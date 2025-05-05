@@ -4,8 +4,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from operator import itemgetter
 from pathlib import Path
-from types import SimpleNamespace
-from typing import Optional
+from typing import Optional, Any
 from uuid import uuid4
 
 import joblib
@@ -47,7 +46,7 @@ class Project:
 
         return pickle_hash, pickle_bytes
 
-    def put(self, key, value):
+    def put(self, key: str, value: Any, *, note: Optional[str] = None):
         id = uuid4().hex
         now = datetime.now(timezone.utc).isoformat()
         pickle_hash, pickle_bytes = self.pickle(value)
@@ -71,6 +70,7 @@ class Project:
                     key=key,
                     artifact_id=pickle_hash,
                     date=now,
+                    note=note,
                     experiment=True,
                     various={
                         "learner": value.estimator_name_,
@@ -96,39 +96,64 @@ class Project:
                     key=key,
                     artifact_id=pickle_hash,
                     date=now,
+                    note=note,
                 )
             )
 
-    def get(self, key):
-        metadata = max(
-            (
-                metadata
-                for _, metadata in self.metadata_storage.items()
-                if metadata["project_name"] == self.name and metadata["key"] == key
-            ),
-            key=itemgetter("date"),
-            default=None,
-        )
+    # def get(self, key):
+    #     metadata = max(
+    #         (
+    #             metadata
+    #             for metadata in self.metadata_storage.values()
+    #             if metadata["project_name"] == self.name and metadata["key"] == key
+    #         ),
+    #         key=itemgetter("date"),
+    #         default=None,
+    #     )
 
-        if metadata:
-            with io.BytesIO(self.artifacts_storage[metadata["artifact_id"]]) as stream:
-                return joblib.load(stream)
+    #     if metadata:
+    #         with io.BytesIO(self.artifacts_storage[metadata["artifact_id"]]) as stream:
+    #             return joblib.load(stream)
 
-        raise KeyError
+    #     raise KeyError
 
     @property
     def experiments(self):
-        def metadata():
-            return sorted(
-                (
-                    metadata
-                    for _, metadata in self.metadata_storage.items()
-                    if metadata["project_name"] == self.name and metadata["experiment"]
-                ),
-                key=itemgetter("date"),
-            )
+        class Namespace:
+            @staticmethod
+            def __call__(id: int):
+                if id in self.artifacts_storage:
+                    with io.BytesIO(self.artifacts_storage[id]) as stream:
+                        return joblib.load(stream)
 
-        return SimpleNamespace(metadata=metadata)
+                raise KeyError
+
+            @staticmethod
+            def metadata():
+                return sorted(
+                    (
+                        {
+                            "id": value["artifact_id"],
+                            "run_id": value["run_id"],
+                            "key": value["key"],
+                            "date": value["date"],
+                            "note": value["note"],
+                            "learner": value["various"]["learner"],
+                            "dataset": value["various"]["dataset"],
+                            "ml_task": value["various"]["ml_task"],
+                            "rmse": value["various"]["rmse"],
+                            "log_loss": value["various"]["log_loss"],
+                            "roc_auc": value["various"]["roc_auc"],
+                            "fit_time": value["various"]["fit_time"],
+                            "predict_time": value["various"]["predict_time"],
+                        }
+                        for value in self.metadata_storage.values()
+                        if (value["project_name"] == self.name) and value["experiment"]
+                    ),
+                    key=itemgetter("date"),
+                )
+
+        return Namespace()
 
 
 if __name__ == "__main__":
