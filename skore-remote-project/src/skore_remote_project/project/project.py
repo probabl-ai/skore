@@ -3,10 +3,32 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import Any, Optional
+from operator import itemgetter
+from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
 from .. import item as item_module
 from ..client.client import AuthenticatedClient
+
+if TYPE_CHECKING:
+    from typing import Any, Optional, TypedDict, Union
+
+    from skore import EstimatorReport
+
+    class EstimatorReportMetadata(TypedDict):  # noqa: D101
+        id: str
+        run_id: str
+        key: str
+        date: str
+        note: Union[str, None]
+        learner: str
+        dataset: str
+        ml_task: str
+        rmse: Union[float, None]
+        log_loss: Union[float, None]
+        roc_auc: Union[float, None]
+        fit_time: float
+        predict_time: float
 
 
 class Project:
@@ -86,13 +108,7 @@ class Project:
 
             return run["id"]
 
-    def put(
-        self,
-        key: str,
-        value: Any,
-        *,
-        note: Optional[str] = None,
-    ):
+    def put(self, key: str, value: Any, *, note: Optional[str] = None):
         """
         Put a key-value pair to the remote project.
 
@@ -123,7 +139,7 @@ class Project:
 
         with AuthenticatedClient(raises=True) as client:
             client.post(
-                f"projects/{self.tenant}/{self.name}/items/",
+                "/".join(("projects", self.tenant, self.name, "items")),
                 json={
                     **item.__metadata__,
                     **item.__representation__,
@@ -133,3 +149,83 @@ class Project:
                     "note": note,
                 },
             )
+
+    @property
+    def experiments(self):
+        """Accessor for interaction with the persisted experiments."""
+
+        def get(id: str) -> EstimatorReport:
+            """Get a persisted experiment by its id."""
+
+            def dto(report):
+                item_class_name = report["raw"]["class"]
+                item_class = getattr(item_module, item_class_name)
+                item_parameters = report["raw"]["parameters"]
+                item = item_class(**item_parameters)
+                return item.__raw__
+
+            with AuthenticatedClient(raises=True) as client:
+                response = client.get(
+                    "/".join(
+                        (
+                            "projects",
+                            self.tenant,
+                            self.name,
+                            "experiments",
+                            "estimator-reports",
+                            id,
+                        )
+                    )
+                )
+
+            if not (response := response.json()):
+                raise KeyError(f"{id} is not a valid `EstimatorReport` identifier")
+
+            return dto(response)
+
+        def metadata() -> list[EstimatorReportMetadata]:
+            """Obtain metadata for all persisted experiments regardless of their run."""
+
+            def dto(summary):
+                metrics = {
+                    metric["name"]: metric["value"]
+                    for metric in summary["metrics"]
+                    if metric["data_source"] in (None, "test")
+                }
+
+                return {
+                    "id": summary["id"],
+                    "run_id": summary["run_id"],
+                    "key": summary["key"],
+                    "date": summary["created_at"],
+                    "note": summary["note"],
+                    "learner": summary["estimator_class_name"],
+                    "dataset": summary["dataset_fingerprint"],
+                    "ml_task": summary["ml_task"],
+                    "rmse": metrics.get("rmse"),
+                    "log_loss": metrics.get("log_loss"),
+                    "roc_auc": metrics.get("roc_auc"),
+                    "fit_time": metrics.get("fit_time"),
+                    "predict_time": metrics.get("predict_time"),
+                }
+
+            with AuthenticatedClient(raises=True) as client:
+                response = client.get(
+                    "/".join(
+                        (
+                            "projects",
+                            self.tenant,
+                            self.name,
+                            "experiments",
+                            "estimator-reports",
+                        )
+                    )
+                )
+
+            return sorted(map(dto, response.json()), key=itemgetter("date"))
+
+        # Ensure project is created by calling `self.run_id`
+        return self.run_id and SimpleNamespace(get=get, metadata=metadata)
+
+    def __repr__(self) -> str:  # noqa: D105
+        return f"Project(remote://{self.tenant}@{self.name})"

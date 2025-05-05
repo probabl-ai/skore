@@ -191,6 +191,7 @@ class Metadata:
                     metric("rmse", "RMSE", "test", False, 3),
                     metric("roc_auc", "ROC AUC", "train", True, 3),
                     metric("roc_auc", "ROC AUC", "test", True, 3),
+                    # timings must be calculated last
                     timing("fit_time", "Fit time (s)", None, False, 1),
                     timing("predict_time", "Predict time (s)", "train", False, 2),
                     timing("predict_time", "Predict time (s)", "test", False, 2),
