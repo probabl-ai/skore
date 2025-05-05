@@ -4,7 +4,7 @@
 Contributing
 ============
 
-Thank you for your interest in contributing to Skore! We welcome contributions from
+Thank you for your interest in contributing to skore! We welcome contributions from
 everyone and appreciate you taking the time to get involved.
 
 This project is hosted on https://github.com/probabl-ai/skore.
@@ -34,8 +34,9 @@ If you have any questions, feel free to reach out:
 
 * Join our community on `Discord <https://discord.gg/scBZerAGwW>`_ for general chat and Q&A.
 * Alternatively, you can `start a discussion on GitHub <https://github.com/probabl-ai/skore/discussions>`_.
+* Both bugs and feature requests can be filed in the `GitHub issue tracker <https://github.com/probabl-ai/skore/issues>`_:
 
-Both bugs and feature requests can be filed in the `Github issue tracker <https://github.com/probabl-ai/skore/issues>`_:
+When filing an issue:
 
 * Check if your issue does not already exist.
 * For `new issues <https://github.com/probabl-ai/skore/issues/new/choose>`_, we recommend some templates but feel free to open a blank issue.
