@@ -313,7 +313,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         response_method : {"predict", "predict_proba", "decision_function"},
-        default="predict"
+                          default="predict"
             The response method to use.
 
         X : array-like of shape (n_samples, n_features), optional

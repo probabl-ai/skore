@@ -290,7 +290,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         response_method : {"predict", "predict_proba", "decision_function"},
-        default="predict"
+                          default="predict"
             The response method to use.
 
         pos_label : int, float, bool or str, default=None
