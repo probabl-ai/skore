@@ -73,23 +73,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     >>> from sklearn.linear_model import LogisticRegression
     >>> from skore import ComparisonReport, EstimatorReport
     >>> X, y = make_classification(random_state=42)
-    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
     >>> estimator_1 = LogisticRegression()
-    >>> estimator_report_1 = EstimatorReport(
-    ...     estimator_1,
-    ...     X_train=X_train,
-    ...     y_train=y_train,
-    ...     X_test=X_test,
-    ...     y_test=y_test
-    ... )
+    >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
     >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-    >>> estimator_report_2 = EstimatorReport(
-    ...     estimator_2,
-    ...     X_train=X_train,
-    ...     y_train=y_train,
-    ...     X_test=X_test,
-    ...     y_test=y_test
-    ... )
+    >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
     >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
     >>> report.report_names_
     ['LogisticRegression_1', 'LogisticRegression_2']
@@ -264,23 +252,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import ComparisonReport
         >>> X, y = make_classification(random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> report.clear_cache()
@@ -318,23 +294,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> report._cache
@@ -411,23 +375,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> predictions = report.get_predictions(

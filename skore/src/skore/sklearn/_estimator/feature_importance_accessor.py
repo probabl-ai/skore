@@ -161,17 +161,10 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_diabetes(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(
-        ...     regressor,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(regressor, **split_data)
         >>> report.feature_importance.coefficients()
                    Coefficient
         Intercept     152.4...
@@ -258,15 +251,9 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = make_classification(n_features=5, random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+        >>> split_data = train_test_split(X, y, random_state=0, as_dict=True)
         >>> forest = RandomForestClassifier(n_estimators=5, random_state=0)
-        >>> report = EstimatorReport(
-        ...     forest,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(forest, **split_data)
         >>> report.feature_importance.mean_decrease_impurity()
                    Mean decrease impurity
         Feature #0                0.06...
@@ -403,17 +390,10 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *make_regression(n_features=3, random_state=0), random_state=0
-        ... )
+        >>> X, y = make_regression(n_features=3, random_state=0)
+        >>> split_data = train_test_split(X, y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(
-        ...     regressor,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(regressor, **split_data)
 
         >>> report.feature_importance.permutation(
         ...    n_repeats=2,

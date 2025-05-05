@@ -91,17 +91,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     >>> from sklearn.linear_model import Ridge
     >>> from sklearn.model_selection import train_test_split
     >>> from skore import EstimatorReport
-    >>> X_train, X_test, y_train, y_test = train_test_split(
-    ...     *load_diabetes(return_X_y=True), random_state=0
-    ... )
+    >>> X, y = load_diabetes(return_X_y=True)
+    >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
     >>> classifier = Ridge()
-    >>> report = EstimatorReport(
-    ...     classifier,
-    ...     X_train=X_train,
-    ...     y_train=y_train,
-    ...     X_test=X_test,
-    ...     y_test=y_test,
-    ... )
+    >>> report = EstimatorReport(classifier, **split_data)
     >>> display = report.metrics.prediction_error()
     >>> display.plot(kind="actual_vs_predicted")
     """
@@ -501,17 +494,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_diabetes(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = Ridge()
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
