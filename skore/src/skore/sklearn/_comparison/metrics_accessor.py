@@ -269,7 +269,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
 
             self._parent._cache[cache_key] = results
-
         return results
 
     def timings(
