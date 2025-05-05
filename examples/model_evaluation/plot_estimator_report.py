@@ -392,7 +392,7 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 # %%
 # Let's first start with a basic confusion matrix:
 cm_display = report.metrics.confusion_matrix()
-cm_display.plot()
+cm_display.plot(cmap="Blues")
 plt.show()
 
 # %%
@@ -406,7 +406,7 @@ plt.show()
 # More plotting options are available, check out the API on the confusion matrix for more information.
 # We can customize the display labels:
 cm_display = report.metrics.confusion_matrix(display_labels=["Disallowed", "Allowed"])
-cm_display.plot()
+cm_display.plot(cmap="Blues")
 plt.show()
 
 # %%
