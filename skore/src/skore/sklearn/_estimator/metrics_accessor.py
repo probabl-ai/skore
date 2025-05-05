@@ -63,8 +63,15 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        scoring: Optional[list[Union[str, Callable, SKLearnScorer]]] = None,
-        scoring_names: Optional[list[Union[str, None]]] = None,
+        scoring: Optional[
+            Union[
+                str,
+                Callable[..., object],
+                SKLearnScorer,
+                list[Union[str, Callable[..., object], SKLearnScorer]],
+            ]
+        ] = None,
+        scoring_names: Optional[Union[str, None, list[Optional[str]]]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
         pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
