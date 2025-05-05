@@ -1,16 +1,44 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+
 import io
 from contextlib import suppress
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from operator import itemgetter
 from pathlib import Path
-from typing import Optional, Any
 from uuid import uuid4
 
 import joblib
 
-from skore import EstimatorReport
 from skore.persistence.storage import DiskCacheStorage
+
+if TYPE_CHECKING:
+    from typing import Any, Optional, TypedDict, Union
+    from skore import EstimatorReport
+
+    class EstimatorReportMetadata(TypedDict):  # noqa: D101
+        id: str
+        run_id: str
+        key: str
+        date: str
+        note: Union[str, None]
+        learner: str
+        dataset: str
+        ml_task: str
+        rmse: Union[float, None]
+        log_loss: Union[float, None]
+        roc_auc: Union[float, None]
+        fit_time: float
+        predict_time: float
+
+
+def lazy_is_instance(value: Any, cls_fullname: str) -> bool:
+    """Return True if value is an instance of ``cls_fullname``."""
+    return cls_fullname in {
+        f"{cls.__module__}.{cls.__name__}" for cls in value.__class__.__mro__
+    }
 
 
 @dataclass
@@ -54,7 +82,7 @@ class Project:
         if pickle_hash not in self.artifacts_storage:
             self.artifacts_storage[pickle_hash] = pickle_bytes
 
-        if isinstance(value, EstimatorReport):
+        if lazy_is_instance(value, "skore.sklearn._estimator.report.EstimatorReport"):
 
             def metric(name):
                 if hasattr(value.metrics, name):
@@ -100,28 +128,11 @@ class Project:
                 )
             )
 
-    # def get(self, key):
-    #     metadata = max(
-    #         (
-    #             metadata
-    #             for metadata in self.metadata_storage.values()
-    #             if metadata["project_name"] == self.name and metadata["key"] == key
-    #         ),
-    #         key=itemgetter("date"),
-    #         default=None,
-    #     )
-
-    #     if metadata:
-    #         with io.BytesIO(self.artifacts_storage[metadata["artifact_id"]]) as stream:
-    #             return joblib.load(stream)
-
-    #     raise KeyError
-
     @property
     def experiments(self):
         class Namespace:
             @staticmethod
-            def __call__(id: int):
+            def __call__(id: int) -> EstimatorReport:
                 if id in self.artifacts_storage:
                     with io.BytesIO(self.artifacts_storage[id]) as stream:
                         return joblib.load(stream)
@@ -129,68 +140,35 @@ class Project:
                 raise KeyError
 
             @staticmethod
-            def metadata():
+            def metadata() -> EstimatorReportMetadata:
+                def dto(value):
+                    return {
+                        "id": value["artifact_id"],
+                        "run_id": value["run_id"],
+                        "key": value["key"],
+                        "date": value["date"],
+                        "note": value["note"],
+                        "learner": value["various"]["learner"],
+                        "dataset": value["various"]["dataset"],
+                        "ml_task": value["various"]["ml_task"],
+                        "rmse": value["various"]["rmse"],
+                        "log_loss": value["various"]["log_loss"],
+                        "roc_auc": value["various"]["roc_auc"],
+                        "fit_time": value["various"]["fit_time"],
+                        "predict_time": value["various"]["predict_time"],
+                    }
+
                 return sorted(
-                    (
-                        {
-                            "id": value["artifact_id"],
-                            "run_id": value["run_id"],
-                            "key": value["key"],
-                            "date": value["date"],
-                            "note": value["note"],
-                            "learner": value["various"]["learner"],
-                            "dataset": value["various"]["dataset"],
-                            "ml_task": value["various"]["ml_task"],
-                            "rmse": value["various"]["rmse"],
-                            "log_loss": value["various"]["log_loss"],
-                            "roc_auc": value["various"]["roc_auc"],
-                            "fit_time": value["various"]["fit_time"],
-                            "predict_time": value["various"]["predict_time"],
-                        }
-                        for value in self.metadata_storage.values()
-                        if (value["project_name"] == self.name) and value["experiment"]
+                    map(
+                        dto,
+                        (
+                            value
+                            for value in self.metadata_storage.values()
+                            if (value["project_name"] == self.name)
+                            and value["experiment"]
+                        ),
                     ),
                     key=itemgetter("date"),
                 )
 
         return Namespace()
-
-
-if __name__ == "__main__":
-    from pathlib import Path
-    from tempfile import TemporaryDirectory
-
-    from sklearn.datasets import make_classification
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.model_selection import train_test_split
-
-    from skore import EstimatorReport
-    from skore.scratch import Project
-
-    X, y = make_classification(random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    classifier = LogisticRegression(max_iter=10_000)
-    report = EstimatorReport(
-        classifier,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    with TemporaryDirectory() as tmpdir:
-        # setup
-        project = Project("test", workspace=Path(tmpdir))
-
-        # put
-        project.put("int", 0)
-        project.put("int", 1)
-        project.put("int", 2)
-        project.put("float", 0.0)
-        project.put("report", report)
-
-        # get
-        print(project.get("int"))
-
-        # metadata
-        print(project.experiments.metadata())
