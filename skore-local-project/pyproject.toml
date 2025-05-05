@@ -4,38 +4,21 @@ dynamic = ["license", "readme", "version"]
 requires-python = ">=3.9, <3.13"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 dependencies = [
-  "httpx",
   "joblib",
-  "matplotlib",
   "rich",
-  "scikit-learn",
-  "skops",
 ]
 
 [project.optional-dependencies]
-polars = ["polars"]
-polars-lts-cpu = ["polars-lts-cpu"]
 test = [
-  "altair",
-  "numpy",
-  "pillow",
-  "plotly",
   "pre-commit",
-  "pyarrow",  # needed for polars.to_pandas()
   "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "respx",
-  "scikit-learn<1.7",
   "skore",
-  "skrub",
   "xdoctest",
 ]
-
-[project.scripts]
-skore-hub-login = "skore_local_project.authentication.login:login"
 
 [project.entry-points."skore.plugins.project"]
 local = "skore_local_project:Project"
