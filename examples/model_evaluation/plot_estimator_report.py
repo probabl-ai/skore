@@ -410,6 +410,39 @@ cm_display.plot()
 plt.show()
 
 # %%
+# Customizing the confusion matrix for better readability
+cm_display = report.metrics.confusion_matrix(
+    display_labels=["Disallowed", "Allowed"]
+)
+
+# Create figure with larger size
+plt.figure(figsize=(10, 8))
+
+# Plot with enhanced readability
+cm_display.plot(
+    cmap='Blues',           # Better color contrast
+    values_format='d',      # Show integers
+    xticks_rotation=45,     # Rotate labels
+    text_kw={
+        'size': 12,         # Larger text
+        'weight': 'bold'    # Bold text
+    }
+)
+
+# Add title and adjust layout
+plt.title('Confusion Matrix', pad=20, size=14)
+plt.tight_layout()
+plt.show()
+
+# %%
+# The confusion matrix display can be customized with several parameters:
+# - values_format: Controls number formatting ('d' for integers)
+# - cmap: Color scheme for better contrast
+# - text_kw: Dictionary of text properties (size, weight, etc.)
+# - figsize: Figure dimensions for larger visualization
+# For more options, check the ConfusionMatrixDisplay API documentation.
+
+# %%
 # Finally, the confusion matrix can also be exported as a pandas DataFrame for further analysis:
 cm_frame = cm_display.frame()
 cm_frame
