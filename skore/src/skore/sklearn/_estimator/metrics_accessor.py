@@ -71,7 +71,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 list[Union[str, Callable[..., object], SKLearnScorer]],
             ]
         ] = None,
-        scoring_names: Optional[Union[str, None, list[Optional[str]]]] = None,
+        scoring_names: Optional[Union[str, list[Union[str, None]]]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
         pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
