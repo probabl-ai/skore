@@ -132,10 +132,7 @@ When adding a new feature to skore, please follow these steps:
 - **Update or add examples**
    - **Minor feature**: adjust one existing example to demonstrate your change—avoid creating many tiny example files.
    - **Major feature**: add a single, concise example under `examples/` (or update the gallery) that highlights the new capability.
-
-
-
-
+   
 Tests
 -----
 
