@@ -155,6 +155,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         """
         if scoring is not None and not isinstance(scoring, list):
             scoring = [scoring]
+        if scoring_names is not None and not isinstance(scoring_names, list):
+            scoring_names = [scoring_names]
 
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
