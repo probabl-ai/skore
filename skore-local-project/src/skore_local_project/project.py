@@ -11,7 +11,7 @@ from uuid import uuid4
 
 import joblib
 
-from skore.persistence.storage import DiskCacheStorage
+from .storage import DiskCacheStorage
 
 if TYPE_CHECKING:
     from typing import Any, Optional, TypedDict, Union
