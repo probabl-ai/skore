@@ -110,6 +110,32 @@ We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/
 
 Skore is a company-driven project. We might provide extensive help to bring PRs to be merged to meet internal deadlines. In such cases, we will warn you in the PR.
 
+Add a new feature
+-----------------
+
+When adding a new feature to skore, please follow these steps:
+
+- **Include unit tests**
+   Write thorough tests using `pytest` and place them under the `tests/` directory.
+   .. code-block:: bash
+
+       pytest -q
+
+- **Verify existing examples**
+   Make sure none of the examples or tutorials break:
+   .. code-block:: bash
+
+       pytest examples/
+
+   For notebooks, open and execute them end-to-end (e.g. via JupyterLab or `nbclient`).
+
+- **Update or add examples**
+   - **Minor feature**: adjust one existing example to demonstrate your change—avoid creating many tiny example files.
+   - **Major feature**: add a single, concise example under `examples/` (or update the gallery) that highlights the new capability.
+
+
+
+
 Tests
 -----
 
