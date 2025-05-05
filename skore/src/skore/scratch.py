@@ -1,6 +1,4 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
-
 
 import io
 from contextlib import suppress
@@ -8,6 +6,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from operator import itemgetter
 from pathlib import Path
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import joblib
@@ -16,6 +15,7 @@ from skore.persistence.storage import DiskCacheStorage
 
 if TYPE_CHECKING:
     from typing import Any, Optional, TypedDict, Union
+
     from skore import EstimatorReport
 
     class EstimatorReportMetadata(TypedDict):  # noqa: D101
@@ -55,7 +55,10 @@ class Metadata:
 
 
 class Project:
-    def __init__(self, name, *, workspace=(Path.home() / ".cache" / "skore")):
+    def __init__(self, name, *, workspace: Optional[Path] = None):
+        if workspace is None:
+            workspace = Path.home() / ".cache" / "skore"
+
         (workspace / "metadata").mkdir(parents=True)
         (workspace / "artifacts").mkdir(parents=True)
 
@@ -140,7 +143,7 @@ class Project:
                 raise KeyError
 
             @staticmethod
-            def metadata() -> EstimatorReportMetadata:
+            def metadata() -> list[EstimatorReportMetadata]:
                 def dto(value):
                     return {
                         "id": value["artifact_id"],

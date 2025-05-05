@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from operator import itemgetter
 from functools import cached_property
+from operator import itemgetter
 from typing import TYPE_CHECKING
 
 from .. import item as item_module
 from ..client.client import AuthenticatedClient
 
-
 if TYPE_CHECKING:
     from typing import Any, Optional, TypedDict, Union
+
     from skore import EstimatorReport
 
     class EstimatorReportMetadata(TypedDict):  # noqa: D101
@@ -138,7 +138,7 @@ class Project:
 
         with AuthenticatedClient(raises=True) as client:
             client.post(
-                f"projects/{self.tenant}/{self.name}/items/",
+                "/".join(("projects", self.tenant, self.name, "items")),
                 json={
                     **item.__metadata__,
                     **item.__representation__,
@@ -153,7 +153,7 @@ class Project:
     def experiments(self):
         class Namespace:
             @staticmethod
-            def __call__(id: int) -> EstimatorReport:
+            def __call__(id: str) -> EstimatorReport:
                 def dto(report):
                     item_class_name = report["raw"]["class"]
                     item_class = getattr(item_module, item_class_name)
@@ -166,8 +166,8 @@ class Project:
                         "/".join(
                             (
                                 "projects",
-                                self.project.tenant,
-                                self.project.name,
+                                self.tenant,
+                                self.name,
                                 "experiments",
                                 "estimator-reports",
                                 id,
@@ -178,7 +178,7 @@ class Project:
                 return dto(response.json())
 
             @staticmethod
-            def metadata() -> EstimatorReportMetadata:
+            def metadata() -> list[EstimatorReportMetadata]:
                 def dto(summary):
                     metrics = {
                         metric["name"]: metric["value"]
