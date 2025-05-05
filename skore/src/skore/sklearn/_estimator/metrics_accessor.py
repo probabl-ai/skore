@@ -146,6 +146,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
         """
+        if scoring is not None and not isinstance(scoring, list):
+            scoring = [scoring]
+
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
             # FIXME: we are still recomputing the hash for all the metrics that we
