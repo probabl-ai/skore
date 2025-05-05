@@ -218,3 +218,6 @@ class Project:
                 return sorted(map(dto, response.json()), key=itemgetter("date"))
 
         return self.run_id and Namespace()
+
+    def __repr__(self) -> str:
+        return f"Project(remote://{self.tenant}@{self.name})"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import os
 from contextlib import suppress
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -55,13 +56,17 @@ class Metadata:
 
 
 class Project:
-    def __init__(self, name, *, workspace: Optional[Path] = None):
+    def __init__(self, name: str, *, workspace: Optional[Path] = None):
         if workspace is None:
-            workspace = Path.home() / ".cache" / "skore"
+            if "SKORE_WORKSPACE" in os.environ:
+                workspace = Path(os.environ["SKORE_WORKSPACE"]) / "skore"
+            else:
+                workspace = Path.home() / ".cache" / "skore"
 
-        (workspace / "metadata").mkdir(parents=True)
-        (workspace / "artifacts").mkdir(parents=True)
+        (workspace / "metadata").mkdir(parents=True, exist_ok=True)
+        (workspace / "artifacts").mkdir(parents=True, exist_ok=True)
 
+        self.workspace = str(workspace)
         self.name = name
         self.run_id = uuid4().hex
         self.metadata_storage = DiskCacheStorage(workspace / "metadata")
@@ -175,3 +180,6 @@ class Project:
                 )
 
         return Namespace()
+
+    def __repr__(self) -> str:
+        return f"Project(local://{self.workspace}@{self.name})"
