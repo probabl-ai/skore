@@ -69,9 +69,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from sklearn.model_selection import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
-    >>> from skore import ComparisonReport, EstimatorReport
+    >>> from skore import ComparisonReport, EstimatorReport, train_test_split
     >>> X, y = make_classification(random_state=42)
     >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
     >>> estimator_1 = LogisticRegression()
@@ -249,8 +248,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
-        >>> from skore import ComparisonReport
+        >>> from skore import ComparisonReport, train_test_split
         >>> X, y = make_classification(random_state=42)
         >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
@@ -291,8 +289,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import ComparisonReport, EstimatorReport, train_test_split
         >>> X, y = make_classification(random_state=42)
         >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
@@ -371,9 +368,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import make_classification
-        >>> from sklearn.model_selection import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import ComparisonReport, EstimatorReport, train_test_split
         >>> X, y = make_classification(random_state=42)
         >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()

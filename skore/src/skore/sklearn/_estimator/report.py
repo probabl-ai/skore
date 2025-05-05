@@ -75,10 +75,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     >>> from sklearn.datasets import make_classification
     >>> from sklearn.model_selection import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import EstimatorReport, train_test_split
     >>> X, y = make_classification(random_state=42)
     >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
     >>> estimator = LogisticRegression()
-    >>> from skore import EstimatorReport
     >>> report = EstimatorReport(estimator, **split_data)
     """
 
@@ -180,8 +180,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import EstimatorReport, train_test_split
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
@@ -217,8 +216,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import EstimatorReport, train_test_split
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
