@@ -63,6 +63,14 @@ def progress_decorator(
                 )
                 progress.start()
 
+            # assigning progress to child reports
+            reports_to_cleanup: list[Any] = []
+            if hasattr(self_obj, "reports_"):
+                for report in self_obj.reports_:
+                    if hasattr(report, "_parent_progress"):
+                        report._parent_progress = progress
+                        reports_to_cleanup.append(report)
+
             task = progress.add_task(desc, total=None)
             self_obj._progress_info = {
                 "current_progress": progress,
@@ -85,6 +93,13 @@ def progress_decorator(
                             task, completed=progress.tasks[task].total, refresh=True
                         )
                     progress.stop()
+
+                # clean up child reports
+                for report in reports_to_cleanup:
+                    report._parent_progress = None
+                    if hasattr(report, "_progress_info"):
+                        report._progress_info = None
+
                 # clean up to make object pickable
                 self_obj._parent_progress = None
                 self_obj._progress_info = None
