@@ -95,10 +95,10 @@ def progress_decorator(
                     progress.stop()
 
                 # clean up child reports
-                for rpt in reports_to_cleanup:
-                    rpt._parent_progress = None
-                    if hasattr(rpt, "_progress_info"):
-                        rpt._progress_info = None
+                for report in reports_to_cleanup:
+                    report._parent_progress = None
+                    if hasattr(report, "_progress_info"):
+                        report._progress_info = None
 
                 # clean up to make object pickable
                 self_obj._parent_progress = None
