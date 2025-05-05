@@ -70,7 +70,82 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         indicator_favorability: bool = False,
         flat_index: bool = False,
     ) -> pd.DataFrame:
-        """Report a set of metrics for our estimator."""
+        """Report a set of metrics for our estimator.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
+
+        scoring : list of str, callable, or scorer, default=None
+            The metrics to report. You can get the possible list of string by calling
+            `report.metrics.help()`. When passing a callable, it should take as
+            arguments `y_true`, `y_pred` as the two first arguments. Additional
+            arguments can be passed as keyword arguments and will be forwarded with
+            `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
+            same parameter name with different values), you can use scikit-learn scorers
+            as provided by :func:`sklearn.metrics.make_scorer`.
+
+        scoring_names : list of str, default=None
+            Used to overwrite the default scoring names in the report. It should be of
+            the same length as the `scoring` parameter.
+
+        scoring_kwargs : dict, default=None
+            The keyword arguments to pass to the scoring functions.
+
+        pos_label : int, float, bool or str, default=None
+            The positive class.
+
+        indicator_favorability : bool, default=False
+            Whether or not to add an indicator of the favorability of the metric as
+            an extra column in the returned DataFrame.
+
+        flat_index : bool, default=False
+            Whether to flatten the multi-index columns. Flat index will always be lower
+            case, do not include spaces and remove the hash symbol to ease indexing.
+
+        Returns
+        -------
+        pd.DataFrame
+            The statistics for the metrics.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+                    LogisticRegression Favorability
+        Metric
+        Precision              0.98...         (↗︎)
+        Recall                 0.93...         (↗︎)
+        ROC AUC                0.99...         (↗︎)
+        Brier score            0.03...         (↘︎)
+        """
         if data_source == "all":
             # Combine results for both train and test datasets
             train_results = self.report_metrics(
