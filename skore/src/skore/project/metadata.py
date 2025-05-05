@@ -4,8 +4,6 @@ import typing
 
 import pandas as pd
 
-from .. import item as item_module
-from ..client.client import AuthenticatedClient
 from .widget import ModelExplorerWidget
 
 if typing.TYPE_CHECKING:
@@ -17,42 +15,7 @@ class Metadata(pd.DataFrame):
 
     @staticmethod
     def factory(project, /):
-        def dto(summary):
-            return dict(
-                (
-                    ("id", summary["id"]),
-                    ("run_id", summary["run_id"]),
-                    ("ml_task", summary["ml_task"]),
-                    ("learner", summary["estimator_class_name"]),
-                    ("dataset", summary["dataset_fingerprint"]),
-                    ("date", summary["created_at"]),
-                    *(
-                        (metric["name"], metric["value"])
-                        for metric in summary["metrics"]
-                        if metric["data_source"] in (None, "test")
-                    ),
-                )
-            )
-
-        # Retrieve HUB's metadata
-        with AuthenticatedClient(raises=True) as client:
-            response = client.get(
-                "/".join(
-                    (
-                        "projects",
-                        project.tenant,
-                        project.name,
-                        "experiments",
-                        "estimator-reports",
-                    )
-                )
-            )
-
-        if not (summaries := response.json()):
-            raise Exception
-
-        # Process the HUB's metadata to be usable by the widget
-        summaries = pd.DataFrame(map(dto, summaries), copy=False)
+        summaries = pd.DataFrame(project.experiments.metadata(), copy=False)
         summaries["learner"] = pd.Categorical(summaries["learner"])
         summaries.index = pd.MultiIndex.from_arrays(
             [
@@ -75,37 +38,10 @@ class Metadata(pd.DataFrame):
         if not hasattr(self, "project") or "id" not in self.index.names:
             raise Exception
 
-        def dto(response):
-            report = response.json()
-            item_class_name = report["raw"]["class"]
-            item_class = getattr(item_module, item_class_name)
-            item_parameters = report["raw"]["parameters"]
-            item = item_class(**item_parameters)
-            return item.__raw__
-
         if filter and (querystr := self.query_string_selection()):
             self = self.query(querystr)
 
-        ids = list(self.index.get_level_values("id"))
-
-        with AuthenticatedClient(raises=True) as client:
-            return [
-                dto(
-                    client.get(
-                        "/".join(
-                            (
-                                "projects",
-                                self.project.tenant,
-                                self.project.name,
-                                "experiments",
-                                "estimator-reports",
-                                id,
-                            )
-                        )
-                    )
-                )
-                for id in ids
-            ]
+        return list(map(self.project.experiments, self.index.get_level_values("id")))
 
     def _repr_html_(self):
         """Display the interactive plot and controls."""

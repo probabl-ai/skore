@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-import sys
 import re
+import sys
+from functools import partial
+from types import SimpleNamespace
 from typing import Any, Optional
 
+from .metadata import Metadata
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
@@ -39,7 +42,7 @@ class Project:
 
     @property
     def experiments(self):
-        return self.__project.experiments
+        return SimpleNamespace(metadata=partial(Metadata.factory, self.__project))
 
     def __repr__(self) -> str:
         return self.__project.__repr__()
