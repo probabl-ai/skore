@@ -244,7 +244,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         )
 
         self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress = None
 
         self.n_jobs = n_jobs
         self._rng = np.random.default_rng(time.time_ns())
@@ -353,8 +352,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         progress.update(main_task, total=total_estimators)
 
         for report in self.reports_:
-            # Pass the progress manager to child tasks
-            report._parent_progress = progress
+            # Share the parent's progress bar with child report
+            report._progress_info = {"current_progress": progress}
             report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
             progress.update(main_task, advance=1, refresh=True)
 
