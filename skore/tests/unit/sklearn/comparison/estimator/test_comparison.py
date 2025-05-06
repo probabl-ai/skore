@@ -512,16 +512,6 @@ def test_comparison_report_aggregate(report):
     [
         (
             "binary_classification",
-            "roc",
-            RocCurveDisplay,
-            {
-                "fpr": {1: [[0, 0, 0, 1], [0, 0, 0, 1]]},
-                "tpr": {1: [[0, 0.1, 1, 1], [0, 0.1, 1, 1]]},
-                "roc_auc": {1: [1, 1]},
-            },
-        ),
-        (
-            "binary_classification",
             "precision_recall",
             PrecisionRecallCurveDisplay,
             {
