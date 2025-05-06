@@ -159,7 +159,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -248,7 +248,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.ensemble import RandomForestClassifier
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = make_classification(n_features=5, random_state=42)
         >>> split_data = train_test_split(X, y, random_state=0, as_dict=True)
@@ -388,7 +388,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_regression
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = make_regression(n_features=3, random_state=0)
         >>> split_data = train_test_split(X, y, random_state=0, as_dict=True)

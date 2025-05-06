@@ -69,7 +69,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from sklearn.model_selection import train_test_split
+    >>> from skore import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> from skore import ComparisonReport, EstimatorReport
     >>> X, y = make_classification(random_state=42)
@@ -249,7 +249,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport
         >>> X, y = make_classification(random_state=42)
         >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
@@ -291,7 +291,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)
         >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
@@ -371,7 +371,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import make_classification
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)

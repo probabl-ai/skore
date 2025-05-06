@@ -125,7 +125,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -522,7 +522,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import make_classification
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
         >>> X, y = make_classification(random_state=42)
         >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
@@ -591,7 +591,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -699,7 +699,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -830,7 +830,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -928,7 +928,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -1052,7 +1052,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -1134,7 +1134,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -1228,7 +1228,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -1332,7 +1332,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -1447,7 +1447,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.metrics import mean_absolute_error
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -1702,7 +1702,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -1770,7 +1770,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -1849,7 +1849,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -1939,7 +1939,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
