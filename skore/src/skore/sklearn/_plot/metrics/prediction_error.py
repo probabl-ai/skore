@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import colormaps
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 from sklearn.utils.validation import _num_samples, check_array
 
 from skore.externals._sklearn_compat import _safe_indexing
@@ -18,7 +18,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore.sklearn.types import MLTask
+from skore.sklearn.types import MLTask, YPlotData
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
@@ -556,8 +556,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     @classmethod
     def _compute_data_for_display(
         cls,
-        y_true: list[ArrayLike],
-        y_pred: list[ArrayLike],
+        y_true: list[YPlotData],
+        y_pred: list[YPlotData],
         *,
         report_type: Literal["cross-validation", "estimator", "comparison-estimator"],
         estimator_names: list[str],
@@ -629,7 +629,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         residuals_min, residuals_max = np.inf, -np.inf
 
         for y_true_i, y_pred_i in zip(y_true, y_pred):
-            n_samples = _num_samples(y_true_i)
+            n_samples = _num_samples(y_true_i["y"])
             if subsample is None:
                 subsample_ = n_samples
             elif isinstance(subsample, numbers.Integral):
@@ -642,10 +642,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             if subsample_ < n_samples:
                 indices = rng.choice(np.arange(n_samples), size=subsample_)
                 y_true_sample = check_array(
-                    _safe_indexing(y_true_i, indices, axis=0), ensure_2d=False
+                    _safe_indexing(y_true_i["y"], indices, axis=0), ensure_2d=False
                 )
                 y_pred_sample = check_array(
-                    _safe_indexing(y_pred_i, indices, axis=0), ensure_2d=False
+                    _safe_indexing(y_pred_i["y"], indices, axis=0), ensure_2d=False
                 )
                 residuals_sample = y_true_sample - y_pred_sample
 
@@ -653,9 +653,9 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 y_pred_display.append(y_pred_sample)
                 residuals_display.append(residuals_sample)
             else:
-                y_true_sample = y_true_i
-                y_pred_sample = y_pred_i
-                residuals_sample = y_true_i - y_pred_i
+                y_true_sample = y_true_i["y"]
+                y_pred_sample = y_pred_i["y"]
+                residuals_sample = y_true_i["y"] - y_pred_i["y"]
 
                 y_true_display.append(y_true_sample)
                 y_pred_display.append(y_pred_sample)

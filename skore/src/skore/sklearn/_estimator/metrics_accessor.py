@@ -1641,8 +1641,20 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
 
             display = display_class._compute_data_for_display(
-                y_true=[y],
-                y_pred=[y_pred],
+                y_true=[
+                    {
+                        "estimator_name": self._parent.estimator_name_,
+                        "split_number": None,
+                        "y": y,
+                    }
+                ],
+                y_pred=[
+                    {
+                        "estimator_name": self._parent.estimator_name_,
+                        "split_number": None,
+                        "y": y_pred,
+                    }
+                ],
                 report_type="estimator",
                 estimators=[self._parent.estimator_],
                 estimator_names=[self._parent.estimator_name_],
