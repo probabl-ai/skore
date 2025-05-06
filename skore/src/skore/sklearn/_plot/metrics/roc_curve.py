@@ -578,10 +578,16 @@ class RocCurveDisplay(
 
         if roc_curve_kwargs is None:
             roc_curve_kwargs = self._default_roc_curve_kwargs
+
+        if self.ml_task == "binary-classification":
+            n_curves = len(self.roc_auc[self.pos_label])
+        else:
+            n_curves = len(self.roc_auc)
+
         roc_curve_kwargs = self._validate_curve_kwargs(
             curve_param_name="roc_curve_kwargs",
             curve_kwargs=roc_curve_kwargs,
-            metric=self.roc_auc,
+            n_curves=n_curves,
             report_type=self.report_type,
         )
 
