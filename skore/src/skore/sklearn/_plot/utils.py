@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Sequence
 from io import StringIO
-from typing import Any, Literal, Optional, Union, cast
+from typing import Any, Literal, Optional, Union
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -144,7 +144,7 @@ class _ClassifierCurveDisplayMixin:
         *,
         curve_param_name: str,
         curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
-        metric: dict[PositiveLabel, list[float]],
+        n_curves: int,
         report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
     ) -> list[dict[str, Any]]:
         """Validate and format the classification curve keyword arguments.
@@ -157,8 +157,8 @@ class _ClassifierCurveDisplayMixin:
         curve_kwargs : dict or list of dict or None
             Keyword arguments to customize the classification curve.
 
-        metric : dict of list of float
-            One of the metric of the curve to infer how many curves we are plotting.
+        n_curves : int
+            The number of curves we are plotting.
 
         report_type : {"comparison-estimator", "cross-validation", "estimator"}
             The type of report.
@@ -174,8 +174,6 @@ class _ClassifierCurveDisplayMixin:
             If the format of curve_kwargs is invalid.
         """
         if self.ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, self.pos_label)
-            n_curves = len(metric[pos_label])
             if report_type in ("estimator", "cross-validation"):
                 allow_single_dict = True
             elif report_type == "comparison-estimator":
@@ -188,7 +186,6 @@ class _ClassifierCurveDisplayMixin:
                     f"or 'comparison-estimator'. Got '{report_type}' instead."
                 )
         else:
-            n_curves = len(metric)
             allow_single_dict = False
 
         if curve_kwargs is None:
