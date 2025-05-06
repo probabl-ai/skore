@@ -63,7 +63,7 @@ class ConfusionMatrixDisplay(Display):
         self.ax_ = None
         self.text_ = None
 
-    def plot(self, ax=None, *, cmap="viridis", colorbar=True, **kwargs):
+    def plot(self, ax=None, *, cmap="Blues", colorbar=True, **kwargs):
         """Plot the confusion matrix.
 
         Parameters
@@ -71,7 +71,7 @@ class ConfusionMatrixDisplay(Display):
         ax : matplotlib axes, default=None
             Axes object to plot on. If None, a new figure and axes is created.
 
-        cmap : str or matplotlib Colormap, default='viridis'
+        cmap : str or matplotlib Colormap, default='Blues'
             Colormap used for confusion matrix.
 
         colorbar : bool, default=True
