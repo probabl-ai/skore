@@ -145,7 +145,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Brier score            0.03...         (↘︎)
 
         >>> # Using scikit-learn metrics
-        >>> report.metrics.report_metrics(scoring=["neg_log_loss"], indicator_favorability=True)
+        >>> report.metrics.report_metrics(
+        scoring=["neg_log_loss"],
+        indicator_favorability=True)
                     LogisticRegression Favorability
         Metric
         Negative Log Loss      -0.10...        (↘︎)
@@ -277,12 +279,14 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                             metric_favorability = (
                                 "↘︎" if metric.startswith("neg_") else "↗︎"
                             )
-                        except ValueError:
+                        except ValueError as err:
                             raise ValueError(
-                                f"Invalid metric: {metric!r}. Please use a valid metric from the "
-                                f"list of supported metrics: {list(self._SCORE_OR_LOSS_INFO.keys())} "
+                                f"Invalid metric: {metric!r}. "
+                                f"Please use a valid metric from the"
+                                f"list of supported metrics: "
+                                f"{list(self._SCORE_OR_LOSS_INFO.keys())}"
                                 "or a valid scikit-learn scoring string."
-                            )
+                            ) from err
                     favorability_indicator.append(metric_favorability)
                 else:
                     # Handle callable metrics
