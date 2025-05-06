@@ -1263,9 +1263,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
-        if self._parent._reports_type == "CrossValidationReport":
-            raise NotImplementedError()
-
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
@@ -1288,44 +1285,48 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y_true: list[YPlotData] = []
             y_pred: list[YPlotData] = []
 
-            for report, report_name in zip(
-                self._parent.reports_, self._parent.report_names_
-            ):
-                report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
-                    data_source=data_source,
-                    X=X,
-                    y=y,
-                )
-
-                y_true.append(
-                    YPlotData(
-                        estimator_name=report_name,
-                        split_index=None,
-                        y=report_y,
-                    )
-                )
-                results = _get_cached_response_values(
-                    cache=report._cache,
-                    estimator_hash=report._hash,
-                    estimator=report._estimator,
-                    X=report_X,
-                    response_method=response_method,
-                    data_source=data_source,
-                    data_source_hash=None,
-                    pos_label=display_kwargs.get("pos_label"),
-                )
-                for key, value, is_cached in results:
-                    if not is_cached:
-                        report._cache[key] = value
-                    if key[-1] != "predict_time":
-                        y_pred.append(
-                            YPlotData(
-                                estimator_name=report_name,
-                                split_index=None,
-                                y=value,
-                            )
+            if self._parent._reports_type == "EstimatorReport":
+                for report, report_name in zip(
+                    self._parent.reports_, self._parent.report_names_
+                ):
+                    report_X, report_y, _ = (
+                        report.metrics._get_X_y_and_data_source_hash(
+                            data_source=data_source,
+                            X=X,
+                            y=y,
                         )
-                progress.update(main_task, advance=1, refresh=True)
+                    )
+
+                    y_true.append(
+                        YPlotData(
+                            estimator_name=report_name,
+                            split_index=None,
+                            y=report_y,
+                        )
+                    )
+                    results = _get_cached_response_values(
+                        cache=report._cache,
+                        estimator_hash=report._hash,
+                        estimator=report._estimator,
+                        X=report_X,
+                        response_method=response_method,
+                        data_source=data_source,
+                        data_source_hash=None,
+                        pos_label=display_kwargs.get("pos_label"),
+                    )
+                    for key, value, is_cached in results:
+                        if not is_cached:
+                            report._cache[key] = value
+                        if key[-1] != "predict_time":
+                            y_pred.append(
+                                YPlotData(
+                                    estimator_name=report_name,
+                                    split_index=None,
+                                    y=value,
+                                )
+                            )
+
+                    progress.update(main_task, advance=1, refresh=True)
 
             display = display_class._compute_data_for_display(
                 y_true=y_true,
