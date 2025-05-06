@@ -25,7 +25,6 @@ if TYPE_CHECKING:
         run_id: str
         key: str
         date: str
-        note: Union[str, None]
         learner: str
         dataset: str
         ml_task: str
@@ -156,7 +155,6 @@ class Project:
                         "run_id": value["run_id"],
                         "key": value["key"],
                         "date": value["date"],
-                        "note": value["note"],
                         "learner": value["various"]["learner"],
                         "dataset": value["various"]["dataset"],
                         "ml_task": value["various"]["ml_task"],
