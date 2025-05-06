@@ -38,8 +38,11 @@ class Project:
     Its constructor initializes a remote project by creating a new project or by
     loading an existing one from a defined tenant.
 
-    The class main method is :func:`~skore_remote_project.Project.put` to insert a
-    key-value pair into the Project.
+    The class main methods are :func:`~skore_remote_project.Project.put`,
+    :func:`~skore_remote_project.experiments.metadata` and
+    :func:`~skore_remote_project.experiments.get`, respectively to insert a key-value
+    pair into the Project, to obtain the experiments metadata and to get a specific
+    experiment.
 
     You can add any type of objects. In some cases, especially on classes you defined,
     the persistency is based on the pickle representation.
