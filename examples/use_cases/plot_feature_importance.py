@@ -577,6 +577,21 @@ column_associations(X_y_plot).query(
     "left_column_name == 'squared_error' or right_column_name == 'squared_error'"
 )
 
+
+# %%
+def rename_features(feature_names):
+    """
+    Rename feature names by replacing 'kmeans__' with 'geospatial__'
+    and removing 'remainder__' prefixes.
+    """
+    return (
+        pd.Series(feature_names)
+        .str.replace("kmeans__", "geospatial__", regex=False)
+        .str.replace("remainder__", "", regex=False)
+        .tolist()
+    )
+
+
 # %%
 # We observe that the ``AveOccup`` feature leads to large prediction errors: our model
 # is not able to deal well with that feature.
@@ -700,9 +715,9 @@ print(selectk_features)
 # And here is the feature importance based on our model (sorted by absolute values):
 
 # %%
-selectk_ridge_report.feature_importance.coefficients().sort_values(
-    by="Coefficient", key=abs, ascending=True
-).tail(15).plot.barh(
+selectk_ridge_report.feature_importance.coefficients().rename(
+    index=lambda x: rename_features([x])[0]
+).sort_values(by="Coefficient", key=abs, ascending=True).tail(15).plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
@@ -851,7 +866,9 @@ plt.tight_layout()
 # Now, let us look at the feature importance based on the MDI:
 
 # %%
-tree_report.feature_importance.mean_decrease_impurity().plot.barh(
+tree_report.feature_importance.mean_decrease_impurity().rename(
+    index=lambda x: rename_features([x])[0]
+).plot.barh(
     title=f"Feature importance of {tree_report.estimator_name_}",
     xlabel="MDI",
     ylabel="Feature",
@@ -914,7 +931,9 @@ print(f"Number of trees in the forest: {n_estimators}")
 # Let us look into the MDI of our random forest:
 
 # %%
-rf_report.feature_importance.mean_decrease_impurity().plot.barh(
+rf_report.feature_importance.mean_decrease_impurity().rename(
+    index=lambda x: rename_features([x])[0]
+).plot.barh(
     title=f"Feature importance of {rf_report.estimator_name_}",
     xlabel="MDI",
     ylabel="Feature",
@@ -1029,7 +1048,7 @@ def plot_permutation_train_test(est_report):
     )
     ax.set_xlabel("$R^2$")
     ax.set_yticks([x + 0.2 for x in range(len(est_report.X_train.columns))])
-    ax.set_yticklabels(est_report.X_train.columns)
+    ax.set_yticklabels(rename_features(est_report.X_train.columns))
 
     plt.tight_layout()
     plt.show()
