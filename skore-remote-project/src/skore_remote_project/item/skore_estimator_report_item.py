@@ -128,7 +128,7 @@ class Metadata:
             verbose_name: str,
             data_source: str,
             greater_is_better: bool,
-            position: Union[int | None],
+            position: Union[int, None],
             /,
         ) -> Union[Metric, None]:
             if hasattr(self.report.metrics, name):
@@ -149,9 +149,9 @@ class Metadata:
         def timing(
             name: str,
             verbose_name: str,
-            data_source: Union[str | None],
+            data_source: Union[str, None],
             greater_is_better: bool,
-            position: Union[int | None],
+            position: Union[int, None],
             /,
         ) -> Union[Metric, None]:
             timings = self.report.metrics.timings()
