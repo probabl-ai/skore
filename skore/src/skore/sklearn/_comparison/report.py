@@ -250,7 +250,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import train_test_split
-        >>> from skore import ComparisonReport
+        >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)
         >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
