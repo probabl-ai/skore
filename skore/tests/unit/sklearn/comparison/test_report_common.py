@@ -8,6 +8,11 @@ from io import BytesIO
 
 import joblib
 import pytest
+from sklearn.datasets import load_iris
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from skore.sklearn.report import ComparisonReport
 
 
 @pytest.fixture(params=["report_estimator_reports", "report_cv_reports"])
@@ -67,3 +72,16 @@ def test_metrics_help(capsys, report):
     report.metrics.help()
     captured = capsys.readouterr()
     assert "Available metrics methods" in captured.out
+
+
+def test_reports_is_dict():
+    X, y = load_iris(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+    estimators = {"lr": LogisticRegression(), "tree": DecisionTreeClassifier()}
+
+    report = ComparisonReport(estimators=estimators)
+    report.fit(X_train, y_train)
+
+    assert isinstance(report.reports_, dict)
+    assert set(report.reports_.keys()) == {"lr", "tree"}
