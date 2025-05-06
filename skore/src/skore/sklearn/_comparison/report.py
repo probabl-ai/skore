@@ -73,7 +73,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     >>> from sklearn.linear_model import LogisticRegression
     >>> from skore import ComparisonReport, EstimatorReport
     >>> X, y = make_classification(random_state=42)
-    >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
+    >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
     >>> estimator_1 = LogisticRegression()
     >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
     >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
@@ -252,7 +252,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> from skore import train_test_split
         >>> from skore import ComparisonReport
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
         >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
@@ -294,7 +294,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
         >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
@@ -375,7 +375,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
         >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization

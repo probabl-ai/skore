@@ -102,7 +102,7 @@ class PrecisionRecallCurveDisplay(
     >>> from skore import train_test_split
     >>> from skore import EstimatorReport
     >>> X, y = load_breast_cancer(return_X_y=True)
-    >>> split_data = train_test_split(X, y, random_state=0, as_dict=True)
+    >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
     >>> classifier = LogisticRegression(max_iter=10_000)
     >>> report = EstimatorReport(classifier, **split_data)
     >>> display = report.metrics.precision_recall()

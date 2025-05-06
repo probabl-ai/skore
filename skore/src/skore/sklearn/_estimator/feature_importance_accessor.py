@@ -251,7 +251,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = make_classification(n_features=5, random_state=42)
-        >>> split_data = train_test_split(X, y, random_state=0, as_dict=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> forest = RandomForestClassifier(n_estimators=5, random_state=0)
         >>> report = EstimatorReport(forest, **split_data)
         >>> report.feature_importance.mean_decrease_impurity()
@@ -391,7 +391,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = make_regression(n_features=3, random_state=0)
-        >>> split_data = train_test_split(X, y, random_state=0, as_dict=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
         >>> report = EstimatorReport(regressor, **split_data)
 

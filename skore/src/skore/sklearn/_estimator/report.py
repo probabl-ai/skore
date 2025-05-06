@@ -76,7 +76,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     >>> from skore import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> X, y = make_classification(random_state=42)
-    >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
+    >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
     >>> estimator = LogisticRegression()
     >>> from skore import EstimatorReport
     >>> report = EstimatorReport(estimator, **split_data)
@@ -326,7 +326,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> from skore import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X, y, random_state=42, as_dict=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator = LogisticRegression()
         >>> from skore import EstimatorReport
         >>> report = EstimatorReport(estimator, **split_data)
