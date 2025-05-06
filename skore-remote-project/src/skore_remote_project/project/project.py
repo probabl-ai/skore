@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from functools import cached_property
 from operator import itemgetter
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from .. import item as item_module
@@ -19,7 +20,6 @@ if TYPE_CHECKING:
         run_id: str
         key: str
         date: str
-        note: Union[str, None]
         learner: str
         dataset: str
         ml_task: str
@@ -151,73 +151,82 @@ class Project:
 
     @property
     def experiments(self):
-        class Namespace:
-            @staticmethod
-            def __call__(id: str) -> EstimatorReport:
-                def dto(report):
-                    item_class_name = report["raw"]["class"]
-                    item_class = getattr(item_module, item_class_name)
-                    item_parameters = report["raw"]["parameters"]
-                    item = item_class(**item_parameters)
-                    return item.__raw__
+        """Accessor for interaction with the persisted experiments."""
 
-                with AuthenticatedClient(raises=True) as client:
-                    response = client.get(
-                        "/".join(
-                            (
-                                "projects",
-                                self.tenant,
-                                self.name,
-                                "experiments",
-                                "estimator-reports",
-                                id,
-                            )
+        def get(id: str) -> EstimatorReport:
+            """Get a persisted experiment by its id."""
+
+            def dto(report):
+                item_class_name = report["raw"]["class"]
+                item_class = getattr(item_module, item_class_name)
+                item_parameters = report["raw"]["parameters"]
+                item = item_class(**item_parameters)
+                return item.__raw__
+
+            with AuthenticatedClient(raises=True) as client:
+                response = client.get(
+                    "/".join(
+                        (
+                            "projects",
+                            self.tenant,
+                            self.name,
+                            "experiments",
+                            "estimator-reports",
+                            id,
                         )
                     )
+                )
 
-                return dto(response.json())
+            return dto(response.json())
 
-            @staticmethod
-            def metadata() -> list[EstimatorReportMetadata]:
-                def dto(summary):
-                    metrics = {
-                        metric["name"]: metric["value"]
-                        for metric in summary["metrics"]
-                        if metric["data_source"] in (None, "test")
-                    }
+        def metadata() -> list[EstimatorReportMetadata]:
+            """
+            Obtain metadata for all persisted experiments regardless of their run.
 
-                    return {
-                        "id": summary["id"],
-                        "run_id": summary["run_id"],
-                        "key": summary["key"],
-                        "date": summary["created_at"],
-                        "note": summary["note"],
-                        "learner": summary["estimator_class_name"],
-                        "dataset": summary["dataset_fingerprint"],
-                        "ml_task": summary["ml_task"],
-                        "rmse": metrics.get("rmse"),
-                        "log_loss": metrics.get("log_loss"),
-                        "roc_auc": metrics.get("roc_auc"),
-                        "fit_time": metrics.get("fit_time"),
-                        "predict_time": metrics.get("predict_time"),
-                    }
+            Notes
+            -----
+            Only scalar metrics are listed in the metadata.
+            """
 
-                with AuthenticatedClient(raises=True) as client:
-                    response = client.get(
-                        "/".join(
-                            (
-                                "projects",
-                                self.tenant,
-                                self.name,
-                                "experiments",
-                                "estimator-reports",
-                            )
+            def dto(summary):
+                metrics = {
+                    metric["name"]: metric["value"]
+                    for metric in summary["metrics"]
+                    if metric["data_source"] in (None, "test")
+                }
+
+                return {
+                    "id": summary["id"],
+                    "run_id": summary["run_id"],
+                    "key": summary["key"],
+                    "date": summary["created_at"],
+                    "learner": summary["estimator_class_name"],
+                    "dataset": summary["dataset_fingerprint"],
+                    "ml_task": summary["ml_task"],
+                    "rmse": metrics.get("rmse"),
+                    "log_loss": metrics.get("log_loss"),
+                    "roc_auc": metrics.get("roc_auc"),
+                    "fit_time": metrics.get("fit_time"),
+                    "predict_time": metrics.get("predict_time"),
+                }
+
+            with AuthenticatedClient(raises=True) as client:
+                response = client.get(
+                    "/".join(
+                        (
+                            "projects",
+                            self.tenant,
+                            self.name,
+                            "experiments",
+                            "estimator-reports",
                         )
                     )
+                )
 
-                return sorted(map(dto, response.json()), key=itemgetter("date"))
+            return sorted(map(dto, response.json()), key=itemgetter("date"))
 
-        return self.run_id and Namespace()
+        # Ensure project is created by calling `self.run_id`
+        return self.run_id and SimpleNamespace(get=get, metadata=metadata)
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # noqa: D105
         return f"Project(remote://{self.tenant}@{self.name})"
