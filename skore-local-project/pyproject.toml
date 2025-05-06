@@ -5,6 +5,7 @@ requires-python = ">=3.9, <3.13"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 dependencies = [
   "joblib",
+  "platformdirs",
   "rich",
 ]
 
