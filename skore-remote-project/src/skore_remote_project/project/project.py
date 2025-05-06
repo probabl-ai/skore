@@ -138,7 +138,7 @@ class Project:
 
         with AuthenticatedClient(raises=True) as client:
             client.post(
-                "/".join(("projects", self.tenant, self.name, "items")),
+                f"projects/{self.tenant}/{self.name}/items",
                 json={
                     **item.__metadata__,
                     **item.__representation__,
@@ -165,16 +165,7 @@ class Project:
 
             with AuthenticatedClient(raises=True) as client:
                 response = client.get(
-                    "/".join(
-                        (
-                            "projects",
-                            self.tenant,
-                            self.name,
-                            "experiments",
-                            "estimator-reports",
-                            id,
-                        )
-                    )
+                    f"projects/{self.tenant}/{self.name}/experiments/estimator-reports/{id}"
                 )
 
             return dto(response.json())
@@ -212,15 +203,7 @@ class Project:
 
             with AuthenticatedClient(raises=True) as client:
                 response = client.get(
-                    "/".join(
-                        (
-                            "projects",
-                            self.tenant,
-                            self.name,
-                            "experiments",
-                            "estimator-reports",
-                        )
-                    )
+                    f"projects/{self.tenant}/{self.name}/experiments/estimator-reports"
                 )
 
             return sorted(map(dto, response.json()), key=itemgetter("date"))
