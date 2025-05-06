@@ -111,8 +111,8 @@ def config_context(
     Examples
     --------
     >>> import skore
-    >>> from sklearn.datasets import make_classification
     >>> from skore import train_test_split
+    >>> from sklearn.datasets import make_classification
     >>> from sklearn.linear_model import LogisticRegression
     >>> from skore import CrossValidationReport
     >>> with skore.config_context(show_progress=False):
