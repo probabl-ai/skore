@@ -392,21 +392,21 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 # %%
 # Let's first start with a basic confusion matrix:
 cm_display = report.metrics.confusion_matrix()
-cm_display.plot(cmap="Blues")
+cm_display.plot()
 plt.show()
 
 # %%
 # We can normalize the confusion matrix to get percentages instead of raw counts.
 # Here we normalize by true labels (rows):
 cm_display = report.metrics.confusion_matrix(normalize="true")
-cm_display.plot(cmap="Blues")
+cm_display.plot()
 plt.show()
 
 # %%
 # More plotting options are available, check out the API on the confusion matrix for more information.
 # We can customize the display labels:
 cm_display = report.metrics.confusion_matrix(display_labels=["Disallowed", "Allowed"])
-cm_display.plot(cmap="Blues")
+cm_display.plot()
 plt.show()
 
 # %%
