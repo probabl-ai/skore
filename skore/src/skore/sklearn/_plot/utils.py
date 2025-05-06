@@ -6,7 +6,6 @@ from typing import Any, Literal, Optional, Union, cast
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
-from numpy.typing import ArrayLike
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -15,7 +14,7 @@ from sklearn.utils.validation import (
     check_consistent_length,
 )
 
-from skore.sklearn.types import MLTask, PositiveLabel
+from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
 
 LINESTYLE = [
     ("solid", "solid"),
@@ -229,8 +228,8 @@ class _ClassifierCurveDisplayMixin:
     @classmethod
     def _validate_from_predictions_params(
         cls,
-        y_true: Sequence[ArrayLike],
-        y_pred: Sequence[ArrayLike],
+        y_true: Sequence[YPlotData],
+        y_pred: Sequence[YPlotData],
         *,
         ml_task: str,
         pos_label: Optional[PositiveLabel] = None,
@@ -239,7 +238,7 @@ class _ClassifierCurveDisplayMixin:
             check_consistent_length(y_true_i, y_pred_i)
 
         if ml_task == "binary-classification":
-            pos_label = _check_pos_label_consistency(pos_label, y_true[0])
+            pos_label = _check_pos_label_consistency(pos_label, y_true[0]["y"])
 
         return pos_label
 
