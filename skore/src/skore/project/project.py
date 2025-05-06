@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import sys
 import re
+import sys
 from typing import Any, Optional
-
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
