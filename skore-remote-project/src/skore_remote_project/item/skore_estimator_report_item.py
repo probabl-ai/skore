@@ -128,7 +128,7 @@ class Metadata:
             verbose_name: str,
             data_source: str,
             greater_is_better: bool,
-            position: Union[int | None],
+            position: Union[int, None],
             /,
         ) -> Union[Metric, None]:
             if hasattr(self.report.metrics, name):
@@ -149,9 +149,9 @@ class Metadata:
         def timing(
             name: str,
             verbose_name: str,
-            data_source: Union[str | None],
+            data_source: Union[str, None],
             greater_is_better: bool,
-            position: Union[int | None],
+            position: Union[int, None],
             /,
         ) -> Union[Metric, None]:
             timings = self.report.metrics.timings()
@@ -191,6 +191,7 @@ class Metadata:
                     metric("rmse", "RMSE", "test", False, 3),
                     metric("roc_auc", "ROC AUC", "train", True, 3),
                     metric("roc_auc", "ROC AUC", "test", True, 3),
+                    # timings must be calculated last
                     timing("fit_time", "Fit time (s)", None, False, 1),
                     timing("predict_time", "Predict time (s)", "train", False, 2),
                     timing("predict_time", "Predict time (s)", "test", False, 2),
