@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import joblib
+import platformdirs
 
 from .storage import DiskCacheStorage
 
@@ -61,7 +62,7 @@ class Project:
             if "SKORE_WORKSPACE" in os.environ:
                 workspace = Path(os.environ["SKORE_WORKSPACE"]) / "skore"
             else:
-                workspace = Path.home() / ".cache" / "skore"
+                workspace = Path(platformdirs.user_cache_dir()) / "skore"
 
         (workspace / "metadata").mkdir(parents=True, exist_ok=True)
         (workspace / "artifacts").mkdir(parents=True, exist_ok=True)
