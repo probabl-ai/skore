@@ -68,10 +68,11 @@ class Project:
     Its constructor initializes a local project by creating a new project or by
     loading an existing one from a ``workspace``.
 
-    The class main methods are :func:`~skore.Project.put`,
-    :func:`~skore.Project.experiments.metadata` and
-    :func:`~skore.Project.experiments.get`, respectively to insert a key-value pair into
-    the Project, to obtain the experiments metadata and to get a specific experiment.
+    The class main methods are :func:`~skore_local_project.Project.put`,
+    :func:`~skore_local_project.experiments.metadata` and
+    :func:`~skore_local_project.experiments.get`, respectively to insert a key-value
+    pair into the Project, to obtain the experiments metadata and to get a specific
+    experiment.
 
     You can add any type of objects. In some cases, especially on classes you defined,
     the persistency is based on the pickle representation.
