@@ -480,10 +480,15 @@ class PrecisionRecallCurveDisplay(
         if pr_curve_kwargs is None:
             pr_curve_kwargs = self._default_pr_curve_kwargs
 
+        if self.ml_task == "binary-classification":
+            n_curves = len(self.average_precision[self.pos_label])
+        else:
+            n_curves = len(self.average_precision)
+
         pr_curve_kwargs = self._validate_curve_kwargs(
             curve_param_name="pr_curve_kwargs",
             curve_kwargs=pr_curve_kwargs,
-            metric=self.average_precision,
+            n_curves=n_curves,
             report_type=self.report_type,
         )
 
