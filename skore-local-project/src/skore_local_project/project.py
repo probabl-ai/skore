@@ -140,7 +140,7 @@ class Project:
     def experiments(self):
         class Namespace:
             @staticmethod
-            def __call__(id: int) -> EstimatorReport:
+            def __call__(id: str) -> EstimatorReport:
                 if id in self.artifacts_storage:
                     with io.BytesIO(self.artifacts_storage[id]) as stream:
                         return joblib.load(stream)
