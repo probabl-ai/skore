@@ -119,12 +119,15 @@ When adding a new feature to skore, please follow these steps:
    Add tests to verify that your feature has as few bugs as possible. Tests are in the `tests/` directory.
 
 - **Verify existing examples**
-   Make sure none of the examples or tutorials break:
-   .. code-block:: bash
+  You can run all examples with
+  .. code-block:: bash
 
-       pytest examples/
+	cd sphinx && make html
 
-   For notebooks, open and execute them end-to-end (e.g. via JupyterLab or `nbclient`).
+  or you can run individual examples with
+  .. code-block:: bash
+
+	python <example_file>
 
 - **Update or add examples**
    - **Minor feature**: adjust one existing example to demonstrate your change—avoid creating many tiny example files.
