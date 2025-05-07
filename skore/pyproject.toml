@@ -34,9 +34,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["polars"]
-polars-lts-cpu = ["polars-lts-cpu"]
-test = [
+test-base = [
   "altair>=5,<6",
   "pillow",
   "plotly>=5,<6",
@@ -50,7 +48,9 @@ test = [
   "skrub",
   "xdoctest",
 ]
-sphinx = [
+test = ["skore[test-base]", "polars"]
+test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
+sphinx-base = [
   "IPython",
   "altair",
   "kaleido",
@@ -69,6 +69,8 @@ sphinx = [
   "sphinx_autosummary_accessors",
   "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
 ]
+sphinx = ["skore[sphinx-base]", "polars"]
+sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]
 dev = [
   "nbformat",
   "ipykernel",
