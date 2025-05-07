@@ -294,6 +294,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     if scoring_kwargs is None:
                         metrics_kwargs = {}
                     else:
+                        # check if we should pass any parameters specific to the metric
                         metric_callable_params = inspect.signature(metric).parameters
                         metrics_kwargs = {
                             param: scoring_kwargs[param]
