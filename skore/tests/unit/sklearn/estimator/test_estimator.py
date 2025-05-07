@@ -9,12 +9,13 @@ import pandas as pd
 import pytest
 from sklearn.base import clone
 from sklearn.cluster import KMeans
-from sklearn.datasets import make_classification, make_regression
+from sklearn.datasets import load_breast_cancer, make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
+    get_scorer,
     make_scorer,
     median_absolute_error,
     r2_score,
@@ -1343,3 +1344,34 @@ def test_estimator_report_average_return_float(binary_classification_data):
     for metric_name in ("precision", "recall", "roc_auc"):
         result = getattr(report.metrics, metric_name)(average="macro")
         assert isinstance(result, float)
+
+
+def test_estimator_report_metric_with_neg_metrics():
+    """Check that scikit-learn metrics with 'neg_' prefix are handled correctly."""
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        *load_breast_cancer(return_X_y=True), random_state=0
+    )
+    classifier = LogisticRegression(max_iter=10_000)
+
+    report = EstimatorReport(
+        classifier,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    # Use scikit-learn's get_scorer to handle neg_log_loss
+    scorer = get_scorer("neg_log_loss")
+    result = report.metrics.report_metrics(scoring=[scorer])
+
+    # Check that the metric name is displayed properly (as 'log_loss')
+    assert "log_loss" in result.index
+
+    # Get the neg_log_loss score directly - use the fitted model from the report
+    neg_log_loss_value = get_scorer("neg_log_loss")(report.estimator_, X_test, y_test)
+
+    # Check that the reported log_loss matches the absolute value of neg_log_loss
+    log_loss_value = result.loc["log_loss", classifier.__class__.__name__]
+    assert np.isclose(log_loss_value, abs(neg_log_loss_value))
