@@ -24,6 +24,43 @@ from skore.sklearn._plot.utils import (
 from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
 
 
+def _set_axis_labels(ax: Axes, info_pos_label: Union[str, None]) -> None:
+    """Add axis labels."""
+    xlabel = "False Positive Rate"
+    ylabel = "True Positive Rate"
+    if info_pos_label:
+        xlabel += info_pos_label
+        ylabel += info_pos_label
+
+    ax.set(
+        xlabel=xlabel,
+        xlim=(-0.01, 1.01),
+        ylabel=ylabel,
+        ylim=(-0.01, 1.01),
+        aspect="equal",
+    )
+
+
+def _add_chance_level(
+    ax: Axes,
+    chance_level_kwargs: Union[dict, None],
+    default_chance_level_kwargs: Union[dict, None],
+) -> Line2D:
+    """Add the chance-level line."""
+    chance_level_kwargs = _validate_style_kwargs(
+        {
+            "label": "Chance level (AUC = 0.5)",
+            "color": "k",
+            "linestyle": "--",
+        },
+        chance_level_kwargs or default_chance_level_kwargs or {},
+    )
+
+    (chance_level,) = ax.plot((0, 1), (0, 1), **chance_level_kwargs)
+
+    return cast(Line2D, chance_level)
+
+
 class RocCurveDisplay(
     StyleDisplayMixin, HelpDisplayMixin, _ClassifierCurveDisplayMixin
 ):
@@ -96,7 +133,7 @@ class RocCurveDisplay(
     lines_ : list of matplotlib lines
         The lines of the ROC curve.
 
-    chance_level_ : matplotlib line
+    chance_level_ : matplotlib line or None
         The chance level line.
 
     Examples
@@ -511,32 +548,16 @@ class RocCurveDisplay(
                 f"or 'comparison-estimator'. Got '{self.report_type}' instead."
             )
 
-        chance_level_kwargs = _validate_style_kwargs(
-            {
-                "label": "Chance level (AUC = 0.5)",
-                "color": "k",
-                "linestyle": "--",
-            },
-            chance_level_kwargs or self._default_chance_level_kwargs or {},
-        )
+        _set_axis_labels(self.ax_, info_pos_label)
 
-        xlabel = "False Positive Rate"
-        ylabel = "True Positive Rate"
-        if info_pos_label:
-            xlabel += info_pos_label
-            ylabel += info_pos_label
-
-        self.ax_.set(
-            xlabel=xlabel,
-            xlim=(-0.01, 1.01),
-            ylabel=ylabel,
-            ylim=(-0.01, 1.01),
-            aspect="equal",
-        )
-
-        self.chance_level_: Optional[Line2D] = None
         if plot_chance_level:
-            (self.chance_level_,) = self.ax_.plot((0, 1), (0, 1), **chance_level_kwargs)
+            self.chance_level_ = _add_chance_level(
+                self.ax_,
+                chance_level_kwargs,
+                self._default_chance_level_kwargs,
+            )
+        else:
+            self.chance_level_ = None
 
         if despine:
             _despine_matplotlib_axis(self.ax_)
