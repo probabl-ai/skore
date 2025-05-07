@@ -160,7 +160,8 @@ class _ClassifierCurveDisplayMixin:
         n_curves : int
             The number of curves we are plotting.
 
-        report_type : {"comparison-estimator", "cross-validation", "estimator"}
+        report_type : {"comparison-cross-validation", "comparison-estimator",
+                      "cross-validation", "estimator"}
             The type of report.
 
         Returns
@@ -176,14 +177,15 @@ class _ClassifierCurveDisplayMixin:
         if self.ml_task == "binary-classification":
             if report_type in ("estimator", "cross-validation"):
                 allow_single_dict = True
-            elif report_type == "comparison-estimator":
+            elif report_type in ("comparison-estimator", "comparison-cross-validation"):
                 # since we compare different estimators, it does not make sense to share
                 # a single dictionary for all the estimators.
                 allow_single_dict = False
             else:
                 raise ValueError(
                     f"`report_type` should be one of 'estimator', 'cross-validation', "
-                    f"or 'comparison-estimator'. Got '{report_type}' instead."
+                    "'comparison-cross-validation' or 'comparison-estimator'. "
+                    f"Got '{report_type}' instead."
                 )
         else:
             allow_single_dict = False

@@ -605,8 +605,9 @@ class RocCurveDisplay(
             )
         else:
             raise ValueError(
-                f"`report_type` should be one of 'estimator', 'cross-validation', "
-                f"or 'comparison-estimator'. Got '{self.report_type}' instead."
+                "`report_type` should be one of 'estimator', 'cross-validation', "
+                "'comparison-cross-validation' or 'comparison-estimator'. "
+                f"Got '{self.report_type}' instead."
             )
 
         _set_axis_labels(self.ax_, info_pos_label)
@@ -640,7 +641,8 @@ class RocCurveDisplay(
             confidence values, or non-thresholded measure of decisions (as returned by
             "decision_function" on some classifiers).
 
-        report_type : {"comparison-estimator", "cross-validation", "estimator"}
+        report_type : {"comparison-cross-validation", "comparison-estimator",
+                      "cross-validation", "estimator"}
             The type of report.
 
         estimators : list of estimator instances
