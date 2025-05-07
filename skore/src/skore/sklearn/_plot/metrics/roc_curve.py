@@ -102,16 +102,16 @@ class RocCurveDisplay(
 
     Attributes
     ----------
-    ax_ : matplotlib axes
+    ax_ : matplotlib axes or array of axes
         The axes on which the ROC curve is plotted.
 
     figure_ : matplotlib figure
         The figure on which the ROC curve is plotted.
 
-    lines_ : list of matplotlib lines
+    lines_ : list of matplotlib lines or list of matplotlib LineCollections
         The lines of the ROC curve.
 
-    chance_level_ : matplotlib line or None
+    chance_level_ : matplotlib line or list of lines or None
         The chance level line.
 
     Examples
@@ -522,6 +522,8 @@ class RocCurveDisplay(
         *,
         estimator_names: list[str],
         roc_curve_kwargs: list[dict[str, Any]],
+        plot_chance_level: bool = True,
+        chance_level_kwargs: Optional[dict[str, Any]] = None,
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve of several cross-validations.
 
@@ -533,6 +535,13 @@ class RocCurveDisplay(
         roc_curve_kwargs : list of dict
             List of dictionaries containing keyword arguments to customize the ROC
             curves. The length of the list should match the number of curves to plot.
+
+        plot_chance_level : bool, default=True
+            Whether to plot the chance level.
+
+        chance_level_kwargs : dict, default=None
+            Keyword arguments to be passed to matplotlib's `plot` for rendering
+            the chance level line.
 
         Returns
         -------
@@ -592,6 +601,21 @@ class RocCurveDisplay(
                 if self.pos_label is not None
                 else ""
             )
+
+            if plot_chance_level:
+                self.chance_level_ = _add_chance_level(
+                    self.ax_,
+                    chance_level_kwargs,
+                    self._default_chance_level_kwargs,
+                )
+            else:
+                self.chance_level_ = None
+
+            self.ax_.legend(
+                bbox_to_anchor=(1.02, 1),
+                title=f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set",
+            )
+
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
             labels = self.roc_curve["label"].unique()
@@ -603,9 +627,9 @@ class RocCurveDisplay(
             for est_idx, estimator_name in enumerate(estimator_names):
                 est_color = colors[est_idx]
 
-                for _class_idx, class_label in enumerate(labels):
+                for label_idx, label in enumerate(labels):
                     roc_auc_estimator = self.roc_auc[
-                        (self.roc_auc["label"] == class_label)
+                        (self.roc_auc["label"] == label)
                         & (self.roc_auc["estimator_name"] == estimator_name)
                     ]["roc_auc"]
                     roc_auc_mean = roc_auc_estimator.mean()
@@ -622,7 +646,7 @@ class RocCurveDisplay(
                     line_kwargs_validated["alpha"] = 0.6
 
                     roc_curve_estimator = self.roc_curve[
-                        (self.roc_curve["label"] == class_label)
+                        (self.roc_curve["label"] == label)
                         & (self.roc_curve["estimator_name"] == estimator_name)
                     ]
 
@@ -635,12 +659,31 @@ class RocCurveDisplay(
 
                     line_collection = LineCollection(segments, **line_kwargs_validated)
                     lines.append(line_collection)
-                    self.ax_.add_collection(line_collection)
+                    self.ax_[label_idx].add_collection(line_collection)
 
-        self.ax_.legend(
-            bbox_to_anchor=(1.02, 1),
-            title=f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set",
-        )
+                    info_pos_label = f"\n(Positive label: {label})"
+                    _set_axis_labels(self.ax_[label_idx], info_pos_label)
+
+            if plot_chance_level:
+                self.chance_level_ = []
+                for ax in self.ax_:
+                    self.chance_level_.append(
+                        _add_chance_level(
+                            ax,
+                            chance_level_kwargs,
+                            self._default_chance_level_kwargs,
+                        )
+                    )
+            else:
+                self.chance_level_ = None
+
+            for ax in self.ax_:
+                ax.legend(
+                    bbox_to_anchor=(1.02, 1),
+                    title=(
+                        f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set"
+                    ),
+                )
 
         return self.ax_, lines, info_pos_label
 
@@ -691,7 +734,14 @@ class RocCurveDisplay(
         >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
-        self.figure_, self.ax_ = plt.subplots()
+        if (
+            self.report_type == "comparison-cross-validation"
+            and self.ml_task == "multiclass-classification"
+        ):
+            n_labels = len(self.roc_auc["label"].unique())
+            self.figure_, self.ax_ = plt.subplots(ncols=n_labels)
+        else:
+            self.figure_, self.ax_ = plt.subplots()
 
         if roc_curve_kwargs is None:
             roc_curve_kwargs = self._default_roc_curve_kwargs
@@ -745,10 +795,18 @@ class RocCurveDisplay(
                 f"Got '{self.report_type}' instead."
             )
 
-        _set_axis_labels(self.ax_, info_pos_label)
+        if (
+            self.report_type == "comparison-cross-validation"
+            and self.ml_task == "multiclass-classification"
+        ):
+            for ax in self.ax_:
+                if despine:
+                    _despine_matplotlib_axis(ax)
+        else:
+            _set_axis_labels(self.ax_, info_pos_label)
 
-        if despine:
-            _despine_matplotlib_axis(self.ax_)
+            if despine:
+                _despine_matplotlib_axis(self.ax_)
 
     @classmethod
     def _compute_data_for_display(
