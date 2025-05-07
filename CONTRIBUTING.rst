@@ -77,7 +77,6 @@ You'll need ``python >=3.9, <3.13``.
 
         make install-skore
 
-
 Choosing an issue
 -----------------
 
@@ -113,26 +112,36 @@ Skore is a company-driven project. We might provide extensive help to bring PRs 
 Adding a new feature
 --------------------
 
-When adding a new feature to skore, please follow these steps:
+When adding a new feature to skore, please also follow these steps:
 
-- **Include unit tests**
-   Add tests to verify that your feature has as few bugs as possible. Tests are in the `tests/` directory.
+#.  **Include unit tests**
 
-- **Verify existing examples**
-  You can run all examples with
-  .. code-block:: bash
+    Add tests to verify that your feature has as few bugs as possible. Tests are in the `tests/` directory.
 
-	cd sphinx && make html
+#.  **Verify existing examples**
 
-  or you can run individual examples with
-  .. code-block:: bash
+    Check if your newly introduced changes do not impact existing examples.
 
-	python <example_file>
+    You can run all examples with:
 
-- **Update or add examples**
-   - **Minor feature**: adjust one existing example to demonstrate your change—avoid creating many tiny example files.
-   - **Major feature**: add a single, concise example under `examples/` (or update the gallery) that highlights the new capability.
-   
+    .. code-block:: bash
+
+        cd sphinx && make html
+
+    *Alternatively*, you can run individual examples with:
+
+    .. code-block:: bash
+
+        python <example_file>
+
+#.  **Update or add examples if needed**
+
+    -   For a minor feature, adjust one existing example to demonstrate your change.
+        Avoid creating many short example files.
+
+    -   For a major feature, add a single, concise example under `examples/` (or update
+        the gallery) that highlights the new capability.
+
 Tests
 -----
 
@@ -142,7 +151,6 @@ To run the tests locally, you may run:
 
     make test
 
-
 Linting
 -------
 
@@ -151,7 +159,6 @@ We use the linter ruff to make sure that the code is formatted correctly:
 .. code-block:: bash
 
     make lint
-
 
 Documentation
 =============
