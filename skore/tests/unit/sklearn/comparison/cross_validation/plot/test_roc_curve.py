@@ -1,5 +1,7 @@
 """Test the `roc_curve` display method."""
 
+from itertools import product
+
 import matplotlib as mpl
 import numpy as np
 from sklearn.datasets import make_classification
@@ -23,28 +25,23 @@ def test_binary_classification(pyplot):
     display = report.metrics.roc()
     assert isinstance(display, RocCurveDisplay)
 
-    # check the structure of the attributes
     pos_label = 1
     n_reports = len(report.reports_)
-    for attr_name in ("fpr", "tpr", "roc_auc"):
-        assert isinstance(getattr(display, attr_name), list)
-        assert len(getattr(display, attr_name)) == n_reports
-
-        attr = getattr(display, attr_name)
-        for i, cv_report in enumerate(report.reports_):
-            # Positive class is 1
-            assert isinstance(attr[i][pos_label], list)
-            assert len(attr[i][pos_label]) == cv_report._cv_splitter.n_splits
 
     display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == n_reports
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for i in range(n_reports):
+    for i, estimator_name in enumerate(report.report_names_):
         roc_curve_mpl = display.lines_[i]
         assert isinstance(roc_curve_mpl, mpl.collections.LineCollection)
-        mean_auc = np.mean(display.roc_auc[i][pos_label])
-        std_auc = np.std(display.roc_auc[i][pos_label], mean=mean_auc)
+        auc = display.roc_auc[
+            (display.roc_auc["label"] == pos_label)
+            & (display.roc_auc["estimator_name"] == estimator_name)
+        ]["roc_auc"]
+        mean_auc = auc.mean()
+        std_auc = auc.std()
+
         assert roc_curve_mpl.get_label() == (
             f"{report.report_names_[i]} (AUC = {mean_auc:0.2f} +/- {std_auc:0.2f})"
         )
@@ -57,7 +54,7 @@ def test_binary_classification(pyplot):
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == r"Binary-Classification on $\bf{test}$ set"
-    assert len(legend.get_texts()) == n_reports + 1
+    assert len(legend.get_texts()) == n_reports
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
     assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
@@ -83,37 +80,35 @@ def test_multiclass(pyplot):
     display = report.metrics.roc()
     assert isinstance(display, RocCurveDisplay)
 
-    # check the structure of the attributes
-    labels = display.fpr[0].keys()
+    labels = display.roc_curve["label"].unique()
     n_reports = len(report.reports_)
-    for attr_name in ("fpr", "tpr", "roc_auc"):
-        assert isinstance(getattr(display, attr_name), list)
-        assert len(getattr(display, attr_name)) == n_reports
-
-        attr = getattr(display, attr_name)
-        for i, cv_report in enumerate(report.reports_):
-            for label in labels:
-                assert isinstance(attr[i][label], list)
-                assert len(attr[i][label]) == cv_report._cv_splitter.n_splits
 
     display.plot()
     assert isinstance(display.lines_, list)
-    assert len(display.lines_) == len(labels)
-    assert len(display.lines_[0]) == n_reports
+    assert len(display.lines_) == n_reports * len(labels)
+    assert (
+        len(display.lines_[0].get_segments())
+        == report.reports_[0]._cv_splitter.n_splits
+    )
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for report_idx, (label_idx, label) in zip(range(n_reports), enumerate(labels)):
-        roc_curve_mpl = display.lines_[label_idx][report_idx]
+    for i, ((estimator_idx, estimator_name), label) in enumerate(
+        product(enumerate(report.report_names_), labels)
+    ):
+        roc_curve_mpl = display.lines_[i]
         assert isinstance(roc_curve_mpl, mpl.collections.LineCollection)
 
-        roc_auc = display.roc_auc[report_idx][label]
-        mean_auc = np.mean(roc_auc)
-        std_auc = np.std(roc_auc, mean=mean_auc)
+        auc = display.roc_auc[
+            (display.roc_auc["label"] == label)
+            & (display.roc_auc["estimator_name"] == estimator_name)
+        ]["roc_auc"]
+        mean_auc = auc.mean()
+        std_auc = auc.std()
+
         assert roc_curve_mpl.get_label() == (
-            f"{report.report_names_[report_idx]} "
-            f"(AUC = {mean_auc:0.2f} +/- {std_auc:0.2f})"
+            f"{estimator_name} (AUC = {mean_auc:0.2f} +/- {std_auc:0.2f})"
         )
         assert list(roc_curve_mpl.get_color()[0][:3]) == list(
-            default_colors[report_idx][:3]
+            default_colors[estimator_idx][:3]
         )
 
     assert isinstance(display.chance_level_, list)
