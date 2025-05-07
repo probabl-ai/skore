@@ -9,13 +9,14 @@ from typing import TYPE_CHECKING
 
 from .. import item as item_module
 from ..client.client import AuthenticatedClient
+from ..item.item import lazy_is_instance
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, TypedDict, Union
+    from typing import TypedDict, Union
 
     from skore import EstimatorReport
 
-    class EstimatorReportMetadata(TypedDict):  # noqa: D101
+    class Metadata(TypedDict):  # noqa: D101
         id: str
         run_id: str
         key: str
@@ -32,20 +33,16 @@ if TYPE_CHECKING:
 
 class Project:
     """
-    API to manage a collection of key-value pairs persisted in a remote storage.
+    API to manage a collection of key-report pairs persisted in a remote storage.
 
-    It communicates with the Probabl's ``skore hub`` storage.
-    Its constructor initializes a remote project by creating a new project or by
-    loading an existing one from a defined tenant.
+    It communicates with the Probabl's ``skore hub`` storage, based on the pickle
+    representation. Its constructor initializes a remote project by creating a new
+    project or by loading an existing one from a defined tenant.
 
     The class main methods are :func:`~skore_remote_project.Project.put`,
-    :func:`~skore_remote_project.experiments.metadata` and
-    :func:`~skore_remote_project.experiments.get`, respectively to insert a key-value
-    pair into the Project, to obtain the experiments metadata and to get a specific
-    experiment.
-
-    You can add any type of objects. In some cases, especially on classes you defined,
-    the persistency is based on the pickle representation.
+    :func:`~skore_remote_project.reports.metadata` and
+    :func:`~skore_remote_project.reports.get`, respectively to insert a key-report pair
+    into the Project, to obtain the reports metadata and to get a specific report.
 
     Parameters
     ----------
@@ -110,21 +107,19 @@ class Project:
 
             return run["id"]
 
-    def put(self, key: str, value: Any, *, note: Optional[str] = None):
+    def put(self, key: str, report: EstimatorReport):
         """
-        Put a key-value pair to the remote project.
+        Put a key-report pair to the remote project.
 
-        If the key already exists, its last value is modified to point to this new
-        value, while keeping track of the value history.
+        If the key already exists, its last report is modified to point to this new
+        report, while keeping track of the report history.
 
         Parameters
         ----------
         key : str
-            The key to associate with ``value`` in the remote project.
-        value : Any
-            The value to associate with ``key`` in the remote project.
-        note : str, optional
-            A note to attach with the key-value pair, default None.
+            The key to associate with ``report`` in the remote project.
+        report : skore.EstimatorReport
+            The report to associate with ``key`` in the remote project.
 
         Raises
         ------
@@ -134,10 +129,14 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        if not isinstance(note, (type(None), str)):
-            raise TypeError(f"Note must be a string (found '{type(note)}')")
+        if not lazy_is_instance(
+            report, "skore.sklearn._estimator.report.EstimatorReport"
+        ):
+            raise TypeError(
+                f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
+            )
 
-        item = item_module.object_to_item(value)
+        item = item_module.object_to_item(report)
 
         with AuthenticatedClient(raises=True) as client:
             client.post(
@@ -148,16 +147,15 @@ class Project:
                     **item.__parameters__,
                     "key": key,
                     "run_id": self.run_id,
-                    "note": note,
                 },
             )
 
     @property
-    def experiments(self):
-        """Accessor for interaction with the persisted experiments."""
+    def reports(self):
+        """Accessor for interaction with the persisted reports."""
 
         def get(id: str) -> EstimatorReport:
-            """Get a persisted experiment by its id."""
+            """Get a persisted report by its id."""
 
             def dto(report):
                 item_class_name = report["raw"]["class"]
@@ -173,14 +171,8 @@ class Project:
 
             return dto(response.json())
 
-        def metadata() -> list[EstimatorReportMetadata]:
-            """
-            Obtain metadata for all persisted experiments regardless of their run.
-
-            Notes
-            -----
-            Only scalar metrics are listed in the metadata.
-            """
+        def metadata() -> list[Metadata]:
+            """Obtain metadata for all persisted reports regardless of their run."""
 
             def dto(summary):
                 metrics = {

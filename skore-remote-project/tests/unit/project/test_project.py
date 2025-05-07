@@ -1,4 +1,4 @@
-from json import dumps
+from json import loads
 from types import SimpleNamespace
 from urllib.parse import urljoin
 
@@ -65,53 +65,183 @@ class TestProject:
         with raises(TypeError, match="Key must be a string"):
             Project("<tenant>", "<name>").put(None, "<value>")
 
-        with raises(TypeError, match="Note must be a string"):
-            Project("<tenant>", "<name>").put("<key>", "<value>", note=0)
+        with raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
+            Project("<tenant>", "<name>").put("<key>", "<value>")
 
-    def test_put(self, respx_mock):
+    def test_put(self, respx_mock, regression):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
             Response(200, json={"id": "<run_id>"})
         )
         respx_mock.post("projects/<tenant>/<name>/items").mock(Response(200))
 
-        Project("<tenant>", "<name>").put("<key>", "<value>", note="<note>")
+        Project("<tenant>", "<name>").put("<key>", regression)
 
-        assert respx_mock.calls.last.request.content == str.encode(
-            dumps(
+        # Retrieve the content of the request
+        content = loads(respx_mock.calls.last.request.content.decode())
+
+        # Prepare the content to be compared
+        content["dataset_fingerprint"] = None
+        content["parameters"]["parameters"]["pickle_b64_str"] = None
+
+        for item in content["related_items"]:
+            item["representation"]["value"] = None
+
+        for metric in content["metrics"]:
+            metric["value"] = None
+
+        # Compare content with the desired output
+        assert content == {
+            "dataset_fingerprint": None,
+            "estimator_class_name": "LinearRegression",
+            "estimator_hyper_params": {
+                "copy_X": True,
+                "fit_intercept": True,
+                "n_jobs": None,
+                "positive": False,
+            },
+            "metrics": [
                 {
-                    "representation": {
-                        "media_type": "application/json",
-                        "value": "<value>",
-                    },
-                    "parameters": {
-                        "class": "JSONableItem",
-                        "parameters": {"value": "<value>"},
-                    },
-                    "key": "<key>",
-                    "run_id": "<run_id>",
-                    "note": "<note>",
+                    "name": "r2",
+                    "verbose_name": "R²",
+                    "value": None,
+                    "data_source": "train",
+                    "greater_is_better": True,
+                    "position": None,
                 },
-                separators=(",", ":"),
-            )
-        )
+                {
+                    "name": "r2",
+                    "verbose_name": "R²",
+                    "value": None,
+                    "data_source": "test",
+                    "greater_is_better": True,
+                    "position": None,
+                },
+                {
+                    "name": "rmse",
+                    "verbose_name": "RMSE",
+                    "value": None,
+                    "data_source": "train",
+                    "greater_is_better": False,
+                    "position": 3,
+                },
+                {
+                    "name": "rmse",
+                    "verbose_name": "RMSE",
+                    "value": None,
+                    "data_source": "test",
+                    "greater_is_better": False,
+                    "position": 3,
+                },
+                {
+                    "name": "fit_time",
+                    "verbose_name": "Fit time (s)",
+                    "value": None,
+                    "data_source": None,
+                    "greater_is_better": False,
+                    "position": 1,
+                },
+                {
+                    "name": "predict_time",
+                    "verbose_name": "Predict time (s)",
+                    "value": None,
+                    "data_source": "train",
+                    "greater_is_better": False,
+                    "position": 2,
+                },
+                {
+                    "name": "predict_time",
+                    "verbose_name": "Predict time (s)",
+                    "value": None,
+                    "data_source": "test",
+                    "greater_is_better": False,
+                    "position": 2,
+                },
+            ],
+            "ml_task": "regression",
+            "related_items": [
+                {
+                    "key": "prediction_error",
+                    "category": "performance",
+                    "attributes": {"data_source": "train"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "image/svg+xml;base64",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "prediction_error",
+                    "category": "performance",
+                    "attributes": {"data_source": "test"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "image/svg+xml;base64",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "permutation",
+                    "category": "feature_importance",
+                    "attributes": {"data_source": "train", "method": "permutation"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "application/vnd.dataframe",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "permutation",
+                    "category": "feature_importance",
+                    "attributes": {"data_source": "test", "method": "permutation"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "application/vnd.dataframe",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "coefficients",
+                    "category": "feature_importance",
+                    "attributes": {"method": "coefficients"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "application/vnd.dataframe",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "estimator_html_repr",
+                    "category": "model",
+                    "attributes": {},
+                    "parameters": {},
+                    "representation": {"media_type": "text/html", "value": None},
+                },
+            ],
+            "parameters": {
+                "class": "SkoreEstimatorReportItem",
+                "parameters": {"pickle_b64_str": None},
+            },
+            "key": "<key>",
+            "run_id": "<run_id>",
+        }
 
-    def test_experiments(self, respx_mock):
+    def test_reports(self, respx_mock):
         url = "projects/<tenant>/<name>/runs"
         respx_mock.post(url).mock(Response(200, json={"id": "<run_id>"}))
 
         project = Project("<tenant>", "<name>")
 
-        assert isinstance(project.experiments, SimpleNamespace)
-        assert hasattr(project.experiments, "get")
-        assert hasattr(project.experiments, "metadata")
+        assert isinstance(project.reports, SimpleNamespace)
+        assert hasattr(project.reports, "get")
+        assert hasattr(project.reports, "metadata")
 
-    def test_experiments_get(self, respx_mock, regression):
+    def test_reports_get(self, respx_mock, regression):
         from skore import EstimatorReport
 
         url = "projects/<tenant>/<name>/runs"
         respx_mock.post(url).mock(Response(200, json={"id": "<run_id>"}))
 
-        url = "projects/<tenant>/<name>/experiments/estimator-reports/<experiment_id>"
+        url = "projects/<tenant>/<name>/experiments/estimator-reports/<report_id>"
         respx_mock.get(url).mock(
             Response(
                 200,
@@ -131,13 +261,13 @@ class TestProject:
         )
 
         project = Project("<tenant>", "<name>")
-        experiment = project.experiments.get("<experiment_id>")
+        report = project.reports.get("<report_id>")
 
-        assert isinstance(experiment, EstimatorReport)
-        assert experiment.estimator_name_ == regression.estimator_name_
-        assert experiment._ml_task == regression._ml_task
+        assert isinstance(report, EstimatorReport)
+        assert report.estimator_name_ == regression.estimator_name_
+        assert report._ml_task == regression._ml_task
 
-    def test_experiments_metadata(self, nowstr, respx_mock):
+    def test_reports_metadata(self, nowstr, respx_mock):
         url = "projects/<tenant>/<name>/runs"
         respx_mock.post(url).mock(Response(200, json={"id": "<run_id_2>"}))
 
@@ -147,7 +277,7 @@ class TestProject:
                 200,
                 json=[
                     {
-                        "id": "<experiment_id_0>",
+                        "id": "<report_id_0>",
                         "run_id": "<run_id_0>",
                         "key": "<key>",
                         "ml_task": "<ml_task>",
@@ -160,7 +290,7 @@ class TestProject:
                         ],
                     },
                     {
-                        "id": "<experiment_id_1>",
+                        "id": "<report_id_1>",
                         "run_id": "<run_id_1>",
                         "key": "<key>",
                         "ml_task": "<ml_task>",
@@ -177,11 +307,11 @@ class TestProject:
         )
 
         project = Project("<tenant>", "<name>")
-        metadata = project.experiments.metadata()
+        metadata = project.reports.metadata()
 
         assert metadata == [
             {
-                "id": "<experiment_id_0>",
+                "id": "<report_id_0>",
                 "run_id": "<run_id_0>",
                 "key": "<key>",
                 "date": nowstr,
@@ -195,7 +325,7 @@ class TestProject:
                 "predict_time": None,
             },
             {
-                "id": "<experiment_id_1>",
+                "id": "<report_id_1>",
                 "run_id": "<run_id_1>",
                 "key": "<key>",
                 "date": nowstr,
