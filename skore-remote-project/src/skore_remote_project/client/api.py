@@ -10,6 +10,7 @@ import httpx
 URI = environ.get("SKORE_HUB_URI", "https://skh.k.probabl.dev")
 Client = partial(
     httpx.Client,
+    follow_redirects=True,
     event_hooks={"response": [httpx.Response.raise_for_status]},
 )
 
