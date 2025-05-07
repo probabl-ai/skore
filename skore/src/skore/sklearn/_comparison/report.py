@@ -166,16 +166,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             reports_list = cast(list[EstimatorReport], reports_list)
             reports_type = "EstimatorReport"
 
-            # FIXME: We should only check y_test since it is all we need to tell us
-            # whether we have a distinct ML task at hand.
             test_dataset_hashes = {
-                joblib.hash((report.X_test, report.y_test))
+                joblib.hash(report.y_test)
                 for report in reports_list
-                if not ((report.X_test is None) and (report.y_test is None))
+                if report.y_test is not None
             }
             if len(test_dataset_hashes) > 1:
                 raise ValueError(
-                    "Expected all estimators to have the same testing data."
+                    "Expected all estimators to share the same test targets."
                 )
 
         elif all(isinstance(report, CrossValidationReport) for report in reports_list):
