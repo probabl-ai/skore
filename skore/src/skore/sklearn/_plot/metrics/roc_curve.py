@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colormaps
 from matplotlib.axes import Axes
+from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
 from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame
@@ -438,7 +439,7 @@ class RocCurveDisplay(
                 roc_auc_est = roc_auc[
                     (roc_auc["label"] == pos_label)
                     & (roc_auc["estimator_name"] == est_name)
-                ]['roc_auc'].iloc[0]
+                ]["roc_auc"].iloc[0]
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[est_idx]
@@ -473,7 +474,7 @@ class RocCurveDisplay(
                     roc_auc_mean = roc_auc[
                         (roc_auc["label"] == class_label)
                         & (roc_auc["estimator_name"] == est_name)
-                    ]['roc_auc'].iloc[0]
+                    ]["roc_auc"].iloc[0]
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 
                     line_kwargs["color"] = est_color
@@ -485,6 +486,156 @@ class RocCurveDisplay(
                     )
                     line_kwargs_validated["label"] = (
                         f"{est_name} - {str(class_label).title()} "
+                        f"(AUC = {roc_auc_mean:0.2f})"
+                    )
+
+                    (line,) = ax.plot(
+                        fpr_est_class, tpr_est_class, **line_kwargs_validated
+                    )
+                    lines.append(line)
+
+        ax.legend(
+            bbox_to_anchor=(1.02, 1),
+            title=f"{ml_task.title()} on $\\bf{{{data_source}}}$ set",
+        )
+
+        return ax, lines, info_pos_label
+
+    @staticmethod
+    def _plot_comparison_cross_validation(
+        *,
+        roc_curve: DataFrame,
+        roc_auc: DataFrame,
+        pos_label: Optional[PositiveLabel],
+        data_source: Literal["train", "test", "X_y"],
+        ml_task: MLTask,
+        ax: Axes,
+        estimator_names: list[str],
+        roc_curve_kwargs: list[dict[str, Any]],
+    ) -> tuple[Axes, list[Line2D], Union[str, None]]:
+        """Plot ROC curve of several cross-validations.
+
+        Parameters
+        ----------
+        roc_curve : DataFrame
+
+        roc_auc : DataFrame
+
+        roc_auc : dict
+            Dictionary mapping class labels to lists of ROC AUC scores. For binary
+            classification, the dictionary has a single key for the positive class. For
+            multiclass, there is one key per class.
+
+        pos_label : int, float, bool, str or None
+            The positive class label for binary classification.
+            Must be provided for binary classification.
+            Ignored for multiclass.
+
+        data_source : {"train", "test", "X_y"}
+            The data source used to compute the ROC curve.
+
+        ml_task : {"binary-classification", "multiclass-classification"}
+            The machine learning task.
+
+        ax : matplotlib.axes.Axes
+            The axes on which to plot.
+
+        estimator_names : list of str
+            The names of the estimators.
+
+        roc_curve_kwargs : list of dict
+            List of dictionaries containing keyword arguments to customize the ROC
+            curves. The length of the list should match the number of curves to plot.
+
+        Returns
+        -------
+        ax : matplotlib.axes.Axes
+            The axes with the ROC curves plotted.
+
+        lines : list of matplotlib.lines.Line2D
+            The plotted ROC curve lines.
+
+        info_pos_label : str or None
+            String containing positive label information for binary classification,
+            None for multiclass.
+        """
+        lines: list[Line2D] = []
+        line_kwargs: dict[str, Any] = {}
+
+        if ml_task == "binary-classification":
+            labels = roc_curve["label"].unique()
+            colors = sample_mpl_colormap(
+                colormaps.get_cmap("tab10"),
+                10 if len(estimator_names) < 10 else len(estimator_names),
+            )
+            for report_idx, estimator_name in enumerate(estimator_names):
+                roc_auc_estimator = roc_auc[
+                    roc_auc["estimator_name"] == estimator_name
+                ]["roc_auc"]
+                roc_auc_mean = roc_auc_estimator.mean()
+                roc_auc_std = roc_auc_estimator.std()
+
+                line_kwargs_validated = _validate_style_kwargs(
+                    line_kwargs, roc_curve_kwargs[report_idx]
+                )
+                line_kwargs_validated = line_kwargs
+                line_kwargs_validated["label"] = (
+                    f"{estimator_name} "
+                    f"(AUC = {roc_auc_mean:0.2f} +/- {roc_auc_std:0.2f})"
+                )
+                line_kwargs_validated["color"] = colors[report_idx]
+                line_kwargs_validated["alpha"] = 0.6
+
+                roc_curve_estimator = roc_curve[
+                    (roc_curve["label"] == pos_label)
+                    & (roc_curve["estimator_name"] == estimator_name)
+                ]
+                segments = [
+                    split_data[1]
+                    for split_data in roc_curve_estimator.groupby("split_number")[
+                        ["fpr", "tpr"]
+                    ]
+                ]
+
+                line_collection = LineCollection(segments, **line_kwargs_validated)
+                lines.append(line_collection)
+                ax.add_collection(line_collection)
+
+            info_pos_label = (
+                f"\n(Positive label: {pos_label})" if pos_label is not None else ""
+            )
+        else:  # multiclass-classification
+            info_pos_label = None  # irrelevant for multiclass
+            labels = roc_curve["label"].unique()
+            class_colors = sample_mpl_colormap(
+                colormaps.get_cmap("tab10"), 10 if len(labels) < 10 else len(labels)
+            )
+
+            for est_idx, estimator_name in enumerate(estimator_names):
+                est_color = class_colors[est_idx]
+
+                for class_idx, class_label in enumerate(labels):
+                    roc_curve_estimator = roc_curve[
+                        (roc_curve["label"] == class_label)
+                        & (roc_curve["estimator_name"] == estimator_name)
+                    ]
+                    fpr_est_class = roc_curve_estimator["fpr"]
+                    tpr_est_class = roc_curve_estimator["tpr"]
+                    roc_auc_mean = roc_auc[
+                        (roc_auc["label"] == class_label)
+                        & (roc_auc["estimator_name"] == estimator_name)
+                    ]["roc_auc"].iloc[0]
+                    class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
+
+                    line_kwargs["color"] = est_color
+                    line_kwargs["alpha"] = 0.6
+                    line_kwargs["linestyle"] = class_linestyle
+
+                    line_kwargs_validated = _validate_style_kwargs(
+                        line_kwargs, roc_curve_kwargs[est_idx]
+                    )
+                    line_kwargs_validated["label"] = (
+                        f"{estimator_name} - {str(class_label).title()} "
                         f"(AUC = {roc_auc_mean:0.2f})"
                     )
 
@@ -604,10 +755,24 @@ class RocCurveDisplay(
                 estimator_names=self.roc_auc["estimator_name"].unique(),
                 roc_curve_kwargs=roc_curve_kwargs,
             )
+        elif self.report_type == "comparison-cross-validation":
+            self.ax_, self.lines_, info_pos_label = (
+                self._plot_comparison_cross_validation(
+                    roc_curve=self.roc_curve,
+                    roc_auc=self.roc_auc,
+                    pos_label=self.pos_label,
+                    data_source=self.data_source,
+                    ml_task=self.ml_task,
+                    ax=self.ax_,
+                    estimator_names=self.roc_auc["estimator_name"].unique(),
+                    roc_curve_kwargs=roc_curve_kwargs,
+                )
+            )
         else:
             raise ValueError(
-                f"`report_type` should be one of 'estimator', 'cross-validation', "
-                f"or 'comparison-estimator'. Got '{self.report_type}' instead."
+                "`report_type` should be one of 'estimator', 'cross-validation', "
+                "'comparison-cross-validation' or 'comparison-estimator'. "
+                f"Got '{self.report_type}' instead."
             )
 
         chance_level_kwargs = _validate_style_kwargs(
@@ -646,7 +811,12 @@ class RocCurveDisplay(
         y_true: Sequence[YPlotData],
         y_pred: Sequence[YPlotData],
         *,
-        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
+        report_type: Literal[
+            "comparison-cross-validation",
+            "comparison-estimator",
+            "cross-validation",
+            "estimator",
+        ],
         estimators: Sequence[BaseEstimator],
         estimator_names: list[str],
         ml_task: MLTask,
@@ -666,7 +836,8 @@ class RocCurveDisplay(
             confidence values, or non-thresholded measure of decisions (as returned by
             "decision_function" on some classifiers).
 
-        report_type : {"comparison-estimator", "cross-validation", "estimator"}
+        report_type : {"comparison-cross-validation", "comparison-estimator",
+                      "cross-validation", "estimator"}
             The type of report.
 
         estimators : list of estimator instances
@@ -699,7 +870,6 @@ class RocCurveDisplay(
 
         roc_curve_records = []
         roc_auc_records = []
-
 
         if ml_task == "binary-classification":
             for y_true_i, y_pred_i in zip(y_true, y_pred):
