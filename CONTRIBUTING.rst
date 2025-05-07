@@ -116,10 +116,7 @@ Add a new feature
 When adding a new feature to skore, please follow these steps:
 
 - **Include unit tests**
-   Write thorough tests using `pytest` and place them under the `tests/` directory.
-   .. code-block:: bash
-
-       pytest -q
+   Add tests to verify that your feature has as few bugs as possible. Tests are in the `tests/` directory.
 
 - **Verify existing examples**
    Make sure none of the examples or tutorials break:
