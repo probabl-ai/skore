@@ -137,16 +137,9 @@ class RocCurveDisplay(
         self.ml_task = ml_task
         self.report_type = report_type
 
-    @staticmethod
     def _plot_single_estimator(
+        self,
         *,
-        fpr: dict[PositiveLabel, list[ArrayLike]],
-        tpr: dict[PositiveLabel, list[ArrayLike]],
-        roc_auc: dict[PositiveLabel, list[float]],
-        pos_label: Optional[PositiveLabel],
-        data_source: Literal["train", "test", "X_y"],
-        ml_task: MLTask,
-        ax: Axes,
         estimator_name: str,
         roc_curve_kwargs: list[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
@@ -154,35 +147,6 @@ class RocCurveDisplay(
 
         Parameters
         ----------
-        fpr : dict
-            Dictionary mapping class labels to lists of false positive rates. For binary
-            classification, the dictionary has a single key for the positive class. For
-            multiclass, there is one key per class.
-
-        tpr : dict
-            Dictionary mapping class labels to lists of true positive rates. For binary
-            classification, the dictionary has a single key for the positive class. For
-            multiclass, there is one key per class.
-
-        roc_auc : dict
-            Dictionary mapping class labels to lists of ROC AUC scores. For binary
-            classification, the dictionary has a single key for the positive class. For
-            multiclass, there is one key per class.
-
-        pos_label : int, float, bool, str or None
-            The positive class label for binary classification.
-            Must be provided for binary classification.
-            Ignored for multiclass.
-
-        data_source : {"train", "test", "X_y"}
-            The data source used to compute the ROC curve.
-
-        ml_task : {"binary-classification", "multiclass-classification"}
-            The machine learning task.
-
-        ax : matplotlib.axes.Axes
-            The axes on which to plot.
-
         estimator_name : str
             The name of the estimator.
 
@@ -206,21 +170,22 @@ class RocCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {}
 
-        if ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, pos_label)
-            if data_source in ("train", "test"):
+        if self.ml_task == "binary-classification":
+            pos_label = cast(PositiveLabel, self.pos_label)
+            if self.data_source in ("train", "test"):
                 line_kwargs["label"] = (
-                    f"{data_source.title()} set (AUC = {roc_auc[pos_label][0]:0.2f})"
+                    f"{self.data_source.title()} set "
+                    f"(AUC = {self.roc_auc[pos_label][0]:0.2f})"
                 )
             else:  # data_source in (None, "X_y")
-                line_kwargs["label"] = f"AUC = {roc_auc[pos_label][0]:0.2f}"
+                line_kwargs["label"] = f"AUC = {self.roc_auc[pos_label][0]:0.2f}"
 
             line_kwargs_validated = _validate_style_kwargs(
                 line_kwargs, roc_curve_kwargs[0]
             )
 
-            (line,) = ax.plot(
-                fpr[pos_label][0], tpr[pos_label][0], **line_kwargs_validated
+            (line,) = self.ax_.plot(
+                self.fpr[pos_label][0], self.tpr[pos_label][0], **line_kwargs_validated
             )
             lines.append(line)
 
@@ -230,19 +195,19 @@ class RocCurveDisplay(
 
         else:  # multiclass-classification
             class_colors = sample_mpl_colormap(
-                colormaps.get_cmap("tab10"), 10 if len(fpr) < 10 else len(fpr)
+                colormaps.get_cmap("tab10"), 10 if len(self.fpr) < 10 else len(self.fpr)
             )
 
-            for class_idx, class_label in enumerate(fpr):
-                fpr_class = fpr[class_label][0]
-                tpr_class = tpr[class_label][0]
-                roc_auc_class = roc_auc[class_label][0]
+            for class_idx, class_label in enumerate(self.fpr):
+                fpr_class = self.fpr[class_label][0]
+                tpr_class = self.tpr[class_label][0]
+                roc_auc_class = self.roc_auc[class_label][0]
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
                 default_line_kwargs: dict[str, Any] = {"color": class_colors[class_idx]}
-                if data_source in ("train", "test"):
+                if self.data_source in ("train", "test"):
                     default_line_kwargs["label"] = (
-                        f"{str(class_label).title()} - {data_source} "
+                        f"{str(class_label).title()} - {self.data_source} "
                         f"set (AUC = {roc_auc_class:0.2f})"
                     )
                 else:  # data_source in (None, "X_y")
@@ -254,25 +219,18 @@ class RocCurveDisplay(
                     default_line_kwargs, roc_curve_kwargs_class
                 )
 
-                (line,) = ax.plot(fpr_class, tpr_class, **line_kwargs)
+                (line,) = self.ax_.plot(fpr_class, tpr_class, **line_kwargs)
                 lines.append(line)
 
             info_pos_label = None  # irrelevant for multiclass
 
-        ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
 
-        return ax, lines, info_pos_label
+        return self.ax_, lines, info_pos_label
 
-    @staticmethod
     def _plot_cross_validated_estimator(
+        self,
         *,
-        fpr: dict[PositiveLabel, list[ArrayLike]],
-        tpr: dict[PositiveLabel, list[ArrayLike]],
-        roc_auc: dict[PositiveLabel, list[float]],
-        pos_label: Optional[PositiveLabel],
-        data_source: Literal["train", "test", "X_y"],
-        ml_task: MLTask,
-        ax: Axes,
         estimator_name: str,
         roc_curve_kwargs: list[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
@@ -280,35 +238,6 @@ class RocCurveDisplay(
 
         Parameters
         ----------
-        fpr : dict
-            Dictionary mapping class labels to lists of false positive rates. For binary
-            classification, the dictionary has a single key for the positive class. For
-            multiclass, there is one key per class.
-
-        tpr : dict
-            Dictionary mapping class labels to lists of true positive rates. For binary
-            classification, the dictionary has a single key for the positive class. For
-            multiclass, there is one key per class.
-
-        roc_auc : dict
-            Dictionary mapping class labels to lists of ROC AUC scores. For binary
-            classification, the dictionary has a single key for the positive class. For
-            multiclass, there is one key per class.
-
-        pos_label : int, float, bool, str or None
-            The positive class label for binary classification.
-            Must be provided for binary classification.
-            Ignored for multiclass.
-
-        data_source : {"train", "test", "X_y"}
-            The data source used to compute the ROC curve.
-
-        ml_task : {"binary-classification", "multiclass-classification"}
-            The machine learning task.
-
-        ax : matplotlib.axes.Axes
-            The axes on which to plot.
-
         estimator_name : str
             The name of the estimator.
 
@@ -331,12 +260,12 @@ class RocCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {}
 
-        if ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, pos_label)
-            for split_idx in range(len(fpr[pos_label])):
-                fpr_split = fpr[pos_label][split_idx]
-                tpr_split = tpr[pos_label][split_idx]
-                roc_auc_split = roc_auc[pos_label][split_idx]
+        if self.ml_task == "binary-classification":
+            pos_label = cast(PositiveLabel, self.pos_label)
+            for split_idx in range(len(self.fpr[pos_label])):
+                fpr_split = self.fpr[pos_label][split_idx]
+                tpr_split = self.tpr[pos_label][split_idx]
+                roc_auc_split = self.roc_auc[pos_label][split_idx]
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[split_idx]
@@ -345,7 +274,7 @@ class RocCurveDisplay(
                     f"Estimator of fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
                 )
 
-                (line,) = ax.plot(fpr_split, tpr_split, **line_kwargs_validated)
+                (line,) = self.ax_.plot(fpr_split, tpr_split, **line_kwargs_validated)
                 lines.append(line)
 
             info_pos_label = (
@@ -354,13 +283,13 @@ class RocCurveDisplay(
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
             class_colors = sample_mpl_colormap(
-                colormaps.get_cmap("tab10"), 10 if len(fpr) < 10 else len(fpr)
+                colormaps.get_cmap("tab10"), 10 if len(self.fpr) < 10 else len(self.fpr)
             )
 
-            for class_idx, class_ in enumerate(fpr):
-                fpr_class = fpr[class_]
-                tpr_class = tpr[class_]
-                roc_auc_class = roc_auc[class_]
+            for class_idx, class_ in enumerate(self.fpr):
+                fpr_class = self.fpr[class_]
+                tpr_class = self.tpr[class_]
+                roc_auc_class = self.roc_auc[class_]
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
                 for split_idx in range(len(fpr_class)):
@@ -385,27 +314,22 @@ class RocCurveDisplay(
                     else:
                         line_kwargs_validated["label"] = None
 
-                    (line,) = ax.plot(fpr_split, tpr_split, **line_kwargs_validated)
+                    (line,) = self.ax_.plot(
+                        fpr_split, tpr_split, **line_kwargs_validated
+                    )
                     lines.append(line)
 
-        if data_source in ("train", "test"):
-            title = f"{estimator_name} on $\\bf{{{data_source}}}$ set"
+        if self.data_source in ("train", "test"):
+            title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
         else:
             title = f"{estimator_name} on $\\bf{{external}}$ set"
-        ax.legend(bbox_to_anchor=(1.02, 1), title=title)
+        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=title)
 
-        return ax, lines, info_pos_label
+        return self.ax_, lines, info_pos_label
 
-    @staticmethod
     def _plot_comparison_estimator(
+        self,
         *,
-        fpr: dict[PositiveLabel, list[ArrayLike]],
-        tpr: dict[PositiveLabel, list[ArrayLike]],
-        roc_auc: dict[PositiveLabel, list[float]],
-        pos_label: Optional[PositiveLabel],
-        data_source: Literal["train", "test", "X_y"],
-        ml_task: MLTask,
-        ax: Axes,
         estimator_names: list[str],
         roc_curve_kwargs: list[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
@@ -413,35 +337,6 @@ class RocCurveDisplay(
 
         Parameters
         ----------
-        fpr : dict
-            Dictionary mapping class labels to lists of false positive rates. For binary
-            classification, the dictionary has a single key for the positive class. For
-            multiclass, there is one key per class.
-
-        tpr : dict
-            Dictionary mapping class labels to lists of true positive rates. For binary
-            classification, the dictionary has a single key for the positive class. For
-            multiclass, there is one key per class.
-
-        roc_auc : dict
-            Dictionary mapping class labels to lists of ROC AUC scores. For binary
-            classification, the dictionary has a single key for the positive class. For
-            multiclass, there is one key per class.
-
-        pos_label : int, float, bool, str or None
-            The positive class label for binary classification.
-            Must be provided for binary classification.
-            Ignored for multiclass.
-
-        data_source : {"train", "test", "X_y"}
-            The data source used to compute the ROC curve.
-
-        ml_task : {"binary-classification", "multiclass-classification"}
-            The machine learning task.
-
-        ax : matplotlib.axes.Axes
-            The axes on which to plot.
-
         estimator_names : list of str
             The names of the estimators.
 
@@ -464,12 +359,12 @@ class RocCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {}
 
-        if ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, pos_label)
+        if self.ml_task == "binary-classification":
+            pos_label = cast(PositiveLabel, self.pos_label)
             for est_idx, est_name in enumerate(estimator_names):
-                fpr_est = fpr[pos_label][est_idx]
-                tpr_est = tpr[pos_label][est_idx]
-                roc_auc_est = roc_auc[pos_label][est_idx]
+                fpr_est = self.fpr[pos_label][est_idx]
+                tpr_est = self.tpr[pos_label][est_idx]
+                roc_auc_est = self.roc_auc[pos_label][est_idx]
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[est_idx]
@@ -477,7 +372,7 @@ class RocCurveDisplay(
                 line_kwargs_validated["label"] = (
                     f"{est_name} (AUC = {roc_auc_est:0.2f})"
                 )
-                (line,) = ax.plot(fpr_est, tpr_est, **line_kwargs_validated)
+                (line,) = self.ax_.plot(fpr_est, tpr_est, **line_kwargs_validated)
                 lines.append(line)
 
             info_pos_label = (
@@ -486,16 +381,16 @@ class RocCurveDisplay(
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
             class_colors = sample_mpl_colormap(
-                colormaps.get_cmap("tab10"), 10 if len(fpr) < 10 else len(fpr)
+                colormaps.get_cmap("tab10"), 10 if len(self.fpr) < 10 else len(self.fpr)
             )
 
             for est_idx, est_name in enumerate(estimator_names):
                 est_color = class_colors[est_idx]
 
-                for class_idx, class_ in enumerate(fpr):
-                    fpr_est_class = fpr[class_][est_idx]
-                    tpr_est_class = tpr[class_][est_idx]
-                    roc_auc_mean = roc_auc[class_][est_idx]
+                for class_idx, class_ in enumerate(self.fpr):
+                    fpr_est_class = self.fpr[class_][est_idx]
+                    tpr_est_class = self.tpr[class_][est_idx]
+                    roc_auc_mean = self.roc_auc[class_][est_idx]
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 
                     line_kwargs["color"] = est_color
@@ -510,17 +405,17 @@ class RocCurveDisplay(
                         f"(AUC = {roc_auc_mean:0.2f})"
                     )
 
-                    (line,) = ax.plot(
+                    (line,) = self.ax_.plot(
                         fpr_est_class, tpr_est_class, **line_kwargs_validated
                     )
                     lines.append(line)
 
-        ax.legend(
+        self.ax_.legend(
             bbox_to_anchor=(1.02, 1),
-            title=f"{ml_task.title()} on $\\bf{{{data_source}}}$ set",
+            title=f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set",
         )
 
-        return ax, lines, info_pos_label
+        return self.ax_, lines, info_pos_label
 
     @StyleDisplayMixin.style_plot
     def plot(
@@ -587,13 +482,6 @@ class RocCurveDisplay(
 
         if self.report_type == "estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_single_estimator(
-                fpr=self.fpr,
-                tpr=self.tpr,
-                roc_auc=self.roc_auc,
-                pos_label=self.pos_label,
-                data_source=self.data_source,
-                ml_task=self.ml_task,
-                ax=self.ax_,
                 estimator_name=(
                     self.estimator_names[0]
                     if estimator_name is None
@@ -604,13 +492,6 @@ class RocCurveDisplay(
         elif self.report_type == "cross-validation":
             self.ax_, self.lines_, info_pos_label = (
                 self._plot_cross_validated_estimator(
-                    fpr=self.fpr,
-                    tpr=self.tpr,
-                    roc_auc=self.roc_auc,
-                    pos_label=self.pos_label,
-                    data_source=self.data_source,
-                    ml_task=self.ml_task,
-                    ax=self.ax_,
                     estimator_name=(
                         self.estimator_names[0]
                         if estimator_name is None
@@ -621,13 +502,6 @@ class RocCurveDisplay(
             )
         elif self.report_type == "comparison-estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_comparison_estimator(
-                fpr=self.fpr,
-                tpr=self.tpr,
-                roc_auc=self.roc_auc,
-                pos_label=self.pos_label,
-                data_source=self.data_source,
-                ml_task=self.ml_task,
-                ax=self.ax_,
                 estimator_names=self.estimator_names,
                 roc_curve_kwargs=roc_curve_kwargs,
             )
