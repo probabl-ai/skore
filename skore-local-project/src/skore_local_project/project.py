@@ -5,7 +5,6 @@ from __future__ import annotations
 import io
 import os
 from contextlib import suppress
-from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from operator import itemgetter
 from pathlib import Path
@@ -23,7 +22,22 @@ if TYPE_CHECKING:
 
     from skore import EstimatorReport
 
-    class EstimatorReportMetadata(TypedDict):  # noqa: D101
+    class PersistedMetadata:  # noqa: D101
+        artifact_id: str
+        project_name: str
+        run_id: str
+        key: str
+        date: str
+        learner: str
+        dataset: str
+        ml_task: str
+        rmse: Union[float, None]
+        log_loss: Union[float, None]
+        roc_auc: Union[float, None]
+        fit_time: float
+        predict_time: float
+
+    class Metadata(TypedDict):  # noqa: D101
         id: str
         run_id: str
         key: str
@@ -38,44 +52,25 @@ if TYPE_CHECKING:
         predict_time: float
 
 
-def lazy_is_instance(value: Any, cls_fullname: str) -> bool:
-    """Return True if value is an instance of ``cls_fullname``."""
-    return cls_fullname in {
+def lazy_is_instance_skore_estimator_report(value: Any) -> bool:
+    """Return True if value is an instance of ``skore.EstimatorReport``."""
+    return "skore.sklearn._estimator.report.EstimatorReport" in {
         f"{cls.__module__}.{cls.__name__}" for cls in value.__class__.__mro__
     }
 
 
-@dataclass
-class Metadata:
-    """Definition of the metadata that are persisted."""
-
-    id: str
-    project_name: str
-    run_id: str
-    key: str
-    artifact_id: str
-    date: str
-    note: Optional[str] = None
-    experiment: Optional[bool] = False
-    various: Optional[dict] = None
-
-
 class Project:
     r"""
-    API to manage a collection of key-value pairs persisted in a local storage.
+    API to manage a collection of key-report pairs persisted in a local storage.
 
-    It communicates with a ``diskcache`` storage.
+    It communicates with a ``diskcache`` storage, based on the pickle representation.
     Its constructor initializes a local project by creating a new project or by
     loading an existing one from a ``workspace``.
 
     The class main methods are :func:`~skore_local_project.Project.put`,
-    :func:`~skore_local_project.experiments.metadata` and
-    :func:`~skore_local_project.experiments.get`, respectively to insert a key-value
-    pair into the Project, to obtain the experiments metadata and to get a specific
-    experiment.
-
-    You can add any type of objects. In some cases, especially on classes you defined,
-    the persistency is based on the pickle representation.
+    :func:`~skore_local_project.reports.metadata` and
+    :func:`~skore_local_project.reports.get`, respectively to insert a key-report pair
+    into the Project, to obtain the reports metadata and to get a specific report.
 
     Parameters
     ----------
@@ -132,21 +127,19 @@ class Project:
         self.metadata_storage = DiskCacheStorage(workspace / "metadata")
         self.artifacts_storage = DiskCacheStorage(workspace / "artifacts")
 
-    def put(self, key: str, value: Any, *, note: Optional[str] = None):
+    def put(self, key: str, report: EstimatorReport):
         """
-        Put a key-value pair to the local project.
+        Put a key-report pair to the local project.
 
-        If the key already exists, its last value is modified to point to this new
-        value, while keeping track of the value history.
+        If the key already exists, its last report is modified to point to this new
+        report, while keeping track of the report history.
 
         Parameters
         ----------
         key : str
-            The key to associate with ``value`` in the local project.
-        value : Any
-            The value to associate with ``key`` in the local project.
-        note : str, optional
-            A note to attach with the key-value pair, default None.
+            The key to associate with ``report`` in the local project.
+        report : skore.EstimatorReport
+            The report to associate with ``key`` in the local project.
 
         Raises
         ------
@@ -156,14 +149,13 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        if not isinstance(note, (type(None), str)):
-            raise TypeError(f"Note must be a string (found '{type(note)}')")
-
-        id = uuid4().hex
-        now = datetime.now(timezone.utc).isoformat()
+        if not lazy_is_instance_skore_estimator_report(report):
+            raise TypeError(
+                f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
+            )
 
         with io.BytesIO() as stream:
-            joblib.dump(value, stream)
+            joblib.dump(report, stream)
 
             pickle_bytes = stream.getvalue()
             pickle_hash = joblib.hash(pickle_bytes)
@@ -171,84 +163,54 @@ class Project:
         if pickle_hash not in self.artifacts_storage:
             self.artifacts_storage[pickle_hash] = pickle_bytes
 
-        if lazy_is_instance(value, "skore.sklearn._estimator.report.EstimatorReport"):
+        def metric(name):
+            """
+            Compute ``report.metrics.name``.
 
-            def metric(name):
-                """
-                Compute ``report.metrics.name``.
+            Notes
+            -----
+            Unavailable metrics return None.
 
-                Notes
-                -----
-                Unavailable metrics return None.
+            All metrics whose report is not a scalar return None:
+            - ignore ``list[float]`` for multi-output ML task,
+            - ignore ``dict[str: float]`` for multi-classes ML task.
+            """
+            if hasattr(report.metrics, name):
+                with suppress(TypeError):
+                    return float(getattr(report.metrics, name)(data_source="test"))
+            return None
 
-                All metrics whose value is not a scalar return None:
-                - ignore ``list[float]`` for multi-output ML task,
-                - ignore ``dict[str: float]`` for multi-classes ML task.
-                """
-                if hasattr(value.metrics, name):
-                    with suppress(TypeError):
-                        return float(getattr(value.metrics, name)(data_source="test"))
-                return None
-
-            self.metadata_storage[id] = asdict(
-                Metadata(
-                    id=id,
-                    project_name=self.name,
-                    run_id=self.run_id,
-                    key=key,
-                    artifact_id=pickle_hash,
-                    date=now,
-                    note=note,
-                    experiment=True,
-                    various={
-                        "learner": value.estimator_name_,
-                        "dataset": joblib.hash(value.y_test),
-                        "ml_task": value._ml_task,
-                        "rmse": metric("rmse"),
-                        "log_loss": metric("log_loss"),
-                        "roc_auc": metric("roc_auc"),
-                        # timings must be calculated last
-                        "fit_time": value.metrics.timings().get("fit_time"),
-                        "predict_time": value.metrics.timings().get(
-                            "predict_time_test"
-                        ),
-                    },
-                )
-            )
-        else:
-            self.metadata_storage[id] = asdict(
-                Metadata(
-                    id=id,
-                    project_name=self.name,
-                    run_id=self.run_id,
-                    key=key,
-                    artifact_id=pickle_hash,
-                    date=now,
-                    note=note,
-                )
-            )
+        self.metadata_storage[uuid4().hex] = {
+            "project_name": self.name,
+            "run_id": self.run_id,
+            "key": key,
+            "artifact_id": pickle_hash,
+            "date": datetime.now(timezone.utc).isoformat(),
+            "learner": report.estimator_name_,
+            "dataset": joblib.hash(report.y_test),
+            "ml_task": report._ml_task,
+            "rmse": metric("rmse"),
+            "log_loss": metric("log_loss"),
+            "roc_auc": metric("roc_auc"),
+            # timings must be calculated last
+            "fit_time": report.metrics.timings().get("fit_time"),
+            "predict_time": report.metrics.timings().get("predict_time_test"),
+        }
 
     @property
-    def experiments(self):
-        """Accessor for interaction with the persisted experiments."""
+    def reports(self):
+        """Accessor for interaction with the persisted reports."""
 
         def get(id: str) -> EstimatorReport:
-            """Get a persisted experiment by its id."""
+            """Get a persisted report by its id."""
             if id in self.artifacts_storage:
                 with io.BytesIO(self.artifacts_storage[id]) as stream:
                     return joblib.load(stream)
 
-            raise KeyError
+            raise KeyError(id)
 
-        @staticmethod
-        def metadata() -> list[EstimatorReportMetadata]:
-            """
-            Obtain metadata for all persisted experiments regardless of their run.
-
-            Notes
-            -----
-            Only scalar metrics are listed in the metadata.
-            """
+        def metadata() -> list[Metadata]:
+            """Obtain metadata for all persisted reports regardless of their run."""
             return sorted(
                 (
                     {
@@ -266,7 +228,7 @@ class Project:
                         "predict_time": value["various"]["predict_time"],
                     }
                     for value in self.metadata_storage.values()
-                    if (value["project_name"] == self.name) and value["experiment"]
+                    if value["project_name"] == self.name
                 ),
                 key=itemgetter("date"),
             )

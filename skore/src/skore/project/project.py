@@ -1,10 +1,8 @@
-"""Define a Project."""
-
 from __future__ import annotations
 
 import re
 import sys
-from typing import Any, Optional
+from typing import TYPE_CHECKING
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
@@ -12,14 +10,18 @@ else:
     from importlib.metadata import entry_points
 
 
+if TYPE_CHECKING:
+    from skore import EstimatorReport
+
+
 class Project:
-    NAME_PATTERN = re.compile(r"(?P<scheme>[^:]+)://(?P<tenant>[^/]+)/(?P<name>.+)")
+    REMOTE_NAME_PATTERN = re.compile(r"remote://(?P<tenant>[^/]+)/(?P<name>.+)")
 
     def __init__(self, name: str):
         if not (PLUGINS := entry_points(group="skore.plugins.project")):
             raise SystemError("No project plugin found, please install at least one.")
 
-        if (match := re.match(self.NAME_PATTERN, name)) and (match["scheme"] == "skh"):
+        if (match := re.match(self.REMOTE_NAME_PATTERN, name)) is not None:
             mode, kwargs = "remote", dict(tenant=match["tenant"], name=match["name"])
         else:
             mode, kwargs = "local", dict(name=name)
@@ -33,12 +35,12 @@ class Project:
         self.__name = name
         self.__project = PLUGINS[mode].load()(**kwargs)
 
-    def put(self, key: str, value: Any, *, note: Optional[str] = None):
-        return self.__project.put(key=key, value=value, note=note)
+    def put(self, key: str, report: EstimatorReport):
+        return self.__project.put(key=key, report=report)
 
     @property
-    def experiments(self):
-        return self.__project.experiments
+    def reports(self):
+        return self.__project.reports
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()
