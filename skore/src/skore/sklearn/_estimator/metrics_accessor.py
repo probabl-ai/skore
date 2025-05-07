@@ -283,7 +283,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 metric_favorability = "(↗︎)" if metric._sign == 1 else "(↘︎)"
                 favorability_indicator.append(metric_favorability)
             elif isinstance(metric, str) or callable(metric):
-                # ALEX: the default case
                 if isinstance(metric, str):
                     # Handle built-in metrics (with underscore prefix)
                     if (
@@ -339,12 +338,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     f"Invalid type of metric: {type(metric)} for {metric!r}"
                 )
 
-            # ALEX: When the scoring is finally determined we calculate the score
             computed_scores = metric_fn(
                 data_source=data_source, X=X, y=y, **metrics_kwargs
             )
-            # ALEX: This is for the _fit and _predict_time calculations which
-            # are currently not computed for dummy models
             if isinstance(computed_scores, float):
                 computed_scores = [computed_scores, None]
 

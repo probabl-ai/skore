@@ -68,6 +68,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Optional[Aggregate] = ("mean", "std"),
+        add_dummy_model: bool = False,
     ) -> pd.DataFrame:
         """Report a set of metrics for our estimator.
 
@@ -128,6 +129,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        add_dummy_model : bool, default=False
+            Whether to add a dummy model's metrics to the report. The dummy model
+            is determined by the task, e.g. DummyRegressor for regression,
+            DummyClassifier for classification, etc.
+
         Returns
         -------
         pd.DataFrame
@@ -166,6 +172,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
             indicator_favorability=indicator_favorability,
+            add_dummy_model=add_dummy_model,
         )
         if flat_index:
             if isinstance(results.columns, pd.MultiIndex):
@@ -187,6 +194,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         aggregate: Optional[Aggregate] = None,
+        add_dummy_model: bool = False,
         **metric_kwargs: Any,
     ) -> pd.DataFrame:
         if data_source == "X_y":
@@ -234,7 +242,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             )
             generator = parallel(
                 delayed(getattr(report.metrics, report_metric_name))(
-                    data_source=data_source, X=X, y=y, **metric_kwargs
+                    data_source=data_source,
+                    X=X,
+                    y=y,
+                    add_dummy_model=add_dummy_model,
+                    **metric_kwargs,
                 )
                 for report in self._parent.estimator_reports_
             )
@@ -250,6 +262,12 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             )
             results = results.swaplevel(0, 1, axis=1)
 
+            if add_dummy_model:
+                results_main = results.iloc[:, 0::2]
+                results_dummy = results.iloc[:, 1::2]
+
+                results = [results_main, results_dummy]
+
             # Pop the favorability column if it exists, to:
             # - not use it in the aggregate operation
             # - later to only report a single column and not by split columns
@@ -262,10 +280,16 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 if isinstance(aggregate, str):
                     aggregate = [aggregate]
 
-                results = results.aggregate(func=aggregate, axis=1)
-                results = pd.concat(
-                    [results], keys=[self._parent.estimator_name_], axis=1
-                )
+                if add_dummy_model:
+                    keys = [self._parent.estimator_name_, "Dummy Baseline"]
+                    results = [
+                        table.aggregate(func=aggregate, axis=1) for table in results
+                    ]
+                else:
+                    keys = [self._parent.estimator_name_]
+                    results = [results.aggregate(func=aggregate, axis=1)]
+
+                results = pd.concat(results, keys=keys, axis=1)
 
             if favorability is not None:
                 results["Favorability"] = favorability
