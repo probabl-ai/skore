@@ -103,19 +103,12 @@ class RocCurveDisplay(
     --------
     >>> from sklearn.datasets import load_breast_cancer
     >>> from sklearn.linear_model import LogisticRegression
-    >>> from sklearn.model_selection import train_test_split
+    >>> from skore import train_test_split
     >>> from skore import EstimatorReport
-    >>> X_train, X_test, y_train, y_test = train_test_split(
-    ...     *load_breast_cancer(return_X_y=True), random_state=0
-    ... )
+    >>> X, y = load_breast_cancer(return_X_y=True)
+    >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
     >>> classifier = LogisticRegression(max_iter=10_000)
-    >>> report = EstimatorReport(
-    ...     classifier,
-    ...     X_train=X_train,
-    ...     y_train=y_train,
-    ...     X_test=X_test,
-    ...     y_test=y_test,
-    ... )
+    >>> report = EstimatorReport(classifier, **split_data)
     >>> display = report.metrics.roc()
     >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
     """
@@ -572,19 +565,12 @@ class RocCurveDisplay(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
