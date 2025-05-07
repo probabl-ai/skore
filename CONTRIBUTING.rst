@@ -110,8 +110,8 @@ We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/
 
 Skore is a company-driven project. We might provide extensive help to bring PRs to be merged to meet internal deadlines. In such cases, we will warn you in the PR.
 
-Add a new feature
------------------
+Adding a new feature
+--------------------
 
 When adding a new feature to skore, please follow these steps:
 
