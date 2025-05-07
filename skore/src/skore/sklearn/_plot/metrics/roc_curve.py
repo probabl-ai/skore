@@ -651,6 +651,39 @@ class RocCurveDisplay(
 
         return ax, lines, info_pos_label
 
+    def _set_label(self, info_pos_label: str) -> None:
+        """Add axis labels."""
+        xlabel = "False Positive Rate"
+        ylabel = "True Positive Rate"
+        if info_pos_label:
+            xlabel += info_pos_label
+            ylabel += info_pos_label
+
+        self.ax_.set(
+            xlabel=xlabel,
+            xlim=(-0.01, 1.01),
+            ylabel=ylabel,
+            ylim=(-0.01, 1.01),
+            aspect="equal",
+        )
+
+    def _add_chance_level(
+        self, chance_level_kwargs: dict, plot_chance_level: bool
+    ) -> None:
+        """Add the chance-level line."""
+        chance_level_kwargs = _validate_style_kwargs(
+            {
+                "label": "Chance level (AUC = 0.5)",
+                "color": "k",
+                "linestyle": "--",
+            },
+            chance_level_kwargs or self._default_chance_level_kwargs or {},
+        )
+
+        self.chance_level_: Optional[Line2D] = None
+        if plot_chance_level:
+            (self.chance_level_,) = self.ax_.plot((0, 1), (0, 1), **chance_level_kwargs)
+
     @StyleDisplayMixin.style_plot
     def plot(
         self,
@@ -775,32 +808,8 @@ class RocCurveDisplay(
                 f"Got '{self.report_type}' instead."
             )
 
-        chance_level_kwargs = _validate_style_kwargs(
-            {
-                "label": "Chance level (AUC = 0.5)",
-                "color": "k",
-                "linestyle": "--",
-            },
-            chance_level_kwargs or self._default_chance_level_kwargs or {},
-        )
-
-        xlabel = "False Positive Rate"
-        ylabel = "True Positive Rate"
-        if info_pos_label:
-            xlabel += info_pos_label
-            ylabel += info_pos_label
-
-        self.ax_.set(
-            xlabel=xlabel,
-            xlim=(-0.01, 1.01),
-            ylabel=ylabel,
-            ylim=(-0.01, 1.01),
-            aspect="equal",
-        )
-
-        self.chance_level_: Optional[Line2D] = None
-        if plot_chance_level:
-            (self.chance_level_,) = self.ax_.plot((0, 1), (0, 1), **chance_level_kwargs)
+        self._set_label(info_pos_label)
+        self._add_chance_level(chance_level_kwargs, plot_chance_level)
 
         if despine:
             _despine_matplotlib_axis(self.ax_)
