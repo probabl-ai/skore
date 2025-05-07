@@ -131,7 +131,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     ) -> None:
         # used to know if a parent launch a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress = None
 
         fit_time: Optional[float] = None
         if fit == "auto":
