@@ -133,32 +133,42 @@ def train_test_split(
     {'X_train': ..., 'X_test': ...,
      'y_train': ..., 'y_test': ...,
      'sample_weights_train': ..., 'sample_weights_test': ...}
+
+    >>> # When using positional arguments and as_dict=True
+    >>> # the first argument is assumed to be X, the second y
+    >>>  train_test_split(
+    ...     [[1], [2], [3], [4]], [0, 1, 0, 1], as_dict=True, random_state=0
+    ... )
+    {'X_train': ..., 'X_test': ..., 'y_train': ..., 'y_test': ...}
     """
     import sklearn.model_selection
 
     new_arrays = list(arrays)
     keys = []
+
     if X is not None:
         new_arrays.append(X)
         keys += ["X"]
+
     if y is not None:
         new_arrays.append(y)
         keys += ["y"]
 
-    if as_dict and arrays:
-        raise ValueError(
-            "When as_dict=True, arrays must be passed as keyword arguments.\n"
-            "Example: train_test_split(X=X, y=y, sw=sample_weight, as_dict=True)"
-        )
+    if as_dict and X is None and y is None:
+        if keyword_arrays:
+            new_arrays = list(keyword_arrays.values())
+        else:
+            X, y = (arrays[0], arrays[1]) if len(arrays) >= 2 else (arrays[0], None)
+            new_arrays = [X, y]
+            keys = ["X", "y"]
 
-    if keyword_arrays:
-        if X is None and y is None:
-            arrays = tuple(
-                keyword_arrays.values()
-            )  # if X and y is not passed but other variables
-        keys += list(keyword_arrays.keys())
-        new_arrays += list(keyword_arrays.values())
+    keys += list(keyword_arrays.keys())
+    new_arrays += list(keyword_arrays.values())
 
+    if not new_arrays:
+        raise ValueError("At least one array must be provided")
+
+    # Perform the train-test split using sklearn
     output = sklearn.model_selection.train_test_split(
         *new_arrays,
         test_size=test_size,
@@ -169,7 +179,10 @@ def train_test_split(
     )
 
     if X is None:
-        X = arrays[0] if len(arrays) == 1 else arrays[-2]
+        if arrays:
+            X = arrays[0] if len(arrays) == 1 else arrays[-2]
+        elif keyword_arrays and "X" in keyword_arrays:
+            X = keyword_arrays["X"]
 
     if y is None and len(arrays) >= 2:
         y = arrays[-1]
@@ -184,7 +197,6 @@ def train_test_split(
         y_test = None
 
     ml_task = _find_ml_task(y)
-
     kwargs = dict(
         arrays=new_arrays,
         test_size=test_size,
@@ -199,6 +211,7 @@ def train_test_split(
         ml_task=ml_task,
     )
 
+    # Display any warnings related to train-test split
     from skore import console  # avoid circular import
 
     for warning_class in TRAIN_TEST_SPLIT_WARNINGS:

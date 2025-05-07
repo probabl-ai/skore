@@ -1,6 +1,7 @@
 import warnings
 from datetime import datetime
 
+import numpy
 import pandas
 import polars
 import pytest
@@ -183,17 +184,22 @@ def test_train_test_split_kwargs():
 
 
 def test_train_test_split_dict_kwargs():
-    """Passing data without keyword arguments with return_dict=True
-    should raise ValueError."""
-
+    """When passing data with positional arguments and as_dict=True,
+    the first argument will be interpreted as `X` and the second one as `y`."""
     X = [[1]] * 20
     y = [0] * 10 + [1] * 10
 
-    with pytest.raises(
-        ValueError,
-        match="When as_dict=True, arrays must be passed as keyword arguments",
-    ):
-        train_test_split(X, y, random_state=0, as_dict=True)
+    result = train_test_split(X, y, test_size=0.2, as_dict=True, random_state=0)
+
+    assert "X_train" in result
+    assert "X_test" in result
+    assert "y_train" in result
+    assert "y_test" in result
+
+    assert numpy.ndim(result.get("X_train")) == 2
+    assert numpy.ndim(result.get("X_test")) == 2
+    assert numpy.ndim(result.get("y_train")) == 1
+    assert numpy.ndim(result.get("y_test")) == 1
 
 
 def test_train_test_split_check_dict():
@@ -221,3 +227,11 @@ def test_train_test_split_check_dict_no_X_no_y():
     output = train_test_split(z=z, random_state=0, as_dict=True)
     keys = output.keys()
     assert list(keys) == ["z_train", "z_test"]
+
+
+def test_empty_input():
+    """Tests that passing empty lists for X and y raises a ValueError."""
+    X = []
+    y = []
+    with pytest.raises(ValueError):
+        train_test_split(X, y)
