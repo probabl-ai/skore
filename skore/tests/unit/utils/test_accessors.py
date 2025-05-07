@@ -82,12 +82,21 @@ def test_check_has_coef():
         def __init__(self):
             self.coef_ = 0
 
+    class MetaEstimator:
+        def __init__(self):
+            self.regressor_ = Estimator()
+
     parent = MockParent(Estimator())
     accessor = MockAccessor(parent)
 
     assert _check_has_coef()(accessor)
 
     parent = MockParent(make_pipeline(Estimator()))
+    accessor = MockAccessor(parent)
+
+    assert _check_has_coef()(accessor)
+
+    parent = MockParent(MetaEstimator())
     accessor = MockAccessor(parent)
 
     assert _check_has_coef()(accessor)

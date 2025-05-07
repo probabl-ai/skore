@@ -25,7 +25,8 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
         "fewer than 100 examples in the test set. In this case, using train_test_split "
         "may not be a good idea because of high variability in the scores obtained on "
         "the test set. We suggest three options to tackle this challenge: you can "
-        "increase test_size, collect more data, or use skore's cross_validate function."
+        "increase test_size, collect more data, or use skore's CrossValidationReport "
+        "with the `cv_splitter` parameter of your choice. "
     )
 
     @staticmethod

@@ -1,0 +1,47 @@
+name: pr-commits-verification
+
+on: [pull_request_target]
+
+permissions:
+  pull-requests: write
+
+defaults:
+  run:
+    shell: "bash"
+
+jobs:
+  pr-commits-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Acquire commits verification from GitHub
+        id: acquire-commits-verification
+        continue-on-error: True
+        run: |
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${REPOSITORY_OWNER}/${REPOSITORY_NAME}/pulls/${PULL_REQUEST_NUMBER}/commits \
+          | grep -qi '"verified":false' && exit 1 || exit 0
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+          PULL_REQUEST_NUMBER: ${{ github.event.number }}
+
+      - name: Display a comment with guidelines on failure
+        if: ${{ steps.acquire-commits-verification.outcome == 'failure' }}
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
+        with:
+          comment-tag: pr-commits-verification
+          message: |
+            > [!CAUTION]
+            > Some commits in the pull request are not signed, or GitHub is not able to verify the signature.
+            > Please sign all your commits; you can find more information [here](https://docs.skore.probabl.ai/dev/contributing.html#signing-commits).
+            > Please note that when you activate commit signing, you'll need to retroactively sign your previous commits.
+
+      - name: Delete previous comment on success
+        if: ${{ steps.acquire-commits-verification.outcome == 'success' }}
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
+        with:
+          comment-tag: pr-commits-verification
+          mode: delete

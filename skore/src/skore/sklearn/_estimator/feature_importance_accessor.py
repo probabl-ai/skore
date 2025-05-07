@@ -203,10 +203,28 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if isinstance(parent_estimator, Pipeline)
             else parent_estimator
         )
-        intercept = np.atleast_2d(estimator.intercept_)
-        coef = np.atleast_2d(estimator.coef_)
+        try:
+            intercept = np.atleast_2d(estimator.intercept_)
+        except AttributeError:
+            # TransformedTargetRegressor() does not expose `intercept_`
+            intercept = np.atleast_2d(estimator.regressor_.intercept_)
+            # Uncomment when SGDOneClassSVM is fully supported by EstimatorReport
+            # except AttributeError:
+            # SGDOneClassSVM does not expose `intercept_`
+            # intercept = None
 
-        data = np.concatenate([intercept, coef.T])
+        try:
+            coef = np.atleast_2d(estimator.coef_)
+        except AttributeError:
+            # TransformedTargetRegressor() does not expose `coef_`
+            coef = np.atleast_2d(estimator.regressor_.coef_)
+
+        if intercept is None:
+            data = coef.T
+            index = list(feature_names)
+        else:
+            data = np.concatenate([intercept, coef.T])
+            index = ["Intercept"] + list(feature_names)
 
         if data.shape[1] == 1:
             columns = ["Coefficient"]
@@ -217,7 +235,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         df = pd.DataFrame(
             data=data,
-            index=["Intercept"] + list(feature_names),
+            index=index,
             columns=columns,
         )
 

@@ -12,6 +12,7 @@ The class :class:`ComparisonReport` provides a report allowing to compare :class
     ComparisonReport
     ComparisonReport.cache_predictions
     ComparisonReport.clear_cache
+
 .. autosummary::
     :toctree: ../api/
     :nosignatures:

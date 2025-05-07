@@ -83,8 +83,6 @@ class Project:
     1.0
     """
 
-    _server_info = None
-
     def __init__(
         self,
         path: Union[str, PathLike[str]] = "project.skore",

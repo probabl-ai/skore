@@ -374,6 +374,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         )
 
     @property
+    def ml_task(self) -> str:
+        return self._ml_task
+
+    @property
     def estimator_(self) -> BaseEstimator:
         return self._estimator
 
