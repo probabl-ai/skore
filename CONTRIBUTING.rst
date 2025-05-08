@@ -77,7 +77,6 @@ You'll need ``python >=3.9, <3.13``.
 
         make install-skore
 
-
 Choosing an issue
 -----------------
 
@@ -110,6 +109,39 @@ We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/
 
 Skore is a company-driven project. We might provide extensive help to bring PRs to be merged to meet internal deadlines. In such cases, we will warn you in the PR.
 
+Adding a new feature
+--------------------
+
+When adding a new feature to skore, please also follow these steps:
+
+#.  **Include unit tests**
+
+    Add tests to verify that your feature has as few bugs as possible. Tests are in the `tests/` directory.
+
+#.  **Verify existing examples**
+
+    Check if your newly introduced changes do not impact existing examples.
+
+    You can run all examples with:
+
+    .. code-block:: bash
+
+        cd sphinx && make html
+
+    *Alternatively*, you can run individual examples with:
+
+    .. code-block:: bash
+
+        python <example_file>
+
+#.  **Update or add examples if needed**
+
+    -   For a minor feature, adjust one existing example to demonstrate your change.
+        Avoid creating many short example files.
+
+    -   For a major feature, add a single, concise example under `examples/` (or update
+        the gallery) that highlights the new capability.
+
 Tests
 -----
 
@@ -119,7 +151,6 @@ To run the tests locally, you may run:
 
     make test
 
-
 Linting
 -------
 
@@ -128,7 +159,6 @@ We use the linter ruff to make sure that the code is formatted correctly:
 .. code-block:: bash
 
     make lint
-
 
 Documentation
 =============
