@@ -192,7 +192,7 @@ The examples are stored in the `examples` folder:
 - The file should start with a docstring giving the example title.
 - No example should require to have large files stored in this repository. For example, no dataset should be stored, it should be downloaded in the script.
 - When built (using `make html` for example), these examples will automatically be converted into RST files in the `sphinx/auto_examples` subfolder. This subfolder is listed in the gitignore and cannot be pushed.
-- Make sure to view and contribute examples based on the `dev` version of the documentation.
+- If you are visualizing the examples on the online documentation and notice some typos or things that could be improved, make sure that you are viewing the `dev` version of the documentation which is the latest version (e.g. check that the typo has not already been solved for example).
 
 Contributing to the README
 --------------------------
