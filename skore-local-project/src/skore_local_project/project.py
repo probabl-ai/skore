@@ -84,9 +84,9 @@ class Project:
             | If not, it will be by default set to a ``skore/`` directory in the USER
             cache directory:
 
-            - in Windows, usually ``C:\Users\%USER%\AppData\Local``,
-            - in Linux, usually ``${HOME}/.cache``,
-            - in macOS, usually ``${HOME}/Library/Caches``.
+            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - in Linux, usually ``${HOME}/.cache/skore``,
+            - in macOS, usually ``${HOME}/Library/Caches/skore``.
     """
 
     def __init__(self, name: str, *, workspace: Optional[Path] = None):
@@ -108,13 +108,13 @@ class Project:
             | If not, it will be by default set to a ``skore/`` directory in the USER
             cache directory:
 
-            - in Windows, usually ``C:\Users\%USER%\AppData\Local``,
-            - in Linux, usually ``${HOME}/.cache``,
-            - in macOS, usually ``${HOME}/Library/Caches``.
+            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - in Linux, usually ``${HOME}/.cache/skore``,
+            - in macOS, usually ``${HOME}/Library/Caches/skore``.
         """
         if workspace is None:
             if "SKORE_WORKSPACE" in os.environ:
-                workspace = Path(os.environ["SKORE_WORKSPACE"]) / "skore"
+                workspace = Path(os.environ["SKORE_WORKSPACE"])
             else:
                 workspace = Path(platformdirs.user_cache_dir()) / "skore"
 
@@ -126,6 +126,30 @@ class Project:
         self.run_id = uuid4().hex
         self.metadata_storage = DiskCacheStorage(workspace / "metadata")
         self.artifacts_storage = DiskCacheStorage(workspace / "artifacts")
+
+    @staticmethod
+    def pickle(report: EstimatorReport) -> tuple[str, bytes]:
+        """
+        Pickle ``report``, return the bytes and the corresponding hash.
+
+        Notes
+        -----
+        The report is pickled without its cache, to avoid salting the hash.
+        """
+        cache = report._cache
+
+        try:
+            report._cache = {}
+
+            with io.BytesIO() as stream:
+                joblib.dump(report, stream)
+
+                pickle_bytes = stream.getvalue()
+                pickle_hash = joblib.hash(pickle_bytes)
+        finally:
+            report._cache = cache
+
+        return pickle_hash, pickle_bytes
 
     def put(self, key: str, report: EstimatorReport):
         """
@@ -154,11 +178,7 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
-        with io.BytesIO() as stream:
-            joblib.dump(report, stream)
-
-            pickle_bytes = stream.getvalue()
-            pickle_hash = joblib.hash(pickle_bytes)
+        pickle_hash, pickle_bytes = self.pickle(report)
 
         if pickle_hash not in self.artifacts_storage:
             self.artifacts_storage[pickle_hash] = pickle_bytes
@@ -218,14 +238,14 @@ class Project:
                         "run_id": value["run_id"],
                         "key": value["key"],
                         "date": value["date"],
-                        "learner": value["various"]["learner"],
-                        "dataset": value["various"]["dataset"],
-                        "ml_task": value["various"]["ml_task"],
-                        "rmse": value["various"]["rmse"],
-                        "log_loss": value["various"]["log_loss"],
-                        "roc_auc": value["various"]["roc_auc"],
-                        "fit_time": value["various"]["fit_time"],
-                        "predict_time": value["various"]["predict_time"],
+                        "learner": value["learner"],
+                        "dataset": value["dataset"],
+                        "ml_task": value["ml_task"],
+                        "rmse": value["rmse"],
+                        "log_loss": value["log_loss"],
+                        "roc_auc": value["roc_auc"],
+                        "fit_time": value["fit_time"],
+                        "predict_time": value["predict_time"],
                     }
                     for value in self.metadata_storage.values()
                     if value["project_name"] == self.name
