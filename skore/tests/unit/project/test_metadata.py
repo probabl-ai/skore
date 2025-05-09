@@ -2,14 +2,16 @@ from datetime import timedelta
 from urllib.parse import urljoin
 
 from httpx import Client, Response
-from pandas import DataFrame, MultiIndex, Index, RangeIndex
+from pandas import DataFrame, Index, MultiIndex, RangeIndex
 from pandas.testing import assert_index_equal
 from pytest import fixture, mark
-from skore_remote_project.project.project import Metadata
 from skore_remote_project.item.skore_estimator_report_item import (
-    SkoreEstimatorReportItem,
     Metadata as SkoreEstimatorReportItemMetadata,
 )
+from skore_remote_project.item.skore_estimator_report_item import (
+    SkoreEstimatorReportItem,
+)
+from skore_remote_project.project.project import Metadata
 
 
 class Namespace:
@@ -40,8 +42,8 @@ class TestMetadata:
     @fixture(scope="class")
     def regression(self):
         from sklearn.datasets import make_regression
-        from sklearn.model_selection import train_test_split
         from sklearn.linear_model import LinearRegression
+        from sklearn.model_selection import train_test_split
         from skore import EstimatorReport
 
         X, y = make_regression()
@@ -58,8 +60,8 @@ class TestMetadata:
     @fixture(scope="class")
     def binary_classification(self):
         from sklearn.datasets import make_classification
-        from sklearn.model_selection import train_test_split
         from sklearn.linear_model import LogisticRegression
+        from sklearn.model_selection import train_test_split
         from skore import EstimatorReport
 
         X, y = make_classification()

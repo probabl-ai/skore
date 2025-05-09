@@ -4,31 +4,30 @@ import re
 import sys
 from functools import partial
 from types import SimpleNamespace
-from typing import TYPE_CHECKING
 
-from .metadata import Metadata
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
 
-
-if TYPE_CHECKING:
-    from skore import EstimatorReport
+from ..sklearn._estimator.report import EstimatorReport
+from .metadata import Metadata
 
 
 class Project:
-    REMOTE_NAME_PATTERN = re.compile(r"remote://(?P<tenant>[^/]+)/(?P<name>.+)")
+    __REMOTE_NAME_PATTERN = re.compile(r"remote://(?P<tenant>[^/]+)/(?P<name>.+)")
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, **kwargs):
         if not (PLUGINS := entry_points(group="skore.plugins.project")):
             raise SystemError("No project plugin found, please install at least one.")
 
-        if (match := re.match(self.REMOTE_NAME_PATTERN, name)) is not None:
-            mode, kwargs = "remote", dict(tenant=match["tenant"], name=match["name"])
+        if match := re.match(self.__REMOTE_NAME_PATTERN, name):
+            mode = "remote"
+            kwargs |= {"tenant": match["tenant"], "name": match["name"]}
         else:
-            mode, kwargs = "local", dict(name=name)
+            mode = "local"
+            kwargs |= {"name": name}
 
         if mode not in PLUGINS.names:
             raise ValueError(
@@ -40,6 +39,14 @@ class Project:
         self.__project = PLUGINS[mode].load()(**kwargs)
 
     def put(self, key: str, report: EstimatorReport):
+        if not isinstance(key, str):
+            raise TypeError(f"Key must be a string (found '{type(key)}')")
+
+        if not isinstance(report, EstimatorReport):
+            raise TypeError(
+                f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
+            )
+
         return self.__project.put(key=key, report=report)
 
     @property

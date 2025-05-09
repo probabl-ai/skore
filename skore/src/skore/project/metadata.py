@@ -15,7 +15,7 @@ class Metadata(pd.DataFrame):
 
     @staticmethod
     def factory(project, /):
-        summaries = pd.DataFrame(project.experiments.metadata(), copy=False)
+        summaries = pd.DataFrame(project.reports.metadata(), copy=False)
         summaries["learner"] = pd.Categorical(summaries["learner"])
         summaries.index = pd.MultiIndex.from_arrays(
             [
@@ -41,7 +41,7 @@ class Metadata(pd.DataFrame):
         if filter and (querystr := self.query_string_selection()):
             self = self.query(querystr)
 
-        return list(map(self.project.experiments, self.index.get_level_values("id")))
+        return list(map(self.project.reports.get, self.index.get_level_values("id")))
 
     def _repr_html_(self):
         """Display the interactive plot and controls."""
