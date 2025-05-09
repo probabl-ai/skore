@@ -12,3 +12,4 @@ These functions and classes are meant for managing a Project and its reports.
     Project
     Project.put
     Project.reports
+    Project.reports.metadata

@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import re
 import sys
+from functools import partial
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
+
+from .metadata import Metadata
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
@@ -40,7 +44,7 @@ class Project:
 
     @property
     def reports(self):
-        return self.__project.reports
+        return SimpleNamespace(metadata=partial(Metadata.factory, self.__project))
 
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()
