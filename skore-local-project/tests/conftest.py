@@ -13,6 +13,18 @@ def nowstr(now):
     return now.isoformat()
 
 
+@fixture
+def Datetime(now):
+    class Datetime:
+        def __init__(self, *args, **kwargs): ...
+
+        @staticmethod
+        def now(*args, **kwargs):
+            return now
+
+    return Datetime
+
+
 def pytest_configure(config):
     import matplotlib
 

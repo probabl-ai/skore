@@ -1,4 +1,4 @@
-"""In-memory storage."""
+"""Storage implementation using diskcache."""
 
 from collections.abc import Iterator
 from functools import partial
@@ -16,7 +16,7 @@ class DirectoryDoesNotExist(Exception):
 
 class DiskCacheStorage:
     """
-    Disk-based storage implementation using diskcache.
+    Storage implementation using diskcache.
 
     This class provides a persistent storage solution using the diskcache library,
     which allows for efficient caching of data on disk.

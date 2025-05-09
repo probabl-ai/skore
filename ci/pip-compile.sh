@@ -69,7 +69,6 @@ set -eu
            --quiet \
            --no-strip-extras \
            --no-header \
-           --extra=polars \
            --extra=test \
            --override "${PACKAGE}/overrides.txt" \
            --python-version "${python}" \
