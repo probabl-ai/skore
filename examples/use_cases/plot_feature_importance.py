@@ -116,6 +116,27 @@ plt.show()
 # them.
 
 # %%
+# This function is used to clean up feature names for better readability in visualizations and reports.
+# It replaces 'kmeans__' with 'geospatial__' (to clarify geospatial features) and removes 'remainder__' prefixes.
+# The function is applied consistently across the codebase wherever feature names are displayed.
+# %%
+
+
+def rename_features(feature_names):
+    names = (
+        pd.Series(feature_names)
+        if not isinstance(feature_names, pd.Series)
+        else feature_names.copy()
+    )
+    names = names.str.replace(r"geospatial__geospatial", "geospatial", regex=True)
+    names = names.str.replace(r"kmeans\d*", "geospatial", regex=True)
+    names = names.str.replace(r"kmeans__", "geospatial__", regex=False)
+    names = names.str.replace("remainder__", "", regex=False)
+    names = names.str.replace(r"geospatial\d+", "geospatial", regex=True)
+    names = names.str.replace(r"geospatial__geospatial", "geospatial", regex=True)
+    names = names.str.replace(r"(geospatial_sp_\d+)_geospatial.*", r"\1", regex=True)
+    return names.tolist()
+
 
 # %%
 # Now, as the median income ``MedInc`` is the feature with the highest association with
@@ -452,9 +473,10 @@ print("Number of features after feature engineering:", n_features_engineered)
 # Let us display the 15 largest absolute coefficients:
 
 # %%
-engineered_ridge_report.feature_importance.coefficients().sort_values(
-    by="Coefficient", key=abs, ascending=True
-).tail(15).plot.barh(
+
+engineered_ridge_report.feature_importance.coefficients().rename(
+    index=lambda x: rename_features([x])[0] if x != "Intercept" else x
+).sort_values(by="Coefficient", key=abs, ascending=True).tail(15).plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
@@ -576,20 +598,6 @@ from skrub import column_associations
 column_associations(X_y_plot).query(
     "left_column_name == 'squared_error' or right_column_name == 'squared_error'"
 )
-
-
-# %%
-def rename_features(feature_names):
-    """
-    Rename feature names by replacing 'kmeans__' with 'geospatial__'
-    and removing 'remainder__' prefixes.
-    """
-    return (
-        pd.Series(feature_names)
-        .str.replace("kmeans__", "geospatial__", regex=False)
-        .str.replace("remainder__", "", regex=False)
-        .tolist()
-    )
 
 
 # %%
@@ -716,7 +724,7 @@ print(selectk_features)
 
 # %%
 selectk_ridge_report.feature_importance.coefficients().rename(
-    index=lambda x: rename_features([x])[0]
+    index=lambda x: rename_features([x])[0] if x != "Intercept" else x
 ).sort_values(by="Coefficient", key=abs, ascending=True).tail(15).plot.barh(
     title="Model weights",
     xlabel="Coefficient",
