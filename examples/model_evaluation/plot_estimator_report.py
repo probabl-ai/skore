@@ -399,7 +399,7 @@ plt.show()
 # We can normalize the confusion matrix to get percentages instead of raw counts.
 # Here we normalize by true labels (rows):
 cm_display = report.metrics.confusion_matrix(normalize="true")
-cm_display.plot(cmap="Blues")
+cm_display.plot()
 plt.show()
 
 # %%
