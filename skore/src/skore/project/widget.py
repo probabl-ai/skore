@@ -39,7 +39,7 @@ class ModelExplorerWidget:
             "type": "time",
             "show": False,
         },
-        "predict_time_test": {
+        "predict_time": {
             "name": "Predict Time",
             "greater_is_better": False,
             "type": "time",
@@ -51,24 +51,12 @@ class ModelExplorerWidget:
             "type": "regression",
             "show": True,
         },
-        # "median_absolute_error": {
-        #     "name": "Median Absolute Error",
-        #     "greater_is_better": False,
-        #     "type": "regression",
-        #     "show": True,
-        # },
         "log_loss": {
             "name": "Log Loss",
             "greater_is_better": False,
             "type": "classification",
             "show": True,
         },
-        # "mean_average_precision": {
-        #     "name": "Mean Average Precision",
-        #     "greater_is_better": True,
-        #     "type": "classification",
-        #     "show": True,
-        # },
         "roc_auc": {
             "name": "Macro ROC AUC",
             "greater_is_better": True,
@@ -204,7 +192,7 @@ class ModelExplorerWidget:
                     layout=widgets.Layout(padding="5px 0px"),
                 ),
                 self._metric_checkboxes["classification"]["fit_time"],
-                self._metric_checkboxes["classification"]["predict_time_test"],
+                self._metric_checkboxes["classification"]["predict_time"],
             ],
             layout=widgets.Layout(
                 width=f"{self._plot_width}px",
@@ -218,7 +206,6 @@ class ModelExplorerWidget:
                     value="Statistical Metrics: ",
                     layout=widgets.Layout(padding="5px 0px"),
                 ),
-                # self._metric_checkboxes["classification"]["mean_average_precision"],
                 self._metric_checkboxes["classification"]["roc_auc"],
                 self._metric_checkboxes["classification"]["log_loss"],
             ],
@@ -244,7 +231,7 @@ class ModelExplorerWidget:
                     layout=widgets.Layout(padding="5px 0px"),
                 ),
                 self._metric_checkboxes["regression"]["fit_time"],
-                self._metric_checkboxes["regression"]["predict_time_test"],
+                self._metric_checkboxes["regression"]["predict_time"],
             ],
             layout=widgets.Layout(
                 width=f"{self._plot_width}px",
@@ -258,7 +245,6 @@ class ModelExplorerWidget:
                     value="Statistical Metrics: ",
                     layout=widgets.Layout(padding="5px 0px"),
                 ),
-                # self._metric_checkboxes["regression"]["median_absolute_error"],
                 self._metric_checkboxes["regression"]["rmse"],
             ],
             layout=widgets.Layout(
