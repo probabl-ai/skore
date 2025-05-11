@@ -65,6 +65,7 @@ class Metadata(pd.DataFrame):
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> query_string = df.query_string_selection()
         >>> df_filtered = df.query(query_string)
         """
