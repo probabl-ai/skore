@@ -1644,14 +1644,14 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 y_true=[
                     {
                         "estimator_name": self._parent.estimator_name_,
-                        "split_number": None,
+                        "split_index": None,
                         "y": y,
                     }
                 ],
                 y_pred=[
                     {
                         "estimator_name": self._parent.estimator_name_,
-                        "split_number": None,
+                        "split_index": None,
                         "y": y_pred,
                     }
                 ],

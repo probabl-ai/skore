@@ -30,7 +30,7 @@ class YPlotData(TypedDict):
     """
 
     estimator_name: str
-    split_number: Optional[int]
+    split_index: Optional[int]
     y: ArrayLike
 
 

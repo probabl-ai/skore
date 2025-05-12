@@ -1297,14 +1297,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 y_true.append(
                     {
                         "estimator_name": report_name,
-                        "split_number": None,
+                        "split_index": None,
                         "y": report_y,
                     }
                 )
                 y_pred.append(
                     {
                         "estimator_name": report_name,
-                        "split_number": None,
+                        "split_index": None,
                         "y": _get_cached_response_values(
                             cache=report._cache,
                             estimator_hash=report._hash,
