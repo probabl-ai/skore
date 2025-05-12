@@ -1,7 +1,8 @@
 """Types between parts of the sklearn module."""
 
 from collections.abc import Iterator, Sequence
-from typing import Any, Callable, Literal, Optional, Protocol, TypedDict, Union
+from dataclasses import dataclass
+from typing import Any, Callable, Literal, Optional, Protocol, Union
 
 from numpy.typing import ArrayLike
 
@@ -23,7 +24,8 @@ PositiveLabel = Union[int, float, bool, str]
 Aggregate = Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
 
 
-class YPlotData(TypedDict):
+@dataclass
+class YPlotData:
     """Response values, either `y_true` or `y_pred`.
 
     Used for passing to Display classes.

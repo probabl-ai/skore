@@ -1173,17 +1173,17 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                         data_source=data_source
                     )
                 y_true.append(
-                    {
-                        "estimator_name": self._parent.estimator_name_,
-                        "split_index": report_idx,
-                        "y": y,
-                    }
+                    YPlotData(
+                        estimator_name=self._parent.estimator_name_,
+                        split_index=report_idx,
+                        y=y,
+                    )
                 )
                 y_pred.append(
-                    {
-                        "estimator_name": self._parent.estimator_name_,
-                        "split_index": report_idx,
-                        "y": _get_cached_response_values(
+                    YPlotData(
+                        estimator_name=self._parent.estimator_name_,
+                        split_index=report_idx,
+                        y=_get_cached_response_values(
                             cache=report._cache,
                             estimator_hash=report._hash,
                             estimator=report._estimator,
@@ -1193,7 +1193,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                             data_source_hash=data_source_hash,
                             pos_label=display_kwargs.get("pos_label"),
                         ),
-                    }
+                    )
                 )
                 progress.update(main_task, advance=1, refresh=True)
 

@@ -606,13 +606,13 @@ class PrecisionRecallCurveDisplay(
             for y_true_i, y_pred_i in zip(y_true, y_pred):
                 pos_label_validated = cast(PositiveLabel, pos_label_validated)
                 precision_i, recall_i, _ = precision_recall_curve(
-                    y_true_i["y"],
-                    y_pred_i["y"],
+                    y_true_i.y,
+                    y_pred_i.y,
                     pos_label=pos_label_validated,
                     drop_intermediate=drop_intermediate,
                 )
                 average_precision_i = average_precision_score(
-                    y_true_i["y"], y_pred_i["y"], pos_label=pos_label_validated
+                    y_true_i.y, y_pred_i.y, pos_label=pos_label_validated
                 )
 
                 precision[pos_label_validated].append(precision_i)
@@ -621,16 +621,16 @@ class PrecisionRecallCurveDisplay(
         else:  # multiclass-classification
             for y_true_i, y_pred_i, est in zip(y_true, y_pred, estimators):
                 label_binarizer = LabelBinarizer().fit(est.classes_)
-                y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i["y"])
+                y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)
                 for class_idx, class_ in enumerate(est.classes_):
                     precision_class_i, recall_class_i, _ = precision_recall_curve(
                         y_true_onehot_i[:, class_idx],
-                        y_pred_i["y"][:, class_idx],
+                        y_pred_i.y[:, class_idx],
                         pos_label=None,
                         drop_intermediate=drop_intermediate,
                     )
                     average_precision_class_i = average_precision_score(
-                        y_true_onehot_i[:, class_idx], y_pred_i["y"][:, class_idx]
+                        y_true_onehot_i[:, class_idx], y_pred_i.y[:, class_idx]
                     )
 
                     precision[class_].append(precision_class_i)

@@ -235,10 +235,10 @@ class _ClassifierCurveDisplayMixin:
         pos_label: Optional[PositiveLabel] = None,
     ) -> Union[PositiveLabel, None]:
         for y_true_i, y_pred_i in zip(y_true, y_pred):
-            check_consistent_length(y_true_i, y_pred_i)
+            check_consistent_length(y_true_i.y, y_pred_i.y)
 
         if ml_task == "binary-classification":
-            pos_label = _check_pos_label_consistency(pos_label, y_true[0]["y"])
+            pos_label = _check_pos_label_consistency(pos_label, y_true[0].y)
 
         return pos_label
 
