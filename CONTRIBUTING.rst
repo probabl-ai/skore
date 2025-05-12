@@ -90,6 +90,80 @@ If you are new to open-source, you can start by an `issue tagged "good first iss
 
 The implementation of some issues are not very detailed. You can either propose a solution, or choose only the issues with a "Ready" status.
 
+Working on Issues
+""""""""""""""""""
+
+Getting Assigned to an Issue
+"""""""""""""""""""""""""""
+
+Before starting to work on a pull request, please follow these steps:
+
+1. **Find an issue to work on**: Browse the `GitHub issues <https://github.com/probabl-ai/skore/issues>`_ list. Issues labeled with `"good first issue" <https://github.com/probabl-ai/skore/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_ are particularly suitable for newcomers.
+
+2. **Request assignment**: Comment on the issue you'd like to work on, asking to be assigned. Due to GitHub limitations, external contributors cannot assign themselves to existing issues and must request assignment from maintainers.
+
+3. **Wait for confirmation**: A maintainer will review your request and assign the issue to you if appropriate. Assignment is typically done on a first-come, first-served basis.
+
+4. **Begin work**: Once assigned, you can start working on the issue. Be sure to link your PR to the issue when submitting.
+
+Issue Assignment Guidelines
+"""""""""""""""""""""""""""
+
+- **Assignment Duration**: If you've been assigned to an issue but haven't submitted a PR or provided updates for more than two weeks, maintainers may unassign you to allow others to work on it.
+
+- **Already Assigned Issues**: If an issue is already assigned to someone, please respect that assignment (unless the previous contributor has been unassigned due to long inactivity).
+
+- **Issue Tags**:
+  - **good first issue**: These issues are specifically selected to be accessible to newcomers.
+  - **help wanted**: These issues are open for community contributions.
+  - **bug**: Indicates an unexpected problem or unintended behavior.
+  - **enhancement**: Suggests improvements to existing functionality.
+  - **epic**: A large body of work that can be broken down into several smaller issues.
+  - **user-reported**: Issues reported by users of the library.
+  - **hackathon-friendly**: Issues suitable for working on during hackathons or sprints.
+  - **hackathon-milestone**: Issues prioritized for completion during upcoming hackathon events.
+  - **needs-triage**: Recently submitted issues that need review and categorization by maintainers.
+  - **documentation**: Issues related to improving or fixing documentation.
+
+Tips for New Contributors
+"""""""""""""""""""""""""
+
+- Start with smaller issues to familiarize yourself with the contribution workflow.
+- Don't hesitate to ask for help in the issue comments if you're stuck.
+- Be sure to read our code style guidelines before submitting your PR.
+
+- **Basic Contribution Workflow**:
+
+  1. Fork the repository on GitHub to your personal account
+  2. Clone your fork to your local machine: ``git clone https://github.com/<your-username>/skore.git``
+  3. Create a Python virtual environment: ``python -m venv venv`` and activate it
+  4. Set up the development environment: ``make install-skore``
+  5. Create a new branch related to the issue: ``git checkout -b new feature``
+  6. Make your changes and commit them with a message related to the issue
+
+- Run pre-commit checks before pushing your changes to catch formatting issues:
+
+  .. code-block:: bash
+
+
+- Sign your commits using the ``-S`` flag or by configuring Git to sign by default:
+
+  .. code-block:: bash
+
+      git commit -S -m "Your commit message"
+
+      # Configure Git to always sign commits
+      git config --global commit.gpgsign true
+
+  For more details about signing commits, see our `documentation <https://docs.skore.probabl.ai/dev/contributing.html#signing-commits>`_.
+
+- Make sure your PR title follows the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ format, such as:
+
+  ``docs: Enhance contributing guide with issue assignment information``
+
+- Check that your PR passes all CI checks before requesting a review.
+- Keep your PR focused on a single issue to simplify the review process.
+
 Pull requests
 -------------
 
