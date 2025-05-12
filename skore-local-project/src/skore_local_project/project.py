@@ -72,21 +72,23 @@ class Project:
     :func:`~skore_local_project.reports.get`, respectively to insert a key-report pair
     into the Project, to obtain the reports metadata and to get a specific report.
 
-    Parameters
+    Attributes
     ----------
-        name : str
-            The name of the project.
-        workspace : Path, optional
-            The directory where the project (metadata and artifacts) are persisted.
+    name : str
+        The name of the project.
+    workspace : Path
+        The directory where the project (metadata and artifacts) are persisted.
 
-            | The workspace can be shared between all the projects.
-            | The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-            | If not, it will be by default set to a ``skore/`` directory in the USER
-            cache directory:
+        | The workspace can be shared between all the projects.
+        | The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+        | If not, it will be by default set to a ``skore/`` directory in the USER
+        cache directory:
 
-            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-            - in Linux, usually ``${HOME}/.cache/skore``,
-            - in macOS, usually ``${HOME}/Library/Caches/skore``.
+        - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+        - in Linux, usually ``${HOME}/.cache/skore``,
+        - in macOS, usually ``${HOME}/Library/Caches/skore``.
+    run_id : str
+        The current run identifier of the project.
     """
 
     def __init__(self, name: str, *, workspace: Optional[Path] = None):
@@ -124,8 +126,8 @@ class Project:
         self.workspace = str(workspace)
         self.name = name
         self.run_id = uuid4().hex
-        self.metadata_storage = DiskCacheStorage(workspace / "metadata")
-        self.artifacts_storage = DiskCacheStorage(workspace / "artifacts")
+        self.__metadata_storage = DiskCacheStorage(workspace / "metadata")
+        self.__artifacts_storage = DiskCacheStorage(workspace / "artifacts")
 
     @staticmethod
     def pickle(report: EstimatorReport) -> tuple[str, bytes]:
@@ -180,8 +182,8 @@ class Project:
 
         pickle_hash, pickle_bytes = self.pickle(report)
 
-        if pickle_hash not in self.artifacts_storage:
-            self.artifacts_storage[pickle_hash] = pickle_bytes
+        if pickle_hash not in self.__artifacts_storage:
+            self.__artifacts_storage[pickle_hash] = pickle_bytes
 
         def metric(name):
             """
@@ -200,7 +202,7 @@ class Project:
                     return float(getattr(report.metrics, name)(data_source="test"))
             return None
 
-        self.metadata_storage[uuid4().hex] = {
+        self.__metadata_storage[uuid4().hex] = {
             "project_name": self.name,
             "run_id": self.run_id,
             "key": key,
@@ -223,8 +225,8 @@ class Project:
 
         def get(id: str) -> EstimatorReport:
             """Get a persisted report by its id."""
-            if id in self.artifacts_storage:
-                with io.BytesIO(self.artifacts_storage[id]) as stream:
+            if id in self.__artifacts_storage:
+                with io.BytesIO(self.__artifacts_storage[id]) as stream:
                     return joblib.load(stream)
 
             raise KeyError(id)
@@ -247,7 +249,7 @@ class Project:
                         "fit_time": value["fit_time"],
                         "predict_time": value["predict_time"],
                     }
-                    for value in self.metadata_storage.values()
+                    for value in self.__metadata_storage.values()
                     if value["project_name"] == self.name
                 ),
                 key=itemgetter("date"),
