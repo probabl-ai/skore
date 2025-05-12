@@ -57,8 +57,8 @@ class TestProject:
         assert project.workspace == str(tmp_path / "skore")
         assert project.name == "<project>"
         assert project.run_id
-        assert isinstance(project.metadata_storage, DiskCacheStorage)
-        assert isinstance(project.artifacts_storage, DiskCacheStorage)
+        assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
+        assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
     def test_pickle(self, regression):
         # Pickle the report once, without any value in the cache
@@ -80,8 +80,8 @@ class TestProject:
         assert project.workspace == str(tmp_path)
         assert project.name == "<project>"
         assert project.run_id
-        assert isinstance(project.metadata_storage, DiskCacheStorage)
-        assert isinstance(project.artifacts_storage, DiskCacheStorage)
+        assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
+        assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
     def test_init_with_workspace(self, tmp_path):
         project = Project("<project>", workspace=tmp_path)
@@ -89,8 +89,8 @@ class TestProject:
         assert project.workspace == str(tmp_path)
         assert project.name == "<project>"
         assert project.run_id
-        assert isinstance(project.metadata_storage, DiskCacheStorage)
-        assert isinstance(project.artifacts_storage, DiskCacheStorage)
+        assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
+        assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
     def test_put_exception(self, tmp_path):
         project = Project("<project>", workspace=tmp_path)
@@ -106,9 +106,9 @@ class TestProject:
         project.put("<key>", regression)
 
         # Ensure artifacts are persisted
-        assert len(project.artifacts_storage) == 1
+        assert len(project._Project__artifacts_storage) == 1
 
-        with BytesIO(next(project.artifacts_storage.values())) as stream:
+        with BytesIO(next(project._Project__artifacts_storage.values())) as stream:
             artifact = joblib.load(stream)
 
         assert isinstance(artifact, EstimatorReport)
@@ -116,13 +116,13 @@ class TestProject:
         assert artifact._ml_task == regression._ml_task
 
         # Ensure metadata are persisted
-        assert len(project.metadata_storage) == 1
-        assert list(project.metadata_storage.values()) == [
+        assert len(project._Project__metadata_storage) == 1
+        assert list(project._Project__metadata_storage.values()) == [
             {
                 "project_name": "<project>",
                 "run_id": project.run_id,
                 "key": "<key>",
-                "artifact_id": next(project.artifacts_storage.keys()),
+                "artifact_id": next(project._Project__artifacts_storage.keys()),
                 "date": nowstr,
                 "learner": regression.estimator_name_,
                 "dataset": joblib.hash(regression.y_test),
@@ -147,10 +147,10 @@ class TestProject:
         project.put("<key>", regression)
         project.put("<key>", regression)
 
-        report = project.reports.get(next(project.artifacts_storage.keys()))
+        report = project.reports.get(next(project._Project__artifacts_storage.keys()))
 
-        assert len(project.artifacts_storage) == 1
-        assert len(project.metadata_storage) == 2
+        assert len(project._Project__artifacts_storage) == 1
+        assert len(project._Project__metadata_storage) == 2
         assert isinstance(report, EstimatorReport)
         assert report.estimator_name_ == regression.estimator_name_
         assert report._ml_task == regression._ml_task
@@ -161,11 +161,11 @@ class TestProject:
         project.put("<key>", regression)
         project.put("<key>", regression)
 
-        assert len(project.artifacts_storage) == 1
-        assert len(project.metadata_storage) == 2
+        assert len(project._Project__artifacts_storage) == 1
+        assert len(project._Project__metadata_storage) == 2
         assert project.reports.metadata() == [
             {
-                "id": next(project.artifacts_storage.keys()),
+                "id": next(project._Project__artifacts_storage.keys()),
                 "run_id": project.run_id,
                 "key": "<key>",
                 "date": nowstr,
@@ -179,7 +179,7 @@ class TestProject:
                 "predict_time": float(hash("<predict_time_test>")),
             },
             {
-                "id": next(project.artifacts_storage.keys()),
+                "id": next(project._Project__artifacts_storage.keys()),
                 "run_id": project.run_id,
                 "key": "<key>",
                 "date": nowstr,
