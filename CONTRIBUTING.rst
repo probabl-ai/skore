@@ -77,6 +77,12 @@ You'll need ``python >=3.9, <3.13``.
 
         make install-skore
 
+    On `old CPU architecture <https://github.com/pola-rs/polars?tab=readme-ov-file#legacy>`_ to get the support of ``polars``:
+
+    .. code-block:: bash
+
+        make install-skore-lts-cpu
+
 Choosing an issue
 -----------------
 
