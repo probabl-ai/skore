@@ -13,28 +13,12 @@ if typing.TYPE_CHECKING:
 class Metadata(pd.DataFrame):
     _metadata = ["project"]
 
-    @staticmethod
-    def factory(project, /):
-        summaries = pd.DataFrame(project.reports.metadata(), copy=False)
-        summaries["learner"] = pd.Categorical(summaries["learner"])
-        summaries.index = pd.MultiIndex.from_arrays(
-            [
-                pd.RangeIndex(len(summaries)),
-                pd.Index(summaries.pop("id"), name="id", dtype=str),
-            ]
-        )
-
-        # Cast standard dataframe to Metadata for lazy reports selection.
-        metadata = Metadata(summaries, copy=False)
-        metadata.project = project
-
-        return metadata
-
     @property
     def _constructor(self):
         return Metadata
 
     def reports(self, *, filter=True):
+        """"""
         if not hasattr(self, "project") or "id" not in self.index.names:
             raise Exception
 
@@ -50,7 +34,8 @@ class Metadata(pd.DataFrame):
         return ""
 
     def query_string_selection(self) -> Union[str, None]:
-        """Generate a pandas query string based on user selections in the plot.
+        """
+        Generate a pandas query string based on user selections in the plot.
 
         This method translates the visual selections made on the parallel
         coordinates plot into a pandas query string that can be used to

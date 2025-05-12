@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import re
 import sys
-from functools import partial
-from types import SimpleNamespace
+import types
+import pandas as pd
 
 
 if sys.version_info < (3, 10):
@@ -51,7 +51,30 @@ class Project:
 
     @property
     def reports(self):
-        return SimpleNamespace(metadata=partial(Metadata.factory, self.__project))
+        """"""
+
+        def get(id: str) -> EstimatorReport:  # hide underlying functions from user
+            """"""
+            return self.__project.reports.get(id)
+
+        def metadata() -> Metadata:  # hide underlying functions from user
+            """"""
+            metadata = pd.DataFrame(self.__project.reports.metadata(), copy=False)
+            metadata["learner"] = pd.Categorical(metadata["learner"])
+            metadata.index = pd.MultiIndex.from_arrays(
+                [
+                    pd.RangeIndex(len(metadata)),
+                    pd.Index(metadata.pop("id"), name="id", dtype=str),
+                ]
+            )
+
+            # Cast standard dataframe to Metadata for lazy reports selection.
+            metadata = Metadata(metadata, copy=False)
+            metadata.project = self.__project
+
+            return metadata
+
+        return types.SimpleNamespace(get=get, metadata=metadata)
 
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()
