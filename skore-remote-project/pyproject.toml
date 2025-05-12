@@ -13,9 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars = ["polars"]
-polars-lts-cpu = ["polars-lts-cpu"]
-test = [
+test-base = [
   "altair",
   "numpy",
   "pillow",
@@ -33,6 +31,8 @@ test = [
   "skrub",
   "xdoctest",
 ]
+test = ["skore-remote-project[test-base]", "polars"]
+test-lts-cpu = ["skore-remote-project[test-base]", "polars-lts-cpu"]
 
 [project.scripts]
 skore-hub-login = "skore_remote_project.authentication.login:login"

@@ -73,13 +73,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from sklearn.model_selection import train_test_split
+    >>> from skore import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> X, y = make_classification(random_state=42)
-    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    >>> estimator = LogisticRegression().fit(X_train, y_train)
+    >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
+    >>> estimator = LogisticRegression()
     >>> from skore import EstimatorReport
-    >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    >>> report = EstimatorReport(estimator, **split_data)
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
@@ -131,7 +131,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     ) -> None:
         # used to know if a parent launch a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress = None
 
         fit_time: Optional[float] = None
         if fit == "auto":
@@ -180,19 +179,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> report.cache_predictions()
         >>> report.clear_cache()
         >>> report._cache
@@ -224,19 +216,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> report.cache_predictions()
         >>> report._cache
         {...}
@@ -337,13 +322,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import make_classification
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
         >>> X, y = make_classification(random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        >>> estimator = LogisticRegression().fit(X_train, y_train)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
+        >>> estimator = LogisticRegression()
         >>> from skore import EstimatorReport
-        >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+        >>> report = EstimatorReport(estimator, **split_data)
         >>> predictions = report.get_predictions(
         ...     data_source="test", response_method="predict"
         ... )

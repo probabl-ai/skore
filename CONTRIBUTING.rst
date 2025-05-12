@@ -77,6 +77,11 @@ You'll need ``python >=3.9, <3.13``.
 
         make install-skore
 
+    On `old CPU architecture <https://github.com/pola-rs/polars?tab=readme-ov-file#legacy>`_ to get the support of ``polars``:
+
+    .. code-block:: bash
+
+        make install-skore-lts-cpu
 
 Choosing an issue
 -----------------
@@ -193,6 +198,7 @@ The examples are stored in the `examples` folder:
 - No example should require to have large files stored in this repository. For example, no dataset should be stored, it should be downloaded in the script.
 - When built (using `make html` for example), these examples will automatically be converted into RST files in the `sphinx/auto_examples` subfolder. This subfolder is listed in the gitignore and cannot be pushed.
 - If you are visualizing the examples on the online documentation and notice some typos or things that could be improved, make sure that you are viewing the `dev` version of the documentation which is the latest version (e.g. check that the typo has not already been solved for example).
+- New examples should use datasets that are sufficiently interesting yet reasonably sized (avoid synthetic datasets with near-perfect scores). As examples are executed during the documentation build, their runtime must remain short (ideally under a few minutes).
 
 Contributing to the README
 --------------------------
