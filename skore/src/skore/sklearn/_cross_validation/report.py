@@ -126,7 +126,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     ) -> None:
         # used to know if a parent launch a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress = None
 
         self._estimator = clone(estimator)
 
@@ -288,8 +287,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         progress.update(main_task, total=total_estimators)
 
         for estimator_report in self.estimator_reports_:
-            # Pass the progress manager to child tasks
-            estimator_report._parent_progress = progress
+            # Share the parent's progress bar with child report
+            estimator_report._progress_info = {"current_progress": progress}
             estimator_report.cache_predictions(
                 response_methods=response_methods, n_jobs=n_jobs
             )
