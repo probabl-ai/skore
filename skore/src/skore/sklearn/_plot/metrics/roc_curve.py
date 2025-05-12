@@ -679,7 +679,8 @@ class RocCurveDisplay(
 
             for ax in self.ax_:
                 ax.legend(
-                    bbox_to_anchor=(1.02, 1),
+                    loc="upper center",
+                    bbox_to_anchor=(0.5, 1.2),
                     title=(
                         f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set"
                     ),
