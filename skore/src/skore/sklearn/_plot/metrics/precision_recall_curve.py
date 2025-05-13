@@ -21,7 +21,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
+from skore.sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 
 class PrecisionRecallCurveDisplay(
@@ -121,7 +121,7 @@ class PrecisionRecallCurveDisplay(
         pos_label: Optional[PositiveLabel],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
-        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
+        report_type: ReportType,
     ) -> None:
         self.precision = precision
         self.recall = recall
@@ -546,7 +546,7 @@ class PrecisionRecallCurveDisplay(
         y_true: Sequence[YPlotData],
         y_pred: Sequence[YPlotData],
         *,
-        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
+        report_type: ReportType,
         estimators: Sequence[BaseEstimator],
         estimator_names: list[str],
         ml_task: MLTask,

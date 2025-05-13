@@ -165,7 +165,7 @@ def test_roc_curve_display_multiclass_classification(
         assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
         roc_auc_class = get_roc_auc(display, label=class_label)
         assert roc_curve_mpl.get_label() == (
-            f"{str(class_label).title()} - test set " f"(AUC = {roc_auc_class :0.2f})"
+            f"{str(class_label).title()} - test set (AUC = {roc_auc_class:0.2f})"
         )
         assert roc_curve_mpl.get_color() == expected_color
 
@@ -218,7 +218,7 @@ def test_roc_curve_display_data_source_multiclass_classification(
     for class_label in estimator.classes_:
         assert display.lines_[class_label].get_label() == (
             f"{str(class_label).title()} - train set "
-            f"(AUC = {get_roc_auc(display,label=class_label):0.2f})"
+            f"(AUC = {get_roc_auc(display, label=class_label):0.2f})"
         )
 
     display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
@@ -226,7 +226,7 @@ def test_roc_curve_display_data_source_multiclass_classification(
     for class_label in estimator.classes_:
         assert display.lines_[class_label].get_label() == (
             f"{str(class_label).title()} - "
-            f"AUC = {get_roc_auc(display,label=class_label):0.2f}"
+            f"AUC = {get_roc_auc(display, label=class_label):0.2f}"
         )
 
 
@@ -376,7 +376,7 @@ def test_roc_curve_display_cross_validation_binary_classification(
         assert isinstance(line, mpl.lines.Line2D)
         roc_auc_split = get_roc_auc(display, label=pos_label, split_number=split_idx)
         assert line.get_label() == (
-            f"Estimator of fold #{split_idx + 1} " f"(AUC = {roc_auc_split:0.2f})"
+            f"Estimator of fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
         )
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
 

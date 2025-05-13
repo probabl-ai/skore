@@ -9,7 +9,6 @@ from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot.metrics import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
-    RocCurveDisplay,
 )
 
 

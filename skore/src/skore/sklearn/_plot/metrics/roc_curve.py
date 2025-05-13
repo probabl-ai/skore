@@ -6,7 +6,7 @@ import numpy as np
 from matplotlib import colormaps
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, roc_curve
@@ -21,7 +21,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
+from skore.sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 
 def _set_axis_labels(ax: Axes, info_pos_label: Union[str, None]) -> None:
@@ -138,7 +138,7 @@ class RocCurveDisplay(
         pos_label: Optional[PositiveLabel],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
-        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
+        report_type: ReportType,
     ) -> None:
         self.roc_curve = roc_curve
         self.roc_auc = roc_auc
@@ -620,7 +620,7 @@ class RocCurveDisplay(
         y_true: Sequence[YPlotData],
         y_pred: Sequence[YPlotData],
         *,
-        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
+        report_type: ReportType,
         estimators: Sequence[BaseEstimator],
         estimator_names: list[str],
         ml_task: MLTask,
