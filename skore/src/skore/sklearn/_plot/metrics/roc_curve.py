@@ -179,6 +179,8 @@ class RocCurveDisplay(
         *,
         estimator_name: str,
         roc_curve_kwargs: list[dict[str, Any]],
+        plot_chance_level: bool = True,
+        chance_level_kwargs: Optional[dict[str, Any]] = None,
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve for a single estimator.
 
@@ -191,6 +193,13 @@ class RocCurveDisplay(
             Additional keyword arguments to pass to matplotlib's plot function. In
             binary case, we should have a single dict. In multiclass case, we should
             have a list of dicts, one per class.
+
+        plot_chance_level : bool, default=True
+            Whether to plot the chance level.
+
+        chance_level_kwargs : dict, default=None
+            Keyword arguments to be passed to matplotlib's `plot` for rendering
+            the chance level line.
 
         Returns
         -------
@@ -261,6 +270,15 @@ class RocCurveDisplay(
 
             info_pos_label = None  # irrelevant for multiclass
 
+        if plot_chance_level:
+            self.chance_level_ = _add_chance_level(
+                self.ax_,
+                chance_level_kwargs,
+                self._default_chance_level_kwargs,
+            )
+        else:
+            self.chance_level_ = None
+
         self.ax_.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
 
         return self.ax_, lines, info_pos_label
@@ -270,6 +288,8 @@ class RocCurveDisplay(
         *,
         estimator_name: str,
         roc_curve_kwargs: list[dict[str, Any]],
+        plot_chance_level: bool = True,
+        chance_level_kwargs: Optional[dict[str, Any]] = None,
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve for a cross-validated estimator.
 
@@ -281,6 +301,13 @@ class RocCurveDisplay(
         roc_curve_kwargs : list of dict
             List of dictionaries containing keyword arguments to customize the ROC
             curves. The length of the list should match the number of curves to plot.
+
+        plot_chance_level : bool, default=True
+            Whether to plot the chance level.
+
+        chance_level_kwargs : dict, default=None
+            Keyword arguments to be passed to matplotlib's `plot` for rendering
+            the chance level line.
 
         Returns
         -------
@@ -356,6 +383,15 @@ class RocCurveDisplay(
                     )
                     lines.append(line)
 
+        if plot_chance_level:
+            self.chance_level_ = _add_chance_level(
+                self.ax_,
+                chance_level_kwargs,
+                self._default_chance_level_kwargs,
+            )
+        else:
+            self.chance_level_ = None
+
         if self.data_source in ("train", "test"):
             title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
         else:
@@ -369,6 +405,8 @@ class RocCurveDisplay(
         *,
         estimator_names: list[str],
         roc_curve_kwargs: list[dict[str, Any]],
+        plot_chance_level: bool = True,
+        chance_level_kwargs: Optional[dict[str, Any]] = None,
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve of several estimators.
 
@@ -380,6 +418,13 @@ class RocCurveDisplay(
         roc_curve_kwargs : list of dict
             List of dictionaries containing keyword arguments to customize the ROC
             curves. The length of the list should match the number of curves to plot.
+
+        plot_chance_level : bool, default=True
+            Whether to plot the chance level.
+
+        chance_level_kwargs : dict, default=None
+            Keyword arguments to be passed to matplotlib's `plot` for rendering
+            the chance level line.
 
         Returns
         -------
@@ -446,6 +491,15 @@ class RocCurveDisplay(
                         fpr_est_class, tpr_est_class, **line_kwargs_validated
                     )
                     lines.append(line)
+
+        if plot_chance_level:
+            self.chance_level_ = _add_chance_level(
+                self.ax_,
+                chance_level_kwargs,
+                self._default_chance_level_kwargs,
+            )
+        else:
+            self.chance_level_ = None
 
         self.ax_.legend(
             bbox_to_anchor=(1.02, 1),
@@ -525,6 +579,8 @@ class RocCurveDisplay(
                     else estimator_name
                 ),
                 roc_curve_kwargs=roc_curve_kwargs,
+                plot_chance_level=plot_chance_level,
+                chance_level_kwargs=chance_level_kwargs,
             )
         elif self.report_type == "cross-validation":
             self.ax_, self.lines_, info_pos_label = (
@@ -535,12 +591,16 @@ class RocCurveDisplay(
                         else estimator_name
                     ),
                     roc_curve_kwargs=roc_curve_kwargs,
+                    plot_chance_level=plot_chance_level,
+                    chance_level_kwargs=chance_level_kwargs,
                 )
             )
         elif self.report_type == "comparison-estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_comparison_estimator(
                 estimator_names=self.estimator_names,
                 roc_curve_kwargs=roc_curve_kwargs,
+                plot_chance_level=plot_chance_level,
+                chance_level_kwargs=chance_level_kwargs,
             )
         else:
             raise ValueError(
@@ -549,15 +609,6 @@ class RocCurveDisplay(
             )
 
         _set_axis_labels(self.ax_, info_pos_label)
-
-        if plot_chance_level:
-            self.chance_level_ = _add_chance_level(
-                self.ax_,
-                chance_level_kwargs,
-                self._default_chance_level_kwargs,
-            )
-        else:
-            self.chance_level_ = None
 
         if despine:
             _despine_matplotlib_axis(self.ax_)
