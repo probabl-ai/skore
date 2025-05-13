@@ -1373,3 +1373,66 @@ def test_estimator_report_metric_with_neg_metrics():
     # Check that the reported log_loss matches the absolute value of neg_log_loss
     log_loss_value = result.loc["log_loss", classifier.__class__.__name__]
     assert np.isclose(log_loss_value, abs(neg_log_loss_value))
+
+
+def test_estimator_report_with_sklearn_scoring_strings():
+    """Test that scikit-learn metric strings can be passed to report_metrics."""
+    # Classification test case
+    X_class, y_class = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_class, y_class, random_state=42
+    )
+    classifier = LogisticRegression(max_iter=10_000)
+    class_report = EstimatorReport(
+        classifier,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    # Test single scikit-learn metric string
+    result = class_report.metrics.report_metrics(scoring=["neg_log_loss"])
+    assert "Log Loss" in result.index.get_level_values(0)
+
+    # Test with multiple scikit-learn metrics
+    result_multi = class_report.metrics.report_metrics(
+        scoring=["accuracy", "neg_log_loss", "roc_auc"], indicator_favorability=True
+    )
+    assert "Accuracy" in result_multi.index.get_level_values(0)
+    assert "Log Loss" in result_multi.index.get_level_values(0)
+    assert "ROC AUC" in result_multi.index.get_level_values(0)
+
+    # Test favorability indicators
+    favorability = result_multi.loc["Accuracy"]["Favorability"]
+    assert favorability == "(↗︎)"
+    favorability = result_multi.loc["Log Loss"]["Favorability"]
+    assert favorability == "(↘︎)"
+
+    # Regression test case
+    X_reg, y_reg = make_regression(random_state=42)
+    X_train_reg, X_test_reg, y_train_reg, y_test_reg = train_test_split(
+        X_reg, y_reg, random_state=42
+    )
+    regressor = LinearRegression()
+    reg_report = EstimatorReport(
+        regressor,
+        X_train=X_train_reg,
+        y_train=y_train_reg,
+        X_test=X_test_reg,
+        y_test=y_test_reg,
+    )
+
+    # Test regression metrics
+    reg_result = reg_report.metrics.report_metrics(
+        scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
+        indicator_favorability=True,
+    )
+
+    assert "Mean Squared Error" in reg_result.index.get_level_values(0)
+    assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
+    assert "R²" in reg_result.index.get_level_values(0)  # Changed from "R2" to "R²"
+
+    # Check favorability
+    assert reg_result.loc["Mean Squared Error"]["Favorability"] == "(↘︎)"
+    assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"  # Changed from "R2" to "R²"

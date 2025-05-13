@@ -153,6 +153,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Negative Log Loss      -0.10...        (↘︎)
         """
         if data_source == "X_y":
+            # optimization of the hash computation to avoid recomputing it
+            # FIXME: we are still recomputing the hash for all the metrics that we
+            # support in the report because we don't call `_compute_metric_scores`
+            # here. We should fix it.
             X, y, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
@@ -277,7 +281,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                             metrics_kwargs = {**scorer._kwargs}
                             metrics_kwargs["data_source_hash"] = data_source_hash
                             metric_favorability = (
-                                "↘︎" if metric.startswith("neg_") else "↗︎"
+                                "(↘︎)" if metric.startswith("neg_") else "(↗︎)"
                             )
                         except ValueError as err:
                             raise ValueError(
