@@ -337,9 +337,10 @@ def test_estimator_report_flat_index(binary_classification_data):
         "recall_1",
         "roc_auc",
         "brier_score",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     ]
+
     assert result.columns.tolist() == ["RandomForestClassifier"]
 
 
@@ -646,12 +647,13 @@ def test_estimator_report_metrics_regression(regression_data, metric):
 
 
 def _normalize_metric_name(column):
-    """Helper to normalize the metric name present in a pandas column that could be
+    """Helper to normalize the metric name present in a pandas index that could be
     a multi-index or single-index."""
     # if we have a multi-index, then the metric name is on level 0
     s = column[0] if isinstance(column, tuple) else column
-    # Remove spaces and underscores
-    return re.sub(r"[^a-zA-Z]", "", s.lower())
+    # Remove spaces and underscores and (s) suffix
+    s = s.lower().replace(" (s)", "")
+    return re.sub(r"[^a-zA-Z]", "", s)
 
 
 def _check_results_report_metrics(result, expected_metrics, expected_nb_stats):
@@ -1304,6 +1306,23 @@ def test_estimator_report_brier_score_requires_probabilities():
     """
     estimator = SVC()  # SVC does not implement `predict_proba` with default parameters
     X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    assert not hasattr(report.metrics, "brier_score")
+
+
+def test_estimator_report_brier_score_requires_binary_classification():
+    """Check that the Brier score is not defined for estimator that do not
+    implement `predict_proba` and that are not binary-classification.
+
+    Non-regression test for:
+    https://github.com/probabl-ai/skore/issues/1540
+    """
+    estimator = LogisticRegression()
+    X, y = make_classification(n_classes=3, n_clusters_per_class=1, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
     report = EstimatorReport(

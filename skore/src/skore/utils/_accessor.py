@@ -2,6 +2,14 @@ from typing import Any, Callable
 
 from sklearn.pipeline import Pipeline
 
+
+def _check_all_checks(checks: list[Callable]) -> Callable:
+    def check(accessor: Any) -> bool:
+        return all(check(accessor) for check in checks)
+
+    return check
+
+
 ########################################################################################
 # Accessor related to `EstimatorReport`
 ########################################################################################
@@ -51,6 +59,12 @@ def _check_has_coef() -> Callable:
         )
         if hasattr(estimator, "coef_"):
             return True
+        try:  # e.g. TransformedTargetRegressor()
+            if hasattr(estimator.regressor_, "coef_"):
+                return True
+        except AttributeError as msg:
+            if "object has no attribute 'regressor_'" not in str(msg):
+                raise
         raise AttributeError(
             f"Estimator {parent_estimator} is not a supported estimator by "
             "the function called."

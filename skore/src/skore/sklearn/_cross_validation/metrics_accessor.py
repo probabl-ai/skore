@@ -1,10 +1,9 @@
-from collections.abc import Sequence
 from typing import Any, Callable, Literal, Optional, Union, cast
 
 import joblib
 import numpy as np
 import pandas as pd
-from rich.progress import Progress
+from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
 from sklearn.metrics._scorer import _BaseScorer as SKLearnScorer
 from sklearn.utils.metaestimators import available_if
@@ -17,13 +16,14 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
+from skore.sklearn.types import Aggregate, PositiveLabel
 from skore.utils._accessor import _check_estimator_report_has_method
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
-DataSource = Literal["test", "train"]
+DataSource = Literal["test", "train", "X_y"]
 
 
 class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
@@ -48,32 +48,39 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
-        self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress: Optional[Progress] = None
-
     def report_metrics(
         self,
         *,
         data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         scoring: Optional[Union[list[str], Callable, SKLearnScorer]] = None,
         scoring_names: Optional[list[str]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = ("mean", "std"),
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Report a set of metrics for our estimator.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the train set provided when creating the report and the target
+              variable.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
             The metrics to report. You can get the possible list of string by calling
@@ -102,7 +109,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Whether to flatten the `MultiIndex` columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
-        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -133,6 +140,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         results = self._compute_metric_scores(
             report_metric_name="report_metrics",
             data_source=data_source,
+            X=X,
+            y=y,
             aggregate=aggregate,
             scoring=scoring,
             pos_label=pos_label,
@@ -145,6 +154,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 results.columns = flatten_multi_index(results.columns)
             if isinstance(results.index, pd.MultiIndex):
                 results.index = flatten_multi_index(results.index)
+            if isinstance(results.index, pd.Index):
+                results.index = results.index.str.replace(
+                    r"\((.*)\)$", r"\1", regex=True
+                )
         return results
 
     @progress_decorator(description="Compute metric for each split")
@@ -153,18 +166,27 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         report_metric_name: str,
         *,
         data_source: DataSource = "test",
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = None,
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = None,
         **metric_kwargs: Any,
     ) -> pd.DataFrame:
-        # build the cache key components to finally create a tuple that will be used
-        # to check if the metric has already been computed
+        if data_source == "X_y":
+            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
+        else:
+            data_source_hash = None
+
         cache_key_parts: list[Any] = [
             self._parent._hash,
             report_metric_name,
             data_source,
         ]
+
+        if data_source_hash is not None:
+            cache_key_parts.append(data_source_hash)
+
         if aggregate is None:
             cache_key_parts.append(aggregate)
         else:
@@ -177,9 +199,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 cache_key_parts.append(metric_kwargs[key])
         cache_key = tuple(cache_key_parts)
 
-        assert self._progress_info is not None, "Progress info not set"
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
+        assert self._parent._progress_info is not None, "Progress info not set"
+        progress = self._parent._progress_info["current_progress"]
+        main_task = self._parent._progress_info["current_task"]
 
         total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
@@ -196,7 +218,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             )
             generator = parallel(
                 delayed(getattr(report.metrics, report_metric_name))(
-                    data_source=data_source, **metric_kwargs
+                    data_source=data_source, X=X, y=y, **metric_kwargs
                 )
                 for report in self._parent.estimator_reports_
             )
@@ -237,9 +259,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
     def timings(
         self,
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = ("mean", "std"),
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Get all measured processing times related to the estimator.
 
@@ -266,14 +286,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
         >>> report.metrics.timings()
-                      mean       std
-        Fit time       ...       ...
+                          mean       std
+        Fit time (s)       ...       ...
         >>> report.cache_predictions(response_methods=["predict"])
         >>> report.metrics.timings()
-                                mean       std
-        Fit time                 ...       ...
-        Predict time test        ...       ...
-        Predict time train       ...       ...
+                                    mean       std
+        Fit time (s)                 ...       ...
+        Predict time test (s)        ...       ...
+        Predict time train (s)       ...       ...
         """
         timings: pd.DataFrame = pd.concat(
             [
@@ -288,6 +308,17 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 aggregate = [aggregate]
             timings = timings.aggregate(func=aggregate, axis=1)
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
+
+        # Add (s) to time measurements
+        new_index = []
+        for idx in timings.index:
+            if "time" in idx.lower():
+                new_index.append(f"{idx} (s)")
+            else:
+                new_index.append(idx)
+
+        timings.index = pd.Index(new_index)
+
         return timings
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
@@ -295,21 +326,30 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = ("mean", "std"),
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -336,6 +376,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             scoring=["accuracy"],
             data_source=data_source,
             aggregate=aggregate,
+            X=X,
+            y=y,
         )
 
     @available_if(_check_estimator_report_has_method("metrics", "precision"))
@@ -343,23 +385,32 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = ("mean", "std"),
+        pos_label: Optional[PositiveLabel] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the precision score.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -389,7 +440,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
-        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -417,6 +468,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             scoring=["precision"],
             data_source=data_source,
             aggregate=aggregate,
+            X=X,
+            y=y,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
         )
@@ -426,23 +479,32 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = ("mean", "std"),
+        pos_label: Optional[PositiveLabel] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the recall score.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -473,7 +535,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
-        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -500,6 +562,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         return self.report_metrics(
             scoring=["recall"],
             data_source=data_source,
+            X=X,
+            y=y,
             aggregate=aggregate,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
@@ -510,21 +574,30 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = ("mean", "std"),
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -550,6 +623,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         return self.report_metrics(
             scoring=["brier_score"],
             data_source=data_source,
+            X=X,
+            y=y,
             aggregate=aggregate,
         )
 
@@ -558,21 +633,30 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = ("mean", "std"),
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         average : {"macro", "micro", "weighted", "samples"}, default=None
             Average to compute the ROC AUC score in a multiclass setting. By default,
@@ -607,7 +691,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
               pairwise combinations of classes. Insensitive to class imbalance when
               `average == "macro"`.
 
-        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -633,6 +717,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         return self.report_metrics(
             scoring=["roc_auc"],
             data_source=data_source,
+            X=X,
+            y=y,
             aggregate=aggregate,
             scoring_kwargs={"average": average, "multi_class": multi_class},
         )
@@ -642,21 +728,30 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = ("mean", "std"),
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the log loss.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -682,6 +777,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         return self.report_metrics(
             scoring=["log_loss"],
             data_source=data_source,
+            X=X,
+            y=y,
             aggregate=aggregate,
         )
 
@@ -690,20 +787,29 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = ("mean", "std"),
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the R² score.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -715,7 +821,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             By default, no averaging is done.
 
-        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -741,6 +847,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         return self.report_metrics(
             scoring=["r2"],
             data_source=data_source,
+            X=X,
+            y=y,
             aggregate=aggregate,
             scoring_kwargs={"multioutput": multioutput},
         )
@@ -750,20 +858,29 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = ("mean", "std"),
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -775,7 +892,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             By default, no averaging is done.
 
-        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -801,6 +918,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         return self.report_metrics(
             scoring=["rmse"],
             data_source=data_source,
+            X=X,
+            y=y,
             aggregate=aggregate,
             scoring_kwargs={"multioutput": multioutput},
         )
@@ -812,9 +931,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         *,
         metric_name: Optional[str] = None,
         data_source: DataSource = "test",
-        aggregate: Optional[
-            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
-        ] = ("mean", "std"),
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
         **kwargs,
     ) -> pd.DataFrame:
         """Compute a custom metric.
@@ -843,13 +962,22 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             The name of the metric. If not provided, it will be inferred from the
             metric function.
 
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -891,6 +1019,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         return self.report_metrics(
             scoring=[scorer],
             data_source=data_source,
+            X=X,
+            y=y,
             aggregate=aggregate,
             scoring_names=[metric_name] if metric_name is not None else None,
         )
@@ -965,20 +1095,31 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     def _get_display(
         self,
         *,
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         data_source: DataSource,
         response_method: str,
-        display_class: Any,
+        display_class: type[
+            Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
+        ],
         display_kwargs: dict[str, Any],
     ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
         """Get the display from the cache or compute it.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        X : array-like of shape (n_samples, n_features)
+            The data.
+
+        y : array-like of shape (n_samples,)
+            The target.
+
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
 
         response_method : str
             The response method.
@@ -994,18 +1135,28 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         display : display_class
             The display.
         """
+        if data_source == "X_y":
+            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
+            assert y is not None, "y must be provided"
+        else:
+            data_source_hash = None
+
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
-            # Create a list of cache key components and then convert to tuple
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
             cache_key_parts.extend(display_kwargs.values())
-            cache_key_parts.append(data_source)
+            if data_source_hash is not None:
+                cache_key_parts.append(data_source_hash)
+            else:
+                cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
-        assert self._progress_info is not None, "Progress info not set"
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
+        assert self._parent._progress_info is not None, "Progress info not set"
+        progress = self._parent._progress_info["current_progress"]
+        main_task = self._parent._progress_info["current_task"]
         total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
@@ -1014,9 +1165,12 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         else:
             y_true, y_pred = [], []
             for report in self._parent.estimator_reports_:
-                X, y, _ = report.metrics._get_X_y_and_data_source_hash(
-                    data_source=data_source
-                )
+                if data_source != "X_y":
+                    # only retrieve data stored in the reports when we don't want to
+                    # use an external common X and y
+                    X, y, _ = report.metrics._get_X_y_and_data_source_hash(
+                        data_source=data_source
+                    )
                 y_true.append(y)
                 y_pred.append(
                     _get_cached_response_values(
@@ -1026,7 +1180,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                         X=X,
                         response_method=response_method,
                         data_source=data_source,
-                        data_source_hash=None,
+                        data_source_hash=data_source_hash,
                         pos_label=display_kwargs.get("pos_label"),
                     )
                 )
@@ -1057,7 +1211,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1068,6 +1224,15 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1094,6 +1259,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             RocCurveDisplay,
             self._get_display(
                 data_source=data_source,
+                X=X,
+                y=y,
                 response_method=response_method,
                 display_class=RocCurveDisplay,
                 display_kwargs=display_kwargs,
@@ -1106,7 +1273,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
@@ -1117,6 +1286,15 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1143,6 +1321,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             PrecisionRecallCurveDisplay,
             self._get_display(
                 data_source=data_source,
+                X=X,
+                y=y,
                 response_method=response_method,
                 display_class=PrecisionRecallCurveDisplay,
                 display_kwargs=display_kwargs,
@@ -1155,6 +1335,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         subsample: Union[float, int, None] = 1_000,
         seed: Optional[int] = None,
     ) -> PredictionErrorDisplay:
@@ -1164,17 +1346,25 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
             it should be between 0 and 1 and represents the proportion of the
             original dataset. If `int`, it represents the number of samples
-            display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1,000 samples or less will be displayed.
 
         seed : int, default=None
@@ -1204,6 +1394,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             PredictionErrorDisplay,
             self._get_display(
                 data_source=data_source,
+                X=X,
+                y=y,
                 response_method="predict",
                 display_class=PredictionErrorDisplay,
                 display_kwargs=display_kwargs,

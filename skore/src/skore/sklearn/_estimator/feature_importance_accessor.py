@@ -17,6 +17,7 @@ from sklearn.utils.metaestimators import available_if
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._estimator.report import EstimatorReport
+from skore.sklearn.types import Aggregate
 from skore.utils._accessor import _check_has_coef, _check_has_feature_importances
 from skore.utils._index import flatten_multi_index
 
@@ -141,9 +142,6 @@ def _check_scoring(scoring: Any) -> Union[Scoring, None]:
         )
 
 
-Aggregation = Literal["mean", "std"]
-
-
 class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     """Accessor for feature importance related operations.
 
@@ -161,19 +159,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_diabetes(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(
-        ...     regressor,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(regressor, **split_data)
         >>> report.feature_importance.coefficients()
                    Coefficient
         Intercept     152.4...
@@ -205,10 +196,28 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if isinstance(parent_estimator, Pipeline)
             else parent_estimator
         )
-        intercept = np.atleast_2d(estimator.intercept_)
-        coef = np.atleast_2d(estimator.coef_)
+        try:
+            intercept = np.atleast_2d(estimator.intercept_)
+        except AttributeError:
+            # TransformedTargetRegressor() does not expose `intercept_`
+            intercept = np.atleast_2d(estimator.regressor_.intercept_)
+            # Uncomment when SGDOneClassSVM is fully supported by EstimatorReport
+            # except AttributeError:
+            # SGDOneClassSVM does not expose `intercept_`
+            # intercept = None
 
-        data = np.concatenate([intercept, coef.T])
+        try:
+            coef = np.atleast_2d(estimator.coef_)
+        except AttributeError:
+            # TransformedTargetRegressor() does not expose `coef_`
+            coef = np.atleast_2d(estimator.regressor_.coef_)
+
+        if intercept is None:
+            data = coef.T
+            index = list(feature_names)
+        else:
+            data = np.concatenate([intercept, coef.T])
+            index = ["Intercept"] + list(feature_names)
 
         if data.shape[1] == 1:
             columns = ["Coefficient"]
@@ -219,7 +228,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         df = pd.DataFrame(
             data=data,
-            index=["Intercept"] + list(feature_names),
+            index=index,
             columns=columns,
         )
 
@@ -239,18 +248,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.ensemble import RandomForestClassifier
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
         >>> X, y = make_classification(n_features=5, random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> forest = RandomForestClassifier(n_estimators=5, random_state=0)
-        >>> report = EstimatorReport(
-        ...     forest,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(forest, **split_data)
         >>> report.feature_importance.mean_decrease_impurity()
                    Mean decrease impurity
         Feature #0                0.06...
@@ -292,7 +295,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        aggregate: Optional[Union[Aggregation, list[Aggregation]]] = None,
+        aggregate: Optional[Aggregate] = None,
         scoring: Optional[Scoring] = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
@@ -385,19 +388,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_regression
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *make_regression(n_features=3, random_state=0), random_state=0
-        ... )
+        >>> X, y = make_regression(n_features=3, random_state=0)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(
-        ...     regressor,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(regressor, **split_data)
 
         >>> report.feature_importance.permutation(
         ...    n_repeats=2,
@@ -466,7 +462,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         data_source_hash: Optional[int] = None,
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        aggregate: Optional[Union[Aggregation, list[Aggregation]]] = None,
+        aggregate: Optional[Aggregate] = None,
         scoring: Optional[Scoring] = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,

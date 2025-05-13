@@ -34,32 +34,32 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = [
+test-base = [
   "altair>=5,<6",
   "pillow",
   "plotly>=5,<6",
-  "polars",
   "pre-commit",
   "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "ruff",
   "scikit-learn<1.7",
   "skrub",
   "xdoctest",
 ]
-sphinx = [
+test = ["skore[test-base]", "polars"]
+test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
+sphinx-base = [
   "IPython",
   "altair",
   "kaleido",
   "numpydoc",
   "plotly>=5,<6",
-  "polars",
   "pydata-sphinx-theme",
+  "scikit-learn<1.7",
   "seaborn",
-  "sentence-transformers",
+  "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
   "skrub",
   "sphinx-copybutton",
   "sphinx-design",
@@ -67,7 +67,10 @@ sphinx = [
   "sphinx-tabs",
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
+  "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
 ]
+sphinx = ["skore[sphinx-base]", "polars"]
+sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]
 dev = [
   "nbformat",
   "ipykernel",
@@ -102,12 +105,6 @@ addopts = [
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
-  # We ignore unwanted directories rather than including wanted ones, because
-  # otherwise it becomes impossible to test only one file (the argument gets
-  # appended to the defaults)
-  "--ignore=doc",
-  "--ignore=examples",
-  "--ignore=notebooks",
   "--dist=loadscope",
 ]
 
@@ -123,7 +120,6 @@ show_missing = true
 
 [tool.ruff]
 src = ["skore"]
-exclude = ["doc"]
 
 [tool.ruff.lint]
 select = [
@@ -154,7 +150,7 @@ convention = "numpy"
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["src/skore/externals/.*", "ci/*", "hatch/*", "tests/*"]
+exclude = ["src/skore/externals/.*", "hatch/*", "tests/*"]
 
 [[tool.mypy.overrides]]
 module = ["diskcache.*", "sklearn.*"]
