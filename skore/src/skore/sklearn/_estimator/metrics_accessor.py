@@ -165,6 +165,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         scoring_was_none = scoring is None
         if scoring is None:
+            # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
                 scoring = ["_precision", "_recall", "_roc_auc"]
                 if hasattr(self._parent._estimator, "predict_proba"):
@@ -179,6 +180,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         if scoring_names is not None and len(scoring_names) != len(scoring):
             if scoring_was_none:
+                # we raise a better error message since we decide the default scores
                 raise ValueError(
                     "The `scoring_names` parameter should be of the same length as "
                     "the `scoring` parameter. In your case, `scoring` was set to None "
@@ -197,7 +199,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         scores = []
         favorability_indicator = []
         for metric_name, metric in zip(scoring_names, scoring):
+            # NOTE: we have to check specifically for `_BaseScorer` first because this
+            # is also a callable but it has a special private API that we can leverage
             if isinstance(metric, _BaseScorer):
+                # scorers have the advantage to have scoped defined kwargs
                 metric_function: Callable = metric._score_func
                 response_method: Union[str, list[str]] = metric._response_method
                 metric_fn = partial(
@@ -300,6 +305,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         metrics_kwargs = {}
                     else:
                         # check if we should pass any parameters specific to the metric
+                        # callable
                         metric_callable_params = inspect.signature(metric).parameters
                         metrics_kwargs = {
                             param: scoring_kwargs[param]
