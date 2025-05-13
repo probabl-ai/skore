@@ -205,6 +205,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     metric_function=metric_function,
                     response_method=response_method,
                 )
+                # forward the additional parameters specific to the scorer
                 metrics_kwargs = {**metric._kwargs}
                 metrics_kwargs["data_source_hash"] = data_source_hash
                 metrics_params = inspect.signature(metric._score_func).parameters
