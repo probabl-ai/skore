@@ -128,6 +128,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._progress_info: Optional[dict[str, Any]] = None
 
         self._estimator = clone(estimator)
+        self._parent_progress = None
 
         # private storage to be able to invalidate the cache when the user alters
         # those attributes
