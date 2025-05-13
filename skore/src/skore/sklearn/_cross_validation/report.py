@@ -126,7 +126,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     ) -> None:
         # used to know if a parent launch a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress = None
+
         self._estimator = clone(estimator)
 
         # private storage to be able to invalidate the cache when the user alters
