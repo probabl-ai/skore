@@ -295,8 +295,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 main_task,
                 description=f"Caching predictions for fold #{i + 1}/{total_estimators}",
             )
-
             estimator_report._parent_progress = progress
+            estimator_report._progress_info = self._progress_info
+
             estimator_report.cache_predictions(
                 response_methods=response_methods, n_jobs=n_jobs
             )
