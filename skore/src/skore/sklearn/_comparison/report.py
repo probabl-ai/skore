@@ -438,31 +438,33 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         # - what if a metrics need pos_label?
         # - what if time_metric = "fit", and data_source != "train"?
         # > data source does not apply to fit. Let's be clear in the axis labels.
-
-        # Question
-        # - should this become an accessor method, e.g. `plots`,
-        #      the equivalent to `metrics`?
-        # > should be in the accessor model_selection
-        # - how to deal with perf metric? should it be consistent with
-        #     the metric name or the column name in metrics report?
-        # > available in _SCORE_OR_LOSS_INFO
+        # - what happens if the metric is a user-created metric?
 
         # TODO
-        # - add example
         # - add test
-        # - add kwargs
+        # - add kwargs (later)
         # - turn into display
-        # - change name to sth like `pairwise_plot`
 
         x_label = _SCORE_OR_LOSS_INFO[perf_metric_x].get("name", perf_metric_x)
         y_label = _SCORE_OR_LOSS_INFO[perf_metric_y].get("name", perf_metric_y)
-
         scatter_data = self.metrics.report_metrics(pos_label=pos_label).T.reset_index()
+        x = scatter_data[x_label]
+        y = scatter_data[y_label]
+
+        if len(x.shape) > 1:
+            raise ValueError(
+                "The perf metric x requires to add a positive label parameter."
+            )
+        if len(y.shape) > 1:
+            raise ValueError(
+                "The perf metric y requires to add a positive label parameter."
+            )
+
         scatter_data.plot(
             kind="scatter",
             x=x_label,
             y=y_label,
-            title="Performance vs Time (s)",
+            title=f"{x_label} vs {y_label}",
         )
 
         # Add labels to the points with a small offset
