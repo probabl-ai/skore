@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Sequence
 from io import StringIO
-from typing import Any, Literal, Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -14,7 +14,7 @@ from sklearn.utils.validation import (
     check_consistent_length,
 )
 
-from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
+from skore.sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 LINESTYLE = [
     ("solid", "solid"),
@@ -145,7 +145,7 @@ class _ClassifierCurveDisplayMixin:
         curve_param_name: str,
         curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
         n_curves: int,
-        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
+        report_type: ReportType,
     ) -> list[dict[str, Any]]:
         """Validate and format the classification curve keyword arguments.
 
