@@ -50,8 +50,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Attributes
     ----------
-    reports_ : list of :class:`~skore.EstimatorReport` instances or
-        :class:`~skore.CrossValidationReport` instances.
+    reports_ : list of :class:`~skore.EstimatorReport` or list of
+        :class:`~skore.CrossValidationReport`
         The compared reports.
 
     report_names_ : list of str
