@@ -126,7 +126,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     ) -> None:
         # used to know if a parent launch a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress = None
 
         self._estimator = clone(estimator)
 
@@ -287,15 +286,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         total_estimators = len(self.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
-        progress.console.print("Processing predictions for each fold...")
-
-        for i, estimator_report in enumerate(self.estimator_reports_):
-            progress.update(
-                main_task,
-                description=f"Caching predictions for fold #{i + 1}/{total_estimators}",
-            )
-
-            estimator_report._parent_progress = progress
+        for estimator_report in self.estimator_reports_:
+            # Share the parent's progress bar with child report
+            estimator_report._progress_info = {"current_progress": progress}
             estimator_report.cache_predictions(
                 response_methods=response_methods, n_jobs=n_jobs
             )
@@ -304,8 +297,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def get_predictions(
         self,
         *,
-        data_source: Literal["train", "test"],
+        data_source: Literal["train", "test", "X_y"],
         response_method: Literal["predict", "predict_proba", "decision_function"],
+        X: Optional[ArrayLike] = None,
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
         """Get estimator's predictions.
@@ -320,9 +314,15 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the train set provided when creating the report and the target
+              variable.
 
         response_method : {"predict", "predict_proba", "decision_function"}
             The response method to use.
+
+        X : array-like of shape (n_samples, n_features), optional
+            When `data_source` is "X_y", the input features on which to compute the
+            response method.
 
         pos_label : int, float, bool or str, default=None
             The positive class when it comes to binary classification. When
@@ -355,15 +355,16 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(50,), (50,)]
         """
-        if data_source not in ("train", "test"):
+        if data_source not in ("train", "test", "X_y"):
             raise ValueError(
                 f"Invalid data source: {data_source}. Valid data sources are "
-                "'train' and 'test'."
+                "'train', 'test' and 'X_y'."
             )
         return [
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,
+                X=X,
                 pos_label=pos_label,
             )
             for report in self.estimator_reports_
