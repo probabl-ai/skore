@@ -12,6 +12,7 @@ from numpy.typing import ArrayLike
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
+from skore.sklearn.utils import _SCORE_OR_LOSS_INFO
 from skore.utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
@@ -351,18 +352,22 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             for report in self.estimator_reports_
         ]
 
-    def plot_perf_against_time(
+    def pairwise_plot(
         self,
-        perf_metric: str,
+        perf_metric_x: str,
+        perf_metric_y: str,
         data_source: Literal["test", "train", "X_y"] = "test",
-        time_metric: Literal["fit", "predict"] = "predict",
+        pos_label: Optional[Any] = None,
     ):
-        """
-        Plot a given performance metric against a time metric.
+        """Plot a given performance metric against another.
 
         Parameters
         ----------
-        perf_metric : str
+        perf_metric_x : str
+            The performance metric to plot on the abscissa axis.
+
+        perf_metric_y : str
+            The performance metrics to plot on the ordinates axis.
 
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
@@ -371,11 +376,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        perf_metric : str
-
-        time_metric: {"fit", "predict"}, default = "predict"
-            The time metric to use in the plot.
-
+        pos_label : int, float, bool or str, default=None
+            The positive class when it comes to binary classification. When
+            `response_method="predict_proba"`, it will select the column corresponding
+            to the positive class. When `response_method="decision_function"`, it will
+            negate the decision function if `pos_label` is different from
+            `estimator.classes_[1]`.
 
         Returns
         -------
@@ -403,23 +409,21 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         # - turn into display
         # - change name to sth like `pairwise_plot`
 
-        if time_metric == "fit":
-            x_label = "Fit time"
-        elif time_metric == "predict":
-            x_label = "Predict time"
+        x_label = _SCORE_OR_LOSS_INFO[perf_metric_x].get("name", perf_metric_x)
+        y_label = _SCORE_OR_LOSS_INFO[perf_metric_y].get("name", perf_metric_y)
 
-        scatter_data = self.metrics.report_metrics().T.reset_index()
+        scatter_data = self.metrics.report_metrics(pos_label=pos_label).T.reset_index()
         scatter_data.plot(
             kind="scatter",
             x=x_label,
-            y="Brier score",
+            y=y_label,
             title="Performance vs Time (s)",
         )
 
         # Add labels to the points with a small offset
         text = scatter_data["Estimator"]
         x = scatter_data[x_label]
-        y = scatter_data["Brier score"]
+        y = scatter_data[y_label]
         for label, x_coord, y_coord in zip(text, x, y):
             plt.annotate(
                 label,

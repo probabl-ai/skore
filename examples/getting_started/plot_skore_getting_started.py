@@ -201,7 +201,7 @@ comparator.metrics.report_metrics(pos_label=1)
 
 # %%
 # We can highlight the performance metric gain against timings
-comparator.plot_perf_against_time(perf_metric="Brier score")
+comparator.pairwise_plot(perf_metric_x="brier_score", perf_metric_y="fit_time")
 
 # %%
 scatter_data = comparator.metrics.report_metrics().T.reset_index()
