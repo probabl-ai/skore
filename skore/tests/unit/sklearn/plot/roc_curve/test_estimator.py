@@ -1,0 +1,268 @@
+import matplotlib as mpl
+import numpy as np
+import pytest
+from skore import EstimatorReport
+from skore.sklearn._plot import RocCurveDisplay
+from skore.sklearn._plot.utils import sample_mpl_colormap
+
+from .conftest import get_roc_auc
+
+
+def test_roc_curve_display_binary_classification(pyplot, binary_classification_data):
+    """Check the attributes and default plotting behaviour of the ROC curve plot with
+    binary data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    assert isinstance(display, RocCurveDisplay)
+
+    # check the structure of the attributes
+    assert list(display.roc_curve.columns) == [
+        "estimator_name",
+        "split_index",
+        "label",
+        "threshold",
+        "fpr",
+        "tpr",
+    ]
+    assert list(display.roc_auc.columns) == [
+        "estimator_name",
+        "split_index",
+        "label",
+        "roc_auc",
+    ]
+
+    assert (
+        list(display.roc_curve["label"].unique())
+        == list(display.roc_auc["label"].unique())
+        == [estimator.classes_[1]]
+        == [display.pos_label]
+    )
+
+    display.plot()
+    assert hasattr(display, "ax_")
+    assert hasattr(display, "figure_")
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == 1
+    roc_curve_mpl = display.lines_[0]
+    assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
+    assert roc_curve_mpl.get_label() == f"Test set (AUC = {get_roc_auc(display):0.2f})"
+    assert roc_curve_mpl.get_color() == "#1f77b4"  # tab:blue in hex
+
+    assert isinstance(display.chance_level_, mpl.lines.Line2D)
+    assert display.chance_level_.get_label() == "Chance level (AUC = 0.5)"
+    assert display.chance_level_.get_color() == "k"
+
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    legend = display.ax_.get_legend()
+    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert len(legend.get_texts()) == 1 + 1
+
+    assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
+    assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
+    assert display.ax_.get_adjustable() == "box"
+    assert display.ax_.get_aspect() in ("equal", 1.0)
+    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+
+
+def test_roc_curve_display_multiclass_classification(
+    pyplot, multiclass_classification_data
+):
+    """Check the attributes and default plotting behaviour of the ROC curve plot with
+    multiclass data."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    assert isinstance(display, RocCurveDisplay)
+
+    # check the structure of the attributes
+    assert list(display.roc_curve.columns) == [
+        "estimator_name",
+        "split_index",
+        "label",
+        "threshold",
+        "fpr",
+        "tpr",
+    ]
+    assert list(display.roc_auc.columns) == [
+        "estimator_name",
+        "split_index",
+        "label",
+        "roc_auc",
+    ]
+
+    np.testing.assert_array_equal(
+        display.roc_curve["label"].unique(), estimator.classes_
+    )
+    np.testing.assert_array_equal(display.roc_auc["label"].unique(), estimator.classes_)
+
+    display.plot()
+    assert hasattr(display, "ax_")
+    assert hasattr(display, "figure_")
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == len(estimator.classes_)
+    default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
+    for class_label, expected_color in zip(estimator.classes_, default_colors):
+        roc_curve_mpl = display.lines_[class_label]
+        assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
+        roc_auc_class = get_roc_auc(display, label=class_label)
+        assert roc_curve_mpl.get_label() == (
+            f"{str(class_label).title()} - test set (AUC = {roc_auc_class:0.2f})"
+        )
+        assert roc_curve_mpl.get_color() == expected_color
+
+    assert isinstance(display.chance_level_, mpl.lines.Line2D)
+    assert display.chance_level_.get_label() == "Chance level (AUC = 0.5)"
+    assert display.chance_level_.get_color() == "k"
+
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    legend = display.ax_.get_legend()
+    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert len(legend.get_texts()) == len(estimator.classes_) + 1
+
+    assert display.ax_.get_xlabel() == "False Positive Rate"
+    assert display.ax_.get_ylabel() == "True Positive Rate"
+    assert display.ax_.get_adjustable() == "box"
+    assert display.ax_.get_aspect() in ("equal", 1.0)
+    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+
+
+def test_roc_curve_display_data_source_binary_classification(
+    pyplot, binary_classification_data
+):
+    """Check that we can pass the `data_source` argument to the ROC curve plot."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc(data_source="train")
+    display.plot()
+    assert (
+        display.lines_[0].get_label()
+        == f"Train set (AUC = {get_roc_auc(display):0.2f})"
+    )
+
+    display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
+    display.plot()
+    assert display.lines_[0].get_label() == f"AUC = {get_roc_auc(display):0.2f}"
+
+
+def test_roc_curve_display_data_source_multiclass_classification(
+    pyplot, multiclass_classification_data
+):
+    """Check that we can pass the `data_source` argument to the ROC curve plot."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc(data_source="train")
+    display.plot()
+    for class_label in estimator.classes_:
+        assert display.lines_[class_label].get_label() == (
+            f"{str(class_label).title()} - train set "
+            f"(AUC = {get_roc_auc(display, label=class_label):0.2f})"
+        )
+
+    display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
+    display.plot()
+    for class_label in estimator.classes_:
+        assert display.lines_[class_label].get_label() == (
+            f"{str(class_label).title()} - "
+            f"AUC = {get_roc_auc(display, label=class_label):0.2f}"
+        )
+
+
+def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
+    pyplot, binary_classification_data, multiclass_classification_data
+):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `roc_curve_kwargs` argument."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    err_msg = (
+        "You intend to plot a single curve. We expect `roc_curve_kwargs` to be a "
+        "dictionary."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(roc_curve_kwargs=[{}, {}])
+
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    err_msg = "You intend to plot multiple curves."
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(roc_curve_kwargs=[{}, {}])
+
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(roc_curve_kwargs={})
+
+
+@pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}], {"color": "red"}])
+def test_roc_curve_display_roc_curve_kwargs_binary_classification(
+    pyplot, binary_classification_data, roc_curve_kwargs
+):
+    """Check that we can pass keyword arguments to the ROC curve plot."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    display.plot(
+        roc_curve_kwargs=roc_curve_kwargs, chance_level_kwargs={"color": "blue"}
+    )
+
+    assert display.lines_[0].get_color() == "red"
+    assert display.chance_level_.get_color() == "blue"
+
+    # check the `.style` display setter
+    display.plot()  # default style
+    assert display.lines_[0].get_color() == "#1f77b4"
+    assert display.chance_level_.get_color() == "k"
+    display.set_style(
+        roc_curve_kwargs=roc_curve_kwargs, chance_level_kwargs={"color": "blue"}
+    )
+    display.plot()
+    assert display.lines_[0].get_color() == "red"
+    assert display.chance_level_.get_color() == "blue"
+    # overwrite the style that was set above
+    display.plot(
+        roc_curve_kwargs={"color": "#1f77b4"}, chance_level_kwargs={"color": "red"}
+    )
+    assert display.lines_[0].get_color() == "#1f77b4"
+    assert display.chance_level_.get_color() == "red"
+
+
+def test_roc_curve_display_roc_curve_kwargs_multiclass_classification(
+    pyplot, multiclass_classification_data
+):
+    """Check that we can pass keyword arguments to the ROC curve plot for
+    multiclass classification."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    display.plot(
+        roc_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")],
+        chance_level_kwargs={"color": "blue"},
+    )
+    assert display.lines_[0].get_color() == "red"
+    assert display.lines_[1].get_color() == "blue"
+    assert display.lines_[2].get_color() == "green"
+    assert display.chance_level_.get_color() == "blue"
+
+    display.plot(plot_chance_level=False)
+    assert display.chance_level_ is None
+
+    display.plot(despine=False)
+    assert display.ax_.spines["top"].get_visible()
+    assert display.ax_.spines["right"].get_visible()
