@@ -28,11 +28,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     or several :class:`~skore.CrossValidationReport` instances.
 
     .. caution::
-        Reports passed to `ComparisonReport` are not copied. If you pass a report to
-        `ComparisonReport`, and then modify the report outside later, it will affect
-        the report stored inside the `ComparisonReport` as well, which can lead to
-        inconsistent results. For this reason, modifying reports after creation is
-        strongly discouraged.
+        Reports passed to `ComparisonReport` are not copied. If you pass a report
+        to `ComparisonReport`, and then modify the report outside later, it will
+        affect the report stored inside the `ComparisonReport` as well, which can
+        lead to inconsistent results. For this reason, modifying reports after
+        creation is strongly discouraged.
 
     Parameters
     ----------
@@ -50,7 +50,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Attributes
     ----------
-    reports_ : List of :class:`~skore.EstimatorReport` instances or
+    reports_ : list of :class:`~skore.EstimatorReport` instances or
         :class:`~skore.CrossValidationReport` instances.
         The compared reports.
 
