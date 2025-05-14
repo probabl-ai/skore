@@ -49,10 +49,8 @@ name: sphinx
 on:
   pull_request:
   push:
-    branches:
-      - main
-  release:
-    types: [released]
+    branches: [main]
+    tags: ['skore/[0-9]+.[0-9]+.[0-9]+']
   merge_group:
     types: [checks_requested]
 
@@ -88,7 +86,7 @@ jobs:
   sphinx-version:
     runs-on: ubuntu-latest
     needs: [sphinx-changes]
-    if: ${{ (contains(fromJSON('["push", "release"]'), github.event_name)) || (needs.sphinx-changes.outputs.changes == 'true') }}
+    if: ${{ (github.event_name == 'push') || (needs.sphinx-changes.outputs.changes == 'true') }}
     outputs:
       SPHINX_VERSION: ${{ steps.sphinx-version.outputs.SPHINX_VERSION }}
       SPHINX_RELEASE: ${{ steps.sphinx-version.outputs.SPHINX_RELEASE }}
@@ -98,7 +96,7 @@ jobs:
         run: |
           set -u
 
-          if [[ "${GITHUB_EVENT_NAME}" != "release" ]]; then
+          if [[ "${GITHUB_EVENT_NAME}" != "push"  ]] || [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
               echo "SPHINX_VERSION=dev" >> "${GITHUB_OUTPUT}"
               echo "SPHINX_RELEASE=0.0.0+dev" >> "${GITHUB_OUTPUT}"
               exit 0
@@ -106,15 +104,15 @@ jobs:
 
           set -e
 
-          if [[ "${GITHUB_REF_NAME}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)?$ ]]; then
-              echo "SPHINX_VERSION=${BASH_REMATCH[1]}.${BASH_REMATCH[2]}" >> "${GITHUB_OUTPUT}"
-              echo "SPHINX_RELEASE=${GITHUB_REF_NAME}" >> "${GITHUB_OUTPUT}"
+          if [[ "${GITHUB_REF_NAME}" =~ ^skore/((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$ ]]; then
+              echo "SPHINX_VERSION=${BASH_REMATCH[2]}.${BASH_REMATCH[3]}" >> "${GITHUB_OUTPUT}"
+              echo "SPHINX_RELEASE=${BASH_REMATCH[1]}" >> "${GITHUB_OUTPUT}"
           fi
 
   sphinx-build:
     runs-on: ubuntu-latest
     needs: [sphinx-version]
-    if: ${{ (contains(fromJSON('["push", "release"]'), github.event_name)) || (needs.sphinx-changes.outputs.changes == 'true') }}
+    if: ${{ (github.event_name == 'push') || (needs.sphinx-changes.outputs.changes == 'true') }}
     permissions:
       contents: read
     steps:
@@ -137,7 +135,7 @@ jobs:
           path: sphinx/build/html/
 
   sphinx-deploy-html:
-    if: ${{ (contains(fromJSON('["push", "release"]'), github.event_name)) }}
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     needs: [sphinx-version, sphinx-build]
     permissions:
@@ -163,7 +161,7 @@ jobs:
           DESTINATION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}/
 
   sphinx-deploy-root-files:
-    if: ${{ github.event_name == 'release' }}
+    if: ${{ (github.event_name == 'push') && (github.ref_type == 'tag') }}
     runs-on: ubuntu-latest
     needs: [sphinx-version, sphinx-build, sphinx-deploy-html]
     permissions:
