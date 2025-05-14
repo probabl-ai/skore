@@ -34,26 +34,17 @@ def test_precision_recall_curve_display_comparison_report_binary_classification(
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
-    # check the structure of the attributes
-    for attr_name in ("precision", "recall", "average_precision"):
-        assert isinstance(getattr(display, attr_name), dict)
-        assert len(getattr(display, attr_name)) == 1
-
-        attr = getattr(display, attr_name)
-        assert list(attr.keys()) == [estimator.classes_[1]]
-        assert list(attr.keys()) == [display.pos_label]
-        assert isinstance(attr[estimator.classes_[1]], list)
-        assert len(attr[estimator.classes_[1]]) == 2
-
     display.plot()
     expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for split_idx, line in enumerate(display.lines_):
+    for idx, (estimator_name, line) in enumerate(
+        zip(report.report_names_, display.lines_)
+    ):
         assert isinstance(line, mpl.lines.Line2D)
-        assert line.get_label() == (
-            f"{report.report_names_[split_idx]} "
-            f"(AP = {display.average_precision[display.pos_label][split_idx]:0.2f})"
-        )
-        assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
+        average_precision = display.average_precision.query(
+            f"label == {display.pos_label} & estimator_name == '{estimator_name}'"
+        )["average_precision"].iloc[0]
+        assert line.get_label() == f"{estimator_name} (AP = {average_precision:0.2f})"
+        assert mpl.colors.to_rgba(line.get_color()) == expected_colors[idx]
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
@@ -95,32 +86,24 @@ def test_precision_recall_curve_display_comparison_report_multiclass_classificat
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
-    # check the structure of the attributes
     class_labels = report.reports_[0].estimator_.classes_
-    for attr_name in ("precision", "recall", "average_precision"):
-        assert isinstance(getattr(display, attr_name), dict)
-        assert len(getattr(display, attr_name)) == len(class_labels)
-
-        attr = getattr(display, attr_name)
-        for class_label in class_labels:
-            assert isinstance(attr[class_label], list)
-            assert len(attr[class_label]) == 2
 
     display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * 2
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for estimator_idx, expected_color in zip(
-        range(len(report.report_names_)), default_colors
+    for idx, (estimator_name, expected_color) in enumerate(
+        zip(report.report_names_, default_colors)
     ):
         for class_label_idx, class_label in enumerate(class_labels):
-            roc_curve_mpl = display.lines_[
-                estimator_idx * len(class_labels) + class_label_idx
-            ]
+            roc_curve_mpl = display.lines_[idx * len(class_labels) + class_label_idx]
             assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
+            average_precision = display.average_precision.query(
+                f"label == {class_label} & estimator_name == '{estimator_name}'"
+            )["average_precision"].iloc[0]
             assert roc_curve_mpl.get_label() == (
-                f"{report.report_names_[estimator_idx]} - {str(class_label).title()} "
-                f"(AP = {display.average_precision[class_label][estimator_idx]:0.2f})"
+                f"{estimator_name} - {str(class_label).title()} "
+                f"(AP = {average_precision:0.2f})"
             )
             assert roc_curve_mpl.get_color() == expected_color
 
