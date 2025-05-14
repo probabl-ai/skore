@@ -333,7 +333,7 @@ def _get_cached_response_values(
 ) -> list[tuple[tuple[Any, ...], Any, bool]]:
     """Compute or load from local cache the response values.
 
-    Be aware that the predictions are not loaded from the cache, they will not be added
+    Be aware that the predictions will be loaded from the cache if present, but they will not be added
     to it. The reason is that we want to be able to run this function in parallel
     settings in a thread-safe manner. The update should be done outside of this
     function.
