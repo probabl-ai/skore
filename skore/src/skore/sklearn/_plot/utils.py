@@ -6,6 +6,7 @@ from typing import Any, Optional, Union
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
+from pandas import DataFrame
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -353,3 +354,20 @@ def sample_mpl_colormap(
     """
     indices = np.linspace(0, 1, n)
     return [cmap(i) for i in indices]
+
+
+def _filter_by(
+    df,
+    label: Optional[PositiveLabel] = None,
+    split_index: Optional[int] = None,
+    estimator_name: Optional[str] = None,
+) -> DataFrame:
+    noop_filter = df.iloc[:, 0].map(lambda _: True)
+    label_filter = (df["label"] == label) if label is not None else True
+    split_number_filter = (
+        (df["split_index"] == split_index) if split_index is not None else True
+    )
+    estimator_name_filter = (
+        (df["estimator_name"] == estimator_name) if estimator_name is not None else True
+    )
+    return df[noop_filter & label_filter & split_number_filter & estimator_name_filter]
