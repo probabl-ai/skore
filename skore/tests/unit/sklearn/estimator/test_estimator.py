@@ -1344,18 +1344,11 @@ def test_estimator_report_average_return_float(binary_classification_data):
         assert isinstance(result, float)
 
 
-def test_estimator_report_metric_with_neg_metrics():
+def test_estimator_report_metric_with_neg_metrics(binary_classification_data):
     """Check that scikit-learn metrics with 'neg_' prefix are handled correctly."""
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        *load_breast_cancer(return_X_y=True), random_state=0
-    )
-    classifier = LogisticRegression(max_iter=10_000)
-
+    classifier, X_test, y_test = binary_classification_data
     report = EstimatorReport(
         classifier,
-        X_train=X_train,
-        y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
@@ -1409,7 +1402,9 @@ def test_estimator_report_with_sklearn_scoring_strings():
     favorability = result_multi.loc["Log Loss"]["Favorability"]
     assert favorability == "(↘︎)"
 
-    # Regression test case
+
+def test_estimator_report_with_sklearn_scoring_strings_regression():
+    """Test scikit-learn regression metric strings in report_metrics."""
     X_reg, y_reg = make_regression(random_state=42)
     X_train_reg, X_test_reg, y_train_reg, y_test_reg = train_test_split(
         X_reg, y_reg, random_state=42
@@ -1431,8 +1426,8 @@ def test_estimator_report_with_sklearn_scoring_strings():
 
     assert "Mean Squared Error" in reg_result.index.get_level_values(0)
     assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
-    assert "R²" in reg_result.index.get_level_values(0)  # Changed from "R2" to "R²"
+    assert "R²" in reg_result.index.get_level_values(0)
 
     # Check favorability
     assert reg_result.loc["Mean Squared Error"]["Favorability"] == "(↘︎)"
-    assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"  # Changed from "R2" to "R²"
+    assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
