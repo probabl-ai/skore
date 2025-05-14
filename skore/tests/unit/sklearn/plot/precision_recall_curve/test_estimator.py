@@ -70,8 +70,7 @@ def test_precision_recall_curve_display_multiclass_classification(
             "average_precision"
         ].iloc[0]
         assert precision_recall_curve_mpl.get_label() == (
-            f"{str(class_label).title()} - test set "
-            f"(AP = {average_precision :0.2f})"
+            f"{str(class_label).title()} - test set (AP = {average_precision:0.2f})"
         )
         assert precision_recall_curve_mpl.get_color() == expected_color
 
@@ -215,8 +214,7 @@ def test_precision_recall_curve_display_data_source_multiclass_classification(
             "average_precision"
         ].iloc[0]
         assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} - train set "
-            f"(AP = {average_precision:0.2f})"
+            f"{str(class_label).title()} - train set (AP = {average_precision:0.2f})"
         )
 
     display = report.metrics.precision_recall(data_source="X_y", X=X_train, y=y_train)
@@ -226,5 +224,5 @@ def test_precision_recall_curve_display_data_source_multiclass_classification(
             "average_precision"
         ].iloc[0]
         assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} - " f"AP = {average_precision:0.2f}"
+            f"{str(class_label).title()} - AP = {average_precision:0.2f}"
         )
