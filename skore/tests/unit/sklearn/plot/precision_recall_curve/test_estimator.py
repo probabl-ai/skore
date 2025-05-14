@@ -18,17 +18,6 @@ def test_precision_recall_curve_display_binary_classification(
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
-    # check the structure of the attributes
-    for attr_name in ("precision", "recall", "average_precision"):
-        assert isinstance(getattr(display, attr_name), dict)
-        assert len(getattr(display, attr_name)) == 1
-
-        attr = getattr(display, attr_name)
-        assert list(attr.keys()) == [estimator.classes_[1]]
-        assert list(attr.keys()) == [display.pos_label]
-        assert isinstance(attr[estimator.classes_[1]], list)
-        assert len(attr[estimator.classes_[1]]) == 1
-
     display.plot()
     assert hasattr(display, "ax_")
     assert hasattr(display, "figure_")
@@ -36,9 +25,12 @@ def test_precision_recall_curve_display_binary_classification(
     assert len(display.lines_) == 1
     precision_recall_curve_mpl = display.lines_[0]
     assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
+    average_precision = display.average_precision.query(
+        f"label == {estimator.classes_[1]}"
+    )["average_precision"].iloc[0]
     assert (
         precision_recall_curve_mpl.get_label()
-        == f"Test set (AP = {display.average_precision[estimator.classes_[1]][0]:0.2f})"
+        == f"Test set (AP = {average_precision:0.2f})"
     )
     assert precision_recall_curve_mpl.get_color() == "#1f77b4"  # tab:blue in hex
 
@@ -67,16 +59,6 @@ def test_precision_recall_curve_display_multiclass_classification(
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
-    # check the structure of the attributes
-    for attr_name in ("precision", "recall", "average_precision"):
-        assert isinstance(getattr(display, attr_name), dict)
-        assert len(getattr(display, attr_name)) == len(estimator.classes_)
-
-        attr = getattr(display, attr_name)
-        for class_label in estimator.classes_:
-            assert isinstance(attr[class_label], list)
-            assert len(attr[class_label]) == 1
-
     display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(estimator.classes_)
@@ -84,9 +66,11 @@ def test_precision_recall_curve_display_multiclass_classification(
     for class_label, expected_color in zip(estimator.classes_, default_colors):
         precision_recall_curve_mpl = display.lines_[class_label]
         assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
+        average_precision = display.average_precision.query(f"label == {class_label}")[
+            "average_precision"
+        ].iloc[0]
         assert precision_recall_curve_mpl.get_label() == (
-            f"{str(class_label).title()} - test set "
-            f"(AP = {display.average_precision[class_label][0]:0.2f})"
+            f"{str(class_label).title()} - test set (AP = {average_precision:0.2f})"
         )
         assert precision_recall_curve_mpl.get_color() == expected_color
 
@@ -226,15 +210,19 @@ def test_precision_recall_curve_display_data_source_multiclass_classification(
     display = report.metrics.precision_recall(data_source="train")
     display.plot()
     for class_label in estimator.classes_:
+        average_precision = display.average_precision.query(f"label == {class_label}")[
+            "average_precision"
+        ].iloc[0]
         assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} - train set "
-            f"(AP = {display.average_precision[class_label][0]:0.2f})"
+            f"{str(class_label).title()} - train set (AP = {average_precision:0.2f})"
         )
 
     display = report.metrics.precision_recall(data_source="X_y", X=X_train, y=y_train)
     display.plot()
     for class_label in estimator.classes_:
+        average_precision = display.average_precision.query(f"label == {class_label}")[
+            "average_precision"
+        ].iloc[0]
         assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} - "
-            f"AP = {display.average_precision[class_label][0]:0.2f}"
+            f"{str(class_label).title()} - AP = {average_precision:0.2f}"
         )
