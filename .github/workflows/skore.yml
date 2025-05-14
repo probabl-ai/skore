@@ -103,7 +103,6 @@ jobs:
           - os: "ubuntu-latest"
             python: "3.12"
             scikit-learn: "1.6"
-            coverage: true
           - os: "ubuntu-latest"
             python: "3.13"
             scikit-learn: "1.5"
