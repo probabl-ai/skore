@@ -136,6 +136,7 @@ When adding a new feature to skore, please also follow these steps:
 
     .. code-block:: bash
         python <example_file>
+
 #.  **Update or add examples if needed**
 
     -   For a minor feature, adjust one existing example to demonstrate your change.
