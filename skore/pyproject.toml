@@ -2,7 +2,7 @@
 name = "skore"
 description = "the scikit-learn sidekick"
 dynamic = ["license", "readme", "version"]
-requires-python = ">=3.9, <3.13"
+requires-python = ">=3.9, <3.14"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 classifiers = [
   "Intended Audience :: Science/Research",
@@ -21,6 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
   "diskcache",
