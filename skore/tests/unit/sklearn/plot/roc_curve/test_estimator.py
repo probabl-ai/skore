@@ -8,7 +8,7 @@ from skore.sklearn._plot.utils import sample_mpl_colormap
 from .conftest import get_roc_auc
 
 
-def test_roc_curve_display_binary_classification(pyplot, binary_classification_data):
+def test_binary_classification(pyplot, binary_classification_data):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     binary data."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -67,9 +67,7 @@ def test_roc_curve_display_binary_classification(pyplot, binary_classification_d
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_roc_curve_display_multiclass_classification(
-    pyplot, multiclass_classification_data
-):
+def test_multiclass_classification(pyplot, multiclass_classification_data):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     multiclass data."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
@@ -131,9 +129,7 @@ def test_roc_curve_display_multiclass_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_roc_curve_display_data_source_binary_classification(
-    pyplot, binary_classification_data
-):
+def test_data_source_binary_classification(pyplot, binary_classification_data):
     """Check that we can pass the `data_source` argument to the ROC curve plot."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     report = EstimatorReport(
@@ -151,9 +147,7 @@ def test_roc_curve_display_data_source_binary_classification(
     assert display.lines_[0].get_label() == f"AUC = {get_roc_auc(display):0.2f}"
 
 
-def test_roc_curve_display_data_source_multiclass_classification(
-    pyplot, multiclass_classification_data
-):
+def test_data_source_multiclass_classification(pyplot, multiclass_classification_data):
     """Check that we can pass the `data_source` argument to the ROC curve plot."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
@@ -176,7 +170,7 @@ def test_roc_curve_display_data_source_multiclass_classification(
         )
 
 
-def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
+def test_plot_error_wrong_roc_curve_kwargs(
     pyplot, binary_classification_data, multiclass_classification_data
 ):
     """Check that we raise a proper error message when passing an inappropriate
@@ -207,7 +201,7 @@ def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
 
 
 @pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}], {"color": "red"}])
-def test_roc_curve_display_roc_curve_kwargs_binary_classification(
+def test_roc_curve_kwargs_binary_classification(
     pyplot, binary_classification_data, roc_curve_kwargs
 ):
     """Check that we can pass keyword arguments to the ROC curve plot."""
@@ -241,7 +235,7 @@ def test_roc_curve_display_roc_curve_kwargs_binary_classification(
     assert display.chance_level_.get_color() == "red"
 
 
-def test_roc_curve_display_roc_curve_kwargs_multiclass_classification(
+def test_roc_curve_kwargs_multiclass_classification(
     pyplot, multiclass_classification_data
 ):
     """Check that we can pass keyword arguments to the ROC curve plot for

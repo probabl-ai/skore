@@ -8,9 +8,7 @@ from skore.sklearn._plot.utils import sample_mpl_colormap
 from .conftest import get_roc_auc
 
 
-def test_roc_curve_display_comparison_report_binary_classification(
-    pyplot, binary_classification_data
-):
+def test_binary_classification(pyplot, binary_classification_data):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     binary data."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -87,9 +85,7 @@ def test_roc_curve_display_comparison_report_binary_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_roc_curve_display_comparison_report_multiclass_classification(
-    pyplot, multiclass_classification_data
-):
+def test_multiclass_classification(pyplot, multiclass_classification_data):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     multiclass data."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
@@ -177,9 +173,7 @@ def test_roc_curve_display_comparison_report_multiclass_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_roc_curve_display_comparison_report_binary_classification_kwargs(
-    pyplot, binary_classification_data
-):
+def test_binary_classification_kwargs(pyplot, binary_classification_data):
     """Check that we can pass keyword arguments to the ROC curve plot for
     cross-validation."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -214,7 +208,7 @@ def test_roc_curve_display_comparison_report_binary_classification_kwargs(
     ["binary_classification_data", "multiclass_classification_data"],
 )
 @pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}], "unknown"])
-def test_roc_curve_display_comparison_multiple_roc_curve_kwargs_error(
+def test_multiple_roc_curve_kwargs_error(
     pyplot, fixture_name, request, roc_curve_kwargs
 ):
     """Check that we raise a proper error message when passing an inappropriate

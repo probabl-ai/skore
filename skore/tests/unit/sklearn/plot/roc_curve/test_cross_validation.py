@@ -9,7 +9,7 @@ from .conftest import get_roc_auc
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
-def test_roc_curve_display_cross_validation_binary_classification(
+def test_binary_classification(
     pyplot, binary_classification_data_no_split, data_source
 ):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
@@ -87,7 +87,7 @@ def test_roc_curve_display_cross_validation_binary_classification(
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
-def test_roc_curve_display_cross_validation_multiclass_classification(
+def test_multiclass_classification(
     pyplot, multiclass_classification_data_no_split, data_source
 ):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
@@ -174,7 +174,7 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
         {"color": "red"},
     ],
 )
-def test_roc_curve_display_cross_validation_binary_classification_kwargs(
+def test_binary_classification_kwargs(
     pyplot, binary_classification_data_no_split, roc_curve_kwargs
 ):
     """Check that we can pass keyword arguments to the ROC curve plot for
@@ -198,7 +198,7 @@ def test_roc_curve_display_cross_validation_binary_classification_kwargs(
     ["binary_classification_data_no_split", "multiclass_classification_data_no_split"],
 )
 @pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}], "unknown"])
-def test_roc_curve_display_cross_validation_multiple_roc_curve_kwargs_error(
+def test_multiple_roc_curve_kwargs_error(
     pyplot, fixture_name, request, roc_curve_kwargs
 ):
     """Check that we raise a proper error message when passing an inappropriate
