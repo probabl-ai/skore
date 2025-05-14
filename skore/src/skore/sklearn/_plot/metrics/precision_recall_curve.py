@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colormaps
 from matplotlib.axes import Axes
+from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
 from sklearn.metrics import average_precision_score, precision_recall_curve
@@ -24,6 +25,23 @@ from skore.sklearn._plot.utils import (
 from skore.sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 
+def _set_axis_labels(ax: Axes, info_pos_label: Union[str, None]) -> None:
+    """Add axis labels."""
+    xlabel = "Recall"
+    ylabel = "Precision"
+    if info_pos_label:
+        xlabel += info_pos_label
+        ylabel += info_pos_label
+
+    ax.set(
+        xlabel=xlabel,
+        xlim=(-0.01, 1.01),
+        ylabel=ylabel,
+        ylim=(-0.01, 1.01),
+        aspect="equal",
+    )
+
+
 class PrecisionRecallCurveDisplay(
     StyleDisplayMixin, HelpDisplayMixin, _ClassifierCurveDisplayMixin
 ):
@@ -32,7 +50,6 @@ class PrecisionRecallCurveDisplay(
     An instance of this class is should created by
     `EstimatorReport.metrics.precision_recall()`. You should not create an
     instance of this class directly.
-
 
     Parameters
     ----------
@@ -71,14 +88,14 @@ class PrecisionRecallCurveDisplay(
 
     Attributes
     ----------
-    ax_ : matplotlib Axes
-        Axes with precision recall curve.
+    ax_ : matplotlib axes or array of axes
+        The axes on which the precision-recall curve is plotted.
 
-    figure_ : matplotlib Figure
-        Figure containing the curve.
+    figure_ : matplotlib figure
+        The figure on which the precision-recall curve is plotted.
 
-    lines_ : list of matplotlib Artist
-        Precision recall curve.
+    lines_ : list of matplotlib lines or list of matplotlib LineCollections
+        The lines of the precision-recall curve.
 
     Examples
     --------
@@ -361,7 +378,7 @@ class PrecisionRecallCurveDisplay(
             String containing positive label information for binary classification,
             None for multiclass.
         """
-        lines: list[Line2D] = []
+        lines: list[LineCollection] = []
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if self.ml_task == "binary-classification":
@@ -435,6 +452,144 @@ class PrecisionRecallCurveDisplay(
 
         return self.ax_, lines, info_pos_label
 
+    def _plot_comparison_cross_validation(
+        self,
+        *,
+        estimator_names: list[str],
+        pr_curve_kwargs: list[dict[str, Any]],
+    ) -> tuple[Axes, list[Line2D], Union[str, None]]:
+        """Plot precision-recall curve of several estimators.
+
+        Parameters
+        ----------
+        estimator_names : list of str
+            The names of the estimators.
+
+        pr_curve_kwargs : list of dict
+            List of dictionaries containing keyword arguments to customize the
+            precision-recall curves. The length of the list should match the number of
+            curves to plot.
+
+        Returns
+        -------
+        ax : matplotlib.axes.Axes
+            The axes with the precision-recall curves plotted.
+
+        lines : list of matplotlib.lines.Line2D
+            The plotted precision-recall curve lines.
+
+        info_pos_label : str or None
+            String containing positive label information for binary classification,
+            None for multiclass.
+        """
+        lines: list[Line2D] = []
+        line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
+        # TODO: see why drawstyle doesn't work
+        line_kwargs: dict[str, Any] = {}
+
+        if self.ml_task == "binary-classification":
+            labels = self.precision_recall["label"].unique()
+            colors = sample_mpl_colormap(
+                colormaps.get_cmap("tab10"),
+                10 if len(estimator_names) < 10 else len(estimator_names),
+            )
+            for report_idx, estimator_name in enumerate(estimator_names):
+                average_precision = self.average_precision.query(
+                    f"estimator_name == '{estimator_name}'"
+                )["average_precision"]
+
+                line_kwargs_validated = _validate_style_kwargs(
+                    line_kwargs, pr_curve_kwargs[report_idx]
+                )
+                line_kwargs_validated["label"] = (
+                    f"{estimator_name} "
+                    f"(AUC = {average_precision.mean():0.2f} "
+                    f"+/- {average_precision.std():0.2f})"
+                )
+                line_kwargs_validated["color"] = colors[report_idx]
+                line_kwargs_validated["alpha"] = 0.6
+
+                precision_recall = self.precision_recall.query(
+                    f"label == {self.pos_label} & estimator_name == '{estimator_name}'"
+                )
+                segments = [
+                    split_data[1]
+                    for split_data in precision_recall.groupby("split_index")[
+                        ["recall", "precision"]
+                    ]
+                ]
+
+                line_collection = LineCollection(segments, **line_kwargs_validated)
+                lines.append(line_collection)
+                self.ax_.add_collection(line_collection)
+
+            info_pos_label = (
+                f"\n(Positive label: {self.pos_label})"
+                if self.pos_label is not None
+                else ""
+            )
+
+            self.ax_.legend(
+                bbox_to_anchor=(1.02, 1),
+                title=f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set",
+            )
+
+        else:  # multiclass-classification
+            info_pos_label = None  # irrelevant for multiclass
+            labels = self.precision_recall["label"].unique()
+            colors = sample_mpl_colormap(
+                colormaps.get_cmap("tab10"),
+                10 if len(estimator_names) < 10 else len(estimator_names),
+            )
+
+            for est_idx, estimator_name in enumerate(estimator_names):
+                est_color = colors[est_idx]
+
+                for label_idx, label in enumerate(labels):
+                    average_precision = self.average_precision.query(
+                        f"label == {label} & estimator_name == '{estimator_name}'"
+                    )["average_precision"]
+
+                    line_kwargs_validated = _validate_style_kwargs(
+                        line_kwargs, pr_curve_kwargs[est_idx]
+                    )
+                    line_kwargs_validated["label"] = (
+                        f"{estimator_name} "
+                        f"(AUC = {average_precision.mean():0.2f} "
+                        f"+/- {average_precision.std():0.2f})"
+                    )
+                    line_kwargs_validated["color"] = est_color
+                    line_kwargs_validated["alpha"] = 0.6
+
+                    precision_recall = self.precision_recall.query(
+                        f"label == {label} & estimator_name == '{estimator_name}'"
+                    )
+
+                    segments = [
+                        split_data[1]
+                        for split_data in precision_recall.groupby("split_index")[
+                            ["recall", "precision"]
+                        ]
+                    ]
+
+                    line_collection = LineCollection(segments, **line_kwargs_validated)
+                    lines.append(line_collection)
+                    self.ax_[label_idx].add_collection(line_collection)
+
+                    info_pos_label = f"\n(Positive label: {label})"
+                    _set_axis_labels(self.ax_[label_idx], info_pos_label)
+
+            for ax in self.ax_:
+                ax.legend(
+                    loc="upper center",
+                    bbox_to_anchor=(0.5, 1.2),
+                    title=(
+                        f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set"
+                    ),
+                )
+
+        return self.ax_, lines, info_pos_label
+
     @StyleDisplayMixin.style_plot
     def plot(
         self,
@@ -484,7 +639,14 @@ class PrecisionRecallCurveDisplay(
         >>> display = report.metrics.precision_recall()
         >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
-        self.figure_, self.ax_ = plt.subplots()
+        if (
+            self.report_type == "comparison-cross-validation"
+            and self.ml_task == "multiclass-classification"
+        ):
+            n_labels = len(self.average_precision["label"].unique())
+            self.figure_, self.ax_ = plt.subplots(ncols=n_labels)
+        else:
+            self.figure_, self.ax_ = plt.subplots()
 
         if pr_curve_kwargs is None:
             pr_curve_kwargs = self._default_pr_curve_kwargs
@@ -531,7 +693,12 @@ class PrecisionRecallCurveDisplay(
                 pr_curve_kwargs=pr_curve_kwargs,
             )
         elif self.report_type == "comparison-cross-validation":
-            raise NotImplementedError()
+            self.ax_, self.lines_, info_pos_label = (
+                self._plot_comparison_cross_validation(
+                    estimator_names=self.estimator_names,
+                    pr_curve_kwargs=pr_curve_kwargs,
+                )
+            )
         else:
             raise ValueError(
                 "`report_type` should be one of 'estimator', 'cross-validation', "
@@ -539,22 +706,18 @@ class PrecisionRecallCurveDisplay(
                 f"Got '{self.report_type}' instead."
             )
 
-        xlabel = "Recall"
-        ylabel = "Precision"
-        if info_pos_label:
-            xlabel += info_pos_label
-            ylabel += info_pos_label
+        if (
+            self.report_type == "comparison-cross-validation"
+            and self.ml_task == "multiclass-classification"
+        ):
+            for ax in self.ax_:
+                if despine:
+                    _despine_matplotlib_axis(ax)
+        else:
+            _set_axis_labels(self.ax_, info_pos_label)
 
-        self.ax_.set(
-            xlabel=xlabel,
-            xlim=(-0.01, 1.01),
-            ylabel=ylabel,
-            ylim=(-0.01, 1.01),
-            aspect="equal",
-        )
-
-        if despine:
-            _despine_matplotlib_axis(self.ax_)
+            if despine:
+                _despine_matplotlib_axis(self.ax_)
 
     @classmethod
     def _compute_data_for_display(
