@@ -21,7 +21,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import PositiveLabel, SKLearnScorer
+from skore.sklearn.types import PositiveLabel, SKLearnScorer, YPlotData
 from skore.utils._accessor import (
     _check_all_checks,
     _check_estimator_has_method,
@@ -1641,8 +1641,20 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
 
             display = display_class._compute_data_for_display(
-                y_true=[y],
-                y_pred=[y_pred],
+                y_true=[
+                    YPlotData(
+                        estimator_name=self._parent.estimator_name_,
+                        split_index=None,
+                        y=y,
+                    )
+                ],
+                y_pred=[
+                    YPlotData(
+                        estimator_name=self._parent.estimator_name_,
+                        split_index=None,
+                        y=y_pred,
+                    )
+                ],
                 report_type="estimator",
                 estimators=[self._parent.estimator_],
                 estimator_names=[self._parent.estimator_name_],
