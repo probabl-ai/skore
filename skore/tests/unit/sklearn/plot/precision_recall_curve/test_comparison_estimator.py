@@ -1,0 +1,206 @@
+import matplotlib as mpl
+import pytest
+from sklearn.base import clone
+from skore import ComparisonReport, EstimatorReport
+from skore.sklearn._plot import PrecisionRecallCurveDisplay
+from skore.sklearn._plot.utils import sample_mpl_colormap
+
+
+def test_precision_recall_curve_display_comparison_report_binary_classification(
+    pyplot, binary_classification_data
+):
+    """Check the attributes and default plotting behaviour of the precision-recall curve
+    plot with binary data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.precision_recall()
+    assert isinstance(display, PrecisionRecallCurveDisplay)
+
+    # check the structure of the attributes
+    for attr_name in ("precision", "recall", "average_precision"):
+        assert isinstance(getattr(display, attr_name), dict)
+        assert len(getattr(display, attr_name)) == 1
+
+        attr = getattr(display, attr_name)
+        assert list(attr.keys()) == [estimator.classes_[1]]
+        assert list(attr.keys()) == [display.pos_label]
+        assert isinstance(attr[estimator.classes_[1]], list)
+        assert len(attr[estimator.classes_[1]]) == 2
+
+    display.plot()
+    expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
+    for split_idx, line in enumerate(display.lines_):
+        assert isinstance(line, mpl.lines.Line2D)
+        assert line.get_label() == (
+            f"{report.report_names_[split_idx]} "
+            f"(AP = {display.average_precision[display.pos_label][split_idx]:0.2f})"
+        )
+        assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
+
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    legend = display.ax_.get_legend()
+    assert legend.get_title().get_text() == r"Binary-Classification on $\bf{test}$ set"
+    assert len(legend.get_texts()) == 2
+
+    assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
+    assert display.ax_.get_ylabel() == "Precision\n(Positive label: 1)"
+    assert display.ax_.get_adjustable() == "box"
+    assert display.ax_.get_aspect() in ("equal", 1.0)
+    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+
+
+def test_precision_recall_curve_display_comparison_report_multiclass_classification(
+    pyplot, multiclass_classification_data
+):
+    """Check the attributes and default plotting behaviour of the precision-recall curve
+    plot with multiclass data."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.precision_recall()
+    assert isinstance(display, PrecisionRecallCurveDisplay)
+
+    # check the structure of the attributes
+    class_labels = report.reports_[0].estimator_.classes_
+    for attr_name in ("precision", "recall", "average_precision"):
+        assert isinstance(getattr(display, attr_name), dict)
+        assert len(getattr(display, attr_name)) == len(class_labels)
+
+        attr = getattr(display, attr_name)
+        for class_label in class_labels:
+            assert isinstance(attr[class_label], list)
+            assert len(attr[class_label]) == 2
+
+    display.plot()
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == len(class_labels) * 2
+    default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
+    for estimator_idx, expected_color in zip(
+        range(len(report.report_names_)), default_colors
+    ):
+        for class_label_idx, class_label in enumerate(class_labels):
+            roc_curve_mpl = display.lines_[
+                estimator_idx * len(class_labels) + class_label_idx
+            ]
+            assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
+            assert roc_curve_mpl.get_label() == (
+                f"{report.report_names_[estimator_idx]} - {str(class_label).title()} "
+                f"(AP = {display.average_precision[class_label][estimator_idx]:0.2f})"
+            )
+            assert roc_curve_mpl.get_color() == expected_color
+
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    legend = display.ax_.get_legend()
+    assert (
+        legend.get_title().get_text() == r"Multiclass-Classification on $\bf{test}$ set"
+    )
+    assert len(legend.get_texts()) == 6
+
+    assert display.ax_.get_xlabel() == "Recall"
+    assert display.ax_.get_ylabel() == "Precision"
+    assert display.ax_.get_adjustable() == "box"
+    assert display.ax_.get_aspect() in ("equal", 1.0)
+    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+
+
+def test_precision_recall_curve_display_comparison_report_binary_classification_kwargs(
+    pyplot, binary_classification_data
+):
+    """Check that we can pass keyword arguments to the precision-recall curve plot for
+    cross-validation."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.precision_recall()
+    pr_curve_kwargs = [{"color": "red"}, {"color": "blue"}]
+    display.plot(pr_curve_kwargs=pr_curve_kwargs)
+    assert display.lines_[0].get_color() == "red"
+    assert display.lines_[1].get_color() == "blue"
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["binary_classification_data", "multiclass_classification_data"],
+)
+@pytest.mark.parametrize("pr_curve_kwargs", [[{"color": "red"}], "unknown"])
+def test_pr_curve_display_comparison_multiple_pr_curve_kwargs_error(
+    pyplot, fixture_name, request, pr_curve_kwargs
+):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `pr_curve_kwargs` argument."""
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.precision_recall()
+    err_msg = "You intend to plot multiple curves"
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(pr_curve_kwargs=pr_curve_kwargs)
