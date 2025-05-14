@@ -16,7 +16,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import Aggregate, PositiveLabel
+from skore.sklearn.types import Aggregate, PositiveLabel, YPlotData
 from skore.utils._accessor import _check_estimator_report_has_method
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
@@ -1163,25 +1163,36 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
-            y_true, y_pred = [], []
-            for report in self._parent.estimator_reports_:
+            y_true: list[YPlotData] = []
+            y_pred: list[YPlotData] = []
+            for report_idx, report in enumerate(self._parent.estimator_reports_):
                 if data_source != "X_y":
                     # only retrieve data stored in the reports when we don't want to
                     # use an external common X and y
                     X, y, _ = report.metrics._get_X_y_and_data_source_hash(
                         data_source=data_source
                     )
-                y_true.append(y)
+                y_true.append(
+                    YPlotData(
+                        estimator_name=self._parent.estimator_name_,
+                        split_index=report_idx,
+                        y=y,
+                    )
+                )
                 y_pred.append(
-                    _get_cached_response_values(
-                        cache=report._cache,
-                        estimator_hash=report._hash,
-                        estimator=report._estimator,
-                        X=X,
-                        response_method=response_method,
-                        data_source=data_source,
-                        data_source_hash=data_source_hash,
-                        pos_label=display_kwargs.get("pos_label"),
+                    YPlotData(
+                        estimator_name=self._parent.estimator_name_,
+                        split_index=report_idx,
+                        y=_get_cached_response_values(
+                            cache=report._cache,
+                            estimator_hash=report._hash,
+                            estimator=report._estimator,
+                            X=X,
+                            response_method=response_method,
+                            data_source=data_source,
+                            data_source_hash=data_source_hash,
+                            pos_label=display_kwargs.get("pos_label"),
+                        ),
                     )
                 )
                 progress.update(main_task, advance=1, refresh=True)

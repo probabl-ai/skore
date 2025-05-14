@@ -115,6 +115,37 @@ We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/
 
 Skore is a company-driven project. We might provide extensive help to bring PRs to be merged to meet internal deadlines. In such cases, we will warn you in the PR.
 
+Adding a new feature
+--------------------
+
+When adding a new feature to skore, please also follow these steps:
+
+#.  **Include unit tests**
+
+    Add tests to verify that your feature has as few bugs as possible. Tests are in the `tests/` directory.
+
+#.  **Verify existing examples**
+
+    Check if your newly introduced changes do not impact existing examples.
+
+    You can run all examples with:
+
+    .. code-block:: bash
+        cd sphinx && make html
+
+    *Alternatively*, you can run individual examples with:
+
+    .. code-block:: bash
+        python <example_file>
+
+#.  **Update or add examples if needed**
+
+    -   For a minor feature, adjust one existing example to demonstrate your change.
+        Avoid creating many short example files.
+
+    -   For a major feature, add a single, concise example under `examples/` (or update
+        the gallery) that highlights the new capability.
+
 Tests
 -----
 
@@ -197,6 +228,7 @@ The examples are stored in the `examples` folder:
 - The file should start with a docstring giving the example title.
 - No example should require to have large files stored in this repository. For example, no dataset should be stored, it should be downloaded in the script.
 - When built (using `make html` for example), these examples will automatically be converted into RST files in the `sphinx/auto_examples` subfolder. This subfolder is listed in the gitignore and cannot be pushed.
+- If you are visualizing the examples on the online documentation and notice some typos or things that could be improved, make sure that you are viewing the `dev` version of the documentation which is the latest version (e.g. check that the typo has not already been solved for example).
 - New examples should use datasets that are sufficiently interesting yet reasonably sized (avoid synthetic datasets with near-perfect scores). As examples are executed during the documentation build, their runtime must remain short (ideally under a few minutes).
 
 Contributing to the README
