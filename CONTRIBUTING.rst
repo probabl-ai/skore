@@ -132,6 +132,7 @@ When adding a new feature to skore, please also follow these steps:
 
     .. code-block:: bash
         cd sphinx && make html
+
     *Alternatively*, you can run individual examples with:
 
     .. code-block:: bash
