@@ -54,7 +54,7 @@ def test_binary_classification(pyplot):
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == r"Binary-Classification on $\bf{test}$ set"
-    assert len(legend.get_texts()) == n_reports
+    assert len(legend.get_texts()) == n_reports + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
     assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
