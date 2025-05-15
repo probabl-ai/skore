@@ -60,7 +60,7 @@ def test_binary_classification(
     expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for split_idx, line in enumerate(display.lines_):
         assert isinstance(line, mpl.lines.Line2D)
-        roc_auc_split = get_roc_auc(display, label=pos_label, split_number=split_idx)
+        roc_auc_split = get_roc_auc(display, label=pos_label, split_index=split_idx)
         assert line.get_label() == (
             f"Estimator of fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
         )

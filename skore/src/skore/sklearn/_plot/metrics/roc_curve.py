@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from typing import Any, Literal, Optional, Union, cast
 
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib import colormaps
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
@@ -18,6 +17,7 @@ from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
     _ClassifierCurveDisplayMixin,
     _despine_matplotlib_axis,
+    _filter_by,
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
@@ -221,30 +221,38 @@ class RocCurveDisplay(
             )
 
             for class_idx, class_label in enumerate(labels):
-                roc_curve_label = self.roc_curve[self.roc_curve["label"] == class_label]
-                fpr_class = roc_curve_label["fpr"]
-                tpr_class = roc_curve_label["tpr"]
-                roc_auc_class = self.roc_auc[self.roc_auc["label"] == class_label][
-                    "roc_auc"
-                ].iloc[0]
+                roc_curve = _filter_by(
+                    self.roc_curve,
+                    label=class_label,
+                )
+
+                roc_auc = _filter_by(
+                    self.roc_auc,
+                    label=class_label,
+                )["roc_auc"].iloc[0]
+
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
                 default_line_kwargs: dict[str, Any] = {"color": class_colors[class_idx]}
                 if self.data_source in ("train", "test"):
                     default_line_kwargs["label"] = (
                         f"{str(class_label).title()} - {self.data_source} "
-                        f"set (AUC = {roc_auc_class:0.2f})"
+                        f"set (AUC = {roc_auc:0.2f})"
                     )
                 else:  # data_source in (None, "X_y")
                     default_line_kwargs["label"] = (
-                        f"{str(class_label).title()} - AUC = {roc_auc_class:0.2f}"
+                        f"{str(class_label).title()} - AUC = {roc_auc:0.2f}"
                     )
 
                 line_kwargs = _validate_style_kwargs(
                     default_line_kwargs, roc_curve_kwargs_class
                 )
 
-                (line,) = self.ax_.plot(fpr_class, tpr_class, **line_kwargs)
+                (line,) = self.ax_.plot(
+                    roc_curve["fpr"],
+                    roc_curve["tpr"],
+                    **line_kwargs,
+                )
                 lines.append(line)
 
             info_pos_label = None  # irrelevant for multiclass
@@ -306,27 +314,29 @@ class RocCurveDisplay(
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
             for split_idx in self.roc_curve["split_index"].unique():
-                fpr_split = self.roc_curve[
-                    (self.roc_curve["label"] == pos_label)
-                    & (self.roc_curve["split_index"] == split_idx)
-                ]["fpr"]
-                tpr_split = self.roc_curve[
-                    (self.roc_curve["label"] == pos_label)
-                    & (self.roc_curve["split_index"] == split_idx)
-                ]["tpr"]
-                roc_auc_split = self.roc_auc[
-                    (self.roc_auc["label"] == pos_label)
-                    & (self.roc_auc["split_index"] == split_idx)
-                ]["roc_auc"].iloc[0]
+                roc_curve = _filter_by(
+                    self.roc_curve,
+                    label=pos_label,
+                    split_index=split_idx,
+                )
+                roc_auc = _filter_by(
+                    self.roc_auc,
+                    label=pos_label,
+                    split_index=split_idx,
+                )["roc_auc"].iloc[0]
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[split_idx]
                 )
                 line_kwargs_validated["label"] = (
-                    f"Estimator of fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
+                    f"Estimator of fold #{split_idx + 1} (AUC = {roc_auc:0.2f})"
                 )
 
-                (line,) = self.ax_.plot(fpr_split, tpr_split, **line_kwargs_validated)
+                (line,) = self.ax_.plot(
+                    roc_curve["fpr"],
+                    roc_curve["tpr"],
+                    **line_kwargs_validated,
+                )
                 lines.append(line)
 
             info_pos_label = (
@@ -340,20 +350,18 @@ class RocCurveDisplay(
             )
 
             for class_idx, class_label in enumerate(labels):
-                roc_auc_class = self.roc_auc[self.roc_auc["label"] == class_label][
-                    "roc_auc"
-                ].iloc[0]
+                roc_auc = _filter_by(
+                    self.roc_auc,
+                    label=class_label,
+                )["roc_auc"].iloc[0]
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
                 for split_idx in self.roc_curve["split_index"].unique():
-                    roc_curve_label = self.roc_curve[
-                        (self.roc_curve["label"] == class_label)
-                        & (self.roc_curve["split_index"] == split_idx)
-                    ]
-                    fpr_split = roc_curve_label["fpr"]
-                    tpr_split = roc_curve_label["tpr"]
-                    roc_auc_mean = np.mean(roc_auc_class)
-                    roc_auc_std = np.std(roc_auc_class)
+                    roc_curve_label = _filter_by(
+                        self.roc_curve,
+                        label=class_label,
+                        split_index=split_idx,
+                    )
 
                     line_kwargs_validated = _validate_style_kwargs(
                         {
@@ -365,14 +373,16 @@ class RocCurveDisplay(
                     if split_idx == 0:
                         line_kwargs_validated["label"] = (
                             f"{str(class_label).title()} "
-                            f"(AUC = {roc_auc_mean:0.2f} +/- "
-                            f"{roc_auc_std:0.2f})"
+                            f"(AUC = {roc_auc.mean():0.2f} +/- "
+                            f"{roc_auc.std():0.2f})"
                         )
                     else:
                         line_kwargs_validated["label"] = None
 
                     (line,) = self.ax_.plot(
-                        fpr_split, tpr_split, **line_kwargs_validated
+                        roc_curve_label["fpr"],
+                        roc_curve_label["tpr"],
+                        **line_kwargs_validated,
                     )
                     lines.append(line)
 
@@ -437,24 +447,27 @@ class RocCurveDisplay(
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
             for est_idx, est_name in enumerate(estimator_names):
-                roc_curve_estimator = self.roc_curve[
-                    (self.roc_curve["label"] == pos_label)
-                    & (self.roc_curve["estimator_name"] == est_name)
-                ]
-                fpr_est = roc_curve_estimator["fpr"]
-                tpr_est = roc_curve_estimator["tpr"]
-                roc_auc_est = self.roc_auc[
-                    (self.roc_auc["label"] == pos_label)
-                    & (self.roc_auc["estimator_name"] == est_name)
-                ]["roc_auc"].iloc[0]
+                roc_curve = _filter_by(
+                    self.roc_curve,
+                    label=pos_label,
+                    estimator_name=est_name,
+                )
+
+                roc_auc = _filter_by(
+                    self.roc_auc,
+                    label=pos_label,
+                    estimator_name=est_name,
+                )["roc_auc"].iloc[0]
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[est_idx]
                 )
-                line_kwargs_validated["label"] = (
-                    f"{est_name} (AUC = {roc_auc_est:0.2f})"
+                line_kwargs_validated["label"] = f"{est_name} (AUC = {roc_auc:0.2f})"
+                (line,) = self.ax_.plot(
+                    roc_curve["fpr"],
+                    roc_curve["tpr"],
+                    **line_kwargs_validated,
                 )
-                (line,) = self.ax_.plot(fpr_est, tpr_est, **line_kwargs_validated)
                 lines.append(line)
 
             info_pos_label = (
@@ -471,16 +484,18 @@ class RocCurveDisplay(
                 est_color = class_colors[est_idx]
 
                 for class_idx, class_label in enumerate(labels):
-                    roc_curve_estimator = self.roc_curve[
-                        (self.roc_curve["label"] == class_label)
-                        & (self.roc_curve["estimator_name"] == est_name)
-                    ]
-                    fpr_est_class = roc_curve_estimator["fpr"]
-                    tpr_est_class = roc_curve_estimator["tpr"]
-                    roc_auc_mean = self.roc_auc[
-                        (self.roc_auc["label"] == class_label)
-                        & (self.roc_auc["estimator_name"] == est_name)
-                    ]["roc_auc"].iloc[0]
+                    roc_curve = _filter_by(
+                        self.roc_curve,
+                        label=class_label,
+                        estimator_name=est_name,
+                    )
+
+                    roc_auc = _filter_by(
+                        self.roc_auc,
+                        label=class_label,
+                        estimator_name=est_name,
+                    )["roc_auc"].iloc[0]
+
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 
                     line_kwargs["color"] = est_color
@@ -492,11 +507,11 @@ class RocCurveDisplay(
                     )
                     line_kwargs_validated["label"] = (
                         f"{est_name} - {str(class_label).title()} "
-                        f"(AUC = {roc_auc_mean:0.2f})"
+                        f"(AUC = {roc_auc:0.2f})"
                     )
 
                     (line,) = self.ax_.plot(
-                        fpr_est_class, tpr_est_class, **line_kwargs_validated
+                        roc_curve["fpr"], roc_curve["tpr"], **line_kwargs_validated
                     )
                     lines.append(line)
 
@@ -564,9 +579,16 @@ class RocCurveDisplay(
                 10 if len(estimator_names) < 10 else len(estimator_names),
             )
             for report_idx, estimator_name in enumerate(estimator_names):
-                roc_auc_estimator = self.roc_auc[
-                    self.roc_auc["estimator_name"] == estimator_name
-                ]["roc_auc"]
+                roc_curve = _filter_by(
+                    self.roc_curve,
+                    label=self.pos_label,
+                    estimator_name=estimator_name,
+                )
+
+                roc_auc = _filter_by(
+                    self.roc_auc,
+                    estimator_name=estimator_name,
+                )["roc_auc"]
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[report_idx]
@@ -574,18 +596,13 @@ class RocCurveDisplay(
                 line_kwargs_validated["color"] = colors[report_idx]
                 line_kwargs_validated["alpha"] = 0.6
 
-                roc_curve_estimator = self.roc_curve[
-                    (self.roc_curve["label"] == self.pos_label)
-                    & (self.roc_curve["estimator_name"] == estimator_name)
-                ]
-
-                for split_index, segment in roc_curve_estimator.groupby("split_index"):
+                for split_index, segment in roc_curve.groupby("split_index"):
                     if split_index == 0:
                         label_kwargs = {
                             "label": (
                                 f"{estimator_name} "
-                                f"(AUC = {roc_auc_estimator.mean():0.2f} +/- "
-                                f"{roc_auc_estimator.std():0.2f})"
+                                f"(AUC = {roc_auc.mean():0.2f} +/- "
+                                f"{roc_auc.std():0.2f})"
                             )
                         }
                     else:
@@ -630,10 +647,17 @@ class RocCurveDisplay(
                 est_color = colors[est_idx]
 
                 for label_idx, label in enumerate(labels):
-                    roc_auc_estimator = self.roc_auc[
-                        (self.roc_auc["label"] == label)
-                        & (self.roc_auc["estimator_name"] == estimator_name)
-                    ]["roc_auc"]
+                    roc_curve = _filter_by(
+                        self.roc_curve,
+                        label=label,
+                        estimator_name=estimator_name,
+                    )
+
+                    roc_auc = _filter_by(
+                        self.roc_auc,
+                        label=label,
+                        estimator_name=estimator_name,
+                    )["roc_auc"]
 
                     line_kwargs_validated = _validate_style_kwargs(
                         line_kwargs, roc_curve_kwargs[est_idx]
@@ -641,20 +665,13 @@ class RocCurveDisplay(
                     line_kwargs_validated["color"] = est_color
                     line_kwargs_validated["alpha"] = 0.6
 
-                    roc_curve_estimator = self.roc_curve[
-                        (self.roc_curve["label"] == label)
-                        & (self.roc_curve["estimator_name"] == estimator_name)
-                    ]
-
-                    for split_index, segment in roc_curve_estimator.groupby(
-                        "split_index"
-                    ):
+                    for split_index, segment in roc_curve.groupby("split_index"):
                         if split_index == 0:
                             label_kwargs = {
                                 "label": (
                                     f"{estimator_name} "
-                                    f"(AUC = {roc_auc_estimator.mean():0.2f} +/- "
-                                    f"{roc_auc_estimator.std():0.2f})"
+                                    f"(AUC = {roc_auc.mean():0.2f} +/- "
+                                    f"{roc_auc.std():0.2f})"
                                 )
                             }
                         else:
