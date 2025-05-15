@@ -128,7 +128,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._progress_info: Optional[dict[str, Any]] = None
 
         self._estimator = clone(estimator)
-        self._parent_progress = None
 
         # private storage to be able to invalidate the cache when the user alters
         # those attributes
@@ -287,9 +286,23 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         total_estimators = len(self.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
-        for estimator_report in self.estimator_reports_:
+        for fold_idx, estimator_report in enumerate(self.estimator_reports_, 1):
             # Share the parent's progress bar with child report
-            estimator_report._progress_info = {"current_progress": progress}
+            estimator_report._progress_info = {
+                "current_progress": progress,
+                "fold_info": {"current": fold_idx, "total": total_estimators},
+            }
+
+            # Update the progress bar description to include the fold number
+            progress.update(
+                main_task,
+                description=(
+                    f"Cross-validation predictions for fold "
+                    f"#{fold_idx}/{total_estimators}"
+                ),
+            )
+
+            # Call cache_predictions without printing a separate message
             estimator_report.cache_predictions(
                 response_methods=response_methods, n_jobs=n_jobs
             )
