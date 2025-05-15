@@ -7,6 +7,12 @@ Applying some pandas styling to dataframes
 """
 
 # %%
+# TODO
+# ====
+#
+# - include ``indicator_favorability=True``
+
+# %%
 # From the source code
 # ====================
 
@@ -58,7 +64,7 @@ from skore import ComparisonReport
 comparator = ComparisonReport(reports=estimator_reports)
 
 # %%
-df = comparator.metrics.report_metrics()
+df = comparator.metrics.report_metrics(indicator_favorability=False)
 df
 
 # %%
@@ -73,8 +79,8 @@ higher_is_better = [
 ]
 
 
-# Function to determine the best value and apply bold styling
 def highlight_best(row):
+    """Determine the best value and apply bold styling."""
     metric = row.name
     if metric in lower_is_better:
         best_value = row.min()  # Lower is better
@@ -86,14 +92,14 @@ def highlight_best(row):
     return styles
 
 
-# Function to apply a blue gradient based on whether lower or higher is better
 def apply_gradient(row):
+    """Apply a color gradient based on whether lower or higher is better."""
     metric = row.name
     if metric in lower_is_better:
-        # For lower-is-better, smaller values get a stronger blue
+        # For lower-is-better, smaller values get a stronger color
         gradient = pd.Series(
             [
-                "background-color: rgba(0, 0, 255, {:.2f})".format(
+                "background-color: rgba(30, 34, 170, {:.2f})".format(
                     1 - (x - row.min()) / (row.max() - row.min())
                 )
                 for x in row
@@ -101,10 +107,10 @@ def apply_gradient(row):
             index=row.index,
         )
     else:
-        # For higher-is-better, larger values get a stronger blue
+        # For higher-is-better, larger values get a stronger color
         gradient = pd.Series(
             [
-                "background-color: rgba(0, 0, 255, {:.2f})".format(
+                "background-color: rgba(30, 34, 170, {:.2f})".format(
                     (x - row.min()) / (row.max() - row.min())
                 )
                 for x in row
@@ -114,23 +120,17 @@ def apply_gradient(row):
     return gradient
 
 
-# Apply the styling
 styled_df = (
-    df.style.apply(highlight_best, axis=1)  # Bold the best value
-    .apply(apply_gradient, axis=1)  # Apply blue gradient
-    .format("{:.6f}")
-)  # Format numbers to 6 decimal places
+    df.style.apply(highlight_best, axis=1)
+    .apply(apply_gradient, axis=1)
+    .format("{:.3f}")
+)
 
-# Display the styled DataFrame (in Jupyter Notebook)
 styled_df
 
 # %%
 # Classification task
 # ===================
-#
-# .. warning::
-#
-#   This part is not done yet.
 
 # %%
 from sklearn.datasets import load_breast_cancer
@@ -139,25 +139,44 @@ X, y = load_breast_cancer(return_X_y=True, as_frame=True)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 # %%
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+
+# %%
+from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+
+estimators = [
+    make_pipeline(StandardScaler(), LogisticRegression()),
+    RandomForestClassifier(random_state=0),
+    HistGradientBoostingClassifier(random_state=0),
+]
+
+# %%
 from skore import EstimatorReport
 
-rf = RandomForestClassifier(random_state=0)
-rf_report = EstimatorReport(
-    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
-)
+estimator_reports = [
+    EstimatorReport(est, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
+    for est in estimators
+]
 
 # %%
-from sklearn.ensemble import GradientBoostingClassifier
+from skore import ComparisonReport
 
-gb = GradientBoostingClassifier(random_state=0)
-gb_report = EstimatorReport(
-    gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
-)
-
-# %%
-comparator = ComparisonReport(reports=[rf_report, gb_report])
+comparator = ComparisonReport(reports=estimator_reports)
 
 # %%
 df = comparator.metrics.report_metrics(pos_label=1, indicator_favorability=False)
 df
+
+# %%
+styled_df = (
+    df.style.apply(highlight_best, axis=1)
+    .apply(apply_gradient, axis=1)
+    .format("{:.3f}")
+)
+
+styled_df
