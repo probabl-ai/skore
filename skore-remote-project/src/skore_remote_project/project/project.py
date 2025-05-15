@@ -14,7 +14,7 @@ from ..item.item import lazy_is_instance
 if TYPE_CHECKING:
     from typing import TypedDict, Union
 
-    from skore import EstimatorReport
+    from skore.sklearn import EstimatorReport
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
