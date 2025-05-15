@@ -4,6 +4,7 @@ from itertools import product
 
 import matplotlib as mpl
 import numpy as np
+from matplotlib.lines import Line2D
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
@@ -27,25 +28,24 @@ def test_binary_classification(pyplot):
 
     pos_label = 1
     n_reports = len(report.reports_)
+    n_splits = report.reports_[0]._cv_splitter.n_splits
 
     display.plot()
     assert isinstance(display.lines_, list)
-    assert len(display.lines_) == n_reports
+    assert len(display.lines_) == n_reports * n_splits
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for i, estimator_name in enumerate(report.report_names_):
-        roc_curve_mpl = display.lines_[i]
-        assert isinstance(roc_curve_mpl, mpl.collections.LineCollection)
+        roc_curve_mpl = display.lines_[i * n_splits]
+        assert isinstance(roc_curve_mpl, Line2D)
         auc = display.roc_auc[
             (display.roc_auc["label"] == pos_label)
             & (display.roc_auc["estimator_name"] == estimator_name)
         ]["roc_auc"]
-        mean_auc = auc.mean()
-        std_auc = auc.std()
 
         assert roc_curve_mpl.get_label() == (
-            f"{report.report_names_[i]} (AUC = {mean_auc:0.2f} +/- {std_auc:0.2f})"
+            f"{report.report_names_[i]} (AUC = {auc.mean():0.2f} +/- {auc.std():0.2f})"
         )
-        assert list(roc_curve_mpl.get_color()[0][:3]) == list(default_colors[i][:3])
+        assert list(roc_curve_mpl.get_color()[:3]) == list(default_colors[i][:3])
 
     assert isinstance(display.chance_level_, mpl.lines.Line2D)
     assert display.chance_level_.get_label() == "Chance level (AUC = 0.5)"
@@ -82,32 +82,27 @@ def test_multiclass(pyplot):
 
     labels = display.roc_curve["label"].unique()
     n_reports = len(report.reports_)
+    n_splits = report.reports_[0]._cv_splitter.n_splits
 
     display.plot()
     assert isinstance(display.lines_, list)
-    assert len(display.lines_) == n_reports * len(labels)
-    assert (
-        len(display.lines_[0].get_segments())
-        == report.reports_[0]._cv_splitter.n_splits
-    )
+    assert len(display.lines_) == n_reports * len(labels) * n_splits
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for i, ((estimator_idx, estimator_name), label) in enumerate(
         product(enumerate(report.report_names_), labels)
     ):
-        roc_curve_mpl = display.lines_[i]
-        assert isinstance(roc_curve_mpl, mpl.collections.LineCollection)
+        roc_curve_mpl = display.lines_[i * n_splits]
+        assert isinstance(roc_curve_mpl, Line2D)
 
         auc = display.roc_auc[
             (display.roc_auc["label"] == label)
             & (display.roc_auc["estimator_name"] == estimator_name)
         ]["roc_auc"]
-        mean_auc = auc.mean()
-        std_auc = auc.std()
 
         assert roc_curve_mpl.get_label() == (
-            f"{estimator_name} (AUC = {mean_auc:0.2f} +/- {std_auc:0.2f})"
+            f"{estimator_name} (AUC = {auc.mean():0.2f} +/- {auc.std():0.2f})"
         )
-        assert list(roc_curve_mpl.get_color()[0][:3]) == list(
+        assert list(roc_curve_mpl.get_color()[:3]) == list(
             default_colors[estimator_idx][:3]
         )
 
