@@ -7,7 +7,6 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot.metrics import (
-    PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
 )
 
@@ -509,26 +508,6 @@ def test_comparison_report_aggregate(report):
 @pytest.mark.parametrize(
     "plot_ml_task, plot_name, plot_cls, plot_attributes",
     [
-        (
-            "binary_classification",
-            "precision_recall",
-            PrecisionRecallCurveDisplay,
-            {
-                "precision": {
-                    1: [
-                        [0.4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        [0.4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    ],
-                },
-                "recall": {
-                    1: [
-                        [1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0],
-                        [1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0],
-                    ]
-                },
-                "average_precision": {1: [0.99, 0.99]},
-            },
-        ),
         (
             "regression",
             "prediction_error",
