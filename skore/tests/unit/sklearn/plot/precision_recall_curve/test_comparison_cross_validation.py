@@ -2,6 +2,7 @@ from itertools import product
 
 import matplotlib as mpl
 import numpy as np
+from matplotlib.lines import Line2D
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
@@ -29,14 +30,15 @@ def test_binary_classification(pyplot):
 
     pos_label = 1
     n_reports = len(report.reports_)
+    n_splits = len(report.reports_[0].estimator_reports_)
 
     display.plot()
     assert isinstance(display.lines_, list)
-    assert len(display.lines_) == n_reports
+    assert len(display.lines_) == n_reports * n_splits
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for i, estimator_name in enumerate(report.report_names_):
-        precision_recall_mpl = display.lines_[i]
-        assert isinstance(precision_recall_mpl, mpl.collections.LineCollection)
+        precision_recall_mpl = display.lines_[i * n_splits]
+        assert isinstance(precision_recall_mpl, Line2D)
 
         average_precision = _filter_by(
             display.average_precision,
@@ -48,9 +50,7 @@ def test_binary_classification(pyplot):
             f"{estimator_name} (AUC = {average_precision.mean():0.2f} "
             f"+/- {average_precision.std():0.2f})"
         )
-        assert list(precision_recall_mpl.get_color()[0][:3]) == list(
-            default_colors[i][:3]
-        )
+        assert list(precision_recall_mpl.get_color()[:3]) == list(default_colors[i][:3])
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
@@ -85,20 +85,18 @@ def test_multiclass(pyplot):
 
     labels = display.precision_recall["label"].unique()
     n_reports = len(report.reports_)
+    n_splits = len(report.reports_[0].estimator_reports_)
 
     display.plot()
     assert isinstance(display.lines_, list)
-    assert len(display.lines_) == n_reports * len(labels)
-    assert (
-        len(display.lines_[0].get_segments())
-        == report.reports_[0]._cv_splitter.n_splits
-    )
+    assert len(display.lines_) == n_reports * len(labels) * n_splits
+
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for i, ((estimator_idx, estimator_name), label) in enumerate(
         product(enumerate(report.report_names_), labels)
     ):
-        precision_recall_mpl = display.lines_[i]
-        assert isinstance(precision_recall_mpl, mpl.collections.LineCollection)
+        precision_recall_mpl = display.lines_[i * n_splits]
+        assert isinstance(precision_recall_mpl, Line2D)
 
         average_precision = _filter_by(
             display.average_precision,
@@ -110,7 +108,7 @@ def test_multiclass(pyplot):
             f"{estimator_name} (AUC = {average_precision.mean():0.2f} "
             f"+/- {average_precision.std():0.2f})"
         )
-        assert list(precision_recall_mpl.get_color()[0][:3]) == list(
+        assert list(precision_recall_mpl.get_color()[:3]) == list(
             default_colors[estimator_idx][:3]
         )
 
