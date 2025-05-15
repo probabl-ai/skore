@@ -13,6 +13,25 @@ if typing.TYPE_CHECKING:
 class Metadata(pd.DataFrame):
     _metadata = ["project"]
 
+    @staticmethod
+    def factory(project, /):
+        metadata = pd.DataFrame(project.reports.metadata(), copy=False)
+
+        if not metadata.empty:
+            metadata["learner"] = pd.Categorical(metadata["learner"])
+            metadata.index = pd.MultiIndex.from_arrays(
+                [
+                    pd.RangeIndex(len(metadata)),
+                    pd.Index(metadata.pop("id"), name="id", dtype=str),
+                ]
+            )
+
+        # Cast standard dataframe to Metadata for lazy reports selection.
+        metadata = Metadata(metadata, copy=False)
+        metadata.project = project
+
+        return metadata
+
     @property
     def _constructor(self):
         return Metadata
@@ -20,7 +39,7 @@ class Metadata(pd.DataFrame):
     def reports(self, *, filter=True):
         """"""
         if not hasattr(self, "project") or "id" not in self.index.names:
-            raise Exception
+            raise RuntimeError("Bad condition: it is not a valid `Metadata` object.")
 
         if filter and (querystr := self.query_string_selection()):
             self = self.query(querystr)
