@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colormaps
 from matplotlib.axes import Axes
-from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
 from numpy.typing import NDArray
 from pandas import DataFrame
@@ -94,7 +93,7 @@ class PrecisionRecallCurveDisplay(
     figure_ : matplotlib figure
         The figure on which the precision-recall curve is plotted.
 
-    lines_ : list of matplotlib lines or list of matplotlib LineCollections
+    lines_ : list of matplotlib lines
         The lines of the precision-recall curve.
 
     Examples
@@ -378,7 +377,7 @@ class PrecisionRecallCurveDisplay(
             String containing positive label information for binary classification,
             None for multiclass.
         """
-        lines: list[LineCollection] = []
+        lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if self.ml_task == "binary-classification":
@@ -484,8 +483,6 @@ class PrecisionRecallCurveDisplay(
         """
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
-        # TODO: see why drawstyle doesn't work
-        line_kwargs: dict[str, Any] = {}
 
         if self.ml_task == "binary-classification":
             labels = self.precision_recall["label"].unique()
@@ -501,27 +498,31 @@ class PrecisionRecallCurveDisplay(
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, pr_curve_kwargs[report_idx]
                 )
-                line_kwargs_validated["label"] = (
-                    f"{estimator_name} "
-                    f"(AUC = {average_precision.mean():0.2f} "
-                    f"+/- {average_precision.std():0.2f})"
-                )
                 line_kwargs_validated["color"] = colors[report_idx]
                 line_kwargs_validated["alpha"] = 0.6
 
                 precision_recall = self.precision_recall.query(
                     f"label == {self.pos_label} & estimator_name == '{estimator_name}'"
                 )
-                segments = [
-                    split_data[1]
-                    for split_data in precision_recall.groupby("split_index")[
-                        ["recall", "precision"]
-                    ]
-                ]
 
-                line_collection = LineCollection(segments, **line_kwargs_validated)
-                lines.append(line_collection)
-                self.ax_.add_collection(line_collection)
+                for split_index, segment in precision_recall.groupby("split_index"):
+                    if split_index == 0:
+                        label_kwargs = {
+                            "label": (
+                                f"{estimator_name} "
+                                f"(AUC = {average_precision.mean():0.2f} "
+                                f"+/- {average_precision.std():0.2f})"
+                            )
+                        }
+                    else:
+                        label_kwargs = {}
+
+                    (line,) = self.ax_.plot(
+                        segment["recall"],
+                        segment["precision"],
+                        **(line_kwargs_validated | label_kwargs),
+                    )
+                    lines.append(line)
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
@@ -553,11 +554,6 @@ class PrecisionRecallCurveDisplay(
                     line_kwargs_validated = _validate_style_kwargs(
                         line_kwargs, pr_curve_kwargs[est_idx]
                     )
-                    line_kwargs_validated["label"] = (
-                        f"{estimator_name} "
-                        f"(AUC = {average_precision.mean():0.2f} "
-                        f"+/- {average_precision.std():0.2f})"
-                    )
                     line_kwargs_validated["color"] = est_color
                     line_kwargs_validated["alpha"] = 0.6
 
@@ -565,16 +561,24 @@ class PrecisionRecallCurveDisplay(
                         f"label == {label} & estimator_name == '{estimator_name}'"
                     )
 
-                    segments = [
-                        split_data[1]
-                        for split_data in precision_recall.groupby("split_index")[
-                            ["recall", "precision"]
-                        ]
-                    ]
+                    for split_index, segment in precision_recall.groupby("split_index"):
+                        if split_index == 0:
+                            label_kwargs = {
+                                "label": (
+                                    f"{estimator_name} "
+                                    f"(AUC = {average_precision.mean():0.2f} "
+                                    f"+/- {average_precision.std():0.2f})"
+                                )
+                            }
+                        else:
+                            label_kwargs = {}
 
-                    line_collection = LineCollection(segments, **line_kwargs_validated)
-                    lines.append(line_collection)
-                    self.ax_[label_idx].add_collection(line_collection)
+                        (line,) = self.ax_[label_idx].plot(
+                            segment["recall"],
+                            segment["precision"],
+                            **(line_kwargs_validated | label_kwargs),
+                        )
+                        lines.append(line)
 
                     info_pos_label = f"\n(Positive label: {label})"
                     _set_axis_labels(self.ax_[label_idx], info_pos_label)
