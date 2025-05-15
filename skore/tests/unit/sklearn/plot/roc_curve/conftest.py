@@ -2,6 +2,7 @@ import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+from skore.sklearn._plot.utils import _filter_by
 
 
 @pytest.fixture
@@ -35,21 +36,12 @@ def multiclass_classification_data_no_split():
 def get_roc_auc(
     display,
     label=None,
-    split_number=None,
+    split_index=None,
     estimator_name=None,
 ) -> float:
-    noop_filter = display.roc_auc["roc_auc"].map(lambda x: True)
-    label_filter = (display.roc_auc["label"] == label) if label is not None else True
-    split_number_filter = (
-        (display.roc_auc["split_index"] == split_number)
-        if split_number is not None
-        else True
-    )
-    estimator_name_filter = (
-        (display.roc_auc["estimator_name"] == estimator_name)
-        if estimator_name is not None
-        else True
-    )
-    return display.roc_auc[
-        noop_filter & label_filter & split_number_filter & estimator_name_filter
-    ]["roc_auc"].iloc[0]
+    return _filter_by(
+        display.roc_auc,
+        label=label,
+        split_index=split_index,
+        estimator_name=estimator_name,
+    )["roc_auc"].iloc[0]
