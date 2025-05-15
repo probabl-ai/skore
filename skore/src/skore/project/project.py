@@ -3,8 +3,8 @@ from __future__ import annotations
 import re
 import sys
 import types
-import pandas as pd
 
+import pandas as pd
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
@@ -60,13 +60,14 @@ class Project:
         def metadata() -> Metadata:  # hide underlying functions from user
             """"""
             metadata = pd.DataFrame(self.__project.reports.metadata(), copy=False)
-            metadata["learner"] = pd.Categorical(metadata["learner"])
-            metadata.index = pd.MultiIndex.from_arrays(
-                [
-                    pd.RangeIndex(len(metadata)),
-                    pd.Index(metadata.pop("id"), name="id", dtype=str),
-                ]
-            )
+            if not metadata.empty:
+                metadata["learner"] = pd.Categorical(metadata["learner"])
+                metadata.index = pd.MultiIndex.from_arrays(
+                    [
+                        pd.RangeIndex(len(metadata)),
+                        pd.Index(metadata.pop("id"), name="id", dtype=str),
+                    ]
+                )
 
             # Cast standard dataframe to Metadata for lazy reports selection.
             metadata = Metadata(metadata, copy=False)
