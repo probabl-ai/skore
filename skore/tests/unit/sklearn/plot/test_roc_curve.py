@@ -79,7 +79,7 @@ def test_roc_curve_display_binary_classification(pyplot, binary_classification_d
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == estimator.__class__.__name__
-    assert len(legend.get_texts()) == 1
+    assert len(legend.get_texts()) == 1 + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
     assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
@@ -132,7 +132,7 @@ def test_roc_curve_display_multiclass_classification(
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == estimator.__class__.__name__
-    assert len(legend.get_texts()) == len(estimator.classes_)
+    assert len(legend.get_texts()) == len(estimator.classes_) + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate"
     assert display.ax_.get_ylabel() == "True Positive Rate"
@@ -280,15 +280,20 @@ def test_roc_curve_display_roc_curve_kwargs_multiclass_classification(
     assert display.ax_.spines["right"].get_visible()
 
 
+@pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_roc_curve_display_cross_validation_binary_classification(
-    pyplot, binary_classification_data_no_split
+    pyplot, binary_classification_data_no_split, data_source
 ):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     binary data."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
+    if data_source == "X_y":
+        roc_kwargs = {"data_source": data_source, "X": X, "y": y}
+    else:
+        roc_kwargs = {"data_source": data_source}
 
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.roc()
+    display = report.metrics.roc(**roc_kwargs)
     assert isinstance(display, RocCurveDisplay)
 
     # check the structure of the attributes
@@ -310,7 +315,7 @@ def test_roc_curve_display_cross_validation_binary_classification(
     for split_idx, line in enumerate(display.lines_):
         assert isinstance(line, mpl.lines.Line2D)
         assert line.get_label() == (
-            f"Test set - fold #{split_idx + 1} "
+            f"Estimator of fold #{split_idx + 1} "
             f"(AUC = {display.roc_auc[pos_label][split_idx]:0.2f})"
         )
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
@@ -321,8 +326,12 @@ def test_roc_curve_display_cross_validation_binary_classification(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
-    assert len(legend.get_texts()) == cv
+    data_source_title = "external" if data_source == "X_y" else data_source
+    assert (
+        legend.get_title().get_text()
+        == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
+    )
+    assert len(legend.get_texts()) == cv + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
     assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
@@ -331,14 +340,20 @@ def test_roc_curve_display_cross_validation_binary_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
+@pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_roc_curve_display_cross_validation_multiclass_classification(
-    pyplot, multiclass_classification_data_no_split
+    pyplot, multiclass_classification_data_no_split, data_source
 ):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     multiclass data."""
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    if data_source == "X_y":
+        roc_kwargs = {"data_source": data_source, "X": X, "y": y}
+    else:
+        roc_kwargs = {"data_source": data_source}
+
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.roc()
+    display = report.metrics.roc(**roc_kwargs)
     assert isinstance(display, RocCurveDisplay)
 
     # check the structure of the attributes
@@ -362,7 +377,7 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
             assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
             if split_idx == 0:
                 assert roc_curve_mpl.get_label() == (
-                    f"{str(class_label).title()} - test set "
+                    f"{str(class_label).title()} "
                     f"(AUC = {np.mean(display.roc_auc[class_label]):0.2f}"
                     f" +/- {np.std(display.roc_auc[class_label]):0.2f})"
                 )
@@ -374,8 +389,12 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
-    assert len(legend.get_texts()) == cv
+    data_source_title = "external" if data_source == "X_y" else data_source
+    assert (
+        legend.get_title().get_text()
+        == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
+    )
+    assert len(legend.get_texts()) == cv + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate"
     assert display.ax_.get_ylabel() == "True Positive Rate"
@@ -485,7 +504,7 @@ def test_roc_curve_display_comparison_report_binary_classification(
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == r"Binary-Classification on $\bf{test}$ set"
-    assert len(legend.get_texts()) == 2
+    assert len(legend.get_texts()) == 2 + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
     assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
@@ -523,7 +542,7 @@ def test_roc_curve_display_comparison_report_multiclass_classification(
     assert isinstance(display, RocCurveDisplay)
 
     # check the structure of the attributes
-    class_labels = report.estimator_reports_[0].estimator_.classes_
+    class_labels = report.reports_[0].estimator_.classes_
     for attr_name in ("fpr", "tpr", "roc_auc"):
         assert isinstance(getattr(display, attr_name), dict)
         assert len(getattr(display, attr_name)) == len(class_labels)
@@ -560,7 +579,7 @@ def test_roc_curve_display_comparison_report_multiclass_classification(
     assert (
         legend.get_title().get_text() == r"Multiclass-Classification on $\bf{test}$ set"
     )
-    assert len(legend.get_texts()) == 6
+    assert len(legend.get_texts()) == 6 + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate"
     assert display.ax_.get_ylabel() == "True Positive Rate"

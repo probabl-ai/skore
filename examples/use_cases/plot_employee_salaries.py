@@ -91,7 +91,7 @@ y
 
 # %%
 # Tree-based model
-# ===============
+# ================
 
 # %%
 # Let's start by creating a tree-based model using some out-of-the-box tools.
@@ -112,7 +112,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 
 model = make_pipeline(
-    TableVectorizer(high_cardinality=TextEncoder()),
+    TableVectorizer(high_cardinality=TextEncoder(store_weights_in_pickle=True)),
     HistGradientBoostingRegressor(),
 )
 model
@@ -121,7 +121,8 @@ model
 # Evaluation
 # ^^^^^^^^^^
 #
-# Let us compute the cross-validation report for this model using :class:`skore.CrossValidationReport`:
+# Let us compute the cross-validation report for this model using
+# :class:`skore.CrossValidationReport`:
 from skore import CrossValidationReport
 
 report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
@@ -145,7 +146,7 @@ report.metrics.report_metrics()
 
 # %%
 # Linear model
-# =========
+# ============
 #
 # Now that we have established a first model that serves as a baseline,
 # we shall proceed to define a quite complex linear model
@@ -268,57 +269,36 @@ hgbt_model_report = my_project.get("HGBT model report")
 linear_model_report = my_project.get("Linear model report")
 
 # %%
-#
-# Now that we retrieved the reports, we can make some further comparison and build upon
-# some usual pandas operations to concatenate the results.
-import pandas as pd
-
-results = pd.concat(
-    [
-        hgbt_model_report.metrics.report_metrics(),
-        linear_model_report.metrics.report_metrics(),
-    ],
-    axis=1,
-)
-results
+# Now that we retrieved the reports, we can make some further comparison using the
+# :class:`skore.ComparisonReport`:
 
 # %%
-#
+from skore import ComparisonReport
+
+comparator = ComparisonReport([hgbt_model_report, linear_model_report])
+comparator.metrics.report_metrics(indicator_favorability=True)
+
+# %%
 # In addition, if we forgot to compute a specific metric
 # (e.g. :func:`~sklearn.metrics.mean_absolute_error`),
 # we can easily add it to the report, without re-training the model and even
 # without re-computing the predictions since they are cached internally in the report.
 # This allows us to save some potentially huge computation time.
+
+# %%
 from sklearn.metrics import mean_absolute_error
 
 scoring = ["r2", "rmse", mean_absolute_error]
 scoring_kwargs = {"response_method": "predict"}
-scoring_names = ["R2", "RMSE", "MAE"]
-results = pd.concat(
-    [
-        hgbt_model_report.metrics.report_metrics(
-            scoring=scoring,
-            scoring_kwargs=scoring_kwargs,
-            scoring_names=scoring_names,
-        ),
-        linear_model_report.metrics.report_metrics(
-            scoring=scoring,
-            scoring_kwargs=scoring_kwargs,
-            scoring_names=scoring_names,
-        ),
-    ],
-    axis=1,
+scoring_names = ["R²", "RMSE", "MAE"]
+
+comparator.metrics.report_metrics(
+    scoring=scoring,
+    scoring_kwargs=scoring_kwargs,
+    scoring_names=scoring_names,
 )
-results
 
 # %%
-# .. note::
-#   We could have also used the :class:`skore.ComparisonReport` to compare estimator
-#   reports.
-#   This is done in :ref:`example_feature_importance`.
-
-# %%
-#
 # Finally, we can even get the individual :class:`~skore.EstimatorReport` for each fold
 # from the cross-validation to make further analysis.
 # Here, we plot the actual vs predicted values for each fold.
