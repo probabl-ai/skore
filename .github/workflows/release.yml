@@ -1,7 +1,6 @@
+# Release a package.
 #
-# p-a-c-k-a-g-e/X.Y.Z
-# p-a-c-k-a-g-e/X.Y.Z-rc.1
-#
+# Package versions are of the form `<package-name>/X.Y.Z` or `<package-name>/X.Y.Z-rc.1`
 
 name: release
 
