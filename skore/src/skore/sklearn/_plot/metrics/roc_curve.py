@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colormaps
 from matplotlib.axes import Axes
-from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
 from numpy.typing import NDArray
 from pandas import DataFrame
@@ -108,7 +107,7 @@ class RocCurveDisplay(
     figure_ : matplotlib figure
         The figure on which the ROC curve is plotted.
 
-    lines_ : list of matplotlib lines or list of matplotlib LineCollections
+    lines_ : list of matplotlib lines
         The lines of the ROC curve.
 
     chance_level_ : matplotlib line or list of lines or None
@@ -568,15 +567,9 @@ class RocCurveDisplay(
                 roc_auc_estimator = self.roc_auc[
                     self.roc_auc["estimator_name"] == estimator_name
                 ]["roc_auc"]
-                roc_auc_mean = roc_auc_estimator.mean()
-                roc_auc_std = roc_auc_estimator.std()
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[report_idx]
-                )
-                line_kwargs_validated["label"] = (
-                    f"{estimator_name} "
-                    f"(AUC = {roc_auc_mean:0.2f} +/- {roc_auc_std:0.2f})"
                 )
                 line_kwargs_validated["color"] = colors[report_idx]
                 line_kwargs_validated["alpha"] = 0.6
@@ -585,16 +578,25 @@ class RocCurveDisplay(
                     (self.roc_curve["label"] == self.pos_label)
                     & (self.roc_curve["estimator_name"] == estimator_name)
                 ]
-                segments = [
-                    split_data[1]
-                    for split_data in roc_curve_estimator.groupby("split_index")[
-                        ["fpr", "tpr"]
-                    ]
-                ]
 
-                line_collection = LineCollection(segments, **line_kwargs_validated)
-                lines.append(line_collection)
-                self.ax_.add_collection(line_collection)
+                for split_index, segment in roc_curve_estimator.groupby("split_index"):
+                    if split_index == 0:
+                        label_kwargs = {
+                            "label": (
+                                f"{estimator_name} "
+                                f"(AUC = {roc_auc_estimator.mean():0.2f} +/- "
+                                f"{roc_auc_estimator.std():0.2f})"
+                            )
+                        }
+                    else:
+                        label_kwargs = {}
+
+                    (line,) = self.ax_.plot(
+                        segment["fpr"],
+                        segment["tpr"],
+                        **(line_kwargs_validated | label_kwargs),
+                    )
+                    lines.append(line)
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
@@ -632,15 +634,9 @@ class RocCurveDisplay(
                         (self.roc_auc["label"] == label)
                         & (self.roc_auc["estimator_name"] == estimator_name)
                     ]["roc_auc"]
-                    roc_auc_mean = roc_auc_estimator.mean()
-                    roc_auc_std = roc_auc_estimator.std()
 
                     line_kwargs_validated = _validate_style_kwargs(
                         line_kwargs, roc_curve_kwargs[est_idx]
-                    )
-                    line_kwargs_validated["label"] = (
-                        f"{estimator_name} "
-                        f"(AUC = {roc_auc_mean:0.2f} +/- {roc_auc_std:0.2f})"
                     )
                     line_kwargs_validated["color"] = est_color
                     line_kwargs_validated["alpha"] = 0.6
@@ -650,16 +646,26 @@ class RocCurveDisplay(
                         & (self.roc_curve["estimator_name"] == estimator_name)
                     ]
 
-                    segments = [
-                        split_data[1]
-                        for split_data in roc_curve_estimator.groupby("split_index")[
-                            ["fpr", "tpr"]
-                        ]
-                    ]
+                    for split_index, segment in roc_curve_estimator.groupby(
+                        "split_index"
+                    ):
+                        if split_index == 0:
+                            label_kwargs = {
+                                "label": (
+                                    f"{estimator_name} "
+                                    f"(AUC = {roc_auc_estimator.mean():0.2f} +/- "
+                                    f"{roc_auc_estimator.std():0.2f})"
+                                )
+                            }
+                        else:
+                            label_kwargs = {}
 
-                    line_collection = LineCollection(segments, **line_kwargs_validated)
-                    lines.append(line_collection)
-                    self.ax_[label_idx].add_collection(line_collection)
+                        (line,) = self.ax_[label_idx].plot(
+                            segment["fpr"],
+                            segment["tpr"],
+                            **(line_kwargs_validated | label_kwargs),
+                        )
+                        lines.append(line)
 
                     info_pos_label = f"\n(Positive label: {label})"
                     _set_axis_labels(self.ax_[label_idx], info_pos_label)
