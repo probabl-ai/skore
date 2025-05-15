@@ -18,8 +18,10 @@ Applying some pandas styling to dataframes
 
 # %%
 from skore.sklearn._estimator.metrics_accessor import _MetricsAccessor
+from pprint import pprint
 
 metrics_dict = _MetricsAccessor._SCORE_OR_LOSS_INFO
+pprint(metrics_dict)
 
 # %%
 # Regression task
