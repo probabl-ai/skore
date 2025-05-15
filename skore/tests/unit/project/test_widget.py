@@ -33,7 +33,7 @@ def test_model_explorer_widget_check_dataframe_schema_error():
         ),
     )
     df["learner"] = "xxx"
-    err_msg = re.escape("Learner column must be a category")
+    err_msg = re.escape("Learner column must be a categorical column")
     with pytest.raises(ValueError, match=err_msg):
         ModelExplorerWidget(df)
 

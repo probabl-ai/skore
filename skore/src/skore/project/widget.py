@@ -1,3 +1,5 @@
+"""Widget for interactive parallel coordinate plots of ML experiment metadata."""
+
 from typing import Any, Optional, Union, cast
 
 import numpy as np
@@ -85,7 +87,7 @@ class ModelExplorerWidget:
                 f"Dataframe is missing required index: {self._required_index}"
             )
         if dataframe["learner"].dtype != "category":
-            raise ValueError("Learner column must be a category")
+            raise ValueError("Learner column must be a categorical column")
 
     def __init__(self, dataframe: pd.DataFrame, seed: int = 0) -> None:
         if dataframe.empty:
@@ -107,19 +109,25 @@ class ModelExplorerWidget:
             "ml_task.str.contains('regression')"
         )["dataset"].unique()
 
+        default_task = "classification" if len(self._clf_datasets) else "regression"
         self._task_dropdown = widgets.Dropdown(
             options=[
                 ("Classification", "classification"),
                 ("Regression", "regression"),
             ],
-            value="classification",
+            value=default_task,
             description="Task Type:",
             disabled=False,
             layout=widgets.Layout(width="200px"),
         )
 
+        default_dataset = (
+            self._clf_datasets
+            if default_task == "classification"
+            else self._reg_datasets
+        )
         self._dataset_dropdown = widgets.Dropdown(
-            options=self._clf_datasets,
+            options=default_dataset,
             description="Dataset:",
             disabled=False,
             layout=widgets.Layout(width="250px"),
