@@ -124,6 +124,6 @@ fig
 # * We could track some items such as machine learning scores over time to better
 #   understand which feature engineering works best.
 #
-# * Avoid overwriting a useful metric by mistake. No results are can be lost.
+# * Avoid overwriting a useful metric by mistake. No results can be lost.
 #
 # * The last updated time can help us reproduce an iteration of a key metric.
