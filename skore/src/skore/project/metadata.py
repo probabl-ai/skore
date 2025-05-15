@@ -38,6 +38,9 @@ class Metadata(pd.DataFrame):
 
     def reports(self, *, filter=True):
         """"""
+        if self.empty:
+            return []
+
         if not hasattr(self, "project") or "id" not in self.index.names:
             raise RuntimeError("Bad condition: it is not a valid `Metadata` object.")
 
