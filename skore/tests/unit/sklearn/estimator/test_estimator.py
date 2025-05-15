@@ -1368,14 +1368,28 @@ def test_estimator_report_metric_with_neg_metrics(binary_classification_data):
     assert np.isclose(log_loss_value, abs(neg_log_loss_value))
 
 
-def test_estimator_report_with_sklearn_scoring_strings():
-    """Test that scikit-learn metric strings can be passed to report_metrics."""
-    # Classification test case
+@pytest.fixture
+def classification_train_test_data():
+    """
+    Create a classification dataset and return fitted estimator,
+    training and test data.
+    """
     X_class, y_class = load_breast_cancer(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(
         X_class, y_class, random_state=42
     )
-    classifier = LogisticRegression(max_iter=10_000)
+    return (
+        LogisticRegression(max_iter=10_000).fit(X_train, y_train),
+        X_train,
+        X_test,
+        y_train,
+        y_test,
+    )
+
+
+def test_estimator_report_with_sklearn_scoring_strings(classification_train_test_data):
+    """Test that scikit-learn metric strings can be passed to report_metrics."""
+    classifier, X_train, X_test, y_train, y_test = classification_train_test_data
     class_report = EstimatorReport(
         classifier,
         X_train=X_train,
@@ -1403,19 +1417,28 @@ def test_estimator_report_with_sklearn_scoring_strings():
     assert favorability == "(↘︎)"
 
 
-def test_estimator_report_with_sklearn_scoring_strings_regression():
-    """Test scikit-learn regression metric strings in report_metrics."""
-    X_reg, y_reg = make_regression(random_state=42)
-    X_train_reg, X_test_reg, y_train_reg, y_test_reg = train_test_split(
-        X_reg, y_reg, random_state=42
+@pytest.fixture
+def reg_train_test_data():
+    """
+    Create a regression dataset and return fitted estimator,
+    training and test data.
+    """
+    X, y = make_regression(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
     )
-    regressor = LinearRegression()
+    return LinearRegression().fit(X_train, y_train), X_train, X_test, y_train, y_test
+
+
+def test_estimator_report_with_sklearn_scoring_strings_regression(reg_train_test_data):
+    """Test scikit-learn regression metric strings in report_metrics."""
+    regressor, X_train, X_test, y_train, y_test = reg_train_test_data
     reg_report = EstimatorReport(
         regressor,
-        X_train=X_train_reg,
-        y_train=y_train_reg,
-        X_test=X_test_reg,
-        y_test=y_test_reg,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
     )
 
     # Test regression metrics
