@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from typing import Any, Literal, TypedDict, Union
 
-    from skore import EstimatorReport
+    from skore.sklearn import EstimatorReport
 
     class MetadataFunction:  # noqa: D101
         metadata: Any

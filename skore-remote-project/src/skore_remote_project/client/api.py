@@ -7,7 +7,7 @@ from urllib.parse import urljoin
 
 import httpx
 
-URI = environ.get("SKORE_HUB_URI", "https://skh.k.probabl.dev")
+URI = environ.get("SKORE_HUB_URI", "https://api.skore.probabl.ai")
 Client = partial(
     httpx.Client,
     follow_redirects=True,
