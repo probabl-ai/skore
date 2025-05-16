@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from skore import CrossValidationReport
 from skore.sklearn._plot import PredictionErrorDisplay
@@ -21,17 +22,15 @@ def test_regression(pyplot, regression_data_no_split, data_source):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.y_true, list)
-    assert isinstance(display.y_pred, list)
-    assert isinstance(display.residuals, list)
-    assert len(display.y_true) == len(display.y_pred) == len(display.residuals) == cv
+    assert isinstance(display.prediction_error, pd.DataFrame)
+    assert len(display.prediction_error["split_index"].unique()) == cv
     assert display.data_source == data_source
     assert isinstance(display.range_y_true, RangeData)
     assert isinstance(display.range_y_pred, RangeData)
     assert isinstance(display.range_residuals, RangeData)
     for attr in ("y_true", "y_pred", "residuals"):
         global_min, global_max = np.inf, -np.inf
-        for display_attr in getattr(display, attr):
+        for display_attr in display.prediction_error[attr]:
             global_min = min(global_min, np.min(display_attr))
             global_max = max(global_max, np.max(display_attr))
         assert getattr(display, f"range_{attr}").min == global_min
@@ -70,9 +69,8 @@ def test_regression_actual_vs_predicted(pyplot, regression_data_no_split):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.y_true, list)
-    assert isinstance(display.y_pred, list)
-    assert len(display.y_true) == len(display.y_pred) == cv
+    assert isinstance(display.prediction_error, pd.DataFrame)
+    assert len(display.prediction_error["split_index"].unique()) == cv
     assert display.data_source == "test"
 
     assert isinstance(display.line_, mpl.lines.Line2D)
