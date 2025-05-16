@@ -1,6 +1,10 @@
 # Release a package.
 #
-# Package versions are of the form `<package-name>/X.Y.Z` or `<package-name>/X.Y.Z-rc.1`
+# This workflow is triggered by a "release" or "pre-release" event.
+# Being in a mono-repository with multiple packages, if the corresponding tag is not
+# prefixed by the name of the package, it fails.
+#
+# Example of valid tags: `skore/1.0.0-rc.1` or `skore/1.0.0`.
 
 name: release
 
