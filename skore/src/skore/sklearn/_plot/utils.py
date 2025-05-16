@@ -1,11 +1,12 @@
 import inspect
 from collections.abc import Sequence
 from io import StringIO
-from typing import Any, Literal, Optional, Union, cast
+from typing import Any, Optional, Union
 
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
+from pandas import DataFrame
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -14,7 +15,7 @@ from sklearn.utils.validation import (
     check_consistent_length,
 )
 
-from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
+from skore.sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 LINESTYLE = [
     ("solid", "solid"),
@@ -144,8 +145,8 @@ class _ClassifierCurveDisplayMixin:
         *,
         curve_param_name: str,
         curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
-        metric: dict[PositiveLabel, list[float]],
-        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
+        n_curves: int,
+        report_type: ReportType,
     ) -> list[dict[str, Any]]:
         """Validate and format the classification curve keyword arguments.
 
@@ -157,10 +158,11 @@ class _ClassifierCurveDisplayMixin:
         curve_kwargs : dict or list of dict or None
             Keyword arguments to customize the classification curve.
 
-        metric : dict of list of float
-            One of the metric of the curve to infer how many curves we are plotting.
+        n_curves : int
+            The number of curves we are plotting.
 
-        report_type : {"comparison-estimator", "cross-validation", "estimator"}
+        report_type : {"comparison-cross-validation", "comparison-estimator",
+                      "cross-validation", "estimator"}
             The type of report.
 
         Returns
@@ -174,21 +176,19 @@ class _ClassifierCurveDisplayMixin:
             If the format of curve_kwargs is invalid.
         """
         if self.ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, self.pos_label)
-            n_curves = len(metric[pos_label])
             if report_type in ("estimator", "cross-validation"):
                 allow_single_dict = True
-            elif report_type == "comparison-estimator":
+            elif report_type in ("comparison-estimator", "comparison-cross-validation"):
                 # since we compare different estimators, it does not make sense to share
                 # a single dictionary for all the estimators.
                 allow_single_dict = False
             else:
                 raise ValueError(
                     f"`report_type` should be one of 'estimator', 'cross-validation', "
-                    f"or 'comparison-estimator'. Got '{report_type}' instead."
+                    "'comparison-cross-validation' or 'comparison-estimator'. "
+                    f"Got '{report_type}' instead."
                 )
         else:
-            n_curves = len(metric)
             allow_single_dict = False
 
         if curve_kwargs is None:
@@ -354,3 +354,20 @@ def sample_mpl_colormap(
     """
     indices = np.linspace(0, 1, n)
     return [cmap(i) for i in indices]
+
+
+def _filter_by(
+    df,
+    label: Optional[PositiveLabel] = None,
+    split_index: Optional[int] = None,
+    estimator_name: Optional[str] = None,
+) -> DataFrame:
+    noop_filter = df.iloc[:, 0].map(lambda _: True)
+    label_filter = (df["label"] == label) if label is not None else True
+    split_number_filter = (
+        (df["split_index"] == split_index) if split_index is not None else True
+    )
+    estimator_name_filter = (
+        (df["estimator_name"] == estimator_name) if estimator_name is not None else True
+    )
+    return df[noop_filter & label_filter & split_number_filter & estimator_name_filter]
