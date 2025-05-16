@@ -36,6 +36,14 @@ class YPlotData:
     y: ArrayLike
 
 
+ReportType = Literal[
+    "cross-validation",
+    "estimator",
+    "comparison-estimator",
+    "comparison-cross-validation",
+]
+
+
 class SKLearnScorer(Protocol):
     """Protocol defining the interface of scikit-learn's _BaseScorer."""
 

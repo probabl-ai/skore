@@ -1260,9 +1260,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
-        if self._parent._reports_type == "CrossValidationReport":
-            raise NotImplementedError()
-
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
@@ -1285,50 +1282,111 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y_true: list[YPlotData] = []
             y_pred: list[YPlotData] = []
 
-            for report, report_name in zip(
-                self._parent.reports_, self._parent.report_names_
-            ):
-                report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
+            if self._parent._reports_type == "EstimatorReport":
+                for report, report_name in zip(
+                    self._parent.reports_, self._parent.report_names_
+                ):
+                    report_X, report_y, _ = (
+                        report.metrics._get_X_y_and_data_source_hash(
+                            data_source=data_source,
+                            X=X,
+                            y=y,
+                        )
+                    )
+
+                    y_true.append(
+                        YPlotData(
+                            estimator_name=report_name,
+                            split_index=None,
+                            y=report_y,
+                        )
+                    )
+                    y_pred.append(
+                        YPlotData(
+                            estimator_name=report_name,
+                            split_index=None,
+                            y=_get_cached_response_values(
+                                cache=report._cache,
+                                estimator_hash=report._hash,
+                                estimator=report._estimator,
+                                X=report_X,
+                                response_method=response_method,
+                                data_source=data_source,
+                                data_source_hash=None,
+                                pos_label=display_kwargs.get("pos_label"),
+                            ),
+                        )
+                    )
+                    progress.update(main_task, advance=1, refresh=True)
+
+                display = display_class._compute_data_for_display(
+                    y_true=y_true,
+                    y_pred=y_pred,
+                    report_type="comparison-estimator",
+                    estimators=[report.estimator_ for report in self._parent.reports_],
+                    estimator_names=self._parent.report_names_,
+                    ml_task=self._parent._ml_task,
                     data_source=data_source,
-                    X=X,
-                    y=y,
+                    **display_kwargs,
                 )
 
-                y_true.append(
-                    YPlotData(
-                        estimator_name=report_name,
-                        split_index=None,
-                        y=report_y,
-                    )
-                )
-                y_pred.append(
-                    YPlotData(
-                        estimator_name=report_name,
-                        split_index=None,
-                        y=_get_cached_response_values(
+            else:
+                for report, report_name in zip(
+                    self._parent.reports_, self._parent.report_names_
+                ):
+                    for split_index, estimator_report in enumerate(
+                        report.estimator_reports_
+                    ):
+                        report_X, report_y, _ = (
+                            estimator_report.metrics._get_X_y_and_data_source_hash(
+                                data_source=data_source,
+                                X=X,
+                                y=y,
+                            )
+                        )
+
+                        y_true.append(
+                            YPlotData(
+                                estimator_name=report_name,
+                                split_index=split_index,
+                                y=report_y,
+                            )
+                        )
+
+                        y_pred_i = _get_cached_response_values(
                             cache=report._cache,
-                            estimator_hash=report._hash,
-                            estimator=report._estimator,
+                            estimator_hash=estimator_report._hash,
+                            estimator=estimator_report.estimator_,
                             X=report_X,
                             response_method=response_method,
                             data_source=data_source,
                             data_source_hash=None,
                             pos_label=display_kwargs.get("pos_label"),
-                        ),
-                    )
-                )
-                progress.update(main_task, advance=1, refresh=True)
+                        )
+                        y_pred.append(
+                            YPlotData(
+                                estimator_name=report_name,
+                                split_index=split_index,
+                                y=y_pred_i,
+                            )
+                        )
 
-            display = display_class._compute_data_for_display(
-                y_true=y_true,
-                y_pred=y_pred,
-                report_type="comparison-estimator",
-                estimators=[report.estimator_ for report in self._parent.reports_],
-                estimator_names=self._parent.report_names_,
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                **display_kwargs,
-            )
+                    progress.update(main_task, advance=1, refresh=True)
+
+                display = display_class._compute_data_for_display(
+                    y_true=y_true,
+                    y_pred=y_pred,
+                    report_type="comparison-cross-validation",
+                    estimators=[
+                        estimator_report.estimator_
+                        for report in self._parent.reports_
+                        for estimator_report in report.estimator_reports_
+                    ],
+                    estimator_names=self._parent.report_names_,
+                    ml_task=self._parent._ml_task,
+                    data_source=data_source,
+                    **display_kwargs,
+                )
 
             if cache_key is not None:
                 # Unless seed is an int (i.e. the call is deterministic),
@@ -1468,6 +1526,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.precision_recall()
         >>> display.plot()
         """
+        if self._parent._reports_type == "CrossValidationReport":
+            raise NotImplementedError()
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
         display = cast(
@@ -1552,6 +1612,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
+        if self._parent._reports_type == "CrossValidationReport":
+            raise NotImplementedError()
         display_kwargs = {"subsample": subsample, "seed": seed}
         display = cast(
             PredictionErrorDisplay,
