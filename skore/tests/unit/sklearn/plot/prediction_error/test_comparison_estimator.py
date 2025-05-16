@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
@@ -32,18 +33,18 @@ def test_regression(pyplot, regression_data):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert display.estimator_names == ["estimator 1", "estimator 2"]
-    assert isinstance(display.y_true, list)
-    assert isinstance(display.y_pred, list)
-    assert isinstance(display.residuals, list)
-    assert len(display.y_true) == len(display.y_pred) == len(display.residuals) == 2
+    assert isinstance(display.prediction_error, pd.DataFrame)
+    assert list(display.prediction_error["estimator_name"].unique()) == [
+        "estimator 1",
+        "estimator 2",
+    ]
     assert display.data_source == "test"
     assert isinstance(display.range_y_true, RangeData)
     assert isinstance(display.range_y_pred, RangeData)
     assert isinstance(display.range_residuals, RangeData)
     for attr in ("y_true", "y_pred", "residuals"):
         global_min, global_max = np.inf, -np.inf
-        for display_attr in getattr(display, attr):
+        for display_attr in display.prediction_error[attr]:
             global_min = min(global_min, np.min(display_attr))
             global_max = max(global_max, np.max(display_attr))
         assert getattr(display, f"range_{attr}").min == global_min
@@ -95,9 +96,7 @@ def test_regression_actual_vs_predicted(pyplot, regression_data):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.y_true, list)
-    assert isinstance(display.y_pred, list)
-    assert len(display.y_true) == len(display.y_pred) == 2
+    assert isinstance(display.prediction_error, pd.DataFrame)
     assert display.data_source == "test"
 
     assert isinstance(display.line_, mpl.lines.Line2D)

@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from skore import EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
@@ -18,22 +19,24 @@ def test_regression(pyplot, regression_data, subsample):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.y_true, list)
-    assert isinstance(display.y_pred, list)
-    assert isinstance(display.residuals, list)
-    np.testing.assert_allclose(display.y_true[0], y_test)
-    np.testing.assert_allclose(display.y_pred[0], estimator.predict(X_test))
-    np.testing.assert_allclose(display.residuals[0], y_test - estimator.predict(X_test))
+    assert isinstance(display.prediction_error, pd.DataFrame)
+    np.testing.assert_allclose(display.prediction_error["y_true"], y_test)
+    np.testing.assert_allclose(
+        display.prediction_error["y_pred"], estimator.predict(X_test)
+    )
+    np.testing.assert_allclose(
+        display.prediction_error["residuals"], y_test - estimator.predict(X_test)
+    )
     assert display.data_source == "test"
     assert isinstance(display.range_y_true, RangeData)
     assert isinstance(display.range_y_pred, RangeData)
     assert isinstance(display.range_residuals, RangeData)
-    assert display.range_y_true.min == np.min(display.y_true[0])
-    assert display.range_y_true.max == np.max(display.y_true[0])
-    assert display.range_y_pred.min == np.min(display.y_pred[0])
-    assert display.range_y_pred.max == np.max(display.y_pred[0])
-    assert display.range_residuals.min == np.min(display.residuals[0])
-    assert display.range_residuals.max == np.max(display.residuals[0])
+    assert display.range_y_true.min == np.min(display.prediction_error["y_true"])
+    assert display.range_y_true.max == np.max(display.prediction_error["y_true"])
+    assert display.range_y_pred.min == np.min(display.prediction_error["y_pred"])
+    assert display.range_y_pred.max == np.max(display.prediction_error["y_pred"])
+    assert display.range_residuals.min == np.min(display.prediction_error["residuals"])
+    assert display.range_residuals.max == np.max(display.prediction_error["residuals"])
 
     display.plot()
     assert hasattr(display, "ax_")
@@ -235,7 +238,8 @@ def test_wrong_report_type(pyplot, regression_data):
     display.report_type = "unknown"
     err_msg = (
         "`report_type` should be one of 'estimator', 'cross-validation', "
-        "or 'comparison-estimator'. Got 'unknown' instead."
+        "'comparison-cross-validation' or 'comparison-estimator'. "
+        "Got 'unknown' instead."
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot()
