@@ -456,6 +456,9 @@ class PrecisionRecallCurveDisplay(
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
+        subplots : bool, default=False
+            If True, plot each estimator or fold on a separate subplot.
+
         Notes
         -----
         The average precision (cf. :func:`~sklearn.metrics.average_precision_score`)

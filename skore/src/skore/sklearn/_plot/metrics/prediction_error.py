@@ -428,6 +428,9 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
+        subplots : bool, default=False
+            If True, plot each estimator or fold on a separate subplot.
+
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
