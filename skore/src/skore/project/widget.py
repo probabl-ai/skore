@@ -140,15 +140,9 @@ class ModelExplorerWidget:
         for metric in self._metrics:
             default_value = self._metrics[metric]["show"]
             metric_type = cast(str, self._metrics[metric]["type"])
-            if metric_type in self._metric_checkboxes:
-                self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
-                    indent=False,
-                    value=default_value,
-                    description=cast(str, self._metrics[metric]["name"]),
-                    disabled=False,
-                    layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
-                )
-            else:
+            if metric_type == "time":
+                # the "time" metrics should be added to all the different types
+                # (i.e. classification and regression)
                 for metric_type in self._metric_checkboxes:
                     self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
                         indent=False,
@@ -157,6 +151,14 @@ class ModelExplorerWidget:
                         disabled=False,
                         layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
                     )
+            else:
+                self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
+                    indent=False,
+                    value=default_value,
+                    description=cast(str, self._metrics[metric]["name"]),
+                    disabled=False,
+                    layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
+                )
 
         metrics_for_classification = [
             metric
