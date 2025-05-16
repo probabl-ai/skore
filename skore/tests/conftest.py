@@ -1,9 +1,6 @@
 from datetime import datetime, timezone
 
 import pytest
-from skore.persistence.repository import ItemRepository
-from skore.persistence.storage import InMemoryStorage
-from skore.project import Project
 
 
 def pytest_configure(config):
@@ -33,24 +30,6 @@ def MockDatetime(mock_now):
             return mock_now
 
     return MockDatetime
-
-
-@pytest.fixture
-def in_memory_project(monkeypatch):
-    monkeypatch.delattr("skore.project.Project.__init__")
-
-    project = Project()
-    project.path = None
-    project.name = "test"
-    project._item_repository = ItemRepository(storage=InMemoryStorage())
-    project._storage_initialized = True
-
-    return project
-
-
-@pytest.fixture
-def on_disk_project(tmp_path):
-    return Project(tmp_path / "project.skore")
 
 
 @pytest.fixture(scope="function")
