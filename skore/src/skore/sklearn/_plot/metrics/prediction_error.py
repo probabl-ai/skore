@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colormaps
 from matplotlib.artist import Artist
-from numpy.typing import NDArray
+from pandas import DataFrame
 from sklearn.utils.validation import _num_samples, check_array
 
 from skore.externals._sklearn_compat import _safe_indexing
@@ -35,14 +35,13 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
     Parameters
     ----------
-    y_true : list of ndarray of shape (n_samples,)
-        True values.
-
-    y_pred : list of ndarray of shape (n_samples,)
-        Prediction values.
-
-    residuals : list of ndarray of shape (n_samples,)
-        Residuals. Equal to `y_true - y_pred`.
+    prediction_error : DataFrame
+        The prediction error data to display. The columns are
+        - "estimator_name"
+        - "split_index" (may be null)
+        - "y_true"
+        - "y_pred"
+        - "residuals".
 
     range_y_true : RangeData
         Global range of the true values.
@@ -52,9 +51,6 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
     range_residuals : RangeData
         Global range of the residuals.
-
-    estimator_names : list of str
-        Name of the estimators.
 
     data_source : {"train", "test", "X_y"}
         The data source used to display the prediction error.
@@ -105,24 +101,18 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     def __init__(
         self,
         *,
-        y_true: list[NDArray],
-        y_pred: list[NDArray],
-        residuals: list[NDArray],
+        prediction_error: DataFrame,
         range_y_true: RangeData,
         range_y_pred: RangeData,
         range_residuals: RangeData,
-        estimator_names: list[str],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
-        self.y_true = y_true
-        self.y_pred = y_pred
-        self.residuals = residuals
+        self.prediction_error = prediction_error
         self.range_y_true = range_y_true
         self.range_y_pred = range_y_pred
         self.range_residuals = range_residuals
-        self.estimator_names = estimator_names
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
@@ -149,9 +139,30 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         ValueError
             If the format of `data_points_kwargs` is invalid.
         """
+        if self.report_type == "estimator":
+            allow_single_dict = True
+            n_curves = 1
+        elif self.report_type == "cross-validation":
+            allow_single_dict = True
+            n_curves = len(self.prediction_error["split_index"].unique())
+        elif self.report_type in (
+            "comparison-estimator",
+            "comparison-cross-validation",
+        ):
+            # since we compare different estimators, it does not make sense to share
+            # a single dictionary for all the estimators.
+            allow_single_dict = False
+            n_curves = len(self.prediction_error["estimator_name"].unique())
+        else:
+            raise ValueError(
+                f"`report_type` should be one of 'estimator', 'cross-validation', "
+                "'comparison-cross-validation' or 'comparison-estimator'. "
+                f"Got '{self.report_type}' instead."
+            )
+
         if data_points_kwargs is None:
-            return [{}] * len(self.y_true)
-        elif len(self.y_true) == 1:
+            return [{}] * n_curves
+        elif n_curves == 1:
             if isinstance(data_points_kwargs, dict):
                 return [data_points_kwargs]
             raise ValueError(
@@ -159,16 +170,26 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 "expect `data_points_kwargs` to be a dictionary. Got "
                 f"{type(data_points_kwargs)} instead."
             )
-        elif not isinstance(data_points_kwargs, list) or len(data_points_kwargs) != len(
-            self.y_true
-        ):
-            raise ValueError(
-                "You intend to plot prediction errors either from multiple estimators "
-                "or from a cross-validated estimator. We expect `data_points_kwargs` "
-                "to be a list of dictionaries with the same length as the number of "
-                "estimators or splits. Got "
-                f"{len(data_points_kwargs)} instead of {len(self.y_true)}."
-            )
+        else:
+            if not allow_single_dict and isinstance(data_points_kwargs, dict):
+                raise ValueError(
+                    "You intend to plot multiple curves. We expect "
+                    "`data_points_kwargs` to be a list of dictionaries. Got "
+                    f"{type(data_points_kwargs)} instead."
+                )
+
+            if isinstance(data_points_kwargs, dict):
+                return [data_points_kwargs] * n_curves
+
+            # From this point, we have a list of dictionaries
+            if len(data_points_kwargs) != n_curves:
+                raise ValueError(
+                    "You intend to plot prediction errors either from multiple "
+                    "estimators or from a cross-validated estimator. "
+                    "We expect `data_points_kwargs` to be a list of dictionaries "
+                    "with the same length as the number of estimators or splits. "
+                    f"Got {len(data_points_kwargs)} instead of {n_curves}."
+                )
 
         return data_points_kwargs
 
@@ -208,7 +229,6 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             data_points_kwargs, samples_kwargs[0]
         )
 
-        y_true, y_pred, residuals = self.y_true[0], self.y_pred[0], self.residuals[0]
         if self.data_source in ("train", "test"):
             scatter_label = f"{self.data_source.title()} set"
         else:  # data_source == "X_y"
@@ -217,8 +237,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         if kind == "actual_vs_predicted":
             scatter.append(
                 self.ax_.scatter(
-                    y_pred,
-                    y_true,
+                    self.prediction_error["y_pred"],
+                    self.prediction_error["y_true"],
                     label=scatter_label,
                     **data_points_kwargs_validated,
                 )
@@ -226,8 +246,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         else:  # kind == "residual_vs_predicted"
             scatter.append(
                 self.ax_.scatter(
-                    y_pred,
-                    residuals,
+                    self.prediction_error["y_pred"],
+                    self.prediction_error["residuals"],
                     label=scatter_label,
                     **data_points_kwargs_validated,
                 )
@@ -264,12 +284,15 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         """
         scatter = []
         data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
+        n_splits = len(self.prediction_error["split_index"].unique())
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
-            len(self.y_true) if len(self.y_true) > 10 else 10,
+            n_splits if n_splits > 10 else 10,
         )
 
-        for split_idx in range(len(self.y_true)):
+        for split_idx, prediction_error_split in self.prediction_error.groupby(
+            "split_index"
+        ):
             data_points_kwargs_fold = {
                 "color": colors_markers[split_idx],
                 **data_points_kwargs,
@@ -284,8 +307,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             if kind == "actual_vs_predicted":
                 scatter.append(
                     self.ax_.scatter(
-                        self.y_pred[split_idx],
-                        self.y_true[split_idx],
+                        prediction_error_split["y_pred"],
+                        prediction_error_split["y_true"],
                         label=label,
                         **data_points_kwargs_validated,
                     )
@@ -293,8 +316,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             else:  # kind == "residual_vs_predicted"
                 scatter.append(
                     self.ax_.scatter(
-                        self.y_pred[split_idx],
-                        self.residuals[split_idx],
+                        prediction_error_split["y_pred"],
+                        prediction_error_split["residuals"],
                         label=label,
                         **data_points_kwargs_validated,
                     )
@@ -312,7 +335,6 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         self,
         *,
         kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
-        estimator_names: list[str],
         samples_kwargs: list[dict[str, Any]],
     ) -> list[Artist]:
         """Plot the prediction error of several estimators.
@@ -321,9 +343,6 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         ----------
         kind : {"actual_vs_predicted", "residual_vs_predicted"}
             The type of plot to draw.
-
-        estimator_names : list of str
-            Name of the estimators.
 
         samples_kwargs : list of dict
             Keyword arguments for the scatter plot.
@@ -335,38 +354,41 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         """
         scatter = []
         data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
+
+        estimator_names = self.prediction_error["estimator_name"].unique()
+        n_estimators = len(estimator_names)
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
-            len(self.y_true) if len(self.y_true) > 10 else 10,
+            n_estimators if n_estimators > 10 else 10,
         )
 
-        for estimator_idx in range(len(self.y_true)):
+        for idx, (estimator_name, prediction_error_estimator) in enumerate(
+            self.prediction_error.groupby("estimator_name")
+        ):
             data_points_kwargs_fold = {
-                "color": colors_markers[estimator_idx],
+                "color": colors_markers[idx],
                 **data_points_kwargs,
             }
 
             data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_fold, samples_kwargs[estimator_idx]
+                data_points_kwargs_fold, samples_kwargs[idx]
             )
-
-            label = f"{estimator_names[estimator_idx]}"
 
             if kind == "actual_vs_predicted":
                 scatter.append(
                     self.ax_.scatter(
-                        self.y_pred[estimator_idx],
-                        self.y_true[estimator_idx],
-                        label=label,
+                        prediction_error_estimator["y_pred"],
+                        prediction_error_estimator["y_true"],
+                        label=estimator_name,
                         **data_points_kwargs_validated,
                     )
                 )
             else:  # kind == "residual_vs_predicted"
                 scatter.append(
                     self.ax_.scatter(
-                        self.y_pred[estimator_idx],
-                        self.residuals[estimator_idx],
-                        label=label,
+                        prediction_error_estimator["y_pred"],
+                        prediction_error_estimator["residuals"],
+                        label=estimator_name,
                         **data_points_kwargs_validated,
                     )
                 )
@@ -519,7 +541,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             self.scatter_ = self._plot_single_estimator(
                 kind=kind,
                 estimator_name=(
-                    self.estimator_names[0]
+                    self.prediction_error["estimator_name"].iloc[0]
                     if estimator_name is None
                     else estimator_name
                 ),
@@ -529,7 +551,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             self.scatter_ = self._plot_cross_validated_estimator(
                 kind=kind,
                 estimator_name=(
-                    self.estimator_names[0]
+                    self.prediction_error["estimator_name"].iloc[0]
                     if estimator_name is None
                     else estimator_name
                 ),
@@ -538,7 +560,6 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         elif self.report_type == "comparison-estimator":
             self.scatter_ = self._plot_comparison_estimator(
                 kind=kind,
-                estimator_names=self.estimator_names,
                 samples_kwargs=data_points_kwargs,
             )
         else:
@@ -559,7 +580,6 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         y_pred: list[YPlotData],
         *,
         report_type: ReportType,
-        estimator_names: list[str],
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
         subsample: Union[float, int, None] = 1_000,
@@ -626,7 +646,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 f"Got {ml_task} instead."
             )
 
-        y_true_display, y_pred_display, residuals_display = [], [], []
+        prediction_error_records = []
         y_true_min, y_true_max = np.inf, -np.inf
         y_pred_min, y_pred_max = np.inf, -np.inf
         residuals_min, residuals_max = np.inf, -np.inf
@@ -652,17 +672,35 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 )
                 residuals_sample = y_true_sample - y_pred_sample
 
-                y_true_display.append(y_true_sample)
-                y_pred_display.append(y_pred_sample)
-                residuals_display.append(residuals_sample)
+                for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
+                    y_true_sample, y_pred_sample, residuals_sample
+                ):
+                    prediction_error_records.append(
+                        {
+                            "estimator_name": y_true_i.estimator_name,
+                            "split_index": y_true_i.split_index,
+                            "y_true": y_true_sample_i,
+                            "y_pred": y_pred_sample_i,
+                            "residuals": residuals_sample_i,
+                        }
+                    )
             else:
                 y_true_sample = y_true_i.y
                 y_pred_sample = y_pred_i.y
                 residuals_sample = y_true_i.y - y_pred_i.y
 
-                y_true_display.append(y_true_sample)
-                y_pred_display.append(y_pred_sample)
-                residuals_display.append(residuals_sample)
+                for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
+                    y_true_sample, y_pred_sample, residuals_sample
+                ):
+                    prediction_error_records.append(
+                        {
+                            "estimator_name": y_true_i.estimator_name,
+                            "split_index": y_true_i.split_index,
+                            "y_true": y_true_sample_i,
+                            "y_pred": y_pred_sample_i,
+                            "residuals": residuals_sample_i,
+                        }
+                    )
 
             y_true_min = min(y_true_min, np.min(y_true_sample))
             y_true_max = max(y_true_max, np.max(y_true_sample))
@@ -676,13 +714,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         range_residuals = RangeData(min=residuals_min, max=residuals_max)
 
         return cls(
-            y_true=y_true_display,
-            y_pred=y_pred_display,
-            residuals=residuals_display,
+            prediction_error=DataFrame.from_records(prediction_error_records),
             range_y_true=range_y_true,
             range_y_pred=range_y_pred,
             range_residuals=range_residuals,
-            estimator_names=estimator_names,
             data_source=data_source,
             ml_task=ml_task,
             report_type=report_type,
