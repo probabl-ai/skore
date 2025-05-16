@@ -70,7 +70,6 @@ df = comparator.metrics.report_metrics(indicator_favorability=False)
 df
 
 # %%
-import pandas as pd
 
 # Automatically determine lower_is_better and higher_is_better
 lower_is_better = [
@@ -80,9 +79,12 @@ higher_is_better = [
     item["name"] for item in metrics_dict.values() if item["icon"] == "(↗︎)"
 ]
 
+# %%
+import pandas as pd
+
 
 def highlight_best(row):
-    """Determine the best value and apply bold styling."""
+    """Determine the best value of the row and apply bold styling."""
     metric = row.name
     if metric in lower_is_better:
         best_value = row.min()  # Lower is better
@@ -95,10 +97,12 @@ def highlight_best(row):
 
 
 def apply_gradient(row):
-    """Apply a color gradient based on whether lower or higher is better."""
+    """Apply a color gradient on the row based on whether lower or higher is better for
+    the metric of the row.
+    """
     metric = row.name
     if metric in lower_is_better:
-        # For lower-is-better, smaller values get a stronger color
+        # For lower-is-better, smaller values get a stronger color (less opacity)
         gradient = pd.Series(
             [
                 "background-color: rgba(30, 34, 170, {:.2f})".format(
@@ -122,6 +126,7 @@ def apply_gradient(row):
     return gradient
 
 
+# %%
 styled_df = (
     df.style.apply(highlight_best, axis=1)
     .apply(apply_gradient, axis=1)
@@ -150,8 +155,10 @@ from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassif
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import LinearSVC
 
 estimators = [
+    make_pipeline(StandardScaler(), LinearSVC(random_state=0, tol=1e-5)),
     make_pipeline(StandardScaler(), LogisticRegression()),
     RandomForestClassifier(random_state=0),
     HistGradientBoostingClassifier(random_state=0),
