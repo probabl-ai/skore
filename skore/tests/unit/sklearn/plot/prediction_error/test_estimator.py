@@ -7,7 +7,7 @@ from skore.sklearn._plot.metrics.prediction_error import RangeData
 
 
 @pytest.mark.parametrize("subsample", [None, 1_000])
-def test_prediction_error_display_regression(pyplot, regression_data, subsample):
+def test_regression(pyplot, regression_data, subsample):
     """Check the attributes and default plotting behaviour of the prediction error plot
     with regression data."""
     estimator, X_train, X_test, y_train, y_test = regression_data
@@ -65,9 +65,8 @@ def test_prediction_error_display_regression(pyplot, regression_data, subsample)
         ({"subsample": -20.0}, "When a floating-point, subsample=-20.0 should be"),
     ],
 )
-def test_prediction_error_display_raise_error(pyplot, params, err_msg, regression_data):
-    """Check that we raise the proper error when making the parameters
-    validation."""
+def test_wrong_subsample(pyplot, params, err_msg, regression_data):
+    """Check that we raise the proper error when making the parameters validation."""
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
@@ -76,7 +75,7 @@ def test_prediction_error_display_raise_error(pyplot, params, err_msg, regressio
         report.metrics.prediction_error(**params)
 
 
-def test_prediction_error_display_regression_kind(pyplot, regression_data):
+def test_regression_actual_vs_predicted(pyplot, regression_data):
     """Check the attributes when switching to the "actual_vs_predicted" kind."""
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = EstimatorReport(
@@ -106,7 +105,7 @@ def test_prediction_error_display_regression_kind(pyplot, regression_data):
     assert display.ax_.get_aspect() in ("equal", 1.0)
 
 
-def test_prediction_error_display_data_source(pyplot, regression_data):
+def test_data_source(pyplot, regression_data):
     """Check that we can pass the `data_source` argument to the prediction error
     plot."""
     estimator, X_train, X_test, y_train, y_test = regression_data
@@ -124,7 +123,7 @@ def test_prediction_error_display_data_source(pyplot, regression_data):
     assert display.scatter_[0].get_label() == "Data set"
 
 
-def test_prediction_error_display_kwargs(pyplot, regression_data):
+def test_kwargs(pyplot, regression_data):
     """Check that we can pass keyword arguments to the prediction error plot."""
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = EstimatorReport(
@@ -190,9 +189,7 @@ def test_random_state(regression_data):
 
 
 @pytest.mark.parametrize("data_points_kwargs", ["not a dict", [{"color": "red"}]])
-def test_prediction_error_single_estimator_kwargs_error(
-    pyplot, regression_data, data_points_kwargs
-):
+def test_wrong_kwargs(pyplot, regression_data, data_points_kwargs):
     """Check that we raise an error when we pass keyword arguments to the prediction
     error plot if there is a single estimator."""
     estimator, X_train, X_test, y_train, y_test = regression_data
@@ -209,7 +206,7 @@ def test_prediction_error_single_estimator_kwargs_error(
         display.plot(data_points_kwargs=data_points_kwargs)
 
 
-def test_prediction_error_display_error_kind(pyplot, regression_data):
+def test_pass_kind_to_plot(pyplot, regression_data):
     """Check that we raise an error when we pass the `kind` argument to the prediction
     error plot. Since all reports shares the same `plot` method, we don't need to check
     all types of reports."""
@@ -227,7 +224,7 @@ def test_prediction_error_display_error_kind(pyplot, regression_data):
         display.plot(kind="whatever")
 
 
-def test_prediction_error_display_wrong_report_type(pyplot, regression_data):
+def test_wrong_report_type(pyplot, regression_data):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `report_type` argument."""
     estimator, X_train, X_test, y_train, y_test = regression_data

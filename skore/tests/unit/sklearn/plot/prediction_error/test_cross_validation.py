@@ -7,9 +7,7 @@ from skore.sklearn._plot.metrics.prediction_error import RangeData
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
-def test_prediction_error_cross_validation_display_regression(
-    pyplot, regression_data_no_split, data_source
-):
+def test_regression(pyplot, regression_data_no_split, data_source):
     """Check the attributes and default plotting behaviour of the prediction error plot
     with cross-validation data."""
     (estimator, X, y), cv = regression_data_no_split, 3
@@ -63,9 +61,7 @@ def test_prediction_error_cross_validation_display_regression(
     assert display.ax_.get_aspect() not in ("equal", 1.0)
 
 
-def test_prediction_error_cross_validation_display_regression_kind(
-    pyplot, regression_data_no_split
-):
+def test_regression_actual_vs_predicted(pyplot, regression_data_no_split):
     """Check the attributes when switching to the "actual_vs_predicted" kind."""
     (estimator, X, y), cv = regression_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
@@ -98,9 +94,7 @@ def test_prediction_error_cross_validation_display_regression_kind(
     assert display.ax_.get_aspect() in ("equal", 1.0)
 
 
-def test_prediction_error_display_cross_validation_kwargs(
-    pyplot, regression_data_no_split
-):
+def test_kwargs(pyplot, regression_data_no_split):
     """Check that we can pass keyword arguments to the prediction error plot when
     there is a cross-validation report."""
     (estimator, X, y), cv = regression_data_no_split, 3
@@ -121,9 +115,7 @@ def test_prediction_error_display_cross_validation_kwargs(
 
 
 @pytest.mark.parametrize("data_points_kwargs", ["not a list", [{"color": "red"}]])
-def test_prediction_error_cross_validation_kwargs_error(
-    pyplot, regression_data_no_split, data_points_kwargs
-):
+def test_wrong_kwargs(pyplot, regression_data_no_split, data_points_kwargs):
     """Check that we raise an error when we pass keyword arguments to the prediction
     error plot if there is a cross-validation report."""
     (estimator, X, y), cv = regression_data_no_split, 3
