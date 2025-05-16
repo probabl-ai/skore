@@ -147,6 +147,24 @@ Join our mission to promote open-source and make machine learning development mo
 
 <br />
 
+
+## Support
+
+Skore is tested on Linux and Windows, for at most 4 versions of Python, and at most 3 versions of scikit-learn:
+- Python 3.9 (will be deprecated)
+  - scikit-learn 1.6
+- Python 3.10
+  - scikit-learn 1.6
+- Python 3.11
+  - scikit-learn 1.6
+- Python 3.12
+  - scikit-learn 1.4
+  - scikit-learn 1.5
+  - scikit-learn 1.6
+- Python 3.13
+  - scikit-learn 1.5
+  - scikit-learn 1.6
+
 ---
 
 Brought to you by
