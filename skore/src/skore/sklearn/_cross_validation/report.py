@@ -297,7 +297,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             progress.update(
                 main_task,
                 description=(
-                    f"Cross-validation predictions for fold "
+                    "Cross-validation predictions for fold "
                     f"#{fold_idx}/{total_estimators}"
                 ),
             )
