@@ -53,3 +53,42 @@ def test_model_explorer_widget_empty_dataframe(capsys):
     assert "No reports found in the project. Use the `put` method to add reports." in (
         captured.out
     )
+
+
+def test_model_explorer_widget_single_task():
+    """Check the behaviour of the widget when there is a single task in the metadata.
+
+    We switch ML task to the one having at least an item.
+    """
+    metadata = pd.DataFrame(
+        data={
+            "ml_task": ["classification"],
+            "dataset": ["dataset1"],
+            "learner": ["learner1"],
+            "fit_time": [1.0],
+            "predict_time": [2.0],
+            "rmse": [0.1],
+            "log_loss": [0.2],
+            "roc_auc": [0.3],
+        },
+        index=pd.MultiIndex.from_tuples([(0, "id1")], names=[None, "id"]),
+    )
+    metadata["learner"] = metadata["learner"].astype("category")
+
+    widget = ModelExplorerWidget(metadata)
+    # check that the classification dropdown menu is visible
+    assert widget.classification_metrics_box.layout.display == ""
+    assert widget._color_metric_dropdown["classification"].layout.display == ""
+    # check that the regression dropdown menu is hidden
+    assert widget.regression_metrics_box.layout.display == "none"
+    assert widget._color_metric_dropdown["regression"].layout.display == "none"
+
+    metadata["ml_task"] = ["regression"]
+
+    widget = ModelExplorerWidget(metadata)
+    # check that the classification dropdown menu is hidden
+    assert widget.classification_metrics_box.layout.display == "none"
+    assert widget._color_metric_dropdown["classification"].layout.display == "none"
+    # check that the regression dropdown menu is visible
+    assert widget.regression_metrics_box.layout.display == ""
+    assert widget._color_metric_dropdown["regression"].layout.display == ""

@@ -332,7 +332,7 @@ class ModelExplorerWidget:
         self._update_task_widgets()
         self._layout = widgets.VBox(
             [controls, self.output],
-            layout=widgets.Layout(width=f"{self._plot_width}px", spacing="0px"),
+            layout=widgets.Layout(width=f"{self._plot_width}px"),
         )
 
     def _update_task_widgets(self) -> None:
