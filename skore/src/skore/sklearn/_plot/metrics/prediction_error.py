@@ -400,6 +400,75 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
         return scatter
 
+    def _plot_comparison_cross_validation(
+        self,
+        *,
+        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
+        samples_kwargs: list[dict[str, Any]],
+    ) -> list[Artist]:
+        """Plot the prediction error of several cross-validated estimators.
+
+        Parameters
+        ----------
+        kind : {"actual_vs_predicted", "residual_vs_predicted"}
+            The type of plot to draw.
+
+        samples_kwargs : list of dict
+            Keyword arguments for the scatter plot.
+
+        Returns
+        -------
+        scatter : list of matplotlib Artist
+            The scatter plot.
+        """
+        scatter = []
+        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
+
+        estimator_names = self.prediction_error["estimator_name"].unique()
+        n_estimators = len(estimator_names)
+        colors_markers = sample_mpl_colormap(
+            colormaps.get_cmap("tab10"),
+            n_estimators if n_estimators > 10 else 10,
+        )
+
+        for idx, (estimator_name, prediction_error_estimator) in enumerate(
+            self.prediction_error.groupby("estimator_name")
+        ):
+            data_points_kwargs_fold = {
+                "color": colors_markers[idx],
+                **data_points_kwargs,
+            }
+
+            data_points_kwargs_validated = _validate_style_kwargs(
+                data_points_kwargs_fold, samples_kwargs[idx]
+            )
+
+            if kind == "actual_vs_predicted":
+                scatter.append(
+                    self.ax_.scatter(
+                        prediction_error_estimator["y_pred"],
+                        prediction_error_estimator["y_true"],
+                        label=estimator_name,
+                        **data_points_kwargs_validated,
+                    )
+                )
+            else:  # kind == "residual_vs_predicted"
+                scatter.append(
+                    self.ax_.scatter(
+                        prediction_error_estimator["y_pred"],
+                        prediction_error_estimator["residuals"],
+                        label=estimator_name,
+                        **data_points_kwargs_validated,
+                    )
+                )
+
+        self.ax_.legend(
+            bbox_to_anchor=(1.02, 1),
+            title=f"Prediction errors on $\\bf{{{self.data_source}}}$ set",
+        )
+
+        return scatter
+
     @StyleDisplayMixin.style_plot
     def plot(
         self,
@@ -559,6 +628,11 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             )
         elif self.report_type == "comparison-estimator":
             self.scatter_ = self._plot_comparison_estimator(
+                kind=kind,
+                samples_kwargs=data_points_kwargs,
+            )
+        elif self.report_type == "comparison-cross-validation":
+            self.scatter_ = self._plot_comparison_cross_validation(
                 kind=kind,
                 samples_kwargs=data_points_kwargs,
             )
