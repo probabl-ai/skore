@@ -291,7 +291,7 @@ my_project = skore.Project("my_project")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now that the project exists, we can store some useful items in it (in the same
-# directory) using :func:`~skore.Project.put`, with a "universal" key-value convention.
+# directory) using :func:`~skore.Project.put`, with a key-value convention.
 
 # %%
 # Let us store the estimator report of the random forest using
@@ -299,6 +299,34 @@ my_project = skore.Project("my_project")
 
 # %%
 my_project.put("estimator_report", rf_report)
+my_project.put("estimator_report", gb_report)
+
+# %%
+# Now, let us retrieve the data that we previously stored:
+
+# %%
+metadata = my_project.reports.metadata()
+print(type(metadata))
+
+# %%
+# We can perform some queries on our stored data:
+
+# %%
+from pprint import pprint
+
+report_get = metadata.query("ml_task.str.contains('classification')").reports()
+pprint(report_get)
+
+# %%
+# For example, we can retrieve the report metrics from the first estimator report:
+
+# %%
+
+# sphinx_gallery_start_ignore
+temp_dir.cleanup()
+# sphinx_gallery_end_ignore
+
+report_get[0].metrics.report_metrics(pos_label=1)
 
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
@@ -310,12 +338,6 @@ temp_dir.cleanup()
 #
 #   -   never lose some key machine learning metrics,
 #   -   and observe the evolution over time / runs.
-
-# %%
-# .. seealso::
-#
-#   For more functionalities about the tracking of items using their history,
-#   see :ref:`example_tracking_items`.
 
 # %%
 # .. admonition:: Stay tuned!
