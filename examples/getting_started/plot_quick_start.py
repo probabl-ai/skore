@@ -19,10 +19,10 @@ from sklearn.model_selection import train_test_split
 
 from skore import EstimatorReport
 
-X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+X, y = make_classification(n_classes=2, n_samples=20_000, n_informative=4)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-report = EstimatorReport(
+log_report = EstimatorReport(
     LogisticRegression(), X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
 )
 
@@ -31,20 +31,20 @@ report = EstimatorReport(
 # detected that you are doing binary classification):
 
 # %%
-report.help()
+log_report.help()
 
 # %%
 # Display the report metrics that was computed for you:
 
 # %%
-df_report_metrics = report.metrics.report_metrics(pos_label=1)
+df_report_metrics = log_report.metrics.report_metrics(pos_label=1)
 df_report_metrics
 
 # %%
 # Display the ROC curve that was generated for you:
 
 # %%
-roc_plot = report.metrics.roc()
+roc_plot = log_report.metrics.roc()
 roc_plot.plot()
 
 # %%
@@ -74,98 +74,38 @@ my_project = skore.Project("my_project")
 # Store some previous results in the skore project for safe-keeping:
 
 # %%
-my_project.put("report", report)
+my_project.put("log_report", log_report)
 
-##
+# %%
+# Let us store a second model:
+
+# %%
+from sklearn.ensemble import RandomForestClassifier
+
+rf_report = EstimatorReport(
+    RandomForestClassifier(),
+    X_train=X_train,
+    X_test=X_test,
+    y_train=y_train,
+    y_test=y_test,
+)
+my_project.put("rf_report", rf_report)
+
+# %%
+# Now, let us get the data that we stored
 
 # %%
 metadata = my_project.reports.metadata()
+print(type(metadata))
 
 # %%
-# .. jupyter-execute::
-# 
-#   name = "world"
-#   print(f"hello {name} !")
+from pprint import pprint
 
-
-# %%
-# .. jupyter-execute::
-# 
-#   from sklearn.datasets import make_classification
-#   from sklearn.linear_model import LogisticRegression
-#   from sklearn.model_selection import train_test_split
-#   
-#   from skore import EstimatorReport
-#   import skore
-#   
-#   import os
-#   import tempfile
-#   
-#   temp_dir = tempfile.TemporaryDirectory()
-# 
-#   os.environ["SKORE_WORKSPACE"] = temp_dir.name
-# 
-#   my_project = skore.Project("my_project")
-#   
-#   X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
-#   X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-#   
-#   report = EstimatorReport(
-#       LogisticRegression(), X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
-#   )
-#   
-#   my_project.put("report", report)
-# 
-#   from IPython.display import display, HTML
-# 
-#   metadata = my_project.reports.metadata()
-#   metadata._repr_html_()
-# 
-#   metadata
-#   
-#   metadata._plot_widget
-# 
-#   display(metadata)
-# 
-#   display(metadata._plot_widget)
-# 
-#   display(metadata._repr_html_())
-# 
-#   display(HTML(metadata._repr_html_()))
-# 
-#   print(metadata)
-# 
-#   print(metadata._plot_widget)
-# 
-#   print(metadata._repr_html_())
-# 
-#   print(HTML(metadata._repr_html_()))
-#
-#   repr(metadata)
-# 
-#   print(repr(metadata))
-#
-#   print(repr(metadata._plot_widget))
- 
-# %%
-repr(metadata)
+report_get = metadata.query("ml_task.str.contains('classification')").reports()
+pprint(report_get)
 
 # %%
-metadata
-
-# %%
-print(repr(metadata))
-
-# %%
-from IPython.display import display, HTML
-
-# breakpoint()
-# display(metadata._plot_widget)
-display(HTML(metadata._repr_html_()))
-
-# %%
-reports = metadata.reports()
-reports
+report_get[0].metrics.report_metrics()
 
 # %%
 # .. seealso::
