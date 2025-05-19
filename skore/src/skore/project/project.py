@@ -1,3 +1,5 @@
+"""Class definition of the ``skore`` project."""
+
 from __future__ import annotations
 
 import re
@@ -14,6 +16,74 @@ from .metadata import Metadata
 
 
 class Project:
+    r"""
+    API to manage a collection of key-report pairs.
+
+    Its constructor initializes a project by creating a new project or by loading an
+    existing one.
+
+    The class main methods are :func:`~skore.Project.put`,
+    :func:`~skore.Project.reports.metadata` and :func:`~skore.Project.reports.get`,
+    respectively to insert a key-report pair into the project, to obtain the metadata of
+    the inserted reports and to get a specific report by its id.
+
+    Two mutually exclusive modes are available and can be configured using the ``name``
+    parameter of the constructor:
+
+    - mode : hub
+
+        If the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the project
+        is configured to the ``hub`` mode to communicate with the ``skore hub``.
+
+        A tenant is a ``skore hub`` concept that must be configured on the ``skore hub``
+        interface. It represents an isolated entity managing users, projects, and
+        resources. It can be a company, organization, or team that operates
+        independently within the system.
+
+        In this mode, you must have an account to the ``skore hub`` and must be
+        authorized to the specified tenant. You must also be authenticated beforehand,
+        using the ``skore-hub-login`` CLI.
+
+    - mode : local
+
+        Otherwise, the project is configured to the ``local`` mode to be persisted on
+        the user machine in a directory called ``workspace``.
+
+        The workspace can be shared between all the projects.
+        The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+        If not, it will be by default set to a ``skore/`` directory in the USER
+        cache directory:
+
+        - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+        - in Linux, usually ``${HOME}/.cache/skore``,
+        - in macOS, usually ``${HOME}/Library/Caches/skore``.
+
+    Parameters
+    ----------
+    name : str
+        The name of the project:
+
+        - if the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the
+          project is configured to communicate with the ``skore hub``,
+        - otherwise, the project is configured to communicate with a local storage, on
+          the user machine.
+
+    **kwargs : dict
+        Keyword arguments passed to the project, depending on its mode.
+
+        workspace : Path, mode:local only.
+            The directory where the local project is persisted.
+
+            The workspace can be shared between all the projects.
+            The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+            If not, it will be by default set to a ``skore/`` directory in the USER
+            cache directory:
+
+            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - in Linux, usually ``${HOME}/.cache/skore``,
+            - in macOS, usually ``${HOME}/Library/Caches/skore``.
+    """
+
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
 
     def __init__(self, name: str, **kwargs):
@@ -38,6 +108,24 @@ class Project:
         self.__project = PLUGINS[mode].load()(**kwargs)
 
     def put(self, key: str, report: EstimatorReport):
+        """
+        Put a key-report pair to the project.
+
+        If the key already exists, its last report is modified to point to this new
+        report, while keeping track of the report history.
+
+        Parameters
+        ----------
+        key : str
+            The key to associate with ``report`` in the project.
+        report : skore.EstimatorReport
+            The report to associate with ``key`` in the project.
+
+        Raises
+        ------
+        TypeError
+            If the combination of parameters are not valid.
+        """
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
@@ -50,14 +138,14 @@ class Project:
 
     @property
     def reports(self):
-        """"""
+        """Accessor for interaction with the persisted reports."""
 
         def get(id: str) -> EstimatorReport:  # hide underlying functions from user
-            """"""
+            """Get a persisted report by its id."""
             return self.__project.reports.get(id)
 
         def metadata() -> Metadata:  # hide underlying functions from user
-            """"""
+            """Obtain metadata for all persisted reports."""
             return Metadata.factory(self.__project)
 
         return types.SimpleNamespace(get=get, metadata=metadata)
