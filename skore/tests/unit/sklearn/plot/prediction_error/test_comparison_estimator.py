@@ -13,14 +13,14 @@ def test_regression(pyplot, regression_data):
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = ComparisonReport(
         reports={
-            "estimator 1": EstimatorReport(
+            "estimator_1": EstimatorReport(
                 estimator,
                 X_train=X_train,
                 y_train=y_train,
                 X_test=X_test,
                 y_test=y_test,
             ),
-            "estimator 2": EstimatorReport(
+            "estimator_2": EstimatorReport(
                 estimator,
                 X_train=X_train,
                 y_train=y_train,
@@ -35,8 +35,8 @@ def test_regression(pyplot, regression_data):
     # check the structure of the attributes
     assert isinstance(display.prediction_error, pd.DataFrame)
     assert list(display.prediction_error["estimator_name"].unique()) == [
-        "estimator 1",
-        "estimator 2",
+        "estimator_1",
+        "estimator_2",
     ]
     assert display.data_source == "test"
     assert isinstance(display.range_y_true, RangeData)
@@ -75,14 +75,14 @@ def test_regression_actual_vs_predicted(pyplot, regression_data):
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = ComparisonReport(
         reports={
-            "estimator 1": EstimatorReport(
+            "estimator_1": EstimatorReport(
                 estimator,
                 X_train=X_train,
                 y_train=y_train,
                 X_test=X_test,
                 y_test=y_test,
             ),
-            "estimator 2": EstimatorReport(
+            "estimator_2": EstimatorReport(
                 estimator,
                 X_train=X_train,
                 y_train=y_train,
@@ -124,14 +124,14 @@ def test_kwargs(pyplot, regression_data):
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = ComparisonReport(
         reports={
-            "estimator 1": EstimatorReport(
+            "estimator_1": EstimatorReport(
                 estimator,
                 X_train=X_train,
                 y_train=y_train,
                 X_test=X_test,
                 y_test=y_test,
             ),
-            "estimator 2": EstimatorReport(
+            "estimator_2": EstimatorReport(
                 estimator,
                 X_train=X_train,
                 y_train=y_train,
@@ -158,14 +158,14 @@ def test_wrong_kwargs(pyplot, regression_data, data_points_kwargs):
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = ComparisonReport(
         reports={
-            "estimator 1": EstimatorReport(
+            "estimator_1": EstimatorReport(
                 estimator,
                 X_train=X_train,
                 y_train=y_train,
                 X_test=X_test,
                 y_test=y_test,
             ),
-            "estimator 2": EstimatorReport(
+            "estimator_2": EstimatorReport(
                 estimator,
                 X_train=X_train,
                 y_train=y_train,
