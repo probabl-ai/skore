@@ -194,6 +194,22 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         scores = []
         favorability_indicator = []
         for metric_name, metric in zip(scoring_names, scoring):
+            if isinstance(metric, str) and not (
+                (metric.startswith("_") and metric[1:] in self._SCORE_OR_LOSS_INFO)
+                or metric in self._SCORE_OR_LOSS_INFO
+            ):
+                # Potentially a scikit-learn metric
+                try:
+                    metric = metrics.get_scorer(metric)
+                except ValueError as err:
+                    raise ValueError(
+                        f"Invalid metric: {metric!r}. "
+                        f"Please use a valid metric from the "
+                        f"list of supported metrics: "
+                        f"{list(self._SCORE_OR_LOSS_INFO.keys())} "
+                        "or a valid scikit-learn scoring string."
+                    ) from err
+
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
             if isinstance(metric, _BaseScorer):
@@ -221,7 +237,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     elif pos_label is not None:
                         metrics_kwargs["pos_label"] = pos_label
                 if metric_name is None:
-                    metric_name = metric._score_func.__name__
+                    metric_name = metric._score_func.__name__.replace("_", " ").title()
                 metric_favorability = "↗︎" if metric._sign == 1 else "↘︎"
                 favorability_indicator.append(metric_favorability)
             elif isinstance(metric, str) or callable(metric):
@@ -248,51 +264,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         if metric_name is None:
                             metric_name = f"{self._SCORE_OR_LOSS_INFO[metric]['name']}"
                         metric_favorability = self._SCORE_OR_LOSS_INFO[metric]["icon"]
-
-                    # Handle scikit-learn metrics by trying get_scorer
-                    else:
-                        from sklearn.metrics import get_scorer
-
-                        try:
-                            scorer = get_scorer(metric)
-                            metric_function = scorer._score_func
-                            response_method = scorer._response_method
-
-                            display_name = metric
-                            if metric.startswith("neg_"):
-                                display_name = metric[4:].replace("_", " ")
-                                metric_fn = partial(
-                                    self._custom_metric,
-                                    metric_function=metric_function,
-                                    response_method=response_method,
-                                )
-                                metrics_kwargs = {**scorer._kwargs}
-                                metrics_kwargs["data_source_hash"] = data_source_hash
-                                metric_favorability = "↘︎"
-                                favorability_indicator.append(metric_favorability)
-
-                            if metric_name is None:
-                                metric_name = display_name.title()
-
-                            metric_fn = partial(
-                                self._custom_metric,
-                                metric_function=metric_function,
-                                response_method=response_method,
-                            )
-                            metrics_kwargs = {**scorer._kwargs}
-                            metrics_kwargs["data_source_hash"] = data_source_hash
-                            metric_favorability = (
-                                "(↘︎)" if metric.startswith("neg_") else "(↗︎)"
-                            )
-                        except ValueError as err:
-                            raise ValueError(
-                                f"Invalid metric: {metric!r}. "
-                                f"Please use a valid metric from the "
-                                f"list of supported metrics: "
-                                f"{list(self._SCORE_OR_LOSS_INFO.keys())} "
-                                "or a valid scikit-learn scoring string."
-                            ) from err
-                    favorability_indicator.append(metric_favorability)
                 else:
                     # Handle callable metrics
                     metric_fn = partial(self._custom_metric, metric_function=metric)
