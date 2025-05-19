@@ -109,6 +109,7 @@ class TestMetadata:
         assert isinstance(metadata, DataFrame)
         assert isinstance(metadata, Metadata)
         assert metadata.project == project
+        assert len(metadata) == 0
 
     def test_constructor(self, regression):
         project = FakeProject(regression)
