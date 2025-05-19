@@ -503,7 +503,7 @@ class ModelExplorerWidget:
                 font=dict(size=16),
                 height=500,
                 width=self._plot_width,
-                margin=dict(l=150, r=150, t=120, b=30),
+                margin=dict(l=200, r=150, t=120, b=30),
                 autosize=False,
             )
 
