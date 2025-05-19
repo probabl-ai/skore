@@ -2,7 +2,7 @@ name: pr-display-code-coverage
 
 on:
   workflow_run:
-    workflows: [skore, skore-remote-project, skore-local-project]
+    workflows: [skore, skore-hub-project, skore-local-project]
     types: [completed]
 
 concurrency:
