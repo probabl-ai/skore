@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from io import StringIO
 from typing import Any, Literal, Optional, Union, cast
 
+import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
@@ -354,3 +355,56 @@ def sample_mpl_colormap(
     """
     indices = np.linspace(0, 1, n)
     return [cmap(i) for i in indices]
+
+
+def get_subplots(
+    nplots: int,
+    nrows: Optional[int] = None,
+    ncols: Optional[int] = None,
+    figsize: Optional[tuple[float, float]] = None,
+) -> tuple[plt.Figure, np.ndarray]:
+    """Create subplots for displaying metrics.
+
+    Parameters
+    ----------
+    nplots : int
+        Number of plots to create.
+    nrows : int, default=None
+        Number of rows in the subplot grid. If None, it will be computed based on ncols.
+    ncols : int, default=None
+        Number of columns in the subplot grid. If None, defaults to 2 for
+        multiple plots, 1 for a single plot.
+    figsize : tuple of float, default=None
+        Figure size (width, height) in inches. If None, a default size will be
+        determined based on the number of subplots.
+
+    Returns
+    -------
+    fig : Figure
+        The matplotlib Figure object.
+    axes : ndarray of Axes
+        Array of Axes objects. When nplots > 1, the array is 2D.
+    """
+    # Default ncols=2 if more than 1 plot, else set to 1
+    if nplots <= 1:
+        return plt.subplots(figsize=figsize or (6, 4), squeeze=True)
+
+    ncols = ncols or 2
+    if nrows is None:
+        quot, resid = divmod(nplots, ncols)
+        nrows = quot + (1 if resid else 0)
+
+    # Setting a reasonable default figsize if none provided
+    if figsize is None:
+        figsize = (6 * ncols, 4 * nrows)
+
+    fig, axes = plt.subplots(
+        nrows, ncols, figsize=figsize, squeeze=False, constrained_layout=True
+    )
+
+    # Hide unused subplots
+    for i in range(nplots, nrows * ncols):
+        row_idx, col_idx = divmod(i, ncols)
+        axes[row_idx, col_idx].set_visible(False)
+
+    return fig, axes
