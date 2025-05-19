@@ -72,6 +72,7 @@ dev = [
   "nbformat",
   "ipykernel",
 ]
+hub = ["skore-hub-project"]
 
 [project.urls]
 Homepage = "https://probabl.ai"
