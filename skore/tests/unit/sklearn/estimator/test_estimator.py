@@ -1352,17 +1352,15 @@ def test_estimator_report_metric_with_neg_metrics(binary_classification_data):
 
     result = report.metrics.report_metrics(scoring=["neg_log_loss"])
     assert "Log Loss" in result.index
-    assert result.loc["Log Loss", "RandomForestClassifier"] == report.metrics.log_loss()
+    assert result.loc["Log Loss", "RandomForestClassifier"] == pytest.approx(
+        report.metrics.log_loss()
+    )
 
 
 def test_estimator_report_with_sklearn_scoring_strings(binary_classification_data):
     """Test that scikit-learn metric strings can be passed to report_metrics."""
     classifier, X_test, y_test = binary_classification_data
-    class_report = EstimatorReport(
-        classifier,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    class_report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
     result = class_report.metrics.report_metrics(scoring=["neg_log_loss"])
     assert "Log Loss" in result.index.get_level_values(0)
@@ -1414,3 +1412,38 @@ def test_estimator_report_with_scoring_strings_regression(regression_data):
 
     assert reg_result.loc["Mean Squared Error"]["Favorability"] == "(↘︎)"
     assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
+
+
+def test_estimator_report_sklearn_scorer_names_pos_label(binary_classification_data):
+    """Check that `pos_label` is dispatched with scikit-learn scorer names."""
+    classifier, X_test, y_test = binary_classification_data
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    result = report.metrics.report_metrics(scoring=["f1"], pos_label=0)
+    assert "F1 Score" in result.index.get_level_values(0)
+    assert 0 in result.index.get_level_values(1)
+    f1_scorer = make_scorer(
+        f1_score, response_method="predict", average="binary", pos_label=0
+    )
+    assert result.loc[("F1 Score", 0), "RandomForestClassifier"] == pytest.approx(
+        f1_scorer(classifier, X_test, y_test)
+    )
+
+
+def test_estimator_report_sklearn_scorer_names_scoring_kwargs(
+    binary_classification_data,
+):
+    """Check that `scoring_kwargs` is not supported when `scoring` is a scikit-learn
+    scorer name.
+    """
+    classifier, X_test, y_test = binary_classification_data
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    err_msg = (
+        "The `scoring_kwargs` parameter is not supported when `scoring` is a "
+        "scikit-learn scorer name."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.report_metrics(
+            scoring=["f1"], scoring_kwargs={"average": "macro"}
+        )

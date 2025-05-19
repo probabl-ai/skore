@@ -202,7 +202,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 (metric.startswith("_") and metric[1:] in self._SCORE_OR_LOSS_INFO)
                 or metric in self._SCORE_OR_LOSS_INFO
             ):
-                # Potentially a scikit-learn metric
                 try:
                     metric = metrics.get_scorer(metric)
                 except ValueError as err:
@@ -213,6 +212,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         f"{list(self._SCORE_OR_LOSS_INFO.keys())} "
                         "or a valid scikit-learn scoring string."
                     ) from err
+                if scoring_kwargs is not None:
+                    raise ValueError(
+                        "The `scoring_kwargs` parameter is not supported when "
+                        "`scoring` is a scikit-learn scorer name. Use the function "
+                        "`sklearn.metrics.make_scorer` to create a scorer with "
+                        "additional parameters."
+                    )
 
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
