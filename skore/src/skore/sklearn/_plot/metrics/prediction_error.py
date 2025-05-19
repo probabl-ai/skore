@@ -479,6 +479,185 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             perfect_model_kwargs or self._default_perfect_model_kwargs or {},
         )
 
+        if data_points_kwargs is None:
+            data_points_kwargs = self._default_data_points_kwargs
+        data_points_kwargs = self._validate_data_points_kwargs(
+            data_points_kwargs=data_points_kwargs
+        )
+
+        # subplot creation
+        if subplots:
+            if self.report_type == "estimator":
+                num_plots = 1
+            elif self.report_type == "cross-validation":
+                num_plots = len(self.y_true)
+            elif self.report_type == "comparison-estimator":
+                num_plots = len(self.estimator_names)
+            else:
+                raise ValueError(
+                    f"`report_type` should be one of 'estimator', 'cross-validation', "
+                    f"or 'comparison-estimator'. Got '{self.report_type}' instead."
+                )
+
+            # Use only needed subplots (without creating empty ones)
+            if nrows is None and ncols is None:
+                ncols = 1
+                nrows = num_plots
+
+            self.figure_ = plt.figure(figsize=figsize)
+            axes: list[Axes] = []
+            for i in range(num_plots):
+                if i == 0:
+                    ax = self.figure_.add_subplot(nrows, ncols, i + 1)
+                else:
+                    ax = self.figure_.add_subplot(
+                        nrows, ncols, i + 1, sharex=axes[0], sharey=axes[0]
+                    )
+                axes.append(ax)
+
+            self.scatter_ = []
+
+            # setting the original self.ax_ to the first axis for
+            # backwards compatibility
+            self.ax_ = axes[0] if axes else None
+
+            for idx, axi in enumerate(axes):
+                if idx >= num_plots:
+                    break
+
+                if kind == "actual_vs_predicted":
+                    # For actual vs predicted, we want the same range for both axes
+                    min_value = min(self.range_y_pred.min, self.range_y_true.min)
+                    max_value = max(self.range_y_pred.max, self.range_y_true.max)
+                    x_range_perfect_pred = [min_value, max_value]
+                    y_range_perfect_pred = [min_value, max_value]
+
+                    _ = axi.plot(
+                        x_range_perfect_pred,
+                        y_range_perfect_pred,
+                        **perfect_model_kwargs_validated,
+                    )[0]
+                    axi.set(
+                        aspect="equal",
+                        xlim=x_range_perfect_pred,
+                        ylim=y_range_perfect_pred,
+                        xticks=np.linspace(
+                            x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                        ),
+                        yticks=np.linspace(
+                            y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                        ),
+                    )
+
+                else:  # kind == "residual_vs_predicted"
+                    x_range_perfect_pred = [
+                        self.range_y_pred.min,
+                        self.range_y_pred.max,
+                    ]
+                    y_range_perfect_pred = [
+                        self.range_residuals.min,
+                        self.range_residuals.max,
+                    ]
+
+                    _ = axi.plot(
+                        x_range_perfect_pred, [0, 0], **perfect_model_kwargs_validated
+                    )[0]
+                    axi.set(
+                        xlim=x_range_perfect_pred,
+                        ylim=y_range_perfect_pred,
+                        xticks=np.linspace(
+                            x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                        ),
+                        yticks=np.linspace(
+                            y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                        ),
+                    )
+
+                axi.set(xlabel=xlabel, ylabel=ylabel)
+
+                # Plot data in the current subplot
+                if self.report_type == "estimator":
+                    scatter = self._plot_single_estimator(
+                        kind=kind,
+                        estimator_name=(
+                            self.estimator_names[0]
+                            if estimator_name is None
+                            else estimator_name
+                        ),
+                        samples_kwargs=data_points_kwargs,
+                        ax=axi,
+                    )
+                    axi.set_title(f"Model: {self.estimator_names[0]}")
+                elif self.report_type == "cross-validation":
+                    # Plot just one fold in this subplot
+                    y_true_fold = [self.y_true[idx]]
+                    y_pred_fold = [self.y_pred[idx]]
+                    residuals_fold = [self.residuals[idx]]
+                    fold_estimator = PredictionErrorDisplay(
+                        y_true=y_true_fold,
+                        y_pred=y_pred_fold,
+                        residuals=residuals_fold,
+                        range_y_true=self.range_y_true,
+                        range_y_pred=self.range_y_pred,
+                        range_residuals=self.range_residuals,
+                        estimator_names=[self.estimator_names[0]],
+                        data_source=self.data_source,
+                        ml_task=self.ml_task,
+                        report_type="estimator",
+                    )
+                    # Set the ax_ attribute for the fold display
+                    fold_estimator.ax_ = axi
+                    fold_estimator.figure_ = self.figure_
+
+                    scatter = fold_estimator._plot_single_estimator(
+                        kind=kind,
+                        estimator_name=self.estimator_names[0],
+                        samples_kwargs=[data_points_kwargs[idx]],
+                        ax=axi,
+                    )
+                    axi.set_title(f"Fold #{idx + 1}")
+                elif self.report_type == "comparison-estimator":
+                    # Plot just one estimator in this subplot
+                    est_name = self.estimator_names[idx]
+                    y_true_est = [self.y_true[idx]]
+                    y_pred_est = [self.y_pred[idx]]
+                    residuals_est = [self.residuals[idx]]
+                    est_display = PredictionErrorDisplay(
+                        y_true=y_true_est,
+                        y_pred=y_pred_est,
+                        residuals=residuals_est,
+                        range_y_true=self.range_y_true,
+                        range_y_pred=self.range_y_pred,
+                        range_residuals=self.range_residuals,
+                        estimator_names=[est_name],
+                        data_source=self.data_source,
+                        ml_task=self.ml_task,
+                        report_type="estimator",
+                    )
+                    # Set the ax_ attribute for the estimator display
+                    est_display.ax_ = axi
+                    est_display.figure_ = self.figure_
+
+                    scatter = est_display._plot_single_estimator(
+                        kind=kind,
+                        estimator_name=est_name,
+                        samples_kwargs=[data_points_kwargs[idx]],
+                        ax=axi,
+                    )
+                    axi.set_title(f"Model: {est_name}")
+
+                self.scatter_.extend(scatter)
+
+                if despine:
+                    x_range = axi.get_xlim()
+                    y_range = axi.get_ylim()
+                    _despine_matplotlib_axis(axi, x_range=x_range, y_range=y_range)
+
+            return self.figure_
+
+        # Original single plot logic (without subplots)
+        self.figure_, self.ax_ = (ax.figure, ax) if ax is not None else plt.subplots()
+
         if kind == "actual_vs_predicted":
             # For actual vs predicted, we want the same range for both axes
             min_value = min(self.range_y_pred.min, self.range_y_true.min)
