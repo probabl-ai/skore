@@ -14,15 +14,16 @@ from .metadata import Metadata
 
 
 class Project:
-    __REMOTE_NAME_PATTERN = re.compile(r"remote://(?P<tenant>[^/]+)/(?P<name>.+)")
+    __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
 
     def __init__(self, name: str, **kwargs):
         if not (PLUGINS := entry_points(group="skore.plugins.project")):
             raise SystemError("No project plugin found, please install at least one.")
 
-        if match := re.match(self.__REMOTE_NAME_PATTERN, name):
-            mode = "remote"
-            kwargs |= {"tenant": match["tenant"], "name": match["name"]}
+        if match := re.match(self.__HUB_NAME_PATTERN, name):
+            mode = "hub"
+            name = match["name"]
+            kwargs |= {"tenant": match["tenant"], "name": name}
         else:
             mode = "local"
             kwargs |= {"name": name}
