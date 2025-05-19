@@ -2,8 +2,29 @@ import re
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 import pytest
 from skore.project.widget import ModelExplorerWidget
+
+
+@pytest.fixture
+def metadata():
+    """Minimal metadata dataframe containing a regressor and a classifier."""
+    metadata = pd.DataFrame(
+        data={
+            "ml_task": ["classification", "regression"],
+            "dataset": ["dataset1", "dataset2"],
+            "learner": ["learner1", "learner2"],
+            "fit_time": [1.0, 2.0],
+            "predict_time": [3.0, 4.0],
+            "rmse": [None, 0.2],
+            "log_loss": [0.3, None],
+            "roc_auc": [0.5, None],
+        },
+        index=pd.MultiIndex.from_tuples([(0, "id1"), (0, "id2")], names=[None, "id"]),
+    )
+    metadata["learner"] = metadata["learner"].astype("category")
+    return metadata
 
 
 def test_model_explorer_widget_check_dataframe_schema_error():
@@ -126,27 +147,15 @@ def test_model_explorer_widget_controls():
     assert components[0].value == "Statistical Metrics: "
     assert components[1].description == "RMSE"
 
+    assert widget.current_fig is None
+    assert widget.current_selection == {}
 
-def test_model_explorer_widget_single_task():
+
+def test_model_explorer_widget_single_task(metadata):
     """Check the behaviour of the widget when there is a single task in the metadata.
 
     We switch ML task to the one having at least an item.
     """
-    metadata = pd.DataFrame(
-        data={
-            "ml_task": ["classification"],
-            "dataset": ["dataset1"],
-            "learner": ["learner1"],
-            "fit_time": [1.0],
-            "predict_time": [2.0],
-            "rmse": [0.1],
-            "log_loss": [0.2],
-            "roc_auc": [0.3],
-        },
-        index=pd.MultiIndex.from_tuples([(0, "id1")], names=[None, "id"]),
-    )
-    metadata["learner"] = metadata["learner"].astype("category")
-
     widget = ModelExplorerWidget(metadata)
     # check that the classification dropdown menu is visible
     assert widget.classification_metrics_box.layout.display == ""
@@ -164,3 +173,52 @@ def test_model_explorer_widget_single_task():
     # check that the regression dropdown menu is visible
     assert widget.regression_metrics_box.layout.display == ""
     assert widget._color_metric_dropdown["regression"].layout.display == ""
+
+
+def test_model_explorer_widget_jitter(metadata):
+    """Check the behaviour of the static method adding some jitter for categorical
+    feature represented on the parallel coordinate plot."""
+    widget = ModelExplorerWidget(metadata)
+    amount = 0.01
+    jitted_categories = widget._add_jitter_to_categorical(
+        seed=0, categorical_series=widget.dataframe["learner"], amount=amount
+    )
+    assert amount > jitted_categories[0] > 0
+    assert 1 > jitted_categories[1] > 1 - amount
+
+
+def test_model_explorer_widget_update_plot(metadata):
+    """Check the behaviour of the method `_update_plot` and thus programmatically
+    if the information on the parallel coordinate plot are the one expected."""
+    widget = ModelExplorerWidget(metadata)
+    widget._update_plot()
+
+    assert isinstance(widget.current_fig, go.FigureWidget)
+    parallel_coordinate = widget.current_fig.data[0]
+    # by default with the data at hand we expect a classification problem
+    dimension_labels = [dim["label"] for dim in parallel_coordinate.dimensions]
+    assert dimension_labels == ["Learner", "Log Loss", "Macro ROC AUC"]
+    assert parallel_coordinate.dimensions[0]["ticktext"] == ["learner1"]
+    np.testing.assert_array_equal(
+        parallel_coordinate.dimensions[1]["values"],
+        metadata["log_loss"].dropna().to_numpy(),
+    )
+    np.testing.assert_array_equal(
+        parallel_coordinate.dimensions[2]["values"],
+        metadata["roc_auc"].dropna().to_numpy(),
+    )
+    assert parallel_coordinate["line"]["colorbar"]["title"]["text"] == "Log Loss"
+
+    # simulate a change to the regression task
+    widget._task_dropdown.value = "regression"
+    widget._update_plot()
+    assert isinstance(widget.current_fig, go.FigureWidget)
+    parallel_coordinate = widget.current_fig.data[0]
+    dimension_labels = [dim["label"] for dim in parallel_coordinate.dimensions]
+    assert dimension_labels == ["Learner", "RMSE"]
+    assert parallel_coordinate.dimensions[0]["ticktext"] == ["learner2"]
+    np.testing.assert_array_equal(
+        parallel_coordinate.dimensions[1]["values"],
+        metadata["rmse"].dropna().to_numpy(),
+    )
+    assert parallel_coordinate["line"]["colorbar"]["title"]["text"] == "RMSE"
