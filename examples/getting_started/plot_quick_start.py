@@ -80,8 +80,73 @@ my_project.put("report", report)
 
 # %%
 metadata = my_project.reports.metadata()
-metadata._repr_html_()
 
+# %%
+# .. jupyter-execute::
+# 
+#   name = "world"
+#   print(f"hello {name} !")
+
+
+# %%
+# .. jupyter-execute::
+# 
+#   from sklearn.datasets import make_classification
+#   from sklearn.linear_model import LogisticRegression
+#   from sklearn.model_selection import train_test_split
+#   
+#   from skore import EstimatorReport
+#   import skore
+#   
+#   import os
+#   import tempfile
+#   
+#   temp_dir = tempfile.TemporaryDirectory()
+# 
+#   os.environ["SKORE_WORKSPACE"] = temp_dir.name
+# 
+#   my_project = skore.Project("my_project")
+#   
+#   X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+#   X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+#   
+#   report = EstimatorReport(
+#       LogisticRegression(), X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+#   )
+#   
+#   my_project.put("report", report)
+# 
+#   from IPython.display import display, HTML
+# 
+#   metadata = my_project.reports.metadata()
+#   metadata._repr_html_()
+# 
+#   metadata
+#   
+#   metadata._plot_widget
+# 
+#   display(metadata)
+# 
+#   display(metadata._plot_widget)
+# 
+#   display(metadata._repr_html_())
+# 
+#   display(HTML(metadata._repr_html_()))
+# 
+#   print(metadata)
+# 
+#   print(metadata._plot_widget)
+# 
+#   print(metadata._repr_html_())
+# 
+#   print(HTML(metadata._repr_html_()))
+#
+#   repr(metadata)
+# 
+#   print(repr(metadata))
+#
+#   print(repr(metadata._plot_widget))
+ 
 # %%
 repr(metadata)
 
@@ -92,9 +157,11 @@ metadata
 print(repr(metadata))
 
 # %%
-from IPython.display import display
+from IPython.display import display, HTML
 
-display(metadata)
+# breakpoint()
+# display(metadata._plot_widget)
+display(HTML(metadata._repr_html_()))
 
 # %%
 reports = metadata.reports()

@@ -62,6 +62,7 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
    auto_examples/index
    reference/index
    contributing
+   project_explorer_demo
 
 .. raw:: html
 

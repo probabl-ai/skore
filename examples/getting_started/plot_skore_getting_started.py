@@ -293,75 +293,18 @@ my_project = skore.Project("my_project")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now that the project exists, we can store some useful items in it (in the same
-# directory) using :func:`~skore.Project.put`, with a "universal" key-value convention,
-# along with some annotations.
+# directory) using :func:`~skore.Project.put`, with a "universal" key-value convention.
 
 # %%
-# Let us store the accuracy and the estimator report of the random forest using
-# :meth:`~skore.Project.put`, along with some annotation to help us track our
-# experiments:
+# Let us store the estimator report of the random forest using
+# :meth:`~skore.Project.put` to help us track our experiments:
 
 # %%
-my_project.put("accuracy", rf_report.metrics.accuracy(), note="random forest, float")
-my_project.put(
-    "estimator_report", rf_report, note="random forest, skore estimator report"
-)
+my_project.put("estimator_report", rf_report)
 
-# %%
-# .. note ::
-#   With the skore :func:`~skore.Project.put`, there is no need to remember the API for
-#   saving or exporting each type of object: ``df.to_csv(...)``, ``plt.savefig(...)``,
-#   ``np.save(...)``, etc.
-#   There is also the unified :func:`~skore.Project.get` for loading items.
-
-# %%
-# We can retrieve the value of an item using :meth:`~skore.Project.get`:
-
-# %%
-my_project.get("accuracy")
-
-# %%
-# We can also retrieve the storage date and our annotation:
-
-# %%
-from pprint import pprint
-
-accuracies = my_project.get("accuracy", metadata="all")
-pprint(accuracies)
-
-# %%
-# .. seealso::
-#
-#   For more information about the functionalities and the different types
-#   of items that we can store in a skore :class:`~skore.Project`,
-#   see :ref:`example_working_with_projects`.
-
-# %%
-# Tracking the history of items
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-# %%
-# Now, for the gradient boosting model, let us store the same kinds of items
-# using the exact same keys, namely ``accuracy`` and ``estimator_report``:
-
-# %%
-my_project.put(
-    "accuracy", gb_report.metrics.accuracy(), note="gradient boosting, float"
-)
-my_project.put(
-    "estimator_report", gb_report, note="gradient boosting, skore estimator report"
-)
-
-# %%
-# Skore does not overwrite items with the same name (key): instead, it stores
-# their history so that nothing is lost:
-
-# %%
-accuracies_history = my_project.get("accuracy", metadata="all", version="all")
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
-pprint(accuracies_history)
 
 # %%
 # .. note::

@@ -570,6 +570,7 @@ class ModelExplorerWidget:
             )
             return None
 
+
         display(self._layout)
         self._update_plot()
         self.update_selection()

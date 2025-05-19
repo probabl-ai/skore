@@ -38,6 +38,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
     "sphinx_autosummary_accessors",
+    "jupyter_sphinx",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
@@ -75,10 +76,9 @@ subsections_order = [
 
 # sphinx_gallery options
 sphinx_gallery_conf = {
-    # "examples_dirs": "../examples",  # path to example scripts
-    "examples_dirs": "../examples/getting_started/",  # path to example scripts
+    "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
-    "filename_pattern": "plot_",  # pattern to select examples; change this to only build some of the examples
+    "filename_pattern": "plot_quick_start",  # pattern to select examples; change this to only build some of the examples
     "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections
     # see https://sphinx-gallery.github.io/stable/configuration.html#sub-gallery-order
     "within_subsection_order": "ExampleTitleSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
