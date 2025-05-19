@@ -459,6 +459,18 @@ class PrecisionRecallCurveDisplay(
         subplots : bool, default=False
             If True, plot each estimator or fold on a separate subplot.
 
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
+
         Notes
         -----
         The average precision (cf. :func:`~sklearn.metrics.average_precision_score`)
