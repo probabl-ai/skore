@@ -1,3 +1,5 @@
+"""Widget for interactive parallel coordinate plots of ML experiment metadata."""
+
 from typing import Any, Optional, Union, cast
 
 import numpy as np
@@ -5,6 +7,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from IPython.display import clear_output, display
 from ipywidgets import widgets
+from rich.panel import Panel
 
 
 class ModelExplorerWidget:
@@ -68,7 +71,31 @@ class ModelExplorerWidget:
         cast(str, v["name"]): k for k, v in _metrics.items()
     }
 
+    _required_columns: list[str] = ["ml_task", "dataset", "learner"] + list(
+        _metrics.keys()
+    )
+    _required_index: list[Union[str, None]] = [None, "id"]
+
+    def _check_dataframe_schema(self, dataframe: pd.DataFrame) -> None:
+        """Check if the dataframe has the required columns and index."""
+        if not all(col in dataframe.columns for col in self._required_columns):
+            raise ValueError(
+                f"Dataframe is missing required columns: {self._required_columns}"
+            )
+        if not all(col in dataframe.index.names for col in self._required_index):
+            raise ValueError(
+                f"Dataframe is missing required index: {self._required_index}"
+            )
+        if dataframe["learner"].dtype != "category":
+            raise ValueError("Learner column must be a categorical column")
+
     def __init__(self, dataframe: pd.DataFrame, seed: int = 0) -> None:
+        if dataframe.empty:
+            self.dataframe = dataframe
+            self.seed = seed
+            return None
+
+        self._check_dataframe_schema(dataframe)
         self.dataframe = dataframe
         self.seed = seed
 
@@ -82,19 +109,25 @@ class ModelExplorerWidget:
             "ml_task.str.contains('regression')"
         )["dataset"].unique()
 
+        default_task = "classification" if len(self._clf_datasets) else "regression"
         self._task_dropdown = widgets.Dropdown(
             options=[
                 ("Classification", "classification"),
                 ("Regression", "regression"),
             ],
-            value="classification",
+            value=default_task,
             description="Task Type:",
             disabled=False,
             layout=widgets.Layout(width="200px"),
         )
 
+        default_dataset = (
+            self._clf_datasets
+            if default_task == "classification"
+            else self._reg_datasets
+        )
         self._dataset_dropdown = widgets.Dropdown(
-            options=self._clf_datasets,
+            options=default_dataset,
             description="Dataset:",
             disabled=False,
             layout=widgets.Layout(width="250px"),
@@ -107,15 +140,9 @@ class ModelExplorerWidget:
         for metric in self._metrics:
             default_value = self._metrics[metric]["show"]
             metric_type = cast(str, self._metrics[metric]["type"])
-            if metric_type in self._metric_checkboxes:
-                self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
-                    indent=False,
-                    value=default_value,
-                    description=cast(str, self._metrics[metric]["name"]),
-                    disabled=False,
-                    layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
-                )
-            else:
+            if metric_type == "time":
+                # the "time" metrics should be added to all the different types
+                # (i.e. classification and regression)
                 for metric_type in self._metric_checkboxes:
                     self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
                         indent=False,
@@ -124,6 +151,14 @@ class ModelExplorerWidget:
                         disabled=False,
                         layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
                     )
+            else:
+                self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
+                    indent=False,
+                    value=default_value,
+                    description=cast(str, self._metrics[metric]["name"]),
+                    disabled=False,
+                    layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
+                )
 
         metrics_for_classification = [
             metric
@@ -299,7 +334,7 @@ class ModelExplorerWidget:
         self._update_task_widgets()
         self._layout = widgets.VBox(
             [controls, self.output],
-            layout=widgets.Layout(width=f"{self._plot_width}px", spacing="0px"),
+            layout=widgets.Layout(width=f"{self._plot_width}px"),
         )
 
     def _update_task_widgets(self) -> None:
@@ -516,6 +551,22 @@ class ModelExplorerWidget:
 
     def display(self) -> None:
         """Display the widget interface and initialize the plot."""
+        if self.dataframe.empty:
+            from skore import console  # avoid circular import
+
+            content = (
+                "No reports found in the project. Use the `put` method to add reports."
+            )
+            console.print(
+                Panel(
+                    content,
+                    title="[bold cyan]Empty Project Metadata[/bold cyan]",
+                    expand=False,
+                    border_style="orange1",
+                )
+            )
+            return None
+
         display(self._layout)
         self._update_plot()
         self.update_selection()
