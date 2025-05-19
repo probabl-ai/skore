@@ -83,6 +83,20 @@ metadata = my_project.reports.metadata()
 metadata._repr_html_()
 
 # %%
+repr(metadata)
+
+# %%
+metadata
+
+# %%
+print(repr(metadata))
+
+# %%
+from IPython.display import display
+
+display(metadata)
+
+# %%
 reports = metadata.reports()
 reports
 
