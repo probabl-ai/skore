@@ -1,4 +1,4 @@
-from skore_remote_project.item.item import (
+from skore_hub_project.item.item import (
     b64_str_to_bytes,
     bytes_to_b64_str,
     lazy_is_instance,

@@ -4,8 +4,8 @@ import numpy as np
 from polars import Series
 from polars.testing import assert_series_equal
 from pytest import raises
-from skore_remote_project.item import PolarsSeriesItem
-from skore_remote_project.item.item import ItemTypeError
+from skore_hub_project.item import PolarsSeriesItem
+from skore_hub_project.item.item import ItemTypeError
 
 
 class TestPolarsSeriesItem:

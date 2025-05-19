@@ -4,8 +4,8 @@ import numpy as np
 from pandas import Index, MultiIndex, Series
 from pandas.testing import assert_series_equal
 from pytest import raises
-from skore_remote_project.item import PandasSeriesItem
-from skore_remote_project.item.item import ItemTypeError
+from skore_hub_project.item import PandasSeriesItem
+from skore_hub_project.item.item import ItemTypeError
 
 ORIENT = PandasSeriesItem.ORIENT
 

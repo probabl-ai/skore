@@ -1,1 +1,1 @@
-"""Module definition of the ``skore`` remote project."""
+"""Module definition of the ``skore`` hub project."""

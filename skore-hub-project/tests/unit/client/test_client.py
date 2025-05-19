@@ -3,8 +3,8 @@ from urllib.parse import urljoin
 
 import pytest
 from httpx import HTTPStatusError, Response
-from skore_remote_project.client.api import URI
-from skore_remote_project.client.client import AuthenticatedClient, AuthenticationError
+from skore_hub_project.client.api import URI
+from skore_hub_project.client.client import AuthenticatedClient, AuthenticationError
 
 REFRESH_URL = urljoin(URI, "identity/oauth/token/refresh")
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc)

@@ -8,8 +8,8 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
-from skore_remote_project.item import PickleItem, SkoreEstimatorReportItem
-from skore_remote_project.item.item import ItemTypeError, bytes_to_b64_str
+from skore_hub_project.item import PickleItem, SkoreEstimatorReportItem
+from skore_hub_project.item.item import ItemTypeError, bytes_to_b64_str
 
 
 @fixture

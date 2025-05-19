@@ -1,5 +1,5 @@
 [project]
-name = "skore-remote-project"
+name = "skore-hub-project"
 dynamic = ["license", "readme", "version"]
 requires-python = ">=3.9, <3.13"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
@@ -31,14 +31,14 @@ test-base = [
   "skrub",
   "xdoctest",
 ]
-test = ["skore-remote-project[test-base]", "polars"]
-test-lts-cpu = ["skore-remote-project[test-base]", "polars-lts-cpu"]
+test = ["skore-hub-project[test-base]", "polars"]
+test-lts-cpu = ["skore-hub-project[test-base]", "polars-lts-cpu"]
 
 [project.scripts]
-skore-hub-login = "skore_remote_project.authentication.login:login"
+skore-hub-login = "skore_hub_project.authentication.login:login"
 
 [project.entry-points."skore.plugins.project"]
-remote = "skore_remote_project:Project"
+hub = "skore_hub_project:Project"
 
 [build-system]
 requires = ["hatchling"]
@@ -54,7 +54,7 @@ readme = { "file" = "../README.md" }
 only-include = ["src/", "hatch/"]
 
 [tool.hatch.build.targets.wheel]
-package = ["src/skore_remote_project/"]
+package = ["src/skore_hub_project/"]
 
 [tool.pytest.ini_options]
 addopts = [
@@ -67,7 +67,7 @@ addopts = [
 
 [tool.coverage.run]
 branch = true
-source = ["skore_remote_project"]
+source = ["skore_hub_project"]
 concurrency = ["thread", "multiprocessing"]
 parallel = true
 
@@ -81,7 +81,7 @@ exclude_also = [
 ]
 
 [tool.ruff]
-src = ["skore_remote_project"]
+src = ["skore_hub_project"]
 
 [tool.ruff.lint]
 select = ["E", "F", "UP", "B", "SIM", "T", "I", "D"]

@@ -1,8 +1,8 @@
 from json import dumps, loads
 
 import pytest
-from skore_remote_project.item import JSONableItem
-from skore_remote_project.item.item import ItemTypeError
+from skore_hub_project.item import JSONableItem
+from skore_hub_project.item.item import ItemTypeError
 
 
 class TestJSONableItem:

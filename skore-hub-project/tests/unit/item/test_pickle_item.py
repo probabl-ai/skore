@@ -3,8 +3,8 @@ import json
 
 import pytest
 from joblib import dump
-from skore_remote_project.item import PickleItem
-from skore_remote_project.item.item import bytes_to_b64_str
+from skore_hub_project.item import PickleItem
+from skore_hub_project.item.item import bytes_to_b64_str
 
 
 class TestPickleItem:

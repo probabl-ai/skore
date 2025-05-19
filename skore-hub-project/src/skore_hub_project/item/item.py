@@ -1,4 +1,4 @@
-"""Abstract base class for all items in the ``skore`` remote project."""
+"""Abstract base class for all items in the ``skore`` hub project."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def switch_mpl_backend():
     Notes
     -----
     The ``agg`` backend is a non-interactive backend that can only write to files.
-    It is used in ``skore-remote-project`` to generate artifacts where we don't need an
+    It is used in ``skore-hub-project`` to generate artifacts where we don't need an
     X display.
 
     https://matplotlib.org/stable/users/explain/figure/backends.html#selecting-a-backend
@@ -61,10 +61,10 @@ class ItemTypeError(Exception):
 
 class Item(ABC):
     """
-    Abstract base class for all items in the ``skore`` remote project.
+    Abstract base class for all items in the ``skore`` hub project.
 
     This class provides a common interface for all items, including the serialization of
-    the parameters needed to recreate the instance from the remote project.
+    the parameters needed to recreate the instance from the hub project.
 
     ``Item`` is an internal concept that is used as a DTO (Data Transfer Object) to
     exchange python objects between ``skore`` and ``skore hub``.
@@ -76,7 +76,7 @@ class Item(ABC):
         Get the parameters of the ``Item`` instance.
 
         These parameters must be sufficient to recreate the instance.
-        They are persisted in the ``skore`` remote project and retrieved as needed.
+        They are persisted in the ``skore`` hub project and retrieved as needed.
         """
         cls = self.__class__
         cls_name = cls.__name__

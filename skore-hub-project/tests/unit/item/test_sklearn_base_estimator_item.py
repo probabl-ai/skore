@@ -3,8 +3,8 @@ from json import dumps
 import sklearn.svm
 import skops.io
 from pytest import raises, skip
-from skore_remote_project.item import SklearnBaseEstimatorItem
-from skore_remote_project.item.item import ItemTypeError, bytes_to_b64_str
+from skore_hub_project.item import SklearnBaseEstimatorItem
+from skore_hub_project.item.item import ItemTypeError, bytes_to_b64_str
 
 
 class Estimator(sklearn.svm.SVC):

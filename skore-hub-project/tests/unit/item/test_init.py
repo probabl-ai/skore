@@ -9,7 +9,7 @@ import pytest
 import sklearn
 import skore
 import skrub
-from skore_remote_project.item import (
+from skore_hub_project.item import (
     AltairChartItem,
     JSONableItem,
     MatplotlibFigureItem,

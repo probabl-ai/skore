@@ -3,8 +3,8 @@ from json import dumps, loads
 import plotly.graph_objects
 import plotly.io
 import pytest
-from skore_remote_project.item import PlotlyFigureItem
-from skore_remote_project.item.item import ItemTypeError
+from skore_hub_project.item import PlotlyFigureItem
+from skore_hub_project.item.item import ItemTypeError
 
 
 class TestPlotlyFigureItem:

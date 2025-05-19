@@ -2,8 +2,8 @@ from json import dumps, loads
 
 from altair import Chart
 from pytest import raises
-from skore_remote_project.item import AltairChartItem
-from skore_remote_project.item.item import ItemTypeError
+from skore_hub_project.item import AltairChartItem
+from skore_hub_project.item.item import ItemTypeError
 
 
 class TestAltairChartItem:

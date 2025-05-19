@@ -1,4 +1,4 @@
-"""Class definition of the ``skore`` remote project."""
+"""Class definition of the ``skore`` hub project."""
 
 from __future__ import annotations
 
@@ -33,15 +33,15 @@ if TYPE_CHECKING:
 
 class Project:
     """
-    API to manage a collection of key-report pairs persisted in a remote storage.
+    API to manage a collection of key-report pairs persisted in a hub storage.
 
     It communicates with the Probabl's ``skore hub`` storage, based on the pickle
-    representation. Its constructor initializes a remote project by creating a new
+    representation. Its constructor initializes a hub project by creating a new
     project or by loading an existing one from a defined tenant.
 
-    The class main methods are :func:`~skore_remote_project.Project.put`,
-    :func:`~skore_remote_project.reports.metadata` and
-    :func:`~skore_remote_project.reports.get`, respectively to insert a key-report pair
+    The class main methods are :func:`~skore_hub_project.Project.put`,
+    :func:`~skore_hub_project.reports.metadata` and
+    :func:`~skore_hub_project.reports.get`, respectively to insert a key-report pair
     into the Project, to obtain the reports metadata and to get a specific report.
 
     Parameters
@@ -68,9 +68,9 @@ class Project:
 
     def __init__(self, tenant: str, name: str):
         """
-        Initialize a remote project.
+        Initialize a hub project.
 
-        Initialize a remote project by creating a new project or by loading an existing
+        Initialize a hub project by creating a new project or by loading an existing
         one from a defined tenant.
 
         Parameters
@@ -109,7 +109,7 @@ class Project:
 
     def put(self, key: str, report: EstimatorReport):
         """
-        Put a key-report pair to the remote project.
+        Put a key-report pair to the hub project.
 
         If the key already exists, its last report is modified to point to this new
         report, while keeping track of the report history.
@@ -117,9 +117,9 @@ class Project:
         Parameters
         ----------
         key : str
-            The key to associate with ``report`` in the remote project.
+            The key to associate with ``report`` in the hub project.
         report : skore.EstimatorReport
-            The report to associate with ``key`` in the remote project.
+            The report to associate with ``key`` in the hub project.
 
         Raises
         ------
@@ -207,4 +207,4 @@ class Project:
         return self.run_id and SimpleNamespace(get=get, metadata=metadata)
 
     def __repr__(self) -> str:  # noqa: D105
-        return f"Project(remote://{self.tenant}@{self.name})"
+        return f"Project(hub://{self.tenant}@{self.name})"

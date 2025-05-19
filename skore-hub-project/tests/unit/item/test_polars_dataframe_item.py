@@ -5,8 +5,8 @@ from polars import DataFrame
 from polars.exceptions import ComputeError
 from polars.testing import assert_frame_equal
 from pytest import raises
-from skore_remote_project.item import PolarsDataFrameItem
-from skore_remote_project.item.item import ItemTypeError
+from skore_hub_project.item import PolarsDataFrameItem
+from skore_hub_project.item.item import ItemTypeError
 
 
 class TestPolarsDataFrameItem:

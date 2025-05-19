@@ -4,8 +4,8 @@ from urllib.parse import urljoin
 
 from httpx import Client, Response
 from pytest import fixture, mark, raises
-from skore_remote_project import Project
-from skore_remote_project.item.skore_estimator_report_item import (
+from skore_hub_project import Project
+from skore_hub_project.item.skore_estimator_report_item import (
     SkoreEstimatorReportItem,
 )
 
@@ -43,7 +43,7 @@ class TestProject:
     @fixture(autouse=True)
     def monkeypatch_client(self, monkeypatch):
         monkeypatch.setattr(
-            "skore_remote_project.project.project.AuthenticatedClient",
+            "skore_hub_project.project.project.AuthenticatedClient",
             FakeClient,
         )
 

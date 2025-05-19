@@ -4,8 +4,8 @@ from json import dumps as json_dumps
 import pytest
 from joblib import dump as joblib_dump
 from matplotlib.pyplot import subplots
-from skore_remote_project.item import MatplotlibFigureItem, PickleItem
-from skore_remote_project.item.item import ItemTypeError, bytes_to_b64_str
+from skore_hub_project.item import MatplotlibFigureItem, PickleItem
+from skore_hub_project.item.item import ItemTypeError, bytes_to_b64_str
 
 
 class TestMatplotlibFigureItem:
