@@ -70,12 +70,7 @@ class TestSkoreEstimatorReportItem:
     def test_metadata(self, monkeypatch, report, report_b64_str):
         metadata = {
             "estimator_class_name": "LinearRegression",
-            "estimator_hyper_params": {
-                "copy_X": True,
-                "fit_intercept": True,
-                "n_jobs": None,
-                "positive": False,
-            },
+            "estimator_hyper_params": {},
             "dataset_fingerprint": joblib.hash(report.y_test),
             "ml_task": "regression",
             "metrics": [
@@ -94,22 +89,6 @@ class TestSkoreEstimatorReportItem:
                     "greater_is_better": True,
                     "position": None,
                     "verbose_name": "R²",
-                },
-                {
-                    "name": "rmse",
-                    "value": float(hash("rmse-train")),
-                    "data_source": "train",
-                    "greater_is_better": False,
-                    "position": 3,
-                    "verbose_name": "RMSE",
-                },
-                {
-                    "name": "rmse",
-                    "value": float(hash("rmse-test")),
-                    "data_source": "test",
-                    "greater_is_better": False,
-                    "position": 3,
-                    "verbose_name": "RMSE",
                 },
                 {
                     "name": "fit_time",
@@ -147,7 +126,7 @@ class TestSkoreEstimatorReportItem:
         )
         monkeypatch.setattr(
             "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.rmse",
-            lambda self, data_source: hash(f"rmse-{data_source}"),
+            lambda self, data_source: float("nan"),
         )
         monkeypatch.setattr(
             "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.timings",
@@ -158,6 +137,9 @@ class TestSkoreEstimatorReportItem:
             },
         )
 
+        assert hasattr(report.metrics, "r2")
+        assert hasattr(report.metrics, "rmse")
+        assert hasattr(report.metrics, "timings")
         assert item1.__metadata__ == metadata
         assert item2.__metadata__ == metadata
 

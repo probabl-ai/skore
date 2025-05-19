@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from inspect import getmembers, ismethod, signature
+from math import isinf, isnan
 from operator import attrgetter
 from typing import TYPE_CHECKING
 
@@ -41,6 +42,17 @@ if TYPE_CHECKING:
         attributes: dict
         representation: dict
         parameters: dict
+
+
+def cast_to_float(value: Any) -> Union[float, None]:
+    """Cast value to float."""
+    with suppress(TypeError):
+        value = float(value)
+
+        if (not isnan(value)) and (not isinf(value)):
+            return value
+
+    return None
 
 
 def metadata_function(function: Any) -> MetadataFunction:
@@ -85,13 +97,9 @@ class Metadata:
         return self.report.estimator_name_
 
     @metadata_function
-    def estimator_hyper_params(self) -> dict[str, Union[None, bool, float, int, str]]:
-        """Return the primitive hyper parameters of the report's estimator."""
-        return {
-            key: value
-            for key, value in self.report.estimator_.get_params().items()
-            if isinstance(value, (type(None), bool, float, int, str))
-        }
+    def estimator_hyper_params(self) -> dict:
+        """DeprecationWarning."""
+        return {}
 
     @metadata_function
     def dataset_fingerprint(self) -> str:
@@ -134,11 +142,11 @@ class Metadata:
             if hasattr(self.report.metrics, name):
                 value = getattr(self.report.metrics, name)(data_source=data_source)
 
-                with suppress(TypeError):
+                if (value := cast_to_float(value)) is not None:
                     return {
                         "name": name,
                         "verbose_name": verbose_name,
-                        "value": float(value),
+                        "value": value,
                         "data_source": data_source,
                         "greater_is_better": greater_is_better,
                         "position": position,
@@ -159,11 +167,11 @@ class Metadata:
                 name if name != "predict_time" else f"{name}_{data_source}"
             )
 
-            if value is not None:
+            if (value := cast_to_float(value)) is not None:
                 return {
                     "name": name,
                     "verbose_name": verbose_name,
-                    "value": float(value),
+                    "value": value,
                     "data_source": data_source,
                     "greater_is_better": greater_is_better,
                     "position": position,
