@@ -501,8 +501,16 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
             # Use only needed subplots (without creating empty ones)
             if nrows is None and ncols is None:
-                ncols = 1
-                nrows = num_plots
+                if num_plots == 1:
+                    ncols = 1
+                    nrows = 1
+                else:
+                    ncols = min(2, num_plots)
+                    nrows = (num_plots + ncols - 1) // ncols
+            elif nrows is None:
+                nrows = (num_plots + (ncols or 1) - 1) // (ncols or 1)
+            elif ncols is None:
+                ncols = (num_plots + (nrows or 1) - 1) // (nrows or 1)
 
             self.figure_ = plt.figure(figsize=figsize)
             axes: list[Axes] = []
