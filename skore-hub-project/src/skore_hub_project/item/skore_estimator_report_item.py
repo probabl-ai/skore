@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from inspect import getmembers, ismethod, signature
-from math import isinf, isnan
+from math import isfinite
 from operator import attrgetter
 from typing import TYPE_CHECKING
 
@@ -47,9 +47,7 @@ if TYPE_CHECKING:
 def cast_to_float(value: Any) -> Union[float, None]:
     """Cast value to float."""
     with suppress(TypeError):
-        value = float(value)
-
-        if (not isnan(value)) and (not isinf(value)):
+        if (value := float(value)) and isfinite(value):
             return value
 
     return None
