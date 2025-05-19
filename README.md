@@ -67,52 +67,33 @@ You can find information on the latest version [here](https://anaconda.org/conda
 
 ### Get assistance when developing your ML/DS projects
 
-1. Evaluate your model using `skore.CrossValidationReport`:
-    ```python
-    from sklearn.datasets import make_classification
-    from sklearn.linear_model import LogisticRegression
+Evaluate your model using `skore.CrossValidationReport`:
+```python
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
 
-    from skore import CrossValidationReport
+from skore import CrossValidationReport
 
-    X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
-    clf = LogisticRegression()
+X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+clf = LogisticRegression()
 
-    cv_report = CrossValidationReport(clf, X, y)
+cv_report = CrossValidationReport(clf, X, y)
 
-    # Display the help tree to see all the insights that are available to you
-    cv_report.help()
-    ```
+# Display the help tree to see all the insights that are available to you
+cv_report.help()
+```
 
-    ```python
-    # Display the report metrics that was computed for you:
-    df_cv_report_metrics = cv_report.metrics.report_metrics()
-    df_cv_report_metrics
-    ```
+```python
+# Display the report metrics that was computed for you:
+df_cv_report_metrics = cv_report.metrics.report_metrics()
+df_cv_report_metrics
+```
 
-    ```python
-    # Display the ROC curve that was generated for you:
-    roc_plot = cv_report.metrics.roc()
-    roc_plot.plot()
-    ```
-
-1. Store your results for safe-keeping.
-    ```python
-    # Create and load a skore project
-    import skore
-    my_project = skore.Project("my_project")
-    ```
-
-    ```python
-    # Store your results
-    my_project.put("df_cv_report_metrics", df_cv_report_metrics)
-    my_project.put("roc_plot", roc_plot)
-    ```
-
-    ```python
-    # Get your results
-    df_get = my_project.get("df_cv_report_metrics")
-    df_get
-    ```
+```python
+# Display the ROC curve that was generated for you:
+roc_plot = cv_report.metrics.roc()
+roc_plot.plot()
+```
 
 Learn more in our [documentation](https://docs.skore.probabl.ai).
 

@@ -99,10 +99,16 @@ metadata = my_project.reports.metadata()
 print(type(metadata))
 
 # %%
+# We can perform some queries on our stored data:
+
+# %%
 from pprint import pprint
 
 report_get = metadata.query("ml_task.str.contains('classification')").reports()
 pprint(report_get)
+
+# %%
+# For example, we can retrieve the report metrics from the first estimator report:
 
 # %%
 
@@ -110,7 +116,7 @@ pprint(report_get)
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
-report_get[0].metrics.report_metrics()
+report_get[0].metrics.report_metrics(pos_label=1)
 
 # %%
 # .. seealso::
