@@ -178,6 +178,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
         estimator_name: str,
         samples_kwargs: list[dict[str, Any]],
+        ax: Optional[Axes] = None,
     ) -> list[Artist]:
         """Plot the prediction error for a single estimator.
 
@@ -191,6 +192,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
         samples_kwargs : list of dict
             Keyword arguments for the scatter plot.
+
+        ax : matplotlib Axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is
+            created.
 
         Returns
         -------
@@ -214,9 +219,15 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         else:  # data_source == "X_y"
             scatter_label = "Data set"
 
+        # Use the provided axis or self.ax_ if available,
+        # otherwise create a new one
+        plot_ax = ax if ax is not None else self.ax_
+        if plot_ax is None:
+            _, plot_ax = plt.subplots()
+
         if kind == "actual_vs_predicted":
             scatter.append(
-                self.ax_.scatter(
+                plot_ax.scatter(
                     y_pred,
                     y_true,
                     label=scatter_label,
@@ -225,7 +236,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             )
         else:  # kind == "residual_vs_predicted"
             scatter.append(
-                self.ax_.scatter(
+                plot_ax.scatter(
                     y_pred,
                     residuals,
                     label=scatter_label,
@@ -233,7 +244,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 )
             )
 
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+        plot_ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
 
         return scatter
 
@@ -243,6 +254,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
         estimator_name: str,
         samples_kwargs: list[dict[str, Any]],
+        ax: Optional[Axes] = None,
     ) -> list[Artist]:
         """Plot the prediction error for a cross-validated estimator.
 
@@ -257,6 +269,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         samples_kwargs : list of dict
             Keyword arguments for the scatter plot.
 
+        ax : matplotlib Axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is
+            created.
+
         Returns
         -------
         scatter : list of matplotlib Artist
@@ -268,6 +284,12 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             colormaps.get_cmap("tab10"),
             len(self.y_true) if len(self.y_true) > 10 else 10,
         )
+
+        # Use the provided axis or self.ax_ if available,
+        # otherwise create a new one
+        plot_ax = ax if ax is not None else self.ax_
+        if plot_ax is None:
+            _, plot_ax = plt.subplots()
 
         for split_idx in range(len(self.y_true)):
             data_points_kwargs_fold = {
@@ -283,7 +305,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
             if kind == "actual_vs_predicted":
                 scatter.append(
-                    self.ax_.scatter(
+                    plot_ax.scatter(
                         self.y_pred[split_idx],
                         self.y_true[split_idx],
                         label=label,
@@ -292,7 +314,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 )
             else:  # kind == "residual_vs_predicted"
                 scatter.append(
-                    self.ax_.scatter(
+                    plot_ax.scatter(
                         self.y_pred[split_idx],
                         self.residuals[split_idx],
                         label=label,
@@ -304,7 +326,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
         else:
             title = f"{estimator_name} on $\\bf{{external}}$ set"
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=title)
+        plot_ax.legend(bbox_to_anchor=(1.02, 1), title=title)
 
         return scatter
 
@@ -314,6 +336,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
         estimator_names: list[str],
         samples_kwargs: list[dict[str, Any]],
+        ax: Optional[Axes] = None,
     ) -> list[Artist]:
         """Plot the prediction error of several estimators.
 
@@ -328,6 +351,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         samples_kwargs : list of dict
             Keyword arguments for the scatter plot.
 
+        ax : matplotlib Axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is
+            created.
+
         Returns
         -------
         scatter : list of matplotlib Artist
@@ -339,6 +366,12 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             colormaps.get_cmap("tab10"),
             len(self.y_true) if len(self.y_true) > 10 else 10,
         )
+
+        # Use the provided axis or self.ax_ if available,
+        # otherwise create a new one
+        plot_ax = ax if ax is not None else self.ax_
+        if plot_ax is None:
+            _, plot_ax = plt.subplots()
 
         for estimator_idx in range(len(self.y_true)):
             data_points_kwargs_fold = {
@@ -354,7 +387,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
             if kind == "actual_vs_predicted":
                 scatter.append(
-                    self.ax_.scatter(
+                    plot_ax.scatter(
                         self.y_pred[estimator_idx],
                         self.y_true[estimator_idx],
                         label=label,
@@ -363,7 +396,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 )
             else:  # kind == "residual_vs_predicted"
                 scatter.append(
-                    self.ax_.scatter(
+                    plot_ax.scatter(
                         self.y_pred[estimator_idx],
                         self.residuals[estimator_idx],
                         label=label,
@@ -371,7 +404,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                     )
                 )
 
-        self.ax_.legend(
+        plot_ax.legend(
             bbox_to_anchor=(1.02, 1),
             title=f"Prediction errors on $\\bf{{{self.data_source}}}$ set",
         )
@@ -392,6 +425,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         ] = None,
         perfect_model_kwargs: Optional[dict[str, Any]] = None,
         despine: bool = True,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
     ) -> None:
         """Plot visualization.
 
@@ -455,6 +492,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
+
+        With subplots:
+
+        >>> display.plot(kind="actual_vs_predicted", subplots=True)
         """
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
@@ -462,12 +503,17 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 f"`kind` must be one of {', '.join(expected_kind)}. "
                 f"Got {kind!r} instead."
             )
+
+        if ax is not None and subplots:
+            raise ValueError(
+                "Cannot specify both 'ax' and 'subplots=True'. "
+                "Either provide an axes object or use subplots, but not both."
+            )
+
         if kind == "actual_vs_predicted":
             xlabel, ylabel = "Predicted values", "Actual values"
         else:  # kind == "residual_vs_predicted"
             xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
-
-        self.figure_, self.ax_ = (ax.figure, ax) if ax is not None else plt.subplots()
 
         perfect_model_kwargs_validated = _validate_style_kwargs(
             {
@@ -712,11 +758,6 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
         # make the scatter plot afterwards since it should take into account the line
         # for the perfect predictions
-        if data_points_kwargs is None:
-            data_points_kwargs = self._default_data_points_kwargs
-        data_points_kwargs = self._validate_data_points_kwargs(
-            data_points_kwargs=data_points_kwargs
-        )
 
         if self.report_type == "estimator":
             self.scatter_ = self._plot_single_estimator(
@@ -727,6 +768,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                     else estimator_name
                 ),
                 samples_kwargs=data_points_kwargs,
+                ax=self.ax_,
             )
         elif self.report_type == "cross-validation":
             self.scatter_ = self._plot_cross_validated_estimator(
@@ -737,12 +779,14 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                     else estimator_name
                 ),
                 samples_kwargs=data_points_kwargs,
+                ax=self.ax_,
             )
         elif self.report_type == "comparison-estimator":
             self.scatter_ = self._plot_comparison_estimator(
                 kind=kind,
                 estimator_names=self.estimator_names,
                 samples_kwargs=data_points_kwargs,
+                ax=self.ax_,
             )
         else:
             raise ValueError(
@@ -754,6 +798,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             x_range = self.ax_.get_xlim()
             y_range = self.ax_.get_ylim()
             _despine_matplotlib_axis(self.ax_, x_range=x_range, y_range=y_range)
+
+        return self.figure_
 
     @classmethod
     def _compute_data_for_display(
