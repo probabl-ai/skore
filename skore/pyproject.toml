@@ -24,7 +24,6 @@ classifiers = [
 ]
 dependencies = [
   "IPython",
-  "diskcache",
   "ipywidgets",
   "joblib",
   "matplotlib",
@@ -33,7 +32,7 @@ dependencies = [
   "plotly",
   "rich",
   "scikit-learn",
-  "skops",
+  "skore-local-project",
 ]
 
 [project.optional-dependencies]
@@ -151,5 +150,5 @@ ignore_missing_imports = true
 exclude = ["src/skore/externals/.*", "hatch/*", "tests/*"]
 
 [[tool.mypy.overrides]]
-module = ["diskcache.*", "sklearn.*"]
+module = ["sklearn.*"]
 ignore_missing_imports = true

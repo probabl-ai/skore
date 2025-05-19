@@ -1,11 +1,7 @@
 asttokens==3.0.0
     # via stack-data
-certifi==2024.12.14
-    # via requests
 cfgv==3.4.0
     # via pre-commit
-charset-normalizer==3.4.1
-    # via requests
 comm==0.2.2
     # via ipywidgets
 contourpy==1.3.0
@@ -17,7 +13,7 @@ cycler==0.12.1
 decorator==5.2.1
     # via ipython
 diskcache==5.6.3
-    # via skore (skore/pyproject.toml)
+    # via skore-local-project
 distlib==0.3.9
     # via virtualenv
 execnet==2.1.1
@@ -25,19 +21,11 @@ execnet==2.1.1
 executing==2.2.0
     # via stack-data
 filelock==3.17.0
-    # via
-    #   huggingface-hub
-    #   virtualenv
+    # via virtualenv
 fonttools==4.55.8
     # via matplotlib
-fsspec==2024.12.0
-    # via huggingface-hub
-huggingface-hub==0.28.1
-    # via skops
 identify==2.6.6
     # via pre-commit
-idna==3.10
-    # via requests
 iniconfig==2.0.0
     # via pytest
 ipython==9.2.0
@@ -54,6 +42,7 @@ joblib==1.4.2
     # via
     #   skore (skore/pyproject.toml)
     #   scikit-learn
+    #   skore-local-project
 jupyterlab-widgets==3.0.15
     # via ipywidgets
 kiwisolver==1.4.7
@@ -80,11 +69,9 @@ numpy==2.0.2
     #   scipy
 packaging==24.2
     # via
-    #   huggingface-hub
     #   matplotlib
     #   plotly
     #   pytest
-    #   skops
 pandas==2.2.3
     # via skore (skore/pyproject.toml)
 parso==0.8.4
@@ -94,7 +81,9 @@ pexpect==4.9.0
 pillow==11.1.0
     # via matplotlib
 platformdirs==4.3.6
-    # via virtualenv
+    # via
+    #   skore-local-project
+    #   virtualenv
 plotly==6.0.1
     # via skore (skore/pyproject.toml)
 pluggy==1.5.0
@@ -138,44 +127,33 @@ python-dateutil==2.9.0.post0
 pytz==2024.2
     # via pandas
 pyyaml==6.0.2
-    # via
-    #   huggingface-hub
-    #   pre-commit
-requests==2.32.3
-    # via huggingface-hub
+    # via pre-commit
 rich==13.9.4
-    # via skore (skore/pyproject.toml)
+    # via
+    #   skore (skore/pyproject.toml)
+    #   skore-local-project
 scikit-learn==1.5.2
     # via
     #   --override skore/overrides.txt
     #   skore (skore/pyproject.toml)
-    #   skops
 scipy==1.13.1
     # via scikit-learn
 six==1.17.0
     # via python-dateutil
-skops==0.11.0
+skore-local-project==0.0.1
     # via skore (skore/pyproject.toml)
 stack-data==0.6.3
     # via ipython
-tabulate==0.9.0
-    # via skops
 threadpoolctl==3.5.0
     # via scikit-learn
-tqdm==4.67.1
-    # via huggingface-hub
 traitlets==5.14.3
     # via
     #   comm
     #   ipython
     #   ipywidgets
     #   matplotlib-inline
-typing-extensions==4.12.2
-    # via huggingface-hub
 tzdata==2025.1
     # via pandas
-urllib3==2.3.0
-    # via requests
 virtualenv==20.29.1
     # via pre-commit
 wcwidth==0.2.13
