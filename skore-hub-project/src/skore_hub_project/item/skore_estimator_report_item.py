@@ -96,7 +96,7 @@ class Metadata:
 
     @metadata_function
     def estimator_hyper_params(self) -> dict:
-        """DeprecationWarning."""
+        """DeprecationWarning: send empty dictionary to not break the hub API."""
         return {}
 
     @metadata_function
