@@ -287,9 +287,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         except ValueError as err:
                             raise ValueError(
                                 f"Invalid metric: {metric!r}. "
-                                f"Please use a valid metric from the"
+                                f"Please use a valid metric from the "
                                 f"list of supported metrics: "
-                                f"{list(self._SCORE_OR_LOSS_INFO.keys())}"
+                                f"{list(self._SCORE_OR_LOSS_INFO.keys())} "
                                 "or a valid scikit-learn scoring string."
                             ) from err
                     favorability_indicator.append(metric_favorability)
