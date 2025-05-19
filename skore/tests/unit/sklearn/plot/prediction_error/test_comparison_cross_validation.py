@@ -32,8 +32,8 @@ def test_regression(pyplot, report):
     # check the structure of the attributes
     assert isinstance(display.prediction_error, pd.DataFrame)
     assert list(display.prediction_error["estimator_name"].unique()) == [
-        "estimator 1",
-        "estimator 2",
+        "estimator_1",
+        "estimator_2",
     ]
     assert display.data_source == "test"
     assert isinstance(display.range_y_true, RangeData)
@@ -111,9 +111,7 @@ def test_kwargs(pyplot, report):
 
 
 @pytest.mark.parametrize("data_points_kwargs", ["not a list", [{"color": "red"}]])
-def test_wrong_kwargs(
-    pyplot, report, data_points_kwargs
-):
+def test_wrong_kwargs(pyplot, report, data_points_kwargs):
     """Check that we raise an error when we pass keyword arguments to the prediction
     error plot if there is a comparison report."""
     display = report.metrics.prediction_error()
