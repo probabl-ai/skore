@@ -67,12 +67,15 @@ class ModelExplorerWidget:
             "show": True,
         },
     }
+    _estimators: dict[str, dict[str, Any]] = {
+        "learner": {"name": "Learner"},
+    }
     _dimension_to_column: dict[str, str] = {
-        cast(str, v["name"]): k for k, v in _metrics.items()
+        cast(str, v["name"]): k for k, v in {**_metrics, **_estimators}.items()
     }
 
-    _required_columns: list[str] = ["ml_task", "dataset", "learner"] + list(
-        _metrics.keys()
+    _required_columns: list[str] = (
+        ["ml_task", "dataset"] + list(_estimators.keys()) + list(_metrics.keys())
     )
     _required_index: list[Union[str, None]] = [None, "id"]
 
@@ -503,7 +506,7 @@ class ModelExplorerWidget:
                 font=dict(size=16),
                 height=500,
                 width=self._plot_width,
-                margin=dict(l=150, r=150, t=120, b=30),
+                margin=dict(l=250, r=150, t=120, b=30),
                 autosize=False,
             )
 

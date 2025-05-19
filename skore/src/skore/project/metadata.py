@@ -91,17 +91,30 @@ class Metadata(pd.DataFrame):
 
         for column_name, range_values in selection.items():
             if column_name == "learner":
-                learner_values = self["learner"].cat.categories
-                learner_codes = self["learner"].cat.codes
+                for dim in self._plot_widget.current_fig.data[0].dimensions:
+                    if dim["label"] == "Learner":
+                        learner_values = dim["ticktext"]
+                        learner_codes = dim["tickvals"]
+                        break
+
+                if not isinstance(range_values[0], tuple):  # single selection
+                    range_values = (range_values,)
 
                 selected_learners = []
-                min_val, max_val = range_values
+                for min_val, max_val in range_values:
+                    # When selecting on the parallel coordinates plot, the min and max
+                    # values my not be exactly the min or max of the learner codes. We
+                    # clip them to be sure that it falls into the correct range.
+                    if min_val < 1e-8:
+                        min_val = 0
+                    if max_val > max(learner_codes) - 1e-8:
+                        max_val = max(learner_codes)
 
-                for i, learner in enumerate(learner_values):
-                    # Get the jittered code value for this learner
-                    code_val = learner_codes[i]
-                    if min_val <= code_val <= max_val:
-                        selected_learners.append(learner)
+                    for i, learner in enumerate(learner_values):
+                        # Get the jittered code value for this learner
+                        code_val = learner_codes[i]
+                        if min_val <= code_val <= max_val:
+                            selected_learners.append(learner)
 
                 if selected_learners:
                     values_str = ", ".join(
