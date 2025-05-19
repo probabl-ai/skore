@@ -119,6 +119,15 @@ temp_dir.cleanup()
 report_get[0].metrics.report_metrics(pos_label=1)
 
 # %%
+# .. note::
+#   If rendered in a Jupyter notebook, ``metadata`` would render an interactive
+#   parallel coordinate plot to search for your preferred model based on some metrics.
+#   Here is a screenshot:
+#
+#   .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/screenshot_quick_start.png
+#       :alt: Screenshot
+
+# %%
 # .. seealso::
 #
 #    For a more in-depth guide, see our :ref:`example_skore_getting_started` page!

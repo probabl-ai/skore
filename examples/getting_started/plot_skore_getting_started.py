@@ -334,6 +334,15 @@ temp_dir.cleanup()
 
 # %%
 # .. note::
+#   If rendered in a Jupyter notebook, ``metadata`` would render an interactive
+#   parallel coordinate plot to search for your preferred model based on some metrics.
+#   Here is a screenshot:
+#
+#   .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/screenshot_getting_started.png
+#       :alt: Screenshot
+
+# %%
+# .. note::
 #   These tracking functionalities are very useful to:
 #
 #   -   never lose some key machine learning metrics,
