@@ -338,7 +338,7 @@ temp_dir.cleanup()
 #   parallel coordinate plot to search for your preferred model based on some metrics.
 #   Here is a screenshot:
 #
-#   .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/screenshot_getting_started.png
+#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/16bf794f929239830a9ff809f930c1bd22318417/sphinx/_static/images/screenshot_getting_started.png
 #       :alt: Screenshot
 
 # %%

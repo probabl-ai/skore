@@ -124,7 +124,7 @@ report_get[0].metrics.report_metrics(pos_label=1)
 #   parallel coordinate plot to search for your preferred model based on some metrics.
 #   Here is a screenshot:
 #
-#   .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/screenshot_quick_start.png
+#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/16bf794f929239830a9ff809f930c1bd22318417/sphinx/_static/images/screenshot_quick_start.png
 #       :alt: Screenshot
 
 # %%
