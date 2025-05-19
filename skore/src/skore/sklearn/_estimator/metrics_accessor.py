@@ -90,13 +90,18 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
-            The metrics to report. You can get the possible list of string by calling
-            `report.metrics.help()`. When passing a callable, it should take as
-            arguments `y_true`, `y_pred` as the two first arguments. Additional
-            arguments can be passed as keyword arguments and will be forwarded with
-            `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
-            same parameter name with different values), you can use scikit-learn scorers
-            as provided by :func:`sklearn.metrics.make_scorer`.
+            The metrics to report. The possible values in the list are:
+
+            - if a string, either one of the built-in metrics or a scikit-learn scorer
+              name. You can get the possible list of string using
+              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
+              the built-in metrics or the scikit-learn scorers, respectively.
+            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
+              first arguments. Additional arguments can be passed as keyword arguments
+              and will be forwarded with `scoring_kwargs`.
+            - if the callable API is too restrictive (e.g. need to pass
+              same parameter name with different values), you can use scikit-learn
+              scorers as provided by :func:`sklearn.metrics.make_scorer`.
 
         scoring_names : list of str, default=None
             Used to overwrite the default scoring names in the report. It should be of
@@ -138,14 +143,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Recall                 0.93...         (↗︎)
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
-
         >>> # Using scikit-learn metrics
         >>> report.metrics.report_metrics(
-        scoring=["neg_log_loss"],
-        indicator_favorability=True)
-                    LogisticRegression Favorability
-        Metric
-        Negative Log Loss      -0.10...        (↘︎)
+        ...     scoring=["f1"], pos_label=1, indicator_favorability=True
+        ... )
+                                  LogisticRegression Favorability
+        Metric   Label / Average
+        F1 Score 1                              0.96...      (↗︎)
         """
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
@@ -238,7 +242,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         metrics_kwargs["pos_label"] = pos_label
                 if metric_name is None:
                     metric_name = metric._score_func.__name__.replace("_", " ").title()
-                metric_favorability = "↗︎" if metric._sign == 1 else "↘︎"
+                metric_favorability = "(↗︎)" if metric._sign == 1 else "(↘︎)"
                 favorability_indicator.append(metric_favorability)
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):

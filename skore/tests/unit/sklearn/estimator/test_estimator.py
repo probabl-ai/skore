@@ -15,7 +15,6 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
-    get_scorer,
     make_scorer,
     median_absolute_error,
     r2_score,
@@ -1349,25 +1348,11 @@ def test_estimator_report_average_return_float(binary_classification_data):
 def test_estimator_report_metric_with_neg_metrics(binary_classification_data):
     """Check that scikit-learn metrics with 'neg_' prefix are handled correctly."""
     classifier, X_test, y_test = binary_classification_data
-    report = EstimatorReport(
-        classifier,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    # Use scikit-learn's get_scorer to handle neg_log_loss
-    scorer = get_scorer("neg_log_loss")
-    result = report.metrics.report_metrics(scoring=[scorer])
-
-    # Check that the metric name is displayed properly (as 'log_loss')
-    assert "log_loss" in result.index
-
-    # Get the neg_log_loss score directly - use the fitted model from the report
-    neg_log_loss_value = get_scorer("neg_log_loss")(report.estimator_, X_test, y_test)
-
-    # Check that the reported log_loss matches the absolute value of neg_log_loss
-    log_loss_value = result.loc["log_loss", classifier.__class__.__name__]
-    assert np.isclose(log_loss_value, abs(neg_log_loss_value))
+    result = report.metrics.report_metrics(scoring=["neg_log_loss"])
+    assert "Log Loss" in result.index
+    assert result.loc["Log Loss", "RandomForestClassifier"] == report.metrics.log_loss()
 
 
 def test_estimator_report_with_sklearn_scoring_strings(binary_classification_data):
@@ -1379,11 +1364,9 @@ def test_estimator_report_with_sklearn_scoring_strings(binary_classification_dat
         y_test=y_test,
     )
 
-    # Test single scikit-learn metric string
     result = class_report.metrics.report_metrics(scoring=["neg_log_loss"])
     assert "Log Loss" in result.index.get_level_values(0)
 
-    # Test with multiple scikit-learn metrics
     result_multi = class_report.metrics.report_metrics(
         scoring=["accuracy", "neg_log_loss", "roc_auc"], indicator_favorability=True
     )
@@ -1391,7 +1374,6 @@ def test_estimator_report_with_sklearn_scoring_strings(binary_classification_dat
     assert "Log Loss" in result_multi.index.get_level_values(0)
     assert "ROC AUC" in result_multi.index.get_level_values(0)
 
-    # Test favorability indicators
     favorability = result_multi.loc["Accuracy"]["Favorability"]
     assert favorability == "(↗︎)"
     favorability = result_multi.loc["Log Loss"]["Favorability"]
@@ -1401,13 +1383,8 @@ def test_estimator_report_with_sklearn_scoring_strings(binary_classification_dat
 def test_estimator_report_with_sklearn_scoring_strings_regression(regression_data):
     """Test scikit-learn regression metric strings in report_metrics."""
     regressor, X_test, y_test = regression_data
-    reg_report = EstimatorReport(
-        regressor,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
 
-    # Test regression metrics
     reg_result = reg_report.metrics.report_metrics(
         scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
         indicator_favorability=True,
@@ -1417,7 +1394,6 @@ def test_estimator_report_with_sklearn_scoring_strings_regression(regression_dat
     assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
     assert "R²" in reg_result.index.get_level_values(0)
 
-    # Check favorability
     assert reg_result.loc["Mean Squared Error"]["Favorability"] == "(↘︎)"
     assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
 
@@ -1425,13 +1401,8 @@ def test_estimator_report_with_sklearn_scoring_strings_regression(regression_dat
 def test_estimator_report_with_scoring_strings_regression(regression_data):
     """Test scikit-learn regression metric strings in report_metrics."""
     regressor, X_test, y_test = regression_data
-    reg_report = EstimatorReport(
-        regressor,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
 
-    # Test regression metrics
     reg_result = reg_report.metrics.report_metrics(
         scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
         indicator_favorability=True,
@@ -1441,6 +1412,5 @@ def test_estimator_report_with_scoring_strings_regression(regression_data):
     assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
     assert "R²" in reg_result.index.get_level_values(0)
 
-    # Check favorability
     assert reg_result.loc["Mean Squared Error"]["Favorability"] == "(↘︎)"
     assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
