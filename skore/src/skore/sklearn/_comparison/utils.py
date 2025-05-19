@@ -1,3 +1,4 @@
+import copy
 from typing import Optional
 
 import pandas as pd
@@ -292,7 +293,7 @@ def _combine_cross_validation_results(
 
         return df
 
-    results = individual_results.copy()
+    results = copy.deepcopy(individual_results)
 
     # Pop the favorability column if it exists, to:
     # - not use it in the aggregate operation
