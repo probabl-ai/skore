@@ -77,7 +77,7 @@ subsections_order = [
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
-    "filename_pattern": "plot_skore_getting",  # pattern to select examples; change this to only build some of the examples
+    "filename_pattern": "plot_",  # pattern to select examples; change this to only build some of the examples
     "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections
     # see https://sphinx-gallery.github.io/stable/configuration.html#sub-gallery-order
     "within_subsection_order": "ExampleTitleSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives

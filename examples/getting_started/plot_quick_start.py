@@ -92,7 +92,7 @@ rf_report = EstimatorReport(
 my_project.put("rf_report", rf_report)
 
 # %%
-# Now, let us get the data that we stored
+# Now, let us retrieve the data that we previously stored:
 
 # %%
 metadata = my_project.reports.metadata()
@@ -105,6 +105,11 @@ report_get = metadata.query("ml_task.str.contains('classification')").reports()
 pprint(report_get)
 
 # %%
+
+# sphinx_gallery_start_ignore
+temp_dir.cleanup()
+# sphinx_gallery_end_ignore
+
 report_get[0].metrics.report_metrics()
 
 # %%
