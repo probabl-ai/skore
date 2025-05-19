@@ -102,6 +102,15 @@ class TestMetadata:
             "predict_time",
         ]
 
+    def test_factory_empty(self):
+        project = FakeProject()
+        metadata = Metadata.factory(project)
+
+        assert isinstance(metadata, DataFrame)
+        assert isinstance(metadata, Metadata)
+        assert metadata.project == project
+        assert len(metadata) == 0
+
     def test_constructor(self, regression):
         project = FakeProject(regression)
         metadata = Metadata.factory(project)
@@ -151,3 +160,10 @@ class TestMetadata:
         )
 
         assert metadata.reports(filter=False) == [regression, binary_classification]
+
+    def test_reports_empty(self):
+        metadata = Metadata.factory(FakeProject())
+
+        assert len(metadata) == 0
+        assert metadata.reports() == []
+        assert metadata.reports(filter=False) == []
