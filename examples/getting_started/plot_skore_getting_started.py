@@ -280,11 +280,9 @@ _ = skore.train_test_split(
 # sphinx_gallery_start_ignore
 import os
 import tempfile
-from pathlib import Path
 
 temp_dir = tempfile.TemporaryDirectory()
-temp_dir_path = Path(temp_dir.name)
-os.chdir(temp_dir_path)
+os.environ["SKORE_WORKSPACE"] = temp_dir.name
 # sphinx_gallery_end_ignore
 my_project = skore.Project("my_project")
 
