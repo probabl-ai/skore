@@ -132,20 +132,21 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
-                    LogisticRegression Favorability
+                    LogisticRegression  Favorability
         Metric
-        Precision              0.98...         (↗︎)
-        Recall                 0.93...         (↗︎)
-        ROC AUC                0.99...         (↗︎)
-        Brier score            0.03...         (↘︎)
+        Precision              0.98...           (↗︎)
+        Recall                 0.93...           (↗︎)
+        ROC AUC                0.99...           (↗︎)
+        Brier score            0.03...           (↘︎)
 
         >>> # Using scikit-learn metrics
         >>> report.metrics.report_metrics(
-        scoring=["neg_log_loss"],
-        indicator_favorability=True)
-                    LogisticRegression Favorability
+        ...     scoring=["neg_log_loss"],
+        ...     indicator_favorability=True,
+        ... )
+                     LogisticRegression Favorability
         Metric
-        Negative Log Loss      -0.10...        (↘︎)
+        Log Loss                0.10...          (↘︎)
         """
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
