@@ -156,6 +156,8 @@ def test_model_explorer_widget_single_task(metadata):
 
     We switch ML task to the one having at least an item.
     """
+    metadata = metadata.copy()  # do not modify the fixture
+    metadata["ml_task"] = ["classification", "classification"]
     widget = ModelExplorerWidget(metadata)
     # check that the classification dropdown menu is visible
     assert widget.classification_metrics_box.layout.display == ""
@@ -164,8 +166,7 @@ def test_model_explorer_widget_single_task(metadata):
     assert widget.regression_metrics_box.layout.display == "none"
     assert widget._color_metric_dropdown["regression"].layout.display == "none"
 
-    metadata["ml_task"] = ["regression"]
-
+    metadata["ml_task"] = ["regression", "regression"]
     widget = ModelExplorerWidget(metadata)
     # check that the classification dropdown menu is hidden
     assert widget.classification_metrics_box.layout.display == "none"
