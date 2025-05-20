@@ -77,7 +77,7 @@ class Metadata(pd.DataFrame):
         return metadata
 
     @property
-    def _constructor(self):
+    def _constructor(self) -> type[Metadata]:
         return Metadata
 
     def reports(self, *, filter: bool = True) -> list[EstimatorReport]:
