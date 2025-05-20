@@ -124,8 +124,8 @@ report_get[0].metrics.report_metrics(pos_label=1)
 #   parallel coordinate plot to search for your preferred model based on some metrics.
 #   Here is a screenshot:
 #
-#   .. image:: /images/screenshot_quick_start.png
-#       :alt: Screenshot
+#   .. image:: /_static/images/screenshot_quick_start.png
+#       :alt: Screenshot of the widget in a Jupyter notebook
 
 # %%
 # .. seealso::
