@@ -1,3 +1,5 @@
+anywidget==0.9.18
+    # via skore (skore/pyproject.toml)
 asttokens==3.0.0
     # via stack-data
 cfgv==3.4.0
@@ -35,7 +37,9 @@ ipython==9.2.0
 ipython-pygments-lexers==1.1.1
     # via ipython
 ipywidgets==8.1.7
-    # via skore (skore/pyproject.toml)
+    # via
+    #   skore (skore/pyproject.toml)
+    #   anywidget
 jedi==0.19.2
     # via ipython
 joblib==1.4.2
@@ -94,6 +98,8 @@ pre-commit==4.1.0
     # via skore (skore/pyproject.toml)
 prompt-toolkit==3.0.51
     # via ipython
+psygnal==0.13.0
+    # via anywidget
 ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.3
@@ -155,7 +161,9 @@ traitlets==5.14.3
     #   ipywidgets
     #   matplotlib-inline
 typing-extensions==4.12.2
-    # via ipython
+    # via
+    #   anywidget
+    #   ipython
 tzdata==2025.1
     # via pandas
 virtualenv==20.29.1
