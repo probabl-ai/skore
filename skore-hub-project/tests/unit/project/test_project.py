@@ -93,12 +93,7 @@ class TestProject:
         assert content == {
             "dataset_fingerprint": None,
             "estimator_class_name": "LinearRegression",
-            "estimator_hyper_params": {
-                "copy_X": True,
-                "fit_intercept": True,
-                "n_jobs": None,
-                "positive": False,
-            },
+            "estimator_hyper_params": {},
             "metrics": [
                 {
                     "name": "r2",
