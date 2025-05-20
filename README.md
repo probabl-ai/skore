@@ -109,7 +109,7 @@ from sklearn.model_selection import train_test_split
 
 import skore
 
-# Create or connect to a Project 
+# Create or connect to a Project
 project = skore.Project("<name>") # local
 project = skore.Project("hub://<tenant>/<name>") # hub
 
