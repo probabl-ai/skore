@@ -17,32 +17,39 @@
   <h3>the scikit-learn sidekick</h3>
 
 Elevate ML Development with Built-in Recommended Practices \
-[Documentation](https://docs.skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3)
+[Documentation](https://docs.skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3) — [Hub](https://probabl.ai/skore)
 
 </div>
 
 <br />
 
-## What is skore?
+## 🧩 What is skore?
 
-skore is a Python open-source library designed to help data scientists apply recommended practices and avoid common methodological pitfalls in scikit-learn.
-
-## Key features
-
-- **Evaluate**: automated insightful reports.
-  - `EstimatorReport`: feed your scikit-learn compatible estimator and dataset, and it generates recommended metrics, feature importance, and plots to help you evaluate and inspect your estimator. All these are computed and generated for you in 1 line of code. Under the hood, we use efficient caching to make the computations blazing fast.
-  - `CrossValidationReport`: get a skore estimator report for each fold of your cross-validation.
-  - `ComparisonReport`: benchmark your skore estimator reports.
-- **Diagnose**: catch methodological errors before they impact your models.
-  - `train_test_split` supercharged with methodological guidance: the API is the same as scikit-learn's, but skore displays warnings when applicable. For example, it warns you against shuffling time series data or when you have class imbalance.
-
-## What's next?
-
-Skore is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
+Skore is a Python open-source library designed to help data scientists boost their ML development with effective guidance and tooling.
 
 ⭐ Support us with a star and spread the word - it means a lot! ⭐
 
-## 🚀 Quick start
+### Key features
+
+**Evaluate and inspect**: automated insightful reports.
+- `EstimatorReport`: feed your scikit-learn compatible estimator and dataset, and it generates recommended metrics, feature importance, and plots to help you evaluate and inspect your model. All in just one line of code. Under the hood, we use efficient caching to make the computations blazing fast.
+- `CrossValidationReport`: get a skore estimator report for each fold of your cross-validation.
+- `ComparisonReport`: benchmark your skore estimator reports.
+
+**Diagnose**: catch methodological errors before they impact your models.
+  - `train_test_split` supercharged with methodological guidance: the API is the same as scikit-learn's, but skore displays warnings when applicable. For example, it warns you against shuffling time series data or when you have class imbalance.
+
+## 🚀 Go next level with Skore Hub
+
+Discover the full collaboration layer for scaling data science teams and be among the first to get early access!
+
+https://probabl.ai/skore
+
+## 🗓️ What's next?
+
+Skore is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
+
+## ⚡️ Quick start
 
 ### Installation
 
@@ -117,12 +124,12 @@ You can find information on the latest version [here](https://anaconda.org/conda
 Learn more in our [documentation](https://docs.skore.probabl.ai).
 
 
-## Contributing
+## 🛠️ Contributing
 
-Thank you for considering contributing to skore! Join our mission to promote open-source and make machine learning development more robust and effective. Please check the contributing guidelines [here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
+Join our mission to promote open-source and make machine learning development more robust and effective. If you'd like to contribute, please check the contributing guidelines [here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
 
 
-## Feedback & Community
+## 👋 Feedback & Community
 
 -   Join our [Discord](https://discord.probabl.ai/) to share ideas or get support.
 -   Request a feature or report a bug via [GitHub Issues](https://github.com/probabl-ai/skore/issues).
@@ -133,7 +140,7 @@ Thank you for considering contributing to skore! Join our mission to promote ope
 
 Brought to you by
 
-<a href="https://probabl.ai" target="_blank">
+<a href="https://probabl.ai/skore" target="_blank">
     <picture>
         <source srcset="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Probabl-logo-orange.png" media="(prefers-color-scheme: dark)">
         <img width="120" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Probabl-logo-blue.png" alt="Probabl logo">
