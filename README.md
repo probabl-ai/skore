@@ -52,16 +52,21 @@ We recommend using a [virtual environment (venv)](https://docs.python.org/3/tuto
 
 Then, you can install skore by using `pip`:
 ```bash
+# If you just use skore locally
 pip install -U skore
+# If you wish to also interact with the skore hub
+pip install -U skore[hub]
 ```
 
 #### With conda
 
-skore is available in `conda-forge`:
+skore is available in `conda-forge` for local use:
 
 ```bash
 conda install conda-forge::skore
 ```
+
+It is not yet possible to interact with the skore hub when the skore is installed via conda.
 
 You can find information on the latest version [here](https://anaconda.org/conda-forge/skore).
 
