@@ -28,7 +28,7 @@ class AuthenticatedClient(Client):
     }
 
     def __init__(self, *, raises=False):
-        super().__init__(follow_redirects=True, timeout=3600)
+        super().__init__(follow_redirects=True, timeout=300)
 
         self.raises = raises
 
