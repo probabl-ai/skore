@@ -48,7 +48,7 @@ Key features of Skore Lib
 🗓️ What's next?
 ---------------
 
-Skore is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
+Skore Lib is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
 
 .. currentmodule:: skore
 
