@@ -156,6 +156,7 @@ class TestProject:
             "related_items": [
                 {
                     "key": "prediction_error",
+                    "verbose_name": "Prediction error",
                     "category": "performance",
                     "attributes": {"data_source": "train"},
                     "parameters": {},
@@ -166,6 +167,7 @@ class TestProject:
                 },
                 {
                     "key": "prediction_error",
+                    "verbose_name": "Prediction error",
                     "category": "performance",
                     "attributes": {"data_source": "test"},
                     "parameters": {},
@@ -176,6 +178,7 @@ class TestProject:
                 },
                 {
                     "key": "permutation",
+                    "verbose_name": "Feature importance - Permutation",
                     "category": "feature_importance",
                     "attributes": {"data_source": "train", "method": "permutation"},
                     "parameters": {},
@@ -186,6 +189,7 @@ class TestProject:
                 },
                 {
                     "key": "permutation",
+                    "verbose_name": "Feature importance - Permutation",
                     "category": "feature_importance",
                     "attributes": {"data_source": "test", "method": "permutation"},
                     "parameters": {},
@@ -196,6 +200,7 @@ class TestProject:
                 },
                 {
                     "key": "coefficients",
+                    "verbose_name": "Feature importance - Coefficients",
                     "category": "feature_importance",
                     "attributes": {"method": "coefficients"},
                     "parameters": {},
@@ -206,6 +211,7 @@ class TestProject:
                 },
                 {
                     "key": "estimator_html_repr",
+                    "verbose_name": None,
                     "category": "model",
                     "attributes": {},
                     "parameters": {},
