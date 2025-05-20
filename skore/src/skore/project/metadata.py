@@ -1,3 +1,5 @@
+"""Class definition of the metadata object, used in ``skore`` project."""
+
 from __future__ import annotations
 
 import typing
@@ -9,12 +11,54 @@ from .widget import ModelExplorerWidget
 if typing.TYPE_CHECKING:
     from typing import Union
 
+    from skore.sklearn import EstimatorReport
+
 
 class Metadata(pd.DataFrame):
+    """
+    Metadata and metrics for all reports persisted in a project at a given moment.
+
+    A metadata object is an extended ``pandas.DataFrame``, containing all the metadata
+    and metrics of the reports that have been persisted in a project. It implements a
+    custom HTML representation, that allows user to filter its reports using a parallel
+    coordinates plot. In a Jupyter Notebook, this representation automatically replaces
+    the standard ``pandas.DataFrame`` one and displays an interactive plot.
+
+    The parallel coordinates plot is interactive, such the user can select a filter path
+    and retrieve the corresponding reports.
+
+    Outside a Jupyter Notebook, the metadata object can be used as a standard
+    ``pandas.DataFrame`` object. This means that it can be questioned, divided etc.,
+    using the standard ``pandas.DataFrame`` functions.
+
+    Methods
+    -------
+    reports(filter=True) -> list[skore.sklearn.EstimatorReport]
+        Return the reports referenced by the metadata object from the project.
+        If a query string selection exists, it will be automatically applied before, to
+        filter the reports to return. Otherwise, returns all reports.
+    query_string_selection() -> Union[str | None]
+        Generate a ``pandas`` query string based on user selections in the parallel
+        coordinates plot.
+    """
+
     _metadata = ["project"]
 
     @staticmethod
     def factory(project, /):
+        """
+        Construct a metadata object from ``project`` at a given moment.
+
+        Parameters
+        ----------
+        project : skore.Project
+            The project from which the metadata object is to be constructed.
+
+        Notes
+        -----
+        This function is not intended for direct use. Instead simply use the accessor
+        ``skore.Project.reports.metadata``.
+        """
         metadata = pd.DataFrame(project.reports.metadata(), copy=False)
 
         if not metadata.empty:
@@ -36,8 +80,16 @@ class Metadata(pd.DataFrame):
     def _constructor(self):
         return Metadata
 
-    def reports(self, *, filter=True):
-        """"""
+    def reports(self, *, filter: bool = True) -> list[EstimatorReport]:
+        """
+        Return the reports referenced by the metadata object from the project.
+
+        Parameters
+        ----------
+        filter : bool, optional
+            Filter the reports to return with the user query string selection, default
+            True.
+        """
         if self.empty:
             return []
 
