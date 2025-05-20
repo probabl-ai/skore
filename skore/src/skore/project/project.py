@@ -82,6 +82,48 @@ class Project:
             - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
             - in Linux, usually ``${HOME}/.cache/skore``,
             - in macOS, usually ``${HOME}/Library/Caches/skore``.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>>
+    >>> from sklearn.datasets import make_classification, make_regression
+    >>> from sklearn.linear_model import LinearRegression, LogisticRegression
+    >>> from sklearn.model_selection import train_test_split
+    >>> from skore import Project
+    >>> from skore.sklearn import EstimatorReport
+    >>>
+    >>> X, y = make_classification(random_state=42)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    >>> classifier = LogisticRegression(max_iter=10)
+    >>> classifier_report = EstimatorReport(
+    >>>     classifier,
+    >>>     X_train=X_train,
+    >>>     y_train=y_train,
+    >>>     X_test=X_test,
+    >>>     y_test=y_test,
+    >>> )
+    >>>
+    >>> X, y = make_regression(random_state=42)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    >>> regressor = LinearRegression()
+    >>> regressor_report = EstimatorReport(
+    >>>     regressor,
+    >>>     X_train=X_train,
+    >>>     y_train=y_train,
+    >>>     X_test=X_test,
+    >>>     y_test=y_test,
+    >>> )
+    >>>
+    >>> with TemporaryDirectory() as tmpdir:
+    >>>     local_project = Project("my-xp", workspace=Path(tmpdir))
+    >>>     local_project.put("my-simple-classification", classifier_report)
+    >>>     local_project.put("my-simple-regression", regressor_report)
+    >>>
+    >>>     metadata = local_project.reports.metadata()
+    >>>     metadata = metadata.query("ml_task.str.contains('classification')")
+    >>>     reports = metadata.reports()
     """
 
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
