@@ -293,6 +293,8 @@ def _combine_cross_validation_results(
 
         return df
 
+    # Deepcopy the contained dataframes to avoid mutating them;
+    # in particular, they might be provided by a report cache
     results = copy.deepcopy(individual_results)
 
     # Pop the favorability column if it exists, to:
