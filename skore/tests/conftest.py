@@ -13,6 +13,24 @@ def pytest_configure(config):
     matplotlib.use("agg")
 
 
+@pytest.fixture(autouse=True)
+def monkeypatch_tmpdir(monkeypatch, tmp_path):
+    """
+    Change ``TMPDIR`` used by ``tempfile.gettempdir()`` to point to ``tmp_path``, so
+    that it is automatically deleted after use, with no impact on user's environment.
+
+    Force the reload of the ``tempfile`` module to change the cached return of
+    ``tempfile.gettempdir()``.
+
+    https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
+    """
+    import importlib
+    import tempfile
+
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    importlib.reload(tempfile)
+
+
 @pytest.fixture
 def mock_now():
     return datetime.now(tz=timezone.utc)
