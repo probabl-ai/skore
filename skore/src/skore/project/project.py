@@ -122,7 +122,7 @@ class Project:
     >>>     y_test=y_test,
     >>> )
     >>>
-    >>> with TemporaryDirectory() as tmpdir:
+    >>> with TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
     >>>     local_project = Project("my-xp", workspace=Path(tmpdir))
     >>>     local_project.put("my-simple-classification", classifier_report)
     >>>     local_project.put("my-simple-regression", regressor_report)
