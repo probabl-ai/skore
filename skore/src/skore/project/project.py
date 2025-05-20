@@ -91,13 +91,11 @@ class Project:
 
     Examples
     --------
-    >>> from pathlib import Path
-    >>> from tempfile import TemporaryDirectory
-    >>>
+    Construct reports.
+
     >>> from sklearn.datasets import make_classification, make_regression
     >>> from sklearn.linear_model import LinearRegression, LogisticRegression
     >>> from sklearn.model_selection import train_test_split
-    >>> from skore import Project
     >>> from skore.sklearn import EstimatorReport
     >>>
     >>> X, y = make_classification(random_state=42)
@@ -121,15 +119,30 @@ class Project:
     >>>     X_test=X_test,
     >>>     y_test=y_test,
     >>> )
+
+    Construct the project in local mode, persisted in a temporary directory.
+
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>> from skore import Project
     >>>
-    >>> with TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
-    >>>     local_project = Project("my-xp", workspace=Path(tmpdir))
-    >>>     local_project.put("my-simple-classification", classifier_report)
-    >>>     local_project.put("my-simple-regression", regressor_report)
-    >>>
-    >>>     metadata = local_project.reports.metadata()
-    >>>     metadata = metadata.query("ml_task.str.contains('classification')")
-    >>>     reports = metadata.reports()
+    >>> tmpdir = TemporaryDirectory().name
+    >>> local_project = Project("my-xp", workspace=Path(tmpdir))
+
+    Put reports in the project.
+
+    >>> local_project.put("my-simple-classification", classifier_report)
+    >>> local_project.put("my-simple-regression", regressor_report)
+
+    Investigate metadata/metrics to filter the best reports.
+
+    >>> metadata = local_project.reports.metadata()
+    >>> metadata = metadata.query("ml_task.str.contains('regression') and (rmse < 67)")
+    >>> reports = metadata.reports()
+
+    See Also
+    --------
+    Metadata : DataFrame designed to investigate persisted reports' metadata/metrics.
     """
 
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
@@ -204,7 +217,7 @@ class Project:
             return self.__project.reports.get(id)
 
         def metadata() -> Metadata:  # hide underlying functions from user
-            """Obtain metadata for all persisted reports."""
+            """Obtain metadata/metrics for all persisted reports."""
             return Metadata.factory(self.__project)
 
         return types.SimpleNamespace(get=get, metadata=metadata)
