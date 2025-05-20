@@ -67,9 +67,8 @@ class Project:
           project is configured to communicate with the ``skore hub``,
         - otherwise, the project is configured to communicate with a local storage, on
           the user machine.
-
     **kwargs : dict
-        Keyword arguments passed to the project, depending on its mode.
+        Extra keyword arguments passed to the project, depending on its mode.
 
         workspace : Path, mode:local only.
             The directory where the local project is persisted.
@@ -82,6 +81,13 @@ class Project:
             - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
             - in Linux, usually ``${HOME}/.cache/skore``,
             - in macOS, usually ``${HOME}/Library/Caches/skore``.
+
+    Attributes
+    ----------
+    name : str
+        The name of the project, extrapolated from the ``name`` parameter.
+    mode : str
+        The mode of the project, extrapolated from the ``name`` parameter.
 
     Examples
     --------
@@ -142,12 +148,23 @@ class Project:
 
         if mode not in PLUGINS.names:
             raise ValueError(
-                f"Unknown mode '{mode}'. Available modes {', '.join(PLUGINS.names)}."
+                f"Unknown mode `{mode}`. "
+                f"Please install the `skore-{mode}-project` python package."
             )
 
         self.__mode = mode
         self.__name = name
         self.__project = PLUGINS[mode].load()(**kwargs)
+
+    @property
+    def mode(self):
+        """The mode of the project."""
+        return self.__mode
+
+    @property
+    def name(self):
+        """The name of the project."""
+        return self.__name
 
     def put(self, key: str, report: EstimatorReport):
         """

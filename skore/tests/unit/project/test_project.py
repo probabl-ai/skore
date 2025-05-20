@@ -78,8 +78,22 @@ class TestProject:
             ),
         )
 
-        with raises(ValueError, match="Unknown mode 'local'"):
+        with raises(
+            ValueError,
+            match=(
+                "Unknown mode `local`. "
+                "Please install the `skore-local-project` python package."
+            ),
+        ):
             Project("<name>")
+
+    def test_mode(self):
+        assert Project("<name>").mode == "local"
+        assert Project("hub://<tenant>/<name>").mode == "hub"
+
+    def test_name(self):
+        assert Project("<name>").name == "<name>"
+        assert Project("hub://<tenant>/<name>").name == "<name>"
 
     def test_put(self): ...
 
