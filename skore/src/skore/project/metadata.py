@@ -90,15 +90,15 @@ class Metadata(pd.DataFrame):
         query_parts.append(f"dataset == '{dataset}'")
 
         for column_name, range_values in selection.items():
+            if not isinstance(range_values[0], tuple):  # single selection
+                range_values = (range_values,)
+
             if column_name == "learner":
                 for dim in self._plot_widget.current_fig.data[0].dimensions:
                     if dim["label"] == "Learner":
                         learner_values = dim["ticktext"]
                         learner_codes = dim["tickvals"]
                         break
-
-                if not isinstance(range_values[0], tuple):  # single selection
-                    range_values = (range_values,)
 
                 selected_learners = []
                 for min_val, max_val in range_values:
@@ -122,10 +122,12 @@ class Metadata(pd.DataFrame):
                     )
                     query_parts.append(f"learner.isin([{values_str}])")
             else:
-                min_val, max_val = range_values
-                query_parts.append(
-                    f"({column_name} >= {min_val:.6f} and "
-                    f"{column_name} <= {max_val:.6f})"
-                )
+                dim_query = []
+                for min_val, max_val in range_values:
+                    dim_query.append(
+                        f"({column_name} >= {min_val:.6f} and "
+                        f"{column_name} <= {max_val:.6f})"
+                    )
+                query_parts.append("(" + " or ".join(dim_query) + ")")
 
         return " and ".join(query_parts)

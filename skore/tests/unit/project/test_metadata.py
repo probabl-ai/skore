@@ -167,3 +167,130 @@ class TestMetadata:
         assert len(metadata) == 0
         assert metadata.reports() == []
         assert metadata.reports(filter=False) == []
+
+    def test_query_string_selection(self, monkeypatch):
+        metadata = DataFrame(
+            data={
+                "ml_task": [
+                    "classification",
+                    "classification",
+                    "classification",
+                    "classification",
+                    "regression",
+                    "regression",
+                    "regression",
+                    "regression",
+                ],
+                "dataset": [
+                    "dataset1",
+                    "dataset1",
+                    "dataset1",
+                    "dataset2",
+                    "dataset3",
+                    "dataset3",
+                    "dataset3",
+                    "dataset4",
+                ],
+                "learner": [
+                    "learner1",
+                    "learner2",
+                    "learner3",
+                    "learner1",
+                    "learner4",
+                    "learner5",
+                    "learner5",
+                    "learner6",
+                ],
+                "fit_time": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
+                "predict_time": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
+                "rmse": [None, None, None, None, 0.1, 0.2, 0.3, 0.4],
+                "log_loss": [0.3, 0.4, 0.5, 0.6, None, None, None, None],
+                "roc_auc": [0.5, 0.6, 0.7, 0.8, None, None, None, None],
+            },
+            index=MultiIndex.from_tuples(
+                [
+                    (0, "id1"),
+                    (0, "id2"),
+                    (0, "id3"),
+                    (0, "id4"),
+                    (0, "id5"),
+                    (0, "id6"),
+                    (0, "id7"),
+                    (0, "id8"),
+                ],
+                names=[None, "id"],
+            ),
+        )
+        metadata["learner"] = metadata["learner"].astype("category")
+        metadata = Metadata(metadata)
+        metadata._repr_html_()  # trigger the creation of the widget
+
+        expected_query = (
+            "ml_task.str.contains('classification') and dataset == 'dataset1'"
+        )
+        assert metadata.query_string_selection() == expected_query
+
+        # simulate a selection on the log loss dimension
+        select_range_log_loss = {
+            "ml_task": "classification",
+            "dataset": "dataset1",
+            "log_loss": (0.35, 0.55),
+        }
+
+        def mock_update_selection(*args, **kwargs):
+            metadata._plot_widget.current_selection = select_range_log_loss
+            return metadata._plot_widget
+
+        monkeypatch.setattr(
+            metadata._plot_widget, "update_selection", mock_update_selection
+        )
+
+        assert metadata.query_string_selection() == (
+            "ml_task.str.contains('classification') and dataset == 'dataset1' "
+            "and ((log_loss >= 0.350000 and log_loss <= 0.550000))"
+        )
+
+        # simulate a double selection on the log loss dimension
+        select_range_log_loss = {
+            "ml_task": "classification",
+            "dataset": "dataset1",
+            "log_loss": ((0.35, 0.45), (0.55, 0.55)),
+        }
+
+        def mock_update_selection(*args, **kwargs):
+            metadata._plot_widget.current_selection = select_range_log_loss
+            return metadata._plot_widget
+
+        monkeypatch.setattr(
+            metadata._plot_widget, "update_selection", mock_update_selection
+        )
+
+        assert metadata.query_string_selection() == (
+            "ml_task.str.contains('classification') and dataset == 'dataset1' "
+            "and ((log_loss >= 0.350000 and log_loss <= 0.450000) "
+            "or (log_loss >= 0.550000 and log_loss <= 0.550000))"
+        )
+
+        # simulate a double selection on the log loss dimension and a selection of
+        # learners
+        select_range_log_loss = {
+            "ml_task": "classification",
+            "dataset": "dataset1",
+            "log_loss": ((0.35, 0.45), (0.55, 0.55)),
+            "learner": ((1e-18, 0.25), (1.5, 2.5)),
+        }
+
+        def mock_update_selection(*args, **kwargs):
+            metadata._plot_widget.current_selection = select_range_log_loss
+            return metadata._plot_widget
+
+        monkeypatch.setattr(
+            metadata._plot_widget, "update_selection", mock_update_selection
+        )
+
+        assert metadata.query_string_selection() == (
+            "ml_task.str.contains('classification') and dataset == 'dataset1' "
+            "and ((log_loss >= 0.350000 and log_loss <= 0.450000) "
+            "or (log_loss >= 0.550000 and log_loss <= 0.550000)) "
+            "and learner.isin(['learner1', 'learner3'])"
+        )
