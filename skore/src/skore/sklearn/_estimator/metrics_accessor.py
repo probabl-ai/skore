@@ -149,7 +149,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ... )
                                   LogisticRegression Favorability
         Metric   Label / Average
-        F1 Score 1                              0.96...      (↗︎)
+        F1 Score               1             0.96...          (↗︎)
         """
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
