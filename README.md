@@ -17,19 +17,21 @@
   <h3>the scikit-learn sidekick</h3>
 
 Elevate ML Development with Built-in Recommended Practices \
-[Documentation](https://docs.skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3) — [Hub](https://probabl.ai/skore)
+[Documentation](https://docs.skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3) — [Skore Hub](https://probabl.ai/skore)
 
 </div>
 
 <br />
 
-## 🧩 What is skore?
+## 🧩 What is Skore?
 
-Skore is a Python open-source library designed to help data scientists boost their ML development with effective guidance and tooling.
+**Skore** is a product whose core mission is to turn uneven ML development into structured, effective decision-making. It is made of two complementary components:
+- **Skore Lib**: the scikit-learn sidekick, an open-source Python library (described here!) designed to help data scientists boost their ML development with effective guidance and tooling.
+- **Skore Hub**: the collaborative layer where teams connect, learn more on our [product page](https://probabl.ai/skore).
 
 ⭐ Support us with a star and spread the word - it means a lot! ⭐
 
-### Key features
+### Key features of Skore Lib
 
 **Evaluate and inspect**: automated insightful reports.
 - `EstimatorReport`: feed your scikit-learn compatible estimator and dataset, and it generates recommended metrics, feature importance, and plots to help you evaluate and inspect your model. All in just one line of code. Under the hood, we use efficient caching to make the computations blazing fast.
@@ -39,15 +41,9 @@ Skore is a Python open-source library designed to help data scientists boost the
 **Diagnose**: catch methodological errors before they impact your models.
   - `train_test_split` supercharged with methodological guidance: the API is the same as scikit-learn's, but skore displays warnings when applicable. For example, it warns you against shuffling time series data or when you have class imbalance.
 
-## 🚀 Go next level with Skore Hub
-
-Discover the full collaboration layer for scaling data science teams and be among the first to get early access!
-
-https://probabl.ai/skore
-
 ## 🗓️ What's next?
 
-Skore is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
+Skore Lib is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
 
 ## ⚡️ Quick start
 
