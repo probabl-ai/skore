@@ -100,6 +100,35 @@ roc_plot = cv_report.metrics.roc()
 roc_plot.plot()
 ```
 
+### Create or connect to a Project to save and load reports
+
+```python
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+
+import skore
+
+# Create or connect to a Project 
+project = skore.Project("<name>") # local
+project = skore.Project("hub://<tenant>/<name>") # hub
+
+X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+clf = LogisticRegression()
+
+report = skore.EstimatorReport(
+    clf,
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_test,
+    y_test=y_test,
+)
+
+# Save report to Project for future reference
+project.put("my_report", report)
+```
+
 Learn more in our [documentation](https://docs.skore.probabl.ai).
 
 
