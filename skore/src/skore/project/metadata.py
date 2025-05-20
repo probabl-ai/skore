@@ -1,3 +1,5 @@
+"""Project metadata."""
+
 from __future__ import annotations
 
 import typing
@@ -11,10 +13,13 @@ if typing.TYPE_CHECKING:
 
 
 class Metadata(pd.DataFrame):
+    """Project metadata."""
+
     _metadata = ["project"]
 
     @staticmethod
-    def factory(project, /):
+    def factory(project, /) -> Metadata:
+        """Create a Metadata."""
         metadata = pd.DataFrame(project.reports.metadata(), copy=False)
 
         if not metadata.empty:
@@ -33,11 +38,18 @@ class Metadata(pd.DataFrame):
         return metadata
 
     @property
-    def _constructor(self):
+    def _constructor(self) -> type[Metadata]:
         return Metadata
 
-    def reports(self, *, filter=True):
-        """"""
+    def reports(self, *, filter=True) -> list:
+        """Retrieve reports from a Metadata.
+
+        Parameters
+        ----------
+        filter : bool
+            Whether to use `Metadata.query_string_selection` to filter the list of
+            reports.
+        """
         if self.empty:
             return []
 
