@@ -885,7 +885,7 @@ def test_cross_validation_report_custom_metric(binary_classification_data):
         response_method="predict",
     )
     assert result.shape == (1, 2)
-    assert result.index == ["accuracy_score"]
+    assert result.index == ["Accuracy Score"]
 
 
 @pytest.mark.parametrize(
@@ -936,7 +936,7 @@ def test_cross_validation_report_interrupted(
         response_method="predict",
     )
     assert result.shape == (1, 2)
-    assert result.index == ["accuracy_score"]
+    assert result.index == ["Accuracy Score"]
 
 
 def test_cross_validation_report_brier_score_requires_probabilities():
