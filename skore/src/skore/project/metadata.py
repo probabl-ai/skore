@@ -51,7 +51,7 @@ class Metadata(pd.DataFrame):
 
         Parameters
         ----------
-        project : skore.Project
+        project : Union[skore_local_project.Project, skore_hub_project.Project]
             The project from which the metadata object is to be constructed.
 
         Notes
@@ -108,26 +108,7 @@ class Metadata(pd.DataFrame):
         return ""
 
     def _query_string_selection(self) -> Union[str, None]:
-        """
-        Generate a pandas query string based on user selections in the plot.
-
-        This method translates the visual selections made on the parallel
-        coordinates plot into a pandas query string that can be used to
-        filter the dataframe.
-
-        Returns
-        -------
-        str
-            A query string that can be used with DataFrame.query() to filter
-            the original dataframe based on the visual selection.
-            Returns an empty string if no selections are active.
-
-        Examples
-        --------
-        >>> # xdoctest: +SKIP
-        >>> query_string = df._query_string_selection()
-        >>> df_filtered = df.query(query_string)
-        """
+        """Generate a string that can be passed to `pandas.DataFrame.query`."""
         if not hasattr(self, "_plot_widget"):
             return None
 
