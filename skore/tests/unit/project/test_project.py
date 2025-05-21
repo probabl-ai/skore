@@ -152,6 +152,14 @@ class TestProject:
         assert hasattr(project.reports, "get")
         assert hasattr(project.reports, "metadata")
 
-    def test_reports_get(self): ...
+    def test_reports_get(self):
+        project = Project("<name>")
+
+        project.reports.get("<id>")
+
+        assert isinstance(project._Project__project, FakeLocalProject)
+        assert project._Project__project.reports.get.called
+        assert project._Project__project.reports.get.call_args.args == ("<id>",)
+        assert not project._Project__project.reports.get.call_args.kwargs
 
     def test_reports_metadata(self): ...
