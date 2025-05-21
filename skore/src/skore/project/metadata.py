@@ -37,9 +37,6 @@ class Metadata(pd.DataFrame):
         Return the reports referenced by the metadata object from the project.
         If a query string selection exists, it will be automatically applied before, to
         filter the reports to return. Otherwise, returns all reports.
-    _query_string_selection() -> Union[str | None]
-        Generate a ``pandas`` query string based on user selections in the parallel
-        coordinates plot.
     """
 
     _metadata = ["project"]
@@ -108,7 +105,26 @@ class Metadata(pd.DataFrame):
         return ""
 
     def _query_string_selection(self) -> Union[str, None]:
-        """Generate a string that can be passed to `pandas.DataFrame.query`."""
+        """
+        Generate a pandas query string based on user selections in the plot.
+
+        This method translates the visual selections made on the parallel
+        coordinates plot into a pandas query string that can be used to
+        filter the dataframe.
+
+        Returns
+        -------
+        str
+            A query string that can be used with DataFrame.query() to filter
+            the original dataframe based on the visual selection.
+            Returns an empty string if no selections are active.
+
+        Examples
+        --------
+        >>> # xdoctest: +SKIP
+        >>> query_string = df._query_string_selection()
+        >>> df_filtered = df.query(query_string)
+        """
         if not hasattr(self, "_plot_widget"):
             return None
 
