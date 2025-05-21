@@ -1189,8 +1189,16 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
 
     @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        _check_all_checks(
+            checks=[
+                _check_supported_ml_task(
+                    supported_ml_tasks=[
+                        "binary-classification",
+                        "multiclass-classification",
+                    ]
+                ),
+                _check_estimator_has_method(method_name="predict_proba"),
+            ]
         )
     )
     def _log_loss(
