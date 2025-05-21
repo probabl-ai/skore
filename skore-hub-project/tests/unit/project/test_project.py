@@ -93,12 +93,7 @@ class TestProject:
         assert content == {
             "dataset_fingerprint": None,
             "estimator_class_name": "LinearRegression",
-            "estimator_hyper_params": {
-                "copy_X": True,
-                "fit_intercept": True,
-                "n_jobs": None,
-                "positive": False,
-            },
+            "estimator_hyper_params": {},
             "metrics": [
                 {
                     "name": "r2",
@@ -161,6 +156,7 @@ class TestProject:
             "related_items": [
                 {
                     "key": "prediction_error",
+                    "verbose_name": "Prediction error",
                     "category": "performance",
                     "attributes": {"data_source": "train"},
                     "parameters": {},
@@ -171,6 +167,7 @@ class TestProject:
                 },
                 {
                     "key": "prediction_error",
+                    "verbose_name": "Prediction error",
                     "category": "performance",
                     "attributes": {"data_source": "test"},
                     "parameters": {},
@@ -181,6 +178,7 @@ class TestProject:
                 },
                 {
                     "key": "permutation",
+                    "verbose_name": "Feature importance - Permutation",
                     "category": "feature_importance",
                     "attributes": {"data_source": "train", "method": "permutation"},
                     "parameters": {},
@@ -191,6 +189,7 @@ class TestProject:
                 },
                 {
                     "key": "permutation",
+                    "verbose_name": "Feature importance - Permutation",
                     "category": "feature_importance",
                     "attributes": {"data_source": "test", "method": "permutation"},
                     "parameters": {},
@@ -201,6 +200,7 @@ class TestProject:
                 },
                 {
                     "key": "coefficients",
+                    "verbose_name": "Feature importance - Coefficients",
                     "category": "feature_importance",
                     "attributes": {"method": "coefficients"},
                     "parameters": {},
@@ -211,6 +211,7 @@ class TestProject:
                 },
                 {
                     "key": "estimator_html_repr",
+                    "verbose_name": None,
                     "category": "model",
                     "attributes": {},
                     "parameters": {},

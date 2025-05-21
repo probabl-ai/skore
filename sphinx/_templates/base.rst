@@ -9,7 +9,6 @@
 .. currentmodule:: {{ module }}
 
 .. autofunction:: {{ objname }}
-   :noindex:
 
 .. minigallery:: {{ module }}.{{ objname }}
    :add-heading: Gallery examples
@@ -23,7 +22,6 @@
    :members:
    :inherited-members:
    :special-members: __call__
-   :noindex:
 
 .. minigallery:: {{ module }}.{{ objname }} {% for meth in methods %}{{ module }}.{{ objname }}.{{ meth }} {% endfor %}
    :add-heading: Gallery examples

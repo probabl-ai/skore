@@ -3,7 +3,7 @@ Managing a project
 
 .. currentmodule:: skore
 
-These functions and classes are meant for managing a Project.
+These functions and classes are meant for managing a Project and its reports.
 
 .. autosummary::
     :toctree: api/
@@ -11,4 +11,4 @@ These functions and classes are meant for managing a Project.
 
     Project
     Project.put
-    Project.get
+    Project.reports

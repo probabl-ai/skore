@@ -234,3 +234,26 @@ def test_X_y(report, classification_data):
         ),
     )
     assert len(result) == 8
+
+
+def test_cache_poisoning(classification_data):
+    """Computing metrics for a ComparisonReport should not influence the
+    metrics computation for the internal CVReports.
+
+    Non-regression test for https://github.com/probabl-ai/skore/issues/1706
+    """
+    X, y = classification_data
+
+    report_1 = CrossValidationReport(
+        DummyClassifier(strategy="uniform", random_state=1), X=X, y=y
+    )
+    report_2 = CrossValidationReport(
+        DummyClassifier(strategy="uniform", random_state=2), X=X, y=y
+    )
+    report = ComparisonReport({"model_1": report_1, "model_2": report_2})
+    report.metrics.report_metrics(indicator_favorability=True)
+    result = report_1.metrics.report_metrics(
+        aggregate=None, indicator_favorability=True
+    )
+
+    assert "Favorability" in result.columns

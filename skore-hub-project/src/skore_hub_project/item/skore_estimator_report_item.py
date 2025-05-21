@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from inspect import getmembers, ismethod, signature
+from math import isfinite
 from operator import attrgetter
 from typing import TYPE_CHECKING
 
@@ -37,10 +38,20 @@ if TYPE_CHECKING:
 
     class Representation(TypedDict):  # noqa: D101
         key: str
+        verbose_name: Union[str, None]
         category: Literal["performance", "feature_importance", "model"]
         attributes: dict
         representation: dict
         parameters: dict
+
+
+def cast_to_float(value: Any) -> Union[float, None]:
+    """Cast value to float."""
+    with suppress(TypeError):
+        if (value := float(value)) and isfinite(value):
+            return value
+
+    return None
 
 
 def metadata_function(function: Any) -> MetadataFunction:
@@ -85,13 +96,9 @@ class Metadata:
         return self.report.estimator_name_
 
     @metadata_function
-    def estimator_hyper_params(self) -> dict[str, Union[None, bool, float, int, str]]:
-        """Return the primitive hyper parameters of the report's estimator."""
-        return {
-            key: value
-            for key, value in self.report.estimator_.get_params().items()
-            if isinstance(value, (type(None), bool, float, int, str))
-        }
+    def estimator_hyper_params(self) -> dict:
+        """DeprecationWarning: send empty dictionary to not break the hub API."""
+        return {}
 
     @metadata_function
     def dataset_fingerprint(self) -> str:
@@ -134,11 +141,11 @@ class Metadata:
             if hasattr(self.report.metrics, name):
                 value = getattr(self.report.metrics, name)(data_source=data_source)
 
-                with suppress(TypeError):
+                if (value := cast_to_float(value)) is not None:
                     return {
                         "name": name,
                         "verbose_name": verbose_name,
-                        "value": float(value),
+                        "value": value,
                         "data_source": data_source,
                         "greater_is_better": greater_is_better,
                         "position": position,
@@ -159,11 +166,11 @@ class Metadata:
                 name if name != "predict_time" else f"{name}_{data_source}"
             )
 
-            if value is not None:
+            if (value := cast_to_float(value)) is not None:
                 return {
                     "name": name,
                     "verbose_name": verbose_name,
-                    "value": float(value),
+                    "value": value,
                     "data_source": data_source,
                     "greater_is_better": greater_is_better,
                     "position": position,
@@ -230,7 +237,13 @@ class Representations:
         """
         self.report = report
 
-    def mpl(self, name, category, **kwargs) -> Union[Representation, None]:
+    def mpl(
+        self,
+        name,
+        verbose_name,
+        category,
+        **kwargs,
+    ) -> Union[Representation, None]:
         """Return sub-representation made of ``matplotlib`` figures."""
         try:
             function = attrgetter(name)(self.report)
@@ -251,13 +264,14 @@ class Representations:
 
             return {
                 "key": name.split(".")[-1],
+                "verbose_name": verbose_name,
                 "category": category,
                 "attributes": kwargs,
                 "parameters": {},
                 "representation": item.__representation__["representation"],
             }
 
-    def pd(self, name, category, **kwargs) -> Union[Representation, None]:
+    def pd(self, name, verbose_name, category, **kwargs) -> Union[Representation, None]:
         """Return sub-representation made of ``pandas`` dataframes."""
         try:
             function = attrgetter(name)(self.report)
@@ -273,6 +287,7 @@ class Representations:
 
             return {
                 "key": name.split(".")[-1],
+                "verbose_name": verbose_name,
                 "category": category,
                 "attributes": kwargs,
                 "parameters": {},
@@ -290,6 +305,7 @@ class Representations:
 
         return {
             "key": "estimator_html_repr",
+            "verbose_name": None,
             "category": "model",
             "attributes": {},
             "parameters": {},
@@ -308,34 +324,54 @@ class Representations:
             None,
             (
                 self.mpl(
-                    "metrics.precision_recall", "performance", data_source="train"
+                    "metrics.precision_recall",
+                    "Precision Recall",
+                    "performance",
+                    data_source="train",
                 ),
-                self.mpl("metrics.precision_recall", "performance", data_source="test"),
                 self.mpl(
-                    "metrics.prediction_error", "performance", data_source="train"
+                    "metrics.precision_recall",
+                    "Precision Recall",
+                    "performance",
+                    data_source="test",
                 ),
-                self.mpl("metrics.prediction_error", "performance", data_source="test"),
-                self.mpl("metrics.roc", "performance", data_source="train"),
-                self.mpl("metrics.roc", "performance", data_source="test"),
+                self.mpl(
+                    "metrics.prediction_error",
+                    "Prediction error",
+                    "performance",
+                    data_source="train",
+                ),
+                self.mpl(
+                    "metrics.prediction_error",
+                    "Prediction error",
+                    "performance",
+                    data_source="test",
+                ),
+                self.mpl("metrics.roc", "ROC", "performance", data_source="train"),
+                self.mpl("metrics.roc", "ROC", "performance", data_source="test"),
                 self.pd(
                     "feature_importance.permutation",
+                    "Feature importance - Permutation",
                     "feature_importance",
                     data_source="train",
                     method="permutation",
                 ),
                 self.pd(
                     "feature_importance.permutation",
+                    "Feature importance - Permutation",
                     "feature_importance",
                     data_source="test",
                     method="permutation",
                 ),
                 self.pd(
                     "feature_importance.mean_decrease_impurity",
+                    "Feature importance - Mean Decrease Impurity (MDI)",
                     "feature_importance",
                     method="mean_decrease_impurity",
                 ),
                 self.pd(
                     "feature_importance.coefficients",
+                    "Feature importance - Coefficients",
                     "feature_importance",
                     method="coefficients",
                 ),
