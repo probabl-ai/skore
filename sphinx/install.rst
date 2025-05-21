@@ -12,13 +12,19 @@ Install
         We recommend using a `virtual environment (venv) <https://docs.python.org/3/tutorial/venv.html>`_.
         You need ``python>=3.9``.
 
-        Then, run:
+        Then, if you just want to use Skore Lib locally, run:
 
         .. code-block:: bash
 
             pip install -U skore
 
-        You can check skore's latest version on `PyPI <https://pypi.org/project/skore/>`_.
+        Amternatively, if you wish to use Skore locally and also interact with Skore Hub
+
+        .. code-block:: bash
+
+            pip install -U skore[hub]
+
+        You can check Skore Lib's latest version on `PyPI <https://pypi.org/project/skore/>`_.
 
     .. tab-item:: Using conda
 
