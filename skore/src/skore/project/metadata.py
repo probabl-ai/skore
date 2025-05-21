@@ -37,9 +37,6 @@ class Metadata(pd.DataFrame):
         Return the reports referenced by the metadata object from the project.
         If a query string selection exists, it will be automatically applied before, to
         filter the reports to return. Otherwise, returns all reports.
-    query_string_selection() -> Union[str | None]
-        Generate a ``pandas`` query string based on user selections in the parallel
-        coordinates plot.
     """
 
     _metadata = ["project"]
@@ -51,7 +48,7 @@ class Metadata(pd.DataFrame):
 
         Parameters
         ----------
-        project : skore.Project
+        project : Union[skore_local_project.Project, skore_hub_project.Project]
             The project from which the metadata object is to be constructed.
 
         Notes
@@ -96,7 +93,7 @@ class Metadata(pd.DataFrame):
         if not hasattr(self, "project") or "id" not in self.index.names:
             raise RuntimeError("Bad condition: it is not a valid `Metadata` object.")
 
-        if filter and (querystr := self.query_string_selection()):
+        if filter and (querystr := self._query_string_selection()):
             self = self.query(querystr)
 
         return list(map(self.project.reports.get, self.index.get_level_values("id")))
@@ -107,7 +104,7 @@ class Metadata(pd.DataFrame):
         self._plot_widget.display()
         return ""
 
-    def query_string_selection(self) -> Union[str, None]:
+    def _query_string_selection(self) -> Union[str, None]:
         """
         Generate a pandas query string based on user selections in the plot.
 
@@ -125,7 +122,7 @@ class Metadata(pd.DataFrame):
         Examples
         --------
         >>> # xdoctest: +SKIP
-        >>> query_string = df.query_string_selection()
+        >>> query_string = df._query_string_selection()
         >>> df_filtered = df.query(query_string)
         """
         if not hasattr(self, "_plot_widget"):
