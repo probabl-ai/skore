@@ -21,7 +21,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import PositiveLabel, SKLearnScorer
+from skore.sklearn.types import PositiveLabel, SKLearnScorer, YPlotData
 from skore.utils._accessor import (
     _check_all_checks,
     _check_estimator_has_method,
@@ -97,13 +97,18 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
-            The metrics to report. You can get the possible list of string by calling
-            `report.metrics.help()`. When passing a callable, it should take as
-            arguments `y_true`, `y_pred` as the two first arguments. Additional
-            arguments can be passed as keyword arguments and will be forwarded with
-            `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
-            same parameter name with different values), you can use scikit-learn scorers
-            as provided by :func:`sklearn.metrics.make_scorer`.
+            The metrics to report. The possible values in the list are:
+
+            - if a string, either one of the built-in metrics or a scikit-learn scorer
+              name. You can get the possible list of string using
+              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
+              the built-in metrics or the scikit-learn scorers, respectively.
+            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
+              first arguments. Additional arguments can be passed as keyword arguments
+              and will be forwarded with `scoring_kwargs`.
+            - if the callable API is too restrictive (e.g. need to pass
+              same parameter name with different values), you can use scikit-learn
+              scorers as provided by :func:`sklearn.metrics.make_scorer`.
 
         scoring_names : list of str, default=None
             Used to overwrite the default scoring names in the report. It should be of
@@ -132,19 +137,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
                     LogisticRegression Favorability
         Metric
@@ -152,6 +150,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Recall                 0.93...         (↗︎)
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
+        >>> # Using scikit-learn metrics
+        >>> report.metrics.report_metrics(
+        ...     scoring=["f1"], pos_label=1, indicator_favorability=True
+        ... )
+                                  LogisticRegression Favorability
+        Metric   Label / Average
+        F1 Score               1             0.96...          (↗︎)
         """
         if scoring is not None and not isinstance(scoring, list):
             scoring = [scoring]
@@ -206,6 +211,28 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         scores = []
         favorability_indicator = []
         for metric_name, metric in zip(scoring_names, scoring):
+            if isinstance(metric, str) and not (
+                (metric.startswith("_") and metric[1:] in self._SCORE_OR_LOSS_INFO)
+                or metric in self._SCORE_OR_LOSS_INFO
+            ):
+                try:
+                    metric = metrics.get_scorer(metric)
+                except ValueError as err:
+                    raise ValueError(
+                        f"Invalid metric: {metric!r}. "
+                        f"Please use a valid metric from the "
+                        f"list of supported metrics: "
+                        f"{list(self._SCORE_OR_LOSS_INFO.keys())} "
+                        "or a valid scikit-learn scoring string."
+                    ) from err
+                if scoring_kwargs is not None:
+                    raise ValueError(
+                        "The `scoring_kwargs` parameter is not supported when "
+                        "`scoring` is a scikit-learn scorer name. Use the function "
+                        "`sklearn.metrics.make_scorer` to create a scorer with "
+                        "additional parameters."
+                    )
+
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
             if isinstance(metric, _BaseScorer):
@@ -233,32 +260,35 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     elif pos_label is not None:
                         metrics_kwargs["pos_label"] = pos_label
                 if metric_name is None:
-                    metric_name = metric._score_func.__name__
-                metric_favorability = "↗︎" if metric._sign == 1 else "↘︎"
+                    metric_name = metric._score_func.__name__.replace("_", " ").title()
+                metric_favorability = "(↗︎)" if metric._sign == 1 else "(↘︎)"
                 favorability_indicator.append(metric_favorability)
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
-                    err_msg = (
-                        f"Invalid metric: {metric!r}. Please use a valid metric"
-                        " from the list of supported metrics: "
-                        f"{list(self._SCORE_OR_LOSS_INFO.keys())}"
-                    )
+                    # Handle built-in metrics (with underscore prefix)
                     if (
                         metric.startswith("_")
-                        and metric[1:] not in self._SCORE_OR_LOSS_INFO
+                        and metric[1:] in self._SCORE_OR_LOSS_INFO
                     ):
-                        raise ValueError(err_msg)
-                    if not metric.startswith("_"):
-                        if metric not in self._SCORE_OR_LOSS_INFO:
-                            raise ValueError(err_msg)
-                        metric = f"_{metric}"
-                    metric_fn = getattr(self, metric)
-                    metrics_kwargs = {"data_source_hash": data_source_hash}
-                    if metric_name is None:
-                        metric_name = f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
-                    metric_favorability = self._SCORE_OR_LOSS_INFO[metric[1:]]["icon"]
-                    favorability_indicator.append(metric_favorability)
+                        metric_fn = getattr(self, metric)
+                        metrics_kwargs = {"data_source_hash": data_source_hash}
+                        if metric_name is None:
+                            metric_name = (
+                                f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
+                            )
+                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric[1:]][
+                            "icon"
+                        ]
+
+                    # Handle built-in metrics (without underscore prefix)
+                    elif metric in self._SCORE_OR_LOSS_INFO:
+                        metric_fn = getattr(self, f"_{metric}")
+                        metrics_kwargs = {"data_source_hash": data_source_hash}
+                        if metric_name is None:
+                            metric_name = f"{self._SCORE_OR_LOSS_INFO[metric]['name']}"
+                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric]["icon"]
                 else:
+                    # Handle callable metrics
                     metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
                         metrics_kwargs = {}
@@ -276,6 +306,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         metric_name = metric.__name__
                     metric_favorability = ""
                     favorability_indicator.append(metric_favorability)
+
                 metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
                     for param in metrics_params:
@@ -542,19 +573,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import make_classification
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
         >>> X, y = make_classification(random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator = LogisticRegression()
         >>> from skore import EstimatorReport
-        >>> report = EstimatorReport(
-        ...     estimator,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(estimator, **split_data)
         >>> report.metrics.timings()
         {'fit_time': ...}
         >>> report.cache_predictions(response_methods=["predict"])
@@ -617,19 +642,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.accuracy()
         0.95...
         """
@@ -732,19 +750,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.precision(pos_label=1)
         0.98...
         """
@@ -870,19 +881,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.recall(pos_label=1)
         0.93...
         """
@@ -975,19 +979,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.brier_score()
         0.03...
         """
@@ -1106,19 +1103,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.roc_auc()
         0.99...
         """
@@ -1195,19 +1185,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.log_loss()
         0.10...
         """
@@ -1219,8 +1202,16 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
 
     @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        _check_all_checks(
+            checks=[
+                _check_supported_ml_task(
+                    supported_ml_tasks=[
+                        "binary-classification",
+                        "multiclass-classification",
+                    ]
+                ),
+                _check_estimator_has_method(method_name="predict_proba"),
+            ]
         )
     )
     def _log_loss(
@@ -1296,19 +1287,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_diabetes(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(
-        ...     regressor,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(regressor, **split_data)
         >>> report.metrics.r2()
         0.35...
         """
@@ -1407,19 +1391,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_diabetes(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(
-        ...     regressor,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(regressor, **split_data)
         >>> report.metrics.rmse()
         56.5...
         """
@@ -1529,19 +1506,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.metrics import mean_absolute_error
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_diabetes(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(
-        ...     regressor,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(regressor, **split_data)
         >>> report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
@@ -1730,8 +1700,20 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
 
             display = display_class._compute_data_for_display(
-                y_true=[y],
-                y_pred=[y_pred],
+                y_true=[
+                    YPlotData(
+                        estimator_name=self._parent.estimator_name_,
+                        split_index=None,
+                        y=y,
+                    )
+                ],
+                y_pred=[
+                    YPlotData(
+                        estimator_name=self._parent.estimator_name_,
+                        split_index=None,
+                        y=y_pred,
+                    )
+                ],
                 report_type="estimator",
                 estimators=[self._parent.estimator_],
                 estimator_names=[self._parent.estimator_name_],
@@ -1791,19 +1773,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
@@ -1866,19 +1841,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.precision_recall()
         >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
@@ -1952,19 +1920,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_diabetes(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(
-        ...     regressor,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(regressor, **split_data)
         >>> display = report.metrics.prediction_error()
         >>> display.plot(perfect_model_kwargs={"color": "tab:red"})
         """
@@ -2049,19 +2010,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.confusion_matrix()
         """
         X, y, _ = self._get_X_y_and_data_source_hash(data_source=data_source, X=X, y=y)

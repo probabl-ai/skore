@@ -16,7 +16,7 @@ from skore.sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import Aggregate, PositiveLabel
+from skore.sklearn.types import Aggregate, PositiveLabel, YPlotData
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
@@ -83,13 +83,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
-            The metrics to report. You can get the possible list of strings by calling
-            `report.metrics.help()`. When passing a callable, it should take as
-            arguments ``y_true``, ``y_pred`` as the two first arguments. Additional
-            arguments can be passed as keyword arguments and will be forwarded with
-            `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
-            same parameter name with different values), you can use scikit-learn scorers
-            as provided by :func:`sklearn.metrics.make_scorer`.
+            The metrics to report. The possible values in the list are:
+
+            - if a string, either one of the built-in metrics or a scikit-learn scorer
+              name. You can get the possible list of string using
+              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
+              the built-in metrics or the scikit-learn scorers, respectively.
+            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
+              first arguments. Additional arguments can be passed as keyword arguments
+              and will be forwarded with `scoring_kwargs`.
+            - if the callable API is too restrictive (e.g. need to pass
+              same parameter name with different values), you can use scikit-learn
+              scorers as provided by :func:`sklearn.metrics.make_scorer`.
 
         scoring_names : list of str, default=None
             Used to overwrite the default scoring names in the report. It should be of
@@ -112,7 +117,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport`s.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
 
         Returns
         -------
@@ -123,26 +128,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -286,7 +279,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport`s.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
 
         Returns
         -------
@@ -296,27 +289,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import make_classification
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport(
         ...     {"model1": estimator_report_1, "model2": estimator_report_2}
         ... )
@@ -409,7 +390,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport`s.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
 
         Returns
         -------
@@ -420,26 +401,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -523,7 +492,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport`s.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
 
         Returns
         -------
@@ -534,26 +503,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -641,7 +598,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport`s.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
 
         Returns
         -------
@@ -652,26 +609,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -724,7 +669,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport`s.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
 
         Returns
         -------
@@ -735,26 +680,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -844,7 +777,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport`s.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
 
         Returns
         -------
@@ -855,26 +788,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -927,7 +848,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport`s.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
 
         Returns
         -------
@@ -938,26 +859,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -1020,7 +929,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport`s.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
 
         Returns
         -------
@@ -1031,26 +940,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -1114,7 +1011,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport`s.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
 
         Returns
         -------
@@ -1125,26 +1022,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -1221,7 +1106,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport`s.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
 
         Returns
         -------
@@ -1233,26 +1118,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.metrics import mean_absolute_error
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -1414,26 +1287,39 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
-            y_true, y_pred = [], []
+            y_true: list[YPlotData] = []
+            y_pred: list[YPlotData] = []
 
-            for report in self._parent.reports_:
+            for report, report_name in zip(
+                self._parent.reports_, self._parent.report_names_
+            ):
                 report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
                     data_source=data_source,
                     X=X,
                     y=y,
                 )
 
-                y_true.append(report_y)
+                y_true.append(
+                    YPlotData(
+                        estimator_name=report_name,
+                        split_index=None,
+                        y=report_y,
+                    )
+                )
                 y_pred.append(
-                    _get_cached_response_values(
-                        cache=report._cache,
-                        estimator_hash=report._hash,
-                        estimator=report._estimator,
-                        X=report_X,
-                        response_method=response_method,
-                        data_source=data_source,
-                        data_source_hash=None,
-                        pos_label=display_kwargs.get("pos_label"),
+                    YPlotData(
+                        estimator_name=report_name,
+                        split_index=None,
+                        y=_get_cached_response_values(
+                            cache=report._cache,
+                            estimator_hash=report._hash,
+                            estimator=report._estimator,
+                            X=report_X,
+                            response_method=response_method,
+                            data_source=data_source,
+                            data_source_hash=None,
+                            pos_label=display_kwargs.get("pos_label"),
+                        ),
                     )
                 )
                 progress.update(main_task, advance=1, refresh=True)
@@ -1500,26 +1386,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -1585,26 +1459,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
@@ -1681,26 +1543,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
