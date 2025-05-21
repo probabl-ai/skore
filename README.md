@@ -55,67 +55,82 @@ We recommend using a [virtual environment (venv)](https://docs.python.org/3/tuto
 
 Then, you can install skore by using `pip`:
 ```bash
+# If you just use skore locally
 pip install -U skore
+# If you wish to also interact with the skore hub
+pip install -U skore[hub]
 ```
 
 #### With conda
 
-skore is available in `conda-forge`:
+skore is available in `conda-forge` for local use:
 
 ```bash
 conda install conda-forge::skore
 ```
 
+It is not yet possible to interact with the skore hub when the skore is installed via conda.
+
 You can find information on the latest version [here](https://anaconda.org/conda-forge/skore).
 
 ### Get assistance when developing your ML/DS projects
 
-1. Evaluate your model using `skore.CrossValidationReport`:
-    ```python
-    from sklearn.datasets import make_classification
-    from sklearn.linear_model import LogisticRegression
+Evaluate your model using `skore.CrossValidationReport`:
+```python
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
 
-    from skore import CrossValidationReport
+from skore import CrossValidationReport
 
-    X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
-    clf = LogisticRegression()
+X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+clf = LogisticRegression()
 
-    cv_report = CrossValidationReport(clf, X, y)
+cv_report = CrossValidationReport(clf, X, y)
 
-    # Display the help tree to see all the insights that are available to you
-    cv_report.help()
-    ```
+# Display the help tree to see all the insights that are available to you
+cv_report.help()
+```
 
-    ```python
-    # Display the report metrics that was computed for you:
-    df_cv_report_metrics = cv_report.metrics.report_metrics()
-    df_cv_report_metrics
-    ```
+```python
+# Display the report metrics that was computed for you:
+df_cv_report_metrics = cv_report.metrics.report_metrics()
+df_cv_report_metrics
+```
 
-    ```python
-    # Display the ROC curve that was generated for you:
-    roc_plot = cv_report.metrics.roc()
-    roc_plot.plot()
-    ```
+```python
+# Display the ROC curve that was generated for you:
+roc_plot = cv_report.metrics.roc()
+roc_plot.plot()
+```
 
-1. Store your results for safe-keeping.
-    ```python
-    # Create and load a skore project
-    import skore
-    my_project = skore.Project("my_project")
-    ```
+### Create or connect to a Project to save and load reports
 
-    ```python
-    # Store your results
-    my_project.put("df_cv_report_metrics", df_cv_report_metrics)
-    my_project.put("roc_plot", roc_plot)
-    ```
+```python
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 
-    ```python
-    # Get your results
-    df_get = my_project.get("df_cv_report_metrics")
-    df_get
-    ```
+import skore
+
+# Create or connect to a Project
+project = skore.Project("<name>") # local
+project = skore.Project("hub://<tenant>/<name>") # hub
+
+X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+clf = LogisticRegression()
+
+report = skore.EstimatorReport(
+    clf,
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_test,
+    y_test=y_test,
+)
+
+# Save report to Project for future reference
+project.put("my_report", report)
+```
 
 Learn more in our [documentation](https://docs.skore.probabl.ai).
 
