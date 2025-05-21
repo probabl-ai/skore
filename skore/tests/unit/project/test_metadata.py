@@ -139,7 +139,7 @@ class TestMetadata:
         assert metadata.reports() == [regression, binary_classification]
 
         monkeypatch.setattr(
-            "skore.project.metadata.Metadata.query_string_selection",
+            "skore.project.metadata.Metadata._query_string_selection",
             lambda self: "ml_task == 'regression'",
         )
 
@@ -155,7 +155,7 @@ class TestMetadata:
         assert metadata.reports(filter=False) == [regression, binary_classification]
 
         monkeypatch.setattr(
-            "skore.project.metadata.Metadata.query_string_selection",
+            "skore.project.metadata.Metadata._query_string_selection",
             lambda self: "ml_task == 'regression'",
         )
 
@@ -168,7 +168,7 @@ class TestMetadata:
         assert metadata.reports() == []
         assert metadata.reports(filter=False) == []
 
-    def test_query_string_selection(self, monkeypatch):
+    def test__query_string_selection(self, monkeypatch):
         metadata = DataFrame(
             data={
                 "ml_task": [
@@ -228,7 +228,7 @@ class TestMetadata:
         expected_query = (
             "ml_task.str.contains('classification') and dataset == 'dataset1'"
         )
-        assert metadata.query_string_selection() == expected_query
+        assert metadata._query_string_selection() == expected_query
 
         # simulate a selection on the log loss dimension
         select_range_log_loss = {
@@ -245,7 +245,7 @@ class TestMetadata:
             metadata._plot_widget, "update_selection", mock_update_selection
         )
 
-        assert metadata.query_string_selection() == (
+        assert metadata._query_string_selection() == (
             "ml_task.str.contains('classification') and dataset == 'dataset1' "
             "and ((log_loss >= 0.350000 and log_loss <= 0.550000))"
         )
@@ -265,7 +265,7 @@ class TestMetadata:
             metadata._plot_widget, "update_selection", mock_update_selection
         )
 
-        assert metadata.query_string_selection() == (
+        assert metadata._query_string_selection() == (
             "ml_task.str.contains('classification') and dataset == 'dataset1' "
             "and ((log_loss >= 0.350000 and log_loss <= 0.450000) "
             "or (log_loss >= 0.550000 and log_loss <= 0.550000))"
@@ -288,7 +288,7 @@ class TestMetadata:
             metadata._plot_widget, "update_selection", mock_update_selection
         )
 
-        assert metadata.query_string_selection() == (
+        assert metadata._query_string_selection() == (
             "ml_task.str.contains('classification') and dataset == 'dataset1' "
             "and ((log_loss >= 0.350000 and log_loss <= 0.450000) "
             "or (log_loss >= 0.550000 and log_loss <= 0.550000)) "
