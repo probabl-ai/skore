@@ -18,7 +18,8 @@ Install
 
             pip install -U skore
 
-        Amternatively, if you wish to use Skore locally and also interact with Skore Hub
+        *Alternatively*, if you wish to use Skore locally and also interact with Skore
+        Hub, run:
 
         .. code-block:: bash
 
