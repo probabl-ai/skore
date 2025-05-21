@@ -49,7 +49,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Attributes
     ----------
-    reports_ : list of :class:`~skore.EstimatorReport` or list of
+    reports_ : list of :class:`~skore.EstimatorReport` or list of \
         :class:`~skore.CrossValidationReport`
         The compared reports.
 
