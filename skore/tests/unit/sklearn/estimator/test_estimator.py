@@ -1297,12 +1297,14 @@ def test_estimator_has_no_deep_copy():
         )
 
 
-def test_estimator_report_brier_score_requires_probabilities():
-    """Check that the Brier score is not defined for estimator that do not
-    implement `predict_proba`.
+@pytest.mark.parametrize("metric", ["brier_score", "log_loss"])
+def test_estimator_report_brier_log_loss_requires_probabilities(metric):
+    """Check that the Brier score and the Log loss is not defined for estimator
+    that do not implement `predict_proba`.
 
     Non-regression test for:
     https://github.com/probabl-ai/skore/pull/1471
+    https://github.com/probabl-ai/skore/issues/1736
     """
     estimator = SVC()  # SVC does not implement `predict_proba` with default parameters
     X, y = make_classification(n_classes=2, random_state=42)
@@ -1311,7 +1313,7 @@ def test_estimator_report_brier_score_requires_probabilities():
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    assert not hasattr(report.metrics, "brier_score")
+    assert not hasattr(report.metrics, metric)
 
 
 def test_estimator_report_brier_score_requires_binary_classification():
