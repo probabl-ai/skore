@@ -27,12 +27,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     This object can be used to compare several :class:`skore.EstimatorReport` instances,
     or several :class:`~skore.CrossValidationReport` instances.
 
-    .. caution::
-        Reports passed to `ComparisonReport` are not copied. If you pass a report
-        to `ComparisonReport`, and then modify the report outside later, it will
-        affect the report stored inside the `ComparisonReport` as well, which can
-        lead to inconsistent results. For this reason, modifying reports after
-        creation is strongly discouraged.
+    .. caution:: Reports passed to `ComparisonReport` are not copied. If you pass
+       a report to `ComparisonReport`, and then modify the report outside later, it
+       will affect the report stored inside the `ComparisonReport` as well, which
+       can lead to inconsistent results. For this reason, modifying reports after
+       creation is strongly discouraged.
 
     Parameters
     ----------
