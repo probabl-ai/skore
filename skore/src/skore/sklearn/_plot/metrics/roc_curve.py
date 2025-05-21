@@ -182,6 +182,10 @@ class RocCurveDisplay(
         plot_chance_level: bool = True,
         chance_level_kwargs: Optional[dict[str, Any]] = None,
         ax: Optional[Axes] = None,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve for a single estimator.
 
@@ -205,6 +209,21 @@ class RocCurveDisplay(
         ax : matplotlib.axes.Axes, default=None
             The axes to plot on. If None, self.ax_ is used.
 
+        subplots : bool, default=False
+            If True, plot each class on a separate subplot.
+
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
+
         Returns
         -------
         ax : matplotlib.axes.Axes
@@ -220,7 +239,71 @@ class RocCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {}
 
-        # Use the provided axis or self.ax_
+        if ax is not None and subplots:
+            raise ValueError(
+                "Cannot specify both 'ax' and 'subplots=True'. "
+                "Either provide an axes object or use subplots, but not both."
+            )
+
+        # Handle subplot creation for multiclass case
+        if subplots and self.ml_task == "multiclass-classification":
+            num_plots = len(self.fpr)
+
+            # Calculate grid dimensions
+            if nrows is None and ncols is None:
+                if num_plots == 1:
+                    ncols = 1
+                    nrows = 1
+                else:
+                    ncols = min(2, num_plots)
+                    nrows = (num_plots + ncols - 1) // ncols
+            elif nrows is None:
+                nrows = (num_plots + (ncols or 1) - 1) // (ncols or 1)
+            elif ncols is None:
+                ncols = (num_plots + (nrows or 1) - 1) // (nrows or 1)
+
+            # Create figure and subplots
+            self.figure_ = plt.figure(figsize=figsize)
+            axes: list[Axes] = []
+            for i in range(num_plots):
+                if i == 0:
+                    ax = self.figure_.add_subplot(nrows, ncols, i + 1)
+                else:
+                    ax = self.figure_.add_subplot(
+                        nrows, ncols, i + 1, sharex=axes[0], sharey=axes[0]
+                    )
+                axes.append(ax)
+
+            # Plot each class in its own subplot
+            for idx, (class_label, axi) in enumerate(zip(self.fpr.keys(), axes)):
+                fpr_class = self.fpr[class_label][0]
+                tpr_class = self.tpr[class_label][0]
+                roc_auc_class = self.roc_auc[class_label][0]
+                roc_curve_kwargs_class = roc_curve_kwargs[idx]
+
+                line_kwargs_validated = _validate_style_kwargs(
+                    {"label": f"AUC = {roc_auc_class:0.2f}"}, roc_curve_kwargs_class
+                )
+
+                (line,) = axi.plot(fpr_class, tpr_class, **line_kwargs_validated)
+                lines.append(line)
+
+                if plot_chance_level:
+                    _add_chance_level(
+                        axi,
+                        chance_level_kwargs,
+                        self._default_chance_level_kwargs,
+                    )
+
+                axi.set_title(f"Class: {class_label}")
+                _set_axis_labels(axi, None)
+                _despine_matplotlib_axis(axi)
+
+            # Set the first axis as the main axis for backward compatibility
+            self.ax_ = axes[0] if axes else None
+            return self.ax_, lines, None
+
+        # Single plot case (binary or multiclass)
         plot_ax = ax if ax is not None else self.ax_
         if plot_ax is None:
             _, plot_ax = plt.subplots()
@@ -300,6 +383,10 @@ class RocCurveDisplay(
         plot_chance_level: bool = True,
         chance_level_kwargs: Optional[dict[str, Any]] = None,
         ax: Optional[Axes] = None,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve for a cross-validated estimator.
 
@@ -322,6 +409,21 @@ class RocCurveDisplay(
         ax : matplotlib.axes.Axes, default=None
             The axes to plot on. If None, self.ax_ is used.
 
+        subplots : bool, default=False
+            If True, plot each fold or class on a separate subplot.
+
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
+
         Returns
         -------
         ax : matplotlib.axes.Axes
@@ -337,7 +439,125 @@ class RocCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {}
 
-        # Use the provided axis or self.ax_
+        if ax is not None and subplots:
+            raise ValueError(
+                "Cannot specify both 'ax' and 'subplots=True'. "
+                "Either provide an axes object or use subplots, but not both."
+            )
+
+        if subplots:
+            if self.ml_task == "binary-classification":
+                pos_label = cast(PositiveLabel, self.pos_label)
+                num_plots = len(self.fpr[pos_label])
+            else:  # multiclass
+                num_plots = len(self.fpr)
+
+            # Calculate grid dimensions
+            if nrows is None and ncols is None:
+                if num_plots == 1:
+                    ncols = 1
+                    nrows = 1
+                else:
+                    ncols = min(2, num_plots)
+                    nrows = (num_plots + ncols - 1) // ncols
+            elif nrows is None:
+                nrows = (num_plots + (ncols or 1) - 1) // (ncols or 1)
+            elif ncols is None:
+                ncols = (num_plots + (nrows or 1) - 1) // (nrows or 1)
+
+            # Create figure and subplots
+            self.figure_ = plt.figure(figsize=figsize)
+            axes: list[Axes] = []
+            for i in range(num_plots):
+                if i == 0:
+                    ax = self.figure_.add_subplot(nrows, ncols, i + 1)
+                else:
+                    ax = self.figure_.add_subplot(
+                        nrows, ncols, i + 1, sharex=axes[0], sharey=axes[0]
+                    )
+                axes.append(ax)
+
+            # Plot in subplots
+            if self.ml_task == "binary-classification":
+                pos_label = cast(PositiveLabel, self.pos_label)
+                for idx, axi in enumerate(axes):
+                    fpr_split = self.fpr[pos_label][idx]
+                    tpr_split = self.tpr[pos_label][idx]
+                    roc_auc_split = self.roc_auc[pos_label][idx]
+
+                    line_kwargs_validated = _validate_style_kwargs(
+                        line_kwargs, roc_curve_kwargs[idx]
+                    )
+                    line_kwargs_validated["label"] = (
+                        f"Estimator of fold #{idx + 1} (AUC = {roc_auc_split:0.2f})"
+                    )
+
+                    (line,) = axi.plot(fpr_split, tpr_split, **line_kwargs_validated)
+                    lines.append(line)
+
+                    if plot_chance_level:
+                        _add_chance_level(
+                            axi,
+                            chance_level_kwargs,
+                            self._default_chance_level_kwargs,
+                        )
+
+                    axi.set_title(f"Fold #{idx + 1}")
+                    _set_axis_labels(axi, f"\n(Positive label: {pos_label})")
+                    _despine_matplotlib_axis(axi)
+
+            else:  # multiclass
+                class_colors = sample_mpl_colormap(
+                    colormaps.get_cmap("tab10"),
+                    10 if len(self.fpr) < 10 else len(self.fpr),
+                )
+
+                for idx, (class_label, axi) in enumerate(zip(self.fpr.keys(), axes)):
+                    fpr_class = self.fpr[class_label]
+                    tpr_class = self.tpr[class_label]
+                    roc_auc_class = self.roc_auc[class_label]
+                    roc_auc_mean = np.mean(roc_auc_class)
+                    roc_auc_std = np.std(roc_auc_class)
+
+                    for split_idx in range(len(fpr_class)):
+                        fpr_split = fpr_class[split_idx]
+                        tpr_split = tpr_class[split_idx]
+
+                        line_kwargs_validated = _validate_style_kwargs(
+                            {
+                                "color": class_colors[idx],
+                                "alpha": 0.3,
+                            },
+                            roc_curve_kwargs[idx],
+                        )
+                        if split_idx == 0:
+                            line_kwargs_validated["label"] = (
+                                f"AUC = {roc_auc_mean:0.2f} +/- {roc_auc_std:0.2f}"
+                            )
+                        else:
+                            line_kwargs_validated["label"] = None
+
+                        (line,) = axi.plot(
+                            fpr_split, tpr_split, **line_kwargs_validated
+                        )
+                        lines.append(line)
+
+                    if plot_chance_level:
+                        _add_chance_level(
+                            axi,
+                            chance_level_kwargs,
+                            self._default_chance_level_kwargs,
+                        )
+
+                    axi.set_title(f"Class: {class_label}")
+                    _set_axis_labels(axi, None)
+                    _despine_matplotlib_axis(axi)
+
+            # Set the first axis as the main axis for backward compatibility
+            self.ax_ = axes[0] if axes else None
+            return self.ax_, lines, None
+
+        # Single plot case
         plot_ax = ax if ax is not None else self.ax_
         if plot_ax is None:
             _, plot_ax = plt.subplots()
@@ -426,6 +646,10 @@ class RocCurveDisplay(
         plot_chance_level: bool = True,
         chance_level_kwargs: Optional[dict[str, Any]] = None,
         ax: Optional[Axes] = None,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve of several estimators.
 
@@ -448,6 +672,21 @@ class RocCurveDisplay(
         ax : matplotlib.axes.Axes, default=None
             The axes to plot on. If None, self.ax_ is used.
 
+        subplots : bool, default=False
+            If True, plot each estimator on a separate subplot.
+
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
+
         Returns
         -------
         ax : matplotlib.axes.Axes
@@ -463,7 +702,111 @@ class RocCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {}
 
-        # Use the provided axis or self.ax_
+        if ax is not None and subplots:
+            raise ValueError(
+                "Cannot specify both 'ax' and 'subplots=True'. "
+                "Either provide an axes object or use subplots, but not both."
+            )
+
+        if subplots:
+            num_plots = len(estimator_names)
+
+            # Calculate grid dimensions
+            if nrows is None and ncols is None:
+                if num_plots == 1:
+                    ncols = 1
+                    nrows = 1
+                else:
+                    ncols = min(2, num_plots)
+                    nrows = (num_plots + ncols - 1) // ncols
+            elif nrows is None:
+                nrows = (num_plots + (ncols or 1) - 1) // (ncols or 1)
+            elif ncols is None:
+                ncols = (num_plots + (nrows or 1) - 1) // (nrows or 1)
+
+            # Create figure and subplots
+            self.figure_ = plt.figure(figsize=figsize)
+            axes: list[Axes] = []
+            for i in range(num_plots):
+                if i == 0:
+                    ax = self.figure_.add_subplot(nrows, ncols, i + 1)
+                else:
+                    ax = self.figure_.add_subplot(
+                        nrows, ncols, i + 1, sharex=axes[0], sharey=axes[0]
+                    )
+                axes.append(ax)
+
+            # Plot each estimator in its own subplot
+            for idx, (est_name, axi) in enumerate(zip(estimator_names, axes)):
+                if self.ml_task == "binary-classification":
+                    pos_label = cast(PositiveLabel, self.pos_label)
+                    fpr_est = self.fpr[pos_label][idx]
+                    tpr_est = self.tpr[pos_label][idx]
+                    roc_auc_est = self.roc_auc[pos_label][idx]
+
+                    line_kwargs_validated = _validate_style_kwargs(
+                        line_kwargs, roc_curve_kwargs[idx]
+                    )
+                    line_kwargs_validated["label"] = f"AUC = {roc_auc_est:0.2f}"
+
+                    (line,) = axi.plot(fpr_est, tpr_est, **line_kwargs_validated)
+                    lines.append(line)
+
+                    if plot_chance_level:
+                        _add_chance_level(
+                            axi,
+                            chance_level_kwargs,
+                            self._default_chance_level_kwargs,
+                        )
+
+                    axi.set_title(f"Model: {est_name}")
+                    _set_axis_labels(axi, f"\n(Positive label: {pos_label})")
+                    _despine_matplotlib_axis(axi)
+
+                else:  # multiclass
+                    class_colors = sample_mpl_colormap(
+                        colormaps.get_cmap("tab10"),
+                        10 if len(self.fpr) < 10 else len(self.fpr),
+                    )
+
+                    for class_idx, class_ in enumerate(self.fpr):
+                        fpr_est_class = self.fpr[class_][idx]
+                        tpr_est_class = self.tpr[class_][idx]
+                        roc_auc_mean = self.roc_auc[class_][idx]
+                        class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
+
+                        line_kwargs["color"] = class_colors[class_idx]
+                        line_kwargs["alpha"] = 0.6
+                        line_kwargs["linestyle"] = class_linestyle
+
+                        line_kwargs_validated = _validate_style_kwargs(
+                            line_kwargs, roc_curve_kwargs[idx]
+                        )
+                        line_kwargs_validated["label"] = (
+                            f"{str(class_).title()} (AUC = {roc_auc_mean:0.2f})"
+                        )
+
+                        (line,) = axi.plot(
+                            fpr_est_class, tpr_est_class, **line_kwargs_validated
+                        )
+                        lines.append(line)
+
+                    if plot_chance_level:
+                        _add_chance_level(
+                            axi,
+                            chance_level_kwargs,
+                            self._default_chance_level_kwargs,
+                        )
+
+                    axi.set_title(f"Model: {est_name}")
+                    _set_axis_labels(axi, None)
+                    _despine_matplotlib_axis(axi)
+
+            # Set the first axis as the main axis for backward compatibility
+            self.ax_ = axes[0] if axes else None
+            return self.ax_, lines, None
+
+        # Single plot case
         plot_ax = ax if ax is not None else self.ax_
         if plot_ax is None:
             _, plot_ax = plt.subplots()
@@ -625,197 +968,11 @@ class RocCurveDisplay(
             report_type=self.report_type,
         )
 
-        # Handle subplot creation
-        if subplots:
-            if self.report_type == "estimator":
-                if self.ml_task == "multiclass-classification":
-                    # One plot per class for multiclass in estimator mode
-                    num_plots = len(self.fpr)
-                else:
-                    num_plots = 1
-            elif self.report_type == "cross-validation":
-                if self.ml_task == "binary-classification":
-                    # One plot per fold
-                    pos_label = cast(PositiveLabel, self.pos_label)
-                    num_plots = len(self.fpr[pos_label])
-                else:  # multiclass
-                    # One plot per class
-                    num_plots = len(self.fpr)
-            elif self.report_type == "comparison-estimator":
-                num_plots = len(self.estimator_names)
-            else:
-                raise ValueError(
-                    f"`report_type` should be one of 'estimator', 'cross-validation', "
-                    f"or 'comparison-estimator'. Got '{self.report_type}' instead."
-                )
-
-            # Use only needed subplots (without creating empty ones)
-            if nrows is None and ncols is None:
-                if num_plots == 1:
-                    ncols = 1
-                    nrows = 1
-                else:
-                    ncols = min(2, num_plots)
-                    nrows = (num_plots + ncols - 1) // ncols
-            elif nrows is None:
-                nrows = (num_plots + (ncols or 1) - 1) // (ncols or 1)
-            elif ncols is None:
-                ncols = (num_plots + (nrows or 1) - 1) // (nrows or 1)
-
-            # Creating the exact number of subplots needed
-            self.figure_ = plt.figure(figsize=figsize)
-            axes: list[Axes] = []
-            for i in range(num_plots):
-                if i == 0:
-                    ax = self.figure_.add_subplot(nrows, ncols, i + 1)
-                else:
-                    ax = self.figure_.add_subplot(
-                        nrows, ncols, i + 1, sharex=axes[0], sharey=axes[0]
-                    )
-                axes.append(ax)
-
-            self.lines_ = []
-
-            # Setting of self.ax_ to the first axis for
-            # backwards compatibility
-            self.ax_ = axes[0] if axes else None
-
-            for idx, axi in enumerate(axes):
-                if idx >= num_plots:
-                    break
-
-                # Plot in the current subplot
-                if self.report_type == "estimator":
-                    _, lines, info_pos_label = self._plot_single_estimator(
-                        estimator_name=(
-                            self.estimator_names[0]
-                            if estimator_name is None
-                            else estimator_name
-                        ),
-                        roc_curve_kwargs=roc_curve_kwargs,
-                        plot_chance_level=plot_chance_level,
-                        chance_level_kwargs=chance_level_kwargs,
-                        ax=axi,
-                    )
-                    if self.ml_task == "multiclass-classification":
-                        # For multiclass, use class as the title
-                        class_label = list(self.fpr.keys())[idx]
-                        axi.set_title(f"Class: {class_label}")
-                    else:
-                        axi.set_title(f"Model: {self.estimator_names[0]}")
-                elif self.report_type == "cross-validation":
-                    if self.ml_task == "binary-classification":
-                        # Plot just one fold in this subplot
-                        pos_label = cast(PositiveLabel, self.pos_label)
-
-                        # Create a new display for this fold
-                        fold_fpr = {pos_label: [self.fpr[pos_label][idx]]}
-                        fold_tpr = {pos_label: [self.tpr[pos_label][idx]]}
-                        fold_roc_auc = {pos_label: [self.roc_auc[pos_label][idx]]}
-                        fold_display = RocCurveDisplay(
-                            fpr=fold_fpr,
-                            tpr=fold_tpr,
-                            roc_auc=fold_roc_auc,
-                            estimator_names=[self.estimator_names[0]],
-                            pos_label=self.pos_label,
-                            data_source=self.data_source,
-                            ml_task=self.ml_task,
-                            report_type="estimator",
-                        )
-                        # Set the ax_ attribute for the fold display
-                        fold_display.ax_ = axi
-                        fold_display.figure_ = self.figure_
-                        _, lines, info_pos_label = fold_display._plot_single_estimator(
-                            estimator_name=self.estimator_names[0],
-                            roc_curve_kwargs=[roc_curve_kwargs[idx]],
-                            plot_chance_level=plot_chance_level,
-                            chance_level_kwargs=chance_level_kwargs,
-                            ax=axi,
-                        )
-                        axi.set_title(f"Fold #{idx + 1}")
-                    else:  # multiclass
-                        # Plot one class in this subplot
-                        class_label = list(self.fpr.keys())[idx]
-                        class_fpr = {class_label: self.fpr[class_label]}
-                        class_tpr = {class_label: self.tpr[class_label]}
-                        class_roc_auc = {class_label: self.roc_auc[class_label]}
-                        class_display = RocCurveDisplay(
-                            fpr=class_fpr,
-                            tpr=class_tpr,
-                            roc_auc=class_roc_auc,
-                            estimator_names=self.estimator_names,
-                            pos_label=None,  # Not needed for multiclass
-                            data_source=self.data_source,
-                            # Treat as binary for plotting
-                            ml_task="binary-classification",
-                            report_type=self.report_type,
-                        )
-                        # Set the ax_ attribute for the class display
-                        class_display.ax_ = axi
-                        class_display.figure_ = self.figure_
-                        _, lines, info_pos_label = (
-                            class_display._plot_cross_validated_estimator(
-                                estimator_name=self.estimator_names[0],
-                                roc_curve_kwargs=roc_curve_kwargs,
-                                plot_chance_level=plot_chance_level,
-                                chance_level_kwargs=chance_level_kwargs,
-                                ax=axi,
-                            )
-                        )
-                        axi.set_title(f"Class: {class_label}")
-                elif self.report_type == "comparison-estimator":
-                    # Plot just one estimator in this subplot
-                    est_name = self.estimator_names[idx]
-
-                    # For binary classification, we need to extract
-                    # the data for this estimator
-                    if self.ml_task == "binary-classification":
-                        pos_label = cast(PositiveLabel, self.pos_label)
-                        est_fpr = {pos_label: [self.fpr[pos_label][idx]]}
-                        est_tpr = {pos_label: [self.tpr[pos_label][idx]]}
-                        est_roc_auc = {pos_label: [self.roc_auc[pos_label][idx]]}
-                    else:  # multiclass
-                        # Extract data for this estimator across all classes
-                        est_fpr = {}
-                        est_tpr = {}
-                        est_roc_auc = {}
-                        for class_label in self.fpr:
-                            est_fpr[class_label] = [self.fpr[class_label][idx]]
-                            est_tpr[class_label] = [self.tpr[class_label][idx]]
-                            est_roc_auc[class_label] = [self.roc_auc[class_label][idx]]
-
-                    est_display = RocCurveDisplay(
-                        fpr=est_fpr,
-                        tpr=est_tpr,
-                        roc_auc=est_roc_auc,
-                        estimator_names=[est_name],
-                        pos_label=self.pos_label,
-                        data_source=self.data_source,
-                        ml_task=self.ml_task,
-                        report_type="estimator",
-                    )
-                    # Set the ax_ attribute for the estimator display
-                    est_display.ax_ = axi
-                    est_display.figure_ = self.figure_
-                    _, lines, info_pos_label = est_display._plot_single_estimator(
-                        estimator_name=est_name,
-                        roc_curve_kwargs=[roc_curve_kwargs[idx]],
-                        plot_chance_level=plot_chance_level,
-                        chance_level_kwargs=chance_level_kwargs,
-                        ax=axi,
-                    )
-                    axi.set_title(f"Model: {est_name}")
-
-                self.lines_.extend(lines)
-                _set_axis_labels(axi, info_pos_label)
-
-                if despine:
-                    _despine_matplotlib_axis(axi)
-
-            return self.figure_
-
-        # Original single plot logic (without subplots)
-        self.figure_, self.ax_ = (ax.figure, ax) if ax is not None else plt.subplots()
+        # Create figure and axes if not using subplots
+        if not subplots:
+            self.figure_, self.ax_ = (
+                (ax.figure, ax) if ax is not None else plt.subplots()
+            )
 
         if self.report_type == "estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_single_estimator(
@@ -827,7 +984,11 @@ class RocCurveDisplay(
                 roc_curve_kwargs=roc_curve_kwargs,
                 plot_chance_level=plot_chance_level,
                 chance_level_kwargs=chance_level_kwargs,
-                ax=self.ax_,
+                ax=ax if not subplots else None,
+                subplots=subplots,
+                nrows=nrows,
+                ncols=ncols,
+                figsize=figsize,
             )
         elif self.report_type == "cross-validation":
             self.ax_, self.lines_, info_pos_label = (
@@ -840,7 +1001,11 @@ class RocCurveDisplay(
                     roc_curve_kwargs=roc_curve_kwargs,
                     plot_chance_level=plot_chance_level,
                     chance_level_kwargs=chance_level_kwargs,
-                    ax=self.ax_,
+                    ax=ax if not subplots else None,
+                    subplots=subplots,
+                    nrows=nrows,
+                    ncols=ncols,
+                    figsize=figsize,
                 )
             )
         elif self.report_type == "comparison-estimator":
@@ -849,7 +1014,11 @@ class RocCurveDisplay(
                 roc_curve_kwargs=roc_curve_kwargs,
                 plot_chance_level=plot_chance_level,
                 chance_level_kwargs=chance_level_kwargs,
-                ax=self.ax_,
+                ax=ax if not subplots else None,
+                subplots=subplots,
+                nrows=nrows,
+                ncols=ncols,
+                figsize=figsize,
             )
         else:
             raise ValueError(
@@ -857,10 +1026,11 @@ class RocCurveDisplay(
                 f"or 'comparison-estimator'. Got '{self.report_type}' instead."
             )
 
-        _set_axis_labels(self.ax_, info_pos_label)
+        if not subplots:
+            _set_axis_labels(self.ax_, info_pos_label)
 
-        if despine:
-            _despine_matplotlib_axis(self.ax_)
+            if despine:
+                _despine_matplotlib_axis(self.ax_)
 
         return self.figure_
 
