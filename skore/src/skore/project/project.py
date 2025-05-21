@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
@@ -150,6 +150,9 @@ class Project(DirNamesMixin):
 
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
     reports: _ReportsAccessor
+    _Project__project: Any
+    _Project__mode: str
+    _Project__name: str
 
     def __init__(self, name: str, **kwargs):
         if not (PLUGINS := entry_points(group="skore.plugins.project")):
