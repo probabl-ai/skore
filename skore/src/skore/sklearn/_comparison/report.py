@@ -24,8 +24,8 @@ if TYPE_CHECKING:
 class ComparisonReport(_BaseReport, DirNamesMixin):
     """Report for comparing reports.
 
-    This object can be used to compare several :class:`skore.EstimatorReport`s, or
-    several :class:`~skore.CrossValidationReport`s.
+    This object can be used to compare several :class:`skore.EstimatorReport` instances,
+    or several :class:`~skore.CrossValidationReport` instances.
 
     .. caution:: Reports passed to `ComparisonReport` are not copied. If you pass
        a report to `ComparisonReport`, and then modify the report outside later, it
@@ -69,27 +69,15 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from sklearn.model_selection import train_test_split
+    >>> from skore import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> from skore import ComparisonReport, EstimatorReport
     >>> X, y = make_classification(random_state=42)
-    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
     >>> estimator_1 = LogisticRegression()
-    >>> estimator_report_1 = EstimatorReport(
-    ...     estimator_1,
-    ...     X_train=X_train,
-    ...     y_train=y_train,
-    ...     X_test=X_test,
-    ...     y_test=y_test
-    ... )
+    >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
     >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-    >>> estimator_report_2 = EstimatorReport(
-    ...     estimator_2,
-    ...     X_train=X_train,
-    ...     y_train=y_train,
-    ...     X_test=X_test,
-    ...     y_test=y_test
-    ... )
+    >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
     >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
     >>> report.report_names_
     ['LogisticRegression_1', 'LogisticRegression_2']
@@ -178,16 +166,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             reports_list = cast(list[EstimatorReport], reports_list)
             reports_type = "EstimatorReport"
 
-            # FIXME: We should only check y_test since it is all we need to tell us
-            # whether we have a distinct ML task at hand.
             test_dataset_hashes = {
-                joblib.hash((report.X_test, report.y_test))
+                joblib.hash(report.y_test)
                 for report in reports_list
-                if not ((report.X_test is None) and (report.y_test is None))
+                if report.y_test is not None
             }
             if len(test_dataset_hashes) > 1:
                 raise ValueError(
-                    "Expected all estimators to have the same testing data."
+                    "Expected all estimators to share the same test targets."
                 )
 
         elif all(isinstance(report, CrossValidationReport) for report in reports_list):
@@ -244,7 +230,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         )
 
         self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress = None
 
         self.n_jobs = n_jobs
         self._rng = np.random.default_rng(time.time_ns())
@@ -261,26 +246,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
-        >>> from skore import ComparisonReport
+        >>> from skore import train_test_split
+        >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> report.clear_cache()
@@ -315,26 +288,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> report._cache
@@ -353,8 +314,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         progress.update(main_task, total=total_estimators)
 
         for report in self.reports_:
-            # Pass the progress manager to child tasks
-            report._parent_progress = progress
+            # Share the parent's progress bar with child report
+            report._progress_info = {"current_progress": progress}
             report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
             progress.update(main_task, advance=1, refresh=True)
 
@@ -407,27 +368,15 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import make_classification
-        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> predictions = report.get_predictions(

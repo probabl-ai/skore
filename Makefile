@@ -1,5 +1,9 @@
 install-skore:
-	python -m pip install -e './skore[polars,test,sphinx,dev]'
+	python -m pip install -e './skore[test,sphinx,dev]'
+	pre-commit install
+
+install-skore-lts-cpu:
+	python -m pip install -e './skore[test-lts-cpu,sphinx-lts-cpu,dev]'
 	pre-commit install
 
 lint:
