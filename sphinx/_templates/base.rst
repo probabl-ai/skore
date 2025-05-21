@@ -21,6 +21,7 @@
 .. autoclass:: {{ objname }}
    :members:
    :inherited-members:
+   :exclude-members: _*Accessor
    :special-members: __call__
 
 .. minigallery:: {{ module }}.{{ objname }} {% for meth in methods %}{{ module }}.{{ objname }}.{{ meth }} {% endfor %}
