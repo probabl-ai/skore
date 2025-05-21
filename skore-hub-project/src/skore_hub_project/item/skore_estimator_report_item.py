@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 
     class Representation(TypedDict):  # noqa: D101
         key: str
+        verbose_name: Union[str, None]
         category: Literal["performance", "feature_importance", "model"]
         attributes: dict
         representation: dict
@@ -236,7 +237,13 @@ class Representations:
         """
         self.report = report
 
-    def mpl(self, name, category, **kwargs) -> Union[Representation, None]:
+    def mpl(
+        self,
+        name,
+        verbose_name,
+        category,
+        **kwargs,
+    ) -> Union[Representation, None]:
         """Return sub-representation made of ``matplotlib`` figures."""
         try:
             function = attrgetter(name)(self.report)
@@ -257,13 +264,14 @@ class Representations:
 
             return {
                 "key": name.split(".")[-1],
+                "verbose_name": verbose_name,
                 "category": category,
                 "attributes": kwargs,
                 "parameters": {},
                 "representation": item.__representation__["representation"],
             }
 
-    def pd(self, name, category, **kwargs) -> Union[Representation, None]:
+    def pd(self, name, verbose_name, category, **kwargs) -> Union[Representation, None]:
         """Return sub-representation made of ``pandas`` dataframes."""
         try:
             function = attrgetter(name)(self.report)
@@ -279,6 +287,7 @@ class Representations:
 
             return {
                 "key": name.split(".")[-1],
+                "verbose_name": verbose_name,
                 "category": category,
                 "attributes": kwargs,
                 "parameters": {},
@@ -296,6 +305,7 @@ class Representations:
 
         return {
             "key": "estimator_html_repr",
+            "verbose_name": None,
             "category": "model",
             "attributes": {},
             "parameters": {},
@@ -314,34 +324,54 @@ class Representations:
             None,
             (
                 self.mpl(
-                    "metrics.precision_recall", "performance", data_source="train"
+                    "metrics.precision_recall",
+                    "Precision Recall",
+                    "performance",
+                    data_source="train",
                 ),
-                self.mpl("metrics.precision_recall", "performance", data_source="test"),
                 self.mpl(
-                    "metrics.prediction_error", "performance", data_source="train"
+                    "metrics.precision_recall",
+                    "Precision Recall",
+                    "performance",
+                    data_source="test",
                 ),
-                self.mpl("metrics.prediction_error", "performance", data_source="test"),
-                self.mpl("metrics.roc", "performance", data_source="train"),
-                self.mpl("metrics.roc", "performance", data_source="test"),
+                self.mpl(
+                    "metrics.prediction_error",
+                    "Prediction error",
+                    "performance",
+                    data_source="train",
+                ),
+                self.mpl(
+                    "metrics.prediction_error",
+                    "Prediction error",
+                    "performance",
+                    data_source="test",
+                ),
+                self.mpl("metrics.roc", "ROC", "performance", data_source="train"),
+                self.mpl("metrics.roc", "ROC", "performance", data_source="test"),
                 self.pd(
                     "feature_importance.permutation",
+                    "Feature importance - Permutation",
                     "feature_importance",
                     data_source="train",
                     method="permutation",
                 ),
                 self.pd(
                     "feature_importance.permutation",
+                    "Feature importance - Permutation",
                     "feature_importance",
                     data_source="test",
                     method="permutation",
                 ),
                 self.pd(
                     "feature_importance.mean_decrease_impurity",
+                    "Feature importance - Mean Decrease Impurity (MDI)",
                     "feature_importance",
                     method="mean_decrease_impurity",
                 ),
                 self.pd(
                     "feature_importance.coefficients",
+                    "Feature importance - Coefficients",
                     "feature_importance",
                     method="coefficients",
                 ),
