@@ -715,3 +715,20 @@ class RocCurveDisplay(
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self):
+        """Return the ROC curve computations as a dataframe.
+
+        Returns
+        -------
+        frame : pandas.DataFrame
+            The ROC curve computations as a dataframe.
+        """
+        import pandas as pd
+
+        if self.ml_task == "binary-classification":
+            return pd.DataFrame({"tpr": self.tpr[1][0], "fpr": self.fpr[1][0]})
+            # TODO: add the threshold
+        if self.ml_task == "multiclasss-classification":
+            return "TODO"
+            # TODO
