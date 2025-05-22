@@ -30,20 +30,6 @@ class Project:
     Two mutually exclusive modes are available and can be configured using the ``name``
     parameter of the constructor:
 
-    .. rubric:: Local mode
-
-    Otherwise, the project is configured to the ``local`` mode to be persisted on
-    the user machine in a directory called ``workspace``.
-
-    The workspace can be shared between all the projects.
-    The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-    If not, it will be by default set to a ``skore/`` directory in the USER
-    cache directory:
-
-    - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-    - in Linux, usually ``${HOME}/.cache/skore``,
-    - in macOS, usually ``${HOME}/Library/Caches/skore``.
-
     .. rubric:: Hub mode
 
     If the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the project
@@ -57,6 +43,20 @@ class Project:
     In this mode, you must have an account to the ``skore hub`` and must be
     authorized to the specified tenant. You must also be authenticated beforehand,
     using the ``skore-hub-login`` CLI.
+
+    .. rubric:: Local mode
+
+    Otherwise, the project is configured to the ``local`` mode to be persisted on
+    the user machine in a directory called ``workspace``.
+
+    The workspace can be shared between all the projects.
+    The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+    If not, it will be by default set to a ``skore/`` directory in the USER
+    cache directory:
+
+    - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+    - in Linux, usually ``${HOME}/.cache/skore``,
+    - in macOS, usually ``${HOME}/Library/Caches/skore``.
 
     Parameters
     ----------
