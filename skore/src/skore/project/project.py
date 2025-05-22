@@ -11,7 +11,8 @@ if sys.version_info < (3, 10):
 else:
     from importlib.metadata import entry_points
 
-from skore.externals._pandas_accessors import DirNamesMixin
+from skore.externals._pandas_accessors import DirNamesMixin, _register_accessor
+from skore.project.reports import _ReportsAccessor
 from skore.sklearn._estimator.report import EstimatorReport
 
 if TYPE_CHECKING:
@@ -217,3 +218,6 @@ class Project(DirNamesMixin):
 
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()
+
+
+_register_accessor("reports", Project)(_ReportsAccessor)
