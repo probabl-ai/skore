@@ -67,8 +67,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
-    skore.sklearn.cross_validation.report.CrossValidationReport
+    skore.CrossValidationReport
         Report of cross-validation results.
+
+    skore.ComparisonReport
+        Report of comparison between estimators.
 
     Examples
     --------
