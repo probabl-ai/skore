@@ -79,7 +79,7 @@ def test_roc_curve_display_binary_classification(pyplot, binary_classification_d
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == estimator.__class__.__name__
-    assert len(legend.get_texts()) == 1
+    assert len(legend.get_texts()) == 1 + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
     assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
@@ -132,7 +132,7 @@ def test_roc_curve_display_multiclass_classification(
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == estimator.__class__.__name__
-    assert len(legend.get_texts()) == len(estimator.classes_)
+    assert len(legend.get_texts()) == len(estimator.classes_) + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate"
     assert display.ax_.get_ylabel() == "True Positive Rate"
@@ -331,7 +331,7 @@ def test_roc_curve_display_cross_validation_binary_classification(
         legend.get_title().get_text()
         == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
     )
-    assert len(legend.get_texts()) == cv
+    assert len(legend.get_texts()) == cv + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
     assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
@@ -394,7 +394,7 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
         legend.get_title().get_text()
         == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
     )
-    assert len(legend.get_texts()) == cv
+    assert len(legend.get_texts()) == cv + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate"
     assert display.ax_.get_ylabel() == "True Positive Rate"
@@ -504,7 +504,7 @@ def test_roc_curve_display_comparison_report_binary_classification(
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == r"Binary-Classification on $\bf{test}$ set"
-    assert len(legend.get_texts()) == 2
+    assert len(legend.get_texts()) == 2 + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
     assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
@@ -542,7 +542,7 @@ def test_roc_curve_display_comparison_report_multiclass_classification(
     assert isinstance(display, RocCurveDisplay)
 
     # check the structure of the attributes
-    class_labels = report.estimator_reports_[0].estimator_.classes_
+    class_labels = report.reports_[0].estimator_.classes_
     for attr_name in ("fpr", "tpr", "roc_auc"):
         assert isinstance(getattr(display, attr_name), dict)
         assert len(getattr(display, attr_name)) == len(class_labels)
@@ -579,7 +579,7 @@ def test_roc_curve_display_comparison_report_multiclass_classification(
     assert (
         legend.get_title().get_text() == r"Multiclass-Classification on $\bf{test}$ set"
     )
-    assert len(legend.get_texts()) == 6
+    assert len(legend.get_texts()) == 6 + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate"
     assert display.ax_.get_ylabel() == "True Positive Rate"
