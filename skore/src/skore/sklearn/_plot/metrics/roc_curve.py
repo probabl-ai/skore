@@ -236,6 +236,7 @@ class RocCurveDisplay(
             )
             lines.append(line)
             n_lines_in_legend += 1
+
             info_pos_label = (
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
             )
@@ -264,6 +265,7 @@ class RocCurveDisplay(
                 (line,) = self.ax_.plot(fpr_class, tpr_class, **line_kwargs)
                 lines.append(line)
                 n_lines_in_legend += 1
+
             if self.data_source in ("train", "test"):
                 legend_title = f"{self.data_source.capitalize()} set"
             else:
@@ -331,8 +333,7 @@ class RocCurveDisplay(
         n_lines_in_legend = 0
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
-            n_splits = len(self.fpr[pos_label])
-            for split_idx in range(n_splits):
+            for split_idx in range(len(self.fpr[pos_label])):
                 fpr_split = self.fpr[pos_label][split_idx]
                 tpr_split = self.tpr[pos_label][split_idx]
                 roc_auc_split = self.roc_auc[pos_label][split_idx]
@@ -347,6 +348,7 @@ class RocCurveDisplay(
                 (line,) = self.ax_.plot(fpr_split, tpr_split, **line_kwargs_validated)
                 lines.append(line)
                 n_lines_in_legend += 1
+
             info_pos_label = (
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
             )
@@ -362,8 +364,7 @@ class RocCurveDisplay(
                 roc_auc_class = self.roc_auc[class_]
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
-                n_splits = len(fpr_class)
-                for split_idx in range(n_splits):
+                for split_idx in range(len(fpr_class)):
                     fpr_split = fpr_class[split_idx]
                     tpr_split = tpr_class[split_idx]
                     roc_auc_mean = np.mean(roc_auc_class)
@@ -401,13 +402,14 @@ class RocCurveDisplay(
             self.chance_level_ = None
 
         if self.data_source in ("train", "test"):
-            title = f"{self.data_source.capitalize()} set"
+            legend_title = f"{self.data_source.capitalize()} set"
         else:
-            title = "External set"
+            legend_title = "External set"
+
         if n_lines_in_legend > 5:  # too many lines to fit legend in the plot
-            self.ax_.legend(bbox_to_anchor=(1.02, 1), title=title)
+            self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
         else:
-            self.ax_.legend(loc="lower right", title=title)
+            self.ax_.legend(loc="lower right", title=legend_title)
         self.ax_.set_title(f"ROC Curve for {estimator_name}")
 
         return self.ax_, lines, info_pos_label
@@ -516,15 +518,15 @@ class RocCurveDisplay(
         else:
             self.chance_level_ = None
 
-        if n_lines_in_legend > 6:  # too many lines to fit legend in the plot
-            self.ax_.legend(
-                bbox_to_anchor=(1.02, 1),
-                title=f"{self.data_source.capitalize()} set",
-            )
+        if self.data_source in ("train", "test"):
+            legend_title = f"{self.data_source.capitalize()} set"
         else:
-            self.ax_.legend(
-                loc="lower right", title=f"{self.data_source.capitalize()} set"
-            )
+            legend_title = "External set"
+
+        if n_lines_in_legend > 6:  # too many lines to fit legend in the plot
+            self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+        else:
+            self.ax_.legend(loc="lower right", title=legend_title)
         self.ax_.set_title("ROC Curve")
 
         return self.ax_, lines, info_pos_label
