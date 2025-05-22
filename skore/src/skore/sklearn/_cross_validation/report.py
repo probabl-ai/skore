@@ -101,6 +101,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     skore.EstimatorReport
         Report for a fitted estimator.
 
+    skore.ComparisonReport
+        Report of comparison between estimators.
+
     Examples
     --------
     >>> from sklearn.datasets import make_classification

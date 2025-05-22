@@ -31,33 +31,33 @@ class Project(DirNamesMixin):
     Two mutually exclusive modes are available and can be configured using the ``name``
     parameter of the constructor:
 
-    - mode : hub
+    .. rubric:: Hub mode
 
-        If the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the project
-        is configured to the ``hub`` mode to communicate with the ``skore hub``.
+    If the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the project
+    is configured to the ``hub`` mode to communicate with the ``skore hub``.
 
-        A tenant is a ``skore hub`` concept that must be configured on the ``skore hub``
-        interface. It represents an isolated entity managing users, projects, and
-        resources. It can be a company, organization, or team that operates
-        independently within the system.
+    A tenant is a ``skore hub`` concept that must be configured on the ``skore hub``
+    interface. It represents an isolated entity managing users, projects, and
+    resources. It can be a company, organization, or team that operates
+    independently within the system.
 
-        In this mode, you must have an account to the ``skore hub`` and must be
-        authorized to the specified tenant. You must also be authenticated beforehand,
-        using the ``skore-hub-login`` CLI.
+    In this mode, you must have an account to the ``skore hub`` and must be
+    authorized to the specified tenant. You must also be authenticated beforehand,
+    using the ``skore-hub-login`` CLI.
 
-    - mode : local
+    .. rubric:: Local mode
 
-        Otherwise, the project is configured to the ``local`` mode to be persisted on
-        the user machine in a directory called ``workspace``.
+    Otherwise, the project is configured to the ``local`` mode to be persisted on
+    the user machine in a directory called ``workspace``.
 
-        The workspace can be shared between all the projects.
-        The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-        If not, it will be by default set to a ``skore/`` directory in the USER
-        cache directory:
+    The workspace can be shared between all the projects.
+    The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+    If not, it will be by default set to a ``skore/`` directory in the USER
+    cache directory:
 
-        - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-        - in Linux, usually ``${HOME}/.cache/skore``,
-        - in macOS, usually ``${HOME}/Library/Caches/skore``.
+    - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+    - in Linux, usually ``${HOME}/.cache/skore``,
+    - in macOS, usually ``${HOME}/Library/Caches/skore``.
 
     Parameters
     ----------
