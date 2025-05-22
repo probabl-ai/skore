@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import sys
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
@@ -14,9 +14,6 @@ else:
 from skore.externals._pandas_accessors import DirNamesMixin, _register_accessor
 from skore.project.reports import _ReportsAccessor
 from skore.sklearn._estimator.report import EstimatorReport
-
-if TYPE_CHECKING:
-    from skore.project.reports import _ReportsAccessor
 
 
 class Project(DirNamesMixin):
