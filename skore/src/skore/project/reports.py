@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from skore.externals._pandas_accessors import DirNamesMixin
+from skore.project.metadata import Metadata
 
 if TYPE_CHECKING:
     from skore.project import Project
-    from skore.project.metadata import Metadata
     from skore.sklearn import EstimatorReport
 
 
