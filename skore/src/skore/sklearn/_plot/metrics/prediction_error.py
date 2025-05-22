@@ -684,3 +684,15 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self):
+        """Return the precision error computations as a dataframe.
+
+        Returns
+        -------
+        frame : pandas.DataFrame
+            The precision error computations as a dataframe.
+        """
+        import pandas as pd
+
+        return pd.DataFrame({"y_true": self.y_true[0], "y_pred": self.y_pred[0]})
