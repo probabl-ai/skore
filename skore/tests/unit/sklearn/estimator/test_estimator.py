@@ -15,6 +15,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
+    get_scorer,
     make_scorer,
     median_absolute_error,
     r2_score,
@@ -872,6 +873,31 @@ def test_estimator_report_report_metrics_indicator_favorability(
     assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
     assert indicator["Brier score"].tolist() == ["(↘︎)"]
+
+
+@pytest.mark.parametrize(
+    "scoring, scoring_kwargs",
+    [
+        ("accuracy", None),
+        ("neg_log_loss", None),
+        (accuracy_score, {"response_method": "predict"}),
+        (get_scorer("accuracy"), None),
+    ],
+)
+def test_estimator_report_report_metrics_scoring_single_list_equivalence(
+    binary_classification_data, scoring, scoring_kwargs
+):
+    """Check that passing a single string, callable, scorer is equivalent to passing a
+    list with a single element."""
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result_single = report.metrics.report_metrics(
+        scoring=scoring, scoring_kwargs=scoring_kwargs
+    )
+    result_list = report.metrics.report_metrics(
+        scoring=[scoring], scoring_kwargs=scoring_kwargs
+    )
+    assert result_single.equals(result_list)
 
 
 def test_estimator_report_interaction_cache_metrics(regression_multioutput_data):

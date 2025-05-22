@@ -12,6 +12,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
+    get_scorer,
     make_scorer,
     median_absolute_error,
     r2_score,
@@ -537,6 +538,31 @@ def test_cross_validation_report_metrics_regression_multioutput(
     (estimator, X, y), cv = regression_multioutput_data, 2
     report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
+
+
+@pytest.mark.parametrize(
+    "scoring, scoring_kwargs",
+    [
+        ("accuracy", None),
+        ("neg_log_loss", None),
+        (accuracy_score, {"response_method": "predict"}),
+        (get_scorer("accuracy"), None),
+    ],
+)
+def test_cross_validation_report_report_metrics_scoring_single_list_equivalence(
+    binary_classification_data, scoring, scoring_kwargs
+):
+    """Check that passing a single string, callable, scorer is equivalent to passing a
+    list with a single element."""
+    (estimator, X, y), cv = binary_classification_data, 2
+    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
+    result_single = report.metrics.report_metrics(
+        scoring=scoring, scoring_kwargs=scoring_kwargs
+    )
+    result_list = report.metrics.report_metrics(
+        scoring=[scoring], scoring_kwargs=scoring_kwargs
+    )
+    assert result_single.equals(result_list)
 
 
 @pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])

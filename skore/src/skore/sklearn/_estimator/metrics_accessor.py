@@ -30,6 +30,7 @@ from skore.utils._accessor import (
 from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
+Scoring = Union[str, Callable[..., object], SKLearnScorer]
 
 
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
@@ -63,14 +64,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        scoring: Optional[
-            Union[
-                str,
-                Callable[..., object],
-                SKLearnScorer,
-                list[Union[str, Callable[..., object], SKLearnScorer]],
-            ]
-        ] = None,
+        scoring: Optional[Union[Scoring, list[Scoring]]] = None,
         scoring_names: Optional[Union[str, list[Union[str, None]]]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
         pos_label: Optional[PositiveLabel] = None,
@@ -96,8 +90,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : list of str, callable, or scorer, default=None
-            The metrics to report. The possible values in the list are:
+        scoring : str, callable, scorer or list of such instances, default=None
+            The metrics to report. The possible values (whether or not in a list) are:
 
             - if a string, either one of the built-in metrics or a scikit-learn scorer
               name. You can get the possible list of string using
