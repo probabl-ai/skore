@@ -6,7 +6,6 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
 
 import joblib
-import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -14,7 +13,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._estimator.report import EstimatorReport
-from skore.sklearn.utils import _SCORE_OR_LOSS_INFO
+from skore.sklearn._plot import PairPlotDisplay
 from skore.utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
@@ -441,85 +440,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         # - add kwargs (later)
         # - turn into display
 
-        # translate the parameters into column names
-        x_label = _SCORE_OR_LOSS_INFO.get(perf_metric_x, {}).get("name", perf_metric_x)
-        y_label = _SCORE_OR_LOSS_INFO.get(perf_metric_y, {}).get("name", perf_metric_y)
-        scatter_data = self.metrics.report_metrics(
-            pos_label=pos_label, data_source=data_source, X=X, y=y
-        ).T.reset_index()
-
-        # Check that the metrics are in the report
-        # If the metric is not in the report, help the user by suggesting
-        # supported metrics
-        reverse_score_info = {
-            value["name"]: key for key, value in _SCORE_OR_LOSS_INFO.items()
-        }
-        available_columns = scatter_data.columns.get_level_values(0).to_list()
-        available_columns.remove("Estimator")
-        supported_metrics = [
-            reverse_score_info.get(col, col) for col in available_columns
-        ]
-        if perf_metric_x not in supported_metrics:
-            raise ValueError(
-                f"Performance metric {perf_metric_x} not found in the report. "
-                f"Supported metrics are: {supported_metrics}."
-            )
-        if perf_metric_y not in supported_metrics:
-            raise ValueError(
-                f"Performance metric {perf_metric_y} not found in the report. "
-                f"Supported metrics are: {supported_metrics}."
-            )
-
-        # Check that x and y are 1D arrays (i.e. the metrics don't need pos_label)
-        x = scatter_data[x_label]
-        y = scatter_data[y_label]
-        if len(x.shape) > 1:
-            raise ValueError(
-                "The perf metric x requires to add a positive label parameter."
-            )
-        if len(y.shape) > 1:
-            raise ValueError(
-                "The perf metric y requires to add a positive label parameter."
-            )
-
-        # Make it clear in the axis labels that we are using the train set
-        if perf_metric_x == "fit_time" and data_source != "train":
-            x_label_text = x_label + " on train set"
-        else:
-            x_label_text = x_label
-        if perf_metric_y == "fit_time" and data_source != "train":
-            y_label_text = y_label + " on train set"
-        else:
-            y_label_text = y_label
-
-        # Create the scatter plot
-        scatter_data.plot(
-            kind="scatter",
-            x=x_label,
-            y=y_label,
-            title=f"{x_label} vs {y_label} on {data_source} data",
+        return PairPlotDisplay.from_metrics(
+            metrics=self.metrics.report_metrics(
+                pos_label=pos_label, data_source=data_source, X=X, y=y
+            ).T.reset_index(),
+            perf_metric_x=perf_metric_x,
+            perf_metric_y=perf_metric_y,
+            data_source=data_source,
         )
-        plt.xlabel(x_label_text)
-        plt.ylabel(y_label_text)
-
-        # Add labels to the points with a small offset
-        text = scatter_data["Estimator"]
-        x = scatter_data[x_label]
-        y = scatter_data[y_label]
-        for label, x_coord, y_coord in zip(text, x, y):
-            plt.annotate(
-                label,
-                (x_coord, y_coord),
-                textcoords="offset points",
-                xytext=(10, 0),
-                bbox=dict(
-                    boxstyle="round,pad=0.3",
-                    edgecolor="gray",
-                    facecolor="white",
-                    alpha=0.7,
-                ),
-            )
-        plt.tight_layout()
 
     ####################################################################################
     # Methods related to the help and repr
