@@ -6,7 +6,7 @@ import re
 import sys
 from typing import Any
 
-if sys.version_info < (3, 10):
+if sys.version_info < (3, 10):  # pragma: no cover
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
