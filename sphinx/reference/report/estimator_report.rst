@@ -17,7 +17,7 @@ report are accessible through accessors.
 
 .. autosummary::
    :toctree: ../api/
-   :template: autosummary/accessor_method.rst
+   :template: class_methods_no_index.rst
 
    EstimatorReport.help
    EstimatorReport.cache_predictions
@@ -48,7 +48,6 @@ estimator.
 
 .. autosummary::
     :toctree: ../api/
-    :nosignatures:
     :template: autosummary/accessor_method.rst
 
     EstimatorReport.metrics.help
@@ -75,7 +74,6 @@ used to train your estimator.
 
 .. autosummary::
     :toctree: ../api/
-    :nosignatures:
     :template: autosummary/accessor_method.rst
 
     EstimatorReport.feature_importance.help

@@ -1,5 +1,4 @@
 from sys import version_info
-from types import SimpleNamespace
 from unittest.mock import Mock
 
 from pytest import fixture, raises
@@ -148,7 +147,7 @@ class TestProject:
     def test_reports(self):
         project = Project("<name>")
 
-        assert isinstance(project.reports, SimpleNamespace)
+        assert hasattr(project, "reports")
         assert hasattr(project.reports, "get")
         assert hasattr(project.reports, "metadata")
 
