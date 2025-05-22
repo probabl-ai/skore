@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import colormaps
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 from sklearn.utils.validation import _num_samples, check_array
 
 from skore.externals._sklearn_compat import _safe_indexing
@@ -18,7 +18,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore.sklearn.types import MLTask
+from skore.sklearn.types import MLTask, YPlotData
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
@@ -172,15 +172,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
         return data_points_kwargs
 
-    @staticmethod
     def _plot_single_estimator(
+        self,
         *,
-        y_true: list[NDArray],
-        y_pred: list[NDArray],
-        residuals: list[NDArray],
-        data_source: Literal["train", "test", "X_y"],
         kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
-        ax: Axes,
         estimator_name: str,
         samples_kwargs: list[dict[str, Any]],
     ) -> list[Artist]:
@@ -188,23 +183,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
         Parameters
         ----------
-        y_true : list of ndarray of shape (n_samples,)
-            True values.
-
-        y_pred : list of ndarray of shape (n_samples,)
-            Prediction values.
-
-        residuals : list of ndarray of shape (n_samples,)
-            Residuals. Equal to `y_true - y_pred`.
-
-        data_source : {"train", "test", "X_y"}
-            The data source used to display the prediction error.
-
         kind : {"actual_vs_predicted", "residual_vs_predicted"}
             The type of plot to draw.
-
-        ax : matplotlib Axes
-            The axes on which to plot the prediction error.
 
         estimator_name : str
             Name of the estimator.
@@ -228,15 +208,15 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             data_points_kwargs, samples_kwargs[0]
         )
 
-        y_true, y_pred, residuals = y_true[0], y_pred[0], residuals[0]
-        if data_source in ("train", "test"):
-            scatter_label = f"{data_source.title()} set"
+        y_true, y_pred, residuals = self.y_true[0], self.y_pred[0], self.residuals[0]
+        if self.data_source in ("train", "test"):
+            scatter_label = f"{self.data_source.title()} set"
         else:  # data_source == "X_y"
             scatter_label = "Data set"
 
         if kind == "actual_vs_predicted":
             scatter.append(
-                ax.scatter(
+                self.ax_.scatter(
                     y_pred,
                     y_true,
                     label=scatter_label,
@@ -245,7 +225,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             )
         else:  # kind == "residual_vs_predicted"
             scatter.append(
-                ax.scatter(
+                self.ax_.scatter(
                     y_pred,
                     residuals,
                     label=scatter_label,
@@ -253,19 +233,14 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 )
             )
 
-        ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
 
         return scatter
 
-    @staticmethod
     def _plot_cross_validated_estimator(
+        self,
         *,
-        y_true: list[NDArray],
-        y_pred: list[NDArray],
-        residuals: list[NDArray],
-        data_source: Literal["train", "test", "X_y"],
         kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
-        ax: Axes,
         estimator_name: str,
         samples_kwargs: list[dict[str, Any]],
     ) -> list[Artist]:
@@ -273,23 +248,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
         Parameters
         ----------
-        y_true : list of ndarray of shape (n_samples,)
-            True values.
-
-        y_pred : list of ndarray of shape (n_samples,)
-            Prediction values.
-
-        residuals : list of ndarray of shape (n_samples,)
-            Residuals. Equal to `y_true - y_pred`.
-
-        data_source : {"train", "test", "X_y"}
-            The data source used to display the prediction error.
-
         kind : {"actual_vs_predicted", "residual_vs_predicted"}
             The type of plot to draw.
-
-        ax : matplotlib Axes
-            The axes on which to plot the prediction error.
 
         estimator_name : str
             Name of the estimator.
@@ -306,10 +266,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
-            len(y_true) if len(y_true) > 10 else 10,
+            len(self.y_true) if len(self.y_true) > 10 else 10,
         )
 
-        for split_idx in range(len(y_true)):
+        for split_idx in range(len(self.y_true)):
             data_points_kwargs_fold = {
                 "color": colors_markers[split_idx],
                 **data_points_kwargs,
@@ -323,40 +283,35 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
             if kind == "actual_vs_predicted":
                 scatter.append(
-                    ax.scatter(
-                        y_pred[split_idx],
-                        y_true[split_idx],
+                    self.ax_.scatter(
+                        self.y_pred[split_idx],
+                        self.y_true[split_idx],
                         label=label,
                         **data_points_kwargs_validated,
                     )
                 )
             else:  # kind == "residual_vs_predicted"
                 scatter.append(
-                    ax.scatter(
-                        y_pred[split_idx],
-                        residuals[split_idx],
+                    self.ax_.scatter(
+                        self.y_pred[split_idx],
+                        self.residuals[split_idx],
                         label=label,
                         **data_points_kwargs_validated,
                     )
                 )
 
-        if data_source in ("train", "test"):
-            title = f"{estimator_name} on $\\bf{{{data_source}}}$ set"
+        if self.data_source in ("train", "test"):
+            title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
         else:
             title = f"{estimator_name} on $\\bf{{external}}$ set"
-        ax.legend(bbox_to_anchor=(1.02, 1), title=title)
+        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=title)
 
         return scatter
 
-    @staticmethod
     def _plot_comparison_estimator(
+        self,
         *,
-        y_true: list[NDArray],
-        y_pred: list[NDArray],
-        residuals: list[NDArray],
-        data_source: Literal["train", "test", "X_y"],
         kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
-        ax: Axes,
         estimator_names: list[str],
         samples_kwargs: list[dict[str, Any]],
     ) -> list[Artist]:
@@ -364,23 +319,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
         Parameters
         ----------
-        y_true : list of ndarray of shape (n_samples,)
-            True values.
-
-        y_pred : list of ndarray of shape (n_samples,)
-            Prediction values.
-
-        residuals : list of ndarray of shape (n_samples,)
-            Residuals. Equal to `y_true - y_pred`.
-
-        data_source : {"train", "test", "X_y"}
-            The data source used to display the prediction error.
-
         kind : {"actual_vs_predicted", "residual_vs_predicted"}
             The type of plot to draw.
-
-        ax : matplotlib Axes
-            The axes on which to plot the prediction error.
 
         estimator_names : list of str
             Name of the estimators.
@@ -397,10 +337,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
-            len(y_true) if len(y_true) > 10 else 10,
+            len(self.y_true) if len(self.y_true) > 10 else 10,
         )
 
-        for estimator_idx in range(len(y_true)):
+        for estimator_idx in range(len(self.y_true)):
             data_points_kwargs_fold = {
                 "color": colors_markers[estimator_idx],
                 **data_points_kwargs,
@@ -414,26 +354,26 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
             if kind == "actual_vs_predicted":
                 scatter.append(
-                    ax.scatter(
-                        y_pred[estimator_idx],
-                        y_true[estimator_idx],
+                    self.ax_.scatter(
+                        self.y_pred[estimator_idx],
+                        self.y_true[estimator_idx],
                         label=label,
                         **data_points_kwargs_validated,
                     )
                 )
             else:  # kind == "residual_vs_predicted"
                 scatter.append(
-                    ax.scatter(
-                        y_pred[estimator_idx],
-                        residuals[estimator_idx],
+                    self.ax_.scatter(
+                        self.y_pred[estimator_idx],
+                        self.residuals[estimator_idx],
                         label=label,
                         **data_points_kwargs_validated,
                     )
                 )
 
-        ax.legend(
+        self.ax_.legend(
             bbox_to_anchor=(1.02, 1),
-            title=f"Prediction errors on $\\bf{{{data_source}}}$ set",
+            title=f"Prediction errors on $\\bf{{{self.data_source}}}$ set",
         )
 
         return scatter
@@ -578,12 +518,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
         if self.report_type == "estimator":
             self.scatter_ = self._plot_single_estimator(
-                y_true=self.y_true,
-                y_pred=self.y_pred,
-                residuals=self.residuals,
-                data_source=self.data_source,
                 kind=kind,
-                ax=self.ax_,
                 estimator_name=(
                     self.estimator_names[0]
                     if estimator_name is None
@@ -593,12 +528,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             )
         elif self.report_type == "cross-validation":
             self.scatter_ = self._plot_cross_validated_estimator(
-                y_true=self.y_true,
-                y_pred=self.y_pred,
-                residuals=self.residuals,
-                data_source=self.data_source,
                 kind=kind,
-                ax=self.ax_,
                 estimator_name=(
                     self.estimator_names[0]
                     if estimator_name is None
@@ -608,12 +538,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             )
         elif self.report_type == "comparison-estimator":
             self.scatter_ = self._plot_comparison_estimator(
-                y_true=self.y_true,
-                y_pred=self.y_pred,
-                residuals=self.residuals,
-                data_source=self.data_source,
                 kind=kind,
-                ax=self.ax_,
                 estimator_names=self.estimator_names,
                 samples_kwargs=data_points_kwargs,
             )
@@ -631,8 +556,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     @classmethod
     def _compute_data_for_display(
         cls,
-        y_true: list[ArrayLike],
-        y_pred: list[ArrayLike],
+        y_true: list[YPlotData],
+        y_pred: list[YPlotData],
         *,
         report_type: Literal["cross-validation", "estimator", "comparison-estimator"],
         estimator_names: list[str],
@@ -704,7 +629,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         residuals_min, residuals_max = np.inf, -np.inf
 
         for y_true_i, y_pred_i in zip(y_true, y_pred):
-            n_samples = _num_samples(y_true_i)
+            n_samples = _num_samples(y_true_i.y)
             if subsample is None:
                 subsample_ = n_samples
             elif isinstance(subsample, numbers.Integral):
@@ -717,10 +642,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             if subsample_ < n_samples:
                 indices = rng.choice(np.arange(n_samples), size=subsample_)
                 y_true_sample = check_array(
-                    _safe_indexing(y_true_i, indices, axis=0), ensure_2d=False
+                    _safe_indexing(y_true_i.y, indices, axis=0), ensure_2d=False
                 )
                 y_pred_sample = check_array(
-                    _safe_indexing(y_pred_i, indices, axis=0), ensure_2d=False
+                    _safe_indexing(y_pred_i.y, indices, axis=0), ensure_2d=False
                 )
                 residuals_sample = y_true_sample - y_pred_sample
 
@@ -728,9 +653,9 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 y_pred_display.append(y_pred_sample)
                 residuals_display.append(residuals_sample)
             else:
-                y_true_sample = y_true_i
-                y_pred_sample = y_pred_i
-                residuals_sample = y_true_i - y_pred_i
+                y_true_sample = y_true_i.y
+                y_pred_sample = y_pred_i.y
+                residuals_sample = y_true_i.y - y_pred_i.y
 
                 y_true_display.append(y_true_sample)
                 y_pred_display.append(y_pred_sample)

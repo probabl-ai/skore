@@ -16,6 +16,8 @@ SPHINXOPTS  ?= --fail-on-warning
 SPHINXBUILD ?= sphinx-build
 SOURCEDIR   = .
 BUILDDIR    = build
+# https://github.com/sphinx-doc/sphinx/issues/8664#issuecomment-757087741
+SPHINX_APIDOC_OPTIONS = members,show-inheritance
 
 # Build the docs without the examples, which can take a long time to run
 # From https://sphinx-gallery.github.io/stable/advanced.html#id4
