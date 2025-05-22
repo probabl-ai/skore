@@ -272,6 +272,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
         progress.update(task, total=total_iterations)
 
+        # do not mutate directly `self._cache` during the execution of Parallel
         results_to_cache = {}
         for results in generator:
             for key, value, is_cached in results:
