@@ -66,6 +66,7 @@ html_js_files = [
 
 # list of examples in explicit order
 subsections_order = [
+    "../examples/dev",
     "../examples/getting_started",
     "../examples/use_cases",
     "../examples/model_evaluation",
