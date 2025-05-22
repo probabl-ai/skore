@@ -4,18 +4,19 @@ from __future__ import annotations
 
 import re
 import sys
-import types
+from typing import Any
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
 
-from ..sklearn._estimator.report import EstimatorReport
-from .metadata import Metadata
+from skore.externals._pandas_accessors import DirNamesMixin, _register_accessor
+from skore.project.reports import _ReportsAccessor
+from skore.sklearn._estimator.report import EstimatorReport
 
 
-class Project:
+class Project(DirNamesMixin):
     r"""
     API to manage a collection of key-report pairs.
 
@@ -146,6 +147,10 @@ class Project:
     """
 
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
+    reports: _ReportsAccessor
+    _Project__project: Any
+    _Project__mode: str
+    _Project__name: str
 
     def __init__(self, name: str, **kwargs):
         if not (PLUGINS := entry_points(group="skore.plugins.project")):
@@ -208,19 +213,8 @@ class Project:
 
         return self.__project.put(key=key, report=report)
 
-    @property
-    def reports(self):
-        """Accessor for interaction with the persisted reports."""
-
-        def get(id: str) -> EstimatorReport:  # hide underlying functions from user
-            """Get a persisted report by its id."""
-            return self.__project.reports.get(id)
-
-        def metadata() -> Metadata:  # hide underlying functions from user
-            """Obtain metadata/metrics for all persisted reports."""
-            return Metadata.factory(self.__project)
-
-        return types.SimpleNamespace(get=get, metadata=metadata)
-
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()
+
+
+_register_accessor("reports", Project)(_ReportsAccessor)

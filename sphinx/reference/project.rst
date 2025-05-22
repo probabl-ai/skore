@@ -25,4 +25,11 @@ These functions and classes are meant for managing a Project and its reports.
    :toctree: ../api/
    :template: autosummary/accessor.rst
 
-    Project.reports
+   Project.reports
+
+.. autosummary::
+   :toctree: api/
+   :template: autosummary/accessor_method.rst
+
+   Project.reports.get
+   Project.reports.metadata
