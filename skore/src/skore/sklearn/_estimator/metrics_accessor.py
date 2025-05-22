@@ -29,7 +29,7 @@ from skore.utils._accessor import (
 )
 from skore.utils._index import flatten_multi_index
 
-DataSource = Literal["test", "train", "X_y"]
+DataSource = Literal["test", "train", "X_y", "all"]
 
 
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
@@ -151,6 +151,38 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
         """
+        if data_source == "all":
+            # Combine results for both train and test datasets
+            train_results = self.report_metrics(
+                data_source="train",
+                X=X,
+                y=y,
+                scoring=scoring,
+                scoring_names=scoring_names,
+                scoring_kwargs=scoring_kwargs,
+                pos_label=pos_label,
+                indicator_favorability=indicator_favorability,
+                flat_index=flat_index,
+            )
+            test_results = self.report_metrics(
+                data_source="test",
+                X=X,
+                y=y,
+                scoring=scoring,
+                scoring_names=scoring_names,
+                scoring_kwargs=scoring_kwargs,
+                pos_label=pos_label,
+                indicator_favorability=indicator_favorability,
+                flat_index=flat_index,
+            )
+            # Add a level to distinguish train and test results
+            train_results["Dataset"] = "train"
+            test_results["Dataset"] = "test"
+            combined_results = pd.concat([train_results, test_results], axis=0)
+            combined_results.set_index("Dataset", append=True, inplace=True)
+            return combined_results
+
+        # Existing logic for other data_source options
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
             # FIXME: we are still recomputing the hash for all the metrics that we
