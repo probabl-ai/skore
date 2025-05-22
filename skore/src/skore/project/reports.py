@@ -1,9 +1,15 @@
 """Module to manage the persisted reports."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.project import Project
-from skore.project.metadata import Metadata
-from skore.sklearn import EstimatorReport
+
+if TYPE_CHECKING:
+    from skore.project import Project
+    from skore.project.metadata import Metadata
+    from skore.sklearn import EstimatorReport
 
 
 class _ReportsAccessor(DirNamesMixin):
