@@ -10,18 +10,25 @@ class PairPlotDisplay(Display):
 
     Parameters
     ----------
-    scatter_data :
+    scatter_data : pandas.DataFrame
+        Dataframe containing the data to plot.
 
     x_column : str
+        The name of the column to plot on the x-axis.
+        If None, the first column of the dataframe is used.
 
     y_column : str
+        The name of the column to plot on the y-axis.
+        If None, the second column of the dataframe is used.
 
     display_label_x : str, default=None
+        The label to use for the x-axis. If None, the name of the column will be used.
 
     display_label_y : str, default=None
+        The label to use for the y-axis. If None, the name of the column will be used.
 
     data_source : str, default=None
-
+        To specify the data source for the plot.
 
     Attributes
     ----------
@@ -30,11 +37,6 @@ class PairPlotDisplay(Display):
 
     ax_ : matplotlib Axes
         Axes with confusion matrix.
-
-    text_ : ndarray of shape (n_classes, n_classes), dtype=matplotlib Text or \
-            None
-        Array of matplotlib text elements containing the values in the
-        confusion matrix.
     """
 
     @StyleDisplayMixin.style_plot
@@ -47,13 +49,20 @@ class PairPlotDisplay(Display):
         display_label_x=None,
         display_label_y=None,
         data_source=None,
-        display_labels=None,
     ):
         self.scatter_data = scatter_data
-        self.x_column = scatter_data.columns[0]
-        self.y_column = scatter_data.columns[1]
-        self.display_label_x = display_label_x
-        self.display_label_y = display_label_y
+        if x_column is None:
+            x_column = scatter_data.columns[0]
+        self.x_column = x_column
+        if y_column is None:
+            y_column = scatter_data.columns[1]
+        self.y_column = y_column
+        self.display_label_x = (
+            display_label_x if display_label_x is not None else self.x_column
+        )
+        self.display_label_y = (
+            display_label_y if display_label_y is not None else self.y_column
+        )
         self.data_source = data_source
         self.figure_ = None
         self.ax_ = None
@@ -74,7 +83,6 @@ class PairPlotDisplay(Display):
         Returns
         -------
         self : PairPlotDisplay
-            Configured with the confusion matrix.
         """
         if ax is None:
             fig, ax = plt.subplots()
@@ -83,32 +91,14 @@ class PairPlotDisplay(Display):
 
         scatter_data = self.scatter_data
 
+        title = f"{self.display_label_x} vs {self.display_label_x}"
+        if self.data_source is not None:
+            title += f" on {self.data_source} data"
         ax.scatter(
-            x=scatter_data[self.x_column],
-            y=scatter_data[self.y_column],
-            title=f"{self.display_label_x} vs {self.display_label_x} on \
-                {self.data_source} data",
+            x=scatter_data[self.x_column], y=scatter_data[self.y_column], title=title
         )
         ax.set_xlabel(self.display_label_x)
         ax.set_ylabel(self.display_label_y)
-
-        # Add labels to the points with a small offset
-        text = scatter_data["Estimator"]
-        x = scatter_data[self.x_column]
-        y = scatter_data[self.y_column]
-        for label, x_coord, y_coord in zip(text, x, y):
-            ax.annotate(
-                label,
-                (x_coord, y_coord),
-                textcoords="offset points",
-                xytext=(10, 0),
-                bbox=dict(
-                    boxstyle="round,pad=0.3",
-                    edgecolor="gray",
-                    facecolor="white",
-                    alpha=0.7,
-                ),
-            )
 
         self.figure_, self.ax_ = fig, ax
         return self
@@ -119,41 +109,29 @@ class PairPlotDisplay(Display):
         metrics,
         perf_metric_x,
         perf_metric_y,
-        data_source,
+        data_source=None,
     ):
         """Create a confusion matrix display from predictions.
 
         Parameters
         ----------
-        y_true : array-like of shape (n_samples,)
-            True labels.
+        metrics : pandas.DataFrame
+            Dataframe containing the data to plot. The dataframe should
+            contain the performance metrics for each estimator.
 
-        y_pred : array-like of shape (n_samples,)
-            Predicted labels, as returned by a classifier.
+        perf_metric_x : str
+            The name of the column to plot on the x-axis.
 
-        sample_weight : array-like of shape (n_samples,), default=None
-            Sample weights.
+        perf_metric_y : str
+            The name of the column to plot on the y-axis.
 
-        display_labels : list of str, default=None
-            Target names used for plotting. By default, labels will be inferred
-            from y_true.
-
-        include_values : bool, default=True
-            Includes values in confusion matrix.
-
-        normalize : {'true', 'pred', 'all'}, default=None
-            Normalizes confusion matrix over the true (rows), predicted (columns)
-            conditions or all the population. If None, confusion matrix will not be
-            normalized.
-
-        values_format : str, default=None
-            Format specification for values in confusion matrix. If None, the format
-            specification is 'd' or '.2g' whichever is shorter.
+        data_source : str
+            To specify the data source for the plot.
 
         Returns
         -------
         display : :class:`PairPlotDisplay`
-            The confusion matrix display.
+            The scatter plot display.
         """
         x_label = _SCORE_OR_LOSS_INFO.get(perf_metric_x, {}).get("name", perf_metric_x)
         y_label = _SCORE_OR_LOSS_INFO.get(perf_metric_y, {}).get("name", perf_metric_y)
@@ -205,17 +183,35 @@ class PairPlotDisplay(Display):
 
         disp = cls(
             scatter_data=scatter_data,
-            x_column=None,
-            y_column=None,
+            x_column=x_label,
+            y_column=y_label,
             display_label_x=x_label_text,
             display_label_y=y_label_text,
-            data_source=None,
+            data_source=data_source,
         )
 
+        # Add labels to the points with a small offset
+        ax = disp.ax_
+        text = scatter_data["Estimator"]
+        for label, x_coord, y_coord in zip(text, x, y):
+            ax.annotate(
+                label,
+                (x_coord, y_coord),
+                textcoords="offset points",
+                xytext=(10, 0),
+                bbox=dict(
+                    boxstyle="round,pad=0.3",
+                    edgecolor="gray",
+                    facecolor="white",
+                    alpha=0.7,
+                ),
+            )
+
+        disp.ax_ = ax
         return disp
 
     def frame(self):
-        """Return the confusion matrix as a dataframe.
+        """Return the dataframe used for the pair plot.
 
         Returns
         -------

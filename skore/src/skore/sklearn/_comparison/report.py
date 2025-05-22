@@ -438,7 +438,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         # TODO
         # - add test
         # - add kwargs (later)
-        # - turn into display
 
         return PairPlotDisplay.from_metrics(
             metrics=self.metrics.report_metrics(
