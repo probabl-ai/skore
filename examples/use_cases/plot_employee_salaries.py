@@ -24,23 +24,6 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 # %%
 #
-# Let's open a skore project in which we will be able to store artifacts from our
-# experiments.
-import skore
-
-# sphinx_gallery_start_ignore
-import os
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory()
-temp_dir_path = Path(temp_dir.name)
-os.chdir(temp_dir_path)
-# sphinx_gallery_end_ignore
-my_project = skore.Project("my_project")
-
-# %%
-#
 # We use a skrub dataset that is non-trivial.
 from skrub.datasets import fetch_employee_salaries
 
@@ -77,10 +60,6 @@ table_report
 #   ``employee_position_title`` are two features containing a large number of
 #   categories.
 #   It is something that we should consider in our feature engineering.
-#
-# We can store the report in the skore project so that we can easily retrieve it later
-# without necessarily having to reload the dataset and recompute the report.
-my_project.put("Input data summary", table_report)
 
 # %%
 #
@@ -112,7 +91,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 
 model = make_pipeline(
-    TableVectorizer(high_cardinality=TextEncoder(store_weights_in_pickle=True)),
+    TableVectorizer(high_cardinality=TextEncoder()),
     HistGradientBoostingRegressor(),
 )
 model
@@ -125,23 +104,20 @@ model
 # :class:`skore.CrossValidationReport`:
 from skore import CrossValidationReport
 
-report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
-report.help()
+hgbt_model_report = CrossValidationReport(
+    estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4
+)
+hgbt_model_report.help()
 
 # %%
 #
 # We cache the predictions for later use.
-report.cache_predictions(n_jobs=4)
-
-# %%
-#
-# We store the report in our skore project.
-my_project.put("HGBT model report", report)
+hgbt_model_report.cache_predictions(n_jobs=4)
 
 # %%
 #
 # We can now have a look at the performance of the model with some standard metrics.
-report.metrics.report_metrics()
+hgbt_model_report.metrics.report_metrics()
 
 
 # %%
@@ -226,8 +202,10 @@ model
 # Now, we want to evaluate this linear model via cross-validation (with 5 folds).
 # For that, we use skore's :class:`~skore.CrossValidationReport` to investigate the
 # performance of our model.
-report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
-report.help()
+linear_model_report = CrossValidationReport(
+    estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4
+)
+linear_model_report.help()
 
 # %%
 # We observe that the cross-validation report detected that we have a regression task
@@ -244,32 +222,17 @@ import warnings
 
 with warnings.catch_warnings():
     warnings.simplefilter(action="ignore", category=FutureWarning)
-    report.cache_predictions(n_jobs=4)
-
-# %%
-# To ensure this cross-validation report is not lost, let us save it in our skore
-# project.
-my_project.put("Linear model report", report)
+    linear_model_report.cache_predictions(n_jobs=4)
 
 # %%
 # We can now have a look at the performance of the model with some standard metrics.
-report.metrics.report_metrics(indicator_favorability=True)
+linear_model_report.metrics.report_metrics(indicator_favorability=True)
 
 # %%
 # Comparing the models
 # ====================
 #
-# At this point, we may not have been cautious and could have already overwritten the
-# report and model from our initial (tree-based model) attempt.
-# Fortunately, since we saved the reports in our skore project, we can easily recover
-# them.
-# So, let us retrieve those reports.
-
-hgbt_model_report = my_project.get("HGBT model report")
-linear_model_report = my_project.get("Linear model report")
-
-# %%
-# Now that we retrieved the reports, we can make some further comparison using the
+# Now that we cross-validated our models, we can make some further comparison using the
 # :class:`skore.ComparisonReport`:
 
 # %%
@@ -317,6 +280,3 @@ for split_idx, (ax, estimator_report) in enumerate(
     ax.legend(loc="lower right")
 
 plt.tight_layout()
-# sphinx_gallery_start_ignore
-temp_dir.cleanup()
-# sphinx_gallery_end_ignore

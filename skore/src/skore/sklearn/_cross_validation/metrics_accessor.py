@@ -16,7 +16,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import Aggregate, PositiveLabel
+from skore.sklearn.types import Aggregate, PositiveLabel, YPlotData
 from skore.utils._accessor import _check_estimator_report_has_method
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
@@ -83,13 +83,18 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
-            The metrics to report. You can get the possible list of string by calling
-            `report.metrics.help()`. When passing a callable, it should take as
-            arguments `y_true`, `y_pred` as the two first arguments. Additional
-            arguments can be passed as keyword arguments and will be forwarded with
-            `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
-            same parameter name with different values), you can use scikit-learn scorers
-            as provided by :func:`sklearn.metrics.make_scorer`.
+            The metrics to report. The possible values in the list are:
+
+            - if a string, either one of the built-in metrics or a scikit-learn scorer
+              name. You can get the possible list of string using
+              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
+              the built-in metrics or the scikit-learn scorers, respectively.
+            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
+              first arguments. Additional arguments can be passed as keyword arguments
+              and will be forwarded with `scoring_kwargs`.
+            - if the callable API is too restrictive (e.g. need to pass
+              same parameter name with different values), you can use scikit-learn
+              scorers as provided by :func:`sklearn.metrics.make_scorer`.
 
         scoring_names : list of str, default=None
             Used to overwrite the default scoring names in the report. It should be of
@@ -211,9 +216,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         else:
             parallel = Parallel(
                 **_validate_joblib_parallel_params(
-                    n_jobs=self._parent.n_jobs,
-                    return_as="generator",
-                    require="sharedmem",
+                    n_jobs=self._parent.n_jobs, return_as="generator"
                 )
             )
             generator = parallel(
@@ -1163,27 +1166,43 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
-            y_true, y_pred = [], []
-            for report in self._parent.estimator_reports_:
+            y_true: list[YPlotData] = []
+            y_pred: list[YPlotData] = []
+            for report_idx, report in enumerate(self._parent.estimator_reports_):
                 if data_source != "X_y":
                     # only retrieve data stored in the reports when we don't want to
                     # use an external common X and y
                     X, y, _ = report.metrics._get_X_y_and_data_source_hash(
                         data_source=data_source
                     )
-                y_true.append(y)
-                y_pred.append(
-                    _get_cached_response_values(
-                        cache=report._cache,
-                        estimator_hash=report._hash,
-                        estimator=report._estimator,
-                        X=X,
-                        response_method=response_method,
-                        data_source=data_source,
-                        data_source_hash=data_source_hash,
-                        pos_label=display_kwargs.get("pos_label"),
+                y_true.append(
+                    YPlotData(
+                        estimator_name=self._parent.estimator_name_,
+                        split_index=report_idx,
+                        y=y,
                     )
                 )
+                results = _get_cached_response_values(
+                    cache=report._cache,
+                    estimator_hash=report._hash,
+                    estimator=report._estimator,
+                    X=X,
+                    response_method=response_method,
+                    data_source=data_source,
+                    data_source_hash=data_source_hash,
+                    pos_label=display_kwargs.get("pos_label"),
+                )
+                for key, value, is_cached in results:
+                    if not is_cached:
+                        report._cache[key] = value
+                    if key[-1] != "predict_time":
+                        y_pred.append(
+                            YPlotData(
+                                estimator_name=self._parent.estimator_name_,
+                                split_index=report_idx,
+                                y=value,
+                            )
+                        )
                 progress.update(main_task, advance=1, refresh=True)
 
             display = display_class._compute_data_for_display(
@@ -1226,7 +1245,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
-                X : array-like of shape (n_samples, n_features), default=None
+        X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the report.
 

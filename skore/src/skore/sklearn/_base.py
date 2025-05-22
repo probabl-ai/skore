@@ -330,8 +330,13 @@ def _get_cached_response_values(
     pos_label: Optional[PositiveLabel] = None,
     data_source: Literal["test", "train", "X_y"] = "test",
     data_source_hash: Optional[int] = None,
-) -> NDArray:
+) -> list[tuple[tuple[Any, ...], Any, bool]]:
     """Compute or load from local cache the response values.
+
+    Be aware that the predictions will be loaded from the cache if present, but they
+    will not be added to it. The reason is that we want to be able to run this function
+    in parallel settings in a thread-safe manner. The update should be done outside of
+    this function.
 
     Parameters
     ----------
@@ -366,8 +371,18 @@ def _get_cached_response_values(
 
     Returns
     -------
-    array-like of shape (n_samples,) or (n_samples, n_outputs)
-        The response values.
+    list of tuples
+        A list of tuples, each containing:
+
+        - cache_key : tuple
+            The cache key.
+
+        - cache_value : Any
+            The cache value. It corresponds to the predictions but also to the predict
+            time when it has not been cached yet.
+
+        - is_cached : bool
+            Whether the cache value was loaded from the cache.
     """
     prediction_method = _check_response_method(estimator, response_method).__name__
 
@@ -392,7 +407,7 @@ def _get_cached_response_values(
 
     if cache_key in cache:
         cached_predictions = cast(NDArray, cache[cache_key])
-        return cached_predictions
+        return [(cache_key, cached_predictions, True)]
 
     with MeasureTime() as predict_time:
         predictions, _ = _get_response_values(
@@ -403,14 +418,14 @@ def _get_cached_response_values(
             return_response_method_used=False,
         )
 
-    cache[cache_key] = predictions
-
     predict_time_cache_key: tuple[Any, ...] = (
         estimator_hash,
         data_source,
         data_source_hash,
         "predict_time",
     )
-    cache[predict_time_cache_key] = predict_time()
 
-    return predictions
+    return [
+        (cache_key, predictions, False),
+        (predict_time_cache_key, predict_time(), False),
+    ]
