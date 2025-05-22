@@ -6,7 +6,7 @@
 #
 # You can pass any `uv pip compile` parameter:
 #
-#     $ bash pip-compile.sh <skore|skore-remote-project> --upgrade
+#     $ bash pip-compile.sh <skore|skore-hub-project|skore-local-project> --upgrade
 #
 
 CWD=$(realpath $(dirname $0))
@@ -14,10 +14,10 @@ TMPDIR=$(mktemp -d)
 PACKAGE=$1
 
 case "${PACKAGE}" in
-    "skore"|"skore-remote-project") ;;
+    "skore"|"skore-hub-project"|"skore-local-project") ;;
     *)
         >&2 echo "Error: Unknown package: '${PACKAGE}'"
-        >&2 echo "Usage: bash pip-compile.sh <skore|skore-remote-project> [option...]"
+        >&2 echo "Usage: bash pip-compile.sh <skore|skore-hub-project|skore-local-project> [option...]"
         exit 1
         ;;
 esac

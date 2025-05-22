@@ -16,7 +16,7 @@ from skore.sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import Aggregate, PositiveLabel
+from skore.sklearn.types import Aggregate, PositiveLabel, YPlotData
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
@@ -83,13 +83,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
-            The metrics to report. You can get the possible list of strings by calling
-            `report.metrics.help()`. When passing a callable, it should take as
-            arguments ``y_true``, ``y_pred`` as the two first arguments. Additional
-            arguments can be passed as keyword arguments and will be forwarded with
-            `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
-            same parameter name with different values), you can use scikit-learn scorers
-            as provided by :func:`sklearn.metrics.make_scorer`.
+            The metrics to report. The possible values in the list are:
+
+            - if a string, either one of the built-in metrics or a scikit-learn scorer
+              name. You can get the possible list of string using
+              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
+              the built-in metrics or the scikit-learn scorers, respectively.
+            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
+              first arguments. Additional arguments can be passed as keyword arguments
+              and will be forwarded with `scoring_kwargs`.
+            - if the callable API is too restrictive (e.g. need to pass
+              same parameter name with different values), you can use scikit-learn
+              scorers as provided by :func:`sklearn.metrics.make_scorer`.
 
         scoring_names : list of str, default=None
             Used to overwrite the default scoring names in the report. It should be of
@@ -1282,26 +1287,39 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
-            y_true, y_pred = [], []
+            y_true: list[YPlotData] = []
+            y_pred: list[YPlotData] = []
 
-            for report in self._parent.reports_:
+            for report, report_name in zip(
+                self._parent.reports_, self._parent.report_names_
+            ):
                 report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
                     data_source=data_source,
                     X=X,
                     y=y,
                 )
 
-                y_true.append(report_y)
+                y_true.append(
+                    YPlotData(
+                        estimator_name=report_name,
+                        split_index=None,
+                        y=report_y,
+                    )
+                )
                 y_pred.append(
-                    _get_cached_response_values(
-                        cache=report._cache,
-                        estimator_hash=report._hash,
-                        estimator=report._estimator,
-                        X=report_X,
-                        response_method=response_method,
-                        data_source=data_source,
-                        data_source_hash=None,
-                        pos_label=display_kwargs.get("pos_label"),
+                    YPlotData(
+                        estimator_name=report_name,
+                        split_index=None,
+                        y=_get_cached_response_values(
+                            cache=report._cache,
+                            estimator_hash=report._hash,
+                            estimator=report._estimator,
+                            X=report_X,
+                            response_method=response_method,
+                            data_source=data_source,
+                            data_source_hash=None,
+                            pos_label=display_kwargs.get("pos_label"),
+                        ),
                     )
                 )
                 progress.update(main_task, advance=1, refresh=True)
