@@ -433,7 +433,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         Returns
         -------
         A matplotlib plot.
-
         """
         # TODO
         # - add kwargs (later)
