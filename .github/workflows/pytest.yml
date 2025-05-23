@@ -1,5 +1,25 @@
 name: pytest
 
+# **How it works**
+# ================
+#
+# The workflow runs `pytest` jobs on all the repository packages, identified by the JSON
+# list `vars.PACKAGES` managed in the GitHub interface. If you want to run this workflow
+# on a new package, you only have to add its name in the above list.
+#
+# It's important to notice that only one workflow is triggered for all packages.
+#
+# The workflow is triggered on:
+# - __pull_request__ or __merge_group__ event (A),
+# - __push__ event on the main branch (B).
+#
+# On (A), the workflow is started and runs jobs on modified packages, and only on modified
+# packages.
+#
+# On (B), the workflow is started and runs jobs on all packages, no matter if they have
+# modification. Indeed it's important to know on main, at each commit, if all workflows
+# are green.
+
 on:
   pull_request:
   push:
