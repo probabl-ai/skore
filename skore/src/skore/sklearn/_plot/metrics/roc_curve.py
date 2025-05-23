@@ -23,7 +23,7 @@ from skore.sklearn._plot.utils import (
 )
 from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
 
-MAX_N_LABELS = 5
+MAX_N_LABELS = 6  # 5 + 1 for the chance level line
 
 
 def _set_axis_labels(ax: Axes, info_pos_label: Union[str, None]) -> None:

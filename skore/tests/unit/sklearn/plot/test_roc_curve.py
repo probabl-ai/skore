@@ -1,6 +1,9 @@
+from typing import Literal
+
 import matplotlib as mpl
 import numpy as np
 import pytest
+from matplotlib.legend import Legend
 from sklearn.base import clone
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
@@ -667,3 +670,136 @@ def test_roc_curve_display_wrong_report_type(pyplot, binary_classification_data)
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot()
+
+
+def _check_legend_position(
+    display, *, loc: str, position: Literal["inside", "outside"]
+):
+    """Check the position of the legend in the axes."""
+    legend = display.ax_.get_legend()
+    assert legend._loc == Legend.codes[loc]
+    if position == "inside":
+        bbox = legend.get_window_extent().transformed(display.ax_.transAxes.inverted())
+        assert 0 <= bbox.x0 <= 1
+    else:
+        bbox = legend.get_window_extent().transformed(display.ax_.transAxes.inverted())
+        assert bbox.x0 >= 1
+
+
+def test_roc_curve_display_legend_estimator_report(
+    pyplot, binary_classification_data, multiclass_classification_data
+):
+    """Check the rendering of the legend for ROC curves with an `EstimatorReport`."""
+
+    # binary classification
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    display.plot()
+    _check_legend_position(display, loc="lower right", position="inside")
+
+    # multiclass classification <= 5 classes
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    display.plot()
+    _check_legend_position(display, loc="lower right", position="inside")
+
+    # multiclass classification > 5 classes
+    estimator = LogisticRegression()
+    X, y = make_classification(
+        n_samples=1_000,
+        n_classes=10,
+        n_clusters_per_class=1,
+        n_informative=10,
+        random_state=42,
+    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    display.plot()
+    _check_legend_position(display, loc="upper left", position="outside")
+
+
+def test_roc_curve_display_legend_cross_validation_report(
+    pyplot, binary_classification_data_no_split, multiclass_classification_data_no_split
+):
+    """Check the rendering of the legend for ROC curves with a
+    `CrossValidationReport`."""
+
+    # binary classification <= 5 folds
+    estimator, X, y = binary_classification_data_no_split
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+    display = report.metrics.roc()
+    display.plot()
+    _check_legend_position(display, loc="lower right", position="inside")
+
+    # binary classification > 5 folds
+    estimator, X, y = binary_classification_data_no_split
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
+    display = report.metrics.roc()
+    display.plot()
+    _check_legend_position(display, loc="upper left", position="outside")
+
+    # multiclass classification <= 5 classes
+    estimator, X, y = multiclass_classification_data_no_split
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+    display = report.metrics.roc()
+    display.plot()
+    _check_legend_position(display, loc="lower right", position="inside")
+
+    # multiclass classification > 5 classes
+    estimator = LogisticRegression()
+    X, y = make_classification(
+        n_samples=1_000,
+        n_classes=10,
+        n_clusters_per_class=1,
+        n_informative=10,
+        random_state=42,
+    )
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
+    display = report.metrics.roc()
+    display.plot()
+    _check_legend_position(display, loc="upper left", position="outside")
+
+
+def test_roc_curve_display_legend_comparison_report(
+    pyplot, binary_classification_data, multiclass_classification_data
+):
+    """Check the rendering of the legend for ROC curves with a `ComparisonReport`."""
+
+    # binary classification
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.roc()
+    display.plot()
+    _check_legend_position(display, loc="lower right", position="inside")
+
+    # multiclass classification <= 5 classes
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.roc()
+    display.plot()
+    _check_legend_position(display, loc="upper left", position="outside")

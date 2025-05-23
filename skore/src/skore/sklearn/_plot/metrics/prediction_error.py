@@ -22,7 +22,7 @@ from skore.sklearn.types import MLTask, YPlotData
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
-MAX_N_LABELS = 5
+MAX_N_LABELS = 6  # 5 + 1 for the perfect model line
 
 
 class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
