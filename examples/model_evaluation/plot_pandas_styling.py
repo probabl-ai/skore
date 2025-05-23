@@ -70,10 +70,6 @@ from skore import ComparisonReport
 comparator = ComparisonReport(reports=estimator_reports)
 
 # %%
-df = comparator.metrics.report_metrics(indicator_favorability=False)
-df
-
-# %%
 # Define styling functions
 # ========================
 
@@ -85,29 +81,47 @@ higher_is_better = [
     item["name"] for item in metrics_dict.values() if item["icon"] == "(↗︎)"
 ]
 
-# %%
-
 
 def apply_styling(row):
     """Apply blue gradient and bold styling based on metric type."""
     metric = row.name
     is_lower_better = metric in lower_is_better
 
+    # Skip styling for indicator rows
+    if metric.startswith("Favorability"):
+        return ["" for _ in row]
+
+    # Handle the case where we have a Favorability column
+    if "Favorability" in row.index:
+        # Get only numeric values, excluding the Favorability column
+        numeric_row = row.drop("Favorability")
+    else:
+        numeric_row = row
+
     # Normalize values to [0, 1] range
     if is_lower_better:
-        normalized = (row.max() - row) / (row.max() - row.min())
+        normalized = (numeric_row.max() - numeric_row) / (
+            numeric_row.max() - numeric_row.min()
+        )
     else:
-        normalized = (row - row.min()) / (row.max() - row.min())
+        normalized = (numeric_row - numeric_row.min()) / (
+            numeric_row.max() - numeric_row.min()
+        )
 
     # Generate styles for each cell
     styles = []
-    for value, norm_value in zip(row, normalized):
+    for value, norm_value in zip(row, normalized.reindex(row.index).fillna(0)):
+        # Skip styling for non-numeric values (like indicators)
+        if not isinstance(value, (int, float)):
+            styles.append("")
+            continue
+
         opacity = norm_value
         # Blue gradient with varying opacity
         color = f"rgba(30, 34, 170, {opacity})"  # Royal Blue
 
-        is_best = (is_lower_better and value == row.min()) or (
-            not is_lower_better and value == row.max()
+        is_best = (is_lower_better and value == numeric_row.min()) or (
+            not is_lower_better and value == numeric_row.max()
         )
         font_weight = "bold" if is_best else "normal"
 
@@ -117,12 +131,36 @@ def apply_styling(row):
     return styles
 
 
-# %%
-# Apply styling to regression metrics
-# ===================================
+def format_values(val):
+    """Format values differently based on their type."""
+    if isinstance(val, (int, float)):
+        return "{:.3f}".format(val)
+    return str(val)
 
-styled_df = df.style.apply(apply_styling, axis=1).format("{:.3f}")
+
+# %%
+# Apply styling to regression metrics without indicators
+# ======================================================
+
+df = comparator.metrics.report_metrics(indicator_favorability=False)
+print("Raw DataFrame without indicators:")
+print(df)
+print("\nStyled DataFrame without indicators:")
+styled_df = df.style.apply(apply_styling, axis=1).format(format_values)
 styled_df
+
+# %%
+# Apply styling to regression metrics with indicators
+# ===================================================
+
+df_with_indicators = comparator.metrics.report_metrics(indicator_favorability=True)
+print("Raw DataFrame with indicators:")
+print(df_with_indicators)
+print("\nStyled DataFrame with indicators:")
+styled_df_with_indicators = df_with_indicators.style.apply(
+    apply_styling, axis=1
+).format(format_values)
+styled_df_with_indicators
 
 # %%
 # Classification task
@@ -158,9 +196,29 @@ estimator_reports = [
 comparator = ComparisonReport(reports=estimator_reports)
 
 # %%
-# Apply styling to classification metrics
-# =======================================
+# Apply styling to classification metrics without indicators
+# ==========================================================
 
 df = comparator.metrics.report_metrics(pos_label=1, indicator_favorability=False)
-styled_df = df.style.apply(apply_styling, axis=1).format("{:.3f}")
+print("Raw DataFrame without indicators:")
+print(df)
+print("\nStyled DataFrame without indicators:")
+styled_df = df.style.apply(apply_styling, axis=1).format(format_values)
 styled_df
+
+# %%
+# Apply styling to classification metrics with indicators
+# =======================================================
+
+df_with_indicators = comparator.metrics.report_metrics(
+    pos_label=1, indicator_favorability=True
+)
+print("Raw DataFrame with indicators:")
+print(df_with_indicators)
+print("\nStyled DataFrame with indicators:")
+styled_df_with_indicators = df_with_indicators.style.apply(
+    apply_styling, axis=1
+).format(format_values)
+styled_df_with_indicators
+
+# %%
