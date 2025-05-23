@@ -23,6 +23,8 @@ from skore.sklearn._plot.utils import (
 )
 from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
 
+MAX_N_LABELS = 7
+
 
 def _set_axis_labels(ax: Axes, info_pos_label: Union[str, None]) -> None:
     """Add axis labels."""
@@ -216,7 +218,6 @@ class RocCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {}
 
-        n_lines_in_legend = 0
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
             if self.data_source in ("train", "test"):
@@ -235,7 +236,6 @@ class RocCurveDisplay(
                 self.fpr[pos_label][0], self.tpr[pos_label][0], **line_kwargs_validated
             )
             lines.append(line)
-            n_lines_in_legend += 1
 
             info_pos_label = (
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
@@ -264,7 +264,6 @@ class RocCurveDisplay(
 
                 (line,) = self.ax_.plot(fpr_class, tpr_class, **line_kwargs)
                 lines.append(line)
-                n_lines_in_legend += 1
 
             if self.data_source in ("train", "test"):
                 legend_title = f"{self.data_source.capitalize()} set"
@@ -281,7 +280,8 @@ class RocCurveDisplay(
         else:
             self.chance_level_ = None
 
-        if n_lines_in_legend > 5:  # too many lines to fit legend in the plot
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
             self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
         else:
             self.ax_.legend(loc="lower right", title=legend_title)
@@ -330,7 +330,6 @@ class RocCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {}
 
-        n_lines_in_legend = 0
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
             for split_idx in range(len(self.fpr[pos_label])):
@@ -347,7 +346,6 @@ class RocCurveDisplay(
 
                 (line,) = self.ax_.plot(fpr_split, tpr_split, **line_kwargs_validated)
                 lines.append(line)
-                n_lines_in_legend += 1
 
             info_pos_label = (
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
@@ -383,7 +381,6 @@ class RocCurveDisplay(
                             f"(AUC = {roc_auc_mean:0.2f} +/- "
                             f"{roc_auc_std:0.2f})"
                         )
-                        n_lines_in_legend += 1
                     else:
                         line_kwargs_validated["label"] = None
 
@@ -406,7 +403,8 @@ class RocCurveDisplay(
         else:
             legend_title = "External set"
 
-        if n_lines_in_legend > 5:  # too many lines to fit legend in the plot
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
             self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
         else:
             self.ax_.legend(loc="lower right", title=legend_title)
@@ -455,7 +453,6 @@ class RocCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {}
 
-        n_lines_in_legend = 0
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
             for est_idx, est_name in enumerate(estimator_names):
@@ -471,7 +468,6 @@ class RocCurveDisplay(
                 )
                 (line,) = self.ax_.plot(fpr_est, tpr_est, **line_kwargs_validated)
                 lines.append(line)
-                n_lines_in_legend += 1
 
             info_pos_label = (
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
@@ -507,7 +503,6 @@ class RocCurveDisplay(
                         fpr_est_class, tpr_est_class, **line_kwargs_validated
                     )
                     lines.append(line)
-                    n_lines_in_legend += 1
 
         if plot_chance_level:
             self.chance_level_ = _add_chance_level(
@@ -523,7 +518,8 @@ class RocCurveDisplay(
         else:
             legend_title = "External set"
 
-        if n_lines_in_legend > 6:  # too many lines to fit legend in the plot
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
             self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
         else:
             self.ax_.legend(loc="lower right", title=legend_title)

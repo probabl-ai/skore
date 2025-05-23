@@ -23,6 +23,8 @@ from skore.sklearn._plot.utils import (
 )
 from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
 
+MAX_N_LABELS = 7
+
 
 class PrecisionRecallCurveDisplay(
     StyleDisplayMixin, HelpDisplayMixin, _ClassifierCurveDisplayMixin
@@ -165,7 +167,6 @@ class PrecisionRecallCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
-        n_lines_in_legend = 0
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
 
@@ -188,7 +189,6 @@ class PrecisionRecallCurveDisplay(
                 **line_kwargs_validated,
             )
             lines.append(line)
-            n_lines_in_legend += 1
 
             info_pos_label = (
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
@@ -219,7 +219,6 @@ class PrecisionRecallCurveDisplay(
                     recall_class, precision_class, **line_kwargs_validated
                 )
                 lines.append(line)
-                n_lines_in_legend += 1
 
             if self.data_source in ("train", "test"):
                 legend_title = f"{self.data_source.capitalize()} set"
@@ -227,7 +226,8 @@ class PrecisionRecallCurveDisplay(
                 legend_title = None
             info_pos_label = None  # irrelevant for multiclass
 
-        if n_lines_in_legend > 5:  # too many lines to fit legend in the plot
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
             self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
         else:
             self.ax_.legend(loc="lower left", title=legend_title)
@@ -268,7 +268,6 @@ class PrecisionRecallCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
-        n_lines_in_legend = 0
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
             for split_idx in range(len(self.precision[pos_label])):
@@ -288,7 +287,6 @@ class PrecisionRecallCurveDisplay(
                     recall_split, precision_split, **line_kwargs_validated
                 )
                 lines.append(line)
-                n_lines_in_legend += 1
 
             info_pos_label = (
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
@@ -323,7 +321,6 @@ class PrecisionRecallCurveDisplay(
                             f"(AP = {average_precision_mean:0.2f} +/- "
                             f"{average_precision_std:0.2f})"
                         )
-                        n_lines_in_legend += 1
                     else:
                         line_kwargs_validated["label"] = None
 
@@ -336,7 +333,8 @@ class PrecisionRecallCurveDisplay(
             legend_title = f"{self.data_source.capitalize()} set"
         else:
             legend_title = "External set"
-        if n_lines_in_legend > 5:  # too many lines to fit legend in the plot
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
             self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
         else:
             self.ax_.legend(loc="lower left", title=legend_title)
@@ -377,7 +375,6 @@ class PrecisionRecallCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
-        n_lines_in_legend = 0
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
             for est_idx, est_name in enumerate(estimator_names):
@@ -395,7 +392,6 @@ class PrecisionRecallCurveDisplay(
                     recall_est, precision_est, **line_kwargs_validated
                 )
                 lines.append(line)
-                n_lines_in_legend += 1
 
             info_pos_label = (
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
@@ -432,14 +428,14 @@ class PrecisionRecallCurveDisplay(
                         recall_est_class, precision_est_class, **line_kwargs_validated
                     )
                     lines.append(line)
-                    n_lines_in_legend += 1
 
         if self.data_source in ("train", "test"):
             legend_title = f"{self.data_source.capitalize()} set"
         else:
             legend_title = "External set"
 
-        if n_lines_in_legend > 5:  # too many lines to fit legend in the plot
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
             self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
         else:
             self.ax_.legend(loc="lower left", title=legend_title)
