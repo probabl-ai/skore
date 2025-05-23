@@ -429,7 +429,6 @@ class PrecisionRecallCurveDisplay(
     @StyleDisplayMixin.style_plot
     def plot(
         self,
-        ax: Optional[Axes] = None,
         *,
         estimator_name: Optional[str] = None,
         pr_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
@@ -441,10 +440,6 @@ class PrecisionRecallCurveDisplay(
 
         Parameters
         ----------
-        ax : Matplotlib Axes, default=None
-            Axes object to plot on. If `None`, a new figure and axes is
-            created.
-
         estimator_name : str, default=None
             Name of the estimator used to plot the precision-recall curve. If
             `None`, we use the inferred name from the estimator.
@@ -480,7 +475,7 @@ class PrecisionRecallCurveDisplay(
         >>> display = report.metrics.precision_recall()
         >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
-        self.figure_, self.ax_ = (ax.figure, ax) if ax is not None else plt.subplots()
+        self.figure_, self.ax_ = plt.subplots()
 
         if pr_curve_kwargs is None:
             pr_curve_kwargs = self._default_pr_curve_kwargs
