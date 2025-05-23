@@ -137,6 +137,11 @@ class PrecisionRecallCurveDisplay(
         *,
         estimator_name: str,
         pr_curve_kwargs: list[dict[str, Any]],
+        ax: Optional[Axes] = None,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot precision-recall curve for a single estimator.
 
@@ -149,6 +154,24 @@ class PrecisionRecallCurveDisplay(
             Additional keyword arguments to pass to matplotlib's plot function. In
             binary case, we should have a single dict. In multiclass case, we should
             have a list of dicts, one per class.
+
+        ax : matplotlib.axes.Axes, default=None
+            The axes to plot on. If None, self.ax_ is used.
+
+        subplots : bool, default=False
+            If True, plot each class on a separate subplot.
+
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
 
         Returns
         -------
@@ -164,6 +187,116 @@ class PrecisionRecallCurveDisplay(
         """
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
+
+        if subplots:
+            if self.ml_task == "multiclass-classification":
+                num_plots = len(self.precision)
+            else:
+                num_plots = 1
+
+            # Calculate grid dimensions
+            if nrows is None and ncols is None:
+                if num_plots == 1:
+                    ncols = 1
+                    nrows = 1
+                else:
+                    ncols = min(2, num_plots)
+                    nrows = (num_plots + ncols - 1) // ncols
+            elif nrows is None:
+                nrows = (num_plots + (ncols or 1) - 1) // (ncols or 1)
+            elif ncols is None:
+                ncols = (num_plots + (nrows or 1) - 1) // (nrows or 1)
+
+            # Create figure and subplots
+            self.figure_ = plt.figure(figsize=figsize)
+            axes: list[Axes] = []
+            for i in range(num_plots):
+                if i == 0:
+                    ax = self.figure_.add_subplot(nrows, ncols, i + 1)
+                else:
+                    ax = self.figure_.add_subplot(
+                        nrows, ncols, i + 1, sharex=axes[0], sharey=axes[0]
+                    )
+                axes.append(ax)
+
+            # Set self.ax_ to the first axis for backwards compatibility
+            self.ax_ = axes[0] if axes else None
+
+            # Plot in each subplot
+            for idx, axi in enumerate(axes):
+                if self.ml_task == "multiclass-classification":
+                    class_label = list(self.precision.keys())[idx]
+                    class_precision = {class_label: [self.precision[class_label][0]]}
+                    class_recall = {class_label: [self.recall[class_label][0]]}
+                    class_avg_precision = {
+                        class_label: [self.average_precision[class_label][0]]
+                    }
+                    class_display = PrecisionRecallCurveDisplay(
+                        precision=class_precision,
+                        recall=class_recall,
+                        average_precision=class_avg_precision,
+                        estimator_names=[estimator_name],
+                        pos_label=class_label,
+                        data_source=self.data_source,
+                        ml_task="binary-classification",
+                        report_type="estimator",
+                    )
+                    class_display.ax_ = axi
+                    class_display.figure_ = self.figure_
+                    _, class_lines, _ = class_display._plot_single_estimator(
+                        estimator_name=estimator_name,
+                        pr_curve_kwargs=[pr_curve_kwargs[idx]],
+                        ax=axi,
+                    )
+                    lines.extend(class_lines)
+                    axi.set_title(f"Class: {class_label}")
+                else:
+                    # Binary classification case
+                    pos_label = cast(PositiveLabel, self.pos_label)
+                    line_kwargs_validated = _validate_style_kwargs(
+                        line_kwargs, pr_curve_kwargs[0]
+                    )
+                    if self.data_source in ("train", "test"):
+                        line_kwargs_validated["label"] = (
+                            f"{self.data_source.title()} set "
+                            f"(AP = {self.average_precision[pos_label][0]:0.2f})"
+                        )
+                    else:
+                        line_kwargs_validated["label"] = (
+                            f"AP = {self.average_precision[pos_label][0]:0.2f}"
+                        )
+
+                    (line,) = axi.plot(
+                        self.recall[pos_label][0],
+                        self.precision[pos_label][0],
+                        **line_kwargs_validated,
+                    )
+                    lines.append(line)
+                    axi.set_title(f"Model: {estimator_name}")
+
+                # Set axis labels and limits
+                xlabel = "Recall"
+                ylabel = "Precision"
+                if self.pos_label is not None:
+                    xlabel += f"\n(Positive label: {self.pos_label})"
+                    ylabel += f"\n(Positive label: {self.pos_label})"
+
+                axi.set(
+                    xlabel=xlabel,
+                    xlim=(-0.01, 1.01),
+                    ylabel=ylabel,
+                    ylim=(-0.01, 1.01),
+                    aspect="equal",
+                )
+
+                axi.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+
+            return self.ax_, lines, None
+
+        # Single plot case
+        plot_ax = ax if ax is not None else self.ax_
+        if plot_ax is None:
+            _, plot_ax = plt.subplots()
 
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
@@ -181,7 +314,7 @@ class PrecisionRecallCurveDisplay(
                     f"AP = {self.average_precision[pos_label][0]:0.2f}"
                 )
 
-            (line,) = self.ax_.plot(
+            (line,) = plot_ax.plot(
                 self.recall[pos_label][0],
                 self.precision[pos_label][0],
                 **line_kwargs_validated,
@@ -219,22 +352,27 @@ class PrecisionRecallCurveDisplay(
                         f"AP = {average_precision_class:0.2f}"
                     )
 
-                (line,) = self.ax_.plot(
+                (line,) = plot_ax.plot(
                     recall_class, precision_class, **line_kwargs_validated
                 )
                 lines.append(line)
 
-            info_pos_label = None  # irrelevant for multiclass
+            info_pos_label = None  # not relevant for multiclass
 
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+        plot_ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
 
-        return self.ax_, lines, info_pos_label
+        return plot_ax, lines, info_pos_label
 
     def _plot_cross_validated_estimator(
         self,
         *,
         estimator_name: str,
         pr_curve_kwargs: list[dict[str, Any]],
+        ax: Optional[Axes] = None,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot precision-recall curve for a cross-validated estimator.
 
@@ -247,6 +385,24 @@ class PrecisionRecallCurveDisplay(
             List of dictionaries containing keyword arguments to customize the
             precision-recall curves. The length of the list should match the number of
             curves to plot.
+
+        ax : matplotlib.axes.Axes, default=None
+            The axes to plot on. If None, self.ax_ is used.
+
+        subplots : bool, default=False
+            If True, plot each fold or class on a separate subplot.
+
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
 
         Returns
         -------
@@ -263,6 +419,126 @@ class PrecisionRecallCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
+        if subplots:
+            if self.ml_task == "binary-classification":
+                pos_label = cast(PositiveLabel, self.pos_label)
+                num_plots = len(self.precision[pos_label])
+            else:  # multiclass
+                num_plots = len(self.precision)
+
+            # Calculate grid dimensions
+            if nrows is None and ncols is None:
+                if num_plots == 1:
+                    ncols = 1
+                    nrows = 1
+                else:
+                    ncols = min(2, num_plots)
+                    nrows = (num_plots + ncols - 1) // ncols
+            elif nrows is None:
+                nrows = (num_plots + (ncols or 1) - 1) // (ncols or 1)
+            elif ncols is None:
+                ncols = (num_plots + (nrows or 1) - 1) // (nrows or 1)
+
+            # Create figure and subplots
+            self.figure_ = plt.figure(figsize=figsize)
+            axes: list[Axes] = []
+            for i in range(num_plots):
+                if i == 0:
+                    ax = self.figure_.add_subplot(nrows, ncols, i + 1)
+                else:
+                    ax = self.figure_.add_subplot(
+                        nrows, ncols, i + 1, sharex=axes[0], sharey=axes[0]
+                    )
+                axes.append(ax)
+
+            # Set self.ax_ to the first axis for backwards compatibility
+            self.ax_ = axes[0] if axes else None
+
+            # Plot in each subplot
+            for idx, axi in enumerate(axes):
+                if self.ml_task == "binary-classification":
+                    # Plot just one fold in this subplot
+                    pos_label = cast(PositiveLabel, self.pos_label)
+                    fold_precision = {pos_label: [self.precision[pos_label][idx]]}
+                    fold_recall = {pos_label: [self.recall[pos_label][idx]]}
+                    fold_avg_precision = {
+                        pos_label: [self.average_precision[pos_label][idx]]
+                    }
+                    fold_display = PrecisionRecallCurveDisplay(
+                        precision=fold_precision,
+                        recall=fold_recall,
+                        average_precision=fold_avg_precision,
+                        estimator_names=[estimator_name],
+                        pos_label=self.pos_label,
+                        data_source=self.data_source,
+                        ml_task=self.ml_task,
+                        report_type="estimator",
+                    )
+                    fold_display.ax_ = axi
+                    fold_display.figure_ = self.figure_
+                    _, fold_lines, _ = fold_display._plot_single_estimator(
+                        estimator_name=estimator_name,
+                        pr_curve_kwargs=[pr_curve_kwargs[idx]],
+                        ax=axi,
+                    )
+                    lines.extend(fold_lines)
+                    axi.set_title(f"Fold #{idx + 1}")
+                else:  # multiclass
+                    # Plot one class in this subplot
+                    class_label = list(self.precision.keys())[idx]
+                    class_precision = {class_label: self.precision[class_label]}
+                    class_recall = {class_label: self.recall[class_label]}
+                    class_avg_precision = {
+                        class_label: self.average_precision[class_label]
+                    }
+                    class_display = PrecisionRecallCurveDisplay(
+                        precision=class_precision,
+                        recall=class_recall,
+                        average_precision=class_avg_precision,
+                        estimator_names=[estimator_name],
+                        pos_label=class_label,
+                        data_source=self.data_source,
+                        ml_task="binary-classification",
+                        report_type="cross-validation",
+                    )
+                    class_display.ax_ = axi
+                    class_display.figure_ = self.figure_
+                    _, class_lines, _ = class_display._plot_cross_validated_estimator(
+                        estimator_name=estimator_name,
+                        pr_curve_kwargs=pr_curve_kwargs,
+                        ax=axi,
+                    )
+                    lines.extend(class_lines)
+                    axi.set_title(f"Class: {class_label}")
+
+                # Set axis labels and limits
+                xlabel = "Recall"
+                ylabel = "Precision"
+                if self.pos_label is not None:
+                    xlabel += f"\n(Positive label: {self.pos_label})"
+                    ylabel += f"\n(Positive label: {self.pos_label})"
+
+                axi.set(
+                    xlabel=xlabel,
+                    xlim=(-0.01, 1.01),
+                    ylabel=ylabel,
+                    ylim=(-0.01, 1.01),
+                    aspect="equal",
+                )
+
+                if self.data_source in ("train", "test"):
+                    title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
+                else:
+                    title = f"{estimator_name} on $\\bf{{external}}$ set"
+                axi.legend(bbox_to_anchor=(1.02, 1), title=title)
+
+            return self.ax_, lines, None
+
+        # Single plot case
+        plot_ax = ax if ax is not None else self.ax_
+        if plot_ax is None:
+            _, plot_ax = plt.subplots()
+
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
             for split_idx in range(len(self.precision[pos_label])):
@@ -278,7 +554,7 @@ class PrecisionRecallCurveDisplay(
                     f"(AP = {average_precision_split:0.2f})"
                 )
 
-                (line,) = self.ax_.plot(
+                (line,) = plot_ax.plot(
                     recall_split, precision_split, **line_kwargs_validated
                 )
                 lines.append(line)
@@ -287,7 +563,7 @@ class PrecisionRecallCurveDisplay(
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
             )
         else:  # multiclass-classification
-            info_pos_label = None  # irrelevant for multiclass
+            info_pos_label = None  # not relevant for multiclass
             class_colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"),
                 10 if len(self.precision) < 10 else len(self.precision),
@@ -319,7 +595,7 @@ class PrecisionRecallCurveDisplay(
                     else:
                         line_kwargs_validated["label"] = None
 
-                    (line,) = self.ax_.plot(
+                    (line,) = plot_ax.plot(
                         recall_split, precision_split, **line_kwargs_validated
                     )
                     lines.append(line)
@@ -328,15 +604,20 @@ class PrecisionRecallCurveDisplay(
             title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
         else:
             title = f"{estimator_name} on $\\bf{{external}}$ set"
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=title)
+        plot_ax.legend(bbox_to_anchor=(1.02, 1), title=title)
 
-        return self.ax_, lines, info_pos_label
+        return plot_ax, lines, info_pos_label
 
     def _plot_comparison_estimator(
         self,
         *,
         estimator_names: list[str],
         pr_curve_kwargs: list[dict[str, Any]],
+        ax: Optional[Axes] = None,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot precision-recall curve of several estimators.
 
@@ -349,6 +630,24 @@ class PrecisionRecallCurveDisplay(
             List of dictionaries containing keyword arguments to customize the
             precision-recall curves. The length of the list should match the number of
             curves to plot.
+
+        ax : matplotlib.axes.Axes, default=None
+            The axes to plot on. If None, self.ax_ is used.
+
+        subplots : bool, default=False
+            If True, plot each estimator on a separate subplot.
+
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
 
         Returns
         -------
@@ -365,6 +664,100 @@ class PrecisionRecallCurveDisplay(
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
+        if subplots:
+            num_plots = len(estimator_names)
+
+            # Calculate grid dimensions
+            if nrows is None and ncols is None:
+                if num_plots == 1:
+                    ncols = 1
+                    nrows = 1
+                else:
+                    ncols = min(2, num_plots)
+                    nrows = (num_plots + ncols - 1) // ncols
+            elif nrows is None:
+                nrows = (num_plots + (ncols or 1) - 1) // (ncols or 1)
+            elif ncols is None:
+                ncols = (num_plots + (nrows or 1) - 1) // (nrows or 1)
+
+            # Create figure and subplots
+            self.figure_ = plt.figure(figsize=figsize)
+            axes: list[Axes] = []
+            for i in range(num_plots):
+                if i == 0:
+                    ax = self.figure_.add_subplot(nrows, ncols, i + 1)
+                else:
+                    ax = self.figure_.add_subplot(
+                        nrows, ncols, i + 1, sharex=axes[0], sharey=axes[0]
+                    )
+                axes.append(ax)
+
+            # Set self.ax_ to the first axis for backwards compatibility
+            self.ax_ = axes[0] if axes else None
+
+            # Plot in each subplot
+            for idx, (est_name, axi) in enumerate(zip(estimator_names, axes)):
+                if self.ml_task == "binary-classification":
+                    pos_label = cast(PositiveLabel, self.pos_label)
+                    est_precision = {pos_label: [self.precision[pos_label][idx]]}
+                    est_recall = {pos_label: [self.recall[pos_label][idx]]}
+                    est_avg_precision = {
+                        pos_label: [self.average_precision[pos_label][idx]]
+                    }
+                else:  # multiclass
+                    # Extract data for this estimator across all classes
+                    est_precision = {}
+                    est_recall = {}
+                    est_avg_precision = {}
+                    for class_label in self.precision:
+                        est_precision[class_label] = [self.precision[class_label][idx]]
+                        est_recall[class_label] = [self.recall[class_label][idx]]
+                        est_avg_precision[class_label] = [
+                            self.average_precision[class_label][idx]
+                        ]
+
+                est_display = PrecisionRecallCurveDisplay(
+                    precision=est_precision,
+                    recall=est_recall,
+                    average_precision=est_avg_precision,
+                    estimator_names=[est_name],
+                    pos_label=self.pos_label,
+                    data_source=self.data_source,
+                    ml_task=self.ml_task,
+                    report_type="estimator",
+                )
+                est_display.ax_ = axi
+                est_display.figure_ = self.figure_
+                _, est_lines, _ = est_display._plot_single_estimator(
+                    estimator_name=est_name,
+                    pr_curve_kwargs=[pr_curve_kwargs[idx]],
+                    ax=axi,
+                )
+                lines.extend(est_lines)
+                axi.set_title(f"Model: {est_name}")
+
+                # Set axis labels and limits
+                xlabel = "Recall"
+                ylabel = "Precision"
+                if self.pos_label is not None:
+                    xlabel += f"\n(Positive label: {self.pos_label})"
+                    ylabel += f"\n(Positive label: {self.pos_label})"
+
+                axi.set(
+                    xlabel=xlabel,
+                    xlim=(-0.01, 1.01),
+                    ylabel=ylabel,
+                    ylim=(-0.01, 1.01),
+                    aspect="equal",
+                )
+
+            return self.ax_, lines, None
+
+        # Single plot case
+        plot_ax = ax if ax is not None else self.ax_
+        if plot_ax is None:
+            _, plot_ax = plt.subplots()
+
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
             for est_idx, est_name in enumerate(estimator_names):
@@ -378,7 +771,7 @@ class PrecisionRecallCurveDisplay(
                 line_kwargs_validated["label"] = (
                     f"{est_name} (AP = {average_precision_est:0.2f})"
                 )
-                (line,) = self.ax_.plot(
+                (line,) = plot_ax.plot(
                     recall_est, precision_est, **line_kwargs_validated
                 )
                 lines.append(line)
@@ -387,7 +780,7 @@ class PrecisionRecallCurveDisplay(
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
             )
         else:  # multiclass-classification
-            info_pos_label = None  # irrelevant for multiclass
+            info_pos_label = None  # not relevant for multiclass
             class_colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"),
                 10 if len(self.precision) < 10 else len(self.precision),
@@ -414,17 +807,17 @@ class PrecisionRecallCurveDisplay(
                         f"(AP = {average_precision_mean:0.2f})"
                     )
 
-                    (line,) = self.ax_.plot(
+                    (line,) = plot_ax.plot(
                         recall_est_class, precision_est_class, **line_kwargs_validated
                     )
                     lines.append(line)
 
-        self.ax_.legend(
+        plot_ax.legend(
             bbox_to_anchor=(1.02, 1),
             title=f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set",
         )
 
-        return self.ax_, lines, info_pos_label
+        return plot_ax, lines, info_pos_label
 
     @StyleDisplayMixin.style_plot
     def plot(
@@ -434,6 +827,10 @@ class PrecisionRecallCurveDisplay(
         estimator_name: Optional[str] = None,
         pr_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
         despine: bool = True,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
     ) -> None:
         """Plot visualization.
 
@@ -455,6 +852,21 @@ class PrecisionRecallCurveDisplay(
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
+
+        subplots : bool, default=False
+            If True, plot each estimator or fold on a separate subplot.
+
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
 
         Notes
         -----
@@ -479,8 +891,16 @@ class PrecisionRecallCurveDisplay(
         >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.precision_recall()
         >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
+
+        With subplots:
+
+        >>> display.plot(subplots=True)
         """
-        self.figure_, self.ax_ = (ax.figure, ax) if ax is not None else plt.subplots()
+        if ax is not None and subplots:
+            raise ValueError(
+                "Cannot specify both 'ax' and 'subplots=True'. "
+                "Either provide an axes object or use subplots, but not both."
+            )
 
         if pr_curve_kwargs is None:
             pr_curve_kwargs = self._default_pr_curve_kwargs
@@ -492,6 +912,12 @@ class PrecisionRecallCurveDisplay(
             report_type=self.report_type,
         )
 
+        # Initialize figure and axes for non-subplot case
+        if not subplots:
+            self.figure_, self.ax_ = (
+                (ax.figure, ax) if ax is not None else plt.subplots()
+            )
+
         if self.report_type == "estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_single_estimator(
                 estimator_name=(
@@ -500,6 +926,11 @@ class PrecisionRecallCurveDisplay(
                     else estimator_name
                 ),
                 pr_curve_kwargs=pr_curve_kwargs,
+                ax=ax,
+                subplots=subplots,
+                nrows=nrows,
+                ncols=ncols,
+                figsize=figsize,
             )
         elif self.report_type == "cross-validation":
             self.ax_, self.lines_, info_pos_label = (
@@ -510,12 +941,22 @@ class PrecisionRecallCurveDisplay(
                         else estimator_name
                     ),
                     pr_curve_kwargs=pr_curve_kwargs,
+                    ax=ax,
+                    subplots=subplots,
+                    nrows=nrows,
+                    ncols=ncols,
+                    figsize=figsize,
                 )
             )
         elif self.report_type == "comparison-estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_comparison_estimator(
                 estimator_names=self.estimator_names,
                 pr_curve_kwargs=pr_curve_kwargs,
+                ax=ax,
+                subplots=subplots,
+                nrows=nrows,
+                ncols=ncols,
+                figsize=figsize,
             )
         else:
             raise ValueError(
@@ -523,22 +964,25 @@ class PrecisionRecallCurveDisplay(
                 f"or 'comparison-estimator'. Got '{self.report_type}' instead."
             )
 
-        xlabel = "Recall"
-        ylabel = "Precision"
-        if info_pos_label:
-            xlabel += info_pos_label
-            ylabel += info_pos_label
+        if not subplots:
+            xlabel = "Recall"
+            ylabel = "Precision"
+            if info_pos_label:
+                xlabel += info_pos_label
+                ylabel += info_pos_label
 
-        self.ax_.set(
-            xlabel=xlabel,
-            xlim=(-0.01, 1.01),
-            ylabel=ylabel,
-            ylim=(-0.01, 1.01),
-            aspect="equal",
-        )
+            self.ax_.set(
+                xlabel=xlabel,
+                xlim=(-0.01, 1.01),
+                ylabel=ylabel,
+                ylim=(-0.01, 1.01),
+                aspect="equal",
+            )
 
-        if despine:
-            _despine_matplotlib_axis(self.ax_)
+            if despine:
+                _despine_matplotlib_axis(self.ax_)
+
+        return self.figure_
 
     @classmethod
     def _compute_data_for_display(

@@ -172,212 +172,6 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
         return data_points_kwargs
 
-    def _plot_single_estimator(
-        self,
-        *,
-        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
-        estimator_name: str,
-        samples_kwargs: list[dict[str, Any]],
-    ) -> list[Artist]:
-        """Plot the prediction error for a single estimator.
-
-        Parameters
-        ----------
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}
-            The type of plot to draw.
-
-        estimator_name : str
-            Name of the estimator.
-
-        samples_kwargs : list of dict
-            Keyword arguments for the scatter plot.
-
-        Returns
-        -------
-        scatter : list of matplotlib Artist
-            The scatter plot.
-        """
-        scatter = []
-        data_points_kwargs: dict[str, Any] = {
-            "color": "tab:blue",
-            "alpha": 0.3,
-            "s": 10,
-        }
-
-        data_points_kwargs_validated = _validate_style_kwargs(
-            data_points_kwargs, samples_kwargs[0]
-        )
-
-        y_true, y_pred, residuals = self.y_true[0], self.y_pred[0], self.residuals[0]
-        if self.data_source in ("train", "test"):
-            scatter_label = f"{self.data_source.title()} set"
-        else:  # data_source == "X_y"
-            scatter_label = "Data set"
-
-        if kind == "actual_vs_predicted":
-            scatter.append(
-                self.ax_.scatter(
-                    y_pred,
-                    y_true,
-                    label=scatter_label,
-                    **data_points_kwargs_validated,
-                )
-            )
-        else:  # kind == "residual_vs_predicted"
-            scatter.append(
-                self.ax_.scatter(
-                    y_pred,
-                    residuals,
-                    label=scatter_label,
-                    **data_points_kwargs_validated,
-                )
-            )
-
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
-
-        return scatter
-
-    def _plot_cross_validated_estimator(
-        self,
-        *,
-        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
-        estimator_name: str,
-        samples_kwargs: list[dict[str, Any]],
-    ) -> list[Artist]:
-        """Plot the prediction error for a cross-validated estimator.
-
-        Parameters
-        ----------
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}
-            The type of plot to draw.
-
-        estimator_name : str
-            Name of the estimator.
-
-        samples_kwargs : list of dict
-            Keyword arguments for the scatter plot.
-
-        Returns
-        -------
-        scatter : list of matplotlib Artist
-            The scatter plot.
-        """
-        scatter = []
-        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
-        colors_markers = sample_mpl_colormap(
-            colormaps.get_cmap("tab10"),
-            len(self.y_true) if len(self.y_true) > 10 else 10,
-        )
-
-        for split_idx in range(len(self.y_true)):
-            data_points_kwargs_fold = {
-                "color": colors_markers[split_idx],
-                **data_points_kwargs,
-            }
-
-            data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_fold, samples_kwargs[split_idx]
-            )
-
-            label = f"Estimator of fold #{split_idx + 1}"
-
-            if kind == "actual_vs_predicted":
-                scatter.append(
-                    self.ax_.scatter(
-                        self.y_pred[split_idx],
-                        self.y_true[split_idx],
-                        label=label,
-                        **data_points_kwargs_validated,
-                    )
-                )
-            else:  # kind == "residual_vs_predicted"
-                scatter.append(
-                    self.ax_.scatter(
-                        self.y_pred[split_idx],
-                        self.residuals[split_idx],
-                        label=label,
-                        **data_points_kwargs_validated,
-                    )
-                )
-
-        if self.data_source in ("train", "test"):
-            title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
-        else:
-            title = f"{estimator_name} on $\\bf{{external}}$ set"
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=title)
-
-        return scatter
-
-    def _plot_comparison_estimator(
-        self,
-        *,
-        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
-        estimator_names: list[str],
-        samples_kwargs: list[dict[str, Any]],
-    ) -> list[Artist]:
-        """Plot the prediction error of several estimators.
-
-        Parameters
-        ----------
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}
-            The type of plot to draw.
-
-        estimator_names : list of str
-            Name of the estimators.
-
-        samples_kwargs : list of dict
-            Keyword arguments for the scatter plot.
-
-        Returns
-        -------
-        scatter : list of matplotlib Artist
-            The scatter plot.
-        """
-        scatter = []
-        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
-        colors_markers = sample_mpl_colormap(
-            colormaps.get_cmap("tab10"),
-            len(self.y_true) if len(self.y_true) > 10 else 10,
-        )
-
-        for estimator_idx in range(len(self.y_true)):
-            data_points_kwargs_fold = {
-                "color": colors_markers[estimator_idx],
-                **data_points_kwargs,
-            }
-
-            data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_fold, samples_kwargs[estimator_idx]
-            )
-
-            label = f"{estimator_names[estimator_idx]}"
-
-            if kind == "actual_vs_predicted":
-                scatter.append(
-                    self.ax_.scatter(
-                        self.y_pred[estimator_idx],
-                        self.y_true[estimator_idx],
-                        label=label,
-                        **data_points_kwargs_validated,
-                    )
-                )
-            else:  # kind == "residual_vs_predicted"
-                scatter.append(
-                    self.ax_.scatter(
-                        self.y_pred[estimator_idx],
-                        self.residuals[estimator_idx],
-                        label=label,
-                        **data_points_kwargs_validated,
-                    )
-                )
-
-        self.ax_.legend(
-            bbox_to_anchor=(1.02, 1),
-            title=f"Prediction errors on $\\bf{{{self.data_source}}}$ set",
-        )
-
-        return scatter
-
     @StyleDisplayMixin.style_plot
     def plot(
         self,
@@ -392,6 +186,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         ] = None,
         perfect_model_kwargs: Optional[dict[str, Any]] = None,
         despine: bool = True,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
     ) -> None:
         """Plot visualization.
 
@@ -428,6 +226,21 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
+        subplots : bool, default=False
+            If True, plot each estimator or fold on a separate subplot.
+
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
+
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
@@ -440,6 +253,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
+
+        With subplots:
+
+        >>> display.plot(kind="actual_vs_predicted", subplots=True)
         """
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
@@ -447,12 +264,17 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 f"`kind` must be one of {', '.join(expected_kind)}. "
                 f"Got {kind!r} instead."
             )
+
+        if ax is not None and subplots:
+            raise ValueError(
+                "Cannot specify both 'ax' and 'subplots=True'. "
+                "Either provide an axes object or use subplots, but not both."
+            )
+
         if kind == "actual_vs_predicted":
             xlabel, ylabel = "Predicted values", "Actual values"
         else:  # kind == "residual_vs_predicted"
             xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
-
-        self.figure_, self.ax_ = (ax.figure, ax) if ax is not None else plt.subplots()
 
         perfect_model_kwargs_validated = _validate_style_kwargs(
             {
@@ -464,19 +286,194 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             perfect_model_kwargs or self._default_perfect_model_kwargs or {},
         )
 
+        if data_points_kwargs is None:
+            data_points_kwargs = self._default_data_points_kwargs
+        data_points_kwargs = self._validate_data_points_kwargs(
+            data_points_kwargs=data_points_kwargs
+        )
+
+        if not subplots:
+            self.figure_, self.ax_ = (
+                (ax.figure, ax) if ax is not None else plt.subplots()
+            )
+
+        if self.report_type == "estimator":
+            self.scatter_ = self._plot_single_estimator(
+                kind=kind,
+                estimator_name=(
+                    self.estimator_names[0]
+                    if estimator_name is None
+                    else estimator_name
+                ),
+                samples_kwargs=data_points_kwargs,
+                ax=ax if not subplots else None,
+                subplots=subplots,
+                nrows=nrows,
+                ncols=ncols,
+                figsize=figsize,
+                perfect_model_kwargs=perfect_model_kwargs_validated,
+                xlabel=xlabel,
+                ylabel=ylabel,
+                despine=despine,
+            )
+        elif self.report_type == "cross-validation":
+            self.scatter_ = self._plot_cross_validated_estimator(
+                kind=kind,
+                estimator_name=(
+                    self.estimator_names[0]
+                    if estimator_name is None
+                    else estimator_name
+                ),
+                samples_kwargs=data_points_kwargs,
+                ax=ax if not subplots else None,
+                subplots=subplots,
+                nrows=nrows,
+                ncols=ncols,
+                figsize=figsize,
+                perfect_model_kwargs=perfect_model_kwargs_validated,
+                xlabel=xlabel,
+                ylabel=ylabel,
+                despine=despine,
+            )
+        elif self.report_type == "comparison-estimator":
+            self.scatter_ = self._plot_comparison_estimator(
+                kind=kind,
+                estimator_names=self.estimator_names,
+                samples_kwargs=data_points_kwargs,
+                ax=ax if not subplots else None,
+                subplots=subplots,
+                nrows=nrows,
+                ncols=ncols,
+                figsize=figsize,
+                perfect_model_kwargs=perfect_model_kwargs_validated,
+                xlabel=xlabel,
+                ylabel=ylabel,
+                despine=despine,
+            )
+        else:
+            raise ValueError(
+                f"`report_type` should be one of 'estimator', 'cross-validation', "
+                f"or 'comparison-estimator'. Got '{self.report_type}' instead."
+            )
+
+        return self.figure_
+
+    def _plot_single_estimator(
+        self,
+        *,
+        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
+        estimator_name: str,
+        samples_kwargs: list[dict[str, Any]],
+        ax: Optional[Axes] = None,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
+        perfect_model_kwargs: dict[str, Any],
+        xlabel: str,
+        ylabel: str,
+        despine: bool = True,
+    ) -> list[Artist]:
+        """Plot the prediction error for a single estimator.
+
+        Parameters
+        ----------
+        kind : {"actual_vs_predicted", "residual_vs_predicted"}
+            The type of plot to draw.
+
+        estimator_name : str
+            Name of the estimator.
+
+        samples_kwargs : list of dict
+            Keyword arguments for the scatter plot.
+
+        ax : matplotlib Axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is
+            created.
+
+        subplots : bool, default=False
+            If True, plot each estimator or fold on a separate subplot.
+
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
+
+        perfect_model_kwargs : dict
+            Keyword arguments for the perfect model line.
+
+        xlabel : str
+            Label for the x-axis.
+
+        ylabel : str
+            Label for the y-axis.
+
+        despine : bool, default=True
+            Whether to remove the top and right spines from the plot.
+
+        Returns
+        -------
+        scatter : list of matplotlib Artist
+            The scatter plot.
+        """
+        scatter = []
+        data_points_kwargs: dict[str, Any] = {
+            "color": "tab:blue",
+            "alpha": 0.3,
+            "s": 10,
+        }
+
+        data_points_kwargs_validated = _validate_style_kwargs(
+            data_points_kwargs, samples_kwargs[0]
+        )
+
+        y_true, y_pred, residuals = self.y_true[0], self.y_pred[0], self.residuals[0]
+        if self.data_source in ("train", "test"):
+            scatter_label = f"{self.data_source.title()} set"
+        else:  # data_source == "X_y"
+            scatter_label = "Data set"
+
+        if subplots:
+            # Calculate grid dimensions
+            if nrows is None and ncols is None:
+                ncols = 1
+                nrows = 1
+            elif nrows is None:
+                nrows = 1
+            elif ncols is None:
+                ncols = 1
+
+            # Create figure and subplots
+            self.figure_ = plt.figure(figsize=figsize)
+            ax = self.figure_.add_subplot(nrows, ncols, 1)
+            self.ax_ = ax
+
+        # Use the provided axis or self.ax_ if available,
+        # otherwise create a new one
+        plot_ax = ax if ax is not None else self.ax_
+        if plot_ax is None:
+            _, plot_ax = plt.subplots()
+
         if kind == "actual_vs_predicted":
-            # For actual vs predicted, we want the same range for both axes
+            # For actual vs predicted, using range for both axes
             min_value = min(self.range_y_pred.min, self.range_y_true.min)
             max_value = max(self.range_y_pred.max, self.range_y_true.max)
             x_range_perfect_pred = [min_value, max_value]
             y_range_perfect_pred = [min_value, max_value]
 
-            self.line_ = self.ax_.plot(
+            self.line_ = plot_ax.plot(
                 x_range_perfect_pred,
                 y_range_perfect_pred,
-                **perfect_model_kwargs_validated,
+                **perfect_model_kwargs,
             )[0]
-            self.ax_.set(
+            plot_ax.set(
                 aspect="equal",
                 xlim=x_range_perfect_pred,
                 ylim=y_range_perfect_pred,
@@ -492,10 +489,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             x_range_perfect_pred = [self.range_y_pred.min, self.range_y_pred.max]
             y_range_perfect_pred = [self.range_residuals.min, self.range_residuals.max]
 
-            self.line_ = self.ax_.plot(
-                x_range_perfect_pred, [0, 0], **perfect_model_kwargs_validated
+            self.line_ = plot_ax.plot(
+                x_range_perfect_pred, [0, 0], **perfect_model_kwargs
             )[0]
-            self.ax_.set(
+            plot_ax.set(
                 xlim=x_range_perfect_pred,
                 ylim=y_range_perfect_pred,
                 xticks=np.linspace(
@@ -506,52 +503,606 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 ),
             )
 
-        self.ax_.set(xlabel=xlabel, ylabel=ylabel)
+        plot_ax.set(xlabel=xlabel, ylabel=ylabel)
 
-        # make the scatter plot afterwards since it should take into account the line
-        # for the perfect predictions
-        if data_points_kwargs is None:
-            data_points_kwargs = self._default_data_points_kwargs
-        data_points_kwargs = self._validate_data_points_kwargs(
-            data_points_kwargs=data_points_kwargs
-        )
+        if kind == "actual_vs_predicted":
+            scatter.append(
+                plot_ax.scatter(
+                    y_pred,
+                    y_true,
+                    label=scatter_label,
+                    **data_points_kwargs_validated,
+                )
+            )
+        else:  # kind == "residual_vs_predicted"
+            scatter.append(
+                plot_ax.scatter(
+                    y_pred,
+                    residuals,
+                    label=scatter_label,
+                    **data_points_kwargs_validated,
+                )
+            )
 
-        if self.report_type == "estimator":
-            self.scatter_ = self._plot_single_estimator(
-                kind=kind,
-                estimator_name=(
-                    self.estimator_names[0]
-                    if estimator_name is None
-                    else estimator_name
-                ),
-                samples_kwargs=data_points_kwargs,
-            )
-        elif self.report_type == "cross-validation":
-            self.scatter_ = self._plot_cross_validated_estimator(
-                kind=kind,
-                estimator_name=(
-                    self.estimator_names[0]
-                    if estimator_name is None
-                    else estimator_name
-                ),
-                samples_kwargs=data_points_kwargs,
-            )
-        elif self.report_type == "comparison-estimator":
-            self.scatter_ = self._plot_comparison_estimator(
-                kind=kind,
-                estimator_names=self.estimator_names,
-                samples_kwargs=data_points_kwargs,
-            )
-        else:
-            raise ValueError(
-                f"`report_type` should be one of 'estimator', 'cross-validation', "
-                f"or 'comparison-estimator'. Got '{self.report_type}' instead."
-            )
+        plot_ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+        plot_ax.set_title(f"Model: {estimator_name}")
 
         if despine:
-            x_range = self.ax_.get_xlim()
-            y_range = self.ax_.get_ylim()
-            _despine_matplotlib_axis(self.ax_, x_range=x_range, y_range=y_range)
+            x_range = plot_ax.get_xlim()
+            y_range = plot_ax.get_ylim()
+            _despine_matplotlib_axis(plot_ax, x_range=x_range, y_range=y_range)
+
+        return scatter
+
+    def _plot_cross_validated_estimator(
+        self,
+        *,
+        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
+        estimator_name: str,
+        samples_kwargs: list[dict[str, Any]],
+        ax: Optional[Axes] = None,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
+        perfect_model_kwargs: dict[str, Any],
+        xlabel: str,
+        ylabel: str,
+        despine: bool = True,
+    ) -> list[Artist]:
+        """Plot the prediction error for a cross-validated estimator.
+
+        Parameters
+        ----------
+        kind : {"actual_vs_predicted", "residual_vs_predicted"}
+            The type of plot to draw.
+
+        estimator_name : str
+            Name of the estimator.
+
+        samples_kwargs : list of dict
+            Keyword arguments for the scatter plot.
+
+        ax : matplotlib Axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is
+            created.
+
+        subplots : bool, default=False
+            If True, plot each estimator or fold on a separate subplot.
+
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
+
+        perfect_model_kwargs : dict
+            Keyword arguments for the perfect model line.
+
+        xlabel : str
+            Label for the x-axis.
+
+        ylabel : str
+            Label for the y-axis.
+
+        despine : bool, default=True
+            Whether to remove the top and right spines from the plot.
+
+        Returns
+        -------
+        scatter : list of matplotlib Artist
+            The scatter plot.
+        """
+        scatter = []
+        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
+        colors_markers = sample_mpl_colormap(
+            colormaps.get_cmap("tab10"),
+            len(self.y_true) if len(self.y_true) > 10 else 10,
+        )
+
+        if subplots:
+            num_plots = len(self.y_true)
+
+            # Calculate grid dimensions
+            if nrows is None and ncols is None:
+                if num_plots == 1:
+                    ncols = 1
+                    nrows = 1
+                else:
+                    ncols = min(2, num_plots)
+                    nrows = (num_plots + ncols - 1) // ncols
+            elif nrows is None:
+                nrows = (num_plots + (ncols or 1) - 1) // (ncols or 1)
+            elif ncols is None:
+                ncols = (num_plots + (nrows or 1) - 1) // (nrows or 1)
+
+            # Create figure and subplots
+            self.figure_ = plt.figure(figsize=figsize)
+            axes: list[Axes] = []
+            for i in range(num_plots):
+                if i == 0:
+                    ax = self.figure_.add_subplot(nrows, ncols, i + 1)
+                else:
+                    ax = self.figure_.add_subplot(
+                        nrows, ncols, i + 1, sharex=axes[0], sharey=axes[0]
+                    )
+                axes.append(ax)
+
+            # Plot each fold in its own subplot
+            for idx, axi in enumerate(axes):
+                if kind == "actual_vs_predicted":
+                    # For actual vs predicted, we want the same range for both axes
+                    min_value = min(self.range_y_pred.min, self.range_y_true.min)
+                    max_value = max(self.range_y_pred.max, self.range_y_true.max)
+                    x_range_perfect_pred = [min_value, max_value]
+                    y_range_perfect_pred = [min_value, max_value]
+
+                    _ = axi.plot(
+                        x_range_perfect_pred,
+                        y_range_perfect_pred,
+                        **perfect_model_kwargs,
+                    )[0]
+                    axi.set(
+                        aspect="equal",
+                        xlim=x_range_perfect_pred,
+                        ylim=y_range_perfect_pred,
+                        xticks=np.linspace(
+                            x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                        ),
+                        yticks=np.linspace(
+                            y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                        ),
+                    )
+
+                else:  # kind == "residual_vs_predicted"
+                    x_range_perfect_pred = [
+                        self.range_y_pred.min,
+                        self.range_y_pred.max,
+                    ]
+                    y_range_perfect_pred = [
+                        self.range_residuals.min,
+                        self.range_residuals.max,
+                    ]
+
+                    _ = axi.plot(x_range_perfect_pred, [0, 0], **perfect_model_kwargs)[
+                        0
+                    ]
+                    axi.set(
+                        xlim=x_range_perfect_pred,
+                        ylim=y_range_perfect_pred,
+                        xticks=np.linspace(
+                            x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                        ),
+                        yticks=np.linspace(
+                            y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                        ),
+                    )
+
+                axi.set(xlabel=xlabel, ylabel=ylabel)
+
+                data_points_kwargs_fold = {
+                    "color": colors_markers[idx],
+                    **data_points_kwargs,
+                }
+
+                data_points_kwargs_validated = _validate_style_kwargs(
+                    data_points_kwargs_fold, samples_kwargs[idx]
+                )
+
+                label = f"Estimator of fold #{idx + 1}"
+
+                if kind == "actual_vs_predicted":
+                    scatter.append(
+                        axi.scatter(
+                            self.y_pred[idx],
+                            self.y_true[idx],
+                            label=label,
+                            **data_points_kwargs_validated,
+                        )
+                    )
+                else:  # kind == "residual_vs_predicted"
+                    scatter.append(
+                        axi.scatter(
+                            self.y_pred[idx],
+                            self.residuals[idx],
+                            label=label,
+                            **data_points_kwargs_validated,
+                        )
+                    )
+
+                axi.set_title(f"Fold #{idx + 1}")
+
+                if despine:
+                    x_range = axi.get_xlim()
+                    y_range = axi.get_ylim()
+                    _despine_matplotlib_axis(axi, x_range=x_range, y_range=y_range)
+
+            # Set the first axis as the main axis for backward compatibility
+            self.ax_ = axes[0] if axes else None
+            return scatter
+
+        # Single plot case
+        plot_ax = ax if ax is not None else self.ax_
+        if plot_ax is None:
+            _, plot_ax = plt.subplots()
+
+        if kind == "actual_vs_predicted":
+            min_value = min(self.range_y_pred.min, self.range_y_true.min)
+            max_value = max(self.range_y_pred.max, self.range_y_true.max)
+            x_range_perfect_pred = [min_value, max_value]
+            y_range_perfect_pred = [min_value, max_value]
+
+            self.line_ = plot_ax.plot(
+                x_range_perfect_pred,
+                y_range_perfect_pred,
+                **perfect_model_kwargs,
+            )[0]
+            plot_ax.set(
+                aspect="equal",
+                xlim=x_range_perfect_pred,
+                ylim=y_range_perfect_pred,
+                xticks=np.linspace(
+                    x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                ),
+                yticks=np.linspace(
+                    y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                ),
+            )
+
+        else:  # kind == "residual_vs_predicted"
+            x_range_perfect_pred = [self.range_y_pred.min, self.range_y_pred.max]
+            y_range_perfect_pred = [self.range_residuals.min, self.range_residuals.max]
+
+            self.line_ = plot_ax.plot(
+                x_range_perfect_pred, [0, 0], **perfect_model_kwargs
+            )[0]
+            plot_ax.set(
+                xlim=x_range_perfect_pred,
+                ylim=y_range_perfect_pred,
+                xticks=np.linspace(
+                    x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                ),
+                yticks=np.linspace(
+                    y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                ),
+            )
+
+        plot_ax.set(xlabel=xlabel, ylabel=ylabel)
+
+        for split_idx in range(len(self.y_true)):
+            data_points_kwargs_fold = {
+                "color": colors_markers[split_idx],
+                **data_points_kwargs,
+            }
+
+            data_points_kwargs_validated = _validate_style_kwargs(
+                data_points_kwargs_fold, samples_kwargs[split_idx]
+            )
+
+            label = f"Estimator of fold #{split_idx + 1}"
+
+            if kind == "actual_vs_predicted":
+                scatter.append(
+                    plot_ax.scatter(
+                        self.y_pred[split_idx],
+                        self.y_true[split_idx],
+                        label=label,
+                        **data_points_kwargs_validated,
+                    )
+                )
+            else:  # kind == "residual_vs_predicted"
+                scatter.append(
+                    plot_ax.scatter(
+                        self.y_pred[split_idx],
+                        self.residuals[split_idx],
+                        label=label,
+                        **data_points_kwargs_validated,
+                    )
+                )
+
+        if self.data_source in ("train", "test"):
+            title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
+        else:
+            title = f"{estimator_name} on $\\bf{{external}}$ set"
+        plot_ax.legend(bbox_to_anchor=(1.02, 1), title=title)
+
+        if despine:
+            x_range = plot_ax.get_xlim()
+            y_range = plot_ax.get_ylim()
+            _despine_matplotlib_axis(plot_ax, x_range=x_range, y_range=y_range)
+
+        return scatter
+
+    def _plot_comparison_estimator(
+        self,
+        *,
+        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
+        estimator_names: list[str],
+        samples_kwargs: list[dict[str, Any]],
+        ax: Optional[Axes] = None,
+        subplots: bool = False,
+        nrows: Optional[int] = None,
+        ncols: Optional[int] = None,
+        figsize: Optional[tuple[float, float]] = None,
+        perfect_model_kwargs: dict[str, Any],
+        xlabel: str,
+        ylabel: str,
+        despine: bool = True,
+    ) -> list[Artist]:
+        """Plot the prediction error of several estimators.
+
+        Parameters
+        ----------
+        kind : {"actual_vs_predicted", "residual_vs_predicted"}
+            The type of plot to draw.
+
+        estimator_names : list of str
+            Name of the estimators.
+
+        samples_kwargs : list of dict
+            Keyword arguments for the scatter plot.
+
+        ax : matplotlib Axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is
+            created.
+
+        subplots : bool, default=False
+            If True, plot each estimator or fold on a separate subplot.
+
+        nrows : int, default=None
+            Number of rows in the subplot grid. Only used when subplots=True.
+            If None, it will be computed based on ncols.
+
+        ncols : int, default=None
+            Number of columns in the subplot grid. Only used when subplots=True.
+            If None, defaults to 2 for multiple plots, 1 for a single plot.
+
+        figsize : tuple of float, default=None
+            Figure size (width, height) in inches. Only used when subplots=True.
+            If None, a default size will be determined based on the number of subplots.
+
+        perfect_model_kwargs : dict
+            Keyword arguments for the perfect model line.
+
+        xlabel : str
+            Label for the x-axis.
+
+        ylabel : str
+            Label for the y-axis.
+
+        despine : bool, default=True
+            Whether to remove the top and right spines from the plot.
+
+        Returns
+        -------
+        scatter : list of matplotlib Artist
+            The scatter plot.
+        """
+        scatter = []
+        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
+        colors_markers = sample_mpl_colormap(
+            colormaps.get_cmap("tab10"),
+            len(self.y_true) if len(self.y_true) > 10 else 10,
+        )
+
+        if subplots:
+            num_plots = len(estimator_names)
+
+            # Calculate grid dimensions
+            if nrows is None and ncols is None:
+                if num_plots == 1:
+                    ncols = 1
+                    nrows = 1
+                else:
+                    ncols = min(2, num_plots)
+                    nrows = (num_plots + ncols - 1) // ncols
+            elif nrows is None:
+                nrows = (num_plots + (ncols or 1) - 1) // (ncols or 1)
+            elif ncols is None:
+                ncols = (num_plots + (nrows or 1) - 1) // (nrows or 1)
+
+            # Create figure and subplots
+            self.figure_ = plt.figure(figsize=figsize)
+            axes: list[Axes] = []
+            for i in range(num_plots):
+                if i == 0:
+                    ax = self.figure_.add_subplot(nrows, ncols, i + 1)
+                else:
+                    ax = self.figure_.add_subplot(
+                        nrows, ncols, i + 1, sharex=axes[0], sharey=axes[0]
+                    )
+                axes.append(ax)
+
+            # Plot each estimator in its own subplot
+            for idx, (est_name, axi) in enumerate(zip(estimator_names, axes)):
+                if kind == "actual_vs_predicted":
+                    # For actual vs predicted, we want the same range for both axes
+                    min_value = min(self.range_y_pred.min, self.range_y_true.min)
+                    max_value = max(self.range_y_pred.max, self.range_y_true.max)
+                    x_range_perfect_pred = [min_value, max_value]
+                    y_range_perfect_pred = [min_value, max_value]
+
+                    _ = axi.plot(
+                        x_range_perfect_pred,
+                        y_range_perfect_pred,
+                        **perfect_model_kwargs,
+                    )[0]
+                    axi.set(
+                        aspect="equal",
+                        xlim=x_range_perfect_pred,
+                        ylim=y_range_perfect_pred,
+                        xticks=np.linspace(
+                            x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                        ),
+                        yticks=np.linspace(
+                            y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                        ),
+                    )
+
+                else:  # kind == "residual_vs_predicted"
+                    x_range_perfect_pred = [
+                        self.range_y_pred.min,
+                        self.range_y_pred.max,
+                    ]
+                    y_range_perfect_pred = [
+                        self.range_residuals.min,
+                        self.range_residuals.max,
+                    ]
+
+                    _ = axi.plot(x_range_perfect_pred, [0, 0], **perfect_model_kwargs)[
+                        0
+                    ]
+                    axi.set(
+                        xlim=x_range_perfect_pred,
+                        ylim=y_range_perfect_pred,
+                        xticks=np.linspace(
+                            x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                        ),
+                        yticks=np.linspace(
+                            y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                        ),
+                    )
+
+                axi.set(xlabel=xlabel, ylabel=ylabel)
+
+                data_points_kwargs_fold = {
+                    "color": colors_markers[idx],
+                    **data_points_kwargs,
+                }
+
+                data_points_kwargs_validated = _validate_style_kwargs(
+                    data_points_kwargs_fold, samples_kwargs[idx]
+                )
+
+                label = f"{est_name}"
+
+                if kind == "actual_vs_predicted":
+                    scatter.append(
+                        axi.scatter(
+                            self.y_pred[idx],
+                            self.y_true[idx],
+                            label=label,
+                            **data_points_kwargs_validated,
+                        )
+                    )
+                else:  # kind == "residual_vs_predicted"
+                    scatter.append(
+                        axi.scatter(
+                            self.y_pred[idx],
+                            self.residuals[idx],
+                            label=label,
+                            **data_points_kwargs_validated,
+                        )
+                    )
+
+                axi.set_title(f"Model: {est_name}")
+
+                if despine:
+                    x_range = axi.get_xlim()
+                    y_range = axi.get_ylim()
+                    _despine_matplotlib_axis(axi, x_range=x_range, y_range=y_range)
+
+            # Set the first axis as the main axis for backward compatibility
+            self.ax_ = axes[0] if axes else None
+            return scatter
+
+        # Single plot case
+        plot_ax = ax if ax is not None else self.ax_
+        if plot_ax is None:
+            _, plot_ax = plt.subplots()
+
+        if kind == "actual_vs_predicted":
+            # For actual vs predicted, we want the same range for both axes
+            min_value = min(self.range_y_pred.min, self.range_y_true.min)
+            max_value = max(self.range_y_pred.max, self.range_y_true.max)
+            x_range_perfect_pred = [min_value, max_value]
+            y_range_perfect_pred = [min_value, max_value]
+
+            self.line_ = plot_ax.plot(
+                x_range_perfect_pred,
+                y_range_perfect_pred,
+                **perfect_model_kwargs,
+            )[0]
+            plot_ax.set(
+                aspect="equal",
+                xlim=x_range_perfect_pred,
+                ylim=y_range_perfect_pred,
+                xticks=np.linspace(
+                    x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                ),
+                yticks=np.linspace(
+                    y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                ),
+            )
+
+        else:  # kind == "residual_vs_predicted"
+            x_range_perfect_pred = [self.range_y_pred.min, self.range_y_pred.max]
+            y_range_perfect_pred = [self.range_residuals.min, self.range_residuals.max]
+
+            self.line_ = plot_ax.plot(
+                x_range_perfect_pred, [0, 0], **perfect_model_kwargs
+            )[0]
+            plot_ax.set(
+                xlim=x_range_perfect_pred,
+                ylim=y_range_perfect_pred,
+                xticks=np.linspace(
+                    x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                ),
+                yticks=np.linspace(
+                    y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                ),
+            )
+
+        plot_ax.set(xlabel=xlabel, ylabel=ylabel)
+
+        for estimator_idx in range(len(self.y_true)):
+            data_points_kwargs_fold = {
+                "color": colors_markers[estimator_idx],
+                **data_points_kwargs,
+            }
+
+            data_points_kwargs_validated = _validate_style_kwargs(
+                data_points_kwargs_fold, samples_kwargs[estimator_idx]
+            )
+
+            label = f"{estimator_names[estimator_idx]}"
+
+            if kind == "actual_vs_predicted":
+                scatter.append(
+                    plot_ax.scatter(
+                        self.y_pred[estimator_idx],
+                        self.y_true[estimator_idx],
+                        label=label,
+                        **data_points_kwargs_validated,
+                    )
+                )
+            else:  # kind == "residual_vs_predicted"
+                scatter.append(
+                    plot_ax.scatter(
+                        self.y_pred[estimator_idx],
+                        self.residuals[estimator_idx],
+                        label=label,
+                        **data_points_kwargs_validated,
+                    )
+                )
+
+        plot_ax.legend(
+            bbox_to_anchor=(1.02, 1),
+            title=f"Prediction errors on $\\bf{{{self.data_source}}}$ set",
+        )
+
+        if despine:
+            x_range = plot_ax.get_xlim()
+            y_range = plot_ax.get_ylim()
+            _despine_matplotlib_axis(plot_ax, x_range=x_range, y_range=y_range)
+
+        return scatter
 
     @classmethod
     def _compute_data_for_display(

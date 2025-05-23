@@ -671,3 +671,190 @@ def test_roc_curve_display_wrong_report_type(pyplot, binary_classification_data)
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot()
+
+
+def test_roc_curve_display_subplots_basic_binary(pyplot, binary_classification_data):
+    """Test that subplots=True creates multiple subplots with default parameters
+    for binary classification."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+
+    # Create a comparison report with multiple estimators
+    est1 = clone(estimator)
+    est2 = clone(estimator)
+    est1.fit(X_train, y_train)
+    est2.fit(X_train, y_train)
+
+    report = ComparisonReport(
+        reports={
+            "estimator 1": EstimatorReport(
+                est1,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator 2": EstimatorReport(
+                est2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        },
+    )
+    display = report.metrics.roc()
+    display.plot(subplots=True)
+
+    assert hasattr(display, "figure_")
+
+    axes = display.figure_.get_axes()
+    assert len(axes) == 2
+
+    assert "Model: estimator 1" in axes[0].get_title()
+    assert "Model: estimator 2" in axes[1].get_title()
+
+    # Each subplot should have correct labels
+    for ax in axes:
+        assert "False Positive Rate" in ax.get_xlabel()
+        assert "True Positive Rate" in ax.get_ylabel()
+        assert ax.get_aspect() in ("equal", 1.0)
+
+
+def test_roc_curve_display_subplots_basic_multiclass(
+    pyplot, multiclass_classification_data
+):
+    """Test that subplots=True creates multiple subplots with default parameters
+    for multiclass classification."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    # In multiclass case, we should get one subplot per class
+    display = report.metrics.roc()
+    display.plot(subplots=True)
+
+    assert hasattr(display, "figure_")
+
+    # Check correct number of subplots (one per class)
+    axes = display.figure_.get_axes()
+    assert len(axes) == len(estimator.classes_)
+
+    for i, class_label in enumerate(estimator.classes_):
+        assert f"Class: {class_label}" in axes[i].get_title()
+
+    # Each subplot should have correct labels
+    for ax in axes:
+        assert "False Positive Rate" in ax.get_xlabel()
+        assert "True Positive Rate" in ax.get_ylabel()
+        assert ax.get_aspect() in ("equal", 1.0)
+
+
+def test_roc_curve_display_subplots_cv_binary(
+    pyplot, binary_classification_data_no_split
+):
+    """Test subplots with cross-validation for binary classification."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.roc()
+    display.plot(subplots=True)
+
+    assert hasattr(display, "figure_")
+
+    # Check number of subplots matches number of CV folds
+    axes = display.figure_.get_axes()
+    assert len(axes) == cv
+
+    # Check titles for each fold
+    for i, ax in enumerate(axes):
+        assert f"Fold #{i + 1}" in ax.get_title()
+
+    # Each subplot should have correct labels
+    for ax in axes:
+        assert "False Positive Rate" in ax.get_xlabel()
+        assert "True Positive Rate" in ax.get_ylabel()
+        assert ax.get_aspect() in ("equal", 1.0)
+
+
+def test_roc_curve_display_subplots_custom_layout(pyplot, binary_classification_data):
+    """Test subplots with custom layout parameters."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+
+    # Create a comparison report with multiple estimators
+    est1 = clone(estimator)
+    est2 = clone(estimator)
+    est3 = clone(estimator)
+    est1.fit(X_train, y_train)
+    est2.fit(X_train, y_train)
+    est3.fit(X_train, y_train)
+
+    report = ComparisonReport(
+        reports={
+            "estimator 1": EstimatorReport(
+                est1,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator 2": EstimatorReport(
+                est2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator 3": EstimatorReport(
+                est3,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        },
+    )
+    display = report.metrics.roc()
+
+    # Test with custom nrows and ncols
+    figsize = (10, 8)
+    display.plot(subplots=True, nrows=1, ncols=3, figsize=figsize)
+
+    # Check figure was created with correct size
+    assert hasattr(display, "figure_")
+    assert display.figure_.get_size_inches()[0] == figsize[0]
+    assert display.figure_.get_size_inches()[1] == figsize[1]
+
+    # Check layout is correct
+    axes = display.figure_.get_axes()
+    assert len(axes) == 3
+
+    # Check subplot arrangement (1 row, 3 columns)
+    pos1 = axes[0].get_position()
+    pos2 = axes[1].get_position()
+    pos3 = axes[2].get_position()
+
+    # Same row (similar y positions)
+    assert abs(pos1.y0 - pos2.y0) < 0.1
+    assert abs(pos2.y0 - pos3.y0) < 0.1
+
+    # Different columns (increasing x positions)
+    assert pos1.x0 < pos2.x0
+    assert pos2.x0 < pos3.x0
+
+
+def test_roc_curve_display_ax_and_subplots_error(pyplot, binary_classification_data):
+    """Test that an error is raised when both ax and subplots=True are specified."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+
+    # Create a figure and axis to pass
+    fig, ax = pyplot.subplots()
+
+    # Test that error is raised when both ax and subplots=True are specified
+    with pytest.raises(
+        ValueError, match="Cannot specify both 'ax' and 'subplots=True'"
+    ):
+        display.plot(ax=ax, subplots=True)
