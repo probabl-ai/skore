@@ -1,392 +1,220 @@
-"""Define a Project."""
+"""Class definition of the ``skore`` project."""
 
 from __future__ import annotations
 
-import functools
-import shutil
-from collections.abc import Iterator
-from logging import INFO, NullHandler, getLogger
-from os import PathLike
-from pathlib import Path
-from typing import Any, Callable, Literal, Optional, Union
+import re
+import sys
+from typing import Any
 
-from skore.persistence.item import item_to_object, object_to_item
-from skore.persistence.repository import ItemRepository
-from skore.persistence.storage import DiskCacheStorage
+if sys.version_info < (3, 10):  # pragma: no cover
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 
-logger = getLogger(__name__)
-logger.addHandler(NullHandler())  # Default to no output
-logger.setLevel(INFO)
+from skore.externals._pandas_accessors import DirNamesMixin, _register_accessor
+from skore.project.reports import _ReportsAccessor
+from skore.sklearn._estimator.report import EstimatorReport
 
 
-class ProjectDeletedError(Exception):
-    """A method of a Project was called but the Project is marked as deleted."""
+class Project(DirNamesMixin):
+    r"""
+    API to manage a collection of key-report pairs.
 
-
-def _raise_if_deleted(method: Callable[..., Any]) -> Callable[..., Any]:
-    """Raise if the underlying Project has been deleted, otherwise execute `method`.
-
-    This wrapper makes it safe to "delete" a Project, even if the Project instance
-    still exists.
-    """
-
-    @functools.wraps(method)
-    def wrapper(self, *args, **kwargs):
-        if self._storage_initialized is not True:
-            raise ProjectDeletedError(
-                "This Project instance is marked as deleted. "
-                "Please re-create a Project and discard the current one."
-            )
-
-        return method(self, *args, **kwargs)
-
-    return wrapper
-
-
-class Project:
-    """
-    A collection of items persisted in a storage.
-
-    This constructor initializes a project, by creating a new project or by loading an
+    Its constructor initializes a project by creating a new project or by loading an
     existing one.
 
-    The class main methods are :func:`~skore.Project.put` and
-    :func:`~skore.Project.get`, respectively to insert a key-value pair into the Project
-    and to recover the value associated with a key.
+    The class main methods are :func:`~skore.Project.put`,
+    :func:`~skore.Project.reports.metadata` and :func:`~skore.Project.reports.get`,
+    respectively to insert a key-report pair into the project, to obtain the metadata of
+    the inserted reports and to get a specific report by its id.
 
-    You can add any type of objects. In some cases, especially on classes you defined,
-    the persistency is based on the pickle representation. You must therefore ensure
-    that the call to :func:`~skore.Project.get` is made in the same environment as
-    :func:`~skore.Project.put`.
+    Two mutually exclusive modes are available and can be configured using the ``name``
+    parameter of the constructor:
+
+    .. rubric:: Hub mode
+
+    If the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the project
+    is configured to the ``hub`` mode to communicate with the ``skore hub``.
+
+    A tenant is a ``skore hub`` concept that must be configured on the ``skore hub``
+    interface. It represents an isolated entity managing users, projects, and
+    resources. It can be a company, organization, or team that operates
+    independently within the system.
+
+    In this mode, you must have an account to the ``skore hub`` and must be
+    authorized to the specified tenant. You must also be authenticated beforehand,
+    using the ``skore-hub-login`` CLI.
+
+    .. rubric:: Local mode
+
+    Otherwise, the project is configured to the ``local`` mode to be persisted on
+    the user machine in a directory called ``workspace``.
+
+    The workspace can be shared between all the projects.
+    The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+    If not, it will be by default set to a ``skore/`` directory in the USER
+    cache directory:
+
+    - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+    - in Linux, usually ``${HOME}/.cache/skore``,
+    - in macOS, usually ``${HOME}/Library/Caches/skore``.
 
     Parameters
     ----------
-    path : str or Path, default="./project.skore"
-        The path of the project to initialize.
-    if_exists: Literal["raise", "load"], default="raise"
-        What to do if the project already exists.
+    name : str
+        The name of the project:
+
+        - if the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the
+          project is configured to communicate with the ``skore hub``,
+        - otherwise, the project is configured to communicate with a local storage, on
+          the user machine.
+    **kwargs : dict
+        Extra keyword arguments passed to the project, depending on its mode.
+
+        workspace : Path, mode:local only.
+            The directory where the local project is persisted.
+
+            The workspace can be shared between all the projects.
+            The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+            If not, it will be by default set to a ``skore/`` directory in the USER
+            cache directory:
+
+            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - in Linux, usually ``${HOME}/.cache/skore``,
+            - in macOS, usually ``${HOME}/Library/Caches/skore``.
 
     Attributes
     ----------
-    path : Path
-        The unified path of the project.
     name : str
-        The name of the project. Corresponds to `path.name`.
+        The name of the project, extrapolated from the ``name`` parameter.
+    mode : str
+        The mode of the project, extrapolated from the ``name`` parameter.
 
     Examples
     --------
-    >>> # xdoctest: +SKIP
-    >>> import skore
-    >>> project = skore.Project("my-xp")
-    >>> project.put("score", 1.0)
-    >>> project.get("score")
-    1.0
+    Construct reports.
+
+    >>> from sklearn.datasets import make_classification, make_regression
+    >>> from sklearn.linear_model import LinearRegression, LogisticRegression
+    >>> from sklearn.model_selection import train_test_split
+    >>> from skore.sklearn import EstimatorReport
+    >>>
+    >>> X, y = make_classification(random_state=42)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    >>> classifier = LogisticRegression(max_iter=10)
+    >>> classifier_report = EstimatorReport(
+    >>>     classifier,
+    >>>     X_train=X_train,
+    >>>     y_train=y_train,
+    >>>     X_test=X_test,
+    >>>     y_test=y_test,
+    >>> )
+    >>>
+    >>> X, y = make_regression(random_state=42)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    >>> regressor = LinearRegression()
+    >>> regressor_report = EstimatorReport(
+    >>>     regressor,
+    >>>     X_train=X_train,
+    >>>     y_train=y_train,
+    >>>     X_test=X_test,
+    >>>     y_test=y_test,
+    >>> )
+
+    Construct the project in local mode, persisted in a temporary directory.
+
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>> from skore import Project
+    >>>
+    >>> tmpdir = TemporaryDirectory().name
+    >>> local_project = Project("my-xp", workspace=Path(tmpdir))
+
+    Put reports in the project.
+
+    >>> local_project.put("my-simple-classification", classifier_report)
+    >>> local_project.put("my-simple-regression", regressor_report)
+
+    Investigate metadata/metrics to filter the best reports.
+
+    >>> metadata = local_project.reports.metadata()
+    >>> metadata = metadata.query("ml_task.str.contains('regression') and (rmse < 67)")
+    >>> reports = metadata.reports()
+
+    See Also
+    --------
+    Metadata : DataFrame designed to investigate persisted reports' metadata/metrics.
     """
 
-    def __init__(
-        self,
-        path: Union[str, PathLike[str]] = "project.skore",
-        *,
-        if_exists: Optional[Literal["raise", "load"]] = "raise",
-    ):
-        """
-        Initialize a project, by creating a new project or by loading an existing one.
+    __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
+    reports: _ReportsAccessor
+    _Project__project: Any
+    _Project__mode: str
+    _Project__name: str
 
-        Parameters
-        ----------
-        path : str or Path, default="./project.skore"
-            The path of the project to initialize.
-        if_exists: Literal["raise", "load"], default="raise"
-            What to do if the project already exists.
+    def __init__(self, name: str, **kwargs):
+        if not (PLUGINS := entry_points(group="skore.plugins.project")):
+            raise SystemError("No project plugin found, please install at least one.")
 
-        Raises
-        ------
-        FileExistsError
-        """
-        self.path = Path(path)
-        self.path = self.path.with_suffix(".skore")
-        self.path = self.path.resolve()
-        self.name = self.path.name
+        if match := re.match(self.__HUB_NAME_PATTERN, name):
+            mode = "hub"
+            name = match["name"]
+            kwargs |= {"tenant": match["tenant"], "name": name}
+        else:
+            mode = "local"
+            kwargs |= {"name": name}
 
-        if if_exists == "raise" and self.path.exists():
-            raise FileExistsError(
-                f"Project '{path}' already exists. "
-                "Set `if_exists='load'` to load the project."
+        if mode not in PLUGINS.names:
+            raise ValueError(
+                f"Unknown mode `{mode}`. "
+                f"Please install the `skore-{mode}-project` python package."
             )
 
-        item_storage_dirpath = self.path / "items"
+        self.__mode = mode
+        self.__name = name
+        self.__project = PLUGINS[mode].load()(**kwargs)
 
-        # Create diskcache directories
-        item_storage_dirpath.mkdir(parents=True, exist_ok=True)
+    @property
+    def mode(self):
+        """The mode of the project."""
+        return self.__mode
 
-        # Initialize repositories with dedicated storages
-        self._item_repository = ItemRepository(DiskCacheStorage(item_storage_dirpath))
+    @property
+    def name(self):
+        """The name of the project."""
+        return self.__name
 
-        self._storage_initialized = True
-
-    @_raise_if_deleted
-    def clear(self, delete_project: bool = False) -> None:
-        """Remove all items from the project.
-
-        .. warning::
-           Clearing the project with `delete_project=True` will invalidate the whole
-           `Project` instance, making it unusable. A new Project instance can be created
-           using the :class:`skore.Project` constructor.
-
-        Parameters
-        ----------
-        delete_project : bool, default=False
-            If set, the project will be deleted entirely.
+    def put(self, key: str, report: EstimatorReport):
         """
-        if delete_project:
-            self._storage_initialized = False
-            del self._item_repository
-            shutil.rmtree(self.path)
-            return
+        Put a key-report pair to the project.
 
-        for item_key in self._item_repository:
-            self._item_repository.delete_item(item_key)
-
-    @_raise_if_deleted
-    def put(
-        self,
-        key: str,
-        value: Any,
-        *,
-        note: Optional[str] = None,
-        display_as: Optional[Literal["HTML", "MARKDOWN", "SVG"]] = None,
-    ) -> None:
-        """Add a key-value pair to the Project.
-
-        If an item with the same key already exists, its value is replaced by the new
-        one.
+        If the key already exists, its last report is modified to point to this new
+        report, while keeping track of the report history.
 
         Parameters
         ----------
         key : str
-            The key to associate with ``value`` in the Project.
-        value : Any
-            The value to associate with ``key`` in the Project.
-        note : str, optional
-            A note to attach with the item.
-        display_as : {"HTML", "MARKDOWN", "SVG"}, optional
-            Used in combination with a string value, it customizes the way the value is
-            displayed in the interface.
+            The key to associate with ``report`` in the project.
+        report : skore.EstimatorReport
+            The report to associate with ``key`` in the project.
 
         Raises
         ------
         TypeError
             If the combination of parameters are not valid.
-
-        NotImplementedError
-            If the value type is not supported.
         """
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        self._item_repository.put_item(
-            key,
-            object_to_item(
-                value,
-                note=note,
-                display_as=display_as,
-            ),
-        )
+        if not isinstance(report, EstimatorReport):
+            raise TypeError(
+                f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
+            )
 
-    @_raise_if_deleted
-    def get(
-        self,
-        key: str,
-        *,
-        version: Optional[Union[Literal[-1, "all"], int]] = -1,
-        metadata: bool = False,
-    ) -> Any:
-        """Get the value associated to ``key`` from the Project.
+        return self.__project.put(key=key, report=report)
 
-        Parameters
-        ----------
-        key : str
-            The key corresponding to the item to get.
-        version : Union[Literal[-1, "all"], int], default=-1
-            If -1, get the latest value associated to ``key``.
-            If "all", get all the values associated to ``key``.
-            If instance of int, get the nth value associated to ``key``.
-        metadata : bool, default=False
-            If True, get the metadata in addition to the value.
+    def __repr__(self) -> str:  # noqa: D105
+        return self.__project.__repr__()
 
-        Returns
-        -------
-        value : any
-            Value associated to ``key``, when latest=True and metadata=False.
-        value_and_metadata : dict
-            Value associated to ``key`` with its metadata, when latest=True and
-            metadata=True.
-        list_of_values : list[any]
-            Values associated to ``key``, ordered by date, when latest=False.
-        list_of_values_and_metadata : list[dict]
-            Values associated to ``key`` with their metadata, ordered by date, when
-            latest=False and metadata=False.
 
-        Raises
-        ------
-        KeyError
-            If the key is not in the project.
-        """
-        if not metadata:
-
-            def dto(item):
-                return item_to_object(item)
-
-        else:
-
-            def dto(item):
-                return {
-                    "value": item_to_object(item),
-                    "date": item.updated_at,
-                    "note": item.note,
-                }
-
-        if version == -1:
-            return dto(self._item_repository.get_item(key))
-        if version == "all":
-            return list(map(dto, self._item_repository.get_item_versions(key)))
-        if isinstance(version, int):
-            return dto(self._item_repository.get_item_versions(key)[version])
-
-        raise ValueError('`version` should be -1, "all", or an integer')
-
-    @_raise_if_deleted
-    def keys(self) -> list[str]:
-        """
-        Get all keys of items stored in the project.
-
-        Returns
-        -------
-        list[str]
-            A list of all keys.
-        """
-        return self._item_repository.keys()
-
-    @_raise_if_deleted
-    def __iter__(self) -> Iterator[str]:
-        """
-        Yield the keys of items stored in the project.
-
-        Returns
-        -------
-        Iterator[str]
-            An iterator yielding all keys.
-        """
-        yield from self._item_repository
-
-    @_raise_if_deleted
-    def delete(self, key: str) -> None:
-        """Delete the item corresponding to ``key`` from the Project.
-
-        Parameters
-        ----------
-        key : str
-            The key corresponding to the item to delete.
-
-        Raises
-        ------
-        KeyError
-            If the key does not correspond to any item.
-        """
-        self._item_repository.delete_item(key)
-
-    @_raise_if_deleted
-    def set_note(self, key: str, note: str, *, version: int = -1) -> None:
-        """Attach a note to key ``key``.
-
-        Parameters
-        ----------
-        key : str
-            The key of the item to annotate.
-            May be qualified with a version number through the ``version`` argument.
-        note : str
-            The note to be attached.
-        version : int, default=-1
-            The version of the key to annotate. Default is the latest version.
-
-        Raises
-        ------
-        KeyError
-            If the ``(key, version)`` couple does not exist.
-        TypeError
-            If ``key`` or ``note`` is not a string.
-
-        Examples
-        --------
-        >>> # xdoctest: +SKIP
-        >>> # Annotate latest version of key "key"
-        >>> project.set_note("key", "note")
-        >>> # Annotate first version of key "key"
-        >>> project.set_note("key", "note", version=0)
-        """
-        return self._item_repository.set_item_note(key=key, note=note, version=version)
-
-    @_raise_if_deleted
-    def get_note(self, key: str, *, version: int = -1) -> Union[str, None]:
-        """Retrieve a note previously attached to key ``key``.
-
-        Parameters
-        ----------
-        key : str
-            The key of the annotated item.
-            May be qualified with a version number through the ``version`` argument.
-        version : int, default=-1
-            The version of the annotated key. Default is the latest version.
-
-        Returns
-        -------
-        The attached note, or None if no note is attached.
-
-        Raises
-        ------
-        KeyError
-            If the ``(key, version)`` couple does not exist.
-
-        Examples
-        --------
-        >>> # xdoctest: +SKIP
-        >>> # Retrieve note attached to latest version of key "key"
-        >>> project.get_note("key")
-        >>> # Retrieve note attached to first version of key "key"
-        >>> project.get_note("key", version=0)
-        """
-        return self._item_repository.get_item_note(key=key, version=version)
-
-    @_raise_if_deleted
-    def delete_note(self, key: str, *, version: int = -1) -> None:
-        """Delete a note previously attached to key ``key``.
-
-        If no note is attached, does nothing.
-
-        Parameters
-        ----------
-        key : str
-            The key of the annotated item.
-            May be qualified with a version number through the ``version`` argument.
-        version : int, default=-1
-            The version of the annotated key. Default is the latest version.
-
-        Raises
-        ------
-        KeyError
-            If the ``(key, version)`` couple does not exist.
-
-        Examples
-        --------
-        >>> # xdoctest: +SKIP
-        >>> # Delete note attached to latest version of key "key"
-        >>> project.delete_note("key")
-        >>> # Delete note attached to first version of key "key"
-        >>> project.delete_note("key", version=0)
-        """
-        return self._item_repository.delete_item_note(key=key, version=version)
-
-    @_raise_if_deleted
-    def __repr__(self) -> str:
-        """Represent in string form."""
-        return f'{self.__class__.__name__}("{self.path}")'
+_register_accessor("reports", Project)(_ReportsAccessor)

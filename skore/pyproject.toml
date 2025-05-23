@@ -23,21 +23,21 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-  "diskcache",
+  "IPython",
+  "anywidget",
+  "ipywidgets",
   "joblib",
   "matplotlib",
   "numpy",
   "pandas",
+  "plotly",
   "rich",
   "scikit-learn",
-  "skops",
+  "skore-local-project",
 ]
 
 [project.optional-dependencies]
 test-base = [
-  "altair>=5,<6",
-  "pillow",
-  "plotly>=5,<6",
   "pre-commit",
   "pytest",
   "pytest-cov",
@@ -45,13 +45,11 @@ test-base = [
   "pytest-randomly",
   "pytest-xdist",
   "scikit-learn<1.7",
-  "skrub",
   "xdoctest",
 ]
 test = ["skore[test-base]", "polars"]
 test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
 sphinx-base = [
-  "IPython",
   "altair",
   "kaleido",
   "numpydoc",
@@ -75,6 +73,7 @@ dev = [
   "nbformat",
   "ipykernel",
 ]
+hub = ["skore-hub-project"]
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -117,6 +116,11 @@ parallel = true
 [tool.coverage.report]
 omit = ["*/externals/*", "src/*", "tests/*"]
 show_missing = true
+exclude_also = [
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
 
 [tool.ruff]
 src = ["skore"]
@@ -153,5 +157,5 @@ ignore_missing_imports = true
 exclude = ["src/skore/externals/.*", "hatch/*", "tests/*"]
 
 [[tool.mypy.overrides]]
-module = ["diskcache.*", "sklearn.*"]
+module = ["sklearn.*"]
 ignore_missing_imports = true

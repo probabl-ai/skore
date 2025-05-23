@@ -83,13 +83,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
-            The metrics to report. You can get the possible list of strings by calling
-            `report.metrics.help()`. When passing a callable, it should take as
-            arguments ``y_true``, ``y_pred`` as the two first arguments. Additional
-            arguments can be passed as keyword arguments and will be forwarded with
-            `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
-            same parameter name with different values), you can use scikit-learn scorers
-            as provided by :func:`sklearn.metrics.make_scorer`.
+            The metrics to report. The possible values in the list are:
+
+            - if a string, either one of the built-in metrics or a scikit-learn scorer
+              name. You can get the possible list of string using
+              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
+              the built-in metrics or the scikit-learn scorers, respectively.
+            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
+              first arguments. Additional arguments can be passed as keyword arguments
+              and will be forwarded with `scoring_kwargs`.
+            - if the callable API is too restrictive (e.g. need to pass
+              same parameter name with different values), you can use scikit-learn
+              scorers as provided by :func:`sklearn.metrics.make_scorer`.
 
         scoring_names : list of str, default=None
             Used to overwrite the default scoring names in the report. It should be of
@@ -214,9 +219,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         else:
             parallel = joblib.Parallel(
                 **_validate_joblib_parallel_params(
-                    n_jobs=self._parent.n_jobs,
-                    return_as="generator",
-                    require="sharedmem",
+                    n_jobs=self._parent.n_jobs, return_as="generator"
                 )
             )
 
@@ -1301,22 +1304,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         y=report_y,
                     )
                 )
-                y_pred.append(
-                    YPlotData(
-                        estimator_name=report_name,
-                        split_index=None,
-                        y=_get_cached_response_values(
-                            cache=report._cache,
-                            estimator_hash=report._hash,
-                            estimator=report._estimator,
-                            X=report_X,
-                            response_method=response_method,
-                            data_source=data_source,
-                            data_source_hash=None,
-                            pos_label=display_kwargs.get("pos_label"),
-                        ),
-                    )
+                results = _get_cached_response_values(
+                    cache=report._cache,
+                    estimator_hash=report._hash,
+                    estimator=report._estimator,
+                    X=report_X,
+                    response_method=response_method,
+                    data_source=data_source,
+                    data_source_hash=None,
+                    pos_label=display_kwargs.get("pos_label"),
                 )
+                for key, value, is_cached in results:
+                    if not is_cached:
+                        report._cache[key] = value
+                    if key[-1] != "predict_time":
+                        y_pred.append(
+                            YPlotData(
+                                estimator_name=report_name,
+                                split_index=None,
+                                y=value,
+                            )
+                        )
                 progress.update(main_task, advance=1, refresh=True)
 
             display = display_class._compute_data_for_display(

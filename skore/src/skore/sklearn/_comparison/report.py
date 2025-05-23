@@ -27,7 +27,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     This object can be used to compare several :class:`skore.EstimatorReport` instances,
     or several :class:`~skore.CrossValidationReport` instances.
 
-    .. caution:: Reports passed to `ComparisonReport` are not copied. If you pass
+    .. caution::
+       Reports passed to `ComparisonReport` are not copied. If you pass
        a report to `ComparisonReport`, and then modify the report outside later, it
        will affect the report stored inside the `ComparisonReport` as well, which
        can lead to inconsistent results. For this reason, modifying reports after
@@ -49,8 +50,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Attributes
     ----------
-    reports_ : list of :class:`~skore.EstimatorReport` or list of
-               :class:`~skore.CrossValidationReport`
+    reports_ : list of :class:`~skore.EstimatorReport` or list of \
+        :class:`~skore.CrossValidationReport`
         The compared reports.
 
     report_names_ : list of str
@@ -323,7 +324,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self,
         *,
         data_source: Literal["train", "test", "X_y"],
-        response_method: Literal["predict", "predict_proba", "decision_function"],
+        response_method: Literal[
+            "predict", "predict_proba", "decision_function"
+        ] = "predict",
         X: Optional[ArrayLike] = None,
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
@@ -341,8 +344,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        response_method : {"predict", "predict_proba", "decision_function"}
-            The response method to use.
+        response_method : {"predict", "predict_proba", "decision_function"},
+        default : "predict"
 
         X : array-like of shape (n_samples, n_features), optional
             When `data_source` is "X_y", the input features on which to compute the
@@ -379,9 +382,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
-        >>> predictions = report.get_predictions(
-        ...     data_source="test", response_method="predict"
-        ... )
+        >>> predictions = report.get_predictions(data_source="test")
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(25,), (25,)]
         """

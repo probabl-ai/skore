@@ -15,7 +15,6 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
-    get_scorer,
     make_scorer,
     median_absolute_error,
     r2_score,
@@ -359,13 +358,11 @@ def test_estimator_report_get_predictions():
     )
 
     # check the `predict` method
-    predictions = report.get_predictions(data_source="test", response_method="predict")
+    predictions = report.get_predictions(data_source="test")
     np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
-    predictions = report.get_predictions(data_source="train", response_method="predict")
+    predictions = report.get_predictions(data_source="train")
     np.testing.assert_allclose(predictions, report.estimator_.predict(X_train))
-    predictions = report.get_predictions(
-        data_source="X_y", response_method="predict", X=X_test
-    )
+    predictions = report.get_predictions(data_source="X_y", X=X_test)
     np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
 
     # check the validity of the `predict_proba` method
@@ -415,7 +412,7 @@ def test_estimator_report_get_predictions_error():
     )
 
     with pytest.raises(ValueError, match="Invalid data source"):
-        report.get_predictions(data_source="invalid", response_method="predict")
+        report.get_predictions(data_source="invalid")
 
 
 ########################################################################################
@@ -1298,12 +1295,14 @@ def test_estimator_has_no_deep_copy():
         )
 
 
-def test_estimator_report_brier_score_requires_probabilities():
-    """Check that the Brier score is not defined for estimator that do not
-    implement `predict_proba`.
+@pytest.mark.parametrize("metric", ["brier_score", "log_loss"])
+def test_estimator_report_brier_log_loss_requires_probabilities(metric):
+    """Check that the Brier score and the Log loss is not defined for estimator
+    that do not implement `predict_proba`.
 
     Non-regression test for:
     https://github.com/probabl-ai/skore/pull/1471
+    https://github.com/probabl-ai/skore/issues/1736
     """
     estimator = SVC()  # SVC does not implement `predict_proba` with default parameters
     X, y = make_classification(n_classes=2, random_state=42)
@@ -1312,7 +1311,7 @@ def test_estimator_report_brier_score_requires_probabilities():
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    assert not hasattr(report.metrics, "brier_score")
+    assert not hasattr(report.metrics, metric)
 
 
 def test_estimator_report_brier_score_requires_binary_classification():
@@ -1349,41 +1348,23 @@ def test_estimator_report_average_return_float(binary_classification_data):
 def test_estimator_report_metric_with_neg_metrics(binary_classification_data):
     """Check that scikit-learn metrics with 'neg_' prefix are handled correctly."""
     classifier, X_test, y_test = binary_classification_data
-    report = EstimatorReport(
-        classifier,
-        X_test=X_test,
-        y_test=y_test,
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    result = report.metrics.report_metrics(scoring=["neg_log_loss"])
+    assert "Log Loss" in result.index
+    assert result.loc["Log Loss", "RandomForestClassifier"] == pytest.approx(
+        report.metrics.log_loss()
     )
-
-    # Use scikit-learn's get_scorer to handle neg_log_loss
-    scorer = get_scorer("neg_log_loss")
-    result = report.metrics.report_metrics(scoring=[scorer])
-
-    # Check that the metric name is displayed properly (as 'log_loss')
-    assert "log_loss" in result.index
-
-    # Get the neg_log_loss score directly - use the fitted model from the report
-    neg_log_loss_value = get_scorer("neg_log_loss")(report.estimator_, X_test, y_test)
-
-    # Check that the reported log_loss matches the absolute value of neg_log_loss
-    log_loss_value = result.loc["log_loss", classifier.__class__.__name__]
-    assert np.isclose(log_loss_value, abs(neg_log_loss_value))
 
 
 def test_estimator_report_with_sklearn_scoring_strings(binary_classification_data):
     """Test that scikit-learn metric strings can be passed to report_metrics."""
     classifier, X_test, y_test = binary_classification_data
-    class_report = EstimatorReport(
-        classifier,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    class_report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    # Test single scikit-learn metric string
     result = class_report.metrics.report_metrics(scoring=["neg_log_loss"])
     assert "Log Loss" in result.index.get_level_values(0)
 
-    # Test with multiple scikit-learn metrics
     result_multi = class_report.metrics.report_metrics(
         scoring=["accuracy", "neg_log_loss", "roc_auc"], indicator_favorability=True
     )
@@ -1391,7 +1372,6 @@ def test_estimator_report_with_sklearn_scoring_strings(binary_classification_dat
     assert "Log Loss" in result_multi.index.get_level_values(0)
     assert "ROC AUC" in result_multi.index.get_level_values(0)
 
-    # Test favorability indicators
     favorability = result_multi.loc["Accuracy"]["Favorability"]
     assert favorability == "(↗︎)"
     favorability = result_multi.loc["Log Loss"]["Favorability"]
@@ -1401,13 +1381,8 @@ def test_estimator_report_with_sklearn_scoring_strings(binary_classification_dat
 def test_estimator_report_with_sklearn_scoring_strings_regression(regression_data):
     """Test scikit-learn regression metric strings in report_metrics."""
     regressor, X_test, y_test = regression_data
-    reg_report = EstimatorReport(
-        regressor,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
 
-    # Test regression metrics
     reg_result = reg_report.metrics.report_metrics(
         scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
         indicator_favorability=True,
@@ -1417,7 +1392,6 @@ def test_estimator_report_with_sklearn_scoring_strings_regression(regression_dat
     assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
     assert "R²" in reg_result.index.get_level_values(0)
 
-    # Check favorability
     assert reg_result.loc["Mean Squared Error"]["Favorability"] == "(↘︎)"
     assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
 
@@ -1425,13 +1399,8 @@ def test_estimator_report_with_sklearn_scoring_strings_regression(regression_dat
 def test_estimator_report_with_scoring_strings_regression(regression_data):
     """Test scikit-learn regression metric strings in report_metrics."""
     regressor, X_test, y_test = regression_data
-    reg_report = EstimatorReport(
-        regressor,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
 
-    # Test regression metrics
     reg_result = reg_report.metrics.report_metrics(
         scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
         indicator_favorability=True,
@@ -1441,6 +1410,40 @@ def test_estimator_report_with_scoring_strings_regression(regression_data):
     assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
     assert "R²" in reg_result.index.get_level_values(0)
 
-    # Check favorability
     assert reg_result.loc["Mean Squared Error"]["Favorability"] == "(↘︎)"
     assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
+
+
+def test_estimator_report_sklearn_scorer_names_pos_label(binary_classification_data):
+    """Check that `pos_label` is dispatched with scikit-learn scorer names."""
+    classifier, X_test, y_test = binary_classification_data
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    result = report.metrics.report_metrics(scoring=["f1"], pos_label=0)
+    assert "F1 Score" in result.index.get_level_values(0)
+    assert 0 in result.index.get_level_values(1)
+    f1_scorer = make_scorer(
+        f1_score, response_method="predict", average="binary", pos_label=0
+    )
+    assert result.loc[("F1 Score", 0), "RandomForestClassifier"] == pytest.approx(
+        f1_scorer(classifier, X_test, y_test)
+    )
+
+
+def test_estimator_report_sklearn_scorer_names_scoring_kwargs(
+    binary_classification_data,
+):
+    """Check that `scoring_kwargs` is not supported when `scoring` is a scikit-learn
+    scorer name.
+    """
+    classifier, X_test, y_test = binary_classification_data
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    err_msg = (
+        "The `scoring_kwargs` parameter is not supported when `scoring` is a "
+        "scikit-learn scorer name."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.report_metrics(
+            scoring=["f1"], scoring_kwargs={"average": "macro"}
+        )

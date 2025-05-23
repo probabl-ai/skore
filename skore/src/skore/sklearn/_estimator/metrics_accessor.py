@@ -90,13 +90,18 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
-            The metrics to report. You can get the possible list of string by calling
-            `report.metrics.help()`. When passing a callable, it should take as
-            arguments `y_true`, `y_pred` as the two first arguments. Additional
-            arguments can be passed as keyword arguments and will be forwarded with
-            `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
-            same parameter name with different values), you can use scikit-learn scorers
-            as provided by :func:`sklearn.metrics.make_scorer`.
+            The metrics to report. The possible values in the list are:
+
+            - if a string, either one of the built-in metrics or a scikit-learn scorer
+              name. You can get the possible list of string using
+              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
+              the built-in metrics or the scikit-learn scorers, respectively.
+            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
+              first arguments. Additional arguments can be passed as keyword arguments
+              and will be forwarded with `scoring_kwargs`.
+            - if the callable API is too restrictive (e.g. need to pass
+              same parameter name with different values), you can use scikit-learn
+              scorers as provided by :func:`sklearn.metrics.make_scorer`.
 
         scoring_names : list of str, default=None
             Used to overwrite the default scoring names in the report. It should be of
@@ -138,14 +143,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Recall                 0.93...         (↗︎)
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
-
         >>> # Using scikit-learn metrics
         >>> report.metrics.report_metrics(
-        scoring=["neg_log_loss"],
-        indicator_favorability=True)
-                    LogisticRegression Favorability
-        Metric
-        Negative Log Loss      -0.10...        (↘︎)
+        ...     scoring=["f1"], pos_label=1, indicator_favorability=True
+        ... )
+                                  LogisticRegression Favorability
+        Metric   Label / Average
+        F1 Score               1             0.96...          (↗︎)
         """
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
@@ -194,6 +198,28 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         scores = []
         favorability_indicator = []
         for metric_name, metric in zip(scoring_names, scoring):
+            if isinstance(metric, str) and not (
+                (metric.startswith("_") and metric[1:] in self._SCORE_OR_LOSS_INFO)
+                or metric in self._SCORE_OR_LOSS_INFO
+            ):
+                try:
+                    metric = metrics.get_scorer(metric)
+                except ValueError as err:
+                    raise ValueError(
+                        f"Invalid metric: {metric!r}. "
+                        f"Please use a valid metric from the "
+                        f"list of supported metrics: "
+                        f"{list(self._SCORE_OR_LOSS_INFO.keys())} "
+                        "or a valid scikit-learn scoring string."
+                    ) from err
+                if scoring_kwargs is not None:
+                    raise ValueError(
+                        "The `scoring_kwargs` parameter is not supported when "
+                        "`scoring` is a scikit-learn scorer name. Use the function "
+                        "`sklearn.metrics.make_scorer` to create a scorer with "
+                        "additional parameters."
+                    )
+
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
             if isinstance(metric, _BaseScorer):
@@ -221,8 +247,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     elif pos_label is not None:
                         metrics_kwargs["pos_label"] = pos_label
                 if metric_name is None:
-                    metric_name = metric._score_func.__name__
-                metric_favorability = "↗︎" if metric._sign == 1 else "↘︎"
+                    metric_name = metric._score_func.__name__.replace("_", " ").title()
+                metric_favorability = "(↗︎)" if metric._sign == 1 else "(↘︎)"
                 favorability_indicator.append(metric_favorability)
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
@@ -248,51 +274,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         if metric_name is None:
                             metric_name = f"{self._SCORE_OR_LOSS_INFO[metric]['name']}"
                         metric_favorability = self._SCORE_OR_LOSS_INFO[metric]["icon"]
-
-                    # Handle scikit-learn metrics by trying get_scorer
-                    else:
-                        from sklearn.metrics import get_scorer
-
-                        try:
-                            scorer = get_scorer(metric)
-                            metric_function = scorer._score_func
-                            response_method = scorer._response_method
-
-                            display_name = metric
-                            if metric.startswith("neg_"):
-                                display_name = metric[4:].replace("_", " ")
-                                metric_fn = partial(
-                                    self._custom_metric,
-                                    metric_function=metric_function,
-                                    response_method=response_method,
-                                )
-                                metrics_kwargs = {**scorer._kwargs}
-                                metrics_kwargs["data_source_hash"] = data_source_hash
-                                metric_favorability = "↘︎"
-                                favorability_indicator.append(metric_favorability)
-
-                            if metric_name is None:
-                                metric_name = display_name.title()
-
-                            metric_fn = partial(
-                                self._custom_metric,
-                                metric_function=metric_function,
-                                response_method=response_method,
-                            )
-                            metrics_kwargs = {**scorer._kwargs}
-                            metrics_kwargs["data_source_hash"] = data_source_hash
-                            metric_favorability = (
-                                "(↘︎)" if metric.startswith("neg_") else "(↗︎)"
-                            )
-                        except ValueError as err:
-                            raise ValueError(
-                                f"Invalid metric: {metric!r}. "
-                                f"Please use a valid metric from the"
-                                f"list of supported metrics: "
-                                f"{list(self._SCORE_OR_LOSS_INFO.keys())}"
-                                "or a valid scikit-learn scoring string."
-                            ) from err
-                    favorability_indicator.append(metric_favorability)
                 else:
                     # Handle callable metrics
                     metric_fn = partial(self._custom_metric, metric_function=metric)
@@ -480,7 +461,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             if "pos_label" in metric_params:
                 kwargs.update(pos_label=pos_label)
 
-            y_pred = _get_cached_response_values(
+            results = _get_cached_response_values(
                 cache=self._parent._cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator_,
@@ -490,6 +471,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 data_source=data_source,
                 data_source_hash=data_source_hash,
             )
+            for key_tuple, value, is_cached in results:
+                if not is_cached:
+                    self._parent._cache[key_tuple] = value
+                if key_tuple[-1] != "predict_time":
+                    y_pred = value
 
             score = metric_fn(y_true, y_pred, **kwargs)
 
@@ -1208,8 +1194,16 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
 
     @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        _check_all_checks(
+            checks=[
+                _check_supported_ml_task(
+                    supported_ml_tasks=[
+                        "binary-classification",
+                        "multiclass-classification",
+                    ]
+                ),
+                _check_estimator_has_method(method_name="predict_proba"),
+            ]
         )
     )
     def _log_loss(
@@ -1686,16 +1680,21 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
-            y_pred = _get_cached_response_values(
+            results = _get_cached_response_values(
                 cache=self._parent._cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator_,
                 X=X,
                 response_method=response_method,
+                pos_label=display_kwargs.get("pos_label"),
                 data_source=data_source,
                 data_source_hash=data_source_hash,
-                pos_label=display_kwargs.get("pos_label"),
             )
+            for key, value, is_cached in results:
+                if not is_cached:
+                    self._parent._cache[cast(tuple[Any, ...], key)] = value
+                if cast(tuple[Any, ...], key)[-1] != "predict_time":
+                    y_pred = value
 
             display = display_class._compute_data_for_display(
                 y_true=[
