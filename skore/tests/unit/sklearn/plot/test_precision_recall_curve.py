@@ -77,7 +77,7 @@ def test_precision_recall_curve_display_binary_classification(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert legend.get_title().get_text() == ""
     assert len(legend.get_texts()) == 1
 
     assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
@@ -85,6 +85,10 @@ def test_precision_recall_curve_display_binary_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert (
+        display.ax_.get_title()
+        == f"Precision-Recall Curve for {estimator.__class__.__name__}"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -133,10 +137,7 @@ def test_precision_recall_curve_cross_validation_display_binary_classification(
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     data_source_title = "external" if data_source == "X_y" else data_source
-    assert (
-        legend.get_title().get_text()
-        == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
-    )
+    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
@@ -144,6 +145,10 @@ def test_precision_recall_curve_cross_validation_display_binary_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert (
+        display.ax_.get_title()
+        == f"Precision-Recall Curve for {estimator.__class__.__name__}"
+    )
 
 
 def test_precision_recall_curve_display_data_source(pyplot, binary_classification_data):
@@ -194,14 +199,14 @@ def test_precision_recall_curve_display_multiclass_classification(
         precision_recall_curve_mpl = display.lines_[class_label]
         assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
         assert precision_recall_curve_mpl.get_label() == (
-            f"{str(class_label).title()} - test set "
+            f"{str(class_label).title()} "
             f"(AP = {display.average_precision[class_label][0]:0.2f})"
         )
         assert precision_recall_curve_mpl.get_color() == expected_color
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Recall"
@@ -209,6 +214,10 @@ def test_precision_recall_curve_display_multiclass_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert (
+        display.ax_.get_title()
+        == f"Precision-Recall Curve for {estimator.__class__.__name__}"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -258,10 +267,7 @@ def test_precision_recall_curve_cross_validation_display_multiclass_classificati
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     data_source_title = "external" if data_source == "X_y" else data_source
-    assert (
-        legend.get_title().get_text()
-        == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
-    )
+    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Recall"
@@ -269,6 +275,10 @@ def test_precision_recall_curve_cross_validation_display_multiclass_classificati
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert (
+        display.ax_.get_title()
+        == f"Precision-Recall Curve for {estimator.__class__.__name__}"
+    )
 
 
 def test_precision_recall_curve_display_pr_curve_kwargs(
@@ -401,7 +411,7 @@ def test_precision_recall_curve_display_data_source_multiclass_classification(
     display.plot()
     for class_label in estimator.classes_:
         assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} - train set "
+            f"{str(class_label).title()} "
             f"(AP = {display.average_precision[class_label][0]:0.2f})"
         )
 
@@ -409,8 +419,8 @@ def test_precision_recall_curve_display_data_source_multiclass_classification(
     display.plot()
     for class_label in estimator.classes_:
         assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} - "
-            f"AP = {display.average_precision[class_label][0]:0.2f}"
+            f"{str(class_label).title()} "
+            f"(AP = {display.average_precision[class_label][0]:0.2f})"
         )
 
 
@@ -465,7 +475,7 @@ def test_precision_recall_curve_display_comparison_report_binary_classification(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == r"Binary-Classification on $\bf{test}$ set"
+    assert legend.get_title().get_text() == r"Test set"
     assert len(legend.get_texts()) == 2
 
     assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
@@ -473,6 +483,7 @@ def test_precision_recall_curve_display_comparison_report_binary_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "Precision-Recall Curve"
 
 
 def test_precision_recall_curve_display_comparison_report_multiclass_classification(
@@ -534,9 +545,7 @@ def test_precision_recall_curve_display_comparison_report_multiclass_classificat
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert (
-        legend.get_title().get_text() == r"Multiclass-Classification on $\bf{test}$ set"
-    )
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 6
 
     assert display.ax_.get_xlabel() == "Recall"
@@ -544,6 +553,7 @@ def test_precision_recall_curve_display_comparison_report_multiclass_classificat
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "Precision-Recall Curve"
 
 
 def test_precision_recall_curve_display_comparison_report_binary_classification_kwargs(
