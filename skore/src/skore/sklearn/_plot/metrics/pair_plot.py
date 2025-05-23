@@ -110,7 +110,7 @@ class PairPlotDisplay(Display):
         perf_metric_y,
         data_source=None,
     ):
-        """Create a confusion matrix display from predictions.
+        """Create a pair plot display from metrics.
 
         Parameters
         ----------
