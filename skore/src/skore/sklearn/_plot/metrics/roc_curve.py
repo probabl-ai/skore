@@ -618,6 +618,7 @@ class RocCurveDisplay(
         cls,
         y_true: Sequence[YPlotData],
         y_pred: Sequence[YPlotData],
+        average: Optional[Literal["threshold"]] = None,
         *,
         report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
         estimators: Sequence[BaseEstimator],
@@ -672,21 +673,40 @@ class RocCurveDisplay(
 
         fpr: dict[PositiveLabel, list[ArrayLike]] = defaultdict(list)
         tpr: dict[PositiveLabel, list[ArrayLike]] = defaultdict(list)
+        thresholds: dict[PositiveLabel, list[ArrayLike]] = defaultdict(list)
         roc_auc: dict[PositiveLabel, list[float]] = defaultdict(list)
 
         if ml_task == "binary-classification":
+            pos_label_validated = cast(PositiveLabel, pos_label_validated)
             for y_true_i, y_pred_i in zip(y_true, y_pred):
-                fpr_i, tpr_i, _ = roc_curve(
+                fpr_i, tpr_i, thresholds_i = roc_curve(
                     y_true_i.y,
                     y_pred_i.y,
                     pos_label=pos_label,
                     drop_intermediate=drop_intermediate,
                 )
                 roc_auc_i = auc(fpr_i, tpr_i)
-                pos_label_validated = cast(PositiveLabel, pos_label_validated)
                 fpr[pos_label_validated].append(fpr_i)
                 tpr[pos_label_validated].append(tpr_i)
+                thresholds[pos_label_validated].append(thresholds_i)
                 roc_auc[pos_label_validated].append(roc_auc_i)
+            if average is not None:
+                if average == "threshold":
+                    average_fpr, average_tpr = cls._threshold_average(
+                        fpr[pos_label_validated],
+                        tpr[pos_label_validated],
+                        thresholds[pos_label_validated],
+                    )
+                else:
+                    raise TypeError(
+                        "'threshold' is the only supported option for `average`,"
+                        f"but got {average} instead"
+                    )
+                average_roc_auc = auc(average_fpr, average_tpr)
+                fpr[pos_label_validated] = [average_fpr]
+                tpr[pos_label_validated] = [average_tpr]
+                roc_auc[pos_label_validated] = [average_roc_auc]
+
         else:  # multiclass-classification
             # OvR fashion to collect fpr, tpr, and roc_auc
             for y_true_i, y_pred_i, est in zip(y_true, y_pred, estimators):
