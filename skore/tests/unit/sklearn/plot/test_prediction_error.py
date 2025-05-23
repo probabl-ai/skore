@@ -580,7 +580,7 @@ def test_prediction_error_display_wrong_report_type(pyplot, regression_data):
         display.plot()
 
 
-def test_prediction_error_display_frame_single_estimator(pyplot, regression_data):
+def test_prediction_error_display_frame_single_estimator(regression_data):
     """Check that the frame method returns the correct DataFrame for a single
     estimator."""
     estimator, X_train, X_test, y_train, y_test = regression_data
@@ -601,7 +601,7 @@ def test_prediction_error_display_frame_single_estimator(pyplot, regression_data
     np.testing.assert_array_equal(df["residuals"].values, display.residuals[0])
 
 
-def test_prediction_error_display_frame_cross_validation(pyplot, regression_data):
+def test_prediction_error_display_frame_cross_validation(regression_data):
     """Check that the frame method returns the correct DataFrame for
     cross-validation."""
     from sklearn.model_selection import KFold
@@ -633,7 +633,7 @@ def test_prediction_error_display_frame_cross_validation(pyplot, regression_data
         )
 
 
-def test_prediction_error_display_frame_comparison(pyplot, regression_data):
+def test_prediction_error_display_frame_comparison(regression_data):
     """Check that the frame method returns the correct DataFrame for model
     comparison."""
     from sklearn.linear_model import Lasso, Ridge

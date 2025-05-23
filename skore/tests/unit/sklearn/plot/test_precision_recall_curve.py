@@ -635,7 +635,7 @@ def test_precision_recall_curve_display_wrong_report_type(
 
 
 def test_precision_recall_curve_display_frame_binary_classification(
-    pyplot, binary_classification_data
+    binary_classification_data,
 ):
     """Check that the frame method returns the correct DataFrame for binary
     classification."""
@@ -661,7 +661,7 @@ def test_precision_recall_curve_display_frame_binary_classification(
 
 
 def test_precision_recall_curve_display_frame_multiclass_classification(
-    pyplot, multiclass_classification_data
+    multiclass_classification_data,
 ):
     """Check that the frame method returns the correct DataFrame for multiclass
     classification."""

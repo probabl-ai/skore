@@ -674,9 +674,7 @@ def test_roc_curve_display_wrong_report_type(pyplot, binary_classification_data)
         display.plot()
 
 
-def test_roc_curve_display_frame_binary_classification(
-    pyplot, binary_classification_data
-):
+def test_roc_curve_display_frame_binary_classification(binary_classification_data):
     """Check that the frame method returns the correct DataFrame for binary
     classification."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -701,7 +699,7 @@ def test_roc_curve_display_frame_binary_classification(
 
 
 def test_roc_curve_display_frame_multiclass_classification(
-    pyplot, multiclass_classification_data
+    multiclass_classification_data,
 ):
     """Check that the frame method returns the correct DataFrame for multiclass
     classification."""
