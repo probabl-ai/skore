@@ -83,13 +83,17 @@ def test_prediction_error_display_regression(pyplot, regression_data, subsample)
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "LinearRegression"
+    assert legend.get_title().get_text() == ""
     assert len(legend.get_texts()) == 2
 
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Residuals (actual - predicted)"
 
     assert display.ax_.get_aspect() not in ("equal", 1.0)
+    assert (
+        display.ax_.get_title()
+        == f"Prediction Error for {estimator.__class__.__name__}"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -137,16 +141,17 @@ def test_prediction_error_cross_validation_display_regression(
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     data_source_title = "external" if data_source == "X_y" else data_source
-    assert (
-        legend.get_title().get_text()
-        == f"LinearRegression on $\\bf{{{data_source_title}}}$ set"
-    )
+    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
     assert len(legend.get_texts()) == 4
 
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Residuals (actual - predicted)"
 
     assert display.ax_.get_aspect() not in ("equal", 1.0)
+    assert (
+        display.ax_.get_title()
+        == f"Prediction Error for {estimator.__class__.__name__}"
+    )
 
 
 def test_prediction_error_comparison_report_display_regression(pyplot, regression_data):
@@ -203,13 +208,14 @@ def test_prediction_error_comparison_report_display_regression(pyplot, regressio
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Prediction errors on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Residuals (actual - predicted)"
 
     assert display.ax_.get_aspect() not in ("equal", 1.0)
+    assert display.ax_.get_title() == "Prediction Error"
 
 
 def test_prediction_error_display_regression_kind(pyplot, regression_data):
@@ -232,7 +238,7 @@ def test_prediction_error_display_regression_kind(pyplot, regression_data):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert legend.get_title().get_text() == ""
     assert len(legend.get_texts()) == 2
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -268,13 +274,17 @@ def test_prediction_error_cross_validation_display_regression_kind(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "LinearRegression on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 4
 
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Actual values"
 
     assert display.ax_.get_aspect() in ("equal", 1.0)
+    assert (
+        display.ax_.get_title()
+        == f"Prediction Error for {estimator.__class__.__name__}"
+    )
 
 
 def test_prediction_error_comparison_report_display_regression_kind(
@@ -320,7 +330,7 @@ def test_prediction_error_comparison_report_display_regression_kind(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Prediction errors on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -344,7 +354,7 @@ def test_prediction_error_display_data_source(pyplot, regression_data):
     display = report.metrics.prediction_error(data_source="X_y", X=X_train, y=y_train)
     display.plot()
     assert display.line_.get_label() == "Perfect predictions"
-    assert display.scatter_[0].get_label() == "Data set"
+    assert display.scatter_[0].get_label() == "External data set"
 
 
 def test_prediction_error_display_kwargs(pyplot, regression_data):
