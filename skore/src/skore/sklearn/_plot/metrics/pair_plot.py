@@ -33,10 +33,10 @@ class PairPlotDisplay(Display):
     Attributes
     ----------
     figure_ : matplotlib Figure
-        Figure containing the confusion matrix.
+        Figure containing the pair plot.
 
     ax_ : matplotlib Axes
-        Axes with confusion matrix.
+        Axes with pair plot.
     """
 
     @StyleDisplayMixin.style_plot

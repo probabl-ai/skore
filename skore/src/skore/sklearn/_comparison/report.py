@@ -436,7 +436,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         """
         # TODO
-        # - add test
         # - add kwargs (later)
 
         return PairPlotDisplay.from_metrics(
