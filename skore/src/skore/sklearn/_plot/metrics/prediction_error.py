@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colormaps
 from matplotlib.artist import Artist
-from matplotlib.axes import Axes
 from numpy.typing import NDArray
 from sklearn.utils.validation import _num_samples, check_array
 
@@ -381,7 +380,6 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     @StyleDisplayMixin.style_plot
     def plot(
         self,
-        ax: Optional[Axes] = None,
         *,
         estimator_name: Optional[str] = None,
         kind: Literal[
@@ -452,7 +450,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         else:  # kind == "residual_vs_predicted"
             xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
 
-        self.figure_, self.ax_ = (ax.figure, ax) if ax is not None else plt.subplots()
+        self.figure_, self.ax_ = plt.subplots()
 
         perfect_model_kwargs_validated = _validate_style_kwargs(
             {
