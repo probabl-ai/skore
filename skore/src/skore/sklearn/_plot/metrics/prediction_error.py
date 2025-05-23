@@ -692,12 +692,14 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         -------
         frame : pandas.DataFrame
             The prediction error computations as a dataframe with columns:
+
             - y_true: Actual values
             - y_pred: Predicted values
             - residuals: Difference between actual and predicted values
-                (y_true - y_pred)
+              (y_true - y_pred)
             - fold_id: (Only for cross-validation) The fold number
             - model_name: (Only for comparison) The name of the model
+
         """
         import pandas as pd
 

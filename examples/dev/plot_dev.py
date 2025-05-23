@@ -52,7 +52,7 @@ df_roc.head()
 
 # %%
 # precision_recall_curve
-# =====================
+# ======================
 
 # Get Precision-Recall curve display and its DataFrame
 display = report.metrics.precision_recall()
