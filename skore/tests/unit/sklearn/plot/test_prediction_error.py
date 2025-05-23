@@ -1,6 +1,9 @@
+from typing import Literal
+
 import matplotlib as mpl
 import numpy as np
 import pytest
+from matplotlib.legend import Legend
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
@@ -587,3 +590,94 @@ def test_prediction_error_display_wrong_report_type(pyplot, regression_data):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot()
+
+
+def _check_legend_position(
+    display, *, loc: str, position: Literal["inside", "outside"]
+):
+    """Check the position of the legend in the axes."""
+    legend = display.ax_.get_legend()
+    assert legend._loc == Legend.codes[loc]
+    if position == "inside":
+        bbox = legend.get_window_extent().transformed(display.ax_.transAxes.inverted())
+        assert 0 <= bbox.x0 <= 1
+    else:
+        bbox = legend.get_window_extent().transformed(display.ax_.transAxes.inverted())
+        assert bbox.x0 >= 1
+
+
+def test_prediction_error_display_legend_estimator_report(pyplot, regression_data):
+    """Check the rendering of the legend for prediction error with an
+    `EstimatorReport`."""
+
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.prediction_error()
+    display.plot()
+    _check_legend_position(display, loc="lower right", position="inside")
+
+    display.plot(kind="actual_vs_predicted")
+    _check_legend_position(display, loc="lower right", position="inside")
+
+
+def test_prediction_error_display_legend_cross_validation_report(
+    pyplot, regression_data_no_split
+):
+    """Check the rendering of the legend for prediction error with an
+    `CrossValidationReport`."""
+
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.prediction_error()
+    display.plot()
+    _check_legend_position(display, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    _check_legend_position(display, loc="lower right", position="inside")
+
+    cv = 10
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.prediction_error()
+    display.plot()
+    _check_legend_position(display, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    _check_legend_position(display, loc="upper left", position="outside")
+
+
+def test_prediction_error_display_legend_comparison_report(pyplot, regression_data):
+    """Check the rendering of the legend for prediction error with a
+    `ComparisonReport`."""
+
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator 1": report_1, "estimator 2": report_2}
+    )
+    display = report.metrics.prediction_error()
+    display.plot()
+    _check_legend_position(display, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    _check_legend_position(display, loc="lower right", position="inside")
+
+    reports = {
+        f"estimator {i}": EstimatorReport(
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        )
+        for i in range(1, 10)
+    }
+    report = ComparisonReport(reports=reports)
+    display = report.metrics.prediction_error()
+    display.plot()
+    _check_legend_position(display, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    _check_legend_position(display, loc="upper left", position="outside")
