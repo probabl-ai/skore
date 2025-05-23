@@ -686,13 +686,52 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         )
 
     def frame(self):
-        """Return the precision error computations as a dataframe.
+        """Return the prediction error computations as a dataframe.
 
         Returns
         -------
         frame : pandas.DataFrame
-            The precision error computations as a dataframe.
+            The prediction error computations as a dataframe with columns:
+            - y_true: Actual values
+            - y_pred: Predicted values
+            - residuals: Difference between actual and predicted values
+                (y_true - y_pred)
+            - fold_id: (Only for cross-validation) The fold number
+            - model_name: (Only for comparison) The name of the model
         """
         import pandas as pd
 
-        return pd.DataFrame({"y_true": self.y_true[0], "y_pred": self.y_pred[0]})
+        if self.report_type == "estimator":
+            return pd.DataFrame(
+                {
+                    "y_true": self.y_true[0],
+                    "y_pred": self.y_pred[0],
+                    "residuals": self.residuals[0],
+                }
+            )
+        elif self.report_type == "cross-validation":
+            dfs = []
+            for fold_idx in range(len(self.y_true)):
+                df = pd.DataFrame(
+                    {
+                        "y_true": self.y_true[fold_idx],
+                        "y_pred": self.y_pred[fold_idx],
+                        "residuals": self.residuals[fold_idx],
+                        "fold_id": fold_idx + 1,
+                    }
+                )
+                dfs.append(df)
+            return pd.concat(dfs, axis=0, ignore_index=True)
+        else:  # comparison-estimator
+            dfs = []
+            for est_idx, est_name in enumerate(self.estimator_names):
+                df = pd.DataFrame(
+                    {
+                        "y_true": self.y_true[est_idx],
+                        "y_pred": self.y_pred[est_idx],
+                        "residuals": self.residuals[est_idx],
+                        "model_name": est_name,
+                    }
+                )
+                dfs.append(df)
+            return pd.concat(dfs, axis=0, ignore_index=True)

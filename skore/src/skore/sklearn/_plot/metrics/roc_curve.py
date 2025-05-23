@@ -107,6 +107,16 @@ class RocCurveDisplay(
             - the value is a list of `float`, each `float` being the area under
               the ROC curve.
 
+    thresholds : dict of list of ndarray
+        Thresholds used for computing the ROC curve. The structure is:
+
+        - for binary classification:
+            - the key is the positive label
+            - the value is a list of `ndarray`, each `ndarray` being the thresholds
+        - for multiclass classification:
+            - the key is the class of interest in an OvR fashion
+            - the value is a list of `ndarray`, each `ndarray` being the thresholds
+
     estimator_names : list of str
         Name of the estimators.
 
@@ -159,6 +169,7 @@ class RocCurveDisplay(
         fpr: dict[PositiveLabel, list[ArrayLike]],
         tpr: dict[PositiveLabel, list[ArrayLike]],
         roc_auc: dict[PositiveLabel, list[float]],
+        thresholds: dict[PositiveLabel, list[ArrayLike]],
         estimator_names: list[str],
         pos_label: Optional[PositiveLabel],
         data_source: Literal["train", "test", "X_y"],
@@ -169,6 +180,7 @@ class RocCurveDisplay(
         self.fpr = fpr
         self.tpr = tpr
         self.roc_auc = roc_auc
+        self.thresholds = thresholds
         self.pos_label = pos_label
         self.data_source = data_source
         self.ml_task = ml_task
@@ -673,10 +685,11 @@ class RocCurveDisplay(
         fpr: dict[PositiveLabel, list[ArrayLike]] = defaultdict(list)
         tpr: dict[PositiveLabel, list[ArrayLike]] = defaultdict(list)
         roc_auc: dict[PositiveLabel, list[float]] = defaultdict(list)
+        thresholds: dict[PositiveLabel, list[ArrayLike]] = defaultdict(list)
 
         if ml_task == "binary-classification":
             for y_true_i, y_pred_i in zip(y_true, y_pred):
-                fpr_i, tpr_i, _ = roc_curve(
+                fpr_i, tpr_i, thresholds_i = roc_curve(
                     y_true_i.y,
                     y_pred_i.y,
                     pos_label=pos_label,
@@ -687,13 +700,14 @@ class RocCurveDisplay(
                 fpr[pos_label_validated].append(fpr_i)
                 tpr[pos_label_validated].append(tpr_i)
                 roc_auc[pos_label_validated].append(roc_auc_i)
+                thresholds[pos_label_validated].append(thresholds_i)
         else:  # multiclass-classification
             # OvR fashion to collect fpr, tpr, and roc_auc
             for y_true_i, y_pred_i, est in zip(y_true, y_pred, estimators):
                 label_binarizer = LabelBinarizer().fit(est.classes_)
                 y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)
                 for class_idx, class_ in enumerate(est.classes_):
-                    fpr_class_i, tpr_class_i, _ = roc_curve(
+                    fpr_class_i, tpr_class_i, thresholds_i = roc_curve(
                         y_true_onehot_i[:, class_idx],
                         y_pred_i.y[:, class_idx],
                         pos_label=None,
@@ -704,11 +718,13 @@ class RocCurveDisplay(
                     fpr[class_].append(fpr_class_i)
                     tpr[class_].append(tpr_class_i)
                     roc_auc[class_].append(roc_auc_class_i)
+                    thresholds[class_].append(thresholds_i)
 
         return cls(
             fpr=fpr,
             tpr=tpr,
             roc_auc=roc_auc,
+            thresholds=thresholds,
             estimator_names=estimator_names,
             pos_label=pos_label_validated,
             data_source=data_source,
@@ -722,13 +738,32 @@ class RocCurveDisplay(
         Returns
         -------
         frame : pandas.DataFrame
-            The ROC curve computations as a dataframe.
+            The ROC curve computations as a dataframe with columns:
+            - fpr: False Positive Rate
+            - tpr: True Positive Rate
+            - threshold: Classification threshold
         """
         import pandas as pd
 
         if self.ml_task == "binary-classification":
-            return pd.DataFrame({"tpr": self.tpr[1][0], "fpr": self.fpr[1][0]})
-            # TODO: add the threshold
-        if self.ml_task == "multiclasss-classification":
-            return "TODO"
-            # TODO
+            pos_label = 1 if self.pos_label is None else self.pos_label
+            return pd.DataFrame(
+                {
+                    "fpr": self.fpr[pos_label][0],
+                    "tpr": self.tpr[pos_label][0],
+                    "threshold": self.thresholds[pos_label][0],
+                }
+            )
+        if self.ml_task == "multiclass-classification":
+            dfs = []
+            for class_label in self.fpr:
+                df = pd.DataFrame(
+                    {
+                        "fpr": self.fpr[class_label][0],
+                        "tpr": self.tpr[class_label][0],
+                        "threshold": self.thresholds[class_label][0],
+                        "class": class_label,
+                    }
+                )
+                dfs.append(df)
+            return pd.concat(dfs, axis=0, ignore_index=True)

@@ -647,3 +647,40 @@ class PrecisionRecallCurveDisplay(
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self):
+        """Return the precision-recall curve computations as a dataframe.
+
+        Returns
+        -------
+        frame : pandas.DataFrame
+            The precision-recall curve computations as a dataframe with columns:
+            - precision: Precision values
+            - recall: Recall values
+            - average_precision: Average precision score
+            - class: (Only for multiclass) The class label
+        """
+        import pandas as pd
+
+        if self.ml_task == "binary-classification":
+            pos_label = 1 if self.pos_label is None else self.pos_label
+            return pd.DataFrame(
+                {
+                    "precision": self.precision[pos_label][0],
+                    "recall": self.recall[pos_label][0],
+                    "average_precision": self.average_precision[pos_label][0],
+                }
+            )
+        else:  # multiclass-classification
+            dfs = []
+            for class_label in self.precision:
+                df = pd.DataFrame(
+                    {
+                        "precision": self.precision[class_label][0],
+                        "recall": self.recall[class_label][0],
+                        "average_precision": self.average_precision[class_label][0],
+                        "class": class_label,
+                    }
+                )
+                dfs.append(df)
+            return pd.concat(dfs, axis=0, ignore_index=True)
