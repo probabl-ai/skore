@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.base import clone
 from sklearn.datasets import make_classification
@@ -631,3 +632,61 @@ def test_precision_recall_curve_display_wrong_report_type(
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot()
+
+
+def test_precision_recall_curve_display_frame_binary_classification(
+    pyplot, binary_classification_data
+):
+    """Check that the frame method returns the correct DataFrame for binary
+    classification."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.precision_recall()
+
+    df = display.frame()
+    pos_label = 1 if display.pos_label is None else display.pos_label
+
+    # Check DataFrame structure
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["precision", "recall", "average_precision"]
+
+    # Check values match display attributes
+    np.testing.assert_array_equal(
+        df["precision"].values, display.precision[pos_label][0]
+    )
+    np.testing.assert_array_equal(df["recall"].values, display.recall[pos_label][0])
+    assert df["average_precision"].iloc[0] == display.average_precision[pos_label][0]
+
+
+def test_precision_recall_curve_display_frame_multiclass_classification(
+    pyplot, multiclass_classification_data
+):
+    """Check that the frame method returns the correct DataFrame for multiclass
+    classification."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.precision_recall()
+
+    df = display.frame()
+
+    # Check DataFrame structure
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["precision", "recall", "average_precision", "class"]
+
+    # Check values match display attributes for each class
+    for class_label in estimator.classes_:
+        class_df = df[df["class"] == class_label]
+        np.testing.assert_array_equal(
+            class_df["precision"].values, display.precision[class_label][0]
+        )
+        np.testing.assert_array_equal(
+            class_df["recall"].values, display.recall[class_label][0]
+        )
+        assert (
+            class_df["average_precision"].iloc[0]
+            == display.average_precision[class_label][0]
+        )

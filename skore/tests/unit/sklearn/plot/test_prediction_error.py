@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
@@ -577,3 +578,93 @@ def test_prediction_error_display_wrong_report_type(pyplot, regression_data):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot()
+
+
+def test_prediction_error_display_frame_single_estimator(pyplot, regression_data):
+    """Check that the frame method returns the correct DataFrame for a single
+    estimator."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.prediction_error()
+
+    df = display.frame()
+
+    # Check DataFrame structure
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["y_true", "y_pred", "residuals"]
+
+    # Check values match display attributes
+    np.testing.assert_array_equal(df["y_true"].values, display.y_true[0])
+    np.testing.assert_array_equal(df["y_pred"].values, display.y_pred[0])
+    np.testing.assert_array_equal(df["residuals"].values, display.residuals[0])
+
+
+def test_prediction_error_display_frame_cross_validation(pyplot, regression_data):
+    """Check that the frame method returns the correct DataFrame for
+    cross-validation."""
+    from sklearn.model_selection import KFold
+
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    cv = KFold(n_splits=3, shuffle=True, random_state=42)
+
+    # Use CrossValidationReport instead of EstimatorReport with cv
+    cv_report = CrossValidationReport(estimator, X=X_train, y=y_train, cv_splitter=cv)
+    display = cv_report.metrics.prediction_error()
+
+    df = display.frame()
+
+    # Check DataFrame structure
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["y_true", "y_pred", "residuals", "fold_id"]
+
+    # Check values match display attributes for each fold
+    for fold_idx in range(len(display.y_true)):
+        fold_df = df[df["fold_id"] == fold_idx + 1]
+        np.testing.assert_array_equal(
+            fold_df["y_true"].values, display.y_true[fold_idx]
+        )
+        np.testing.assert_array_equal(
+            fold_df["y_pred"].values, display.y_pred[fold_idx]
+        )
+        np.testing.assert_array_equal(
+            fold_df["residuals"].values, display.residuals[fold_idx]
+        )
+
+
+def test_prediction_error_display_frame_comparison(pyplot, regression_data):
+    """Check that the frame method returns the correct DataFrame for model
+    comparison."""
+    from sklearn.linear_model import Lasso, Ridge
+
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    ridge_report = EstimatorReport(
+        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    lasso_report = EstimatorReport(
+        Lasso(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    # Use ComparisonReport instead of from_estimators
+    comparison_report = ComparisonReport({"ridge": ridge_report, "lasso": lasso_report})
+    display = comparison_report.metrics.prediction_error()
+
+    df = display.frame()
+
+    # Check DataFrame structure
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["y_true", "y_pred", "residuals", "model_name"]
+
+    # Check values match display attributes for each model
+    for est_idx, est_name in enumerate(display.estimator_names):
+        model_df = df[df["model_name"] == est_name]
+        np.testing.assert_array_equal(
+            model_df["y_true"].values, display.y_true[est_idx]
+        )
+        np.testing.assert_array_equal(
+            model_df["y_pred"].values, display.y_pred[est_idx]
+        )
+        np.testing.assert_array_equal(
+            model_df["residuals"].values, display.residuals[est_idx]
+        )

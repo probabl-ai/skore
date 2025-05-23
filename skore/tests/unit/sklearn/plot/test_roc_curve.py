@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.base import clone
 from sklearn.datasets import make_classification
@@ -671,3 +672,60 @@ def test_roc_curve_display_wrong_report_type(pyplot, binary_classification_data)
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot()
+
+
+def test_roc_curve_display_frame_binary_classification(
+    pyplot, binary_classification_data
+):
+    """Check that the frame method returns the correct DataFrame for binary
+    classification."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+
+    df = display.frame()
+    pos_label = 1 if display.pos_label is None else display.pos_label
+
+    # Check DataFrame structure
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["fpr", "tpr", "threshold"]
+
+    # Check values match display attributes
+    np.testing.assert_array_equal(df["fpr"].values, display.fpr[pos_label][0])
+    np.testing.assert_array_equal(df["tpr"].values, display.tpr[pos_label][0])
+    np.testing.assert_array_equal(
+        df["threshold"].values, display.thresholds[pos_label][0]
+    )
+
+
+def test_roc_curve_display_frame_multiclass_classification(
+    pyplot, multiclass_classification_data
+):
+    """Check that the frame method returns the correct DataFrame for multiclass
+    classification."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+
+    df = display.frame()
+
+    # Check DataFrame structure
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["fpr", "tpr", "threshold", "class"]
+
+    # Check values match display attributes for each class
+    for class_label in estimator.classes_:
+        class_df = df[df["class"] == class_label]
+        np.testing.assert_array_equal(
+            class_df["fpr"].values, display.fpr[class_label][0]
+        )
+        np.testing.assert_array_equal(
+            class_df["tpr"].values, display.tpr[class_label][0]
+        )
+        np.testing.assert_array_equal(
+            class_df["threshold"].values, display.thresholds[class_label][0]
+        )
