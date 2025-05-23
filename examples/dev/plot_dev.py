@@ -38,7 +38,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 
 X, y = make_classification(
-    n_classes=2, n_clusters_per_class=2, n_informative=3, random_state=42
+    n_classes=2, n_clusters_per_class=3, n_informative=3, random_state=42
 )
 split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
 classifier = LogisticRegression(max_iter=10_000)
