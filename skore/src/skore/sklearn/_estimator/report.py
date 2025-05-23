@@ -271,11 +271,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         task = self._progress_info["current_task"]
         total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
         progress.update(task, total=total_iterations)
+
+        # do not mutate directly `self._cache` during the execution of Parallel
+        results_to_cache = {}
         for results in generator:
             for key, value, is_cached in results:
                 if not is_cached:
-                    self._cache[key] = value
+                    results_to_cache[key] = value
             progress.update(task, advance=1, refresh=True)
+
+        if results_to_cache:
+            self._cache.update(results_to_cache)
 
     def get_predictions(
         self,
