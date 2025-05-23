@@ -62,8 +62,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     ml_task : {"regression", "multioutput-regression"}
         The machine learning task.
 
-    report_type : {"comparison-cross-validation", "comparison-estimator",
-                  "cross-validation", "estimator"}
+    report_type : {"comparison-cross-validation", "comparison-estimator", \
+        "cross-validation", "estimator"}
         The type of report.
 
     Attributes
@@ -576,8 +576,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         y_pred : list of array-like of shape (n_samples,)
             Predicted target values.
 
-        report_type : {"comparison-cross-validation", "comparison-estimator",
-                      "cross-validation", "estimator"}
+        report_type : {"comparison-cross-validation", "comparison-estimator", \
+            "cross-validation", "estimator"}
             The type of report.
 
         estimators : list of estimator instances
