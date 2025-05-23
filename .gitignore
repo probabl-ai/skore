@@ -186,6 +186,7 @@ tramp
 sphinx/build/
 sphinx/auto_examples/
 sphinx/reference/api/
+/sphinx/api
 sphinx/sg_execution_times.rst
 examples/plot_*.png
 
@@ -197,4 +198,3 @@ examples/plot_*.png
 skore/LICENSE
 skore-hub-project/LICENSE
 skore-local-project/LICENSE
-/sphinx/api
