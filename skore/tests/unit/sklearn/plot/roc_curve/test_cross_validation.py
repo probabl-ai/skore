@@ -5,8 +5,6 @@ from skore import CrossValidationReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
-from .conftest import get_roc_auc
-
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_binary_classification(
@@ -60,7 +58,9 @@ def test_binary_classification(
     expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for split_idx, line in enumerate(display.lines_):
         assert isinstance(line, mpl.lines.Line2D)
-        roc_auc_split = get_roc_auc(display, label=pos_label, split_index=split_idx)
+        roc_auc_split = display.roc_auc.query(
+            f"label == {pos_label} & split_index == {split_idx}"
+        )["roc_auc"].iloc[0]
         assert line.get_label() == (
             f"Estimator of fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
         )
@@ -139,7 +139,9 @@ def test_multiclass_classification(
             roc_curve_mpl = display.lines_[class_label * cv + split_idx]
             assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
             if split_idx == 0:
-                roc_auc_class = get_roc_auc(display, label=class_label)
+                roc_auc_class = display.roc_auc.query(f"label == {class_label}")[
+                    "roc_auc"
+                ].iloc[0]
                 assert roc_curve_mpl.get_label() == (
                     f"{str(class_label).title()} "
                     f"(AUC = {np.mean(roc_auc_class):0.2f}"

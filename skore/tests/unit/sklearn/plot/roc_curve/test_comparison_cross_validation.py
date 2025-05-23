@@ -9,7 +9,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore.sklearn._plot.metrics.roc_curve import RocCurveDisplay
-from skore.sklearn._plot.utils import _filter_by, sample_mpl_colormap
+from skore.sklearn._plot.utils import sample_mpl_colormap
 
 
 def test_binary_classification(pyplot):
@@ -37,10 +37,8 @@ def test_binary_classification(pyplot):
     for i, estimator_name in enumerate(report.report_names_):
         roc_curve_mpl = display.lines_[i * n_splits]
         assert isinstance(roc_curve_mpl, Line2D)
-        auc = _filter_by(
-            display.roc_auc,
-            label=pos_label,
-            estimator_name=estimator_name,
+        auc = display.roc_auc.query(
+            f"label == {pos_label} & estimator_name == '{estimator_name}'"
         )["roc_auc"]
 
         assert roc_curve_mpl.get_label() == (
@@ -95,10 +93,8 @@ def test_multiclass(pyplot):
         roc_curve_mpl = display.lines_[i * n_splits]
         assert isinstance(roc_curve_mpl, Line2D)
 
-        auc = _filter_by(
-            display.roc_auc,
-            label=label,
-            estimator_name=estimator_name,
+        auc = display.roc_auc.query(
+            f"label == {label} & estimator_name == '{estimator_name}'"
         )["roc_auc"]
 
         assert roc_curve_mpl.get_label() == (

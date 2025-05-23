@@ -5,8 +5,6 @@ from skore import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
-from .conftest import get_roc_auc
-
 
 def test_binary_classification(pyplot, binary_classification_data):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
@@ -48,7 +46,10 @@ def test_binary_classification(pyplot, binary_classification_data):
     assert len(display.lines_) == 1
     roc_curve_mpl = display.lines_[0]
     assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
-    assert roc_curve_mpl.get_label() == f"Test set (AUC = {get_roc_auc(display):0.2f})"
+    assert (
+        roc_curve_mpl.get_label()
+        == f"Test set (AUC = {display.roc_auc['roc_auc'].iloc[0]:0.2f})"
+    )
     assert roc_curve_mpl.get_color() == "#1f77b4"  # tab:blue in hex
 
     assert isinstance(display.chance_level_, mpl.lines.Line2D)
@@ -107,7 +108,9 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
     for class_label, expected_color in zip(estimator.classes_, default_colors):
         roc_curve_mpl = display.lines_[class_label]
         assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
-        roc_auc_class = get_roc_auc(display, label=class_label)
+        roc_auc_class = display.roc_auc.query(f"label == {class_label}")[
+            "roc_auc"
+        ].iloc[0]
         assert roc_curve_mpl.get_label() == (
             f"{str(class_label).title()} - test set (AUC = {roc_auc_class:0.2f})"
         )
@@ -139,12 +142,15 @@ def test_data_source_binary_classification(pyplot, binary_classification_data):
     display.plot()
     assert (
         display.lines_[0].get_label()
-        == f"Train set (AUC = {get_roc_auc(display):0.2f})"
+        == f"Train set (AUC = {display.roc_auc['roc_auc'].iloc[0]:0.2f})"
     )
 
     display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
     display.plot()
-    assert display.lines_[0].get_label() == f"AUC = {get_roc_auc(display):0.2f}"
+    assert (
+        display.lines_[0].get_label()
+        == f"AUC = {display.roc_auc['roc_auc'].iloc[0]:0.2f}"
+    )
 
 
 def test_data_source_multiclass_classification(pyplot, multiclass_classification_data):
@@ -156,17 +162,21 @@ def test_data_source_multiclass_classification(pyplot, multiclass_classification
     display = report.metrics.roc(data_source="train")
     display.plot()
     for class_label in estimator.classes_:
+        roc_auc_class = display.roc_auc.query(f"label == {class_label}")[
+            "roc_auc"
+        ].iloc[0]
         assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} - train set "
-            f"(AUC = {get_roc_auc(display, label=class_label):0.2f})"
+            f"{str(class_label).title()} - train set (AUC = {roc_auc_class:0.2f})"
         )
 
     display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
     display.plot()
     for class_label in estimator.classes_:
+        roc_auc_class = display.roc_auc.query(f"label == {class_label}")[
+            "roc_auc"
+        ].iloc[0]
         assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} - "
-            f"AUC = {get_roc_auc(display, label=class_label):0.2f}"
+            f"{str(class_label).title()} - AUC = {roc_auc_class:0.2f}"
         )
 
 

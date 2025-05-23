@@ -5,8 +5,6 @@ from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
-from .conftest import get_roc_auc
-
 
 def test_binary_classification(pyplot, binary_classification_data):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
@@ -63,9 +61,9 @@ def test_binary_classification(pyplot, binary_classification_data):
         zip(report.report_names_, display.lines_)
     ):
         assert isinstance(line, mpl.lines.Line2D)
-        roc_auc_class = get_roc_auc(
-            display, label=display.pos_label, estimator_name=estimator_name
-        )
+        roc_auc_class = display.roc_auc.query(
+            f"label == {display.pos_label} & estimator_name == '{estimator_name}'"
+        )["roc_auc"].iloc[0]
         assert line.get_label() == (f"{estimator_name} (AUC = {roc_auc_class:0.2f})")
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[idx]
 
@@ -144,11 +142,9 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
         for class_label_idx, class_label in enumerate(class_labels):
             roc_curve_mpl = display.lines_[idx * len(class_labels) + class_label_idx]
             assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
-            roc_auc_class = get_roc_auc(
-                display,
-                label=class_label,
-                estimator_name=estimator_name,
-            )
+            roc_auc_class = display.roc_auc.query(
+                f"label == {class_label} & estimator_name == '{estimator_name}'"
+            )["roc_auc"].iloc[0]
             assert roc_curve_mpl.get_label() == (
                 f"{estimator_name} - {str(class_label).title()} "
                 f"(AUC = {roc_auc_class:0.2f})"

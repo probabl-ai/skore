@@ -17,7 +17,6 @@ from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
     _ClassifierCurveDisplayMixin,
     _despine_matplotlib_axis,
-    _filter_by,
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
@@ -222,15 +221,11 @@ class RocCurveDisplay(
             )
 
             for class_idx, class_label in enumerate(labels):
-                roc_curve = _filter_by(
-                    self.roc_curve,
-                    label=class_label,
-                )
+                roc_curve = self.roc_curve.query(f"label == {class_label}")
 
-                roc_auc = _filter_by(
-                    self.roc_auc,
-                    label=class_label,
-                )["roc_auc"].iloc[0]
+                roc_auc = self.roc_auc.query(f"label == {class_label}")["roc_auc"].iloc[
+                    0
+                ]
 
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
@@ -315,15 +310,11 @@ class RocCurveDisplay(
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
             for split_idx in self.roc_curve["split_index"].unique():
-                roc_curve = _filter_by(
-                    self.roc_curve,
-                    label=pos_label,
-                    split_index=split_idx,
+                roc_curve = self.roc_curve.query(
+                    f"label == {pos_label} & split_index == {split_idx}"
                 )
-                roc_auc = _filter_by(
-                    self.roc_auc,
-                    label=pos_label,
-                    split_index=split_idx,
+                roc_auc = self.roc_auc.query(
+                    f"label == {pos_label} & split_index == {split_idx}"
                 )["roc_auc"].iloc[0]
 
                 line_kwargs_validated = _validate_style_kwargs(
@@ -351,17 +342,14 @@ class RocCurveDisplay(
             )
 
             for class_idx, class_label in enumerate(labels):
-                roc_auc = _filter_by(
-                    self.roc_auc,
-                    label=class_label,
-                )["roc_auc"].iloc[0]
+                roc_auc = self.roc_auc.query(f"label == {class_label}")["roc_auc"].iloc[
+                    0
+                ]
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
                 for split_idx in self.roc_curve["split_index"].unique():
-                    roc_curve_label = _filter_by(
-                        self.roc_curve,
-                        label=class_label,
-                        split_index=split_idx,
+                    roc_curve_label = self.roc_curve.query(
+                        f"label == {class_label} & split_index == {split_idx}"
                     )
 
                     line_kwargs_validated = _validate_style_kwargs(
@@ -448,16 +436,12 @@ class RocCurveDisplay(
         if self.ml_task == "binary-classification":
             pos_label = cast(PositiveLabel, self.pos_label)
             for est_idx, est_name in enumerate(estimator_names):
-                roc_curve = _filter_by(
-                    self.roc_curve,
-                    label=pos_label,
-                    estimator_name=est_name,
+                roc_curve = self.roc_curve.query(
+                    f"label == {pos_label} & estimator_name == '{est_name}'"
                 )
 
-                roc_auc = _filter_by(
-                    self.roc_auc,
-                    label=pos_label,
-                    estimator_name=est_name,
+                roc_auc = self.roc_auc.query(
+                    f"label == {pos_label} & estimator_name == '{est_name}'"
                 )["roc_auc"].iloc[0]
 
                 line_kwargs_validated = _validate_style_kwargs(
@@ -485,16 +469,12 @@ class RocCurveDisplay(
                 est_color = class_colors[est_idx]
 
                 for class_idx, class_label in enumerate(labels):
-                    roc_curve = _filter_by(
-                        self.roc_curve,
-                        label=class_label,
-                        estimator_name=est_name,
+                    roc_curve = self.roc_curve.query(
+                        f"label == {class_label} & estimator_name == '{est_name}'"
                     )
 
-                    roc_auc = _filter_by(
-                        self.roc_auc,
-                        label=class_label,
-                        estimator_name=est_name,
+                    roc_auc = self.roc_auc.query(
+                        f"label == {class_label} & estimator_name == '{est_name}'"
                     )["roc_auc"].iloc[0]
 
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
@@ -580,16 +560,13 @@ class RocCurveDisplay(
                 10 if len(estimator_names) < 10 else len(estimator_names),
             )
             for report_idx, estimator_name in enumerate(estimator_names):
-                roc_curve = _filter_by(
-                    self.roc_curve,
-                    label=self.pos_label,
-                    estimator_name=estimator_name,
+                roc_curve = self.roc_curve.query(
+                    f"label == {self.pos_label} & estimator_name == '{estimator_name}'"
                 )
 
-                roc_auc = _filter_by(
-                    self.roc_auc,
-                    estimator_name=estimator_name,
-                )["roc_auc"]
+                roc_auc = self.roc_auc.query(f"estimator_name == '{estimator_name}'")[
+                    "roc_auc"
+                ]
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[report_idx]
@@ -648,16 +625,12 @@ class RocCurveDisplay(
                 est_color = colors[est_idx]
 
                 for label_idx, label in enumerate(labels):
-                    roc_curve = _filter_by(
-                        self.roc_curve,
-                        label=label,
-                        estimator_name=estimator_name,
+                    roc_curve = self.roc_curve.query(
+                        f"label == {label} & estimator_name == '{estimator_name}'"
                     )
 
-                    roc_auc = _filter_by(
-                        self.roc_auc,
-                        label=label,
-                        estimator_name=estimator_name,
+                    roc_auc = self.roc_auc.query(
+                        f"label == {label} & estimator_name == '{estimator_name}'"
                     )["roc_auc"]
 
                     line_kwargs_validated = _validate_style_kwargs(
