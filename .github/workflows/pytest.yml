@@ -22,7 +22,6 @@ jobs:
   pytest-changes:
     runs-on: ubuntu-latest
     outputs:
-      all-packages: ${{ steps.filter-keys.outputs.keys }}
       modified-packages: ${{ steps.filter.outputs.changes }}
     permissions:
       pull-requests: read
@@ -30,35 +29,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - id: filter
-        name: Define if at least one file has changed
+      - name: Create dynamically filtering file, based on `vars.PACKAGES`
+        run: |
+            echo "${PACKAGES}" | jq -r '.[]' | while read package; do
+                >>${FILEPATH} echo "${package}:
+                - '.github/workflows/pytest.yml'
+                - 'ci/requirements/${package}/**'
+                - '${package}/**'"
+            done
+        env:
+          PACKAGES: ${{ vars.PACKAGES }}
+          FILEPATH: ${{ runner.temp }}/filters.yaml
+
+      - name: Define if at least one file has changed
+        id: filter
         uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         with:
-          filters: |
-            skore:
-              - '.github/workflows/pytest.yml'
-              - 'ci/requirements/skore/**'
-              - 'skore/**'
-            skore-hub-project:
-              - '.github/workflows/pytest.yml'
-              - 'ci/requirements/skore-hub-project/**'
-              - 'skore-hub-project/**'
-            skore-local-project:
-              - '.gitlocal/workflows/pytest.yml'
-              - 'ci/requirements/skore-local-project/**'
-              - 'skore-local-project/**'
-
-      - id: filter-keys
-        run: |
-          # {
-          #     "<package>": "boolean",
-          #     "<package>_count": "int",
-          #     "changes": list
-          # }
-          keys=$(echo "${FILTER_OUTPUTS}" | jq -c 'to_entries | map(select(.value == "true" or .value == "false")) | from_entries | keys')
-          echo "keys=${keys}" >> $GITHUB_OUTPUT
-        env:
-          FILTER_OUTPUTS: ${{ toJSON(steps.filter.outputs) }}
+          filters: ${{ runner.temp }}/filters.yaml
 
   pytest-lockfiles:
     runs-on: ubuntu-latest
@@ -115,7 +102,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: ${{ (github.event_name == 'push') && fromJSON(needs.pytest-changes.outputs.all-packages) || fromJSON(needs.pytest-changes.outputs.modified-packages) }}
+        package: ${{ (github.event_name == 'push') && fromJSON(vars.PACKAGES) || fromJSON(needs.pytest-changes.outputs.modified-packages) }}
         os: ["ubuntu-latest", "windows-latest"]
         python: ["3.9", "3.10", "3.11", "3.12"]
         include:

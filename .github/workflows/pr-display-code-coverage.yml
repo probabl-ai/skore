@@ -18,10 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package:
-          - skore
-          - skore-hub-project
-          - skore-local-project
+        package: ${{ fromJSON(vars.PACKAGES) }}
     permissions:
       actions: read
       contents: read
