@@ -511,7 +511,6 @@ class RocCurveDisplay(
     @StyleDisplayMixin.style_plot
     def plot(
         self,
-        ax: Optional[Axes] = None,
         *,
         estimator_name: Optional[str] = None,
         roc_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
@@ -525,10 +524,6 @@ class RocCurveDisplay(
 
         Parameters
         ----------
-        ax : matplotlib axes, default=None
-            Axes object to plot on. If `None`, a new figure and axes is
-            created.
-
         estimator_name : str, default=None
             Name of the estimator used to plot the ROC curve. If `None`, we use
             the inferred name from the estimator.
@@ -560,7 +555,7 @@ class RocCurveDisplay(
         >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
-        self.figure_, self.ax_ = (ax.figure, ax) if ax is not None else plt.subplots()
+        self.figure_, self.ax_ = plt.subplots()
 
         if roc_curve_kwargs is None:
             roc_curve_kwargs = self._default_roc_curve_kwargs
