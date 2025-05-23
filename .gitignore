@@ -197,3 +197,4 @@ examples/plot_*.png
 skore/LICENSE
 skore-hub-project/LICENSE
 skore-local-project/LICENSE
+/sphinx/api

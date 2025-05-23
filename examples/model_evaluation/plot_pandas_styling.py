@@ -4,6 +4,10 @@
 ==========================================
 Applying some pandas styling to dataframes
 ==========================================
+
+This example shows how to apply styling to the metrics dataframe returned by
+:meth:`skore.ComparisonReport.metrics.report_metrics`. The styling helps highlight
+which estimator performs better for each metric using blue gradients.
 """
 
 # %%
@@ -70,6 +74,8 @@ df = comparator.metrics.report_metrics(indicator_favorability=False)
 df
 
 # %%
+# Define styling functions
+# ========================
 
 # Automatically determine lower_is_better and higher_is_better
 lower_is_better = [
@@ -80,59 +86,42 @@ higher_is_better = [
 ]
 
 # %%
-import pandas as pd
 
 
-def highlight_best(row):
-    """Determine the best value of the row and apply bold styling."""
+def apply_styling(row):
+    """Apply blue gradient and bold styling based on metric type."""
     metric = row.name
-    if metric in lower_is_better:
-        best_value = row.min()  # Lower is better
-        is_best = row == best_value
-    else:  # higher_is_better
-        best_value = row.max()  # Higher is better
-        is_best = row == best_value
-    styles = ["font-weight: bold" if x else "" for x in is_best]
+    is_lower_better = metric in lower_is_better
+
+    # Normalize values to [0, 1] range
+    if is_lower_better:
+        normalized = (row.max() - row) / (row.max() - row.min())
+    else:
+        normalized = (row - row.min()) / (row.max() - row.min())
+
+    # Generate styles for each cell
+    styles = []
+    for value, norm_value in zip(row, normalized):
+        opacity = norm_value
+        # Blue gradient with varying opacity
+        color = f"rgba(30, 34, 170, {opacity})"  # Royal Blue
+
+        is_best = (is_lower_better and value == row.min()) or (
+            not is_lower_better and value == row.max()
+        )
+        font_weight = "bold" if is_best else "normal"
+
+        style = f"background-color: {color}; font-weight: {font_weight}"
+        styles.append(style)
+
     return styles
 
 
-def apply_gradient(row):
-    """Apply a color gradient on the row based on whether lower or higher is better for
-    the metric of the row.
-    """
-    metric = row.name
-    if metric in lower_is_better:
-        # For lower-is-better, smaller values get a stronger color (less opacity)
-        gradient = pd.Series(
-            [
-                "background-color: rgba(30, 34, 170, {:.2f})".format(
-                    1 - (x - row.min()) / (row.max() - row.min())
-                )
-                for x in row
-            ],
-            index=row.index,
-        )
-    else:
-        # For higher-is-better, larger values get a stronger color
-        gradient = pd.Series(
-            [
-                "background-color: rgba(30, 34, 170, {:.2f})".format(
-                    (x - row.min()) / (row.max() - row.min())
-                )
-                for x in row
-            ],
-            index=row.index,
-        )
-    return gradient
-
-
 # %%
-styled_df = (
-    df.style.apply(highlight_best, axis=1)
-    .apply(apply_gradient, axis=1)
-    .format("{:.3f}")
-)
+# Apply styling to regression metrics
+# ===================================
 
+styled_df = df.style.apply(apply_styling, axis=1).format("{:.3f}")
 styled_df
 
 # %%
@@ -143,11 +132,6 @@ styled_df
 from sklearn.datasets import load_breast_cancer
 
 X, y = load_breast_cancer(return_X_y=True, as_frame=True)
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-
-# %%
-from sklearn.model_selection import train_test_split
-
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 # %%
@@ -165,27 +149,18 @@ estimators = [
 ]
 
 # %%
-from skore import EstimatorReport
-
 estimator_reports = [
     EstimatorReport(est, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
     for est in estimators
 ]
 
 # %%
-from skore import ComparisonReport
-
 comparator = ComparisonReport(reports=estimator_reports)
 
 # %%
+# Apply styling to classification metrics
+# =======================================
+
 df = comparator.metrics.report_metrics(pos_label=1, indicator_favorability=False)
-df
-
-# %%
-styled_df = (
-    df.style.apply(highlight_best, axis=1)
-    .apply(apply_gradient, axis=1)
-    .format("{:.3f}")
-)
-
+styled_df = df.style.apply(apply_styling, axis=1).format("{:.3f}")
 styled_df
