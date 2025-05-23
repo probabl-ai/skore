@@ -39,10 +39,14 @@ jobs:
               - '.github/workflows/pytest.yml'
               - 'ci/requirements/skore/**'
               - 'skore/**'
-            skore-remote-project:
+            skore-hub-project:
               - '.github/workflows/pytest.yml'
-              - 'ci/requirements/skore-remote-project/**'
-              - 'skore-remote-project/**'
+              - 'ci/requirements/skore-hub-project/**'
+              - 'skore-hub-project/**'
+            skore-local-project:
+              - '.gitlocal/workflows/pytest.yml'
+              - 'ci/requirements/skore-local-project/**'
+              - 'skore-local-project/**'
 
       - id: filter-keys
         run: |

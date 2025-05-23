@@ -20,7 +20,8 @@ jobs:
       matrix:
         package:
           - skore
-          - skore-remote-project
+          - skore-hub-project
+          - skore-local-project
     permissions:
       actions: read
       contents: read
