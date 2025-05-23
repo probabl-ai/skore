@@ -25,6 +25,7 @@ from skore.utils._progress_bar import progress_decorator
 from .utils import _combine_cross_validation_results, _combine_estimator_results
 
 DataSource = Literal["test", "train", "X_y"]
+Scoring = Union[str, Callable[..., object], SKLearnScorer]
 
 
 class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
@@ -82,8 +83,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : list of str, callable, or scorer, default=None
-            The metrics to report. The possible values in the list are:
+        scoring : str, callable, scorer or list of such instances, default=None
+            The metrics to report. The possible values (whether or not in a list) are:
 
             - if a string, either one of the built-in metrics or a scikit-learn scorer
               name. You can get the possible list of string using
