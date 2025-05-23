@@ -85,16 +85,27 @@ def test_get_cached_response_values(
     }
 
     # trigger the computation
-    response_values = _get_cached_response_values(cache=cache, **params)
+    results = _get_cached_response_values(cache=cache, **params)
 
-    assert response_values.shape == y.shape
+    # when the predictions are not cached then we have 2 results:
+    # - the prediction
+    # - the time it took to compute the prediction
+    assert len(results) == 2
+    assert results[0][1].shape == y.shape  # check the predictions shape
     initial_calls = getattr(estimator, f"n_call_{response_method}")
     assert initial_calls == 1, (
         f"Expected 1 call for {response_method}, got {initial_calls}"
     )
 
+    # cache the results
+    for key, value, _ in results:
+        cache[key] = value
+
     # Reload from the cache
-    response_values = _get_cached_response_values(cache=cache, **params)
+    results = _get_cached_response_values(cache=cache, **params)
+    assert len(results) == 1
+    _, response_values, is_cached = results[0]
+    assert is_cached
     assert response_values.shape == y.shape
     current_calls = getattr(estimator, f"n_call_{response_method}")
     assert current_calls == initial_calls, (
@@ -105,21 +116,31 @@ def test_get_cached_response_values(
     # Change pos_label
     # It should trigger recomputation for predict_proba and decision_function only
     params["pos_label"] = 1 - pos_label
-    response_values = _get_cached_response_values(cache=cache, **params)
-    assert response_values.shape == y.shape
+    results = _get_cached_response_values(cache=cache, **params)
     current_calls = getattr(estimator, f"n_call_{response_method}")
-    expected_calls = initial_calls + (1 if pos_label_sensitive else 0)
-    assert current_calls == expected_calls, (
-        f"Unexpected number of calls for different pos_label in {response_method}"
-    )
+
+    if pos_label_sensitive:
+        assert len(results) == 2
+        assert current_calls == initial_calls + 1
+        _, response_values, is_cached = results[0]
+        assert not is_cached
+        assert response_values.shape == y.shape
+
+        for key, value, _ in results:
+            cache[key] = value
+    else:
+        assert len(results) == 1
+        assert current_calls == initial_calls
+        _, response_values, is_cached = results[0]
+        assert is_cached
+        assert response_values.shape == y.shape
 
     # Should reload completely from the cache
-    response_values = _get_cached_response_values(cache=cache, **params)
+    results = _get_cached_response_values(cache=cache, **params)
+    assert len(results) == 1
+    _, response_values, is_cached = results[0]
+    assert is_cached
     assert response_values.shape == y.shape
-    current_calls = getattr(estimator, f"n_call_{response_method}")
-    assert current_calls == expected_calls, (
-        f"Unexpected number of calls for different pos_label in {response_method}"
-    )
 
 
 @pytest.mark.parametrize(
@@ -149,14 +170,24 @@ def test_get_cached_response_values_different_data_source_hash(
         "data_source": "X_y",
         "data_source_hash": None,
     }
-    response_values = _get_cached_response_values(cache=cache, **params)
+    results = _get_cached_response_values(cache=cache, **params)
+    assert len(results) == 2
+    _, response_values, is_cached = results[0]
+    assert not is_cached
     assert response_values.shape == y.shape
     initial_calls = getattr(estimator, f"n_call_{response_method}")
+
+    # cache the results
+    for key, value, _ in results:
+        cache[key] = value
 
     # Second call by passing the hash of the data should not trigger new computation
     # because we consider it trustworthy
     params["data_source_hash"] = joblib.hash(X)
-    response_values = _get_cached_response_values(cache=cache, **params)
+    results = _get_cached_response_values(cache=cache, **params)
+    assert len(results) == 1
+    _, response_values, is_cached = results[0]
+    assert is_cached
     assert response_values.shape == y.shape
     current_calls = getattr(estimator, f"n_call_{response_method}")
     assert current_calls == initial_calls, (
@@ -167,7 +198,10 @@ def test_get_cached_response_values_different_data_source_hash(
     # Third call by passing a data hash not in the keys should trigger new computation
     # It is should never happen in practice but the behaviour is safe
     params["data_source_hash"] = 456
-    response_values = _get_cached_response_values(cache=cache, **params)
+    results = _get_cached_response_values(cache=cache, **params)
+    assert len(results) == 2
+    _, response_values, is_cached = results[0]
+    assert not is_cached
     assert response_values.shape == y.shape
     current_calls = getattr(estimator, f"n_call_{response_method}")
     assert current_calls == initial_calls + 1, (
