@@ -11,12 +11,6 @@ which estimator performs better for each metric using blue gradients.
 """
 
 # %%
-# TODO
-# ====
-#
-# - include ``indicator_favorability=True``
-
-# %%
 # From the source code
 # ====================
 
