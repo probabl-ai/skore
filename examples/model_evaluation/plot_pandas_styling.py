@@ -143,8 +143,6 @@ def format_values(val):
 # ======================================================
 
 df = comparator.metrics.report_metrics(indicator_favorability=False)
-print("Raw DataFrame without indicators:")
-print(df)
 print("\nStyled DataFrame without indicators:")
 styled_df = df.style.apply(apply_styling, axis=1).format(format_values)
 styled_df
@@ -154,8 +152,6 @@ styled_df
 # ===================================================
 
 df_with_indicators = comparator.metrics.report_metrics(indicator_favorability=True)
-print("Raw DataFrame with indicators:")
-print(df_with_indicators)
 print("\nStyled DataFrame with indicators:")
 styled_df_with_indicators = df_with_indicators.style.apply(
     apply_styling, axis=1
@@ -200,8 +196,6 @@ comparator = ComparisonReport(reports=estimator_reports)
 # ==========================================================
 
 df = comparator.metrics.report_metrics(pos_label=1, indicator_favorability=False)
-print("Raw DataFrame without indicators:")
-print(df)
 print("\nStyled DataFrame without indicators:")
 styled_df = df.style.apply(apply_styling, axis=1).format(format_values)
 styled_df
@@ -213,8 +207,6 @@ styled_df
 df_with_indicators = comparator.metrics.report_metrics(
     pos_label=1, indicator_favorability=True
 )
-print("Raw DataFrame with indicators:")
-print(df_with_indicators)
 print("\nStyled DataFrame with indicators:")
 styled_df_with_indicators = df_with_indicators.style.apply(
     apply_styling, axis=1
