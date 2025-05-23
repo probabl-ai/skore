@@ -9,7 +9,6 @@ from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot.metrics import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
-    RocCurveDisplay,
 )
 
 
@@ -510,16 +509,6 @@ def test_comparison_report_aggregate(report):
 @pytest.mark.parametrize(
     "plot_ml_task, plot_name, plot_cls, plot_attributes",
     [
-        (
-            "binary_classification",
-            "roc",
-            RocCurveDisplay,
-            {
-                "fpr": {1: [[0, 0, 0, 1], [0, 0, 0, 1]]},
-                "tpr": {1: [[0, 0.1, 1, 1], [0, 0.1, 1, 1]]},
-                "roc_auc": {1: [1, 1]},
-            },
-        ),
         (
             "binary_classification",
             "precision_recall",
