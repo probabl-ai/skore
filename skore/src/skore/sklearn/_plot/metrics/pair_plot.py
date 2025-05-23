@@ -94,9 +94,8 @@ class PairPlotDisplay(Display):
         title = f"{self.display_label_x} vs {self.display_label_x}"
         if self.data_source is not None:
             title += f" on {self.data_source} data"
-        ax.scatter(
-            x=scatter_data[self.x_column], y=scatter_data[self.y_column], title=title
-        )
+        ax.scatter(x=scatter_data[self.x_column], y=scatter_data[self.y_column])
+        ax.set_title(title)
         ax.set_xlabel(self.display_label_x)
         ax.set_ylabel(self.display_label_y)
 
@@ -188,7 +187,7 @@ class PairPlotDisplay(Display):
             display_label_x=x_label_text,
             display_label_y=y_label_text,
             data_source=data_source,
-        )
+        ).plot()
 
         # Add labels to the points with a small offset
         ax = disp.ax_
