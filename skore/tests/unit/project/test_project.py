@@ -1,11 +1,13 @@
 from sys import version_info
 from unittest.mock import Mock
 
+from pandas import DataFrame, MultiIndex, Series
 from pytest import fixture, raises
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from skore import EstimatorReport, Project
+from skore.project.metadata import Metadata
 
 if version_info < (3, 10):
     from importlib_metadata import EntryPoint, EntryPoints
@@ -26,23 +28,22 @@ class FakeHubProject(Mock):
 class TestProject:
     @fixture(autouse=True)
     def monkeypatch_entrypoints(self, monkeypatch, request):
-        entrypoints = EntryPoints(
-            [
-                EntryPoint(
-                    name="local",
-                    value=f"{__name__}:FakeLocalProject",
-                    group="skore.plugins.project",
-                ),
-                EntryPoint(
-                    name="hub",
-                    value=f"{__name__}:FakeHubProject",
-                    group="skore.plugins.project",
-                ),
-            ]
-        )
-
         monkeypatch.setattr(
-            "skore.project.project.entry_points", lambda **kwargs: entrypoints
+            "skore.project.project.entry_points",
+            lambda **kwargs: EntryPoints(
+                [
+                    EntryPoint(
+                        name="local",
+                        value=f"{__name__}:FakeLocalProject",
+                        group="skore.plugins.project",
+                    ),
+                    EntryPoint(
+                        name="hub",
+                        value=f"{__name__}:FakeHubProject",
+                        group="skore.plugins.project",
+                    ),
+                ]
+            ),
         )
 
     @fixture(scope="class")
@@ -161,4 +162,36 @@ class TestProject:
         assert project._Project__project.reports.get.call_args.args == ("<id>",)
         assert not project._Project__project.reports.get.call_args.kwargs
 
-    def test_reports_metadata(self): ...
+    def test_reports_metadata(self):
+        project = Project("<name>")
+        project._Project__project.reports.metadata.return_value = [
+            {
+                "learner": "<learner>",
+                "accuracy": 1.0,
+                "id": "<id>",
+            }
+        ]
+
+        metadata = project.reports.metadata()
+
+        assert project._Project__project.reports.metadata.called
+        assert isinstance(metadata, DataFrame)
+        assert isinstance(metadata, Metadata)
+        assert DataFrame.equals(
+            metadata,
+            DataFrame(
+                data={
+                    "learner": Series(
+                        ["<learner>"],
+                        dtype="category",
+                        index=[(0, "<id>")],
+                    ),
+                    "accuracy": Series([1.0], index=[(0, "<id>")]),
+                },
+                index=MultiIndex.from_tuples([(0, "<id>")], names=[None, "id"]),
+            ),
+        )
+
+    def test_repr(self):
+        project = Project("<name>")
+        assert repr(project) == repr(project._Project__project)
