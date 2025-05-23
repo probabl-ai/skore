@@ -23,7 +23,7 @@ from skore.sklearn._plot.utils import (
 )
 from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
 
-MAX_N_LABELS = 7
+MAX_N_LABELS = 5
 
 
 class PrecisionRecallCurveDisplay(
@@ -279,8 +279,7 @@ class PrecisionRecallCurveDisplay(
                     line_kwargs, pr_curve_kwargs[split_idx]
                 )
                 line_kwargs_validated["label"] = (
-                    f"Estimator of fold #{split_idx + 1} "
-                    f"(AP = {average_precision_split:0.2f})"
+                    f"Fold #{split_idx + 1} (AP = {average_precision_split:0.2f})"
                 )
 
                 (line,) = self.ax_.plot(
