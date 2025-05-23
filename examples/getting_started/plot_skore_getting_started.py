@@ -208,6 +208,10 @@ comparator.help()
 comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
 
 # %%
+# We can highlight the performance metric gain against timings
+comparator.pairwise_plot(perf_metric_x="brier_score", perf_metric_y="fit_time")
+
+# %%
 # Thus, we easily have the result of our benchmark for several recommended metrics.
 
 # %%
