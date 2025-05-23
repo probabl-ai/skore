@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-import typing
+from typing import TYPE_CHECKING
 
-import pandas as pd
+from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
 
-from .widget import ModelExplorerWidget
+from skore.project.widget import ModelExplorerWidget
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from typing import Union
 
     from skore.sklearn import EstimatorReport
 
 
-class Metadata(pd.DataFrame):
+class Metadata(DataFrame):
     """
     Metadata and metrics for all reports persisted in a project at a given moment.
 
@@ -56,14 +56,14 @@ class Metadata(pd.DataFrame):
         This function is not intended for direct use. Instead simply use the accessor
         ``skore.Project.reports.metadata``.
         """
-        metadata = pd.DataFrame(project.reports.metadata(), copy=False)
+        metadata = DataFrame(project.reports.metadata(), copy=False)
 
         if not metadata.empty:
-            metadata["learner"] = pd.Categorical(metadata["learner"])
-            metadata.index = pd.MultiIndex.from_arrays(
+            metadata["learner"] = Categorical(metadata["learner"])
+            metadata.index = MultiIndex.from_arrays(
                 [
-                    pd.RangeIndex(len(metadata)),
-                    pd.Index(metadata.pop("id"), name="id", dtype=str),
+                    RangeIndex(len(metadata)),
+                    Index(metadata.pop("id"), name="id", dtype=str),
                 ]
             )
 
