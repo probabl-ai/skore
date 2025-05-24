@@ -16,6 +16,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn._plot import (
+    CalibrationCurveDisplay,
     ConfusionMatrixDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -1626,10 +1627,22 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source: DataSource,
         response_method: Union[str, list[str], tuple[str, ...]],
         display_class: type[
-            Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
+            Union[
+                RocCurveDisplay,
+                PrecisionRecallCurveDisplay,
+                PredictionErrorDisplay,
+                CalibrationCurveDisplay,
+                ConfusionMatrixDisplay,
+            ]
         ],
         display_kwargs: dict[str, Any],
-    ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
+    ) -> Union[
+        RocCurveDisplay,
+        PrecisionRecallCurveDisplay,
+        PredictionErrorDisplay,
+        CalibrationCurveDisplay,
+        ConfusionMatrixDisplay,
+    ]:
         """Get the display from the cache or compute it.
 
         Parameters
