@@ -1,7 +1,9 @@
 from typing import Any, Literal, Optional, Union
 
 import matplotlib.pyplot as plt
+import numpy as np
 from numpy.typing import NDArray
+from sklearn.calibration import calibration_curve
 
 from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import (
@@ -9,7 +11,7 @@ from skore.sklearn._plot.utils import (
     _despine_matplotlib_axis,
     _validate_style_kwargs,
 )
-from skore.sklearn.types import MLTask, PositiveLabel
+from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
 
 
 class CalibrationCurveDisplay(StyleDisplayMixin, HelpDisplayMixin):
@@ -370,3 +372,133 @@ class CalibrationCurveDisplay(StyleDisplayMixin, HelpDisplayMixin):
             _despine_matplotlib_axis(
                 self.hist_ax_, x_range=(0, 1), y_range=self.hist_ax_.get_ylim()
             )
+
+    @classmethod
+    def _compute_data_for_display(
+        cls,
+        y_true: list[YPlotData],
+        y_pred: list[YPlotData],
+        *,
+        report_type: Literal["cross-validation", "estimator", "comparison-estimator"],
+        estimator_names: list[str],
+        ml_task: MLTask,
+        data_source: Literal["train", "test", "X_y"],
+        pos_label: PositiveLabel,
+        strategy: str = "uniform",
+        n_bins: int = 5,
+        **kwargs,
+    ) -> "CalibrationCurveDisplay":
+        """Compute the calibration curve data.
+
+        Parameters
+        ----------
+        y_true : list[YPlotData]
+            True target values.
+
+        y_pred : list[YPlotData]
+            Predicted probabilities.
+
+        report_type : {"cross-validation", "estimator", "comparison-estimator"}
+            The type of report.
+
+        estimator_names : list[str]
+            Names of the estimators.
+
+        ml_task : {"binary-classification", "multiclass-classification"}
+            The machine learning task.
+
+        data_source : {"train", "test", "X_y"}
+            The data source used to compute the calibration curve.
+
+        pos_label : PositiveLabel
+            The positive class label.
+
+        strategy : str, default="uniform"
+            Strategy used to define the widths of the bins: 'uniform' or 'quantile'.
+
+        n_bins : int, default=5
+            Number of bins to use when calculating the calibration curve.
+
+        **kwargs : Dict
+            Additional keyword arguments to be compatible with other metrics.
+
+        Returns
+        -------
+        display : CalibrationCurveDisplay
+            The display object with computed calibration data.
+        """
+        # Support both binary and multiclass classification
+        supported_tasks = ["binary-classification", "multiclass-classification"]
+        if ml_task not in supported_tasks:
+            raise ValueError(
+                f"The machine learning task must be one of {supported_tasks}. "
+                f"Got {ml_task} instead."
+            )
+
+        allowed_strategies = ["uniform", "quantile"]
+        if strategy not in allowed_strategies:
+            raise ValueError(
+                f"strategy must be one of {allowed_strategies}. Got {strategy} instead."
+            )
+
+        prob_true: dict[Any, list[NDArray]] = {pos_label: []}
+        prob_pred: dict[Any, list[NDArray]] = {pos_label: []}
+        y_prob: list[NDArray] = []
+
+        # Compute calibration curve for each estimator
+        for y_true_i, y_pred_i in zip(y_true, y_pred):
+            # Get binary target values
+            y_true_binary = (np.array(y_true_i.y) == pos_label).astype(int)
+
+            # Get probabilities - handle both direct probabilities or 2D arrays
+            y_pred_array = np.array(y_pred_i.y)
+
+            # If y_pred is a 2D array with multiple columns (probability for each class)
+            if len(y_pred_array.shape) == 2 and y_pred_array.shape[1] >= 2:
+                # For binary classification with standard sklearn format
+                if y_pred_array.shape[1] == 2:
+                    # Use second column (index 1) for positive class probability
+                    # Standard convention in sklearn
+                    y_pred_proba = y_pred_array[:, 1]
+                else:
+                    # For multi-class, try to find the column for pos_label
+                    pos_idx = 1  # Default to second column
+                    if hasattr(y_pred_i, "classes") and hasattr(
+                        y_pred_i.classes, "__iter__"
+                    ):
+                        # If classes are available, find the index of pos_label
+                        try:
+                            classes = np.array(y_pred_i.classes)
+                            pos_idx = np.where(classes == pos_label)[0][0]
+                        except (IndexError, AttributeError):
+                            pass
+                    y_pred_proba = y_pred_array[:, pos_idx]
+            else:
+                y_pred_proba = y_pred_array
+
+            # Store probabilities for histogram
+            y_prob.append(y_pred_proba)
+
+            # Compute calibration curve
+            prob_true_i, prob_pred_i = calibration_curve(
+                y_true_binary,
+                y_pred_proba,
+                n_bins=n_bins,
+                strategy=strategy,
+            )
+
+            prob_true[pos_label].append(prob_true_i)
+            prob_pred[pos_label].append(prob_pred_i)
+
+        return cls(
+            prob_true=prob_true,
+            prob_pred=prob_pred,
+            y_prob=y_prob,
+            estimator_names=estimator_names,
+            pos_label=pos_label,
+            data_source=data_source,
+            ml_task=ml_task,
+            report_type=report_type,
+            n_bins=n_bins,
+            strategy=strategy,
+        )
