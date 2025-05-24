@@ -1,9 +1,6 @@
 from datetime import datetime, timezone
 
 import pytest
-from skore.persistence.repository import ItemRepository
-from skore.persistence.storage import InMemoryStorage
-from skore.project import Project
 
 
 def pytest_configure(config):
@@ -11,6 +8,24 @@ def pytest_configure(config):
     import matplotlib
 
     matplotlib.use("agg")
+
+
+@pytest.fixture(autouse=True)
+def monkeypatch_tmpdir(monkeypatch, tmp_path):
+    """
+    Change ``TMPDIR`` used by ``tempfile.gettempdir()`` to point to ``tmp_path``, so
+    that it is automatically deleted after use, with no impact on user's environment.
+
+    Force the reload of the ``tempfile`` module to change the cached return of
+    ``tempfile.gettempdir()``.
+
+    https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
+    """
+    import importlib
+    import tempfile
+
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    importlib.reload(tempfile)
 
 
 @pytest.fixture
@@ -33,24 +48,6 @@ def MockDatetime(mock_now):
             return mock_now
 
     return MockDatetime
-
-
-@pytest.fixture
-def in_memory_project(monkeypatch):
-    monkeypatch.delattr("skore.project.Project.__init__")
-
-    project = Project()
-    project.path = None
-    project.name = "test"
-    project._item_repository = ItemRepository(storage=InMemoryStorage())
-    project._storage_initialized = True
-
-    return project
-
-
-@pytest.fixture
-def on_disk_project(tmp_path):
-    return Project(tmp_path / "project.skore")
 
 
 @pytest.fixture(scope="function")

@@ -1,0 +1,203 @@
+name: skore-hub-project
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  merge_group:
+    types: [checks_requested]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+defaults:
+  run:
+    shell: "bash"
+
+jobs:
+  skore-hub-project-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changes: ${{ steps.filter.outputs.skore-hub-project }}
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Define if at least one file has changed
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            skore-hub-project:
+              - '.github/workflows/skore-hub-project.yml'
+              - 'ci/requirements/skore-hub-project/**'
+              - 'skore-hub-project/**'
+
+  skore-hub-project-lockfiles:
+    runs-on: "ubuntu-latest"
+    needs: [skore-hub-project-changes]
+    if: ${{ (contains(fromJSON('["pull_request", "merge_group"]'), github.event_name)) && (needs.skore-hub-project-changes.outputs.changes == 'true') }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 2
+
+      - name: Check lockfiles are not obsolete
+        run: |
+          set -eu
+
+          # Check if `pyproject.toml` has changed in this pull-request
+          # ├── False
+          # │   └── Exit 0
+          # └── True
+          #     └── Check if lockfiles have changed in this pull-request
+          #         ├── True
+          #         │   └── Exit 0
+          #         └── False
+          #             └── Recompile lockfiles and check if they have to change
+          #                 ├── False
+          #                 │   └── Exit 0
+          #                 └── True
+          #                     └── Exit 1
+
+          changes=$(git diff --name-only HEAD^1 HEAD)
+
+          if
+            (echo "${changes}" | grep -qE "skore-hub-project/pyproject.toml") &&
+            (echo "${changes}" | (! grep -qE "ci/requirements/skore-hub-project/.*/test-requirements.txt"))
+          then
+              curl -LsSf https://astral.sh/uv/0.6.16/install.sh | sh
+              bash ci/pip-compile.sh skore-hub-project
+
+              if (git diff --name-only | grep -qE "ci/requirements/skore-hub-project/.*/test-requirements.txt"); then
+                  echo '::error title=skore-hub-project-lockfiles::Lockfiles obsolete, please execute `$ bash ci/pip-compile.sh skore-hub-project`'
+                  exit 1
+             fi
+          fi
+
+  skore-hub-project-test:
+    needs: [skore-hub-project-changes]
+    if: ${{ (github.event_name == 'push') || (needs.skore-hub-project-changes.outputs.changes == 'true') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest", "windows-latest"]
+        python: ["3.9", "3.10", "3.11", "3.12"]
+        scikit-learn: ["1.6"]
+        include:
+          - os: "ubuntu-latest"
+            python: "3.12"
+            scikit-learn: "1.4"
+          - os: "ubuntu-latest"
+            python: "3.12"
+            scikit-learn: "1.5"
+          - os: "ubuntu-latest"
+            python: "3.12"
+            scikit-learn: "1.6"
+            coverage: true
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Python
+        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
+        id: setup-python
+        with:
+          python-version: ${{ matrix.python }}
+          check-latest: True
+          cache: pip
+
+      - name: Restore python-venv
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        id: cache-python-venv
+        with:
+          path: 'skore-hub-project/venv'
+          key: >-
+            python-venv
+            -${{ matrix.os }}
+            -${{ steps.setup-python.outputs.python-version }}
+            -${{ hashFiles(format('ci/requirements/skore-hub-project/python-{0}/scikit-learn-{1}/test-requirements.txt', matrix.python, matrix.scikit-learn)) }}
+
+      - name: Setup python-venv
+        working-directory: "skore-hub-project/"
+        run: |
+          set -eu
+
+          # Ensure venv is created
+          python -m venv venv
+
+          # Activate venv for each step depending on the OS
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              echo "${GITHUB_WORKSPACE}/skore-hub-project/venv/bin" >> ${GITHUB_PATH}
+              echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}/skore-hub-project/venv" >> ${GITHUB_ENV}
+          else
+              echo "${GITHUB_WORKSPACE}\\skore-hub-project\\venv\\Scripts" >> ${GITHUB_PATH}
+              echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}\\skore-hub-project\\venv" >> ${GITHUB_ENV}
+          fi
+
+      - name: Install dependencies in python-venv
+        working-directory: ${{ format('ci/requirements/skore-hub-project/python-{0}/scikit-learn-{1}', matrix.python, matrix.scikit-learn) }}
+        if: steps.cache-python-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --upgrade pip build
+          python -m pip install --requirement test-requirements.txt
+
+      - name: Save python-venv
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        if: steps.cache-python-venv.outputs.cache-hit != 'true'
+        with:
+          path: 'skore-hub-project/venv'
+          key: ${{ steps.cache-python-venv.outputs.cache-primary-key }}
+
+      - name: Build
+        working-directory: skore-hub-project/
+        run: python -m build
+
+      - name: Install
+        working-directory: skore-hub-project/dist/
+        run: wheel=(*.whl); python -m pip install --force-reinstall --no-deps "${wheel}"
+
+      - name: Test without coverage
+        if: ${{ ! matrix.coverage }}
+        timeout-minutes: 10
+        working-directory: skore-hub-project/
+        run: python -m pytest -n auto src/ tests/ --no-cov
+
+      - name: Test with coverage
+        if: ${{ matrix.coverage }}
+        timeout-minutes: 10
+        working-directory: skore-hub-project/
+        run: |
+          mkdir coverage
+          python -m pytest -n auto src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
+
+      - name: Upload coverage reports
+        if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: skore-hub-project-coverage
+          path: skore-hub-project/coverage/
+
+  skore-hub-project:
+    needs:
+      - skore-hub-project-changes
+      - skore-hub-project-lockfiles
+      - skore-hub-project-test
+    if: ${{ always() }}
+    runs-on: Ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          [[  ${{ contains(needs.*.result, 'failure') }} = false ]]

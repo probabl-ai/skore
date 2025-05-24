@@ -195,4 +195,5 @@ examples/plot_*.png
 
 # Exclude hatch artifacts
 skore/LICENSE
-skore-remote-project/LICENSE
+skore-hub-project/LICENSE
+skore-local-project/LICENSE

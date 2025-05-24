@@ -32,8 +32,6 @@ def test_show_versions(capfd):
     assert "machine:" in captured.out
     assert "skore:" in captured.out
     assert "pip:" in captured.out
-    assert "diskcache:" in captured.out
     assert "numpy:" in captured.out
     assert "rich:" in captured.out
     assert "scikit-learn:" in captured.out
-    assert "skops:" in captured.out

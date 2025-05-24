@@ -88,7 +88,7 @@ rf_report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
 # (here we display only the first 10 predictions for conciseness purposes):
 
 # %%
-rf_report.get_predictions(data_source="train", response_method="predict")[0:10]
+rf_report.get_predictions(data_source="train")[0:10]
 
 # %%
 # We can also plot the ROC curve that is generated for us:
@@ -280,11 +280,9 @@ _ = skore.train_test_split(
 # sphinx_gallery_start_ignore
 import os
 import tempfile
-from pathlib import Path
 
 temp_dir = tempfile.TemporaryDirectory()
-temp_dir_path = Path(temp_dir.name)
-os.chdir(temp_dir_path)
+os.environ["SKORE_WORKSPACE"] = temp_dir.name
 # sphinx_gallery_end_ignore
 my_project = skore.Project("my_project")
 
@@ -293,75 +291,55 @@ my_project = skore.Project("my_project")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now that the project exists, we can store some useful items in it (in the same
-# directory) using :func:`~skore.Project.put`, with a "universal" key-value convention,
-# along with some annotations.
+# directory) using :func:`~skore.Project.put`, with a key-value convention.
 
 # %%
-# Let us store the accuracy and the estimator report of the random forest using
-# :meth:`~skore.Project.put`, along with some annotation to help us track our
-# experiments:
+# Let us store the estimator report of the random forest using
+# :meth:`~skore.Project.put` to help us track our experiments:
 
 # %%
-my_project.put("accuracy", rf_report.metrics.accuracy(), note="random forest, float")
-my_project.put(
-    "estimator_report", rf_report, note="random forest, skore estimator report"
-)
+my_project.put("estimator_report", rf_report)
+my_project.put("estimator_report", gb_report)
 
 # %%
-# .. note ::
-#   With the skore :func:`~skore.Project.put`, there is no need to remember the API for
-#   saving or exporting each type of object: ``df.to_csv(...)``, ``plt.savefig(...)``,
-#   ``np.save(...)``, etc.
-#   There is also the unified :func:`~skore.Project.get` for loading items.
+# Now, let us retrieve the data that we previously stored:
 
 # %%
-# We can retrieve the value of an item using :meth:`~skore.Project.get`:
+metadata = my_project.reports.metadata()
+print(type(metadata))
 
 # %%
-my_project.get("accuracy")
-
-# %%
-# We can also retrieve the storage date and our annotation:
+# We can perform some queries on our stored data:
 
 # %%
 from pprint import pprint
 
-accuracies = my_project.get("accuracy", metadata="all")
-pprint(accuracies)
+report_get = metadata.query("ml_task.str.contains('classification')").reports()
+pprint(report_get)
 
 # %%
-# .. seealso::
-#
-#   For more information about the functionalities and the different types
-#   of items that we can store in a skore :class:`~skore.Project`,
-#   see :ref:`example_working_with_projects`.
+# For example, we can retrieve the report metrics from the first estimator report:
 
 # %%
-# Tracking the history of items
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-# %%
-# Now, for the gradient boosting model, let us store the same kinds of items
-# using the exact same keys, namely ``accuracy`` and ``estimator_report``:
-
-# %%
-my_project.put(
-    "accuracy", gb_report.metrics.accuracy(), note="gradient boosting, float"
-)
-my_project.put(
-    "estimator_report", gb_report, note="gradient boosting, skore estimator report"
-)
-
-# %%
-# Skore does not overwrite items with the same name (key): instead, it stores
-# their history so that nothing is lost:
-
-# %%
-accuracies_history = my_project.get("accuracy", metadata="all", version="all")
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
-pprint(accuracies_history)
+
+report_get[0].metrics.report_metrics(pos_label=1)
+
+# sphinx_gallery_start_ignore
+temp_dir.cleanup()
+# sphinx_gallery_end_ignore
+
+# %%
+# .. note::
+#   If rendered in a Jupyter notebook, ``metadata`` would render an interactive
+#   parallel coordinate plot to search for your preferred model based on some metrics.
+#   Here is a screenshot:
+#
+#   .. image:: /_static/images/screenshot_getting_started.png
+#       :alt: Screenshot of the widget in a Jupyter notebook
 
 # %%
 # .. note::
@@ -369,12 +347,6 @@ pprint(accuracies_history)
 #
 #   -   never lose some key machine learning metrics,
 #   -   and observe the evolution over time / runs.
-
-# %%
-# .. seealso::
-#
-#   For more functionalities about the tracking of items using their history,
-#   see :ref:`example_tracking_items`.
 
 # %%
 # .. admonition:: Stay tuned!

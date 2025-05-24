@@ -7,7 +7,6 @@ def test_standalone_progress():
 
     class StandaloneTask:
         def __init__(self):
-            self._parent_progress = None
             self._progress_info = None
 
         @progress_decorator("Standalone Task")
@@ -27,7 +26,6 @@ def test_standalone_progress():
     assert result == "done"
     assert task._standalone_n_calls == 4
     assert task._progress_info is None
-    assert task._parent_progress is None
 
 
 def test_nested_progress():
@@ -35,7 +33,6 @@ def test_nested_progress():
 
     class ParentTask:
         def __init__(self):
-            self._parent_progress = None
             self._progress_info = None
 
         @progress_decorator("Parent Task")
@@ -46,7 +43,8 @@ def test_nested_progress():
 
             self._child = ChildTask()
             for i in range(iterations):
-                self._child._parent_progress = progress
+                # Share the parent's progress bar with child
+                self._child._progress_info = {"current_progress": progress}
                 self._child.run()
                 progress.update(task, advance=1)
                 self._parent_n_calls = i
@@ -54,7 +52,6 @@ def test_nested_progress():
 
     class ChildTask:
         def __init__(self):
-            self._parent_progress = None
             self._progress_info = None
 
         @progress_decorator("Child Task")
@@ -73,10 +70,8 @@ def test_nested_progress():
 
     assert result == "done"
     assert parent._progress_info is None
-    assert parent._parent_progress is None
     assert parent._parent_n_calls == 2
     assert parent._child._child_n_calls == 1
-    assert parent._child._parent_progress is None
     assert parent._child._progress_info is None
 
 
@@ -86,7 +81,6 @@ def test_dynamic_description():
 
     class DynamicTask:
         def __init__(self, name):
-            self._parent_progress = None
             self._progress_info = None
             self.name = name
 
@@ -106,7 +100,6 @@ def test_dynamic_description():
 
     assert result == "test_task"
     assert task._progress_info is None
-    assert task._parent_progress is None
     assert task._dynamic_n_calls == 3
 
 
@@ -115,7 +108,6 @@ def test_exception_handling():
 
     class ErrorTask:
         def __init__(self):
-            self._parent_progress = None
             self._progress_info = None
 
         @progress_decorator("Error Task")
@@ -133,7 +125,6 @@ def test_exception_handling():
 
     # Verify progress bar was cleaned up
     assert task._progress_info is None
-    assert task._parent_progress is None
 
 
 def test_child_report_cleanup():
@@ -142,7 +133,6 @@ def test_child_report_cleanup():
 
     class Child:
         def __init__(self):
-            self._parent_progress = None
             self._progress_info = None
             self.called = False
 
@@ -153,7 +143,6 @@ def test_child_report_cleanup():
 
     class Parent:
         def __init__(self):
-            self._parent_progress = None
             self._progress_info = None
             self.reports_ = [Child(), Child()]
 
@@ -171,8 +160,6 @@ def test_child_report_cleanup():
     assert all(rp.called for rp in parent.reports_)
     # Verify that progress attributes are cleaned for each child report
     for rp in parent.reports_:
-        assert rp._parent_progress is None
         assert rp._progress_info is None
     # Also verify if parent reports are cleaned up as well
-    assert parent._parent_progress is None
     assert parent._progress_info is None

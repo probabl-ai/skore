@@ -17,7 +17,7 @@ functionalities of the report are exposed through accessors.
 
 .. autosummary::
    :toctree: ../api/
-   :template: autosummary/accessor_method.rst
+   :template: class_methods_no_index.rst
 
    CrossValidationReport.help
    CrossValidationReport.cache_predictions
@@ -40,7 +40,6 @@ estimator across cross-validation folds.
 
 .. autosummary::
     :toctree: ../api/
-    :nosignatures:
     :template: autosummary/accessor_method.rst
 
     CrossValidationReport.metrics.help

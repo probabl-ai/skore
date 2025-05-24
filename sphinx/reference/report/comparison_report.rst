@@ -3,22 +3,25 @@ Report for a comparison of :class:`EstimatorReport`
 
 .. currentmodule:: skore
 
-The class :class:`ComparisonReport` provides a report allowing to compare :class:`EstimatorReport` instances in an interactive way. The functionalities of the report are accessible through accessors.
+The class :class:`ComparisonReport` provides a report allowing to compare
+:class:`EstimatorReport` instances in an interactive way. The functionalities of the
+report are accessible through accessors.
 
 .. autosummary::
     :toctree: ../api/
     :template: base.rst
 
     ComparisonReport
-    ComparisonReport.cache_predictions
-    ComparisonReport.clear_cache
+
+.. rubric:: Methods
 
 .. autosummary::
     :toctree: ../api/
-    :nosignatures:
-    :template: autosummary/accessor_method.rst
+    :template: class_methods_no_index.rst
 
     ComparisonReport.help
+    ComparisonReport.cache_predictions
+    ComparisonReport.clear_cache
     ComparisonReport.get_predictions
 
 .. autosummary::
@@ -37,7 +40,6 @@ get the common performance metric representations.
 
 .. autosummary::
     :toctree: ../api/
-    :nosignatures:
     :template: autosummary/accessor_method.rst
 
     ComparisonReport.metrics.help
