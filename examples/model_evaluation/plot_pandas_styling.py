@@ -215,4 +215,7 @@ styled_df_with_indicators
 # %%
 # .. warning::
 #    There is an issue where the Brier score's favorability indicator shows as NaN
-#    in the output (before styling!), while it should display "(↘︎)" to indicate that lower values are better.
+#    in the output (before styling!), while it should display "(↘︎)" to indicate that
+#    lower values are better.
+#    This issue is tracked in
+#    `issue #1755 <https://github.com/probabl-ai/skore/issues/1755>`_.
