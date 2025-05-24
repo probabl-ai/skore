@@ -2,7 +2,7 @@ import inspect
 from collections.abc import Iterable
 from functools import partial
 from operator import attrgetter
-from typing import Any, Callable, Literal, Optional, Union, cast
+from typing import Any, Callable, Literal, Optional, Protocol, Union, cast
 
 import joblib
 import numpy as np
@@ -31,6 +31,11 @@ from skore.utils._accessor import (
 from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
+
+
+class DisplayClassProtocol(Protocol):
+    @classmethod
+    def _compute_data_for_display(cls, *args, **kwargs) -> Any: ...
 
 
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
@@ -1626,15 +1631,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         y: Union[ArrayLike, None],
         data_source: DataSource,
         response_method: Union[str, list[str], tuple[str, ...]],
-        display_class: type[
-            Union[
-                RocCurveDisplay,
-                PrecisionRecallCurveDisplay,
-                PredictionErrorDisplay,
-                CalibrationCurveDisplay,
-                ConfusionMatrixDisplay,
-            ]
-        ],
+        display_class: type[DisplayClassProtocol],
         display_kwargs: dict[str, Any],
     ) -> Union[
         RocCurveDisplay,
