@@ -18,25 +18,21 @@ class Metadata(DataFrame):
     """
     Metadata and metrics for all reports persisted in a project at a given moment.
 
-    A metadata object is an extended ``pandas.DataFrame``, containing all the metadata
-    and metrics of the reports that have been persisted in a project. It implements a
-    custom HTML representation, that allows user to filter its reports using a parallel
-    coordinates plot. In a Jupyter Notebook, this representation automatically replaces
-    the standard ``pandas.DataFrame`` one and displays an interactive plot.
+    A metadata object is an extended :class:`pandas.DataFrame`, containing all the
+    metadata and metrics of the reports that have been persisted in a project. It
+    implements a custom HTML representation, that allows user to filter its reports
+    using a parallel coordinates plot. In a Jupyter Notebook, this representation
+    automatically replaces the standard :class:`pandas.DataFrame` one and displays an
+    interactive plot.
 
     The parallel coordinates plot is interactive, such the user can select a filter path
     and retrieve the corresponding reports.
 
     Outside a Jupyter Notebook, the metadata object can be used as a standard
-    ``pandas.DataFrame`` object. This means that it can be questioned, divided etc.,
-    using the standard ``pandas.DataFrame`` functions.
+    :class:`pandas.DataFrame` object. This means that it can be questioned, divided
+    etc., using the standard :class:`pandas.DataFrame` functions.
 
-    Methods
-    -------
-    reports(filter=True) -> list[skore.sklearn.EstimatorReport]
-        Return the reports referenced by the metadata object from the project.
-        If a query string selection exists, it will be automatically applied before, to
-        filter the reports to return. Otherwise, returns all reports.
+    Refer to :class:`pandas.DataFrame` for the standard methods and attributes.
     """
 
     _metadata = ["project"]
@@ -54,7 +50,7 @@ class Metadata(DataFrame):
         Notes
         -----
         This function is not intended for direct use. Instead simply use the accessor
-        ``skore.Project.reports.metadata``.
+        :meth:`skore.Project.reports.metadata`.
         """
         metadata = DataFrame(project.reports.metadata(), copy=False)
 
