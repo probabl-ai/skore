@@ -15,6 +15,10 @@ which estimator performs better for each metric using blue gradients.
 # ====================
 
 # %%
+import pandas as pd
+
+pd.set_option("future.no_silent_downcasting", True)
+
 from skore.sklearn._estimator.metrics_accessor import _MetricsAccessor
 from pprint import pprint
 
@@ -24,6 +28,8 @@ pprint(metrics_dict)
 # %%
 # Define styling functions
 # ========================
+
+# %%
 
 # Automatically determine lower_is_better and higher_is_better
 lower_is_better = [
@@ -62,7 +68,8 @@ def apply_styling(row):
 
     # Generate styles for each cell
     styles = []
-    for value, norm_value in zip(row, normalized.reindex(row.index).fillna(0)):
+    normalized_values = normalized.reindex(row.index).fillna(0)
+    for value, norm_value in zip(row, normalized_values):
         # Skip styling for non-numeric values (like indicators)
         if not isinstance(value, (int, float)):
             styles.append("")
@@ -198,9 +205,14 @@ styled_df
 df_with_indicators = comparator.metrics.report_metrics(
     pos_label=1, indicator_favorability=True
 )
+print("Raw dataframe before styling:")
+print(df_with_indicators)
 styled_df_with_indicators = df_with_indicators.style.apply(
     apply_styling, axis=1
 ).format(format_values)
 styled_df_with_indicators
 
 # %%
+# .. warning::
+#    There is an issue where the Brier score's favorability indicator shows as NaN
+#    in the output (before styling!), while it should display "(↘︎)" to indicate that lower values are better.
