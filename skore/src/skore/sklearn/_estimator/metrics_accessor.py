@@ -412,7 +412,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
     def _build_partial_report(
         self,
-        score,
+        score: dict | list,
         metric_name: str | None,
         metrics_kwargs: dict,
         pos_label: Optional[PositiveLabel] = None,
@@ -421,8 +421,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Parameters
         ----------
-            score : _type_
-                _description_
+            score : dict | list
+                A dictionary/list containing computed score values.
 
             metric_name : str | None
                 The name of the metric that is going to be shown in the report.
@@ -436,7 +436,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Returns
         -------
             tuple[NDArray, Union[pd.Index, pd.MultiIndex, list[str], None]]
-                _description_
+                A small chunk of the report.
         """
         if self._parent._ml_task == "binary-classification":
             if isinstance(score, dict):
