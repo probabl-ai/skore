@@ -7,14 +7,14 @@ These functions and classes are meant for managing a Project and its reports.
 
 .. autosummary::
     :toctree: api/
-    :template: base.rst
+    :template: class_with_accessors.rst
 
     Project
 
 .. rubric:: Methods
 
 .. autosummary::
-   :toctree: ../api/
+   :toctree: api/
    :template: class_methods_no_index.rst
 
     Project.put
@@ -22,7 +22,7 @@ These functions and classes are meant for managing a Project and its reports.
 .. rubric:: Reports
 
 .. autosummary::
-   :toctree: ../api/
+   :toctree: api/
    :template: autosummary/accessor.rst
 
    Project.reports

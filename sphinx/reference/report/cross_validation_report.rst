@@ -9,7 +9,7 @@ functionalities of the report are exposed through accessors.
 
 .. autosummary::
    :toctree: ../api/
-   :template: base.rst
+   :template: class_with_accessors.rst
 
    CrossValidationReport
 
@@ -24,7 +24,7 @@ functionalities of the report are exposed through accessors.
    CrossValidationReport.clear_cache
    CrossValidationReport.get_predictions
 
-.. rubric:: Metrics
+.. rubric:: Accessors
 
 .. autosummary::
    :toctree: ../api/
