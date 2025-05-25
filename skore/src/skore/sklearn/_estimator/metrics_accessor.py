@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
 from sklearn import metrics
+from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
@@ -2006,10 +2007,15 @@ class _MetricsAccessor(
             pos_label=None,
         )
 
-        return ConfusionMatrixDisplay.from_predictions(
-            y_true=y,
-            y_pred=y_pred,
-            sample_weight=sample_weight,
+        cm = sklearn_confusion_matrix(
+            y_true=y, y_pred=y_pred, sample_weight=sample_weight
+        )
+
+        if display_labels is None:
+            display_labels = np.unique(np.concatenate([y, y_pred]))
+
+        return ConfusionMatrixDisplay(
+            confusion_matrix=cm,
             display_labels=display_labels,
             include_values=include_values,
             normalize=normalize,
