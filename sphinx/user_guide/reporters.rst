@@ -56,7 +56,7 @@ computed based on the type of target variable. However, you can specify by passi
 the metrics you want to compute to the `scoring` parameter. We accept different types:
 (i) some strings that corresponds to scikit-learn scorer names or a built-in `skore`
 metric name, (ii) a callable or a (iii) scikit-learn scorer constructed with
-:func:`skore.metrics.make_scorer`.
+:func:`sklearn.metrics.make_scorer`.
 
 Refer to the :ref:`estimator_report_metrics` section for more details on all the
 available metrics in `skore`.
