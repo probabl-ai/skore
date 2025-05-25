@@ -42,8 +42,8 @@ the statistical and performance metrics of the predictive model. This accessor p
 two types of methods: (i) methods that return some metrics and (ii) methods that
 return a `skore` display object.
 
-Before to go more in details in those methods, we first discuss the parameters shared
-between these methods. `data_source` is a parameter that allows specifying the data
+Before diving into the details of these methods, we first discuss the parameters they share.
+`data_source` is a parameter that allows specifying the data
 to use to compute the metrics. It can be set to `train` or `test` in which case we
 rely on the data provided to the constructor. In addition, `data_source` can be set
 to `X_y` and it allows to pass a new dataset using the parameters `X` and `y`. It is
