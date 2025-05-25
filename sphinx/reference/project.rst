@@ -40,9 +40,10 @@ These functions and classes are meant for managing a `Project` and its reports.
 Skore project's metadata
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-When calling :meth:`Project.reports.metadata`, a :class:`Metadata` object is returned.
-This object is a :class:`pandas.DataFrame` with a specific HTML representation to
-allow you filter and retrieve the reports.
+When calling :meth:`Project.reports.metadata`, a
+:class:`~skore.project.metadata.Metadata` object is returned. This object is a
+:class:`pandas.DataFrame` with a specific HTML representation to allow you filter and
+retrieve the reports.
 
 .. autosummary::
    :toctree: api/
