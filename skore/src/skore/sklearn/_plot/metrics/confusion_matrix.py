@@ -149,69 +149,6 @@ class ConfusionMatrixDisplay(StyleDisplayMixin, HelpDisplayMixin):
         self.figure_, self.ax_ = fig, ax
         return self
 
-    @classmethod
-    def from_predictions(
-        cls,
-        y_true,
-        y_pred,
-        *,
-        sample_weight=None,
-        display_labels=None,
-        include_values=True,
-        normalize=None,
-        values_format=None,
-    ):
-        """Create a confusion matrix display from predictions.
-
-        Parameters
-        ----------
-        y_true : array-like of shape (n_samples,)
-            True labels.
-
-        y_pred : array-like of shape (n_samples,)
-            Predicted labels, as returned by a classifier.
-
-        sample_weight : array-like of shape (n_samples,), default=None
-            Sample weights.
-
-        display_labels : list of str, default=None
-            Target names used for plotting. By default, labels will be inferred
-            from y_true.
-
-        include_values : bool, default=True
-            Includes values in confusion matrix.
-
-        normalize : {'true', 'pred', 'all'}, default=None
-            Normalizes confusion matrix over the true (rows), predicted (columns)
-            conditions or all the population. If None, confusion matrix will not be
-            normalized.
-
-        values_format : str, default=None
-            Format specification for values in confusion matrix. If None, the format
-            specification is 'd' or '.2g' whichever is shorter.
-
-        Returns
-        -------
-        display : :class:`~sklearn.metrics.ConfusionMatrixDisplay`
-            The confusion matrix display.
-        """
-        cm = sklearn_confusion_matrix(
-            y_true=y_true, y_pred=y_pred, sample_weight=sample_weight
-        )
-
-        if display_labels is None:
-            display_labels = np.unique(np.concatenate([y_true, y_pred]))
-
-        disp = cls(
-            confusion_matrix=cm,
-            display_labels=display_labels,
-            include_values=include_values,
-            normalize=normalize,
-            values_format=values_format,
-        )
-
-        return disp
-
     def frame(self):
         """Return the confusion matrix as a dataframe.
 
