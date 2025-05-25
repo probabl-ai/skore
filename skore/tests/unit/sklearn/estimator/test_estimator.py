@@ -10,6 +10,7 @@ import pytest
 from sklearn.base import clone
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
@@ -1447,3 +1448,33 @@ def test_estimator_report_sklearn_scorer_names_scoring_kwargs(
         report.metrics.report_metrics(
             scoring=["f1"], scoring_kwargs={"average": "macro"}
         )
+
+
+def test_estimator_report_metrics_dummy_model_binary(binary_classification_data):
+    estimator, X_test, y_test = binary_classification_data
+
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    accessor = report.metrics
+
+    metrics_df = accessor.report_metrics(add_dummy_model=True)
+
+    assert isinstance(accessor._dummy_model, DummyClassifier)
+    # check that there are 2 columns (one for selected model and one for the dummy one)
+    assert metrics_df.shape[1] == 2
+    assert metrics_df.columns[1] == "Dummy Baseline"
+
+
+def test_estimator_report_metrics_dummy_model_regression(regression_data):
+    estimator, X_test, y_test = regression_data
+
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    accessor = report.metrics
+
+    metrics_df = accessor.report_metrics(add_dummy_model=True)
+
+    assert isinstance(accessor._dummy_model, DummyRegressor)
+    # check that there are 2 columns (one for selected model and one for the dummy one)
+    assert metrics_df.shape[1] == 2
+    assert metrics_df.columns[1] == "Dummy Baseline"
