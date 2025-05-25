@@ -1137,3 +1137,31 @@ def test_estimator_report_precision_recall_pos_label_overwrite(
             (metric.capitalize(), "A"), (report.estimator_name_, "mean")
         ]
     )
+
+
+def test_cross_validation_report_metrics_dummy_model_binary(binary_classification_data):
+    estimator, X, y = binary_classification_data
+
+    report = CrossValidationReport(estimator, X=X, y=y)
+
+    accessor = report.metrics
+
+    metrics_df = accessor.report_metrics(add_dummy_model=True)
+
+    # check that there are 2 columns (one for selected model and one for the dummy one)
+    assert len(set(metrics_df.columns.get_level_values(level=0))) == 2
+    assert "Dummy Baseline" in set(metrics_df.columns.get_level_values(level=0))
+
+
+def test_cross_validation_report_metrics_dummy_model_regression(regression_data):
+    estimator, X, y = regression_data
+
+    report = CrossValidationReport(estimator, X=X, y=y)
+
+    accessor = report.metrics
+
+    metrics_df = accessor.report_metrics(add_dummy_model=True)
+
+    # check that there are 2 columns (one for selected model and one for the dummy one)
+    assert len(set(metrics_df.columns.get_level_values(level=0))) == 2
+    assert "Dummy Baseline" in set(metrics_df.columns.get_level_values(level=0))

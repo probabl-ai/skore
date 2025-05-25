@@ -419,20 +419,16 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     ) -> tuple[NDArray, Union[pd.Index, pd.MultiIndex, list[str], None]]:
         """Build the small chunks of the report per metric given the score.
 
-        flat_index : bool, default=False
-            Whether to flatten the multi-index columns. Flat index will always be lower
-            case, do not include spaces and remove the hash symbol to ease indexing.
-
         Parameters
         ----------
             score : _type_
                 _description_
 
-            metric_name : str
+            metric_name : str | None
                 The name of the metric that is going to be shown in the report.
 
             metrics_kwargs : dict
-                _description_
+                Keyword arguments for the respective metrics function.
 
             pos_label : Optional[PositiveLabel], default=None
                 The positive class.
