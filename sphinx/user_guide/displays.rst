@@ -6,8 +6,9 @@ Visualization via the `skore` display API
 
 .. currentmodule:: skore
 
-`skore` provides a family of objects that we call displays. As a user, you can get a
-display by interacting with a reporter. Let's provide an example:
+`skore` provides a family of objects that we call displays. All displays follow the
+common API defined by the :class:`Display` protocol. As a user, you get a display by
+interacting with a reporter. Let's provide an example:
 
 .. plot::
     :context: close-figs
