@@ -37,12 +37,26 @@ test data if the test data is not provided.
 Model evaluation
 ^^^^^^^^^^^^^^^^
 
-:obj:`EstimatorReport.metrics`
+:obj:`EstimatorReport.metrics` is the entry point that provides methods to evaluate
+the statistical and performance metrics of the predictive model. This accessor provides
+two types of methods: (i) methods that return some metrics and (ii) methods that
+return a `skore` display object.
 
+Before to go more in details in those methods, we first discuss the parameters shared
+between these methods. `data_source` is a parameter that allows specifying the data
+to use to compute the metrics. It can be set to `train` or `test` in which case we
+rely on the data provided to the constructor. In addition, `data_source` can be set
+to `X_y` and it allows to pass a new dataset using the parameters `X` and `y`. It is
+useful when you want to compare different models on a new left-out dataset.
 
-Model inspection
-^^^^^^^^^^^^^^^^
-
+While there is individual methods to compute each metric specific to the problem at
+hand, we provide the :class:`EstimatorReport.metrics.report_metrics` method that
+allows to aggregate metrics in a single dataframe. By default, a set of metrics is
+computed based on the type of target variable. However, you can specify by passing
+the metrics you want to compute to the `scoring` parameter. We accept different types:
+(i) some strings that corresponds to scikit-learn scorer names or a built-in `skore`
+metric name, (ii) a callable or a (iii) scikit-learn scorer constructed with
+:func:`skore.metrics.make_scorer`.
 
 Caching mechanism
 ^^^^^^^^^^^^^^^^^

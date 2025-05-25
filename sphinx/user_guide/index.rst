@@ -1,5 +1,8 @@
 .. _user_guide:
 
+User guide
+==========
+
 `skore` helps at structuring and storing what matters in your data science
 experiments.
 
@@ -26,12 +29,11 @@ project easier to understand and maintain in the long run. Finally, `skore` prov
 a way to store all those structured artifacts in a structured project and thus help
 you later on to retrieve the experiment results that you need.
 
-User guide
-==========
+Table of contents
+-----------------
 
 .. toctree::
-   :maxdepth: 1
-   :hidden:
+   :maxdepth: 2
 
    reporters
    project
