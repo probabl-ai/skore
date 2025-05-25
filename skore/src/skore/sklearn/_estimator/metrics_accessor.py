@@ -413,7 +413,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     def _build_partial_report(
         self,
         score,
-        metric_name: str,
+        metric_name: str | None,
         metrics_kwargs: dict,
         pos_label: Optional[PositiveLabel] = None,
     ) -> tuple[NDArray, Union[pd.Index, pd.MultiIndex, list[str], None]]:
@@ -583,7 +583,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     data_source=data_source,
                     data_source_hash=data_source_hash,
                 )
-                score_dummy = metric_fn(y_true, y_pred_dummy, **kwargs)
+                score_dummy = metric_fn(y_true, y_pred_dummy[0][1], **kwargs)
             else:
                 score_dummy = None
 
