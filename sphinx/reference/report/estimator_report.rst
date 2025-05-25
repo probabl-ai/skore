@@ -33,6 +33,8 @@ report are accessible through accessors.
    EstimatorReport.feature_importance
    EstimatorReport.metrics
 
+.. _estimator_report_metrics:
+
 Metrics
 -------
 

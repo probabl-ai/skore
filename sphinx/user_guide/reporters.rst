@@ -58,6 +58,18 @@ the metrics you want to compute to the `scoring` parameter. We accept different 
 metric name, (ii) a callable or a (iii) scikit-learn scorer constructed with
 :func:`skore.metrics.make_scorer`.
 
+Refer to the :ref:`estimator_report_metrics` section for more details on all the
+available metrics in `skore`.
+
+The second type of methods provided by :obj:`EstimatorReport.metrics` are methods
+that return a `skore` display object. They have a common API as well. They expose
+two methods: (i) `plot` that allows to plot graphically the information contained
+in the display and (ii) `set_style` that allows to set some graphical settings instead
+of passing them to the `plot` method at each call.
+
+Refer to the :ref:`displays` section for more details regarding the `skore` display
+API.
+
 Caching mechanism
 ^^^^^^^^^^^^^^^^^
 
