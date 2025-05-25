@@ -56,9 +56,6 @@ correspond to scikit-learn scorer names or a built-in `skore` metric name, (ii) 
 callable or a (iii) scikit-learn scorer constructed with
 :func:`sklearn.metrics.make_scorer`.
 
-Refer to the :ref:`estimator_report_metrics` section for more details on all the
-available metrics in `skore`.
-
 The second type of methods provided by :obj:`EstimatorReport.metrics` are methods that
 return a `skore` display object. They have a common API as well. They expose two
 methods: (i) `plot` that plots graphically the information contained in the display and
@@ -66,7 +63,8 @@ methods: (i) `plot` that plots graphically the information contained in the disp
 method at each call.
 
 Refer to the :ref:`displays` section for more details regarding the `skore` display
-API.
+API. Refer to the :ref:`estimator_report_metrics` section for more details on all the
+available metrics in `skore`.
 
 Caching mechanism
 ^^^^^^^^^^^^^^^^^
@@ -75,6 +73,20 @@ Caching mechanism
 intermediate information that is expensive to compute such as predictions. It
 efficiently re-uses this information when recomputing the same metric or a metric
 requiring the same intermediate information.
+
+We expose three methods to interact with the cache:
+
+- :meth:`EstimatorReport.cache_predictions` to cache the predictions of the estimator
+  without awaiting the computation when calling the evaluation metrics.
+- :meth:`EstimatorReport.clear_cache` to clear the cache.
+- :meth:`EstimatorReport.get_predictions` to get the predictions from the cache or
+  compute them if they are not in the cache.
+
+.. note::
+    The current implementation of the caching mechanism happens in-memory. It is
+    therefore not persisted between sessions, apart from loading an
+    :class:`EstimatorReport` from a :class:`Project`. Refer to the following
+    section :ref:`project` for more details.
 
 Refer to the example entitled
 :ref:`sphx_glr_auto_examples_technical_details_plot_cache_mechanism.py` to get a
@@ -85,7 +97,37 @@ detailed view of the caching mechanism.
 Cross-validation estimator
 --------------------------
 
+:class:`CrossValidationReport` has a similar API to :class:`EstimatorReport`. The main
+difference is in the initialization. It accepts an estimator, a dataset (i.e. `X` and
+`y`) and a cross-validation strategy. Internally, the dataset is split according to the
+cross-validation strategy and an estimator report is created for each split. Therefore,
+a :class:`CrossValidationReport` is a collection of :class:`EstimatorReport` instances,
+available through the :obj:`CrossValidationReport.estimator_reports_` attribute.
+
+For metrics and displays, the same API is exposed with an extra
+parameter, `aggregate`, to aggregate the metrics across the splits.
+
+The :class:`CrossValidationReport` also comes with a caching mechanism by leveraging
+the :class:`EstimatorReport` caching mechanism and exposes the same methods.
+
+Refer to the :ref:`cross_validation_report_metrics` section for more details on the
+metrics available in `skore` for cross-validation.
+
 .. _comparison_report:
 
 Comparison report
 -----------------
+
+:class:`CrossValidationReport` is a great tool to compare the performance of the same
+predictive model architecture with a variation of the dataset. However, it is not
+intended to compare different families of predictive models. For this purpose,
+use :class:`ComparisonReport`.
+
+:class:`ComparisonReport` takes a list (or a dictionary) of :class:`EstimatorReport` or
+:class:`CrossValidationReport` instances. It then provides methods to compare the
+performance of the different models.
+
+The caching mechanism is also available and exposes the same methods.
+
+Refer to the :ref:`cross_validation_report_metrics` section for more details on the metrics
+available in `skore` for comparison.
