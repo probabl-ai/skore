@@ -76,7 +76,8 @@ def _combine_estimator_results(
     # - not use it in the aggregate operation
     # - later to only report a single column and not by split columns
     if indicator_favorability:
-        favorability = results.pop("Favorability").iloc[:, 0]
+        fav_df = results.pop("Favorability")
+        favorability = fav_df.bfill(axis=1).iloc[:, 0]
     else:
         favorability = None
 
