@@ -302,9 +302,13 @@ def _combine_cross_validation_results(
     # - not use it in the aggregate operation
     # - later to only report a single column and not by split columns
     if indicator_favorability:
-        favorability = results[0]["Favorability"]
+        all_favorability_columns: list[pd.Series] = []
         for result in results:
-            result.pop("Favorability")
+            all_favorability_columns.append(result.pop("Favorability"))
+
+        # Using bfill to ensure we have non-NaN values when possible
+        favorability_df = pd.concat(all_favorability_columns, axis=1)
+        favorability = favorability_df.bfill(axis=1).iloc[:, 0]
     else:
         favorability = None
 
