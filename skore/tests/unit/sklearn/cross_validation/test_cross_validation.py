@@ -1009,3 +1009,31 @@ def test_cross_validation_timings_flat_index(binary_classification_data):
         "fit_time_s",
         "predict_time_s",
     ]
+
+
+def test_cross_validation_report_metrics_dummy_model_binary(binary_classification_data):
+    estimator, X, y = binary_classification_data
+
+    report = CrossValidationReport(estimator, X=X, y=y)
+
+    accessor = report.metrics
+
+    metrics_df = accessor.report_metrics(add_dummy_model=True)
+
+    # check that there are 2 columns (one for selected model and one for the dummy one)
+    assert len(set(metrics_df.columns.get_level_values(level=0))) == 2
+    assert "Dummy Baseline" in set(metrics_df.columns.get_level_values(level=0))
+
+
+def test_cross_validation_report_metrics_dummy_model_regression(regression_data):
+    estimator, X, y = regression_data
+
+    report = CrossValidationReport(estimator, X=X, y=y)
+
+    accessor = report.metrics
+
+    metrics_df = accessor.report_metrics(add_dummy_model=True)
+
+    # check that there are 2 columns (one for selected model and one for the dummy one)
+    assert len(set(metrics_df.columns.get_level_values(level=0))) == 2
+    assert "Dummy Baseline" in set(metrics_df.columns.get_level_values(level=0))
