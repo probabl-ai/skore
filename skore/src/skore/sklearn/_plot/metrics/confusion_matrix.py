@@ -1,12 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 
-from skore.sklearn._plot.base import Display
 from skore.sklearn._plot.style import StyleDisplayMixin
+from skore.sklearn._plot.utils import HelpDisplayMixin
 
 
-class ConfusionMatrixDisplay(Display):
+class ConfusionMatrixDisplay(StyleDisplayMixin, HelpDisplayMixin):
     """Display for confusion matrix.
 
     Parameters
