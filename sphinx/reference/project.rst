@@ -51,7 +51,7 @@ allow you filter and retrieve the reports.
    project.metadata.Metadata
 
 .. autosummary::
-   :toctree: ../api/
+   :toctree: api/
    :template: class_methods_no_index.rst
 
    project.metadata.Metadata.reports
