@@ -129,5 +129,5 @@ performance of the different models.
 
 The caching mechanism is also available and exposes the same methods.
 
-Refer to the :ref:`cross_validation_report_metrics` section for more details on the metrics
-available in `skore` for comparison.
+Refer to the :ref:`cross_validation_report_metrics` section for more details on the
+metrics available in `skore` for comparison.
