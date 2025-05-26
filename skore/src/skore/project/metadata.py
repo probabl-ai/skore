@@ -101,7 +101,7 @@ class Metadata(DataFrame):
         if depth > max_depth:
             return itemized_pipeline
 
-        for transformer in feature_union.values():
+        for _, transformer in feature_union.transformer_list:
             type_ = type(transformer)
             if type_ == Pipeline:
                 itemized_pipeline = Metadata._explore_sk_pipeline(
