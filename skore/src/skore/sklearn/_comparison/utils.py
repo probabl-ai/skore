@@ -76,8 +76,10 @@ def _combine_estimator_results(
     # - not use it in the aggregate operation
     # - later to only report a single column and not by split columns
     if indicator_favorability:
-        fav_df = results.pop("Favorability")
-        favorability = fav_df.bfill(axis=1).iloc[:, 0]
+        # Some metrics can be undefined for some estimators and NaN are
+        # introduced after the concatenation. We fill the NaN using the
+        # valid favorability
+        favorability = results.pop("Favorability").bfill(axis=1).iloc[:, 0]
     else:
         favorability = None
 
@@ -302,13 +304,11 @@ def _combine_cross_validation_results(
     # - not use it in the aggregate operation
     # - later to only report a single column and not by split columns
     if indicator_favorability:
-        all_favorability_columns: list[pd.Series] = []
-        for result in results:
-            all_favorability_columns.append(result.pop("Favorability"))
-
-        # Using bfill to ensure we have non-NaN values when possible
-        favorability_df = pd.concat(all_favorability_columns, axis=1)
-        favorability = favorability_df.bfill(axis=1).iloc[:, 0]
+        favorability = (
+            pd.concat([result.pop("Favorability") for result in results], axis=1)
+            .bfill(axis=1)
+            .iloc[:, 0]
+        )
     else:
         favorability = None
 
