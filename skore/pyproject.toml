@@ -23,42 +23,37 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-  "diskcache",
+  "IPython",
+  "anywidget",
+  "ipywidgets",
   "joblib",
   "matplotlib",
   "numpy",
   "pandas",
+  "plotly",
   "rich",
   "scikit-learn",
-  "skops",
+  "skore-local-project",
 ]
 
 [project.optional-dependencies]
-test = [
-  "altair>=5,<6",
-  "pillow",
-  "plotly>=5,<6",
-  "polars; platform_machine != 'x86_64'",
-  "polars-lts-cpu; platform_machine == 'x86_64'",
+test-base = [
   "pre-commit",
   "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "ruff",
   "scikit-learn<1.7",
-  "skrub",
   "xdoctest",
 ]
-sphinx = [
-  "IPython",
+test = ["skore[test-base]", "polars"]
+test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
+sphinx-base = [
   "altair",
   "kaleido",
   "numpydoc",
   "plotly>=5,<6",
-  "polars; platform_machine != 'x86_64'",
-  "polars-lts-cpu; platform_machine == 'x86_64'",
   "pydata-sphinx-theme",
   "scikit-learn<1.7",
   "seaborn",
@@ -72,10 +67,13 @@ sphinx = [
   "sphinx_autosummary_accessors",
   "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
 ]
+sphinx = ["skore[sphinx-base]", "polars"]
+sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]
 dev = [
   "nbformat",
   "ipykernel",
 ]
+hub = ["skore-hub-project"]
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -106,12 +104,6 @@ addopts = [
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
-  # We ignore unwanted directories rather than including wanted ones, because
-  # otherwise it becomes impossible to test only one file (the argument gets
-  # appended to the defaults)
-  "--ignore=doc",
-  "--ignore=examples",
-  "--ignore=notebooks",
   "--dist=loadscope",
 ]
 
@@ -124,10 +116,14 @@ parallel = true
 [tool.coverage.report]
 omit = ["*/externals/*", "src/*", "tests/*"]
 show_missing = true
+exclude_also = [
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
 
 [tool.ruff]
 src = ["skore"]
-exclude = ["doc"]
 
 [tool.ruff.lint]
 select = [
@@ -158,8 +154,8 @@ convention = "numpy"
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["src/skore/externals/.*", "ci/*", "hatch/*", "tests/*"]
+exclude = ["src/skore/externals/.*", "hatch/*", "tests/*"]
 
 [[tool.mypy.overrides]]
-module = ["diskcache.*", "sklearn.*"]
+module = ["sklearn.*"]
 ignore_missing_imports = true

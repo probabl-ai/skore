@@ -17,32 +17,35 @@
   <h3>the scikit-learn sidekick</h3>
 
 Elevate ML Development with Built-in Recommended Practices \
-[Documentation](https://docs.skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3)
+[Documentation](https://docs.skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3) — [Skore Hub](https://probabl.ai/skore)
 
 </div>
 
 <br />
 
-## What is skore?
+## 🧩 What is Skore?
 
-skore is a Python open-source library designed to help data scientists apply recommended practices and avoid common methodological pitfalls in scikit-learn.
-
-## Key features
-
-- **Diagnose**: catch methodological errors before they impact your models.
-  - `train_test_split` supercharged with methodological guidance: the API is the same as scikit-learn's, but skore displays warnings when applicable. For example, it warns you against shuffling time series data or when you have class imbalance.
-- **Evaluate**: automated insightful reports.
-  - `EstimatorReport`: feed your scikit-learn compatible estimator and dataset, and it generates recommended metrics, feature importance, and plots to help you evaluate and inspect your estimator. All these are computed and generated for you in 1 line of code. Under the hood, we use efficient caching to make the computations blazing fast.
-  - `CrossValidationReport`: get a skore estimator report for each fold of your cross-validation.
-  - `ComparisonReport`: benchmark your skore estimator reports.
-
-## What's next?
-
-Skore is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
+**Skore** is a product whose core mission is to turn uneven ML development into structured, effective decision-making. It is made of two complementary components:
+- **Skore Lib**: the scikit-learn sidekick, an open-source Python library (described here!) designed to help data scientists boost their ML development with effective guidance and tooling.
+- **Skore Hub**: the collaborative layer where teams connect, learn more on our [product page](https://probabl.ai/skore).
 
 ⭐ Support us with a star and spread the word - it means a lot! ⭐
 
-## 🚀 Quick start
+### Key features of Skore Lib
+
+**Evaluate and inspect**: automated insightful reports.
+- `EstimatorReport`: feed your scikit-learn compatible estimator and dataset, and it generates recommended metrics, feature importance, and plots to help you evaluate and inspect your model. All in just one line of code. Under the hood, we use efficient caching to make the computations blazing fast.
+- `CrossValidationReport`: get a skore estimator report for each fold of your cross-validation.
+- `ComparisonReport`: benchmark your skore estimator reports.
+
+**Diagnose**: catch methodological errors before they impact your models.
+  - `train_test_split` supercharged with methodological guidance: the API is the same as scikit-learn's, but skore displays warnings when applicable. For example, it warns you against shuffling time series data or when you have class imbalance.
+
+## 🗓️ What's next?
+
+Skore Lib is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
+
+## ⚡️ Quick start
 
 ### Installation
 
@@ -52,77 +55,92 @@ We recommend using a [virtual environment (venv)](https://docs.python.org/3/tuto
 
 Then, you can install skore by using `pip`:
 ```bash
+# If you just use skore locally
 pip install -U skore
+# If you wish to also interact with the skore hub
+pip install -U skore[hub]
 ```
 
 #### With conda
 
-skore is available in `conda-forge`:
+skore is available in `conda-forge` for local use:
 
 ```bash
 conda install conda-forge::skore
 ```
 
+It is not yet possible to interact with the skore hub when the skore is installed via conda.
+
 You can find information on the latest version [here](https://anaconda.org/conda-forge/skore).
 
 ### Get assistance when developing your ML/DS projects
 
-1. Evaluate your model using `skore.CrossValidationReport`:
-    ```python
-    from sklearn.datasets import make_classification
-    from sklearn.linear_model import LogisticRegression
+Evaluate your model using `skore.CrossValidationReport`:
+```python
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
 
-    from skore import CrossValidationReport
+from skore import CrossValidationReport
 
-    X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
-    clf = LogisticRegression()
+X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+clf = LogisticRegression()
 
-    cv_report = CrossValidationReport(clf, X, y)
+cv_report = CrossValidationReport(clf, X, y)
 
-    # Display the help tree to see all the insights that are available to you
-    cv_report.help()
-    ```
+# Display the help tree to see all the insights that are available to you
+cv_report.help()
+```
 
-    ```python
-    # Display the report metrics that was computed for you:
-    df_cv_report_metrics = cv_report.metrics.report_metrics()
-    df_cv_report_metrics
-    ```
+```python
+# Display the report metrics that was computed for you:
+df_cv_report_metrics = cv_report.metrics.report_metrics()
+df_cv_report_metrics
+```
 
-    ```python
-    # Display the ROC curve that was generated for you:
-    roc_plot = cv_report.metrics.roc()
-    roc_plot.plot()
-    ```
+```python
+# Display the ROC curve that was generated for you:
+roc_plot = cv_report.metrics.roc()
+roc_plot.plot()
+```
 
-1. Store your results for safe-keeping.
-    ```python
-    # Create and load a skore project
-    import skore
-    my_project = skore.Project("my_project")
-    ```
+### Create or connect to a Project to save and load reports
 
-    ```python
-    # Store your results
-    my_project.put("df_cv_report_metrics", df_cv_report_metrics)
-    my_project.put("roc_plot", roc_plot)
-    ```
+```python
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 
-    ```python
-    # Get your results
-    df_get = my_project.get("df_cv_report_metrics")
-    df_get
-    ```
+import skore
+
+# Create or connect to a Project
+project = skore.Project("<name>") # local
+project = skore.Project("hub://<tenant>/<name>") # hub
+
+X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+clf = LogisticRegression()
+
+report = skore.EstimatorReport(
+    clf,
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_test,
+    y_test=y_test,
+)
+
+# Save report to Project for future reference
+project.put("my_report", report)
+```
 
 Learn more in our [documentation](https://docs.skore.probabl.ai).
 
 
-## Contributing
+## 🛠️ Contributing
 
-Thank you for considering contributing to skore! Join our mission to promote open-source and make machine learning development more robust and effective. Please check the contributing guidelines [here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
+Join our mission to promote open-source and make machine learning development more robust and effective. If you'd like to contribute, please check the contributing guidelines [here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
 
 
-## Feedback & Community
+## 👋 Feedback & Community
 
 -   Join our [Discord](https://discord.probabl.ai/) to share ideas or get support.
 -   Request a feature or report a bug via [GitHub Issues](https://github.com/probabl-ai/skore/issues).
@@ -133,7 +151,7 @@ Thank you for considering contributing to skore! Join our mission to promote ope
 
 Brought to you by
 
-<a href="https://probabl.ai" target="_blank">
+<a href="https://probabl.ai/skore" target="_blank">
     <picture>
         <source srcset="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Probabl-logo-orange.png" media="(prefers-color-scheme: dark)">
         <img width="120" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Probabl-logo-blue.png" alt="Probabl logo">

@@ -1,0 +1,252 @@
+name: pytest
+
+# **How it works**
+# ================
+#
+# The workflow runs `pytest` jobs on all the repository packages, identified by the JSON
+# list `env.PACKAGES`. If you want to run this workflow on a new package, you only have
+# to add its name in the above list.
+#
+# It's important to notice that only one workflow is triggered for all packages.
+#
+# The workflow is triggered on:
+# - __pull_request__ or __merge_group__ event (A),
+# - __push__ event on the main branch (B).
+#
+# On (A), the workflow is started and runs jobs on modified packages, and only on modified
+# packages.
+#
+# On (B), the workflow is started and runs jobs on all packages, no matter if they have
+# modification. Indeed it's important to know on main, at each commit, if all workflows
+# are green.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  merge_group:
+    types: [checks_requested]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PACKAGES: '["skore","skore-hub-project","skore-local-project"]'
+
+jobs:
+  pytest-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.setup.outputs.packages }}
+      modified-packages: ${{ steps.filter.outputs.changes }}
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Create dynamically filtering file, based on `env.PACKAGES`
+        id: setup
+        run: |
+            echo "packages=${PACKAGES}" >> $GITHUB_OUTPUT
+            echo "${PACKAGES}" | jq -r '.[]' | while read package; do
+                >>${FILEPATH} echo "${package}:
+                - '.github/workflows/pytest.yml'
+                - 'ci/requirements/${package}/**'
+                - '${package}/**'"
+            done
+        env:
+          PACKAGES: ${{ env.PACKAGES }}
+          FILEPATH: ${{ runner.temp }}/filters.yaml
+
+      - name: Define if at least one file has changed
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: ${{ runner.temp }}/filters.yaml
+
+  pytest-lockfiles:
+    runs-on: ubuntu-latest
+    needs: [pytest-changes]
+    if: ${{ (contains(fromJSON('["pull_request", "merge_group"]'), github.event_name)) && (needs.pytest-changes.outputs.modified-packages != '[]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.pytest-changes.outputs.modified-packages) }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 2
+
+      - name: Check lockfiles are not obsolete
+        run: |
+          set -eu
+
+          # Check if `pyproject.toml` has changed in this pull-request
+          # ├── False
+          # │   └── Exit 0
+          # └── True
+          #     └── Check if lockfiles have changed in this pull-request
+          #         ├── True
+          #         │   └── Exit 0
+          #         └── False
+          #             └── Recompile lockfiles and check if they have to change
+          #                 ├── False
+          #                 │   └── Exit 0
+          #                 └── True
+          #                     └── Exit 1
+
+          changes=$(git diff --name-only HEAD^1 HEAD)
+
+          if
+            (echo "${changes}" | grep -qE "${{ matrix.package }}/pyproject.toml") &&
+            (echo "${changes}" | (! grep -qE "ci/requirements/${{ matrix.package }}/.*/test-requirements.txt"))
+          then
+              curl -LsSf https://astral.sh/uv/0.6.16/install.sh | sh
+              bash ci/pip-compile.sh ${{ matrix.package }}
+
+              if (git diff --name-only | grep -qE "ci/requirements/${{ matrix.package }}/.*/test-requirements.txt"); then
+                  echo '::error title=${{ matrix.package }}-lockfiles::Lockfiles obsolete, please execute `$ bash ci/pip-compile.sh ${{ matrix.package }}`'
+                  exit 1
+             fi
+          fi
+
+  pytest-test:
+    needs: [pytest-changes]
+    if: ${{ (github.event_name == 'push') || (needs.pytest-changes.outputs.modified-packages != '[]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ (github.event_name == 'push') && fromJSON(needs.pytest-changes.outputs.packages) || fromJSON(needs.pytest-changes.outputs.modified-packages) }}
+        os: ["ubuntu-latest", "windows-latest"]
+        python: ["3.9", "3.10", "3.11", "3.12"]
+        scikit-learn: ["1.4", "1.5", "1.6"]
+        exclude:
+          - python: "3.9"
+            scikit-learn: "1.4"
+          - python: "3.10"
+            scikit-learn: "1.4"
+          - python: "3.11"
+            scikit-learn: "1.4"
+          - os: "windows-latest"
+            scikit-learn: "1.4"
+          - python: "3.9"
+            scikit-learn: "1.5"
+          - python: "3.10"
+            scikit-learn: "1.5"
+          - python: "3.11"
+            scikit-learn: "1.5"
+          - os: "windows-latest"
+            scikit-learn: "1.5"
+        include:
+          - os: "ubuntu-latest"
+            python: "3.12"
+            scikit-learn: "1.6"
+            coverage: true
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        id: setup-python
+        with:
+          python-version: ${{ matrix.python }}
+          check-latest: True
+          cache: pip
+
+      - name: Restore python-venv
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        id: cache-python-venv
+        with:
+          path: ${{ matrix.package }}/venv
+          key: >-
+            python-venv
+            -${{ matrix.os }}
+            -${{ steps.setup-python.outputs.python-version }}
+            -${{ hashFiles(format('ci/requirements/{0}/python-{1}/scikit-learn-{2}/test-requirements.txt', matrix.package, matrix.python, matrix.scikit-learn)) }}
+
+      - name: Setup python-venv
+        working-directory: ${{ matrix.package }}/
+        run: |
+          set -eu
+
+          # Ensure venv is created
+          python -m venv venv
+
+          # Activate venv for each step depending on the OS
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              echo "${GITHUB_WORKSPACE}/${{ matrix.package }}/venv/bin" >> ${GITHUB_PATH}
+              echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}/${{ matrix.package }}/venv" >> ${GITHUB_ENV}
+          else
+              echo "${GITHUB_WORKSPACE}\\${{ matrix.package }}\\venv\\Scripts" >> ${GITHUB_PATH}
+              echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}\\${{ matrix.package }}\\venv" >> ${GITHUB_ENV}
+          fi
+
+      - name: Install dependencies in python-venv
+        working-directory: ${{ format('ci/requirements/{0}/python-{1}/scikit-learn-{2}', matrix.package, matrix.python, matrix.scikit-learn) }}
+        if: steps.cache-python-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --upgrade pip build
+          python -m pip install --requirement test-requirements.txt
+
+      - name: Save python-venv
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        if: steps.cache-python-venv.outputs.cache-hit != 'true'
+        with:
+          path: ${{ matrix.package }}/venv
+          key: ${{ steps.cache-python-venv.outputs.cache-primary-key }}
+
+      - name: Build
+        working-directory: ${{ matrix.package }}/
+        run: python -m build
+
+      - name: Install
+        working-directory: ${{ matrix.package }}/dist/
+        run: wheel=(*.whl); python -m pip install --force-reinstall --no-deps "${wheel}"
+
+      - name: Test without coverage
+        if: ${{ ! matrix.coverage }}
+        timeout-minutes: 10
+        working-directory: ${{ matrix.package }}/
+        run: python -m pytest -n auto src/ tests/ --no-cov
+
+      - name: Test with coverage
+        if: ${{ matrix.coverage }}
+        timeout-minutes: 10
+        working-directory: ${{ matrix.package }}/
+        run: |
+          mkdir coverage
+          python -m pytest -n auto src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
+
+      - name: Upload coverage reports
+        if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ matrix.package }}-coverage
+          path: ${{ matrix.package }}/coverage/
+
+  pytest:
+    needs:
+      - pytest-changes
+      - pytest-lockfiles
+      - pytest-test
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          [[  ${{ contains(needs.*.result, 'failure') }} = false ]]

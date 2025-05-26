@@ -1,0 +1,180 @@
+anywidget==0.9.18
+    # via skore (skore/pyproject.toml)
+asttokens==3.0.0
+    # via stack-data
+cfgv==3.4.0
+    # via pre-commit
+comm==0.2.2
+    # via ipywidgets
+contourpy==1.3.0
+    # via matplotlib
+coverage[toml]==7.6.10
+    # via pytest-cov
+cycler==0.12.1
+    # via matplotlib
+decorator==5.2.1
+    # via ipython
+diskcache==5.6.3
+    # via skore-local-project
+distlib==0.3.9
+    # via virtualenv
+exceptiongroup==1.2.2
+    # via
+    #   ipython
+    #   pytest
+execnet==2.1.1
+    # via pytest-xdist
+executing==2.2.0
+    # via stack-data
+filelock==3.17.0
+    # via virtualenv
+fonttools==4.55.8
+    # via matplotlib
+identify==2.6.6
+    # via pre-commit
+iniconfig==2.0.0
+    # via pytest
+ipython==8.36.0
+    # via
+    #   skore (skore/pyproject.toml)
+    #   ipywidgets
+ipywidgets==8.1.7
+    # via
+    #   skore (skore/pyproject.toml)
+    #   anywidget
+jedi==0.19.2
+    # via ipython
+joblib==1.4.2
+    # via
+    #   skore (skore/pyproject.toml)
+    #   scikit-learn
+    #   skore-local-project
+jupyterlab-widgets==3.0.15
+    # via ipywidgets
+kiwisolver==1.4.7
+    # via matplotlib
+markdown-it-py==3.0.0
+    # via rich
+matplotlib==3.9.4
+    # via skore (skore/pyproject.toml)
+matplotlib-inline==0.1.7
+    # via ipython
+mdurl==0.1.2
+    # via markdown-it-py
+narwhals==1.38.2
+    # via plotly
+nodeenv==1.9.1
+    # via pre-commit
+numpy==2.0.2
+    # via
+    #   skore (skore/pyproject.toml)
+    #   contourpy
+    #   matplotlib
+    #   pandas
+    #   scikit-learn
+    #   scipy
+packaging==24.2
+    # via
+    #   matplotlib
+    #   plotly
+    #   pytest
+pandas==2.2.3
+    # via skore (skore/pyproject.toml)
+parso==0.8.4
+    # via jedi
+pexpect==4.9.0
+    # via ipython
+pillow==11.1.0
+    # via matplotlib
+platformdirs==4.3.6
+    # via
+    #   skore-local-project
+    #   virtualenv
+plotly==6.0.1
+    # via skore (skore/pyproject.toml)
+pluggy==1.5.0
+    # via pytest
+polars==1.21.0
+    # via skore (skore/pyproject.toml)
+pre-commit==4.1.0
+    # via skore (skore/pyproject.toml)
+prompt-toolkit==3.0.51
+    # via ipython
+psygnal==0.13.0
+    # via anywidget
+ptyprocess==0.7.0
+    # via pexpect
+pure-eval==0.2.3
+    # via stack-data
+pygments==2.19.1
+    # via
+    #   ipython
+    #   rich
+pyparsing==3.2.1
+    # via matplotlib
+pytest==8.3.4
+    # via
+    #   skore (skore/pyproject.toml)
+    #   pytest-cov
+    #   pytest-order
+    #   pytest-randomly
+    #   pytest-xdist
+pytest-cov==6.0.0
+    # via skore (skore/pyproject.toml)
+pytest-order==1.3.0
+    # via skore (skore/pyproject.toml)
+pytest-randomly==3.16.0
+    # via skore (skore/pyproject.toml)
+pytest-xdist==3.6.1
+    # via skore (skore/pyproject.toml)
+python-dateutil==2.9.0.post0
+    # via
+    #   matplotlib
+    #   pandas
+pytz==2024.2
+    # via pandas
+pyyaml==6.0.2
+    # via pre-commit
+rich==13.9.4
+    # via
+    #   skore (skore/pyproject.toml)
+    #   skore-local-project
+scikit-learn==1.6.1
+    # via
+    #   --override skore/overrides.txt
+    #   skore (skore/pyproject.toml)
+scipy==1.13.1
+    # via scikit-learn
+six==1.17.0
+    # via python-dateutil
+skore-local-project==0.0.1
+    # via skore (skore/pyproject.toml)
+stack-data==0.6.3
+    # via ipython
+threadpoolctl==3.5.0
+    # via scikit-learn
+tomli==2.2.1
+    # via
+    #   coverage
+    #   pytest
+traitlets==5.14.3
+    # via
+    #   comm
+    #   ipython
+    #   ipywidgets
+    #   matplotlib-inline
+typing-extensions==4.12.2
+    # via
+    #   anywidget
+    #   ipython
+    #   rich
+tzdata==2025.1
+    # via pandas
+virtualenv==20.29.1
+    # via pre-commit
+wcwidth==0.2.13
+    # via prompt-toolkit
+widgetsnbextension==4.0.14
+    # via ipywidgets
+xdoctest==1.2.0
+    # via skore (skore/pyproject.toml)

@@ -1,0 +1,54 @@
+name: pr-display-code-coverage
+
+on:
+  workflow_run:
+    workflows: [pytest]
+    types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  pr-display-code-coverage:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(vars.PACKAGES) }}
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          sparse-checkout: .github
+
+      - name: Acquire PR context
+        id: acquire-pr-context
+        uses: ./.github/actions/workflow-run/context
+
+      - name: Download coverage reports
+        id: download-coverage-reports
+        continue-on-error: True
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+        with:
+          name: ${{ matrix.package }}-coverage
+          path: coverage/
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Display coverage reports
+        if: ${{ steps.download-coverage-reports.outcome == 'success' }}
+        uses: MishaKav/pytest-coverage-comment@13d3c18e21895566c746187c9ea74736372e5e91 # v1.1.54
+        with:
+          issue-number: ${{ steps.acquire-pr-context.outputs.pr-number }}
+          pytest-xml-coverage-path: coverage/pytest-coverage.xml
+          junitxml-path: coverage/pytest.xml
+          title: Coverage Report for `${{ matrix.package }}/`
+          unique-id-for-comment: ${{ matrix.package }}
