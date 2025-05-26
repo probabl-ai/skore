@@ -28,6 +28,7 @@ domain = os.environ["SPHINX_DOMAIN"]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "matplotlib.sphinxext.plot_directive",
     "numpydoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.githubpages",
@@ -44,6 +45,21 @@ exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
 default_role = "literal"
+
+# Produce `plot::` directives for examples that contain `import matplotlib` or
+# `from matplotlib import`.
+numpydoc_use_plots = True
+
+# Options for the `::plot` directive:
+# https://matplotlib.org/stable/api/sphinxext_plot_directive_api.html
+plot_formats = ["png"]
+plot_include_source = True
+plot_html_show_formats = False
+plot_html_show_source_link = False
+plot_rcparams = {
+    "savefig.bbox": "tight",  # to not crop the figure when shown in the docs
+}
+plot_apply_rcparams = True  # if context option is used
 
 # Add any paths that contain templates here, relative to this directory.
 autosummary_generate = True  # generate stubs for all classes
@@ -90,7 +106,7 @@ sphinx_gallery_conf = {
     "backreferences_dir": "reference/api",
     "doc_module": "skore",
     # "reset_modules": (reset_mpl, "seaborn"),
-    "image_scrapers": [matplotlib_skore_scraper()], # using the custom class scraper
+    "image_scrapers": [matplotlib_skore_scraper()],  # using the custom class scraper
     "abort_on_example_error": True,
 }
 

@@ -57,6 +57,7 @@ Skore Lib is just at the beginning of its journey, but we’re shipping fast! Fr
    :hidden:
 
    install
+   user_guide/index
    auto_examples/index
    reference/index
    contributing

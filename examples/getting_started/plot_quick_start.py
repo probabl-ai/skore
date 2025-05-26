@@ -99,6 +99,15 @@ metadata = my_project.reports.metadata()
 print(type(metadata))
 
 # %%
+# .. note::
+#   If rendered in a Jupyter notebook, ``metadata`` would render an interactive
+#   parallel coordinate plot to search for your preferred model based on some metrics.
+#   Here is a screenshot:
+#
+#   .. image:: /_static/images/screenshot_quick_start.png
+#       :alt: Screenshot of the widget in a Jupyter notebook
+
+# %%
 # We can perform some queries on our stored data:
 
 # %%
@@ -117,15 +126,6 @@ temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
 report_get[0].metrics.report_metrics(pos_label=1)
-
-# %%
-# .. note::
-#   If rendered in a Jupyter notebook, ``metadata`` would render an interactive
-#   parallel coordinate plot to search for your preferred model based on some metrics.
-#   Here is a screenshot:
-#
-#   .. image:: /_static/images/screenshot_quick_start.png
-#       :alt: Screenshot of the widget in a Jupyter notebook
 
 # %%
 # .. seealso::
