@@ -216,7 +216,7 @@ class RocCurveDisplay(
             )
 
         else:  # multiclass-classification
-            labels = self.roc_curve["label"].unique()
+            labels = self.roc_curve["label"].cat.categories
             class_colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"), 10 if len(labels) < 10 else len(labels)
             )
@@ -309,7 +309,7 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if self.ml_task == "binary-classification":
-            for split_idx in self.roc_curve["split_index"].unique():
+            for split_idx in self.roc_curve["split_index"].cat.categories:
                 roc_curve = self.roc_curve.query(
                     f"label == {self.pos_label} & split_index == {split_idx}"
                 )
@@ -338,7 +338,7 @@ class RocCurveDisplay(
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
-            labels = self.roc_curve["label"].unique()
+            labels = self.roc_curve["label"].cat.categories
             class_colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"), 10 if len(labels) < 10 else len(labels)
             )
@@ -347,7 +347,7 @@ class RocCurveDisplay(
                 roc_auc = self.roc_auc.query(f"label == {class_label}")["roc_auc"]
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
-                for split_idx in self.roc_curve["split_index"].unique():
+                for split_idx in self.roc_curve["split_index"].cat.categories:
                     roc_curve_label = self.roc_curve.query(
                         f"label == {class_label} & split_index == {split_idx}"
                     )
@@ -461,7 +461,7 @@ class RocCurveDisplay(
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
-            labels = self.roc_curve["label"].unique()
+            labels = self.roc_curve["label"].cat.categories
             class_colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"), 10 if len(labels) < 10 else len(labels)
             )
@@ -555,7 +555,7 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if self.ml_task == "binary-classification":
-            labels = self.roc_curve["label"].unique()
+            labels = self.roc_curve["label"].cat.categories
             colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"),
                 10 if len(estimator_names) < 10 else len(estimator_names),
@@ -575,7 +575,9 @@ class RocCurveDisplay(
                     line_kwargs, roc_curve_kwargs[report_idx]
                 )
 
-                for split_index, segment in roc_curve.groupby("split_index"):
+                for split_index, segment in roc_curve.groupby(
+                    "split_index", observed=True
+                ):
                     if split_index == 0:
                         label_kwargs = {
                             "label": (
@@ -616,7 +618,7 @@ class RocCurveDisplay(
 
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
-            labels = self.roc_curve["label"].unique()
+            labels = self.roc_curve["label"].cat.categories
             colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"),
                 10 if len(estimator_names) < 10 else len(estimator_names),
@@ -635,7 +637,9 @@ class RocCurveDisplay(
                         f"label == {label} & estimator_name == '{estimator_name}'"
                     )["roc_auc"]
 
-                    for split_index, segment in roc_curve.groupby("split_index"):
+                    for split_index, segment in roc_curve.groupby(
+                        "split_index", observed=True
+                    ):
                         if split_index == 0:
                             label_kwargs = {
                                 "label": (
@@ -740,7 +744,7 @@ class RocCurveDisplay(
             self.report_type == "comparison-cross-validation"
             and self.ml_task == "multiclass-classification"
         ):
-            n_labels = len(self.roc_auc["label"].unique())
+            n_labels = len(self.roc_auc["label"].cat.categories)
             self.figure_, self.ax_ = plt.subplots(ncols=n_labels)
         else:
             self.figure_, self.ax_ = plt.subplots()
@@ -762,7 +766,10 @@ class RocCurveDisplay(
 
         if self.report_type == "estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_single_estimator(
-                estimator_name=estimator_name or self.roc_auc["estimator_name"][0],
+                estimator_name=(
+                    estimator_name
+                    or self.roc_auc["estimator_name"].cat.categories.item()
+                ),
                 roc_curve_kwargs=roc_curve_kwargs,
                 plot_chance_level=plot_chance_level,
                 chance_level_kwargs=chance_level_kwargs,
@@ -770,7 +777,10 @@ class RocCurveDisplay(
         elif self.report_type == "cross-validation":
             self.ax_, self.lines_, info_pos_label = (
                 self._plot_cross_validated_estimator(
-                    estimator_name=estimator_name or self.roc_auc["estimator_name"][0],
+                    estimator_name=(
+                        estimator_name
+                        or self.roc_auc["estimator_name"].cat.categories.item()
+                    ),
                     roc_curve_kwargs=roc_curve_kwargs,
                     plot_chance_level=plot_chance_level,
                     chance_level_kwargs=chance_level_kwargs,
@@ -778,7 +788,7 @@ class RocCurveDisplay(
             )
         elif self.report_type == "comparison-estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_comparison_estimator(
-                estimator_names=self.roc_auc["estimator_name"].unique(),
+                estimator_names=self.roc_auc["estimator_name"].cat.categories,
                 roc_curve_kwargs=roc_curve_kwargs,
                 plot_chance_level=plot_chance_level,
                 chance_level_kwargs=chance_level_kwargs,
@@ -786,7 +796,7 @@ class RocCurveDisplay(
         elif self.report_type == "comparison-cross-validation":
             self.ax_, self.lines_, info_pos_label = (
                 self._plot_comparison_cross_validation(
-                    estimator_names=self.roc_auc["estimator_name"].unique(),
+                    estimator_names=self.roc_auc["estimator_name"].cat.categories,
                     roc_curve_kwargs=roc_curve_kwargs,
                     plot_chance_level=plot_chance_level,
                     chance_level_kwargs=chance_level_kwargs,
@@ -943,9 +953,15 @@ class RocCurveDisplay(
                         }
                     )
 
+        dtypes = {
+            "estimator_name": "category",
+            "split_index": "category",
+            "label": "category",
+        }
+
         return cls(
-            roc_curve=DataFrame.from_records(roc_curve_records),
-            roc_auc=DataFrame.from_records(roc_auc_records),
+            roc_curve=DataFrame.from_records(roc_curve_records).astype(dtypes),
+            roc_auc=DataFrame.from_records(roc_auc_records).astype(dtypes),
             pos_label=pos_label_validated,
             data_source=data_source,
             ml_task=ml_task,
