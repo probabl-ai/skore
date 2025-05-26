@@ -46,7 +46,7 @@ def test_binary_classification(
         assert isinstance(line, mpl.lines.Line2D)
         roc_auc_split = display.roc_auc.query(
             f"label == {pos_label} & split_index == {split_idx}"
-        )["roc_auc"].iloc[0]
+        )["roc_auc"].item()
         assert line.get_label() == (
             f"Estimator of fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
         )

@@ -193,10 +193,10 @@ class RocCurveDisplay(
             if self.data_source in ("train", "test"):
                 line_kwargs["label"] = (
                     f"{self.data_source.title()} set "
-                    f"(AUC = {self.roc_auc['roc_auc'][0]:0.2f})"
+                    f"(AUC = {self.roc_auc['roc_auc'].item():0.2f})"
                 )
             else:  # data_source in (None, "X_y")
-                line_kwargs["label"] = f"AUC = {self.roc_auc['roc_auc'][0]:0.2f}"
+                line_kwargs["label"] = f"AUC = {self.roc_auc['roc_auc'].item():0.2f}"
 
             line_kwargs_validated = _validate_style_kwargs(
                 line_kwargs, roc_curve_kwargs[0]
@@ -224,9 +224,9 @@ class RocCurveDisplay(
             for class_idx, class_label in enumerate(labels):
                 roc_curve = self.roc_curve.query(f"label == {class_label}")
 
-                roc_auc = self.roc_auc.query(f"label == {class_label}")["roc_auc"].iloc[
-                    0
-                ]
+                roc_auc = self.roc_auc.query(f"label == {class_label}")[
+                    "roc_auc"
+                ].item()
 
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
@@ -315,7 +315,7 @@ class RocCurveDisplay(
                 )
                 roc_auc = self.roc_auc.query(
                     f"label == {self.pos_label} & split_index == {split_idx}"
-                )["roc_auc"].iloc[0]
+                )["roc_auc"].item()
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[split_idx]
@@ -441,7 +441,7 @@ class RocCurveDisplay(
 
                 roc_auc = self.roc_auc.query(
                     f"label == {self.pos_label} & estimator_name == '{est_name}'"
-                )["roc_auc"].iloc[0]
+                )["roc_auc"].item()
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[est_idx]
@@ -476,7 +476,7 @@ class RocCurveDisplay(
 
                     roc_auc = self.roc_auc.query(
                         f"label == {class_label} & estimator_name == '{est_name}'"
-                    )["roc_auc"].iloc[0]
+                    )["roc_auc"].item()
 
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 

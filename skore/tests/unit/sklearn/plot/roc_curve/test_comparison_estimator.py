@@ -50,7 +50,7 @@ def test_binary_classification(pyplot, binary_classification_data):
         assert isinstance(line, mpl.lines.Line2D)
         roc_auc_class = display.roc_auc.query(
             f"label == {display.pos_label} & estimator_name == '{estimator_name}'"
-        )["roc_auc"].iloc[0]
+        )["roc_auc"].item()
         assert line.get_label() == (f"{estimator_name} (AUC = {roc_auc_class:0.2f})")
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[idx]
 
@@ -116,7 +116,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
             assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
             roc_auc_class = display.roc_auc.query(
                 f"label == {class_label} & estimator_name == '{estimator_name}'"
-            )["roc_auc"].iloc[0]
+            )["roc_auc"].item()
             assert roc_curve_mpl.get_label() == (
                 f"{estimator_name} - {str(class_label).title()} "
                 f"(AUC = {roc_auc_class:0.2f})"

@@ -35,7 +35,7 @@ def test_binary_classification(pyplot, binary_classification_data):
     assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
     assert (
         roc_curve_mpl.get_label()
-        == f"Test set (AUC = {display.roc_auc['roc_auc'].iloc[0]:0.2f})"
+        == f"Test set (AUC = {display.roc_auc['roc_auc'].item():0.2f})"
     )
     assert roc_curve_mpl.get_color() == "#1f77b4"  # tab:blue in hex
 
@@ -83,7 +83,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
         assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
         roc_auc_class = display.roc_auc.query(f"label == {class_label}")[
             "roc_auc"
-        ].iloc[0]
+        ].item()
         assert roc_curve_mpl.get_label() == (
             f"{str(class_label).title()} - test set (AUC = {roc_auc_class:0.2f})"
         )
@@ -115,14 +115,14 @@ def test_data_source_binary_classification(pyplot, binary_classification_data):
     display.plot()
     assert (
         display.lines_[0].get_label()
-        == f"Train set (AUC = {display.roc_auc['roc_auc'].iloc[0]:0.2f})"
+        == f"Train set (AUC = {display.roc_auc['roc_auc'].item():0.2f})"
     )
 
     display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
     display.plot()
     assert (
         display.lines_[0].get_label()
-        == f"AUC = {display.roc_auc['roc_auc'].iloc[0]:0.2f}"
+        == f"AUC = {display.roc_auc['roc_auc'].item():0.2f}"
     )
 
 
@@ -137,7 +137,7 @@ def test_data_source_multiclass_classification(pyplot, multiclass_classification
     for class_label in estimator.classes_:
         roc_auc_class = display.roc_auc.query(f"label == {class_label}")[
             "roc_auc"
-        ].iloc[0]
+        ].item()
         assert display.lines_[class_label].get_label() == (
             f"{str(class_label).title()} - train set (AUC = {roc_auc_class:0.2f})"
         )
@@ -147,7 +147,7 @@ def test_data_source_multiclass_classification(pyplot, multiclass_classification
     for class_label in estimator.classes_:
         roc_auc_class = display.roc_auc.query(f"label == {class_label}")[
             "roc_auc"
-        ].iloc[0]
+        ].item()
         assert display.lines_[class_label].get_label() == (
             f"{str(class_label).title()} - AUC = {roc_auc_class:0.2f}"
         )
