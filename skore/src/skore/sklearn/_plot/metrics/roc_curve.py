@@ -222,11 +222,9 @@ class RocCurveDisplay(
             )
 
             for class_idx, class_label in enumerate(labels):
-                roc_curve = self.roc_curve.query(f"label == {class_label}")
-
-                roc_auc = self.roc_auc.query(f"label == {class_label}")[
-                    "roc_auc"
-                ].item()
+                query = f"label == {class_label}"
+                roc_curve = self.roc_curve.query(query)
+                roc_auc = self.roc_auc.query(query)["roc_auc"].item()
 
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
@@ -310,12 +308,9 @@ class RocCurveDisplay(
 
         if self.ml_task == "binary-classification":
             for split_idx in self.roc_curve["split_index"].cat.categories:
-                roc_curve = self.roc_curve.query(
-                    f"label == {self.pos_label} & split_index == {split_idx}"
-                )
-                roc_auc = self.roc_auc.query(
-                    f"label == {self.pos_label} & split_index == {split_idx}"
-                )["roc_auc"].item()
+                query = f"label == {self.pos_label} & split_index == {split_idx}"
+                roc_curve = self.roc_curve.query(query)
+                roc_auc = self.roc_auc.query(query)["roc_auc"].item()
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[split_idx]
@@ -435,13 +430,11 @@ class RocCurveDisplay(
 
         if self.ml_task == "binary-classification":
             for est_idx, est_name in enumerate(estimator_names):
-                roc_curve = self.roc_curve.query(
-                    f"label == {self.pos_label} & estimator_name == '{est_name}'"
-                )
+                query = f"label == {self.pos_label} & estimator_name == '{est_name}'"
 
-                roc_auc = self.roc_auc.query(
-                    f"label == {self.pos_label} & estimator_name == '{est_name}'"
-                )["roc_auc"].item()
+                roc_curve = self.roc_curve.query(query)
+
+                roc_auc = self.roc_auc.query(query)["roc_auc"].item()
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[est_idx]
@@ -470,13 +463,10 @@ class RocCurveDisplay(
                 est_color = class_colors[est_idx]
 
                 for class_idx, class_label in enumerate(labels):
-                    roc_curve = self.roc_curve.query(
-                        f"label == {class_label} & estimator_name == '{est_name}'"
-                    )
+                    query = f"label == {class_label} & estimator_name == '{est_name}'"
+                    roc_curve = self.roc_curve.query(query)
 
-                    roc_auc = self.roc_auc.query(
-                        f"label == {class_label} & estimator_name == '{est_name}'"
-                    )["roc_auc"].item()
+                    roc_auc = self.roc_auc.query(query)["roc_auc"].item()
 
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 
@@ -561,13 +551,9 @@ class RocCurveDisplay(
                 10 if len(estimator_names) < 10 else len(estimator_names),
             )
             for report_idx, estimator_name in enumerate(estimator_names):
-                roc_curve = self.roc_curve.query(
-                    f"label == {self.pos_label} & estimator_name == '{estimator_name}'"
-                )
-
-                roc_auc = self.roc_auc.query(f"estimator_name == '{estimator_name}'")[
-                    "roc_auc"
-                ]
+                query = f"estimator_name == '{estimator_name}'"
+                roc_curve = self.roc_curve.query(query)
+                roc_auc = self.roc_auc.query(query)["roc_auc"]
 
                 line_kwargs["color"] = colors[report_idx]
                 line_kwargs["alpha"] = 0.6
@@ -629,13 +615,10 @@ class RocCurveDisplay(
                 est_color = colors[est_idx]
 
                 for label_idx, label in enumerate(labels):
-                    roc_curve = self.roc_curve.query(
-                        f"label == {label} & estimator_name == '{estimator_name}'"
-                    )
+                    query = f"label == {label} & estimator_name == '{estimator_name}'"
+                    roc_curve = self.roc_curve.query(query)
 
-                    roc_auc = self.roc_auc.query(
-                        f"label == {label} & estimator_name == '{estimator_name}'"
-                    )["roc_auc"]
+                    roc_auc = self.roc_auc.query(query)["roc_auc"]
 
                     for split_index, segment in roc_curve.groupby(
                         "split_index", observed=True
