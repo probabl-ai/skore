@@ -29,15 +29,18 @@ def _generate_estimator_report(
     y: Optional[ArrayLike],
     train_indices: ArrayLike,
     test_indices: ArrayLike,
-) -> EstimatorReport:
-    return EstimatorReport(
-        estimator,
-        fit=True,
-        X_train=_safe_indexing(X, train_indices),
-        y_train=_safe_indexing(y, train_indices),
-        X_test=_safe_indexing(X, test_indices),
-        y_test=_safe_indexing(y, test_indices),
-    )
+) -> Union[EstimatorReport, KeyboardInterrupt, Exception]:
+    try:
+        return EstimatorReport(
+            estimator,
+            fit=True,
+            X_train=_safe_indexing(X, train_indices),
+            y_train=_safe_indexing(y, train_indices),
+            X_test=_safe_indexing(X, test_indices),
+            y_test=_safe_indexing(y, test_indices),
+        )
+    except (KeyboardInterrupt, Exception) as e:
+        return e
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
@@ -198,41 +201,59 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
 
         estimator_reports = []
-        try:
-            for report in generator:
-                estimator_reports.append(report)
-                progress.update(task, advance=1, refresh=True)
-        except (Exception, KeyboardInterrupt) as e:
-            if len(estimator_reports) == 0:
-                raise RuntimeError(
-                    "Cross-validation failed: no estimators were successfully fitted. "
-                    "Please check your data, estimator, or cross-validation setup."
-                ) from e
+        for report in generator:
+            estimator_reports.append(report)
+            progress.update(task, advance=1, refresh=True)
 
+        warn_msg = None
+        if all(
+            isinstance(report, (KeyboardInterrupt, Exception))
+            for report in estimator_reports
+        ):
+            raise RuntimeError(
+                "Cross-validation failed: no estimators were successfully fitted. "
+                "Please check your data, estimator, or cross-validation setup.\n"
+                f"Traceback: \n{'\n'.join(str(exc) for exc in estimator_reports)}"
+            )
+        elif any(isinstance(report, Exception) for report in estimator_reports):
+            msg_traceback = "\n".join(
+                str(exc) for exc in estimator_reports if isinstance(exc, Exception)
+            )
+            warn_msg = (
+                "Cross-validation process was interrupted by an error before "
+                "all estimators could be fitted; CrossValidationReport object "
+                "might not contain all the expected results.\n"
+                f"Traceback: \n{msg_traceback}"
+            )
+            estimator_reports = [
+                report
+                for report in estimator_reports
+                if not isinstance(report, Exception)
+            ]
+        elif any(isinstance(report, KeyboardInterrupt) for report in estimator_reports):
+            warn_msg = (
+                "Cross-validation process was interrupted manually before all "
+                "estimators could be fitted; CrossValidationReport object "
+                "might not contain all the expected results."
+            )
+            estimator_reports = [
+                report
+                for report in estimator_reports
+                if not isinstance(report, KeyboardInterrupt)
+            ]
+
+        if warn_msg is not None:
             from skore import console  # avoid circular import
-
-            if isinstance(e, KeyboardInterrupt):
-                message = (
-                    "Cross-validation process was interrupted manually before all "
-                    "estimators could be fitted; CrossValidationReport object "
-                    "might not contain all the expected results."
-                )
-            else:
-                message = (
-                    "Cross-validation process was interrupted by an error before "
-                    "all estimators could be fitted; CrossValidationReport object "
-                    "might not contain all the expected results. "
-                    f"Traceback: \n{e}"
-                )
 
             console.print(
                 Panel(
                     title="Cross-validation interrupted",
-                    renderable=message,
+                    renderable=warn_msg,
                     style="orange1",
                     border_style="cyan",
                 )
             )
+
         return estimator_reports
 
     def clear_cache(self) -> None:
