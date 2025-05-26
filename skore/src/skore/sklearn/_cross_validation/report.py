@@ -50,6 +50,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     `KeyboardInterrupt` exceptions are swallowed and will only interrupt the
     cross-validation process, rather than the entire program.
 
+    Refer to the :ref:`cross_validation_report` section of the user guide for more
+    details.
+
     Parameters
     ----------
     estimator : estimator object
