@@ -316,8 +316,10 @@ print(type(metadata))
 # We can retrieve the complete list of stored reports:
 
 # %%
+from pprint import pprint
+
 reports_get = metadata.reports()
-reports_get
+pprint(reports_get)
 
 # %%
 # For example, we can compare the stored reports:
@@ -327,7 +329,7 @@ comparator = ComparisonReport(reports=reports_get)
 comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
 
 # %%
-# We can retrieve any result of our stored estimator reports, for example
+# We can retrieve any accessor of our stored estimator reports, for example
 # the timings from the first estimator report:
 
 # %%
@@ -335,8 +337,8 @@ reports_get[0].metrics.timings()
 
 # %%
 # But what if instead of having stored only 2 estimators reports, we had a few
-# hundreds? We would need a search feature to navigate through our stored estimator
-# reports.
+# hundreds?
+# We would need to navigate through our stored estimator reports.
 # For that, the skore project provides a convenient search feature.
 
 # %%
@@ -355,7 +357,7 @@ reports_get[0].metrics.timings()
 #
 # How to use the widget? You select the estimator(s) you are interested in by clicking
 # on the plot and the metric(s) you are interested in by checking them.
-# Then, using the python API, we can retrieve the corresponding list of stored reports:
+# Then, using the python API, we can retrieve the *corresponding* list of stored reports:
 #
 # .. code:: python
 #
@@ -366,12 +368,6 @@ reports_get[0].metrics.timings()
 # """"""""""""""""""""
 #
 # Alternatively, this search feature can be performed using the Python API.
-# We can retrieve the list of stored reports using:
-
-# %%
-from pprint import pprint
-
-pprint(metadata.reports())
 
 # %%
 # We can perform some queries on our stored data using the following keys:
