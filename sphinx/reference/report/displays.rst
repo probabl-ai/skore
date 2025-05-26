@@ -10,6 +10,7 @@ the API of each display.
    :toctree: ../api/
    :template: base.rst
 
+   Display
    RocCurveDisplay
    PrecisionRecallCurveDisplay
    PredictionErrorDisplay

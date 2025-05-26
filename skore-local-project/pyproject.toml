@@ -1,0 +1,83 @@
+[project]
+name = "skore-local-project"
+dynamic = ["license", "readme", "version"]
+requires-python = ">=3.9"
+maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
+dependencies = [
+  "diskcache",
+  "joblib",
+  "platformdirs",
+  "rich",
+]
+
+[project.optional-dependencies]
+test = [
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "pytest-order",
+  "pytest-randomly",
+  "pytest-xdist",
+  "skore",
+  "xdoctest",
+]
+
+[project.entry-points."skore.plugins.project"]
+local = "skore_local_project:Project"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata.hooks.custom]
+path = "hatch/metadata.py"
+version-default = "0.0.0+unknown"
+license = { "file" = "../LICENSE" }
+readme = { "file" = "../README.md" }
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/", "hatch/"]
+
+[tool.hatch.build.targets.wheel]
+package = ["src/skore_local_project/"]
+
+[tool.pytest.ini_options]
+addopts = [
+  "--xdoctest",
+  "--import-mode=importlib",
+  "--no-header",
+  "--verbosity=2",
+  "--dist=loadscope",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["skore_local_project"]
+concurrency = ["thread", "multiprocessing"]
+parallel = true
+
+[tool.coverage.report]
+omit = ["src/*", "tests/*"]
+show_missing = true
+exclude_also = [
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.ruff]
+src = ["skore_local_project"]
+
+[tool.ruff.lint]
+select = ["E", "F", "UP", "B", "SIM", "T", "I", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"src/*" = ["UP007"]
+"tests/*" = ["D"]
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = ["hatch/*", "tests/*"]

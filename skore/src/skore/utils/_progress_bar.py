@@ -45,8 +45,10 @@ def progress_decorator(
 
             desc = description(self_obj) if callable(description) else description
 
-            if getattr(self_obj, "_parent_progress", None) is not None:
-                progress = self_obj._parent_progress
+            created_progress = False
+
+            if getattr(self_obj, "_progress_info", None) is not None:
+                progress = self_obj._progress_info["current_progress"]
             else:
                 progress = Progress(
                     SpinnerColumn(),
@@ -62,6 +64,15 @@ def progress_decorator(
                     disable=not get_config()["show_progress"],
                 )
                 progress.start()
+                created_progress = True
+
+            # assigning progress to child reports
+            reports_to_cleanup: list[Any] = []
+            if hasattr(self_obj, "reports_"):
+                for report in self_obj.reports_:
+                    if hasattr(report, "_progress_info"):
+                        report._progress_info = {"current_progress": progress}
+                        reports_to_cleanup.append(report)
 
             task = progress.add_task(desc, total=None)
             self_obj._progress_info = {
@@ -79,14 +90,18 @@ def progress_decorator(
                 has_errored = True
                 raise
             finally:
-                if self_obj._parent_progress is None:
+                if created_progress:
                     if not has_errored:
                         progress.update(
                             task, completed=progress.tasks[task].total, refresh=True
                         )
                     progress.stop()
+
+                # clean up child reports
+                for report in reports_to_cleanup:
+                    report._progress_info = None
+
                 # clean up to make object pickable
-                self_obj._parent_progress = None
                 self_obj._progress_info = None
 
         return wrapper

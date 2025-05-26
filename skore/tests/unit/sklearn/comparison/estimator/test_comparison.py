@@ -9,7 +9,6 @@ from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot.metrics import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
-    RocCurveDisplay,
 )
 
 
@@ -69,23 +68,22 @@ def test_comparison_report_without_testing_data(binary_classification_model):
 
 
 def test_comparison_report_different_test_data(binary_classification_model):
-    """Raise an error if the passed estimators do not have the same testing data."""
+    """Raise an error if the passed estimators do not have the same testing targets."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator.fit(X_train, y_train)
 
-    # The estimators that have testing data, need to have the same testing data
-    # The estimators that do not have testing data do not count
+    # The estimators that have testing data need to have the same testing targets
     with pytest.raises(
-        ValueError, match="Expected all estimators to have the same testing data"
+        ValueError, match="Expected all estimators to share the same test targets."
     ):
         ComparisonReport(
             [
-                EstimatorReport(estimator, X_test=X_test, y_test=y_test),
-                EstimatorReport(estimator, X_test=X_test[1:], y_test=y_test[1:]),
+                EstimatorReport(estimator, y_test=y_test),
+                EstimatorReport(estimator, y_test=y_test[1:]),
             ]
         )
 
-    # The estimators without testing data (i.e. no X_test and no y_test) do not count
+    # The estimators without testing data (i.e., no y_test) do not count
     ComparisonReport(
         [
             EstimatorReport(estimator, X_test=X_test, y_test=y_test),
@@ -94,16 +92,13 @@ def test_comparison_report_different_test_data(binary_classification_model):
         ]
     )
 
-    # If there is an X_test but no y_test, it counts
-    with pytest.raises(
-        ValueError, match="Expected all estimators to have the same testing data"
-    ):
-        ComparisonReport(
-            [
-                EstimatorReport(estimator, fit=False, X_test=X_test, y_test=y_test),
-                EstimatorReport(estimator, fit=False, X_test=X_test),
-            ]
-        )
+    # If there is an X_test but no y_test, it should not raise an error
+    ComparisonReport(
+        [
+            EstimatorReport(estimator, fit=False, X_test=X_test, y_test=None),
+            EstimatorReport(estimator, fit=False, X_test=X_test, y_test=None),
+        ]
+    )
 
 
 @pytest.fixture
@@ -516,16 +511,6 @@ def test_comparison_report_aggregate(report):
     [
         (
             "binary_classification",
-            "roc",
-            RocCurveDisplay,
-            {
-                "fpr": {1: [[0, 0, 0, 1], [0, 0, 0, 1]]},
-                "tpr": {1: [[0, 0.1, 1, 1], [0, 0.1, 1, 1]]},
-                "roc_auc": {1: [1, 1]},
-            },
-        ),
-        (
-            "binary_classification",
             "precision_recall",
             PrecisionRecallCurveDisplay,
             {
@@ -655,7 +640,7 @@ def test_comparison_report_get_predictions(
 def test_comparison_report_get_predictions_error(report):
     """Check that we raise an error when the data source is invalid."""
     with pytest.raises(ValueError, match="Invalid data source"):
-        report.get_predictions(data_source="invalid", response_method="predict")
+        report.get_predictions(data_source="invalid")
 
 
 def test_comparison_report_timings(report):
@@ -665,13 +650,13 @@ def test_comparison_report_timings(report):
     assert timings.index.tolist() == ["Fit time (s)"]
     assert timings.columns.tolist() == report.report_names_
 
-    report.get_predictions(data_source="train", response_method="predict")
+    report.get_predictions(data_source="train")
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == ["Fit time (s)", "Predict time train (s)"]
     assert timings.columns.tolist() == report.report_names_
 
-    report.get_predictions(data_source="test", response_method="predict")
+    report.get_predictions(data_source="test")
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == [
@@ -684,8 +669,8 @@ def test_comparison_report_timings(report):
 
 def test_comparison_report_timings_flat_index(report):
     """Check that time measurements have _s suffix with flat_index=True."""
-    report.get_predictions(data_source="train", response_method="predict")
-    report.get_predictions(data_source="test", response_method="predict")
+    report.get_predictions(data_source="train")
+    report.get_predictions(data_source="test")
 
     # Get metrics with flat_index=True
     results = report.metrics.report_metrics(flat_index=True)

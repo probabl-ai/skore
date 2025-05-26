@@ -43,10 +43,11 @@ scikit-learn estimators by cross-validation, and reporting the results.
    cross_validation_report
 
 Comparison Report
------------------------
+-----------------
 
 :class:`skore.ComparisonReport` provides comprehensive capabilities for comparing
-:class:`skore.EstimatorReport` instances, and reporting the results.
+:class:`skore.EstimatorReport` or :class:`skore.CrossValidationReport` instances, and
+reporting the results.
 
 .. toctree::
    :maxdepth: 2

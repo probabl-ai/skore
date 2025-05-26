@@ -12,45 +12,43 @@
       <p class="hero-description">Elevate ML Development with Built-in Recommended Practices</p>
    </div>
 
-.. admonition:: Where to start?
+🧩 What is Skore?
+-----------------
 
-   See our :ref:`example_quick_start` page!
+**Skore** is a product whose core mission is to turn uneven ML development into structured, effective decision-making. It is made of two complementary components:
 
-What is skore?
-""""""""""""""
+-  **Skore Lib**: the scikit-learn sidekick, an open-source Python library (described here!) designed to help data scientists boost their ML development with effective guidance and tooling.
 
-skore is a Python open-source library designed to help data scientists apply recommended
-practices and avoid common methodological pitfalls in scikit-learn.
+-  **Skore Hub**: the collaborative layer where teams connect, learn more on our `product page <https://probabl.ai/skore>`_.
 
-Key features
-""""""""""""
+Key features of Skore Lib
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **Evaluate**: automated insightful reports.
+**Evaluate and inspect**: automated insightful reports.
 
-   -  :class:`skore.EstimatorReport`: feed your scikit-learn compatible estimator and
-      dataset, and it generates recommended metrics, feature importance, and plots to
-      help you evaluate and inspect your estimator.
-      All these are computed and generated for you in 1 line of code.
-      Under the hood, we use efficient caching to make the computations blazing fast.
+-  :class:`skore.EstimatorReport`: feed your scikit-learn compatible estimator and
+   dataset, and it generates recommended metrics, feature importance, and plots to
+   help you evaluate and inspect your model.
+   All in just one line of code.
+   Under the hood, we use efficient caching to make the computations blazing fast.
 
-   -  :class:`skore.CrossValidationReport`: get a skore estimator report for each fold
-      of your cross-validation.
+-  :class:`skore.CrossValidationReport`: get a skore estimator report for each fold
+   of your cross-validation.
 
-   -  :class:`skore.ComparisonReport`: benchmark your skore estimator reports.
+-  :class:`skore.ComparisonReport`: benchmark your skore estimator reports.
 
--  **Diagnose**: catch methodological errors before they impact your models.
+**Diagnose**: catch methodological errors before they impact your models.
 
-   -  :func:`skore.train_test_split` supercharged with methodological guidance:
-      the API is the same as scikit-learn's, but skore displays warnings when
-      applicable.
-      For example, it warns you against shuffling time series data or when you have
-      class imbalance.
+-  :func:`skore.train_test_split` supercharged with methodological guidance:
+   the API is the same as scikit-learn's, but skore displays warnings when
+   applicable.
+   For example, it warns you against shuffling time series data or when you have
+   class imbalance.
 
-What's next?
-""""""""""""
+🗓️ What's next?
+---------------
 
-Skore is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
-
+Skore Lib is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
 
 .. currentmodule:: skore
 
@@ -59,6 +57,7 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
    :hidden:
 
    install
+   user_guide/index
    auto_examples/index
    reference/index
    contributing
