@@ -203,6 +203,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 estimator_reports.append(report)
                 progress.update(task, advance=1, refresh=True)
         except (Exception, KeyboardInterrupt) as e:
+            if len(estimator_reports) == 0:
+                raise RuntimeError(
+                    "Cross-validation failed: no estimators were successfully fitted. "
+                    "Please check your data, estimator, or cross-validation setup."
+                ) from e
+
             from skore import console  # avoid circular import
 
             if isinstance(e, KeyboardInterrupt):
@@ -218,11 +224,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     "might not contain all the expected results. "
                     f"Traceback: \n{e}"
                 )
-            if len(estimator_reports) == 0:
-                raise RuntimeError(
-                    "Cross-validation failed: no estimators were successfully fitted. "
-                    "Please check your data, estimator, or cross-validation setup."
-                ) from e
 
             console.print(
                 Panel(

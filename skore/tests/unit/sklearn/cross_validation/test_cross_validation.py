@@ -895,8 +895,9 @@ def test_cross_validation_report_custom_metric(binary_classification_data):
         (KeyboardInterrupt(), "Cross-validation interrupted manually"),
     ],
 )
+@pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_cross_validation_report_interrupted(
-    binary_classification_data, capsys, error, error_message
+    binary_classification_data, capsys, error, error_message, n_jobs
 ):
     """Check that we can interrupt cross-validation without losing all
     data."""
@@ -926,7 +927,7 @@ def test_cross_validation_report_interrupted(
 
     _, X, y = binary_classification_data
 
-    report = CrossValidationReport(MockEstimator(), X, y, cv_splitter=10)
+    report = CrossValidationReport(MockEstimator(), X, y, cv_splitter=10, n_jobs=n_jobs)
 
     captured = capsys.readouterr()
     assert all(word in captured.out for word in error_message.split(" "))
@@ -998,14 +999,15 @@ class BrokenEstimator(ClassifierMixin, BaseEstimator):
         return [0] * len(X)
 
 
-def test_cross_validation_report_failure_all_splits():
+@pytest.mark.parametrize("n_jobs", [None, 1, 2])
+def test_cross_validation_report_failure_all_splits(n_jobs):
     """Check that we raise an error when no estimators were successfully fitted.
     during the cross-validation process."""
     X, y = make_classification(n_samples=100, n_features=10, random_state=42)
 
     err_msg = "Cross-validation failed: no estimators were successfully fitted"
     with pytest.raises(RuntimeError, match=err_msg):
-        CrossValidationReport(BrokenEstimator(), X, y)
+        CrossValidationReport(BrokenEstimator(), X, y, n_jobs=n_jobs)
 
 
 def test_cross_validation_timings_flat_index(binary_classification_data):
