@@ -153,7 +153,7 @@ class RocCurveDisplay(
         estimator_name: str,
         roc_curve_kwargs: list[dict[str, Any]],
         plot_chance_level: bool = True,
-        chance_level_kwargs: Optional[dict[str, Any]] = None,
+        chance_level_kwargs: Optional[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve for a single estimator.
 
@@ -272,7 +272,7 @@ class RocCurveDisplay(
         estimator_name: str,
         roc_curve_kwargs: list[dict[str, Any]],
         plot_chance_level: bool = True,
-        chance_level_kwargs: Optional[dict[str, Any]] = None,
+        chance_level_kwargs: Optional[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve for a cross-validated estimator.
 
@@ -398,7 +398,7 @@ class RocCurveDisplay(
         estimator_names: list[str],
         roc_curve_kwargs: list[dict[str, Any]],
         plot_chance_level: bool = True,
-        chance_level_kwargs: Optional[dict[str, Any]] = None,
+        chance_level_kwargs: Optional[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve of several estimators.
 
@@ -518,7 +518,7 @@ class RocCurveDisplay(
         estimator_names: list[str],
         roc_curve_kwargs: list[dict[str, Any]],
         plot_chance_level: bool = True,
-        chance_level_kwargs: Optional[dict[str, Any]] = None,
+        chance_level_kwargs: Optional[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve of several cross-validations.
 
@@ -568,11 +568,11 @@ class RocCurveDisplay(
                     "roc_auc"
                 ]
 
+                line_kwargs["color"] = colors[report_idx]
+                line_kwargs["alpha"] = 0.6
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, roc_curve_kwargs[report_idx]
                 )
-                line_kwargs_validated["color"] = colors[report_idx]
-                line_kwargs_validated["alpha"] = 0.6
 
                 for split_index, segment in roc_curve.groupby("split_index"):
                     if split_index == 0:
@@ -620,6 +620,7 @@ class RocCurveDisplay(
                 colormaps.get_cmap("tab10"),
                 10 if len(estimator_names) < 10 else len(estimator_names),
             )
+            idx = 0
 
             for est_idx, estimator_name in enumerate(estimator_names):
                 est_color = colors[est_idx]
@@ -633,12 +634,6 @@ class RocCurveDisplay(
                         f"label == {label} & estimator_name == '{estimator_name}'"
                     )["roc_auc"]
 
-                    line_kwargs_validated = _validate_style_kwargs(
-                        line_kwargs, roc_curve_kwargs[est_idx]
-                    )
-                    line_kwargs_validated["color"] = est_color
-                    line_kwargs_validated["alpha"] = 0.6
-
                     for split_index, segment in roc_curve.groupby("split_index"):
                         if split_index == 0:
                             label_kwargs = {
@@ -651,12 +646,20 @@ class RocCurveDisplay(
                         else:
                             label_kwargs = {}
 
+                        line_kwargs["color"] = est_color
+                        line_kwargs["alpha"] = 0.6
+                        line_kwargs_validated = _validate_style_kwargs(
+                            line_kwargs, roc_curve_kwargs[idx]
+                        )
+
                         (line,) = self.ax_[label_idx].plot(
                             segment["fpr"],
                             segment["tpr"],
                             **(line_kwargs_validated | label_kwargs),
                         )
                         lines.append(line)
+
+                        idx = idx + 1
 
                     info_pos_label = f"\n(Positive label: {label})"
                     _set_axis_labels(self.ax_[label_idx], info_pos_label)
@@ -784,6 +787,8 @@ class RocCurveDisplay(
                 self._plot_comparison_cross_validation(
                     estimator_names=self.roc_auc["estimator_name"].unique(),
                     roc_curve_kwargs=roc_curve_kwargs,
+                    plot_chance_level=plot_chance_level,
+                    chance_level_kwargs=chance_level_kwargs,
                 )
             )
         else:
