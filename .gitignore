@@ -186,7 +186,6 @@ tramp
 sphinx/build/
 sphinx/auto_examples/
 sphinx/reference/api/
-sphinx/api/
 sphinx/sg_execution_times.rst
 examples/plot_*.png
 
