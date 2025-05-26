@@ -85,7 +85,6 @@ subsections_order = [
     "../examples/getting_started",
     "../examples/use_cases",
     "../examples/model_evaluation",
-    "../examples/skore_project",
     "../examples/technical_details",
 ]
 
