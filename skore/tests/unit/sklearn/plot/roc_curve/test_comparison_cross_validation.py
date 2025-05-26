@@ -10,6 +10,8 @@ from skore import ComparisonReport, CrossValidationReport
 from skore.sklearn._plot.metrics.roc_curve import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
+from .conftest import check_display_data
+
 
 def test_binary_classification(pyplot, binary_classification_data_no_split):
     """Check the behaviour of `roc_curve` when ML task is "binary-classification"."""
@@ -24,6 +26,7 @@ def test_binary_classification(pyplot, binary_classification_data_no_split):
     )
     display = report.metrics.roc()
     assert isinstance(display, RocCurveDisplay)
+    check_display_data(display)
 
     pos_label = 1
     n_reports = len(report.reports_)
@@ -75,6 +78,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data_no_spl
     )
     display = report.metrics.roc()
     assert isinstance(display, RocCurveDisplay)
+    check_display_data(display)
 
     labels = display.roc_curve["label"].unique()
     n_reports = len(report.reports_)

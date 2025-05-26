@@ -5,6 +5,8 @@ from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
+from .conftest import check_display_data
+
 
 def test_binary_classification(pyplot, binary_classification_data):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
@@ -31,22 +33,7 @@ def test_binary_classification(pyplot, binary_classification_data):
     )
     display = report.metrics.roc()
     assert isinstance(display, RocCurveDisplay)
-
-    # check the structure of the attributes
-    assert list(display.roc_curve.columns) == [
-        "estimator_name",
-        "split_index",
-        "label",
-        "threshold",
-        "fpr",
-        "tpr",
-    ]
-    assert list(display.roc_auc.columns) == [
-        "estimator_name",
-        "split_index",
-        "label",
-        "roc_auc",
-    ]
+    check_display_data(display)
 
     assert (
         list(display.roc_curve["label"].unique())
@@ -107,25 +94,10 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
         }
     )
     display = report.metrics.roc()
+
     assert isinstance(display, RocCurveDisplay)
-
-    # check the structure of the attributes
+    check_display_data(display)
     class_labels = report.reports_[0].estimator_.classes_
-    assert list(display.roc_curve.columns) == [
-        "estimator_name",
-        "split_index",
-        "label",
-        "threshold",
-        "fpr",
-        "tpr",
-    ]
-    assert list(display.roc_auc.columns) == [
-        "estimator_name",
-        "split_index",
-        "label",
-        "roc_auc",
-    ]
-
     assert (
         list(display.roc_curve["label"].unique())
         == list(display.roc_auc["label"].unique())

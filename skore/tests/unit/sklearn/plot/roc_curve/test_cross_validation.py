@@ -5,6 +5,8 @@ from skore import CrossValidationReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
+from .conftest import check_display_data
+
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_binary_classification(
@@ -22,24 +24,8 @@ def test_binary_classification(
     display = report.metrics.roc(**roc_kwargs)
     assert isinstance(display, RocCurveDisplay)
 
-    # check the structure of the attributes
+    check_display_data(display)
     pos_label = report.estimator_reports_[0].estimator_.classes_[1]
-
-    assert list(display.roc_curve.columns) == [
-        "estimator_name",
-        "split_index",
-        "label",
-        "threshold",
-        "fpr",
-        "tpr",
-    ]
-    assert list(display.roc_auc.columns) == [
-        "estimator_name",
-        "split_index",
-        "label",
-        "roc_auc",
-    ]
-
     assert (
         list(display.roc_curve["label"].unique())
         == list(display.roc_auc["label"].unique())
@@ -103,21 +89,7 @@ def test_multiclass_classification(
     assert isinstance(display, RocCurveDisplay)
 
     # check the structure of the attributes
-    assert list(display.roc_curve.columns) == [
-        "estimator_name",
-        "split_index",
-        "label",
-        "threshold",
-        "fpr",
-        "tpr",
-    ]
-    assert list(display.roc_auc.columns) == [
-        "estimator_name",
-        "split_index",
-        "label",
-        "roc_auc",
-    ]
-
+    check_display_data(display)
     class_labels = report.estimator_reports_[0].estimator_.classes_
     assert (
         list(display.roc_curve["label"].unique())

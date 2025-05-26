@@ -30,3 +30,21 @@ def binary_classification_data_no_split():
 def multiclass_classification_data_no_split():
     X, y = make_classification(n_classes=3, n_clusters_per_class=1, random_state=42)
     return LogisticRegression(), X, y
+
+
+def check_display_data(display):
+    """Check the structure of the display's internal data."""
+    assert list(display.roc_curve.columns) == [
+        "estimator_name",
+        "split_index",
+        "label",
+        "threshold",
+        "fpr",
+        "tpr",
+    ]
+    assert list(display.roc_auc.columns) == [
+        "estimator_name",
+        "split_index",
+        "label",
+        "roc_auc",
+    ]
