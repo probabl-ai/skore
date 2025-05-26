@@ -301,12 +301,8 @@ my_project.put("estimator_report", rf_report)
 my_project.put("estimator_report", gb_report)
 
 # %%
-# Retrieving and searching through our stored reports
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-# %%
 # Retrieving our stored reports
-# """""""""""""""""""""""""""""
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
 # Now, let us retrieve the data that we just stored using a
@@ -317,11 +313,38 @@ metadata = my_project.reports.metadata()
 print(type(metadata))
 
 # %%
-# To look into our stored reports, the skore project provides a convenient search feature.
+# We can retrieve the complete list of stored reports:
 
 # %%
-# Searching using the widget
-# """"""""""""""""""""""""""
+reports_get = metadata.reports()
+reports_get
+
+# %%
+# For example, we can compare the stored reports:
+
+# %%
+comparator = ComparisonReport(reports=reports_get)
+comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+
+# %%
+# We can retrieve any result of our stored estimator reports, for example
+# the timings from the first estimator report:
+
+# %%
+reports_get[0].metrics.timings()
+
+# %%
+# But what if instead of having stored only 2 estimators reports, we had a few
+# hundreds? We would need a search feature to navigate through our stored estimator
+# reports.
+# For that, the skore project provides a convenient search feature.
+
+# %%
+# Searching through our stored reports
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# Using the interactive widget
+# """"""""""""""""""""""""""""
 #
 # If rendered in a Jupyter notebook, ``metadata`` would render an interactive
 # parallel coordinate plot to search for your preferred model based on some metrics.
@@ -339,8 +362,8 @@ print(type(metadata))
 #     metadata.reports()
 
 # %%
-# Searching using the Python API
-# """"""""""""""""""""""""""""""
+# Using the Python API
+# """"""""""""""""""""
 #
 # Alternatively, this search feature can be performed using the Python API.
 # We can retrieve the list of stored reports using:
@@ -361,38 +384,22 @@ pprint(metadata.keys())
 # :class:`~sklearn.ensemble.RandomForestClassifier`:
 
 # %%
-report_get_df = metadata.query(
+report_search_rf = metadata.query(
     "learner.str.contains('RandomForestClassifier')"
 ).reports()
-pprint(report_get_df)
+pprint(report_search_rf)
 
 # %%
 # Or, we can query all the estimator reports corresponding to a classification
 # task:
 
 # %%
-report_get_clf = metadata.query("ml_task.str.contains('classification')").reports()
-pprint(report_get_clf)
-
-# %%
-# Then, we can manipulate the retrieved list of estimators reports.
-# For example, we can compare the reports corresponding to a classification task:
-
-# %%
-comparator = ComparisonReport(reports=report_get_clf)
-comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
-
-# %%
-# Naturally, we can retrieve any result of our stored estimator reports, for example
-# the timings from the first estimator report:
-
-# %%
+report_search_clf = metadata.query("ml_task.str.contains('classification')").reports()
+pprint(report_search_clf)
 
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
-
-report_get_clf[0].metrics.timings()
 
 # %%
 # .. admonition:: Stay tuned!
