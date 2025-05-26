@@ -5,16 +5,15 @@ from itertools import product
 import matplotlib as mpl
 import numpy as np
 from matplotlib.lines import Line2D
-from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore.sklearn._plot.metrics.roc_curve import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
 
-def test_binary_classification(pyplot):
+def test_binary_classification(pyplot, binary_classification_data_no_split):
     """Check the behaviour of `roc_curve` when ML task is "binary-classification"."""
-    X, y = make_classification(class_sep=0.1, random_state=42)
+    _, X, y = binary_classification_data_no_split
     estimator_1 = LogisticRegression()
     estimator_2 = LogisticRegression(C=10)
     report = ComparisonReport(
@@ -62,12 +61,10 @@ def test_binary_classification(pyplot):
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_multiclass(pyplot):
+def test_multiclass(pyplot, multiclass_classification_data_no_split):
     """Check the behaviour of `roc_curve` when ML task is "multiclass-classification"
     and `pos_label` is None."""
-    X, y = make_classification(
-        class_sep=0.1, n_classes=3, n_clusters_per_class=1, random_state=42
-    )
+    _, X, y = multiclass_classification_data_no_split
     estimator_1 = LogisticRegression()
     estimator_2 = LogisticRegression(C=10)
     report = ComparisonReport(
