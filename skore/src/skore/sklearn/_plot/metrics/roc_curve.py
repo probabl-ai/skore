@@ -728,7 +728,9 @@ class RocCurveDisplay(
             and self.ml_task == "multiclass-classification"
         ):
             n_labels = len(self.roc_auc["label"].cat.categories)
-            self.figure_, self.ax_ = plt.subplots(ncols=n_labels)
+            self.figure_, self.ax_ = plt.subplots(
+                ncols=n_labels, figsize=(6.4 * n_labels, 4.8)
+            )
         else:
             self.figure_, self.ax_ = plt.subplots()
 
