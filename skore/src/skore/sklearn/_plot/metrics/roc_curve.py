@@ -745,7 +745,7 @@ class RocCurveDisplay(
             roc_curve_kwargs = self._default_roc_curve_kwargs
 
         if self.ml_task == "binary-classification":
-            n_curves = len(self.roc_auc[self.roc_auc["label"] == self.pos_label])
+            n_curves = len(self.roc_auc.query(f"label == {self.pos_label}"))
         else:
             n_curves = len(self.roc_auc)
 
