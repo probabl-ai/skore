@@ -336,8 +336,8 @@ comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
 reports_get[0].metrics.timings()
 
 # %%
-# But what if instead of having stored only 2 estimators reports, we had a few
-# hundreds?
+# But what if instead of having stored only 2 estimators reports, we had a dozen or
+# even a few hundreds over several months of experimenting?
 # We would need to navigate through our stored estimator reports.
 # For that, the skore project provides a convenient search feature.
 
