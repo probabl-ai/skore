@@ -9,7 +9,7 @@ report are accessible through accessors.
 
 .. autosummary::
     :toctree: ../api/
-    :template: base.rst
+    :template: class_with_accessors.rst
 
     ComparisonReport
 
@@ -23,6 +23,8 @@ report are accessible through accessors.
     ComparisonReport.cache_predictions
     ComparisonReport.clear_cache
     ComparisonReport.get_predictions
+
+.. rubric:: Accessors
 
 .. autosummary::
     :toctree: ../api/

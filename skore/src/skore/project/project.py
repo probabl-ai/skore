@@ -59,6 +59,8 @@ class Project(DirNamesMixin):
     - in Linux, usually ``${HOME}/.cache/skore``,
     - in macOS, usually ``${HOME}/Library/Caches/skore``.
 
+    Refer to the :ref:`project` section of the user guide for more details.
+
     Parameters
     ----------
     name : str

@@ -19,12 +19,14 @@ from skore.sklearn import (
     RocCurveDisplay,
     train_test_split,
 )
+from skore.sklearn._plot.base import Display
 from skore.utils._patch import setup_jupyter_display
 from skore.utils._show_versions import show_versions
 
 __all__ = [
     "CrossValidationReport",
     "ComparisonReport",
+    "Display",
     "EstimatorReport",
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",

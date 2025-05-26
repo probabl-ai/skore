@@ -30,6 +30,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     This class provides a set of tools to quickly validate and inspect a scikit-learn
     compatible estimator.
 
+    Refer to the :ref:`estimator_report` section of the user guide for more details.
+
     Parameters
     ----------
     estimator : estimator object
