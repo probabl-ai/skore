@@ -542,7 +542,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         cache_key = tuple(cache_key_parts)
 
         if cache_key in self._parent._cache:
-            score = self._parent._cache[cache_key]
+            scores = self._parent._cache[cache_key]
         else:
             metric_params = inspect.signature(metric_fn).parameters
             kwargs = {**metric_kwargs}
@@ -567,8 +567,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
             score = metric_fn(y_true, y_pred, **kwargs)
 
+            if isinstance(score, np.ndarray):
+                score = score.tolist()
+            elif hasattr(score, "item"):
+                score = score.item()
+
             # get metric scores for dummy model if it exists
-            if self._dummy_model is not None:
+            if hasattr(self, "_dummy_model") and self._dummy_model is not None:
                 y_pred_dummy = _get_cached_response_values(
                     cache=self._parent._cache,
                     estimator_hash=-1,  # int value is expected
@@ -591,7 +596,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 elif hasattr(scores[i], "item"):
                     scores[i] = scores[i].item()
 
-            self._parent._cache[cache_key] = scores[0]
+            self._parent._cache[cache_key] = scores
 
         for i in range(len(scores)):
             if isinstance(scores[i], list):
