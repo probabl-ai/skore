@@ -308,7 +308,7 @@ class RocCurveDisplay(
 
         if self.ml_task == "binary-classification":
             for split_idx in self.roc_curve["split_index"].cat.categories:
-                query = f"label == {self.pos_label} & split_index == {split_idx}"
+                query = f"label == {self.pos_label!r} & split_index == {split_idx}"
                 roc_curve = self.roc_curve.query(query)
                 roc_auc = self.roc_auc.query(query)["roc_auc"].item()
 
@@ -430,7 +430,7 @@ class RocCurveDisplay(
 
         if self.ml_task == "binary-classification":
             for est_idx, est_name in enumerate(estimator_names):
-                query = f"label == {self.pos_label} & estimator_name == '{est_name}'"
+                query = f"label == {self.pos_label!r} & estimator_name == '{est_name}'"
 
                 roc_curve = self.roc_curve.query(query)
 
@@ -738,7 +738,7 @@ class RocCurveDisplay(
             roc_curve_kwargs = self._default_roc_curve_kwargs
 
         if self.ml_task == "binary-classification":
-            n_curves = len(self.roc_auc.query(f"label == {self.pos_label}"))
+            n_curves = len(self.roc_auc.query(f"label == {self.pos_label!r}"))
         else:
             n_curves = len(self.roc_auc)
 
