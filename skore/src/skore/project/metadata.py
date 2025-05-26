@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
+from sklearn.pipeline import FeatureUnion, Pipeline
+from skrub import TableVectorizer
 
 from skore.project.widget import ModelExplorerWidget
 
@@ -36,6 +38,108 @@ class Metadata(DataFrame):
     """
 
     _metadata = ["project"]
+
+    @staticmethod
+    def _explore_sk_pipeline(
+        pipeline: Pipeline, itemized_pipeline: list, depth: int = 0, max_depth: int = 5
+    ) -> list:
+        """
+        Explore the pipeline and return a list of estimators or transformers.
+
+        Parameters
+        ----------
+        pipeline : Pipeline
+            The pipeline to explore.
+
+        Returns
+        -------
+        list
+            A list of estimators or transformers in the pipeline.
+        """
+        if depth > max_depth:
+            return itemized_pipeline
+
+        for _, step in pipeline.steps:
+            type_ = type(step)
+            if type_ == Pipeline:
+                itemized_pipeline = Metadata._explore_sk_pipeline(
+                    step, itemized_pipeline, depth=depth + 1
+                )
+            elif type_ == FeatureUnion:
+                itemized_pipeline = Metadata._explore_sk_feature_union(
+                    step, itemized_pipeline, depth=depth + 1
+                )
+            elif type_ == TableVectorizer:
+                itemized_pipeline.append(step.low_cardinality)
+                itemized_pipeline.append(step.high_cardinality)
+                itemized_pipeline.append(step.numeric)
+                itemized_pipeline.append(step.datetime)
+            else:
+                itemized_pipeline.append(step)
+        return itemized_pipeline
+
+    @staticmethod
+    def _explore_sk_feature_union(
+        feature_union: FeatureUnion,
+        itemized_pipeline: list,
+        depth: int = 0,
+        max_depth: int = 5,
+    ) -> list:
+        """
+        Explore the feature union and return a list of estimators or transformers.
+
+        Parameters
+        ----------
+        feature_union : FeatureUnion
+            The feature union to explore.
+
+        Returns
+        -------
+        list
+            A list of estimators or transformers in the feature union.
+        """
+        if depth > max_depth:
+            return itemized_pipeline
+
+        for transformer in feature_union.values():
+            type_ = type(transformer)
+            if type_ == Pipeline:
+                itemized_pipeline = Metadata._explore_sk_pipeline(
+                    transformer, itemized_pipeline, depth=depth + 1
+                )
+            elif type_ == FeatureUnion:
+                itemized_pipeline = Metadata._explore_sk_feature_union(
+                    transformer, itemized_pipeline, depth=depth + 1
+                )
+            elif type_ == TableVectorizer:
+                itemized_pipeline.append(transformer.low_cardinality)
+                itemized_pipeline.append(transformer.high_cardinality)
+                itemized_pipeline.append(transformer.numeric)
+                itemized_pipeline.append(transformer.datetime)
+            else:
+                itemized_pipeline.append(transformer)
+        return itemized_pipeline
+
+    @staticmethod
+    def _split_pipeline(pipeline=Pipeline) -> list:
+        """
+        Split the pipeline into a list of estimators or transformers.
+
+        Parameters
+        ----------
+        pipeline : Pipeline
+            The pipeline to split.
+
+        Returns
+        -------
+        list
+            A list of estimators or transformers in the pipeline.
+        """
+        max_depth = 5
+        itemized_pipeline = Metadata._explore_sk_pipeline(
+            pipeline, [], depth=0, max_depth=max_depth
+        )
+        return itemized_pipeline
 
     @staticmethod
     def factory(project, /):
