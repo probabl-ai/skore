@@ -344,9 +344,7 @@ class RocCurveDisplay(
             )
 
             for class_idx, class_label in enumerate(labels):
-                roc_auc = self.roc_auc.query(f"label == {class_label}")["roc_auc"].iloc[
-                    0
-                ]
+                roc_auc = self.roc_auc.query(f"label == {class_label}")["roc_auc"]
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
                 for split_idx in self.roc_curve["split_index"].unique():

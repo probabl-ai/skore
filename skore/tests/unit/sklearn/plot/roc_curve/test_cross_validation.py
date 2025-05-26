@@ -113,7 +113,7 @@ def test_multiclass_classification(
             if split_idx == 0:
                 roc_auc_class = display.roc_auc.query(f"label == {class_label}")[
                     "roc_auc"
-                ].iloc[0]
+                ]
                 assert roc_curve_mpl.get_label() == (
                     f"{str(class_label).title()} "
                     f"(AUC = {np.mean(roc_auc_class):0.2f}"
