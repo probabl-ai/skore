@@ -50,12 +50,11 @@ addition, set `data_source` to `X_y` to pass a new dataset using the parameters 
 While there are individual methods to compute each metric specific to the problem at
 hand, we provide the :class:`EstimatorReport.metrics.report_metrics` method that
 aggregates metrics in a single dataframe. By default, a set of metrics is computed based
-on the type of target variable (e.g. classification or regression).
-Nevertheless, you can specify the metrics you want to compute thanks to the `scoring` parameter.
-We accept different types: (i) some strings that
-correspond to scikit-learn scorer names or a built-in `skore` metric name, (ii) a
-callable or a (iii) scikit-learn scorer constructed with
-:func:`sklearn.metrics.make_scorer`.
+on the type of target variable (e.g. classification or regression). Nevertheless, you
+can specify the metrics you want to compute thanks to the `scoring` parameter. We accept
+different types: (i) some strings that correspond to scikit-learn scorer names or a
+built-in `skore` metric name, (ii) a callable or a (iii) scikit-learn scorer constructed
+with :func:`sklearn.metrics.make_scorer`.
 
 The second type of methods provided by :obj:`EstimatorReport.metrics` are methods that
 return a `skore` display object. They have a common API as well. They expose two
