@@ -294,8 +294,8 @@ my_project = skore.Project("my_project")
 # directory) using :func:`~skore.Project.put`, with a key-value convention.
 
 # %%
-# Let us store the estimator report of the random forest using
-# :meth:`~skore.Project.put` to help us track our experiments:
+# Let us store the estimator reports of the random forest and the gradient boosting
+# using :meth:`~skore.Project.put` to help us track our experiments:
 
 # %%
 my_project.put("estimator_report", rf_report)
