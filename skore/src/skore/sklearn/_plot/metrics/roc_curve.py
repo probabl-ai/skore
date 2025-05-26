@@ -96,7 +96,7 @@ class RocCurveDisplay(
         The machine learning task.
 
     report_type : {"comparison-cross-validation", "comparison-estimator", \
-        "cross-validation", "estimator"}
+            "cross-validation", "estimator"}
         The type of report.
 
     Attributes
@@ -833,7 +833,7 @@ class RocCurveDisplay(
             "decision_function" on some classifiers).
 
         report_type : {"comparison-cross-validation", "comparison-estimator", \
-            "cross-validation", "estimator"}
+                "cross-validation", "estimator"}
             The type of report.
 
         estimators : list of estimator instances
