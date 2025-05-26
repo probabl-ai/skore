@@ -61,7 +61,7 @@ def test_binary_classification(pyplot, binary_classification_data_no_split):
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_multiclass(pyplot, multiclass_classification_data_no_split):
+def test_multiclass_classification(pyplot, multiclass_classification_data_no_split):
     """Check the behaviour of `roc_curve` when ML task is "multiclass-classification"
     and `pos_label` is None."""
     _, X, y = multiclass_classification_data_no_split
