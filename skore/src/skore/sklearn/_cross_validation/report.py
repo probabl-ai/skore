@@ -210,10 +210,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             isinstance(report, (KeyboardInterrupt, Exception))
             for report in estimator_reports
         ):
+            traceback_msg = "\n".join(str(exc) for exc in estimator_reports)
             raise RuntimeError(
                 "Cross-validation failed: no estimators were successfully fitted. "
                 "Please check your data, estimator, or cross-validation setup.\n"
-                f"Traceback: \n{'\n'.join(str(exc) for exc in estimator_reports)}"
+                f"Traceback: \n{traceback_msg}"
             )
         elif any(isinstance(report, Exception) for report in estimator_reports):
             msg_traceback = "\n".join(
