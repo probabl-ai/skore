@@ -272,8 +272,7 @@ _ = skore.train_test_split(
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-#  Let us start by creating a skore project directory named ``my_project.skore`` in our
-#  current directory:
+#  Let us start by creating a skore project named ``my_project``:
 
 # %%
 
@@ -287,38 +286,97 @@ os.environ["SKORE_WORKSPACE"] = temp_dir.name
 my_project = skore.Project("my_project")
 
 # %%
-# Skore project: storing and retrieving some items
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Storing some reports in our project
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# Now that the project exists, we can store some useful items in it (in the same
-# directory) using :func:`~skore.Project.put`, with a key-value convention.
+# Now that the project exists, we can store some useful reports in it using
+# :func:`~skore.Project.put`, with a key-value convention.
 
 # %%
 # Let us store the estimator reports of the random forest and the gradient boosting
-# using :meth:`~skore.Project.put` to help us track our experiments:
+# to help us track our experiments:
 
 # %%
 my_project.put("estimator_report", rf_report)
 my_project.put("estimator_report", gb_report)
 
 # %%
-# Now, let us retrieve the data that we previously stored:
+# Retrieving and searching through our stored reports
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+# %%
+# Retrieving our stored reports
+# """""""""""""""""""""""""""""
+
+# %%
+# Now, let us retrieve the data that we just stored using a
+# :class:`~skore.project.metadata.Metadata` object:
 
 # %%
 metadata = my_project.reports.metadata()
 print(type(metadata))
 
 # %%
-# We can perform some queries on our stored data:
+# To look into our stored reports, the skore project provides a convenient search feature.
+
+# %%
+# Searching using the widget
+# """"""""""""""""""""""""""
+#
+# If rendered in a Jupyter notebook, ``metadata`` would render an interactive
+# parallel coordinate plot to search for your preferred model based on some metrics.
+# Here is a screenshot:
+#
+# .. image:: /_static/images/screenshot_getting_started.png
+#   :alt: Screenshot of the widget in a Jupyter notebook
+
+# %%
+# Searching using the Python API
+# """"""""""""""""""""""""""""""
+#
+# Alternatively, this search feature can be performed using the Python API.
+# We can retrieve the list of stored reports using:
 
 # %%
 from pprint import pprint
 
-report_get = metadata.query("ml_task.str.contains('classification')").reports()
-pprint(report_get)
+pprint(metadata.reports())
 
 # %%
-# For example, we can retrieve the report metrics from the first estimator report:
+# We can perform some queries on our stored data using the following keys:
+
+# %%
+pprint(metadata.keys())
+
+# %%
+# For example, we can query all the estimators corresponding to a
+# :class:`~sklearn.ensemble.RandomForestClassifier`:
+
+# %%
+report_get_df = metadata.query(
+    "learner.str.contains('RandomForestClassifier')"
+).reports()
+pprint(report_get_df)
+
+# %%
+# Or, we can query all the estimator reports corresponding to a classification
+# task:
+
+# %%
+report_get_clf = metadata.query("ml_task.str.contains('classification')").reports()
+pprint(report_get_clf)
+
+# %%
+# Then, we can manipulate the retrieved list of estimators reports.
+# For example, we can compare the reports corresponding to a classification task:
+
+# %%
+comparator = ComparisonReport(reports=report_get_clf)
+comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+
+# %%
+# Naturally, we can retrieve any result of our stored estimator reports, for example
+# the timings from the first estimator report:
 
 # %%
 
@@ -326,27 +384,7 @@ pprint(report_get)
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
-report_get[0].metrics.report_metrics(pos_label=1)
-
-# sphinx_gallery_start_ignore
-temp_dir.cleanup()
-# sphinx_gallery_end_ignore
-
-# %%
-# .. note::
-#   If rendered in a Jupyter notebook, ``metadata`` would render an interactive
-#   parallel coordinate plot to search for your preferred model based on some metrics.
-#   Here is a screenshot:
-#
-#   .. image:: /_static/images/screenshot_getting_started.png
-#       :alt: Screenshot of the widget in a Jupyter notebook
-
-# %%
-# .. note::
-#   These tracking functionalities are very useful to:
-#
-#   -   never lose some key machine learning metrics,
-#   -   and observe the evolution over time / runs.
+report_get_clf[0].metrics.timings()
 
 # %%
 # .. admonition:: Stay tuned!
