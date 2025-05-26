@@ -190,7 +190,6 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if self.ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, self.pos_label)
             if self.data_source in ("train", "test"):
                 line_kwargs["label"] = (
                     f"{self.data_source.title()} set "
@@ -211,7 +210,9 @@ class RocCurveDisplay(
             lines.append(line)
 
             info_pos_label = (
-                f"\n(Positive label: {pos_label})" if pos_label is not None else ""
+                f"\n(Positive label: {self.pos_label})"
+                if self.pos_label is not None
+                else ""
             )
 
         else:  # multiclass-classification
@@ -308,13 +309,12 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if self.ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, self.pos_label)
             for split_idx in self.roc_curve["split_index"].unique():
                 roc_curve = self.roc_curve.query(
-                    f"label == {pos_label} & split_index == {split_idx}"
+                    f"label == {self.pos_label} & split_index == {split_idx}"
                 )
                 roc_auc = self.roc_auc.query(
-                    f"label == {pos_label} & split_index == {split_idx}"
+                    f"label == {self.pos_label} & split_index == {split_idx}"
                 )["roc_auc"].iloc[0]
 
                 line_kwargs_validated = _validate_style_kwargs(
@@ -332,7 +332,9 @@ class RocCurveDisplay(
                 lines.append(line)
 
             info_pos_label = (
-                f"\n(Positive label: {pos_label})" if pos_label is not None else ""
+                f"\n(Positive label: {self.pos_label})"
+                if self.pos_label is not None
+                else ""
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
@@ -434,14 +436,13 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if self.ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, self.pos_label)
             for est_idx, est_name in enumerate(estimator_names):
                 roc_curve = self.roc_curve.query(
-                    f"label == {pos_label} & estimator_name == '{est_name}'"
+                    f"label == {self.pos_label} & estimator_name == '{est_name}'"
                 )
 
                 roc_auc = self.roc_auc.query(
-                    f"label == {pos_label} & estimator_name == '{est_name}'"
+                    f"label == {self.pos_label} & estimator_name == '{est_name}'"
                 )["roc_auc"].iloc[0]
 
                 line_kwargs_validated = _validate_style_kwargs(
@@ -456,7 +457,9 @@ class RocCurveDisplay(
                 lines.append(line)
 
             info_pos_label = (
-                f"\n(Positive label: {pos_label})" if pos_label is not None else ""
+                f"\n(Positive label: {self.pos_label})"
+                if self.pos_label is not None
+                else ""
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
