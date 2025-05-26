@@ -329,6 +329,14 @@ print(type(metadata))
 #
 # .. image:: /_static/images/screenshot_getting_started.png
 #   :alt: Screenshot of the widget in a Jupyter notebook
+#
+# How to use the widget? You select the estimator(s) you are interested in by clicking
+# on the plot and the metric(s) you are interested in by checking them.
+# Then, using the python API, we can retrieve the corresponding list of stored reports:
+#
+# .. code:: python
+#
+#     metadata.reports()
 
 # %%
 # Searching using the Python API
