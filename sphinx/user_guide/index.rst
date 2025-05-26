@@ -8,11 +8,13 @@ experiments.
 
 When it comes to data science, many libraries are available to help you experiment.
 `pandas` or `polars` are great tools to explore and transform your data. `skrub` is the
-one tool that brings the necessary *statefullness* to those transformations required
-by the machine learning pipeline. `scikit-learn` and other `scikit-learn` compatible
-libraries (e.g. `xgboost`, `lightgbm`) provide a set of algorithms to ingest those
-transformed data and create predictive models. `scikit-learn` provides even more tools
-to diagnose and evaluate those models.
+one tool that brings the necessary *statefullness* to those transformations required by
+the machine learning pipeline
+(`refer to <https://skrub-data.org/stable/documentation.html>`_).
+`scikit-learn` and other `scikit-learn` compatible libraries (e.g. `xgboost`,
+`lightgbm`) provide a set of algorithms to ingest those transformed data and create
+predictive models. `scikit-learn`
+provides even more tools to diagnose and evaluate those models.
 
 `skore` is the cherry on the top. All those libraries are thought to be generic to
 accommodate a wide range of use cases. When it comes to your particular use case,
