@@ -139,7 +139,8 @@ class Metadata(DataFrame):
         itemized_pipeline = Metadata._explore_sk_pipeline(
             pipeline, [], depth=0, max_depth=max_depth
         )
-        return itemized_pipeline
+        class_names = list(set([type(est) for est in itemized_pipeline]))
+        return class_names
 
     @staticmethod
     def factory(project, /):
