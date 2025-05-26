@@ -23,6 +23,8 @@ from skore.sklearn._plot.utils import (
 )
 from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
 
+MAX_N_LABELS = 6  # 5 + 1 for the chance level line
+
 
 def _set_axis_labels(ax: Axes, info_pos_label: Union[str, None]) -> None:
     """Add axis labels."""
@@ -238,6 +240,7 @@ class RocCurveDisplay(
             info_pos_label = (
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
             )
+            legend_title = None
 
         else:  # multiclass-classification
             class_colors = sample_mpl_colormap(
@@ -251,15 +254,9 @@ class RocCurveDisplay(
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
                 default_line_kwargs: dict[str, Any] = {"color": class_colors[class_idx]}
-                if self.data_source in ("train", "test"):
-                    default_line_kwargs["label"] = (
-                        f"{str(class_label).title()} - {self.data_source} "
-                        f"set (AUC = {roc_auc_class:0.2f})"
-                    )
-                else:  # data_source in (None, "X_y")
-                    default_line_kwargs["label"] = (
-                        f"{str(class_label).title()} - AUC = {roc_auc_class:0.2f}"
-                    )
+                default_line_kwargs["label"] = (
+                    f"{str(class_label).title()} (AUC = {roc_auc_class:0.2f})"
+                )
 
                 line_kwargs = _validate_style_kwargs(
                     default_line_kwargs, roc_curve_kwargs_class
@@ -268,6 +265,10 @@ class RocCurveDisplay(
                 (line,) = self.ax_.plot(fpr_class, tpr_class, **line_kwargs)
                 lines.append(line)
 
+            if self.data_source in ("train", "test"):
+                legend_title = f"{self.data_source.capitalize()} set"
+            else:
+                legend_title = None
             info_pos_label = None  # irrelevant for multiclass
 
         if plot_chance_level:
@@ -279,7 +280,12 @@ class RocCurveDisplay(
         else:
             self.chance_level_ = None
 
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
+            self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+        else:
+            self.ax_.legend(loc="lower right", title=legend_title)
+        self.ax_.set_title(f"ROC Curve for {estimator_name}")
 
         return self.ax_, lines, info_pos_label
 
@@ -335,7 +341,7 @@ class RocCurveDisplay(
                     line_kwargs, roc_curve_kwargs[split_idx]
                 )
                 line_kwargs_validated["label"] = (
-                    f"Estimator of fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
+                    f"Fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
                 )
 
                 (line,) = self.ax_.plot(fpr_split, tpr_split, **line_kwargs_validated)
@@ -393,10 +399,16 @@ class RocCurveDisplay(
             self.chance_level_ = None
 
         if self.data_source in ("train", "test"):
-            title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
+            legend_title = f"{self.data_source.capitalize()} set"
         else:
-            title = f"{estimator_name} on $\\bf{{external}}$ set"
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=title)
+            legend_title = "External set"
+
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
+            self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+        else:
+            self.ax_.legend(loc="lower right", title=legend_title)
+        self.ax_.set_title(f"ROC Curve for {estimator_name}")
 
         return self.ax_, lines, info_pos_label
 
@@ -501,10 +513,17 @@ class RocCurveDisplay(
         else:
             self.chance_level_ = None
 
-        self.ax_.legend(
-            bbox_to_anchor=(1.02, 1),
-            title=f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set",
-        )
+        if self.data_source in ("train", "test"):
+            legend_title = f"{self.data_source.capitalize()} set"
+        else:
+            legend_title = "External set"
+
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
+            self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+        else:
+            self.ax_.legend(loc="lower right", title=legend_title)
+        self.ax_.set_title("ROC Curve")
 
         return self.ax_, lines, info_pos_label
 

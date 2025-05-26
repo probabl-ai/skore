@@ -23,6 +23,8 @@ from skore.sklearn._plot.utils import (
 )
 from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
 
+MAX_N_LABELS = 5
+
 
 class PrecisionRecallCurveDisplay(
     StyleDisplayMixin, HelpDisplayMixin, _ClassifierCurveDisplayMixin
@@ -191,6 +193,7 @@ class PrecisionRecallCurveDisplay(
             info_pos_label = (
                 f"\n(Positive label: {pos_label})" if pos_label is not None else ""
             )
+            legend_title = None
 
         else:  # multiclass-classification
             class_colors = sample_mpl_colormap(
@@ -208,25 +211,27 @@ class PrecisionRecallCurveDisplay(
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, pr_curve_kwargs_class
                 )
-                if self.data_source in ("train", "test"):
-                    line_kwargs_validated["label"] = (
-                        f"{str(class_label).title()} - {self.data_source} "
-                        f"set (AP = {average_precision_class:0.2f})"
-                    )
-                else:  # data_source in (None, "X_y")
-                    line_kwargs_validated["label"] = (
-                        f"{str(class_label).title()} - "
-                        f"AP = {average_precision_class:0.2f}"
-                    )
+                line_kwargs_validated["label"] = (
+                    f"{str(class_label).title()} (AP = {average_precision_class:0.2f})"
+                )
 
                 (line,) = self.ax_.plot(
                     recall_class, precision_class, **line_kwargs_validated
                 )
                 lines.append(line)
 
+            if self.data_source in ("train", "test"):
+                legend_title = f"{self.data_source.capitalize()} set"
+            else:
+                legend_title = None
             info_pos_label = None  # irrelevant for multiclass
 
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
+            self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+        else:
+            self.ax_.legend(loc="lower left", title=legend_title)
+        self.ax_.set_title(f"Precision-Recall Curve for {estimator_name}")
 
         return self.ax_, lines, info_pos_label
 
@@ -274,8 +279,7 @@ class PrecisionRecallCurveDisplay(
                     line_kwargs, pr_curve_kwargs[split_idx]
                 )
                 line_kwargs_validated["label"] = (
-                    f"Estimator of fold #{split_idx + 1} "
-                    f"(AP = {average_precision_split:0.2f})"
+                    f"Fold #{split_idx + 1} (AP = {average_precision_split:0.2f})"
                 )
 
                 (line,) = self.ax_.plot(
@@ -325,10 +329,15 @@ class PrecisionRecallCurveDisplay(
                     lines.append(line)
 
         if self.data_source in ("train", "test"):
-            title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
+            legend_title = f"{self.data_source.capitalize()} set"
         else:
-            title = f"{estimator_name} on $\\bf{{external}}$ set"
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=title)
+            legend_title = "External set"
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
+            self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+        else:
+            self.ax_.legend(loc="lower left", title=legend_title)
+        self.ax_.set_title(f"Precision-Recall Curve for {estimator_name}")
 
         return self.ax_, lines, info_pos_label
 
@@ -419,10 +428,17 @@ class PrecisionRecallCurveDisplay(
                     )
                     lines.append(line)
 
-        self.ax_.legend(
-            bbox_to_anchor=(1.02, 1),
-            title=f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set",
-        )
+        if self.data_source in ("train", "test"):
+            legend_title = f"{self.data_source.capitalize()} set"
+        else:
+            legend_title = "External set"
+
+        _, labels = self.ax_.get_legend_handles_labels()
+        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
+            self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+        else:
+            self.ax_.legend(loc="lower left", title=legend_title)
+        self.ax_.set_title("Precision-Recall Curve")
 
         return self.ax_, lines, info_pos_label
 
