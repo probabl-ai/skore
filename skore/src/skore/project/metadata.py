@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
@@ -45,7 +47,7 @@ class Metadata(DataFrame):
 
         Parameters
         ----------
-        step : Pipeline, FeatureUnion or TableVectorizer
+        step : one node of the pipeline
             The step to explore.
 
         Returns
@@ -127,7 +129,7 @@ class Metadata(DataFrame):
         return itemized_pipeline
 
     @staticmethod
-    def _split_pipeline(pipeline=Pipeline) -> list:
+    def _split_pipeline(pipeline: Pipeline) -> dict[str, list[str]]:
         """
         Split the pipeline into a list of estimators or transformers.
 
@@ -138,15 +140,33 @@ class Metadata(DataFrame):
 
         Returns
         -------
-        list
+        dict[str, list[str]]
             A list of estimators or transformers in the pipeline.
         """
         max_depth = 5
         itemized_pipeline = Metadata._explore_sk_pipeline(
             pipeline, [], depth=0, max_depth=max_depth
         )
-        class_names = list(set([type(est) for est in itemized_pipeline]))
-        return class_names
+        class_names = list(set([str(type(est)) for est in itemized_pipeline]))
+
+        sklearn_regex = re.compile(r"sklearn\.(\w+)\.(\w+)")
+        skrub_regex = re.compile(r"skrub\.(\w+)\.(\w+)")
+
+        # pipe_steps: dict[str, list[str]] = dict()
+        pipe_steps = defaultdict(list)
+        for estimator_class in class_names:
+            sklearn_match = sklearn_regex.search(estimator_class)
+            skrub_match = skrub_regex.search(estimator_class)
+            if sklearn_match is not None:
+                module, class_name = sklearn_match.groups()
+                pipe_steps[module].append(class_name)
+            elif skrub_match is not None:
+                module, class_name = skrub_match.groups()
+                pipe_steps[module].append(class_name)
+            else:
+                pipe_steps["other"].append(estimator_class)
+
+        return pipe_steps
 
     @staticmethod
     def factory(project, /):
