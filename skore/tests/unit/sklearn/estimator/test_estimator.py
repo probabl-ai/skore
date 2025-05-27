@@ -404,6 +404,22 @@ def test_estimator_report_get_predictions():
     )
     np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
 
+    # check the behaviour in conjunction of a report `pos_label`
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        pos_label=0,
+    )
+    predictions = report.get_predictions(
+        data_source="train", response_method="predict_proba"
+    )
+    np.testing.assert_allclose(
+        predictions, report.estimator_.predict_proba(X_train)[:, 0]
+    )
+
 
 def test_estimator_report_get_predictions_error():
     """Check that we raise an error when the data source is invalid."""
