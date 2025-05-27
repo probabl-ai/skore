@@ -19,5 +19,5 @@ updates:
         patterns:
           - "*"
 
-    # It uses `skore/ci/requirements/python*/.python-version` to specify the python
-    # version used to update `skore/ci/requirements/**/test-requirements.txt`
+    # It uses `ci/requirements/**/.python-version` to specify the python version used to
+    # update `ci/requirements/**/test-requirements.txt`

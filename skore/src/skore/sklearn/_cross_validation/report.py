@@ -29,15 +29,18 @@ def _generate_estimator_report(
     y: Optional[ArrayLike],
     train_indices: ArrayLike,
     test_indices: ArrayLike,
-) -> EstimatorReport:
-    return EstimatorReport(
-        estimator,
-        fit=True,
-        X_train=_safe_indexing(X, train_indices),
-        y_train=_safe_indexing(y, train_indices),
-        X_test=_safe_indexing(X, test_indices),
-        y_test=_safe_indexing(y, test_indices),
-    )
+) -> Union[EstimatorReport, KeyboardInterrupt, Exception]:
+    try:
+        return EstimatorReport(
+            estimator,
+            fit=True,
+            X_train=_safe_indexing(X, train_indices),
+            y_train=_safe_indexing(y, train_indices),
+            X_test=_safe_indexing(X, test_indices),
+            y_test=_safe_indexing(y, test_indices),
+        )
+    except (KeyboardInterrupt, Exception) as e:
+        return e
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
@@ -49,6 +52,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     the full cross-validation process did not complete. In particular,
     `KeyboardInterrupt` exceptions are swallowed and will only interrupt the
     cross-validation process, rather than the entire program.
+
+    Refer to the :ref:`cross_validation_report` section of the user guide for more
+    details.
 
     Parameters
     ----------
@@ -101,6 +107,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     skore.EstimatorReport
         Report for a fitted estimator.
 
+    skore.ComparisonReport
+        Report of comparison between estimators.
+
     Examples
     --------
     >>> from sklearn.datasets import make_classification
@@ -126,7 +135,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     ) -> None:
         # used to know if a parent launch a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress = None
 
         self._estimator = clone(estimator)
 
@@ -193,31 +201,55 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
 
         estimator_reports = []
-        try:
-            for report in generator:
-                estimator_reports.append(report)
-                progress.update(task, advance=1, refresh=True)
-        except (Exception, KeyboardInterrupt) as e:
-            from skore import console  # avoid circular import
+        for report in generator:
+            estimator_reports.append(report)
+            progress.update(task, advance=1, refresh=True)
 
-            if isinstance(e, KeyboardInterrupt):
-                message = (
-                    "Cross-validation process was interrupted manually before all "
-                    "estimators could be fitted; CrossValidationReport object "
-                    "might not contain all the expected results."
-                )
-            else:
-                message = (
-                    "Cross-validation process was interrupted by an error before "
-                    "all estimators could be fitted; CrossValidationReport object "
-                    "might not contain all the expected results. "
-                    f"Traceback: \n{e}"
-                )
+        warn_msg = None
+        if not any (
+            isinstance(report, EstimatorReport)
+            for report in estimator_reports
+        ):
+            traceback_msg = "\n".join(str(exc) for exc in estimator_reports)
+            raise RuntimeError(
+                "Cross-validation failed: no estimators were successfully fitted. "
+                "Please check your data, estimator, or cross-validation setup.\n"
+                f"Traceback: \n{traceback_msg}"
+            )
+        elif any(isinstance(report, Exception) for report in estimator_reports):
+            msg_traceback = "\n".join(
+                str(exc) for exc in estimator_reports if isinstance(exc, Exception)
+            )
+            warn_msg = (
+                "Cross-validation process was interrupted by an error before "
+                "all estimators could be fitted; CrossValidationReport object "
+                "might not contain all the expected results.\n"
+                f"Traceback: \n{msg_traceback}"
+            )
+            estimator_reports = [
+                report
+                for report in estimator_reports
+                if not isinstance(report, Exception)
+            ]
+        if any(isinstance(report, KeyboardInterrupt) for report in estimator_reports):
+            warn_msg = (
+                "Cross-validation process was interrupted manually before all "
+                "estimators could be fitted; CrossValidationReport object "
+                "might not contain all the expected results."
+            )
+            estimator_reports = [
+                report
+                for report in estimator_reports
+                if not isinstance(report, KeyboardInterrupt)
+            ]
+
+        if warn_msg is not None:
+            from skore import console  # avoid circular import
 
             console.print(
                 Panel(
                     title="Cross-validation interrupted",
-                    renderable=message,
+                    renderable=warn_msg,
                     style="orange1",
                     border_style="cyan",
                 )
@@ -287,9 +319,23 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         total_estimators = len(self.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
-        for estimator_report in self.estimator_reports_:
-            # Pass the progress manager to child tasks
-            estimator_report._parent_progress = progress
+        for fold_idx, estimator_report in enumerate(self.estimator_reports_, 1):
+            # Share the parent's progress bar with child report
+            estimator_report._progress_info = {
+                "current_progress": progress,
+                "fold_info": {"current": fold_idx, "total": total_estimators},
+            }
+
+            # Update the progress bar description to include the fold number
+            progress.update(
+                main_task,
+                description=(
+                    "Cross-validation predictions for fold "
+                    f"#{fold_idx}/{total_estimators}"
+                ),
+            )
+
+            # Call cache_predictions without printing a separate message
             estimator_report.cache_predictions(
                 response_methods=response_methods, n_jobs=n_jobs
             )
@@ -299,7 +345,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self,
         *,
         data_source: Literal["train", "test", "X_y"],
-        response_method: Literal["predict", "predict_proba", "decision_function"],
+        response_method: Literal[
+            "predict", "predict_proba", "decision_function"
+        ] = "predict",
         X: Optional[ArrayLike] = None,
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
@@ -310,7 +358,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
@@ -318,7 +366,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             - "X_y" : use the train set provided when creating the report and the target
               variable.
 
-        response_method : {"predict", "predict_proba", "decision_function"}
+        response_method : {"predict", "predict_proba", "decision_function"},
+        default : "predict"
+
             The response method to use.
 
         X : array-like of shape (n_samples, n_features), optional
@@ -350,9 +400,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> estimator = LogisticRegression()
         >>> from skore import CrossValidationReport
         >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
-        >>> predictions = report.get_predictions(
-        ...     data_source="test", response_method="predict"
-        ... )
+        >>> predictions = report.get_predictions(data_source="test")
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(50,), (50,)]
         """

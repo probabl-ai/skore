@@ -1,12 +1,11 @@
 import inspect
 from collections.abc import Sequence
 from io import StringIO
-from typing import Any, Literal, Optional, Union, cast
+from typing import Any, Optional, Union
 
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
-from numpy.typing import ArrayLike
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -15,7 +14,7 @@ from sklearn.utils.validation import (
     check_consistent_length,
 )
 
-from skore.sklearn.types import MLTask, PositiveLabel
+from skore.sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 LINESTYLE = [
     ("solid", "solid"),
@@ -145,8 +144,8 @@ class _ClassifierCurveDisplayMixin:
         *,
         curve_param_name: str,
         curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
-        metric: dict[PositiveLabel, list[float]],
-        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
+        n_curves: int,
+        report_type: ReportType,
     ) -> list[dict[str, Any]]:
         """Validate and format the classification curve keyword arguments.
 
@@ -158,10 +157,11 @@ class _ClassifierCurveDisplayMixin:
         curve_kwargs : dict or list of dict or None
             Keyword arguments to customize the classification curve.
 
-        metric : dict of list of float
-            One of the metric of the curve to infer how many curves we are plotting.
+        n_curves : int
+            The number of curves we are plotting.
 
-        report_type : {"comparison-estimator", "cross-validation", "estimator"}
+        report_type : {"comparison-cross-validation", "comparison-estimator",
+                      "cross-validation", "estimator"}
             The type of report.
 
         Returns
@@ -175,21 +175,19 @@ class _ClassifierCurveDisplayMixin:
             If the format of curve_kwargs is invalid.
         """
         if self.ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, self.pos_label)
-            n_curves = len(metric[pos_label])
             if report_type in ("estimator", "cross-validation"):
                 allow_single_dict = True
-            elif report_type == "comparison-estimator":
+            elif report_type in ("comparison-estimator", "comparison-cross-validation"):
                 # since we compare different estimators, it does not make sense to share
                 # a single dictionary for all the estimators.
                 allow_single_dict = False
             else:
                 raise ValueError(
                     f"`report_type` should be one of 'estimator', 'cross-validation', "
-                    f"or 'comparison-estimator'. Got '{report_type}' instead."
+                    "'comparison-cross-validation' or 'comparison-estimator'. "
+                    f"Got '{report_type}' instead."
                 )
         else:
-            n_curves = len(metric)
             allow_single_dict = False
 
         if curve_kwargs is None:
@@ -229,17 +227,17 @@ class _ClassifierCurveDisplayMixin:
     @classmethod
     def _validate_from_predictions_params(
         cls,
-        y_true: Sequence[ArrayLike],
-        y_pred: Sequence[ArrayLike],
+        y_true: Sequence[YPlotData],
+        y_pred: Sequence[YPlotData],
         *,
         ml_task: str,
         pos_label: Optional[PositiveLabel] = None,
     ) -> Union[PositiveLabel, None]:
         for y_true_i, y_pred_i in zip(y_true, y_pred):
-            check_consistent_length(y_true_i, y_pred_i)
+            check_consistent_length(y_true_i.y, y_pred_i.y)
 
         if ml_task == "binary-classification":
-            pos_label = _check_pos_label_consistency(pos_label, y_true[0])
+            pos_label = _check_pos_label_consistency(pos_label, y_true[0].y)
 
         return pos_label
 

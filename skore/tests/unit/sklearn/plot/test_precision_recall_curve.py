@@ -504,7 +504,7 @@ def test_precision_recall_curve_display_comparison_report_multiclass_classificat
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
     # check the structure of the attributes
-    class_labels = report.estimator_reports_[0].estimator_.classes_
+    class_labels = report.reports_[0].estimator_.classes_
     for attr_name in ("precision", "recall", "average_precision"):
         assert isinstance(getattr(display, attr_name), dict)
         assert len(getattr(display, attr_name)) == len(class_labels)
@@ -627,7 +627,8 @@ def test_precision_recall_curve_display_wrong_report_type(
     display.report_type = "unknown"
     err_msg = (
         "`report_type` should be one of 'estimator', 'cross-validation', "
-        "or 'comparison-estimator'. Got 'unknown' instead."
+        "'comparison-cross-validation' or 'comparison-estimator'. "
+        "Got 'unknown' instead."
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot()

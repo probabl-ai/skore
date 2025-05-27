@@ -9,7 +9,7 @@ functionalities of the report are exposed through accessors.
 
 .. autosummary::
    :toctree: ../api/
-   :template: base.rst
+   :template: class_with_accessors.rst
 
    CrossValidationReport
 
@@ -17,20 +17,22 @@ functionalities of the report are exposed through accessors.
 
 .. autosummary::
    :toctree: ../api/
-   :template: autosummary/accessor_method.rst
+   :template: class_methods_no_index.rst
 
    CrossValidationReport.help
    CrossValidationReport.cache_predictions
    CrossValidationReport.clear_cache
    CrossValidationReport.get_predictions
 
-.. rubric:: Metrics
+.. rubric:: Accessors
 
 .. autosummary::
    :toctree: ../api/
    :template: autosummary/accessor.rst
 
    CrossValidationReport.metrics
+
+.. _cross_validation_report_metrics:
 
 Metrics
 -------
@@ -40,7 +42,6 @@ estimator across cross-validation folds.
 
 .. autosummary::
     :toctree: ../api/
-    :nosignatures:
     :template: autosummary/accessor_method.rst
 
     CrossValidationReport.metrics.help
