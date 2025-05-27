@@ -61,15 +61,6 @@ def _combine_estimator_results(
     Metric
     Brier score                   ...                   ...
     """
-    pd.DataFrame.from_dict(
-        {
-            "index": ["Brier score"],
-            "columns": ["LogisticRegression"],
-            "data": [[0.026683863888246822]],
-            "index_names": ["Metric"],
-            "column_names": [None],
-        }
-    )
     results = pd.concat(individual_results, axis=1)
 
     # Pop the favorability column if it exists, to:
