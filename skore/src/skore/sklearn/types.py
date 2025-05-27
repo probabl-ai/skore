@@ -44,6 +44,11 @@ class SKLearnScorer(Protocol):
     _kwargs: dict[str, Any]
 
 
+ScoringName = Union[str, None]
+
+Scoring = Union[str, Callable, SKLearnScorer]
+
+
 class SKLearnCrossValidator(Protocol):
     """Protocol defining the interface of scikit-learn's cross-validation splitters."""
 

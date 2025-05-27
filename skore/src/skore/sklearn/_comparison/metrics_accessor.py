@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
-from sklearn.metrics._scorer import _BaseScorer as SKLearnScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
@@ -16,7 +15,13 @@ from skore.sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import Aggregate, PositiveLabel, YPlotData
+from skore.sklearn.types import (
+    Aggregate,
+    PositiveLabel,
+    Scoring,
+    ScoringName,
+    YPlotData,
+)
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
@@ -25,7 +30,6 @@ from skore.utils._progress_bar import progress_decorator
 from .utils import _combine_cross_validation_results, _combine_estimator_results
 
 DataSource = Literal["test", "train", "X_y"]
-Scoring = Union[str, Callable[..., object], SKLearnScorer]
 
 
 class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
@@ -56,8 +60,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        scoring: Optional[Union[list[str], Callable, SKLearnScorer]] = None,
-        scoring_names: Optional[list[str]] = None,
+        scoring: Optional[Union[Scoring, list[Scoring]]] = None,
+        scoring_names: Optional[Union[ScoringName, list[ScoringName]]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
         pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
@@ -97,7 +101,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
               same parameter name with different values), you can use scikit-learn
               scorers as provided by :func:`sklearn.metrics.make_scorer`.
 
-        scoring_names : list of str, default=None
+        scoring_names : str, None or list of such instances, default=None
             Used to overwrite the default scoring names in the report. It should be of
             the same length as the ``scoring`` parameter.
 

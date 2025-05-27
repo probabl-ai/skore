@@ -21,7 +21,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import PositiveLabel, SKLearnScorer, YPlotData
+from skore.sklearn.types import PositiveLabel, Scoring, ScoringName, YPlotData
 from skore.utils._accessor import (
     _check_all_checks,
     _check_estimator_has_method,
@@ -30,7 +30,6 @@ from skore.utils._accessor import (
 from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
-Scoring = Union[str, Callable[..., object], SKLearnScorer]
 
 
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
@@ -65,7 +64,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         scoring: Optional[Union[Scoring, list[Scoring]]] = None,
-        scoring_names: Optional[Union[str, list[Union[str, None]]]] = None,
+        scoring_names: Optional[Union[ScoringName, list[ScoringName]]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
         pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
@@ -104,7 +103,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
               same parameter name with different values), you can use scikit-learn
               scorers as provided by :func:`sklearn.metrics.make_scorer`.
 
-        scoring_names : list of str, default=None
+        scoring_names : str, None or list of such instances, default=None
             Used to overwrite the default scoring names in the report. It should be of
             the same length as the `scoring` parameter.
 
