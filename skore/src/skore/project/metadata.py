@@ -141,7 +141,8 @@ class Metadata(DataFrame):
         Returns
         -------
         dict[str, list[str]]
-            A list of estimators or transformers in the pipeline.
+            A dict of estimators or transformers class in the pipeline,
+            grouped by their module name.
         """
         max_depth = 5
         itemized_pipeline = Metadata._explore_sk_pipeline(
