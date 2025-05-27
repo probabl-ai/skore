@@ -6,9 +6,7 @@ from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
 
-def test_precision_recall_curve_display_comparison_report_binary_classification(
-    pyplot, binary_classification_data
-):
+def test_binary_classification(pyplot, binary_classification_data):
     """Check the attributes and default plotting behaviour of the precision-recall curve
     plot with binary data."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -58,9 +56,7 @@ def test_precision_recall_curve_display_comparison_report_binary_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_precision_recall_curve_display_comparison_report_multiclass_classification(
-    pyplot, multiclass_classification_data
-):
+def test_multiclass_classification(pyplot, multiclass_classification_data):
     """Check the attributes and default plotting behaviour of the precision-recall curve
     plot with multiclass data."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
@@ -121,9 +117,7 @@ def test_precision_recall_curve_display_comparison_report_multiclass_classificat
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_precision_recall_curve_display_comparison_report_binary_classification_kwargs(
-    pyplot, binary_classification_data
-):
+def test_binary_classification_kwargs(pyplot, binary_classification_data):
     """Check that we can pass keyword arguments to the precision-recall curve plot for
     cross-validation."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -158,9 +152,7 @@ def test_precision_recall_curve_display_comparison_report_binary_classification_
     ["binary_classification_data", "multiclass_classification_data"],
 )
 @pytest.mark.parametrize("pr_curve_kwargs", [[{"color": "red"}], "unknown"])
-def test_pr_curve_display_comparison_multiple_pr_curve_kwargs_error(
-    pyplot, fixture_name, request, pr_curve_kwargs
-):
+def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `pr_curve_kwargs` argument."""
     estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)

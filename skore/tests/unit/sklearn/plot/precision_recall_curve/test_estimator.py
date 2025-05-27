@@ -5,9 +5,7 @@ from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
 
-def test_precision_recall_curve_display_binary_classification(
-    pyplot, binary_classification_data
-):
+def test_binary_classification(pyplot, binary_classification_data):
     """Check the attributes and default plotting behaviour of the
     precision-recall curve plot with binary data.
     """
@@ -46,9 +44,7 @@ def test_precision_recall_curve_display_binary_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_precision_recall_curve_display_multiclass_classification(
-    pyplot, multiclass_classification_data
-):
+def test_multiclass_classification(pyplot, multiclass_classification_data):
     """Check the attributes and default plotting behaviour of the precision-recall
     curve plot with multiclass data.
     """
@@ -86,7 +82,7 @@ def test_precision_recall_curve_display_multiclass_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_precision_recall_curve_display_data_source(pyplot, binary_classification_data):
+def test_data_source(pyplot, binary_classification_data):
     """Check that we can pass the `data_source` argument to the precision-recall
     curve plot.
     """
@@ -103,7 +99,7 @@ def test_precision_recall_curve_display_data_source(pyplot, binary_classificatio
     assert display.lines_[0].get_label() == "AP = 0.93"
 
 
-def test_precision_recall_curve_display_pr_curve_kwargs(
+def test_pr_curve_kwargs(
     pyplot, binary_classification_data, multiclass_classification_data
 ):
     """Check that we can pass keyword arguments to the precision-recall curve plot."""
@@ -146,7 +142,7 @@ def test_precision_recall_curve_display_pr_curve_kwargs(
     assert display.ax_.spines["right"].get_visible()
 
 
-def test_precision_recall_curve_display_plot_error_wrong_pr_curve_kwargs(
+def test_wrong_kwargs(
     pyplot, binary_classification_data, multiclass_classification_data
 ):
     """Check that we raise a proper error message when passing an inappropriate
@@ -180,9 +176,7 @@ def test_precision_recall_curve_display_plot_error_wrong_pr_curve_kwargs(
         display.plot(pr_curve_kwargs={})
 
 
-def test_precision_recall_curve_display_data_source_binary_classification(
-    pyplot, binary_classification_data
-):
+def test_binary_classification_data_source(pyplot, binary_classification_data):
     """Check that we can pass the `data_source` argument to the precision-recall curve
     plot."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -198,9 +192,7 @@ def test_precision_recall_curve_display_data_source_binary_classification(
     assert display.lines_[0].get_label() == "AP = 0.93"
 
 
-def test_precision_recall_curve_display_data_source_multiclass_classification(
-    pyplot, multiclass_classification_data
-):
+def test_multiclass_classification_data_source(pyplot, multiclass_classification_data):
     """Check that we can pass the `data_source` argument to the precision-recall curve
     plot."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
