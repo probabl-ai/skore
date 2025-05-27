@@ -165,7 +165,7 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if self.ml_task == "binary-classification":
-            precision_recall = self.precision_recall.query(f"label == {self.pos_label}")
+            precision_recall = self.precision_recall.query(f"label == {self.pos_label!r}")
             average_precision = self.average_precision["average_precision"].item()
 
             line_kwargs_validated = _validate_style_kwargs(
@@ -199,7 +199,7 @@ class PrecisionRecallCurveDisplay(
             )
 
             for class_idx, class_label in enumerate(labels):
-                query = f"label == {class_label}"
+                query = f"label == {class_label!r}"
                 precision_recall = self.precision_recall.query(query)
                 average_precision = self.average_precision.query(query)[
                     "average_precision"
@@ -268,7 +268,7 @@ class PrecisionRecallCurveDisplay(
 
         if self.ml_task == "binary-classification":
             for split_idx in self.precision_recall["split_index"].cat.categories:
-                query = f"label == {self.pos_label} & split_index == {split_idx}"
+                query = f"label == {self.pos_label!r} & split_index == {split_idx}"
                 precision_recall = self.precision_recall.query(query)
                 average_precision = self.average_precision.query(query)[
                     "average_precision"
@@ -309,7 +309,7 @@ class PrecisionRecallCurveDisplay(
                 pr_curve_kwargs_class = pr_curve_kwargs[class_idx]
 
                 for split_idx in self.precision_recall["split_index"].cat.categories:
-                    query = f"label == {class_label} & split_index == {split_idx}"
+                    query = f"label == {class_label!r} & split_index == {split_idx}"
                     precision_recall = self.precision_recall.query(query)
                     average_precision = self.average_precision.query(query)[
                         "average_precision"
@@ -381,7 +381,7 @@ class PrecisionRecallCurveDisplay(
 
         if self.ml_task == "binary-classification":
             for est_idx, est_name in enumerate(estimator_names):
-                query = f"label == {self.pos_label} & estimator_name == '{est_name}'"
+                query = f"label == {self.pos_label!r} & estimator_name == '{est_name}'"
                 precision_recall = self.precision_recall.query(query)
                 average_precision = self.average_precision.query(query)[
                     "average_precision"
@@ -417,7 +417,7 @@ class PrecisionRecallCurveDisplay(
                 est_color = class_colors[est_idx]
 
                 for class_idx, class_label in enumerate(labels):
-                    query = f"label == {class_label} & estimator_name == '{est_name}'"
+                    query = f"label == {class_label!r} & estimator_name == '{est_name}'"
                     precision_recall = self.precision_recall.query(query)
                     average_precision = self.average_precision.query(query)[
                         "average_precision"
@@ -491,7 +491,7 @@ class PrecisionRecallCurveDisplay(
             idx = 0
             for report_idx, estimator_name in enumerate(estimator_names):
                 query = (
-                    f"label == {self.pos_label} & estimator_name == '{estimator_name}'"
+                    f"label == {self.pos_label!r} & estimator_name == '{estimator_name}'"
                 )
                 average_precision = self.average_precision.query(query)[
                     "average_precision"
@@ -552,7 +552,7 @@ class PrecisionRecallCurveDisplay(
                 est_color = colors[est_idx]
 
                 for label_idx, label in enumerate(labels):
-                    query = f"label == {label} & estimator_name == '{estimator_name}'"
+                    query = f"label == {label!r} & estimator_name == '{estimator_name}'"
                     average_precision = self.average_precision.query(query)[
                         "average_precision"
                     ]
@@ -666,7 +666,7 @@ class PrecisionRecallCurveDisplay(
             pr_curve_kwargs = self._default_pr_curve_kwargs
 
         if self.ml_task == "binary-classification":
-            n_curves = len(self.average_precision.query(f"label == {self.pos_label}"))
+            n_curves = len(self.average_precision.query(f"label == {self.pos_label!r}"))
         else:
             n_curves = len(self.average_precision)
 
