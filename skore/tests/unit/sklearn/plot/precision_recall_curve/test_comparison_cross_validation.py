@@ -2,6 +2,7 @@ from itertools import product
 
 import matplotlib as mpl
 import numpy as np
+import pytest
 from matplotlib.lines import Line2D
 from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
@@ -13,11 +14,9 @@ from skore.sklearn._plot.utils import sample_mpl_colormap
 from .utils import check_display_data
 
 
-def test_binary_classification(pyplot, binary_classification_data_no_split):
-    """
-    Check the behaviour of `precision_recall` when ML task is "binary-classification".
-    """
-    X, y = binary_classification_data_no_split
+@pytest.fixture
+def binary_classification_report(binary_classification_data_no_split):
+    _, X, y = binary_classification_data_no_split
     estimator_1 = LogisticRegression()
     estimator_2 = LogisticRegression(C=10)
     report = ComparisonReport(
@@ -26,6 +25,28 @@ def test_binary_classification(pyplot, binary_classification_data_no_split):
             "estimator_2": CrossValidationReport(estimator_2, X, y),
         }
     )
+    return report
+
+
+@pytest.fixture
+def multiclass_classification_report(multiclass_classification_data_no_split):
+    _, X, y = multiclass_classification_data_no_split
+    estimator_1 = LogisticRegression()
+    estimator_2 = LogisticRegression(C=10)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": CrossValidationReport(estimator_1, X, y),
+            "estimator_2": CrossValidationReport(estimator_2, X, y),
+        }
+    )
+    return report
+
+
+def test_binary_classification(pyplot, binary_classification_report):
+    """
+    Check the behaviour of `precision_recall` when ML task is "binary-classification".
+    """
+    report = binary_classification_report
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
     check_display_data(display)
@@ -64,20 +85,12 @@ def test_binary_classification(pyplot, binary_classification_data_no_split):
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_multiclass_classification(pyplot, multiclass_classification_data_no_split):
+def test_multiclass_classification(pyplot, multiclass_classification_report):
     """
     Check the behaviour of `precision_recall` when ML task is
     "multiclass-classification" and `pos_label` is None.
     """
-    X, y = multiclass_classification_data_no_split
-    estimator_1 = LogisticRegression()
-    estimator_2 = LogisticRegression(C=10)
-    report = ComparisonReport(
-        reports={
-            "estimator_1": CrossValidationReport(estimator_1, X, y),
-            "estimator_2": CrossValidationReport(estimator_2, X, y),
-        }
-    )
+    report = multiclass_classification_report
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
     check_display_data(display)
