@@ -39,6 +39,39 @@ class Metadata(DataFrame):
     _metadata = ["project"]
 
     @staticmethod
+    def _iterate_in_pipe_tree(step, itemized_pipeline: list, depth: int) -> list:
+        """
+        Iterate through the pipeline tree.
+
+        Parameters
+        ----------
+        step : Pipeline, FeatureUnion or TableVectorizer
+            The step to explore.
+
+        Returns
+        -------
+        list
+            A list of estimators or transformers in the pipeline.
+        """
+        type_ = type(step)
+        if type_ == Pipeline:
+            itemized_pipeline = Metadata._explore_sk_pipeline(
+                step, itemized_pipeline, depth=depth + 1
+            )
+        elif type_ == FeatureUnion:
+            itemized_pipeline = Metadata._explore_sk_feature_union(
+                step, itemized_pipeline, depth=depth + 1
+            )
+        elif str(type_) == "<class 'skrub._table_vectorizer.TableVectorizer'>":
+            itemized_pipeline.append(step.low_cardinality)
+            itemized_pipeline.append(step.high_cardinality)
+            itemized_pipeline.append(step.numeric)
+            itemized_pipeline.append(step.datetime)
+        else:
+            itemized_pipeline.append(step)
+        return itemized_pipeline
+
+    @staticmethod
     def _explore_sk_pipeline(
         pipeline: Pipeline, itemized_pipeline: list, depth: int = 0, max_depth: int = 5
     ) -> list:
@@ -59,22 +92,9 @@ class Metadata(DataFrame):
             return itemized_pipeline
 
         for _, step in pipeline.steps:
-            type_ = type(step)
-            if type_ == Pipeline:
-                itemized_pipeline = Metadata._explore_sk_pipeline(
-                    step, itemized_pipeline, depth=depth + 1
-                )
-            elif type_ == FeatureUnion:
-                itemized_pipeline = Metadata._explore_sk_feature_union(
-                    step, itemized_pipeline, depth=depth + 1
-                )
-            elif str(type_) == "<class 'skrub._table_vectorizer.TableVectorizer'>":
-                itemized_pipeline.append(step.low_cardinality)
-                itemized_pipeline.append(step.high_cardinality)
-                itemized_pipeline.append(step.numeric)
-                itemized_pipeline.append(step.datetime)
-            else:
-                itemized_pipeline.append(step)
+            itemized_pipeline = Metadata._iterate_in_pipe_tree(
+                step, itemized_pipeline, depth=depth
+            )
         return itemized_pipeline
 
     @staticmethod
@@ -101,22 +121,9 @@ class Metadata(DataFrame):
             return itemized_pipeline
 
         for _, transformer in feature_union.transformer_list:
-            type_ = type(transformer)
-            if type_ == Pipeline:
-                itemized_pipeline = Metadata._explore_sk_pipeline(
-                    transformer, itemized_pipeline, depth=depth + 1
-                )
-            elif type_ == FeatureUnion:
-                itemized_pipeline = Metadata._explore_sk_feature_union(
-                    transformer, itemized_pipeline, depth=depth + 1
-                )
-            elif str(type_) == "<class 'skrub._table_vectorizer.TableVectorizer'>":
-                itemized_pipeline.append(transformer.low_cardinality)
-                itemized_pipeline.append(transformer.high_cardinality)
-                itemized_pipeline.append(transformer.numeric)
-                itemized_pipeline.append(transformer.datetime)
-            else:
-                itemized_pipeline.append(transformer)
+            itemized_pipeline = Metadata._iterate_in_pipe_tree(
+                transformer, itemized_pipeline, depth=depth
+            )
         return itemized_pipeline
 
     @staticmethod
