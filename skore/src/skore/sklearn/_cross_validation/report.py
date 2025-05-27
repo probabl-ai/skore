@@ -231,7 +231,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 for report in estimator_reports
                 if not isinstance(report, Exception)
             ]
-        elif any(isinstance(report, KeyboardInterrupt) for report in estimator_reports):
+        if any(isinstance(report, KeyboardInterrupt) for report in estimator_reports):
             warn_msg = (
                 "Cross-validation process was interrupted manually before all "
                 "estimators could be fitted; CrossValidationReport object "
