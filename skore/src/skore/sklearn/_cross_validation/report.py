@@ -460,6 +460,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
+    @property
+    def cv_splitter(self) -> SKLearnCrossValidator:
+        return self._cv_splitter
+
     ####################################################################################
     # Methods related to the help and repr
     ####################################################################################

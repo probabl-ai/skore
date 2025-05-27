@@ -1,3 +1,4 @@
+import inspect
 import re
 from copy import deepcopy
 from io import BytesIO
@@ -113,6 +114,24 @@ def regression_multioutput_data():
 ########################################################################################
 # Check the general behaviour of the report
 ########################################################################################
+
+
+def test_report_can_be_rebuilt_using_parameters(regression_data):
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    parameters = {}
+
+    for parameter in inspect.signature(EstimatorReport).parameters:
+        has_parameter = hasattr(report, parameter)
+        has_parameter_ = hasattr(report, f"{parameter}_")
+
+        assert has_parameter or has_parameter_, parameter
+
+        parameters[parameter] = getattr(
+            report, parameter if has_parameter else f"{parameter}_"
+        )
+
+    EstimatorReport(**parameters)
 
 
 @pytest.mark.parametrize("fit", [True, "auto"])
