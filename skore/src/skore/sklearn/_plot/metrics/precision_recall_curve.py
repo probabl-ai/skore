@@ -680,7 +680,7 @@ class PrecisionRecallCurveDisplay(
         if self.report_type == "estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_single_estimator(
                 estimator_name=(
-                    self.estimator_names[0]
+                    self.precision_recall["estimator_name"].cat.categories.item()
                     if estimator_name is None
                     else estimator_name
                 ),
@@ -690,7 +690,7 @@ class PrecisionRecallCurveDisplay(
             self.ax_, self.lines_, info_pos_label = (
                 self._plot_cross_validated_estimator(
                     estimator_name=(
-                        self.estimator_names[0]
+                        self.precision_recall["estimator_name"].cat.categories.item()
                         if estimator_name is None
                         else estimator_name
                     ),
