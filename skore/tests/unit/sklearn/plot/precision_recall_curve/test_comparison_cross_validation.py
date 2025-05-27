@@ -95,7 +95,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
     assert isinstance(display, PrecisionRecallCurveDisplay)
     check_display_data(display)
 
-    labels = display.precision_recall["label"].unique()
+    labels = display.precision_recall["label"].cat.categories
     n_reports = len(report.reports_)
     n_splits = len(report.reports_[0].estimator_reports_)
 

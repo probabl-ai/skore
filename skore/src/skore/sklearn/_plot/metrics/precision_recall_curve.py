@@ -192,7 +192,7 @@ class PrecisionRecallCurveDisplay(
             )
 
         else:  # multiclass-classification
-            labels = self.precision_recall["label"].unique()
+            labels = self.precision_recall["label"].cat.categories
             class_colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"),
                 10 if len(labels) < 10 else len(labels),
@@ -268,7 +268,7 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if self.ml_task == "binary-classification":
-            for split_idx in self.precision_recall["split_index"].unique():
+            for split_idx in self.precision_recall["split_index"].cat.categories:
                 precision_recall = self.precision_recall.query(
                     f"label == {self.pos_label} & split_index == {split_idx}"
                 )
@@ -298,7 +298,7 @@ class PrecisionRecallCurveDisplay(
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
-            labels = self.precision_recall["label"].unique()
+            labels = self.precision_recall["label"].cat.categories
             class_colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"),
                 10 if len(labels) < 10 else len(labels),
@@ -310,7 +310,7 @@ class PrecisionRecallCurveDisplay(
                 # average_precision_class = self.average_precision[class_]
                 pr_curve_kwargs_class = pr_curve_kwargs[class_idx]
 
-                for split_idx in self.precision_recall["split_index"].unique():
+                for split_idx in self.precision_recall["split_index"].cat.categories:
                     precision_recall = self.precision_recall.query(
                         f"label == {class_label} & split_index == {split_idx}"
                     )
@@ -411,7 +411,7 @@ class PrecisionRecallCurveDisplay(
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
-            labels = self.precision_recall["label"].unique()
+            labels = self.precision_recall["label"].cat.categories
             class_colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"),
                 10 if len(labels) < 10 else len(labels),
@@ -488,7 +488,7 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if self.ml_task == "binary-classification":
-            labels = self.precision_recall["label"].unique()
+            labels = self.precision_recall["label"].cat.categories
             colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"),
                 10 if len(estimator_names) < 10 else len(estimator_names),
@@ -503,7 +503,9 @@ class PrecisionRecallCurveDisplay(
                     f"label == {self.pos_label} & estimator_name == '{estimator_name}'"
                 )
 
-                for split_index, segment in precision_recall.groupby("split_index"):
+                for split_index, segment in precision_recall.groupby(
+                    "split_index", observed=True
+                ):
                     if split_index == 0:
                         label_kwargs = {
                             "label": (
@@ -543,7 +545,7 @@ class PrecisionRecallCurveDisplay(
 
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
-            labels = self.precision_recall["label"].unique()
+            labels = self.precision_recall["label"].cat.categories
             colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"),
                 10 if len(estimator_names) < 10 else len(estimator_names),
@@ -562,7 +564,9 @@ class PrecisionRecallCurveDisplay(
                         f"label == {label} & estimator_name == '{estimator_name}'"
                     )
 
-                    for split_index, segment in precision_recall.groupby("split_index"):
+                    for split_index, segment in precision_recall.groupby(
+                        "split_index", observed=True
+                    ):
                         if split_index == 0:
                             label_kwargs = {
                                 "label": (
@@ -656,7 +660,7 @@ class PrecisionRecallCurveDisplay(
             self.report_type == "comparison-cross-validation"
             and self.ml_task == "multiclass-classification"
         ):
-            n_labels = len(self.average_precision["label"].unique())
+            n_labels = len(self.average_precision["label"].cat.categories)
             self.figure_, self.ax_ = plt.subplots(ncols=n_labels)
         else:
             self.figure_, self.ax_ = plt.subplots()
@@ -862,9 +866,20 @@ class PrecisionRecallCurveDisplay(
                             "average_precision": average_precision_class_i,
                         }
                     )
+
+        dtypes = {
+            "estimator_name": "category",
+            "split_index": "category",
+            "label": "category",
+        }
+
         return cls(
-            precision_recall=DataFrame.from_records(precision_recall_records),
-            average_precision=DataFrame.from_records(average_precision_records),
+            precision_recall=DataFrame.from_records(precision_recall_records).astype(
+                dtypes
+            ),
+            average_precision=DataFrame.from_records(average_precision_records).astype(
+                dtypes
+            ),
             estimator_names=estimator_names,
             pos_label=pos_label_validated,
             data_source=data_source,
