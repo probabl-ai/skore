@@ -11,6 +11,8 @@ from skore.sklearn._plot.metrics.precision_recall_curve import (
 )
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
+from .utils import check_display_data
+
 
 def test_binary_classification(pyplot):
     """
@@ -27,6 +29,7 @@ def test_binary_classification(pyplot):
     )
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
+    check_display_data(display)
 
     pos_label = 1
     n_reports = len(report.reports_)
@@ -80,6 +83,7 @@ def test_multiclass_classification(pyplot):
     )
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
+    check_display_data(display)
 
     labels = display.precision_recall["label"].unique()
     n_reports = len(report.reports_)

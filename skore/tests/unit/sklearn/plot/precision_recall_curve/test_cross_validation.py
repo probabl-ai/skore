@@ -5,6 +5,8 @@ from skore import CrossValidationReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
+from .utils import check_display_data
+
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_binary_classification(
@@ -22,6 +24,7 @@ def test_binary_classification(
 
     display = report.metrics.precision_recall(**precision_recall_kwargs)
     assert isinstance(display, PrecisionRecallCurveDisplay)
+    check_display_data(display)
 
     display.plot()
 
@@ -76,6 +79,7 @@ def test_multiclass_classification(
 
     display = report.metrics.precision_recall(**precision_recall_kwargs)
     assert isinstance(display, PrecisionRecallCurveDisplay)
+    check_display_data(display)
 
     display.plot()
 

@@ -5,6 +5,8 @@ from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
+from .utils import check_display_data
+
 
 def test_binary_classification(pyplot, binary_classification_data):
     """Check the attributes and default plotting behaviour of the precision-recall curve
@@ -31,6 +33,7 @@ def test_binary_classification(pyplot, binary_classification_data):
     )
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
+    check_display_data(display)
 
     display.plot()
     expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
@@ -81,6 +84,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
     )
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
+    check_display_data(display)
 
     class_labels = report.reports_[0].estimator_.classes_
 
