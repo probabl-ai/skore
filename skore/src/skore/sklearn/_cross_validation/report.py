@@ -206,8 +206,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             progress.update(task, advance=1, refresh=True)
 
         warn_msg = None
-        if all(
-            isinstance(report, (KeyboardInterrupt, Exception))
+        if not any (
+            isinstance(report, EstimatorReport)
             for report in estimator_reports
         ):
             traceback_msg = "\n".join(str(exc) for exc in estimator_reports)
