@@ -265,7 +265,7 @@ _ = skore.train_test_split(
 # =======================
 #
 # Another key feature of skore is its :class:`~skore.Project` that allows us to store
-# and retrieve EstimatorReports.
+# and retrieve :class:`~skore.EstimatorReport` objects.
 
 # %%
 # Setup: creating and loading a skore project
