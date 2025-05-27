@@ -17,7 +17,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore.sklearn.types import MLTask, YPlotData
+from skore.sklearn.types import MLTask, ReportType, YPlotData
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
@@ -62,7 +62,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     ml_task : {"regression", "multioutput-regression"}
         The machine learning task.
 
-    report_type : {"cross-validation", "estimator", "comparison-estimator"}
+    report_type : {"comparison-cross-validation", "comparison-estimator", \
+        "cross-validation", "estimator"}
         The type of report.
 
     Attributes
@@ -113,7 +114,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         estimator_names: list[str],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
-        report_type: Literal["cross-validation", "estimator", "comparison-estimator"],
+        report_type: ReportType,
     ) -> None:
         self.y_true = y_true
         self.y_pred = y_pred
@@ -557,7 +558,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         y_true: list[YPlotData],
         y_pred: list[YPlotData],
         *,
-        report_type: Literal["cross-validation", "estimator", "comparison-estimator"],
+        report_type: ReportType,
         estimator_names: list[str],
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
@@ -574,6 +575,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
         y_pred : list of array-like of shape (n_samples,)
             Predicted target values.
+
+        report_type : {"comparison-cross-validation", "comparison-estimator", \
+            "cross-validation", "estimator"}
+            The type of report.
 
         estimators : list of estimator instances
             The estimators from which `y_pred` is obtained.

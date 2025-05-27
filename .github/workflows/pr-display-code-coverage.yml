@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: ${{ fromJSON(vars.PACKAGES) }}
+        package: ["skore", "skore-hub-project", "skore-local-project"]
     permissions:
       actions: read
       contents: read

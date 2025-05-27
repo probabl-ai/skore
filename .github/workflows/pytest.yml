@@ -5,7 +5,7 @@ name: pytest
 #
 # The workflow runs `pytest` jobs on all the repository packages, identified by the JSON
 # list `env.PACKAGES`. If you want to run this workflow on a new package, you only have
-# to add its name in the above list.
+# to add its name in the above list, and in the `pr-display-code-coverage.yml` workflow.
 #
 # It's important to notice that only one workflow is triggered for all packages.
 #
