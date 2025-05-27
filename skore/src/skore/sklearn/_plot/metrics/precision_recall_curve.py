@@ -165,7 +165,9 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if self.ml_task == "binary-classification":
-            precision_recall = self.precision_recall.query(f"label == {self.pos_label!r}")
+            precision_recall = self.precision_recall.query(
+                f"label == {self.pos_label!r}"
+            )
             average_precision = self.average_precision["average_precision"].item()
 
             line_kwargs_validated = _validate_style_kwargs(
@@ -491,7 +493,8 @@ class PrecisionRecallCurveDisplay(
             idx = 0
             for report_idx, estimator_name in enumerate(estimator_names):
                 query = (
-                    f"label == {self.pos_label!r} & estimator_name == '{estimator_name}'"
+                    f"label == {self.pos_label!r} "
+                    f"& estimator_name == '{estimator_name}'"
                 )
                 average_precision = self.average_precision.query(query)[
                     "average_precision"
