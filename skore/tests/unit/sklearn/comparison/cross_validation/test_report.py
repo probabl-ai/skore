@@ -61,14 +61,10 @@ def test_non_string_report_names(cv_reports):
 def test_get_predictions(report_cv_reports, classification_data, data_source):
     if data_source == "X_y":
         X, _ = classification_data
-        predictions = report_cv_reports.get_predictions(
-            X=X, data_source=data_source, response_method="predict"
-        )
+        predictions = report_cv_reports.get_predictions(X=X, data_source=data_source)
 
     else:
-        predictions = report_cv_reports.get_predictions(
-            data_source=data_source, response_method="predict"
-        )
+        predictions = report_cv_reports.get_predictions(data_source=data_source)
 
     assert len(predictions) == len(report_cv_reports.reports_)
     for i, cv_report in enumerate(report_cv_reports.reports_):

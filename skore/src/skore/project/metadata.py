@@ -2,41 +2,37 @@
 
 from __future__ import annotations
 
-import typing
+from typing import TYPE_CHECKING
 
-import pandas as pd
+from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
 
-from .widget import ModelExplorerWidget
+from skore.project.widget import ModelExplorerWidget
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from typing import Union
 
     from skore.sklearn import EstimatorReport
 
 
-class Metadata(pd.DataFrame):
+class Metadata(DataFrame):
     """
     Metadata and metrics for all reports persisted in a project at a given moment.
 
-    A metadata object is an extended ``pandas.DataFrame``, containing all the metadata
-    and metrics of the reports that have been persisted in a project. It implements a
-    custom HTML representation, that allows user to filter its reports using a parallel
-    coordinates plot. In a Jupyter Notebook, this representation automatically replaces
-    the standard ``pandas.DataFrame`` one and displays an interactive plot.
+    A metadata object is an extended :class:`pandas.DataFrame`, containing all the
+    metadata and metrics of the reports that have been persisted in a project. It
+    implements a custom HTML representation, that allows user to filter its reports
+    using a parallel coordinates plot. In a Jupyter Notebook, this representation
+    automatically replaces the standard :class:`pandas.DataFrame` one and displays an
+    interactive plot.
 
     The parallel coordinates plot is interactive, such the user can select a filter path
     and retrieve the corresponding reports.
 
     Outside a Jupyter Notebook, the metadata object can be used as a standard
-    ``pandas.DataFrame`` object. This means that it can be questioned, divided etc.,
-    using the standard ``pandas.DataFrame`` functions.
+    :class:`pandas.DataFrame` object. This means that it can be questioned, divided
+    etc., using the standard :class:`pandas.DataFrame` functions.
 
-    Methods
-    -------
-    reports(filter=True) -> list[skore.sklearn.EstimatorReport]
-        Return the reports referenced by the metadata object from the project.
-        If a query string selection exists, it will be automatically applied before, to
-        filter the reports to return. Otherwise, returns all reports.
+    Refer to :class:`pandas.DataFrame` for the standard methods and attributes.
     """
 
     _metadata = ["project"]
@@ -54,16 +50,16 @@ class Metadata(pd.DataFrame):
         Notes
         -----
         This function is not intended for direct use. Instead simply use the accessor
-        ``skore.Project.reports.metadata``.
+        :meth:`skore.Project.reports.metadata`.
         """
-        metadata = pd.DataFrame(project.reports.metadata(), copy=False)
+        metadata = DataFrame(project.reports.metadata(), copy=False)
 
         if not metadata.empty:
-            metadata["learner"] = pd.Categorical(metadata["learner"])
-            metadata.index = pd.MultiIndex.from_arrays(
+            metadata["learner"] = Categorical(metadata["learner"])
+            metadata.index = MultiIndex.from_arrays(
                 [
-                    pd.RangeIndex(len(metadata)),
-                    pd.Index(metadata.pop("id"), name="id", dtype=str),
+                    RangeIndex(len(metadata)),
+                    Index(metadata.pop("id"), name="id", dtype=str),
                 ]
             )
 

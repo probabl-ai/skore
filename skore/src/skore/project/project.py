@@ -4,18 +4,19 @@ from __future__ import annotations
 
 import re
 import sys
-import types
+from typing import Any
 
-if sys.version_info < (3, 10):
+if sys.version_info < (3, 10):  # pragma: no cover
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
 
-from ..sklearn._estimator.report import EstimatorReport
-from .metadata import Metadata
+from skore.externals._pandas_accessors import DirNamesMixin, _register_accessor
+from skore.project.reports import _ReportsAccessor
+from skore.sklearn._estimator.report import EstimatorReport
 
 
-class Project:
+class Project(DirNamesMixin):
     r"""
     API to manage a collection of key-report pairs.
 
@@ -30,33 +31,35 @@ class Project:
     Two mutually exclusive modes are available and can be configured using the ``name``
     parameter of the constructor:
 
-    - mode : hub
+    .. rubric:: Hub mode
 
-        If the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the project
-        is configured to the ``hub`` mode to communicate with the ``skore hub``.
+    If the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the project
+    is configured to the ``hub`` mode to communicate with the ``skore hub``.
 
-        A tenant is a ``skore hub`` concept that must be configured on the ``skore hub``
-        interface. It represents an isolated entity managing users, projects, and
-        resources. It can be a company, organization, or team that operates
-        independently within the system.
+    A tenant is a ``skore hub`` concept that must be configured on the ``skore hub``
+    interface. It represents an isolated entity managing users, projects, and
+    resources. It can be a company, organization, or team that operates
+    independently within the system.
 
-        In this mode, you must have an account to the ``skore hub`` and must be
-        authorized to the specified tenant. You must also be authenticated beforehand,
-        using the ``skore-hub-login`` CLI.
+    In this mode, you must have an account to the ``skore hub`` and must be
+    authorized to the specified tenant. You must also be authenticated beforehand,
+    using the ``skore-hub-login`` CLI.
 
-    - mode : local
+    .. rubric:: Local mode
 
-        Otherwise, the project is configured to the ``local`` mode to be persisted on
-        the user machine in a directory called ``workspace``.
+    Otherwise, the project is configured to the ``local`` mode to be persisted on
+    the user machine in a directory called ``workspace``.
 
-        The workspace can be shared between all the projects.
-        The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-        If not, it will be by default set to a ``skore/`` directory in the USER
-        cache directory:
+    The workspace can be shared between all the projects.
+    The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+    If not, it will be by default set to a ``skore/`` directory in the USER
+    cache directory:
 
-        - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-        - in Linux, usually ``${HOME}/.cache/skore``,
-        - in macOS, usually ``${HOME}/Library/Caches/skore``.
+    - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+    - in Linux, usually ``${HOME}/.cache/skore``,
+    - in macOS, usually ``${HOME}/Library/Caches/skore``.
+
+    Refer to the :ref:`project` section of the user guide for more details.
 
     Parameters
     ----------
@@ -146,6 +149,10 @@ class Project:
     """
 
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
+    reports: _ReportsAccessor
+    _Project__project: Any
+    _Project__mode: str
+    _Project__name: str
 
     def __init__(self, name: str, **kwargs):
         if not (PLUGINS := entry_points(group="skore.plugins.project")):
@@ -208,19 +215,8 @@ class Project:
 
         return self.__project.put(key=key, report=report)
 
-    @property
-    def reports(self):
-        """Accessor for interaction with the persisted reports."""
-
-        def get(id: str) -> EstimatorReport:  # hide underlying functions from user
-            """Get a persisted report by its id."""
-            return self.__project.reports.get(id)
-
-        def metadata() -> Metadata:  # hide underlying functions from user
-            """Obtain metadata/metrics for all persisted reports."""
-            return Metadata.factory(self.__project)
-
-        return types.SimpleNamespace(get=get, metadata=metadata)
-
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()
+
+
+_register_accessor("reports", Project)(_ReportsAccessor)

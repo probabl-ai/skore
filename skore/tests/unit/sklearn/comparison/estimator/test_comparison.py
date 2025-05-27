@@ -9,7 +9,6 @@ from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot.metrics import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
-    RocCurveDisplay,
 )
 
 
@@ -512,16 +511,6 @@ def test_comparison_report_aggregate(report):
     [
         (
             "binary_classification",
-            "roc",
-            RocCurveDisplay,
-            {
-                "fpr": {1: [[0, 0, 0, 1], [0, 0, 0, 1]]},
-                "tpr": {1: [[0, 0.1, 1, 1], [0, 0.1, 1, 1]]},
-                "roc_auc": {1: [1, 1]},
-            },
-        ),
-        (
-            "binary_classification",
             "precision_recall",
             PrecisionRecallCurveDisplay,
             {
@@ -651,7 +640,7 @@ def test_comparison_report_get_predictions(
 def test_comparison_report_get_predictions_error(report):
     """Check that we raise an error when the data source is invalid."""
     with pytest.raises(ValueError, match="Invalid data source"):
-        report.get_predictions(data_source="invalid", response_method="predict")
+        report.get_predictions(data_source="invalid")
 
 
 def test_comparison_report_timings(report):
@@ -661,13 +650,13 @@ def test_comparison_report_timings(report):
     assert timings.index.tolist() == ["Fit time (s)"]
     assert timings.columns.tolist() == report.report_names_
 
-    report.get_predictions(data_source="train", response_method="predict")
+    report.get_predictions(data_source="train")
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == ["Fit time (s)", "Predict time train (s)"]
     assert timings.columns.tolist() == report.report_names_
 
-    report.get_predictions(data_source="test", response_method="predict")
+    report.get_predictions(data_source="test")
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == [
@@ -680,8 +669,8 @@ def test_comparison_report_timings(report):
 
 def test_comparison_report_timings_flat_index(report):
     """Check that time measurements have _s suffix with flat_index=True."""
-    report.get_predictions(data_source="train", response_method="predict")
-    report.get_predictions(data_source="test", response_method="predict")
+    report.get_predictions(data_source="train")
+    report.get_predictions(data_source="test")
 
     # Get metrics with flat_index=True
     results = report.metrics.report_metrics(flat_index=True)

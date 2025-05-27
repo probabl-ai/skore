@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
 from pandas.testing import assert_index_equal
-from pytest import fixture
+from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -167,6 +167,10 @@ class TestMetadata:
         assert len(metadata) == 0
         assert metadata.reports() == []
         assert metadata.reports(filter=False) == []
+
+    def test_reports_exception(self):
+        with raises(RuntimeError, match="Bad condition"):
+            Metadata([{"<column>": "<value>"}]).reports()
 
     def test__query_string_selection(self, monkeypatch):
         metadata = DataFrame(

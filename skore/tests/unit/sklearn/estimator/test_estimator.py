@@ -359,13 +359,11 @@ def test_estimator_report_get_predictions():
     )
 
     # check the `predict` method
-    predictions = report.get_predictions(data_source="test", response_method="predict")
+    predictions = report.get_predictions(data_source="test")
     np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
-    predictions = report.get_predictions(data_source="train", response_method="predict")
+    predictions = report.get_predictions(data_source="train")
     np.testing.assert_allclose(predictions, report.estimator_.predict(X_train))
-    predictions = report.get_predictions(
-        data_source="X_y", response_method="predict", X=X_test
-    )
+    predictions = report.get_predictions(data_source="X_y", X=X_test)
     np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
 
     # check the validity of the `predict_proba` method
@@ -415,7 +413,7 @@ def test_estimator_report_get_predictions_error():
     )
 
     with pytest.raises(ValueError, match="Invalid data source"):
-        report.get_predictions(data_source="invalid", response_method="predict")
+        report.get_predictions(data_source="invalid")
 
 
 ########################################################################################

@@ -1,14 +1,12 @@
-from typing import Any, Optional, Protocol, runtime_checkable
-
-from matplotlib.axes import Axes
+from typing import Any, Protocol, runtime_checkable
 
 
 @runtime_checkable
 class Display(Protocol):
-    """A display that can be styled and plotted."""
+    """Protocol specifying the common API for all `skore` displays."""
 
-    def plot(self, ax: Optional[Axes] = None, **kwargs: Any) -> None:
-        """Plot the display."""
+    def plot(self, **kwargs: Any) -> None:
+        """Display a matplotlib figure containing the information of the display."""
 
     def set_style(self, **kwargs: Any) -> None:
         """Set the style of the display."""

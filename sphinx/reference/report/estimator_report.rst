@@ -9,7 +9,7 @@ report are accessible through accessors.
 
 .. autosummary::
    :toctree: ../api/
-   :template: base.rst
+   :template: class_with_accessors.rst
 
    EstimatorReport
 
@@ -17,28 +17,23 @@ report are accessible through accessors.
 
 .. autosummary::
    :toctree: ../api/
-   :template: autosummary/accessor_method.rst
+   :template: class_methods_no_index.rst
 
    EstimatorReport.help
    EstimatorReport.cache_predictions
    EstimatorReport.clear_cache
    EstimatorReport.get_predictions
 
-.. rubric:: Metrics
-
-.. autosummary::
-   :toctree: ../api/
-   :template: autosummary/accessor.rst
-
-   EstimatorReport.metrics
-
-.. rubric:: Feature importance
+.. rubric:: Accessors
 
 .. autosummary::
    :toctree: ../api/
    :template: autosummary/accessor.rst
 
    EstimatorReport.feature_importance
+   EstimatorReport.metrics
+
+.. _estimator_report_metrics:
 
 Metrics
 -------
@@ -48,7 +43,6 @@ estimator.
 
 .. autosummary::
     :toctree: ../api/
-    :nosignatures:
     :template: autosummary/accessor_method.rst
 
     EstimatorReport.metrics.help
@@ -75,7 +69,6 @@ used to train your estimator.
 
 .. autosummary::
     :toctree: ../api/
-    :nosignatures:
     :template: autosummary/accessor_method.rst
 
     EstimatorReport.feature_importance.help

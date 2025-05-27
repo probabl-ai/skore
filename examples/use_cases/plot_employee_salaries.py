@@ -91,7 +91,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 
 model = make_pipeline(
-    TableVectorizer(high_cardinality=TextEncoder(store_weights_in_pickle=True)),
+    TableVectorizer(high_cardinality=TextEncoder()),
     HistGradientBoostingRegressor(),
 )
 model
@@ -262,21 +262,11 @@ comparator.metrics.report_metrics(
 )
 
 # %%
-# Finally, we can even get the individual :class:`~skore.EstimatorReport` for each fold
-# from the cross-validation to make further analysis.
-# Here, we plot the actual vs predicted values for each fold.
-from itertools import zip_longest
+# Finally, we can even get a deeper understanding by analyzing each fold in the
+# :class:`~skore.CrossValidationReport`.
+# Here, we plot the actual-vs-predicted values for each fold.
 import matplotlib.pyplot as plt
 
-fig, axs = plt.subplots(ncols=2, nrows=3, figsize=(12, 18))
-for split_idx, (ax, estimator_report) in enumerate(
-    zip_longest(axs.flatten(), linear_model_report.estimator_reports_)
-):
-    if estimator_report is None:
-        ax.axis("off")
-        continue
-    estimator_report.metrics.prediction_error().plot(kind="actual_vs_predicted", ax=ax)
-    ax.set_title(f"Split #{split_idx + 1}")
-    ax.legend(loc="lower right")
+linear_model_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
 
 plt.tight_layout()

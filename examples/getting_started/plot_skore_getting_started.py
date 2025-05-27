@@ -88,7 +88,7 @@ rf_report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
 # (here we display only the first 10 predictions for conciseness purposes):
 
 # %%
-rf_report.get_predictions(data_source="train", response_method="predict")[0:10]
+rf_report.get_predictions(data_source="train")[0:10]
 
 # %%
 # We can also plot the ROC curve that is generated for us:
