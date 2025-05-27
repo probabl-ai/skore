@@ -62,7 +62,7 @@ def test_binary_classification(pyplot):
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_multiclass(pyplot):
+def test_multiclass_classification(pyplot):
     """
     Check the behaviour of `precision_recall` when ML task is
     "multiclass-classification" and `pos_label` is None.
