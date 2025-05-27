@@ -28,7 +28,7 @@ def test_binary_classification(pyplot, binary_classification_data):
     assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
     average_precision = display.average_precision.query(
         f"label == {estimator.classes_[1]}"
-    )["average_precision"].iloc[0]
+    )["average_precision"].item()
     assert (
         precision_recall_curve_mpl.get_label()
         == f"Test set (AP = {average_precision:0.2f})"
@@ -68,7 +68,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
         assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
         average_precision = display.average_precision.query(f"label == {class_label}")[
             "average_precision"
-        ].iloc[0]
+        ].item()
         assert precision_recall_curve_mpl.get_label() == (
             f"{str(class_label).title()} - test set (AP = {average_precision:0.2f})"
         )
@@ -208,7 +208,7 @@ def test_multiclass_classification_data_source(pyplot, multiclass_classification
     for class_label in estimator.classes_:
         average_precision = display.average_precision.query(f"label == {class_label}")[
             "average_precision"
-        ].iloc[0]
+        ].item()
         assert display.lines_[class_label].get_label() == (
             f"{str(class_label).title()} - train set (AP = {average_precision:0.2f})"
         )
@@ -218,7 +218,7 @@ def test_multiclass_classification_data_source(pyplot, multiclass_classification
     for class_label in estimator.classes_:
         average_precision = display.average_precision.query(f"label == {class_label}")[
             "average_precision"
-        ].iloc[0]
+        ].item()
         assert display.lines_[class_label].get_label() == (
             f"{str(class_label).title()} - AP = {average_precision:0.2f}"
         )
