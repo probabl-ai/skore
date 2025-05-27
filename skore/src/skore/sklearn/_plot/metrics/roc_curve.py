@@ -952,3 +952,39 @@ class RocCurveDisplay(
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self):
+        """Return the ROC curve computations as a dataframe.
+
+        Returns
+        -------
+        frame : pandas.DataFrame
+            The ROC curve computations as a dataframe with columns:
+            - fpr: False Positive Rate
+            - tpr: True Positive Rate
+            - threshold: Classification threshold
+        """
+        import pandas as pd
+
+        if self.ml_task == "binary-classification":
+            pos_label = 1 if self.pos_label is None else self.pos_label
+            return pd.DataFrame(
+                {
+                    "fpr": self.fpr[pos_label][0],
+                    "tpr": self.tpr[pos_label][0],
+                    "threshold": self.thresholds[pos_label][0],
+                }
+            )
+        if self.ml_task == "multiclass-classification":
+            dfs = []
+            for class_label in self.fpr:
+                df = pd.DataFrame(
+                    {
+                        "fpr": self.fpr[class_label][0],
+                        "tpr": self.tpr[class_label][0],
+                        "threshold": self.thresholds[class_label][0],
+                        "class": class_label,
+                    }
+                )
+                dfs.append(df)
+            return pd.concat(dfs, axis=0, ignore_index=True)
