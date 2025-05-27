@@ -43,7 +43,7 @@ def test_binary_classification(pyplot, binary_classification_data):
         assert isinstance(line, mpl.lines.Line2D)
         average_precision = display.average_precision.query(
             f"label == {display.pos_label} & estimator_name == '{estimator_name}'"
-        )["average_precision"].iloc[0]
+        )["average_precision"].item()
         assert line.get_label() == f"{estimator_name} (AP = {average_precision:0.2f})"
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[idx]
 
@@ -100,7 +100,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
             assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
             average_precision = display.average_precision.query(
                 f"label == {class_label} & estimator_name == '{estimator_name}'"
-            )["average_precision"].iloc[0]
+            )["average_precision"].item()
             assert roc_curve_mpl.get_label() == (
                 f"{estimator_name} - {str(class_label).title()} "
                 f"(AP = {average_precision:0.2f})"

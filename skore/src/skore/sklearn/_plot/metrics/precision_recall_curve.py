@@ -166,7 +166,7 @@ class PrecisionRecallCurveDisplay(
 
         if self.ml_task == "binary-classification":
             precision_recall = self.precision_recall.query(f"label == {self.pos_label}")
-            average_precision = self.average_precision["average_precision"].iloc[0]
+            average_precision = self.average_precision["average_precision"].item()
 
             line_kwargs_validated = _validate_style_kwargs(
                 line_kwargs, pr_curve_kwargs[0]
@@ -204,7 +204,7 @@ class PrecisionRecallCurveDisplay(
                 )
                 average_precision = self.average_precision.query(
                     f"label == {class_label}"
-                )["average_precision"].iloc[0]
+                )["average_precision"].item()
                 pr_curve_kwargs_class = pr_curve_kwargs[class_idx]
 
                 line_kwargs["color"] = class_colors[class_idx]
@@ -274,7 +274,7 @@ class PrecisionRecallCurveDisplay(
                 )
                 average_precision = self.average_precision.query(
                     f"label == {self.pos_label} & split_index == {split_idx}"
-                )["average_precision"].iloc[0]
+                )["average_precision"].item()
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, pr_curve_kwargs[split_idx]
@@ -389,7 +389,7 @@ class PrecisionRecallCurveDisplay(
                 )
                 average_precision = self.average_precision.query(
                     f"label == {self.pos_label} & estimator_name == '{est_name}'"
-                )["average_precision"].iloc[0]
+                )["average_precision"].item()
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, pr_curve_kwargs[est_idx]
@@ -426,7 +426,7 @@ class PrecisionRecallCurveDisplay(
                     )
                     average_precision = self.average_precision.query(
                         f"label == {class_label} & estimator_name == '{est_name}'"
-                    )["average_precision"].iloc[0]
+                    )["average_precision"].item()
 
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
                     line_kwargs["color"] = est_color

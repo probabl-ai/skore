@@ -40,7 +40,7 @@ def test_binary_classification(
         assert isinstance(line, mpl.lines.Line2D)
         average_precision = display.average_precision.query(
             f"label == {pos_label} & split_index == {split_idx}"
-        )["average_precision"].iloc[0]
+        )["average_precision"].item()
 
         assert line.get_label() == (
             f"Estimator of fold #{split_idx + 1} (AP = {average_precision:0.2f})"
