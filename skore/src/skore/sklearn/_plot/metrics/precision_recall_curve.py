@@ -21,7 +21,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore.sklearn.types import MLTask, PositiveLabel, YPlotData
+from skore.sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 
 class PrecisionRecallCurveDisplay(
@@ -81,7 +81,8 @@ class PrecisionRecallCurveDisplay(
     ml_task : {"binary-classification", "multiclass-classification"}
         The machine learning task.
 
-    report_type : {"comparison-estimator", "cross-validation", "estimator"}
+    report_type : {"comparison-cross-validation", "comparison-estimator", \
+        "cross-validation", "estimator"}
         The type of report.
 
     Attributes
@@ -121,7 +122,7 @@ class PrecisionRecallCurveDisplay(
         pos_label: Optional[PositiveLabel],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
-        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
+        report_type: ReportType,
     ) -> None:
         self.precision = precision
         self.recall = recall
@@ -480,10 +481,15 @@ class PrecisionRecallCurveDisplay(
         if pr_curve_kwargs is None:
             pr_curve_kwargs = self._default_pr_curve_kwargs
 
+        if self.ml_task == "binary-classification":
+            n_curves = len(self.average_precision[self.pos_label])
+        else:
+            n_curves = len(self.average_precision)
+
         pr_curve_kwargs = self._validate_curve_kwargs(
             curve_param_name="pr_curve_kwargs",
             curve_kwargs=pr_curve_kwargs,
-            metric=self.average_precision,
+            n_curves=n_curves,
             report_type=self.report_type,
         )
 
@@ -512,10 +518,13 @@ class PrecisionRecallCurveDisplay(
                 estimator_names=self.estimator_names,
                 pr_curve_kwargs=pr_curve_kwargs,
             )
+        elif self.report_type == "comparison-cross-validation":
+            raise NotImplementedError()
         else:
             raise ValueError(
-                f"`report_type` should be one of 'estimator', 'cross-validation', "
-                f"or 'comparison-estimator'. Got '{self.report_type}' instead."
+                "`report_type` should be one of 'estimator', 'cross-validation', "
+                "'comparison-cross-validation' or 'comparison-estimator'. "
+                f"Got '{self.report_type}' instead."
             )
 
         xlabel = "Recall"
@@ -541,7 +550,7 @@ class PrecisionRecallCurveDisplay(
         y_true: Sequence[YPlotData],
         y_pred: Sequence[YPlotData],
         *,
-        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
+        report_type: ReportType,
         estimators: Sequence[BaseEstimator],
         estimator_names: list[str],
         ml_task: MLTask,
@@ -561,7 +570,8 @@ class PrecisionRecallCurveDisplay(
             confidence values, or non-thresholded measure of decisions (as returned by
             "decision_function" on some classifiers).
 
-        report_type : {"comparison-estimator", "cross-validation", "estimator"}
+        report_type : {"comparison-cross-validation", "comparison-estimator", \
+            "cross-validation", "estimator"}
             The type of report.
 
         estimators : list of estimator instances
