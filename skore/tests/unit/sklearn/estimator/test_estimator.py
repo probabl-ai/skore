@@ -18,8 +18,10 @@ from sklearn.metrics import (
     get_scorer,
     make_scorer,
     median_absolute_error,
+    precision_score,
     r2_score,
     rand_score,
+    recall_score,
 )
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
@@ -440,6 +442,31 @@ def test_estimator_report_display_binary_classification(
     assert report._cache != {}
     display_second_call = getattr(report.metrics, display)()
     assert display_first_call is display_second_call
+
+
+@pytest.mark.parametrize("display", ["roc", "precision_recall"])
+def test_estimator_report_display_binary_classification_pos_label(
+    pyplot, binary_classification_data, display
+):
+    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    classifier = LogisticRegression().fit(X, y)
+    report = EstimatorReport(classifier, X_test=X, y_test=y)
+    with pytest.raises(ValueError, match="pos_label is not specified"):
+        getattr(report.metrics, display)()
+
+    report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="A")
+    disp = getattr(report.metrics, display)()
+    disp.plot()
+    assert "Positive label: A" in disp.ax_.get_xlabel()
+
+    disp = getattr(report.metrics, display)(pos_label="B")
+    disp.plot()
+    assert "Positive label: B" in disp.ax_.get_xlabel()
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
@@ -1473,3 +1500,62 @@ def test_estimator_report_sklearn_scorer_names_scoring_kwargs(
         report.metrics.report_metrics(
             scoring=["f1"], scoring_kwargs={"average": "macro"}
         )
+
+
+@pytest.mark.parametrize(
+    "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
+)
+def test_estimator_report_report_metrics_pos_label_overwrite(
+    binary_classification_data, metric, metric_fn
+):
+    """Check that `pos_label` can be overwritten in `report_metrics`"""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    classifier = LogisticRegression().fit(X, y)
+
+    report = EstimatorReport(classifier, X_test=X, y_test=y)
+    result = report.metrics.report_metrics(scoring=metric).reset_index()
+    assert result["Label / Average"].to_list() == ["A", "B"]
+
+    report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="B")
+    result = report.metrics.report_metrics(scoring=metric).reset_index()
+    assert "Label / Average" not in result.columns
+    assert result[report.estimator_name_].item() == pytest.approx(
+        metric_fn(y, classifier.predict(X), pos_label="B")
+    )
+
+    result = report.metrics.report_metrics(scoring=metric, pos_label="A").reset_index()
+    assert "Label / Average" not in result.columns
+    assert result[report.estimator_name_].item() == pytest.approx(
+        metric_fn(y, classifier.predict(X), pos_label="A")
+    )
+
+
+@pytest.mark.parametrize(
+    "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
+)
+def test_estimator_report_precision_recall_pos_label_overwrite(
+    binary_classification_data, metric, metric_fn
+):
+    """Check that `pos_label` can be overwritten in `report_metrics`"""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    classifier = LogisticRegression().fit(X, y)
+
+    report = EstimatorReport(classifier, X_test=X, y_test=y)
+    result = getattr(report.metrics, metric)()
+    assert result.keys() == {"A", "B"}
+
+    report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="B")
+    assert getattr(report.metrics, metric)(pos_label="B") == pytest.approx(
+        metric_fn(y, classifier.predict(X), pos_label="B")
+    )
+    assert getattr(report.metrics, metric)(pos_label="A") == pytest.approx(
+        metric_fn(y, classifier.predict(X), pos_label="A")
+    )

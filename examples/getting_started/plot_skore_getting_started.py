@@ -56,7 +56,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 rf = RandomForestClassifier(random_state=0)
 
 rf_report = EstimatorReport(
-    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, pos_label=1
 )
 
 # %%
@@ -81,7 +81,7 @@ rf_report.help()
 # fit and prediction times):
 
 # %%
-rf_report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+rf_report.metrics.report_metrics(indicator_favorability=True)
 
 # %%
 # For inspection, we can also retrieve the predictions, on the train set for example
@@ -139,13 +139,13 @@ cv_report.help()
 # We display the mean and standard deviation for each metric:
 
 # %%
-cv_report.metrics.report_metrics(pos_label=1)
+cv_report.metrics.report_metrics()
 
 # %%
 # or by individual fold:
 
 # %%
-cv_report.metrics.report_metrics(aggregate=None, pos_label=1)
+cv_report.metrics.report_metrics(aggregate=None)
 
 # %%
 # We display the ROC curves for each fold:
@@ -159,7 +159,7 @@ roc_plot_cv.plot()
 # for example getting the report metrics for the first fold only:
 
 # %%
-cv_report.estimator_reports_[0].metrics.report_metrics(pos_label=1)
+cv_report.estimator_reports_[0].metrics.report_metrics()
 
 # %%
 # .. seealso::
@@ -205,7 +205,7 @@ comparator.help()
 # Let us display the result of our benchmark:
 
 # %%
-comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+comparator.metrics.report_metrics(indicator_favorability=True)
 
 # %%
 # Thus, we easily have the result of our benchmark for several recommended metrics.
@@ -326,7 +326,7 @@ pprint(report_get)
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
-report_get[0].metrics.report_metrics(pos_label=1)
+report_get[0].metrics.report_metrics()
 
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
