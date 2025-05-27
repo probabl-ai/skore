@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
 from sklearn.pipeline import FeatureUnion, Pipeline
-from skrub import TableVectorizer
 
 from skore.project.widget import ModelExplorerWidget
 
@@ -69,7 +68,7 @@ class Metadata(DataFrame):
                 itemized_pipeline = Metadata._explore_sk_feature_union(
                     step, itemized_pipeline, depth=depth + 1
                 )
-            elif type_ == TableVectorizer:
+            elif str(type_) == "<class 'skrub._table_vectorizer.TableVectorizer'>":
                 itemized_pipeline.append(step.low_cardinality)
                 itemized_pipeline.append(step.high_cardinality)
                 itemized_pipeline.append(step.numeric)
@@ -111,7 +110,7 @@ class Metadata(DataFrame):
                 itemized_pipeline = Metadata._explore_sk_feature_union(
                     transformer, itemized_pipeline, depth=depth + 1
                 )
-            elif type_ == TableVectorizer:
+            elif str(type_) == "<class 'skrub._table_vectorizer.TableVectorizer'>":
                 itemized_pipeline.append(transformer.low_cardinality)
                 itemized_pipeline.append(transformer.high_cardinality)
                 itemized_pipeline.append(transformer.numeric)
