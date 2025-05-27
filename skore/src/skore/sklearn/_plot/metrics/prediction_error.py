@@ -59,7 +59,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         The machine learning task.
 
     report_type : {"comparison-cross-validation", "comparison-estimator", \
-        "cross-validation", "estimator"}
+            "cross-validation", "estimator"}
         The type of report.
 
     Attributes
@@ -671,7 +671,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             Predicted target values.
 
         report_type : {"comparison-cross-validation", "comparison-estimator", \
-            "cross-validation", "estimator"}
+                "cross-validation", "estimator"}
             The type of report.
 
         estimators : list of estimator instances
