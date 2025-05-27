@@ -304,6 +304,9 @@ def _combine_cross_validation_results(
     # - not use it in the aggregate operation
     # - later to only report a single column and not by split columns
     if indicator_favorability:
+        # Some metrics can be undefined for some estimators and NaN are
+        # introduced after the concatenation. We fill the NaN using the
+        # valid favorability
         favorability = (
             pd.concat([result.pop("Favorability") for result in results], axis=1)
             .bfill(axis=1)
