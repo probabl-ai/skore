@@ -165,8 +165,7 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if self.ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, self.pos_label)
-            precision_recall = self.precision_recall.query(f"label == {pos_label}")
+            precision_recall = self.precision_recall.query(f"label == {self.pos_label}")
             average_precision = self.average_precision["average_precision"].iloc[0]
 
             line_kwargs_validated = _validate_style_kwargs(
@@ -187,7 +186,9 @@ class PrecisionRecallCurveDisplay(
             lines.append(line)
 
             info_pos_label = (
-                f"\n(Positive label: {pos_label})" if pos_label is not None else ""
+                f"\n(Positive label: {self.pos_label})"
+                if self.pos_label is not None
+                else ""
             )
 
         else:  # multiclass-classification
@@ -267,13 +268,12 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if self.ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, self.pos_label)
             for split_idx in self.precision_recall["split_index"].unique():
                 precision_recall = self.precision_recall.query(
-                    f"label == {pos_label} & split_index == {split_idx}"
+                    f"label == {self.pos_label} & split_index == {split_idx}"
                 )
                 average_precision = self.average_precision.query(
-                    f"label == {pos_label} & split_index == {split_idx}"
+                    f"label == {self.pos_label} & split_index == {split_idx}"
                 )["average_precision"].iloc[0]
 
                 line_kwargs_validated = _validate_style_kwargs(
@@ -292,7 +292,9 @@ class PrecisionRecallCurveDisplay(
                 lines.append(line)
 
             info_pos_label = (
-                f"\n(Positive label: {pos_label})" if pos_label is not None else ""
+                f"\n(Positive label: {self.pos_label})"
+                if self.pos_label is not None
+                else ""
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
@@ -381,13 +383,12 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if self.ml_task == "binary-classification":
-            pos_label = cast(PositiveLabel, self.pos_label)
             for est_idx, est_name in enumerate(estimator_names):
                 precision_recall = self.precision_recall.query(
-                    f"label == {pos_label} & estimator_name == '{est_name}'"
+                    f"label == {self.pos_label} & estimator_name == '{est_name}'"
                 )
                 average_precision = self.average_precision.query(
-                    f"label == {pos_label} & estimator_name == '{est_name}'"
+                    f"label == {self.pos_label} & estimator_name == '{est_name}'"
                 )["average_precision"].iloc[0]
 
                 line_kwargs_validated = _validate_style_kwargs(
@@ -404,7 +405,9 @@ class PrecisionRecallCurveDisplay(
                 lines.append(line)
 
             info_pos_label = (
-                f"\n(Positive label: {pos_label})" if pos_label is not None else ""
+                f"\n(Positive label: {self.pos_label})"
+                if self.pos_label is not None
+                else ""
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
