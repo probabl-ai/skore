@@ -74,13 +74,13 @@ Fork the repository on GitHub, then clone your fork locally:
 
     # Clone your fork of the repo
     git clone https://github.com/YOUR_USERNAME/skore.git
-    
+
     # Navigate to the newly cloned directory
     cd skore
-    
+
     # Add the original repository as a remote
     git remote add upstream https://github.com/probabl-ai/skore.git
-    
+
     # Create a new branch for your issue
     git checkout -b issue-NAME_OF_ISSUE
 
