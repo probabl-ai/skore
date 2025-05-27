@@ -136,3 +136,82 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
         assert ax.get_adjustable() == "box"
         assert ax.get_aspect() in ("equal", 1.0)
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
+
+
+def test_binary_classification_wrong_kwargs(pyplot, binary_classification_report):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `pr_curve_kwargs` argument."""
+    report = binary_classification_report
+    display = report.metrics.precision_recall()
+    err_msg = (
+        "You intend to plot multiple curves. We expect `pr_curve_kwargs` to be a "
+        "list of dictionaries with the same length as the number of curves. "
+        "Got 2 instead of 10."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(pr_curve_kwargs=[{}, {}])
+
+
+@pytest.mark.parametrize("pr_curve_kwargs", [[{"color": "red"}] * 10])
+def test_binary_classification_kwargs(
+    pyplot, binary_classification_report, pr_curve_kwargs
+):
+    """Check that we can pass keyword arguments to the PR curve plot."""
+    report = binary_classification_report
+    display = report.metrics.precision_recall()
+    display.plot(pr_curve_kwargs=pr_curve_kwargs)
+    assert display.lines_[0].get_color() == "red"
+
+    # check the `.style` display setter
+    display.plot()  # default style
+    assert display.lines_[0].get_color() == (
+        np.float64(0.12156862745098039),
+        np.float64(0.4666666666666667),
+        np.float64(0.7058823529411765),
+        np.float64(1.0),
+    )
+
+    display.set_style(pr_curve_kwargs=pr_curve_kwargs)
+    display.plot()
+    assert display.lines_[0].get_color() == "red"
+
+    # overwrite the style that was set above
+    display.plot(pr_curve_kwargs=[{"color": "#1f77b4"}] * 10)
+    assert display.lines_[0].get_color() == "#1f77b4"
+
+
+def test_multiclass_classification_wrong_kwargs(
+    pyplot, multiclass_classification_report
+):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `pr_curve_kwargs` argument."""
+    report = multiclass_classification_report
+    display = report.metrics.precision_recall()
+    err_msg = "You intend to plot multiple curves."
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(pr_curve_kwargs=[{}, {}])
+
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(pr_curve_kwargs={})
+
+
+def test_multiclass_classification_kwargs(pyplot, multiclass_classification_report):
+    """Check that we can pass keyword arguments to the PR curve plot for
+    multiclass classification."""
+    report = multiclass_classification_report
+    display = report.metrics.precision_recall()
+    display.plot(
+        pr_curve_kwargs=(
+            [{"color": "red"}] * 10
+            + [{"color": "blue"}] * 10
+            + [{"color": "green"}] * 10
+        )
+    )
+    assert display.lines_[0].get_color() == "red"
+    assert display.lines_[10].get_color() == "blue"
+    assert display.lines_[20].get_color() == "green"
+
+    display.plot()
+
+    display.plot(despine=False)
+    assert display.ax_[0].spines["top"].get_visible()

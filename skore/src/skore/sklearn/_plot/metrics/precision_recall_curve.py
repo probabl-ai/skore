@@ -490,16 +490,11 @@ class PrecisionRecallCurveDisplay(
                 colormaps.get_cmap("tab10"),
                 10 if len(estimator_names) < 10 else len(estimator_names),
             )
+            idx = 0
             for report_idx, estimator_name in enumerate(estimator_names):
                 average_precision = self.average_precision.query(
                     f"estimator_name == '{estimator_name}'"
                 )["average_precision"]
-
-                line_kwargs_validated = _validate_style_kwargs(
-                    line_kwargs, pr_curve_kwargs[report_idx]
-                )
-                line_kwargs_validated["color"] = colors[report_idx]
-                line_kwargs_validated["alpha"] = 0.6
 
                 precision_recall = self.precision_recall.query(
                     f"label == {self.pos_label} & estimator_name == '{estimator_name}'"
@@ -517,12 +512,20 @@ class PrecisionRecallCurveDisplay(
                     else:
                         label_kwargs = {}
 
+                    line_kwargs["color"] = colors[report_idx]
+                    line_kwargs["alpha"] = 0.6
+                    line_kwargs_validated = _validate_style_kwargs(
+                        line_kwargs, pr_curve_kwargs[idx]
+                    )
+
                     (line,) = self.ax_.plot(
                         segment["recall"],
                         segment["precision"],
                         **(line_kwargs_validated | label_kwargs),
                     )
                     lines.append(line)
+
+                    idx = idx + 1
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
@@ -542,6 +545,7 @@ class PrecisionRecallCurveDisplay(
                 colormaps.get_cmap("tab10"),
                 10 if len(estimator_names) < 10 else len(estimator_names),
             )
+            idx = 0
 
             for est_idx, estimator_name in enumerate(estimator_names):
                 est_color = colors[est_idx]
@@ -550,12 +554,6 @@ class PrecisionRecallCurveDisplay(
                     average_precision = self.average_precision.query(
                         f"label == {label} & estimator_name == '{estimator_name}'"
                     )["average_precision"]
-
-                    line_kwargs_validated = _validate_style_kwargs(
-                        line_kwargs, pr_curve_kwargs[est_idx]
-                    )
-                    line_kwargs_validated["color"] = est_color
-                    line_kwargs_validated["alpha"] = 0.6
 
                     precision_recall = self.precision_recall.query(
                         f"label == {label} & estimator_name == '{estimator_name}'"
@@ -573,12 +571,20 @@ class PrecisionRecallCurveDisplay(
                         else:
                             label_kwargs = {}
 
+                        line_kwargs["color"] = est_color
+                        line_kwargs["alpha"] = 0.6
+                        line_kwargs_validated = _validate_style_kwargs(
+                            line_kwargs, pr_curve_kwargs[idx]
+                        )
+
                         (line,) = self.ax_[label_idx].plot(
                             segment["recall"],
                             segment["precision"],
                             **(line_kwargs_validated | label_kwargs),
                         )
                         lines.append(line)
+
+                        idx = idx + 1
 
                     info_pos_label = f"\n(Positive label: {label})"
                     _set_axis_labels(self.ax_[label_idx], info_pos_label)
