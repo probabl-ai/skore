@@ -300,6 +300,6 @@ Before submitting your pull request, ensure you have:
 3. Updated documentation if necessary
 4. Run pre-commit hooks on your code
 5. Signed all your commits
-6. Followed our coding standards and commit message format
+6. Followed our coding standards
 
 This checklist helps maintain code quality and ensures a smooth review process.
