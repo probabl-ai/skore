@@ -199,12 +199,11 @@ class PrecisionRecallCurveDisplay(
             )
 
             for class_idx, class_label in enumerate(labels):
-                precision_recall = self.precision_recall.query(
-                    f"label == {class_label}"
-                )
-                average_precision = self.average_precision.query(
-                    f"label == {class_label}"
-                )["average_precision"].item()
+                query = f"label == {class_label}"
+                precision_recall = self.precision_recall.query(query)
+                average_precision = self.average_precision.query(query)[
+                    "average_precision"
+                ].item()
                 pr_curve_kwargs_class = pr_curve_kwargs[class_idx]
 
                 line_kwargs["color"] = class_colors[class_idx]
@@ -269,12 +268,11 @@ class PrecisionRecallCurveDisplay(
 
         if self.ml_task == "binary-classification":
             for split_idx in self.precision_recall["split_index"].cat.categories:
-                precision_recall = self.precision_recall.query(
-                    f"label == {self.pos_label} & split_index == {split_idx}"
-                )
-                average_precision = self.average_precision.query(
-                    f"label == {self.pos_label} & split_index == {split_idx}"
-                )["average_precision"].item()
+                query = f"label == {self.pos_label} & split_index == {split_idx}"
+                precision_recall = self.precision_recall.query(query)
+                average_precision = self.average_precision.query(query)[
+                    "average_precision"
+                ].item()
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, pr_curve_kwargs[split_idx]
@@ -311,12 +309,11 @@ class PrecisionRecallCurveDisplay(
                 pr_curve_kwargs_class = pr_curve_kwargs[class_idx]
 
                 for split_idx in self.precision_recall["split_index"].cat.categories:
-                    precision_recall = self.precision_recall.query(
-                        f"label == {class_label} & split_index == {split_idx}"
-                    )
-                    average_precision = self.average_precision.query(
-                        f"label == {class_label} & split_index == {split_idx}"
-                    )["average_precision"]
+                    query = f"label == {class_label} & split_index == {split_idx}"
+                    precision_recall = self.precision_recall.query(query)
+                    average_precision = self.average_precision.query(query)[
+                        "average_precision"
+                    ]
                     average_precision_mean = np.mean(average_precision)
                     average_precision_std = np.std(average_precision)
 
@@ -384,12 +381,11 @@ class PrecisionRecallCurveDisplay(
 
         if self.ml_task == "binary-classification":
             for est_idx, est_name in enumerate(estimator_names):
-                precision_recall = self.precision_recall.query(
-                    f"label == {self.pos_label} & estimator_name == '{est_name}'"
-                )
-                average_precision = self.average_precision.query(
-                    f"label == {self.pos_label} & estimator_name == '{est_name}'"
-                )["average_precision"].item()
+                query = f"label == {self.pos_label} & estimator_name == '{est_name}'"
+                precision_recall = self.precision_recall.query(query)
+                average_precision = self.average_precision.query(query)[
+                    "average_precision"
+                ].item()
 
                 line_kwargs_validated = _validate_style_kwargs(
                     line_kwargs, pr_curve_kwargs[est_idx]
@@ -421,12 +417,11 @@ class PrecisionRecallCurveDisplay(
                 est_color = class_colors[est_idx]
 
                 for class_idx, class_label in enumerate(labels):
-                    precision_recall = self.precision_recall.query(
-                        f"label == {class_label} & estimator_name == '{est_name}'"
-                    )
-                    average_precision = self.average_precision.query(
-                        f"label == {class_label} & estimator_name == '{est_name}'"
-                    )["average_precision"].item()
+                    query = f"label == {class_label} & estimator_name == '{est_name}'"
+                    precision_recall = self.precision_recall.query(query)
+                    average_precision = self.average_precision.query(query)[
+                        "average_precision"
+                    ].item()
 
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
                     line_kwargs["color"] = est_color
@@ -495,13 +490,14 @@ class PrecisionRecallCurveDisplay(
             )
             idx = 0
             for report_idx, estimator_name in enumerate(estimator_names):
-                average_precision = self.average_precision.query(
-                    f"estimator_name == '{estimator_name}'"
-                )["average_precision"]
-
-                precision_recall = self.precision_recall.query(
+                query = (
                     f"label == {self.pos_label} & estimator_name == '{estimator_name}'"
                 )
+                average_precision = self.average_precision.query(query)[
+                    "average_precision"
+                ]
+
+                precision_recall = self.precision_recall.query(query)
 
                 for split_index, segment in precision_recall.groupby(
                     "split_index", observed=True
@@ -556,13 +552,12 @@ class PrecisionRecallCurveDisplay(
                 est_color = colors[est_idx]
 
                 for label_idx, label in enumerate(labels):
-                    average_precision = self.average_precision.query(
-                        f"label == {label} & estimator_name == '{estimator_name}'"
-                    )["average_precision"]
+                    query = f"label == {label} & estimator_name == '{estimator_name}'"
+                    average_precision = self.average_precision.query(query)[
+                        "average_precision"
+                    ]
 
-                    precision_recall = self.precision_recall.query(
-                        f"label == {label} & estimator_name == '{estimator_name}'"
-                    )
+                    precision_recall = self.precision_recall.query(query)
 
                     for split_index, segment in precision_recall.groupby(
                         "split_index", observed=True
