@@ -14,7 +14,7 @@ from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.sklearn.types import SKLearnCrossValidator
+from skore.sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
@@ -27,6 +27,7 @@ def _generate_estimator_report(
     estimator: BaseEstimator,
     X: ArrayLike,
     y: Optional[ArrayLike],
+    pos_label: Optional[PositiveLabel],
     train_indices: ArrayLike,
     test_indices: ArrayLike,
 ) -> Union[EstimatorReport, KeyboardInterrupt, Exception]:
@@ -38,6 +39,7 @@ def _generate_estimator_report(
             y_train=_safe_indexing(y, train_indices),
             X_test=_safe_indexing(X, test_indices),
             y_test=_safe_indexing(y, test_indices),
+            pos_label=pos_label,
         )
     except (KeyboardInterrupt, Exception) as e:
         return e
@@ -66,6 +68,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     y : array-like of shape (n_samples,) or (n_samples, n_outputs), default=None
         The target variable to try to predict in the case of supervised learning.
+
+    pos_label : int, float, bool or str, default=None
+        For binary classification, the positive class. If `None` and the target labels
+        are `{0, 1}` or `{-1, 1}`, the positive class is set to `1`. For other labels,
+        some metrics might raise an error if `pos_label` is not defined.
 
     cv_splitter : int, cross-validation generator or an iterable, default=5
         Determines the cross-validation splitting strategy.
@@ -130,6 +137,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         estimator: BaseEstimator,
         X: ArrayLike,
         y: Optional[ArrayLike] = None,
+        pos_label: Optional[PositiveLabel] = None,
         cv_splitter: Optional[Union[int, SKLearnCrossValidator, Generator]] = None,
         n_jobs: Optional[int] = None,
     ) -> None:
@@ -142,6 +150,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         # those attributes
         self._X = X
         self._y = y
+        self._pos_label = pos_label
         self._cv_splitter = check_cv(
             cv_splitter, y, classifier=is_classifier(estimator)
         )
@@ -194,6 +203,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 clone(self._estimator),
                 self._X,
                 self._y,
+                self._pos_label,
                 train_indices,
                 test_indices,
             )
@@ -206,10 +216,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             progress.update(task, advance=1, refresh=True)
 
         warn_msg = None
-        if not any (
-            isinstance(report, EstimatorReport)
-            for report in estimator_reports
-        ):
+        if not any(isinstance(report, EstimatorReport) for report in estimator_reports):
             traceback_msg = "\n".join(str(exc) for exc in estimator_reports)
             raise RuntimeError(
                 "Cross-validation failed: no estimators were successfully fitted. "
@@ -349,7 +356,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             "predict", "predict_proba", "decision_function"
         ] = "predict",
         X: Optional[ArrayLike] = None,
-        pos_label: Optional[Any] = None,
+        pos_label: Optional[PositiveLabel] = "default",
     ) -> ArrayLike:
         """Get estimator's predictions.
 
@@ -375,12 +382,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             When `data_source` is "X_y", the input features on which to compute the
             response method.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class when it comes to binary classification. When
-            `response_method="predict_proba"`, it will select the column corresponding
-            to the positive class. When `response_method="decision_function"`, it will
-            negate the decision function if `pos_label` is different from
-            `estimator.classes_[1]`.
+        pos_label : int, float, bool, str or None default="default"
+            If `"default"`, the positive class is set to the one provided when creating
+            the report. Use this parameter to override the positive class.
 
         Returns
         -------
@@ -457,6 +461,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def y(self, value: Any) -> None:
         raise AttributeError(
             "The y attribute is immutable. "
+            f"Call the constructor of {self.__class__.__name__} to create a new report."
+        )
+
+    @property
+    def pos_label(self) -> Optional[PositiveLabel]:
+        return self._pos_label
+
+    @pos_label.setter
+    def pos_label(self, value: Any) -> None:
+        raise AttributeError(
+            "The pos_label attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
