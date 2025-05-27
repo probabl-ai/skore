@@ -627,7 +627,8 @@ def test_precision_recall_curve_display_wrong_report_type(
     display.report_type = "unknown"
     err_msg = (
         "`report_type` should be one of 'estimator', 'cross-validation', "
-        "or 'comparison-estimator'. Got 'unknown' instead."
+        "'comparison-cross-validation' or 'comparison-estimator'. "
+        "Got 'unknown' instead."
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot()
