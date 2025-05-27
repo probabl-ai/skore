@@ -5,7 +5,7 @@ from skore import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
-from .conftest import check_display_data
+from .utils import check_display_data
 
 
 def test_binary_classification(pyplot, binary_classification_data):

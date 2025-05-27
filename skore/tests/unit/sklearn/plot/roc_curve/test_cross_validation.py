@@ -5,7 +5,7 @@ from skore import CrossValidationReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
-from .conftest import check_display_data
+from .utils import check_display_data
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
