@@ -144,7 +144,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             n_curves = 1
         elif self.report_type == "cross-validation":
             allow_single_dict = True
-            n_curves = len(self.prediction_error["split_index"].unique())
+            n_curves = len(self.prediction_error["split_index"].cat.categories)
         elif self.report_type in (
             "comparison-estimator",
             "comparison-cross-validation",
@@ -152,7 +152,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             # since we compare different estimators, it does not make sense to share
             # a single dictionary for all the estimators.
             allow_single_dict = False
-            n_curves = len(self.prediction_error["estimator_name"].unique())
+            n_curves = len(self.prediction_error["estimator_name"].cat.categories)
         else:
             raise ValueError(
                 f"`report_type` should be one of 'estimator', 'cross-validation', "
@@ -284,14 +284,14 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         """
         scatter = []
         data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
-        n_splits = len(self.prediction_error["split_index"].unique())
+        n_splits = len(self.prediction_error["split_index"].cat.categories)
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
             n_splits if n_splits > 10 else 10,
         )
 
         for split_idx, prediction_error_split in self.prediction_error.groupby(
-            "split_index"
+            "split_index", observed=True
         ):
             data_points_kwargs_fold = {
                 "color": colors_markers[split_idx],
@@ -355,7 +355,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         scatter = []
         data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
 
-        estimator_names = self.prediction_error["estimator_name"].unique()
+        estimator_names = self.prediction_error["estimator_name"].cat.categories
         n_estimators = len(estimator_names)
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
@@ -363,7 +363,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         )
 
         for idx, (estimator_name, prediction_error_estimator) in enumerate(
-            self.prediction_error.groupby("estimator_name")
+            self.prediction_error.groupby("estimator_name", observed=True)
         ):
             data_points_kwargs_fold = {
                 "color": colors_markers[idx],
@@ -424,7 +424,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         scatter = []
         data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
 
-        estimator_names = self.prediction_error["estimator_name"].unique()
+        estimator_names = self.prediction_error["estimator_name"].cat.categories
         n_estimators = len(estimator_names)
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
@@ -432,7 +432,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         )
 
         for idx, (estimator_name, prediction_error_estimator) in enumerate(
-            self.prediction_error.groupby("estimator_name")
+            self.prediction_error.groupby("estimator_name", observed=True)
         ):
             data_points_kwargs_fold = {
                 "color": colors_markers[idx],
@@ -610,7 +610,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             self.scatter_ = self._plot_single_estimator(
                 kind=kind,
                 estimator_name=(
-                    self.prediction_error["estimator_name"].iloc[0]
+                    self.prediction_error["estimator_name"].cat.categories.item()
                     if estimator_name is None
                     else estimator_name
                 ),
@@ -620,7 +620,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             self.scatter_ = self._plot_cross_validated_estimator(
                 kind=kind,
                 estimator_name=(
-                    self.prediction_error["estimator_name"].iloc[0]
+                    self.prediction_error["estimator_name"].cat.categories.item()
                     if estimator_name is None
                     else estimator_name
                 ),
@@ -788,7 +788,9 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         range_residuals = RangeData(min=residuals_min, max=residuals_max)
 
         return cls(
-            prediction_error=DataFrame.from_records(prediction_error_records),
+            prediction_error=DataFrame.from_records(prediction_error_records).astype(
+                {"estimator_name": "category", "split_index": "category"}
+            ),
             range_y_true=range_y_true,
             range_y_pred=range_y_pred,
             range_residuals=range_residuals,
