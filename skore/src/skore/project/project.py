@@ -149,22 +149,24 @@ class Project(DirNamesMixin):
     """
 
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
+
     reports: _ReportsAccessor
     _Project__project: Any
     _Project__mode: str
     _Project__name: str
 
-    def __init__(self, name: str, **kwargs):
+    @staticmethod
+    def __setup_plugin(name: str) -> tuple[str, str, Any, dict]:
         if not (PLUGINS := entry_points(group="skore.plugins.project")):
             raise SystemError("No project plugin found, please install at least one.")
 
-        if match := re.match(self.__HUB_NAME_PATTERN, name):
+        if match := re.match(Project.__HUB_NAME_PATTERN, name):
             mode = "hub"
             name = match["name"]
-            kwargs |= {"tenant": match["tenant"], "name": name}
+            parameters = {"tenant": match["tenant"], "name": name}
         else:
             mode = "local"
-            kwargs |= {"name": name}
+            parameters = {"name": name}
 
         if mode not in PLUGINS.names:
             raise ValueError(
@@ -172,9 +174,14 @@ class Project(DirNamesMixin):
                 f"Please install the `skore-{mode}-project` python package."
             )
 
+        return mode, name, PLUGINS[mode].load(), parameters
+
+    def __init__(self, name: str, **kwargs):
+        mode, name, plugin, parameters = Project.__setup_plugin(name)
+
         self.__mode = mode
         self.__name = name
-        self.__project = PLUGINS[mode].load()(**kwargs)
+        self.__project = plugin(**(kwargs | parameters))
 
     @property
     def mode(self):
@@ -217,6 +224,12 @@ class Project(DirNamesMixin):
 
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()
+
+    @staticmethod
+    def delete(name: str, **kwargs):
+        _, _, plugin, parameters = Project.__setup_plugin(name)
+
+        return plugin.delete(**(kwargs | parameters))
 
 
 _register_accessor("reports", Project)(_ReportsAccessor)
