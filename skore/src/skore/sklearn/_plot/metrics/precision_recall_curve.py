@@ -117,7 +117,6 @@ class PrecisionRecallCurveDisplay(
         *,
         precision_recall: DataFrame,
         average_precision: DataFrame,
-        estimator_names: list[str],
         pos_label: Optional[PositiveLabel],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
@@ -125,7 +124,6 @@ class PrecisionRecallCurveDisplay(
     ) -> None:
         self.precision_recall = precision_recall
         self.average_precision = average_precision
-        self.estimator_names = estimator_names
         self.pos_label = pos_label
         self.data_source = data_source
         self.ml_task = ml_task
@@ -702,13 +700,15 @@ class PrecisionRecallCurveDisplay(
             )
         elif self.report_type == "comparison-estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_comparison_estimator(
-                estimator_names=self.estimator_names,
+                estimator_names=self.precision_recall["estimator_name"].cat.categories,
                 pr_curve_kwargs=pr_curve_kwargs,
             )
         elif self.report_type == "comparison-cross-validation":
             self.ax_, self.lines_, info_pos_label = (
                 self._plot_comparison_cross_validation(
-                    estimator_names=self.estimator_names,
+                    estimator_names=self.precision_recall[
+                        "estimator_name"
+                    ].cat.categories,
                     pr_curve_kwargs=pr_curve_kwargs,
                 )
             )
@@ -880,7 +880,6 @@ class PrecisionRecallCurveDisplay(
             average_precision=DataFrame.from_records(average_precision_records).astype(
                 dtypes
             ),
-            estimator_names=estimator_names,
             pos_label=pos_label_validated,
             data_source=data_source,
             ml_task=ml_task,
