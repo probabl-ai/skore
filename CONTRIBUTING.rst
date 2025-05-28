@@ -179,7 +179,7 @@ We use the linter ruff to make sure that the code is formatted correctly:
     make lint
 
 Pre-commit Hooks
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 We use pre-commit hooks to ensure code quality before changes are committed. These hooks were installed during setup, but you can manually run them with:
 
@@ -291,7 +291,7 @@ If you haven't set up commit signing yet, GitHub supports signing using **GPG**,
 For setup instructions and more details, please refer to `GitHub's guide on signing commits <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_.
 
 Pull Request Checklist
-=====================
+======================
 
 Before submitting your pull request, ensure you have:
 
