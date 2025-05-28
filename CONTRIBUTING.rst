@@ -121,7 +121,7 @@ Quick start:
 
     -   Link your PR to its corresponding issue (if any).
 
-    -   You can mark your PR as draft if it is not ready to be reviewed by maintainers.
+    -   You can mark your PR as draft if it is not ready to be reviewed by maintainers. You can use draft PR to get help on the code if needed.
 
 We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ format, and we automatically check that the PR title fits this format:
 
