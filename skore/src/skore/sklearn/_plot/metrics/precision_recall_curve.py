@@ -87,7 +87,7 @@ class PrecisionRecallCurveDisplay(
 
     Attributes
     ----------
-    ax_ : matplotlib axes or array of axes
+    ax_ : matplotlib axes or ndarray of axes
         The axes on which the precision-recall curve is plotted.
 
     figure_ : matplotlib figure
