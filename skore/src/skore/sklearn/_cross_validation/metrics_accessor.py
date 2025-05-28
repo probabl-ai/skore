@@ -1216,7 +1216,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                         )
                 progress.update(main_task, advance=1, refresh=True)
 
-            if isinstance(display_class, RocCurveDisplay):
+            if display_class == RocCurveDisplay:
+                display_class = cast(type[RocCurveDisplay], display_class)
                 display = display_class._compute_data_for_display(
                     y_true=y_true,
                     y_pred=y_pred,
@@ -1332,7 +1333,6 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        average: Optional[Literal["threshold"]] = None,
         pos_label: Optional[PositiveLabel] = None,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
@@ -1353,9 +1353,6 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
-
-        average: {"threshold"}, default=None
-            Method to use for averaging cross-validation ROC curves.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
