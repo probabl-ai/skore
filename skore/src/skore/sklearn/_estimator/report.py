@@ -315,11 +315,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "X_y" : use the provided `X` and `y` to compute the predictions.
 
         response_method : {"predict", "predict_proba", "decision_function"},
-        default:"predict"
-
+                default="predict"
             The response method to use.
 
         X : array-like of shape (n_samples, n_features), optional
@@ -327,10 +326,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             response method.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing the metric. Use
-            this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report. If `None`,
-            the metric is computed considering each class as a positive class.
+            The label to consider as the positive class when computing predictions in
+            binary classification cases. By default, the positive class is set to the
+            one provided when creating the report. If `None`, `estimator_.classes_[1]`
+            is used as positive label.
+
+            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
+            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
+            and `-estimator_.decision_function(X)` for
+            `response_method="decision_function"`.
 
         Returns
         -------
