@@ -462,7 +462,7 @@ def test_estimator_report_display_binary_classification(
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_estimator_report_display_binary_classification_pos_label(
-    pyplot, binary_classification_data, display
+    pyplot, binary_classification_data, metric
 ):
     """Check the behaviour of the display methods when `pos_label` needs to be set."""
     X, y = make_classification(
