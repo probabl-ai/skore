@@ -1264,6 +1264,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
         average: {"threshold"}, default=None
             Method to use for averaging cross-validation ROC curves.
+            Only implemented for threshold averaging [1]_.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1272,6 +1273,12 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         -------
         RocCurveDisplay
             The ROC curve display.
+
+        References
+        ----------
+
+        .. [1] T. Fawcett, "An introduction to ROC analysis", Pattern Recognition
+               Letters, 27(8), 861–874, 2006.
 
         Examples
         --------
