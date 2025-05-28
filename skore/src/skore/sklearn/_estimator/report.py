@@ -446,7 +446,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return self._pos_label
 
     @pos_label.setter
-    def pos_label(self, value):
+    def pos_label(self, value: Optional[PositiveLabel]) -> None:
         self._pos_label = value
         self._initialize_state()
 
