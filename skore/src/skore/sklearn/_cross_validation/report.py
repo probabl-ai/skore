@@ -14,7 +14,7 @@ from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.sklearn.types import PositiveLabel, SKLearnCrossValidator
+from skore.sklearn.types import _DEFAULT, PositiveLabel, SKLearnCrossValidator
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
@@ -356,8 +356,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             "predict", "predict_proba", "decision_function"
         ] = "predict",
         X: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = "default",
-    ) -> ArrayLike:
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
+    ) -> list[ArrayLike]:
         """Get estimator's predictions.
 
         This method has the advantage to reload from the cache if the predictions
@@ -382,9 +382,16 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             When `data_source` is "X_y", the input features on which to compute the
             response method.
 
-        pos_label : int, float, bool, str or None default="default"
-            If `"default"`, the positive class is set to the one provided when creating
-            the report. Use this parameter to override the positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing predictions in
+            binary classification cases. By default, the positive class is set to the
+            one provided when creating the report. If `None`, `estimator_.classes_[1]`
+            is used as positive label.
+
+            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
+            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
+            and `-estimator_.decision_function(X)` for
+            `response_method="decision_function"`.
 
         Returns
         -------
@@ -469,7 +476,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return self._pos_label
 
     @pos_label.setter
-    def pos_label(self, value: Any) -> None:
+    def pos_label(self, value: Optional[PositiveLabel]) -> None:
         raise AttributeError(
             "The pos_label attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
