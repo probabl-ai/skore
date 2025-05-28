@@ -1256,6 +1256,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
+        average: {"threshold"}, default=None
+            Method to use for averaging cross-validation ROC curves.
+
         pos_label : int, float, bool or str, default=None
             The positive class.
 
@@ -1319,6 +1322,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        average: {"threshold"}, default=None
+            Method to use for averaging cross-validation ROC curves.
 
         pos_label : int, float, bool or str, default=None
             The positive class.

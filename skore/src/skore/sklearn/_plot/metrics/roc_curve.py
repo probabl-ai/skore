@@ -396,7 +396,9 @@ class RocCurveDisplay(
         plot_chance_level: bool = True,
         chance_level_kwargs: Optional[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
-        """Plot ROC curve for a cross-validated estimator.
+        """Plot average ROC curve for a cross-validated binary estimator.
+
+        Includes the underlying ROC curves from cross-validation.
 
         Parameters
         ----------
@@ -954,6 +956,9 @@ class RocCurveDisplay(
             Target scores, can either be probability estimates of the positive class,
             confidence values, or non-thresholded measure of decisions (as returned by
             "decision_function" on some classifiers).
+
+        average: {"threshold"}, default=None
+            Method to use for averaging cross-validation ROC curves.
 
         report_type : {"comparison-cross-validation", "comparison-estimator", \
                 "cross-validation", "estimator"}
