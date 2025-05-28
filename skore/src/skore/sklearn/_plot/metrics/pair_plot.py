@@ -40,7 +40,6 @@ class PairPlotDisplay(Display):
         Axes with pair plot.
     """
 
-    @StyleDisplayMixin.style_plot
     def __init__(
         self,
         scatter_data,
