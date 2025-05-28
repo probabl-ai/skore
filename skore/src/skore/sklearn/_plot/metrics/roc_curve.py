@@ -647,7 +647,7 @@ class RocCurveDisplay(
                         )
                         lines.append(line)
 
-                        curve_idx = curve_idx + 1
+                        curve_idx += 1
 
                     info_pos_label = f"\n(Positive label: {label})"
                     _set_axis_labels(self.ax_[label_idx], info_pos_label)

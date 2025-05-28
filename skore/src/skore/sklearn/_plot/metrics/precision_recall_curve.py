@@ -529,7 +529,7 @@ class PrecisionRecallCurveDisplay(
                     )
                     lines.append(line)
 
-                    curve_idx = curve_idx + 1
+                    curve_idx += 1
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
