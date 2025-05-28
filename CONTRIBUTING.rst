@@ -68,7 +68,8 @@ You'll need ``python >=3.9, <3.13``.
 Setting up your development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Fork the repository on GitHub, then clone your fork locally:
+Fork the repository on GitHub, then clone your fork locally, and add a git remote to the main skore repository.
+You will find below some code you can use in your terminal, using HTTPS connection as an example.
 
 .. code-block:: bash
 
@@ -259,7 +260,7 @@ Guidelines for creating effective examples:
    - **Doctests**: Use these in API documentation for demonstrating simple usage patterns.
    - **User guide examples**: Create comprehensive examples that demonstrate functionality in real-world contexts.
 
-2. **Small features**: For minor features (like a confusion matrix plot), don't create standalone examples. Instead, incorporate these into existing relevant documentation where they make sense contextually.
+2. **Small features**: For minor features, for instance when extending existing assets or easying a supported use-case, don't create standalone examples. Instead, incorporate these into existing relevant documentation where they make sense contextually.
 
 3. **Example content**: Focus on demonstrating the core concept rather than exhaustively listing all possible arguments. Show the global idea of how to use the feature effectively.
 
@@ -293,13 +294,13 @@ For setup instructions and more details, please refer to `GitHub's guide on sign
 Pull Request Checklist
 ======================
 
-Before submitting your pull request, ensure you have:
+Before marking your pull request as ready for review, ensure you have:
 
 1. Created or updated unit tests for your changes
 2. Run all tests locally and verified they pass
 3. Updated documentation if necessary
-4. Run pre-commit hooks on your code
-5. Signed all your commits
-6. Followed our coding standards
+4. Make sure the documentation can be ran without warning nor failure.
+5. Run pre-commit hooks on your code
+6. Signed all your commits
 
 This checklist helps maintain code quality and ensures a smooth review process.
