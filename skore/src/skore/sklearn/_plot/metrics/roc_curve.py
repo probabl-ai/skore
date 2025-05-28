@@ -1050,8 +1050,8 @@ class RocCurveDisplay(
                     )
                 else:
                     raise TypeError(
-                        "'threshold' is the only supported option for `average`,"
-                        f"but got {average} instead"
+                        'average must be "threshold" or None, '
+                        f"got {average}"
                     )
                 average_roc_auc = auc(average_fpr, average_tpr)
                 for fpr, tpr, threshold in zip(
