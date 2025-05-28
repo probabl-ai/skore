@@ -4,8 +4,7 @@ from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-
-from .utils import check_display_data
+from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
 def test_binary_classification(pyplot, binary_classification_data):

@@ -3,8 +3,9 @@ import pytest
 from skore import EstimatorReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-
-from .utils import check_display_data
+from skore.utils._testing import (
+    check_precision_recall_curve_display_data as check_display_data,
+)
 
 
 def test_binary_classification(pyplot, binary_classification_data):

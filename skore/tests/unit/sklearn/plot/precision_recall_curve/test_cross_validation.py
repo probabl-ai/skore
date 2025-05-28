@@ -4,8 +4,9 @@ import pytest
 from skore import CrossValidationReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-
-from .utils import check_display_data
+from skore.utils._testing import (
+    check_precision_recall_curve_display_data as check_display_data,
+)
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
