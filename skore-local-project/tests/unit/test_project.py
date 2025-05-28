@@ -69,7 +69,7 @@ class TestProject:
 
         project = Project("<project>")
 
-        assert project.workspace == str(tmp_path / "skore")
+        assert project.workspace == (tmp_path / "skore")
         assert project.name == "<project>"
         assert project.run_id
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
@@ -92,7 +92,7 @@ class TestProject:
         monkeypatch.setenv("SKORE_WORKSPACE", str(tmp_path))
         project = Project("<project>")
 
-        assert project.workspace == str(tmp_path)
+        assert project.workspace == tmp_path
         assert project.name == "<project>"
         assert project.run_id
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
@@ -101,7 +101,7 @@ class TestProject:
     def test_init_with_workspace(self, tmp_path):
         project = Project("<project>", workspace=tmp_path)
 
-        assert project.workspace == str(tmp_path)
+        assert project.workspace == tmp_path
         assert project.name == "<project>"
         assert project.run_id
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
@@ -226,5 +226,10 @@ class TestProject:
         assert len(DiskCacheStorage(tmp_path / "artifacts")) == 1
 
     def test_delete_exception(self, tmp_path):
-        with raises(ValueError, match="doesn't exist"):
+        import re
+
+        with raises(
+            ValueError,
+            match=re.escape(f"Project(local:{tmp_path}@<project>) doesn't exist"),
+        ):
             Project.delete("<project>", workspace=tmp_path)

@@ -95,7 +95,7 @@ class Project:
     def __setup_diskcache(
         workspace: Union[Path, None],
     ) -> tuple[
-        str,
+        Path,
         DiskCacheStorage,
         DiskCacheStorage,
     ]:
@@ -109,7 +109,7 @@ class Project:
         (workspace / "artifacts").mkdir(parents=True, exist_ok=True)
 
         return (
-            str(workspace),
+            workspace,
             DiskCacheStorage(workspace / "metadata"),
             DiskCacheStorage(workspace / "artifacts"),
         )
@@ -295,7 +295,7 @@ class Project:
             - in Linux, usually ``${HOME}/.cache/skore``,
             - in macOS, usually ``${HOME}/Library/Caches/skore``.
         """
-        _, metadata, artifacts = Project.__setup_diskcache(workspace)
+        workspace, metadata, artifacts = Project.__setup_diskcache(workspace)
 
         # delete all metadata related to the project
         remaining_artifacts = set()
