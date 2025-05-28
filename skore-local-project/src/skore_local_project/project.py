@@ -20,7 +20,7 @@ from .storage import DiskCacheStorage
 if TYPE_CHECKING:
     from typing import Any, Optional, TypedDict, Union
 
-    from skore import EstimatorReport
+    from skore.sklearn import EstimatorReport
 
     class PersistedMetadata:  # noqa: D101
         artifact_id: str
@@ -91,6 +91,29 @@ class Project:
         The current run identifier of the project.
     """
 
+    @staticmethod
+    def __setup_diskcache(
+        workspace: Union[Path, None],
+    ) -> tuple[
+        str,
+        DiskCacheStorage,
+        DiskCacheStorage,
+    ]:
+        if workspace is None:
+            if "SKORE_WORKSPACE" in os.environ:
+                workspace = Path(os.environ["SKORE_WORKSPACE"])
+            else:
+                workspace = Path(platformdirs.user_cache_dir()) / "skore"
+
+        (workspace / "metadata").mkdir(parents=True, exist_ok=True)
+        (workspace / "artifacts").mkdir(parents=True, exist_ok=True)
+
+        return (
+            str(workspace),
+            DiskCacheStorage(workspace / "metadata"),
+            DiskCacheStorage(workspace / "artifacts"),
+        )
+
     def __init__(self, name: str, *, workspace: Optional[Path] = None):
         r"""
         Initialize a local project.
@@ -114,20 +137,11 @@ class Project:
             - in Linux, usually ``${HOME}/.cache/skore``,
             - in macOS, usually ``${HOME}/Library/Caches/skore``.
         """
-        if workspace is None:
-            if "SKORE_WORKSPACE" in os.environ:
-                workspace = Path(os.environ["SKORE_WORKSPACE"])
-            else:
-                workspace = Path(platformdirs.user_cache_dir()) / "skore"
-
-        (workspace / "metadata").mkdir(parents=True, exist_ok=True)
-        (workspace / "artifacts").mkdir(parents=True, exist_ok=True)
-
-        self.workspace = str(workspace)
         self.name = name
         self.run_id = uuid4().hex
-        self.__metadata_storage = DiskCacheStorage(workspace / "metadata")
-        self.__artifacts_storage = DiskCacheStorage(workspace / "artifacts")
+        self.workspace, self.__metadata_storage, self.__artifacts_storage = (
+            Project.__setup_diskcache(workspace)
+        )
 
     @staticmethod
     def pickle(report: EstimatorReport) -> tuple[str, bytes]:
@@ -180,7 +194,7 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
-        pickle_hash, pickle_bytes = self.pickle(report)
+        pickle_hash, pickle_bytes = Project.pickle(report)
 
         if pickle_hash not in self.__artifacts_storage:
             self.__artifacts_storage[pickle_hash] = pickle_bytes
@@ -259,3 +273,45 @@ class Project:
 
     def __repr__(self) -> str:  # noqa: D105
         return f"Project(local:{self.workspace}@{self.name})"
+
+    @staticmethod
+    def delete(name: str, *, workspace: Optional[Path] = None):
+        r"""
+        Delete a local project.
+
+        Parameters
+        ----------
+        name : str
+            The name of the project.
+        workspace : Path, optional
+            The directory where the project (metadata and artifacts) are persisted.
+
+            | The workspace can be shared between all the projects.
+            | The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+            | If not, it will be by default set to a ``skore/`` directory in the USER
+            cache directory:
+
+            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - in Linux, usually ``${HOME}/.cache/skore``,
+            - in macOS, usually ``${HOME}/Library/Caches/skore``.
+        """
+        _, metadata, artifacts = Project.__setup_diskcache(workspace)
+
+        # delete all metadata related to the project
+        remaining_artifacts = set()
+        found = False
+
+        for key, value in metadata.items():
+            if value["project_name"] == name:
+                found = True
+                del metadata[key]
+            else:
+                remaining_artifacts.add(value["artifact_id"])
+
+        if not found:
+            raise ValueError(f"Project(local:{workspace}@{name}) doesn't exist")
+
+        # prune artifacts not related to a project
+        for artifact in artifacts:
+            if artifact not in remaining_artifacts:
+                del artifacts[artifact]
