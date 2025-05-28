@@ -15,7 +15,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.sklearn.types import PositiveLabel
+from skore.sklearn.types import _DEFAULT, PositiveLabel
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._measure_time import MeasureTime
 from skore.utils._parallel import Parallel, delayed
@@ -301,7 +301,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "predict", "predict_proba", "decision_function"
         ] = "predict",
         X: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = "default",
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
     ) -> ArrayLike:
         """Get estimator's predictions.
 
@@ -326,8 +326,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             When `data_source` is "X_y", the input features on which to compute the
             response method.
 
-        pos_label : int, float, bool, str or None default="default"
-            If `"default"`, the positive class is set to the one provided when creating
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            By default, the positive class is set to the one provided when creating
             the report. Use this parameter to override the positive class.
 
         Returns
@@ -354,7 +354,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> predictions.shape
         (25,)
         """
-        if pos_label == "default":
+        if pos_label is _DEFAULT:
             pos_label = self.pos_label
 
         if data_source == "test":
