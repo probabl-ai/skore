@@ -1156,7 +1156,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
-            cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
+            cache_key_parts: list[Any] = [
+                self._parent._hash,
+                display_class.__name__,
+                average,
+            ]
             cache_key_parts.extend(display_kwargs.values())
             if data_source_hash is not None:
                 cache_key_parts.append(data_source_hash)
