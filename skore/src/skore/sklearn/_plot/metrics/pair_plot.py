@@ -6,7 +6,7 @@ from skore.sklearn._plot.utils import HelpDisplayMixin
 from skore.sklearn.utils import _SCORE_OR_LOSS_INFO
 
 
-class PairPlotDisplay(Display):
+class PairPlotDisplay(HelpDisplayMixin, StyleDisplayMixin):
     """Display for pair plot.
 
     Parameters
