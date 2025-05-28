@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 
 from skore.sklearn._plot.base import Display
 from skore.sklearn._plot.style import StyleDisplayMixin
+from skore.sklearn._plot.utils import HelpDisplayMixin
 from skore.sklearn.utils import _SCORE_OR_LOSS_INFO
 
 
