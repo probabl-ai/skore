@@ -490,7 +490,7 @@ class PrecisionRecallCurveDisplay(
                 colormaps.get_cmap("tab10"),
                 10 if len(estimator_names) < 10 else len(estimator_names),
             )
-            idx = 0
+            curve_idx = 0
             for report_idx, estimator_name in enumerate(estimator_names):
                 query = (
                     f"label == {self.pos_label!r} "
@@ -519,7 +519,7 @@ class PrecisionRecallCurveDisplay(
                     line_kwargs["color"] = colors[report_idx]
                     line_kwargs["alpha"] = 0.6
                     line_kwargs_validated = _validate_style_kwargs(
-                        line_kwargs, pr_curve_kwargs[idx]
+                        line_kwargs, pr_curve_kwargs[curve_idx]
                     )
 
                     (line,) = self.ax_.plot(
@@ -529,7 +529,7 @@ class PrecisionRecallCurveDisplay(
                     )
                     lines.append(line)
 
-                    idx = idx + 1
+                    curve_idx = curve_idx + 1
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
