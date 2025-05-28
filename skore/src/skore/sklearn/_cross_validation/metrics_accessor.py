@@ -1100,6 +1100,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         *,
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        average: Optional[Literal["threshold"]] = None,
         data_source: DataSource,
         response_method: str,
         display_class: type[
@@ -1208,6 +1209,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             display = display_class._compute_data_for_display(
                 y_true=y_true,
                 y_pred=y_pred,
+                average=average,
                 report_type="cross-validation",
                 estimators=[
                     report.estimator_ for report in self._parent.estimator_reports_
@@ -1232,6 +1234,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        average: Optional[Literal["threshold"]] = None,
         pos_label: Optional[PositiveLabel] = None,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
@@ -1280,6 +1283,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 data_source=data_source,
                 X=X,
                 y=y,
+                average=average,
                 response_method=response_method,
                 display_class=RocCurveDisplay,
                 display_kwargs=display_kwargs,
@@ -1294,6 +1298,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        average: Optional[Literal["threshold"]] = None,
         pos_label: Optional[PositiveLabel] = None,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.

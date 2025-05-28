@@ -549,6 +549,7 @@ class PrecisionRecallCurveDisplay(
         cls,
         y_true: Sequence[YPlotData],
         y_pred: Sequence[YPlotData],
+        average: Optional[Literal["threshold"]] = None,
         *,
         report_type: ReportType,
         estimators: Sequence[BaseEstimator],
