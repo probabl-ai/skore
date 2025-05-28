@@ -65,13 +65,29 @@ Quick start
 
 You'll need ``python >=3.9, <3.13``.
 
-1.  Fork the skore repository.
+Setting up your development environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-2.  Clone your fork.
+Fork the repository on GitHub, then clone your fork locally, and add a git remote to the main skore repository.
+You will find below some code you can use in your terminal, using HTTPS connection as an example.
 
-3.  Create a virtual environment.
+.. code-block:: bash
 
-4.  Install dependencies and setup pre-commit with:
+    # Clone your fork of the repo
+    git clone https://github.com/YOUR_USERNAME/skore.git
+
+    # Navigate to the newly cloned directory
+    cd skore
+
+    # Add the original repository as a remote
+    git remote add upstream https://github.com/probabl-ai/skore.git
+
+    # Create a new branch for your issue
+    git checkout -b issue-NAME_OF_ISSUE
+
+We strongly recommend using a virtual environment to isolate your development dependencies.
+
+Once your environment is set up, install the development dependencies and setup pre-commit with:
 
     .. code-block:: bash
 
@@ -105,7 +121,7 @@ Quick start:
 
     -   Link your PR to its corresponding issue (if any).
 
-    -   You can mark your PR as draft if it is not ready to be reviewed by maintainers.
+    -   You can mark your PR as draft if it is not ready to be reviewed by maintainers. You can use draft PR to get help on the code if needed.
 
 We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ format, and we automatically check that the PR title fits this format:
 
@@ -115,10 +131,10 @@ We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/
 
 Skore is a company-driven project. We might provide extensive help to bring PRs to be merged to meet internal deadlines. In such cases, we will warn you in the PR.
 
-Adding a new feature
---------------------
+Tests
+-----
 
-When adding a new feature to skore, please also follow these steps:
+When adding a new feature to skore, please make sure to:
 
 #.  **Include unit tests**
 
@@ -148,15 +164,11 @@ When adding a new feature to skore, please also follow these steps:
     -   For a major feature, add a single, concise example under `examples/` (or update
         the gallery) that highlights the new capability.
 
-Tests
------
-
 To run the tests locally, you may run:
 
 .. code-block:: bash
 
     make test
-
 
 Linting
 -------
@@ -166,6 +178,15 @@ We use the linter ruff to make sure that the code is formatted correctly:
 .. code-block:: bash
 
     make lint
+
+Pre-commit Hooks
+^^^^^^^^^^^^^^^^
+
+We use pre-commit hooks to ensure code quality before changes are committed. These hooks were installed during setup, but you can manually run them with:
+
+.. code-block:: bash
+
+    pre-commit run --all-files
 
 
 Documentation
@@ -218,7 +239,7 @@ When writing documentation, whether it be online, docstrings or help messages in
 #. Text is written in US English (use "visualize" rather than "visualise")
 #. In the CLI, positional arguments are written in snake case (``snake_case``), keyword arguments in kebab case (``kebab-case``)
 #. When there is a default argument, it should be shown in the help message, typically with ``(default: <default value>)`` at the end of the message
-#. Use clear, concise language for non-native English speakers.
+#. Use clear, concise language (e.g. that can be understood by non-native English speakers)
 
 Contributing to the examples
 ----------------------------
@@ -233,8 +254,53 @@ The examples are stored in the `examples` folder:
 - If you are visualizing the examples on the online documentation and notice some typos or things that could be improved, make sure that you are viewing the `dev` version of the documentation which is the latest version (e.g. check that the typo has not already been solved for example).
 - New examples should use datasets that are sufficiently interesting yet reasonably sized (avoid synthetic datasets with near-perfect scores). As examples are executed during the documentation build, their runtime must remain short (ideally under a few minutes).
 
+Guidelines for creating effective examples:
+
+1. **Types of examples**:
+   - **Doctests**: Use these in API documentation for demonstrating simple usage patterns.
+   - **User guide examples**: Create comprehensive examples that demonstrate functionality in real-world contexts.
+
+2. **Small features**: For minor features, for instance when extending existing assets or easying a supported use-case, don't create standalone examples. Instead, incorporate these into existing relevant documentation where they make sense contextually.
+
+3. **Example content**: Focus on demonstrating the core concept rather than exhaustively listing all possible arguments. Show the global idea of how to use the feature effectively.
+
+4. **Dataset selection**:
+   - Use meaningful, realistic datasets (not synthetic data with artificially high scores)
+   - Ensure examples execute efficiently (under a few minutes)
+   - Prefer built-in or easily downloadable datasets
+   - If downloading data, include clear code for this process
+
 Contributing to the README
 --------------------------
 
 The `README.md` file can be modified and is part of the documentation (although it is not included in the online documentation).
 This file is used to be presented on `PyPI <https://pypi.org/project/skore/#description>`_.
+
+Signing Commits
+---------------
+
+You must sign your commits before submitting a pull request.
+For a pull request to be accepted, all the commits inside of it must be signed.
+
+To sign your commits:
+
+.. code-block:: bash
+
+    git commit -S -m "Your commit message"
+
+If you haven't set up commit signing yet, GitHub supports signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
+For setup instructions and more details, please refer to `GitHub's guide on signing commits <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_.
+
+Pull Request Checklist
+======================
+
+Before marking your pull request as ready for review, ensure you have:
+
+1. Created or updated unit tests for your changes
+2. Run all tests locally and verified they pass
+3. Updated documentation if necessary
+4. Make sure the documentation can be ran without warning nor failure.
+5. Run pre-commit hooks on your code
+6. Signed all your commits
+
+This checklist helps maintain code quality and ensures a smooth review process.

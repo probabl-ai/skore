@@ -4,7 +4,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.base import BaseEstimator, ClassifierMixin, clone
+from sklearn.base import clone
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
@@ -12,6 +12,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
+    get_scorer,
     make_scorer,
     median_absolute_error,
     r2_score,
@@ -26,6 +27,7 @@ from skore.sklearn._cross_validation.report import (
 )
 from skore.sklearn._estimator import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
+from skore.utils._testing import MockEstimator
 
 
 @pytest.fixture
@@ -539,6 +541,31 @@ def test_cross_validation_report_metrics_regression_multioutput(
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
+@pytest.mark.parametrize(
+    "scoring, scoring_kwargs",
+    [
+        ("accuracy", None),
+        ("neg_log_loss", None),
+        (accuracy_score, {"response_method": "predict"}),
+        (get_scorer("accuracy"), None),
+    ],
+)
+def test_cross_validation_report_report_metrics_scoring_single_list_equivalence(
+    binary_classification_data, scoring, scoring_kwargs
+):
+    """Check that passing a single string, callable, scorer is equivalent to passing a
+    list with a single element."""
+    (estimator, X, y), cv = binary_classification_data, 2
+    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
+    result_single = report.metrics.report_metrics(
+        scoring=scoring, scoring_kwargs=scoring_kwargs
+    )
+    result_list = report.metrics.report_metrics(
+        scoring=[scoring], scoring_kwargs=scoring_kwargs
+    )
+    assert result_single.equals(result_list)
+
+
 @pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])
 def test_cross_validation_report_report_metrics_binary(
     binary_classification_data,
@@ -895,38 +922,16 @@ def test_cross_validation_report_custom_metric(binary_classification_data):
         (KeyboardInterrupt(), "Cross-validation interrupted manually"),
     ],
 )
+@pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_cross_validation_report_interrupted(
-    binary_classification_data, capsys, error, error_message
+    binary_classification_data, capsys, error, error_message, n_jobs
 ):
     """Check that we can interrupt cross-validation without losing all
     data."""
-
-    class MockEstimator(ClassifierMixin, BaseEstimator):
-        def __init__(self, n_call=0, fail_after_n_clone=3):
-            self.n_call = n_call
-            self.fail_after_n_clone = fail_after_n_clone
-
-        def fit(self, X, y):
-            if self.n_call > self.fail_after_n_clone:
-                raise error
-            self.classes_ = np.unique(y)
-            return self
-
-        def __sklearn_clone__(self):
-            """Do not clone the estimator
-
-            Instead, we increment a counter each time that
-            `sklearn.clone` is called.
-            """
-            self.n_call += 1
-            return self
-
-        def predict(self, X):
-            return np.ones(X.shape[0])
-
     _, X, y = binary_classification_data
 
-    report = CrossValidationReport(MockEstimator(), X, y, cv_splitter=10)
+    estimator = MockEstimator(error=error, n_call=0, fail_after_n_clone=8)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=10, n_jobs=n_jobs)
 
     captured = capsys.readouterr()
     assert all(word in captured.out for word in error_message.split(" "))
@@ -988,6 +993,20 @@ def test_cross_validation_timings(
         "Predict time test (s)",
     ]
     assert timings.columns.tolist() == expected_columns
+
+
+@pytest.mark.parametrize("n_jobs", [None, 1, 2])
+def test_cross_validation_report_failure_all_splits(n_jobs):
+    """Check that we raise an error when no estimators were successfully fitted.
+    during the cross-validation process."""
+    X, y = make_classification(n_samples=100, n_features=10, random_state=42)
+    estimator = MockEstimator(
+        error=ValueError("Intentional failure for testing"), fail_after_n_clone=0
+    )
+
+    err_msg = "Cross-validation failed: no estimators were successfully fitted"
+    with pytest.raises(RuntimeError, match=err_msg):
+        CrossValidationReport(estimator, X, y, n_jobs=n_jobs)
 
 
 def test_cross_validation_timings_flat_index(binary_classification_data):

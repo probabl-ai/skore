@@ -5,6 +5,7 @@ import pytest
 from pandas.testing import assert_frame_equal, assert_index_equal
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.metrics import accuracy_score, get_scorer
 from skore import ComparisonReport, CrossValidationReport
 from skore.utils._testing import check_cache_changed, check_cache_unchanged
 
@@ -257,3 +258,26 @@ def test_cache_poisoning(classification_data):
     )
 
     assert "Favorability" in result.columns
+
+
+@pytest.mark.parametrize(
+    "scoring, scoring_kwargs",
+    [
+        ("accuracy", None),
+        ("neg_log_loss", None),
+        (accuracy_score, {"response_method": "predict"}),
+        (get_scorer("accuracy"), None),
+    ],
+)
+def test_comparison_report_cv_report_metrics_scoring_single_list_equivalence(
+    report, scoring, scoring_kwargs
+):
+    """Check that passing a single string, callable, scorer is equivalent to passing a
+    list with a single element."""
+    result_single = report.metrics.report_metrics(
+        scoring=scoring, scoring_kwargs=scoring_kwargs
+    )
+    result_list = report.metrics.report_metrics(
+        scoring=[scoring], scoring_kwargs=scoring_kwargs
+    )
+    assert result_single.equals(result_list)
