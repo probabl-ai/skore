@@ -502,10 +502,10 @@ class PrecisionRecallCurveDisplay(
 
                 precision_recall = self.precision_recall.query(query)
 
-                for split_index, segment in precision_recall.groupby(
+                for split_idx, segment in precision_recall.groupby(
                     "split_index", observed=True
                 ):
-                    if split_index == 0:
+                    if split_idx == 0:
                         label_kwargs = {
                             "label": (
                                 f"{estimator_name} "
@@ -562,10 +562,10 @@ class PrecisionRecallCurveDisplay(
 
                     precision_recall = self.precision_recall.query(query)
 
-                    for split_index, segment in precision_recall.groupby(
+                    for split_idx, segment in precision_recall.groupby(
                         "split_index", observed=True
                     ):
-                        if split_index == 0:
+                        if split_idx == 0:
                             label_kwargs = {
                                 "label": (
                                     f"{estimator_name} "

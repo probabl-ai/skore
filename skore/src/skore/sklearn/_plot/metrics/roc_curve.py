@@ -561,10 +561,10 @@ class RocCurveDisplay(
                     line_kwargs, roc_curve_kwargs[report_idx]
                 )
 
-                for split_index, segment in roc_curve.groupby(
+                for split_idx, segment in roc_curve.groupby(
                     "split_index", observed=True
                 ):
-                    if split_index == 0:
+                    if split_idx == 0:
                         label_kwargs = {
                             "label": (
                                 f"{estimator_name} "
@@ -620,10 +620,10 @@ class RocCurveDisplay(
 
                     roc_auc = self.roc_auc.query(query)["roc_auc"]
 
-                    for split_index, segment in roc_curve.groupby(
+                    for split_idx, segment in roc_curve.groupby(
                         "split_index", observed=True
                     ):
-                        if split_index == 0:
+                        if split_idx == 0:
                             label_kwargs = {
                                 "label": (
                                     f"{estimator_name} "
