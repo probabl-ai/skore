@@ -111,8 +111,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             The keyword arguments to pass to the scoring functions.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
-            By default, the positive class is set to the one provided when creating
-            the report. Use this parameter to override the positive class.
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         indicator_favorability : bool, default=False
             Whether or not to add an indicator of the favorability of the metric as
@@ -739,8 +741,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 `average="binary"`).
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
-            By default, the positive class is set to the one provided when creating
-            the report. Use this parameter to override the positive class.
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -874,8 +878,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 `average="binary"`).
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
-            By default, the positive class is set to the one provided when creating
-            the report. Use this parameter to override the positive class.
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -1778,8 +1784,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             provided when creating the report.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
-            By default, the positive class is set to the one provided when creating
-            the report. Use this parameter to override the positive class.
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -1850,8 +1858,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             provided when creating the report.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
-            By default, the positive class is set to the one provided when creating
-            the report. Use this parameter to override the positive class.
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         Returns
         -------
