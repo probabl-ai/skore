@@ -15,7 +15,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.sklearn.types import PositiveLabel
+from skore.sklearn.types import _DEFAULT, PositiveLabel
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._measure_time import MeasureTime
 from skore.utils._parallel import Parallel, delayed
@@ -301,7 +301,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "predict", "predict_proba", "decision_function"
         ] = "predict",
         X: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = "default",
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
     ) -> ArrayLike:
         """Get estimator's predictions.
 
@@ -315,20 +315,26 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "X_y" : use the provided `X` and `y` to compute the predictions.
 
-        response_method : {"predict", "predict_proba", "decision_function"},
-        default:"predict"
-
+        response_method : {"predict", "predict_proba", "decision_function"}, \
+                default="predict"
             The response method to use.
 
         X : array-like of shape (n_samples, n_features), optional
             When `data_source` is "X_y", the input features on which to compute the
             response method.
 
-        pos_label : int, float, bool, str or None default="default"
-            If `"default"`, the positive class is set to the one provided when creating
-            the report. Use this parameter to override the positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing predictions in
+            binary classification cases. By default, the positive class is set to the
+            one provided when creating the report. If `None`, `estimator_.classes_[1]`
+            is used as positive label.
+
+            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
+            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
+            and `-estimator_.decision_function(X)` for
+            `response_method="decision_function"`.
 
         Returns
         -------
@@ -354,7 +360,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> predictions.shape
         (25,)
         """
-        if pos_label == "default":
+        if pos_label is _DEFAULT:
             pos_label = self.pos_label
 
         if data_source == "test":
@@ -444,7 +450,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return self._pos_label
 
     @pos_label.setter
-    def pos_label(self, value):
+    def pos_label(self, value: Optional[PositiveLabel]) -> None:
         self._pos_label = value
         self._initialize_state()
 

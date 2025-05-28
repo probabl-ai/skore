@@ -18,9 +18,16 @@ MLTask = Literal[
     "unknown",
 ]
 
-PositiveLabel = Union[int, float, bool, str]
+
+class _DefaultType:
+    """Sentinel class for default values."""
+
+    def __repr__(self) -> str:
+        return "<DEFAULT>"
 
 
+_DEFAULT = _DefaultType()
+PositiveLabel = Union[int, float, bool, str, None, _DefaultType]
 Aggregate = Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
 
 

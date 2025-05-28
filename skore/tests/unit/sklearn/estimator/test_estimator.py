@@ -460,9 +460,9 @@ def test_estimator_report_display_binary_classification(
     assert display_first_call is display_second_call
 
 
-@pytest.mark.parametrize("display", ["roc", "precision_recall"])
+@pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_estimator_report_display_binary_classification_pos_label(
-    pyplot, binary_classification_data, display
+    pyplot, binary_classification_data, metric
 ):
     """Check the behaviour of the display methods when `pos_label` needs to be set."""
     X, y = make_classification(
@@ -473,16 +473,16 @@ def test_estimator_report_display_binary_classification_pos_label(
     classifier = LogisticRegression().fit(X, y)
     report = EstimatorReport(classifier, X_test=X, y_test=y)
     with pytest.raises(ValueError, match="pos_label is not specified"):
-        getattr(report.metrics, display)()
+        getattr(report.metrics, metric)()
 
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="A")
-    disp = getattr(report.metrics, display)()
-    disp.plot()
-    assert "Positive label: A" in disp.ax_.get_xlabel()
+    display = getattr(report.metrics, metric)()
+    display.plot()
+    assert "Positive label: A" in display.ax_.get_xlabel()
 
-    disp = getattr(report.metrics, display)(pos_label="B")
-    disp.plot()
-    assert "Positive label: B" in disp.ax_.get_xlabel()
+    display = getattr(report.metrics, metric)(pos_label="B")
+    display.plot()
+    assert "Positive label: B" in display.ax_.get_xlabel()
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
