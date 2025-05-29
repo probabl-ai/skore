@@ -671,10 +671,10 @@ class RocCurveDisplay(
                     line_kwargs, roc_curve_kwargs[report_idx]
                 )
 
-                for split_index, segment in roc_curve.groupby(
+                for split_idx, segment in roc_curve.groupby(
                     "split_index", observed=True
                 ):
-                    if split_index == 0:
+                    if split_idx == 0:
                         label_kwargs = {
                             "label": (
                                 f"{estimator_name} "
@@ -719,7 +719,7 @@ class RocCurveDisplay(
                 colormaps.get_cmap("tab10"),
                 10 if len(estimator_names) < 10 else len(estimator_names),
             )
-            idx = 0
+            curve_idx = 0
 
             for est_idx, estimator_name in enumerate(estimator_names):
                 est_color = colors[est_idx]
@@ -730,10 +730,10 @@ class RocCurveDisplay(
 
                     roc_auc = self.roc_auc.query(query)["roc_auc"]
 
-                    for split_index, segment in roc_curve.groupby(
+                    for split_idx, segment in roc_curve.groupby(
                         "split_index", observed=True
                     ):
-                        if split_index == 0:
+                        if split_idx == 0:
                             label_kwargs = {
                                 "label": (
                                     f"{estimator_name} "
@@ -747,7 +747,7 @@ class RocCurveDisplay(
                         line_kwargs["color"] = est_color
                         line_kwargs["alpha"] = 0.6
                         line_kwargs_validated = _validate_style_kwargs(
-                            line_kwargs, roc_curve_kwargs[idx]
+                            line_kwargs, roc_curve_kwargs[curve_idx]
                         )
 
                         (line,) = self.ax_[label_idx].plot(
@@ -757,7 +757,7 @@ class RocCurveDisplay(
                         )
                         lines.append(line)
 
-                        idx = idx + 1
+                        curve_idx += 1
 
                     info_pos_label = f"\n(Positive label: {label})"
                     _set_axis_labels(self.ax_[label_idx], info_pos_label)

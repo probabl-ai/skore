@@ -1544,8 +1544,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.precision_recall()
         >>> display.plot()
         """
-        if self._parent._reports_type == "CrossValidationReport":
-            raise NotImplementedError()
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
         display = cast(
