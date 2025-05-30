@@ -1,3 +1,5 @@
+import inspect
+
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -18,6 +20,25 @@ def cv_report_regression():
     X, y = make_regression(random_state=42)
     cv_report = CrossValidationReport(DummyRegressor(), X, y)
     return cv_report
+
+
+def test_report_can_be_rebuilt_using_parameters(cv_report_regression):
+    report = cv_report_regression
+    parameters = {}
+
+    assert isinstance(report, CrossValidationReport)
+
+    for parameter in inspect.signature(CrossValidationReport).parameters:
+        has_parameter = hasattr(report, parameter)
+        has_parameter_ = hasattr(report, f"{parameter}_")
+
+        assert has_parameter or has_parameter_, parameter
+
+        parameters[parameter] = getattr(
+            report, parameter if has_parameter else f"{parameter}_"
+        )
+
+    CrossValidationReport(**parameters)
 
 
 def test_init_wrong_parameters(cv_report_classification):

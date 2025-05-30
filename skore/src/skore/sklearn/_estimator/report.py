@@ -143,6 +143,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     ) -> None:
         # used to know if a parent launch a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
+        self._fit = fit
 
         fit_time: Optional[float] = None
         if fit == "auto":
@@ -461,6 +462,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             name = self._estimator.__class__.__name__
         return name
+
+    @property
+    def fit(self) -> Union[Literal["auto"], bool]:
+        return self._fit
 
     ####################################################################################
     # Methods related to the help and repr
