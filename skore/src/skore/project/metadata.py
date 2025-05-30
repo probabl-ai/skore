@@ -41,95 +41,7 @@ class Metadata(DataFrame):
     _metadata = ["project"]
 
     @staticmethod
-    def _iterate_in_pipe_tree(step, itemized_pipeline: list, depth: int) -> list:
-        """
-        Iterate through the pipeline tree.
-
-        Parameters
-        ----------
-        step : one node of the pipeline
-            The step to explore.
-
-        Returns
-        -------
-        list
-            A list of estimators or transformers in the pipeline.
-        """
-        type_ = type(step)
-        if type_ == Pipeline:
-            itemized_pipeline = Metadata._explore_sk_pipeline(
-                step, itemized_pipeline, depth=depth + 1
-            )
-        elif type_ == FeatureUnion:
-            itemized_pipeline = Metadata._explore_sk_feature_union(
-                step, itemized_pipeline, depth=depth + 1
-            )
-        elif str(type_) == "<class 'skrub._table_vectorizer.TableVectorizer'>":
-            itemized_pipeline.append(step.low_cardinality)
-            itemized_pipeline.append(step.high_cardinality)
-            itemized_pipeline.append(step.numeric)
-            itemized_pipeline.append(step.datetime)
-        else:
-            itemized_pipeline.append(step)
-        return itemized_pipeline
-
-    @staticmethod
-    def _explore_sk_pipeline(
-        pipeline: Pipeline, itemized_pipeline: list, depth: int = 0, max_depth: int = 5
-    ) -> list:
-        """
-        Explore the pipeline and return a list of estimators or transformers.
-
-        Parameters
-        ----------
-        pipeline : Pipeline
-            The pipeline to explore.
-
-        Returns
-        -------
-        list
-            A list of estimators or transformers in the pipeline.
-        """
-        if depth > max_depth:
-            return itemized_pipeline
-
-        for _, step in pipeline.steps:
-            itemized_pipeline = Metadata._iterate_in_pipe_tree(
-                step, itemized_pipeline, depth=depth
-            )
-        return itemized_pipeline
-
-    @staticmethod
-    def _explore_sk_feature_union(
-        feature_union: FeatureUnion,
-        itemized_pipeline: list,
-        depth: int = 0,
-        max_depth: int = 5,
-    ) -> list:
-        """
-        Explore the feature union and return a list of estimators or transformers.
-
-        Parameters
-        ----------
-        feature_union : FeatureUnion
-            The feature union to explore.
-
-        Returns
-        -------
-        list
-            A list of estimators or transformers in the feature union.
-        """
-        if depth > max_depth:
-            return itemized_pipeline
-
-        for _, transformer in feature_union.transformer_list:
-            itemized_pipeline = Metadata._iterate_in_pipe_tree(
-                transformer, itemized_pipeline, depth=depth
-            )
-        return itemized_pipeline
-
-    @staticmethod
-    def _split_pipeline(pipeline: Pipeline) -> dict[str, list[str]]:
+    def _find_estimators(pipeline: Pipeline) -> dict[str, list[str]]:
         """
         Split the pipeline into a list of estimators or transformers.
 
@@ -144,10 +56,13 @@ class Metadata(DataFrame):
             A dict of estimators or transformers class in the pipeline,
             grouped by their module name.
         """
-        max_depth = 5
-        itemized_pipeline = Metadata._explore_sk_pipeline(
-            pipeline, [], depth=0, max_depth=max_depth
-        )
+        itemized_pipeline = []
+        from sklearn.base import BaseEstimator
+
+        for _, value in pipeline.get_params().items():
+            if isinstance(value, BaseEstimator) and not isinstance(value, FeatureUnion):
+                itemized_pipeline.append(value)
+
         class_names = list(set([str(type(est)) for est in itemized_pipeline]))
 
         sklearn_regex = re.compile(r"sklearn\.(\w+)\.(\w+)")

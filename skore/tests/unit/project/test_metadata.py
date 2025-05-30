@@ -302,11 +302,11 @@ class TestMetadata:
             "and learner.isin(['learner1', 'learner3'])"
         )
 
-    def test_splitting_pipeline(self):
+    def test_find_estimators(self):
         estimators = [("linear_pca", PCA()), ("kernel_pca", KernelPCA())]
         combined = FeatureUnion(estimators)
         combined = FeatureUnion([("test", FeatureUnion(estimators)), ("one", PCA())])
         pip = make_pipeline(combined, RandomForestClassifier())
 
-        extracted = Metadata._split_pipeline(pip)
+        extracted = Metadata._find_estimators(pip)
         assert len(extracted) > 0
