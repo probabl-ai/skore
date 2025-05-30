@@ -489,10 +489,6 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
         Parameters
         ----------
-        ax : matplotlib axes, default=None
-            Axes object to plot on. If `None`, a new figure and axes is
-            created.
-
         estimator_name : str
             Name of the estimator used to plot the prediction error. If `None`,
             we used the inferred name from the estimator.
