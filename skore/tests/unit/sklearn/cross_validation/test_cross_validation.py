@@ -321,11 +321,12 @@ def test_cross_validation_report_metrics_data_source_external(
 ########################################################################################
 
 
-def test_cross_validation_report_plot_roc(binary_classification_data):
+@pytest.mark.parametrize("average", [None, "threshold"])
+def test_cross_validation_report_plot_roc(binary_classification_data, average):
     """Check that the ROC plot method works."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    assert isinstance(report.metrics.roc(), RocCurveDisplay)
+    assert isinstance(report.metrics.roc(average=average), RocCurveDisplay)
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])

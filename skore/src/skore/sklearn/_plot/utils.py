@@ -6,6 +6,7 @@ from typing import Any, Optional, Union
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
+from numpy.typing import ArrayLike
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -240,6 +241,47 @@ class _ClassifierCurveDisplayMixin:
             pos_label = _check_pos_label_consistency(pos_label, y_true[0].y)
 
         return pos_label
+
+    @staticmethod
+    def _threshold_average(
+        xs: list[ArrayLike], ys: list[ArrayLike], thresholds: list[ArrayLike]
+    ) -> tuple[list[float], list[float], list[float]]:
+        """
+        Private method to calculate threshold average roc or precision_recall_curve.
+
+        Parameters
+        ----------
+        x : list of array-like of shape (n_samples,)
+            False positive rates or precision
+        y : list of array-like of shape (n_samples,)
+            True positive rates or recall
+        thresholds : list of array-like of shape (n_samples,)
+            Thresholds
+        """
+        unique_thresholds = sorted(np.unique(np.concatenate(thresholds)), reverse=True)
+
+        average_x = []
+        average_y = []
+        average_threshold = []
+        for target_threshold in unique_thresholds:
+            threshold_x, threshold_y = [], []
+            for x, y, threshold in zip(
+                xs,
+                ys,
+                thresholds,
+            ):
+                closest_idx = max(
+                    np.searchsorted(threshold[::-1], target_threshold, side="right")
+                    - 1,
+                    0,
+                )
+                closest_idx_inverted = (closest_idx + 1) * -1
+                threshold_x.append(x[closest_idx_inverted])
+                threshold_y.append(y[closest_idx_inverted])
+            average_x.append(np.mean(threshold_x))
+            average_y.append(np.mean(threshold_y))
+            average_threshold.append(target_threshold)
+        return average_x, average_y, average_threshold
 
 
 def _despine_matplotlib_axis(

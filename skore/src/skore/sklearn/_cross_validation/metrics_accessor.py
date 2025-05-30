@@ -1106,6 +1106,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         *,
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        average: Optional[Literal["threshold"]] = None,
         data_source: DataSource,
         response_method: str,
         display_class: type[
@@ -1155,7 +1156,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
-            cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
+            cache_key_parts: list[Any] = [
+                self._parent._hash,
+                display_class.__name__,
+                average,
+            ]
             cache_key_parts.extend(display_kwargs.values())
             if data_source_hash is not None:
                 cache_key_parts.append(data_source_hash)
@@ -1211,18 +1216,34 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                         )
                 progress.update(main_task, advance=1, refresh=True)
 
-            display = display_class._compute_data_for_display(
-                y_true=y_true,
-                y_pred=y_pred,
-                report_type="cross-validation",
-                estimators=[
-                    report.estimator_ for report in self._parent.estimator_reports_
-                ],
-                estimator_names=[self._parent.estimator_name_],
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                **display_kwargs,
-            )
+            if display_class == RocCurveDisplay:
+                display_class = cast(type[RocCurveDisplay], display_class)
+                display = display_class._compute_data_for_display(
+                    y_true=y_true,
+                    y_pred=y_pred,
+                    average=average,
+                    report_type="cross-validation",
+                    estimators=[
+                        report.estimator_ for report in self._parent.estimator_reports_
+                    ],
+                    estimator_names=[self._parent.estimator_name_],
+                    ml_task=self._parent._ml_task,
+                    data_source=data_source,
+                    **display_kwargs,
+                )
+            else:
+                display = display_class._compute_data_for_display(
+                    y_true=y_true,
+                    y_pred=y_pred,
+                    report_type="cross-validation",
+                    estimators=[
+                        report.estimator_ for report in self._parent.estimator_reports_
+                    ],
+                    estimator_names=[self._parent.estimator_name_],
+                    ml_task=self._parent._ml_task,
+                    data_source=data_source,
+                    **display_kwargs,
+                )
 
             if cache_key is not None:
                 # Unless seed is an int (i.e. the call is deterministic),
@@ -1238,6 +1259,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        average: Optional[Literal["threshold"]] = None,
         pos_label: Optional[PositiveLabel] = None,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
@@ -1259,6 +1281,12 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
+        average: {"threshold"}, default=None
+            Method to use for averaging cross-validation ROC curves.
+            Possible values are:
+            - `None`: No averaging.
+            - `"threshold"`: Threshold averaging [1]_.
+
         pos_label : int, float, bool or str, default=None
             The positive class.
 
@@ -1266,6 +1294,12 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         -------
         RocCurveDisplay
             The ROC curve display.
+
+        References
+        ----------
+
+        .. [1] T. Fawcett, "An introduction to ROC analysis", Pattern Recognition
+               Letters, 27(8), 861–874, 2006.
 
         Examples
         --------
@@ -1286,6 +1320,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 data_source=data_source,
                 X=X,
                 y=y,
+                average=average,
                 response_method=response_method,
                 display_class=RocCurveDisplay,
                 display_kwargs=display_kwargs,
