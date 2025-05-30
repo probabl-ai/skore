@@ -63,13 +63,13 @@ class Metadata(DataFrame):
             if isinstance(value, BaseEstimator) and not isinstance(value, FeatureUnion):
                 itemized_pipeline.append(value)
 
-        class_names = set(type(est) for est in itemized_pipeline)
+        classes = set(type(est) for est in itemized_pipeline)
 
         sklearn_regex = re.compile(r"sklearn\.(\w+)\.")
         skrub_regex = re.compile(r"skrub\.(\w+)\.")
 
         pipe_steps: dict[str, list[str]] = defaultdict(list)
-        for estimator_class in class_names:
+        for estimator_class in classes:
             class_name = estimator_class.__name__
             estimator_class_str = str(estimator_class)
             sklearn_match = sklearn_regex.search(estimator_class_str)
@@ -82,6 +82,8 @@ class Metadata(DataFrame):
                 module = "other"
             pipe_steps[module].append(class_name)
 
+        # sort, so that even if two pipelines using the same transformers
+        # are split in different orders, their dict still match.
         for _, value in pipe_steps.items():
             value.sort()
 
