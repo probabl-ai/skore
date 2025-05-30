@@ -82,6 +82,9 @@ class Metadata(DataFrame):
                 module = "other"
             pipe_steps[module].append(class_name)
 
+        for _, value in pipe_steps.items():
+            value.sort()
+
         return pipe_steps
 
     @staticmethod
