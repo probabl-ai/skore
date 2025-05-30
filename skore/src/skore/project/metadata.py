@@ -63,7 +63,7 @@ class Metadata(DataFrame):
             if isinstance(value, BaseEstimator) and not isinstance(value, FeatureUnion):
                 itemized_pipeline.append(value)
 
-        class_names = list(set([str(type(est)) for est in itemized_pipeline]))
+        class_names = list(set(str(type(est)) for est in itemized_pipeline))
 
         sklearn_regex = re.compile(r"sklearn\.(\w+)\.(\w+)")
         skrub_regex = re.compile(r"skrub\.(\w+)\.(\w+)")
