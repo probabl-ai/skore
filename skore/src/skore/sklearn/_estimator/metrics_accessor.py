@@ -1,3 +1,4 @@
+import importlib.util
 import inspect
 from collections.abc import Iterable
 from functools import partial
@@ -28,6 +29,8 @@ from skore.utils._accessor import (
     _check_supported_ml_task,
 )
 from skore.utils._index import flatten_multi_index
+
+PLOTLY_AVAILABLE = importlib.util.find_spec("plotly") is not None
 
 DataSource = Literal["test", "train", "X_y"]
 
@@ -69,6 +72,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         pos_label: Optional[PositiveLabel] = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
+        backend: Literal["matplotlib", "plotly"] = "matplotlib",
     ) -> pd.DataFrame:
         """Report a set of metrics for our estimator.
 
@@ -152,6 +156,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
         """
+        if backend == "plotly" and not PLOTLY_AVAILABLE:
+            raise ImportError(
+                "Plotly is required for plotly backend. "
+                "Install it with: pip install plotly"
+            )
+
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
@@ -1654,6 +1664,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
         ],
         display_kwargs: dict[str, Any],
+        backend: Literal["matplotlib", "plotly"] = "matplotlib",
     ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
         """Get the display from the cache or compute it.
 
@@ -1690,6 +1701,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             data_source=data_source, X=X, y=y
         )
         assert y is not None, "y must be provided"
+        if backend == "plotly" and not PLOTLY_AVAILABLE:
+            raise ImportError(
+                "Plotly is required for plotly backend. "
+                "Install it with: pip install plotly"
+            )
+        display_kwargs["backend"] = backend
 
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
@@ -1763,6 +1780,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         pos_label: Optional[PositiveLabel] = _DEFAULT,
+        backend: Literal["matplotlib", "plotly"] = "matplotlib",
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1811,7 +1829,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label = self._parent.pos_label
 
         response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": pos_label}
+        display_kwargs = {"pos_label": pos_label, "backend": backend}
+
         display = cast(
             RocCurveDisplay,
             self._get_display(
@@ -1837,6 +1856,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         pos_label: Optional[PositiveLabel] = _DEFAULT,
+        backend: Literal["matplotlib", "plotly"] = "matplotlib",
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
@@ -1885,7 +1905,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label = self._parent.pos_label
 
         response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": pos_label}
+        display_kwargs = {
+            "pos_label": pos_label,
+            "backend": backend,
+        }
         display = cast(
             PrecisionRecallCurveDisplay,
             self._get_display(
@@ -1912,6 +1935,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         y: Optional[ArrayLike] = None,
         subsample: Union[float, int, None] = 1_000,
         seed: Optional[int] = None,
+        backend: Literal["matplotlib", "plotly"] = "matplotlib",
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
@@ -1963,7 +1987,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> display = report.metrics.prediction_error()
         >>> display.plot(perfect_model_kwargs={"color": "tab:red"})
         """
-        display_kwargs = {"subsample": subsample, "seed": seed}
+        display_kwargs = {
+            "subsample": subsample,
+            "seed": seed,
+            "backend": backend,
+        }
         display = cast(
             PredictionErrorDisplay,
             self._get_display(
@@ -1993,6 +2021,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         include_values: bool = True,
         normalize: Optional[Literal["true", "pred", "all"]] = None,
         values_format: Optional[str] = None,
+        backend: Literal["matplotlib", "plotly"] = "matplotlib",
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -2061,7 +2090,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label=None,
         )
 
-        return ConfusionMatrixDisplay.from_predictions(
+        display = ConfusionMatrixDisplay.from_predictions(
             y_true=y,
             y_pred=y_pred,
             sample_weight=sample_weight,
@@ -2070,3 +2099,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             normalize=normalize,
             values_format=values_format,
         )
+
+        if hasattr(display, "set_backend"):
+            display.set_backend(backend)
+
+        return display
