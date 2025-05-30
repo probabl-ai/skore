@@ -45,6 +45,7 @@ test-base = [
   "pytest-randomly",
   "pytest-xdist",
   "scikit-learn<1.7",
+  "skrub",
   "xdoctest",
 ]
 test = ["skore[test-base]", "polars"]
