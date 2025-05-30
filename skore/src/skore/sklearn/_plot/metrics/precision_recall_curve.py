@@ -23,6 +23,15 @@ from skore.sklearn._plot.utils import (
 )
 from skore.sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
+try:
+    import plotly.express as px
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+
 
 def _set_axis_labels(ax: Axes, info_pos_label: Union[str, None]) -> None:
     """Add axis labels."""
@@ -610,6 +619,7 @@ class PrecisionRecallCurveDisplay(
         estimator_name: Optional[str] = None,
         pr_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
         despine: bool = True,
+        backend: Literal["matplotlib", "plotly"] = "matplotlib",
     ) -> None:
         """Plot visualization.
 
@@ -652,6 +662,20 @@ class PrecisionRecallCurveDisplay(
         >>> display = report.metrics.precision_recall()
         >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
+        if backend == "plotly":
+            if not PLOTLY_AVAILABLE:
+                raise ImportError(
+                    "Plotly is required for plotly backend. "
+                    "Install it with: pip install plotly"
+                )
+            fig = self._create_plotly_figure(
+                estimator_name=estimator_name,
+                pr_curve_kwargs=pr_curve_kwargs,
+            )
+            self.fig_ = fig
+            fig.show()
+            return
+
         if (
             self.report_type == "comparison-cross-validation"
             and self.ml_task == "multiclass-classification"
@@ -885,3 +909,348 @@ class PrecisionRecallCurveDisplay(
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def _create_plotly_figure(
+        self,
+        *,
+        estimator_name: Optional[str] = None,
+        pr_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
+    ) -> go.Figure:
+        """Create a Plotly figure for Precision-Recall curve visualization."""
+        if not PLOTLY_AVAILABLE:
+            raise ImportError(
+                "Plotly is required for plotly backend. "
+                "Install it with: pip install plotly"
+            )
+
+        # Handle different report types and ML tasks
+        if (
+            self.report_type == "comparison-cross-validation"
+            and self.ml_task == "multiclass-classification"
+        ):
+            n_labels = len(self.average_precision["label"].cat.categories)
+            fig = make_subplots(
+                rows=1,
+                cols=n_labels,
+                subplot_titles=[
+                    f"Class {label}"
+                    for label in self.average_precision["label"].cat.categories
+                ],
+                horizontal_spacing=0.1,
+            )
+        else:
+            fig = go.Figure()
+
+        # Default styling
+        if pr_curve_kwargs is None:
+            pr_curve_kwargs = self._default_pr_curve_kwargs or {}
+
+        if self.ml_task == "binary-classification":
+            n_curves = len(self.average_precision.query(f"label == {self.pos_label!r}"))
+        else:
+            n_curves = len(self.average_precision)
+
+        # Validate kwargs
+        pr_curve_kwargs = self._validate_curve_kwargs(
+            curve_param_name="pr_curve_kwargs",
+            curve_kwargs=pr_curve_kwargs,
+            n_curves=n_curves,
+            report_type=self.report_type,
+        )
+
+        # Plot based on report type
+        if self.report_type == "estimator":
+            self._add_plotly_single_estimator(
+                fig,
+                estimator_name,
+                pr_curve_kwargs,
+            )
+        elif self.report_type == "cross-validation":
+            self._add_plotly_cross_validated_estimator(
+                fig,
+                estimator_name,
+                pr_curve_kwargs,
+            )
+        elif self.report_type == "comparison-estimator":
+            self._add_plotly_comparison_estimator(
+                fig,
+                pr_curve_kwargs,
+            )
+        elif self.report_type == "comparison-cross-validation":
+            self._add_plotly_comparison_cross_validation(
+                fig,
+                pr_curve_kwargs,
+            )
+
+        # Update layout
+        fig.update_layout(
+            title=f"Precision-Recall Curve - {self.data_source.title()} Set",
+            xaxis_title="Recall",
+            yaxis_title="Precision",
+            width=800,
+            height=600,
+            showlegend=True,
+        )
+
+        return fig
+
+    def _add_plotly_single_estimator(
+        self,
+        fig,
+        estimator_name,
+        pr_curve_kwargs,
+    ):
+        """Add Precision-Recall curve for a single estimator to Plotly figure."""
+        if self.ml_task == "binary-classification":
+            query = f"label == {self.pos_label!r}"
+            pr_data = self.precision_recall.query(query)
+            ap_score = self.average_precision.query(query)["average_precision"].item()
+
+            if self.data_source in ("train", "test"):
+                name = f"{self.data_source.title()} set (AP = {ap_score:.2f})"
+            else:
+                name = f"AP = {ap_score:.2f}"
+
+            fig.add_trace(
+                go.Scatter(
+                    x=pr_data["recall"],
+                    y=pr_data["precision"],
+                    mode="lines",
+                    name=name,
+                    line=dict(
+                        color=pr_curve_kwargs[0].get("color", "blue"), shape="hv"
+                    ),
+                )
+            )
+
+        else:  # multiclass
+            labels = self.precision_recall["label"].cat.categories
+            colors = px.colors.qualitative.Set1[: len(labels)]
+
+            for class_idx, class_label in enumerate(labels):
+                query = f"label == {class_label}"
+                pr_data = self.precision_recall.query(query)
+                ap_score = self.average_precision.query(query)[
+                    "average_precision"
+                ].item()
+
+                if self.data_source in ("train", "test"):
+                    name = (
+                        f"{str(class_label).title()} - {self.data_source} set "
+                        f"(AP = {ap_score:.2f})"
+                    )
+                else:
+                    name = f"{str(class_label).title()} - AP = {ap_score:.2f}"
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=pr_data["recall"],
+                        y=pr_data["precision"],
+                        mode="lines",
+                        name=name,
+                        line=dict(color=colors[class_idx % len(colors)], shape="hv"),
+                    )
+                )
+
+    def _add_plotly_comparison_estimator(self, fig, pr_curve_kwargs):
+        """Add Precision-Recall curves for comparison of estimators to Plotly figure."""
+        estimator_names = self.average_precision["estimator_name"].cat.categories
+        colors = px.colors.qualitative.Set1[: len(estimator_names)]
+
+        if self.ml_task == "binary-classification":
+            for est_idx, est_name in enumerate(estimator_names):
+                query = f"label == {self.pos_label!r} & estimator_name == '{est_name}'"
+                pr_data = self.precision_recall.query(query)
+                ap_score = self.average_precision.query(query)[
+                    "average_precision"
+                ].item()
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=pr_data["recall"],
+                        y=pr_data["precision"],
+                        mode="lines",
+                        name=f"{est_name} (AP = {ap_score:.2f})",
+                        line=dict(color=colors[est_idx % len(colors)], shape="hv"),
+                    )
+                )
+        else:  # multiclass
+            labels = self.precision_recall["label"].cat.categories
+
+            for est_idx, est_name in enumerate(estimator_names):
+                est_color = colors[est_idx % len(colors)]
+
+                for class_idx, class_label in enumerate(labels):
+                    query = f"label == {class_label} & estimator_name == '{est_name}'"
+                    pr_data = self.precision_recall.query(query)
+                    ap_score = self.average_precision.query(query)[
+                        "average_precision"
+                    ].item()
+
+                    dash_style = ["solid", "dash", "dot", "dashdot"][class_idx % 4]
+
+                    fig.add_trace(
+                        go.Scatter(
+                            x=pr_data["recall"],
+                            y=pr_data["precision"],
+                            mode="lines",
+                            name=(
+                                f"{est_name} - {str(class_label).title()} "
+                                f"(AP = {ap_score:.2f})"
+                            ),
+                            line=dict(color=est_color, dash=dash_style, shape="hv"),
+                            opacity=0.7,
+                        )
+                    )
+
+    def _add_plotly_cross_validated_estimator(
+        self,
+        fig,
+        estimator_name,
+        pr_curve_kwargs,
+    ):
+        """Add Precision-Recall curves for cross-validated estimator to Plotly."""
+        if self.ml_task == "binary-classification":
+            for split_idx in self.precision_recall["split_index"].cat.categories:
+                query = f"label == {self.pos_label!r} & split_index == {split_idx}"
+                pr_data = self.precision_recall.query(query)
+                ap_score = self.average_precision.query(query)[
+                    "average_precision"
+                ].item()
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=pr_data["recall"],
+                        y=pr_data["precision"],
+                        mode="lines",
+                        name=f"Fold #{split_idx + 1} (AP = {ap_score:.2f})",
+                        line=dict(shape="hv"),
+                        opacity=0.7,
+                    )
+                )
+        else:  # multiclass-classification
+            labels = self.precision_recall["label"].cat.categories
+            colors = px.colors.qualitative.Set1[: len(labels)]
+
+            for class_idx, class_label in enumerate(labels):
+                ap_values = self.average_precision.query(f"label == {class_label}")[
+                    "average_precision"
+                ]
+                ap_mean = ap_values.mean()
+                ap_std = ap_values.std()
+
+                for split_idx in self.precision_recall["split_index"].cat.categories:
+                    query = f"label == {class_label} & split_index == {split_idx}"
+                    pr_data = self.precision_recall.query(query)
+
+                    showlegend = split_idx == 0  # Only first fold in legend
+                    name = (
+                        f"{str(class_label).title()} "
+                        f"(AP = {ap_mean:.2f} +/- {ap_std:.2f})"
+                        if showlegend
+                        else None
+                    )
+
+                    fig.add_trace(
+                        go.Scatter(
+                            x=pr_data["recall"],
+                            y=pr_data["precision"],
+                            mode="lines",
+                            name=name,
+                            showlegend=showlegend,
+                            legendgroup=str(class_label),
+                            line=dict(
+                                color=colors[class_idx % len(colors)],
+                                shape="hv",
+                            ),
+                            opacity=0.4,
+                        )
+                    )
+
+    def _add_plotly_comparison_cross_validation(self, fig, pr_curve_kwargs):
+        """Add Precision-Recall curves for comparison of cross-validated estimators.
+
+        Adds curves to Plotly figure.
+        """
+        estimator_names = self.average_precision["estimator_name"].cat.categories
+        colors = px.colors.qualitative.Set1[: len(estimator_names)]
+
+        if self.ml_task == "binary-classification":
+            for report_idx, estimator_name in enumerate(estimator_names):
+                query = (
+                    f"estimator_name == '{estimator_name}' & "
+                    f"label == {self.pos_label!r}"
+                )
+                pr_data = self.precision_recall.query(query)
+                ap_values = self.average_precision.query(query)["average_precision"]
+
+                for split_idx, segment in pr_data.groupby("split_index", observed=True):
+                    showlegend = split_idx == 0  # Only first fold in legend
+                    name = (
+                        f"{estimator_name} (AP = {ap_values.mean():.2f} "
+                        f"+/- {ap_values.std():.2f})"
+                        if showlegend
+                        else None
+                    )
+
+                    fig.add_trace(
+                        go.Scatter(
+                            x=segment["recall"],
+                            y=segment["precision"],
+                            mode="lines",
+                            name=name,
+                            showlegend=showlegend,
+                            legendgroup=estimator_name,
+                            line=dict(
+                                color=colors[report_idx % len(colors)],
+                                shape="hv",
+                            ),
+                            opacity=0.6,
+                        )
+                    )
+        else:  # multiclass-classification
+            labels = self.precision_recall["label"].cat.categories
+
+            for class_label in labels:
+                for est_idx, estimator_name in enumerate(estimator_names):
+                    query = (
+                        f"label == {class_label} & estimator_name == '{estimator_name}'"
+                    )
+                    ap_values = self.average_precision.query(query)["average_precision"]
+
+                    for split_idx in self.precision_recall[
+                        "split_index"
+                    ].cat.categories:
+                        fold_query = (
+                            f"label == {class_label} & "
+                            f"estimator_name == '{estimator_name}' & "
+                            f"split_index == {split_idx}"
+                        )
+                        pr_fold_data = self.precision_recall.query(fold_query)
+
+                        showlegend = split_idx == 0  # Only first fold in legend
+                        name = (
+                            (
+                                f"{estimator_name} - {str(class_label).title()} "
+                                f"(AP = {ap_values.mean():.2f} +/- "
+                                f"{ap_values.std():.2f})"
+                            )
+                            if showlegend
+                            else None
+                        )
+
+                        fig.add_trace(
+                            go.Scatter(
+                                x=pr_fold_data["recall"],
+                                y=pr_fold_data["precision"],
+                                mode="lines",
+                                name=name,
+                                showlegend=showlegend,
+                                legendgroup=f"{estimator_name}_{class_label}",
+                                line=dict(
+                                    color=colors[est_idx % len(colors)],
+                                    shape="hv",
+                                ),
+                                opacity=0.4,
+                            )
+                        )

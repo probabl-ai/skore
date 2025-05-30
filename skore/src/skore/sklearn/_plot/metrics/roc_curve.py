@@ -11,6 +11,15 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, roc_curve
 from sklearn.preprocessing import LabelBinarizer
 
+try:
+    import plotly.express as px
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+
 from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import (
     LINESTYLE,
@@ -146,6 +155,7 @@ class RocCurveDisplay(
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
+        self.fig_ = None
 
     def _plot_single_estimator(
         self,
@@ -676,6 +686,349 @@ class RocCurveDisplay(
 
         return self.ax_, lines, info_pos_label
 
+    def _create_plotly_figure(
+        self,
+        *,
+        estimator_name: Optional[str] = None,
+        roc_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
+        plot_chance_level: bool = True,
+        chance_level_kwargs: Optional[dict[str, Any]] = None,
+    ) -> go.Figure:
+        """Create a Plotly figure for ROC curve visualization."""
+        if not PLOTLY_AVAILABLE:
+            raise ImportError(
+                "Plotly is required for plotly backend. "
+                "Install it with: pip install plotly"
+            )
+
+        # Handle different report types and ML tasks
+        if (
+            self.report_type == "comparison-cross-validation"
+            and self.ml_task == "multiclass-classification"
+        ):
+            n_labels = len(self.roc_auc["label"].cat.categories)
+            fig = make_subplots(
+                rows=1,
+                cols=n_labels,
+                subplot_titles=[
+                    f"Class {label}" for label in self.roc_auc["label"].cat.categories
+                ],
+                horizontal_spacing=0.1,
+            )
+        else:
+            fig = go.Figure()
+
+        # Default styling
+        if roc_curve_kwargs is None:
+            roc_curve_kwargs = self._default_roc_curve_kwargs or {}
+
+        if self.ml_task == "binary-classification":
+            n_curves = len(self.roc_auc.query(f"label == {self.pos_label!r}"))
+        else:
+            n_curves = len(self.roc_auc)
+
+        # Validate kwargs
+        roc_curve_kwargs = self._validate_curve_kwargs(
+            curve_param_name="roc_curve_kwargs",
+            curve_kwargs=roc_curve_kwargs,
+            n_curves=n_curves,
+            report_type=self.report_type,
+        )
+
+        # Plot based on report type
+        if self.report_type == "estimator":
+            self._add_plotly_single_estimator(
+                fig,
+                estimator_name,
+                roc_curve_kwargs,
+                plot_chance_level,
+                chance_level_kwargs,
+            )
+        elif self.report_type == "cross-validation":
+            self._add_plotly_cross_validated_estimator(
+                fig,
+                estimator_name,
+                roc_curve_kwargs,
+                plot_chance_level,
+                chance_level_kwargs,
+            )
+        elif self.report_type == "comparison-estimator":
+            self._add_plotly_comparison_estimator(
+                fig, roc_curve_kwargs, plot_chance_level, chance_level_kwargs
+            )
+        elif self.report_type == "comparison-cross-validation":
+            self._add_plotly_comparison_cross_validation(
+                fig, roc_curve_kwargs, plot_chance_level, chance_level_kwargs
+            )
+
+        # Update layout
+        fig.update_layout(
+            title=f"ROC Curve - {self.data_source.title()} Set",
+            xaxis_title="False Positive Rate",
+            yaxis_title="True Positive Rate",
+            width=800,
+            height=600,
+            showlegend=True,
+        )
+
+        return fig
+
+    def _add_plotly_single_estimator(
+        self,
+        fig,
+        estimator_name,
+        roc_curve_kwargs,
+        plot_chance_level,
+        chance_level_kwargs,
+    ):
+        """Add ROC curve for a single estimator to Plotly figure."""
+        if self.ml_task == "binary-classification":
+            auc_score = self.roc_auc["roc_auc"].item()
+            if self.data_source in ("train", "test"):
+                name = f"{self.data_source.title()} set (AUC = {auc_score:.2f})"
+            else:
+                name = f"AUC = {auc_score:.2f}"
+
+            fig.add_trace(
+                go.Scatter(
+                    x=self.roc_curve["fpr"],
+                    y=self.roc_curve["tpr"],
+                    mode="lines",
+                    name=name,
+                    line=dict(color=roc_curve_kwargs[0].get("color", "blue")),
+                )
+            )
+
+        else:  # multiclass
+            labels = self.roc_curve["label"].cat.categories
+            colors = px.colors.qualitative.Set1[: len(labels)]
+
+            for class_idx, class_label in enumerate(labels):
+                query = f"label == {class_label}"
+                roc_curve_class = self.roc_curve.query(query)
+                roc_auc_class = self.roc_auc.query(query)["roc_auc"].item()
+
+                if self.data_source in ("train", "test"):
+                    name = (
+                        f"{str(class_label).title()} - {self.data_source} set "
+                        f"(AUC = {roc_auc_class:.2f})"
+                    )
+                else:
+                    name = f"{str(class_label).title()} - AUC = {roc_auc_class:.2f}"
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=roc_curve_class["fpr"],
+                        y=roc_curve_class["tpr"],
+                        mode="lines",
+                        name=name,
+                        line=dict(color=colors[class_idx % len(colors)]),
+                    )
+                )
+
+        # Add chance level line
+        if plot_chance_level:
+            fig.add_trace(
+                go.Scatter(
+                    x=[0, 1],
+                    y=[0, 1],
+                    mode="lines",
+                    name="Chance level (AUC = 0.5)",
+                    line=dict(dash="dash", color="black"),
+                )
+            )
+
+    def _add_plotly_comparison_estimator(
+        self, fig, roc_curve_kwargs, plot_chance_level, chance_level_kwargs
+    ):
+        """Add ROC curves for comparison of estimators to Plotly figure."""
+        estimator_names = self.roc_auc["estimator_name"].cat.categories
+        colors = px.colors.qualitative.Set1[: len(estimator_names)]
+
+        if self.ml_task == "binary-classification":
+            for est_idx, est_name in enumerate(estimator_names):
+                query = f"label == {self.pos_label!r} & estimator_name == '{est_name}'"
+                roc_curve_est = self.roc_curve.query(query)
+                roc_auc_est = self.roc_auc.query(query)["roc_auc"].item()
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=roc_curve_est["fpr"],
+                        y=roc_curve_est["tpr"],
+                        mode="lines",
+                        name=f"{est_name} (AUC = {roc_auc_est:.2f})",
+                        line=dict(color=colors[est_idx % len(colors)]),
+                    )
+                )
+
+        # Add chance level line
+        if plot_chance_level:
+            fig.add_trace(
+                go.Scatter(
+                    x=[0, 1],
+                    y=[0, 1],
+                    mode="lines",
+                    name="Chance level (AUC = 0.5)",
+                    line=dict(dash="dash", color="black"),
+                )
+            )
+
+    def _add_plotly_cross_validated_estimator(
+        self,
+        fig,
+        estimator_name,
+        roc_curve_kwargs,
+        plot_chance_level,
+        chance_level_kwargs,
+    ):
+        """Add ROC curves for cross-validated estimator to Plotly figure."""
+        if self.ml_task == "binary-classification":
+            for split_idx in self.roc_curve["split_index"].cat.categories:
+                query = f"label == {self.pos_label!r} & split_index == {split_idx}"
+                roc_curve_fold = self.roc_curve.query(query)
+                roc_auc_fold = self.roc_auc.query(query)["roc_auc"].item()
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=roc_curve_fold["fpr"],
+                        y=roc_curve_fold["tpr"],
+                        mode="lines",
+                        name=f"Fold #{split_idx + 1} (AUC = {roc_auc_fold:.2f})",
+                        opacity=0.6,
+                    )
+                )
+        else:  # multiclass-classification
+            labels = self.roc_curve["label"].cat.categories
+            colors = px.colors.qualitative.Set1[: len(labels)]
+
+            for class_idx, class_label in enumerate(labels):
+                query = f"label == {class_label}"
+                roc_curve_class = self.roc_curve.query(query)
+                roc_auc_class = self.roc_auc.query(query)["roc_auc"].item()
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=roc_curve_class["fpr"],
+                        y=roc_curve_class["tpr"],
+                        mode="lines",
+                        name=(
+                            f"{str(class_label).title()} (AUC = {roc_auc_class:.2f})"
+                        ),
+                        line=dict(
+                            color=colors[class_idx % len(colors)],
+                            dash=["solid", "dash", "dot"][class_idx % 3],
+                        ),
+                        opacity=0.8,
+                    )
+                )
+
+        # Add chance level line
+        if plot_chance_level:
+            fig.add_trace(
+                go.Scatter(
+                    x=[0, 1],
+                    y=[0, 1],
+                    mode="lines",
+                    name="Chance level (AUC = 0.5)",
+                    line=dict(dash="dash", color="black"),
+                )
+            )
+
+    def _add_plotly_comparison_cross_validation(
+        self, fig, roc_curve_kwargs, plot_chance_level, chance_level_kwargs
+    ):
+        """Add ROC curves for comparison of cross-validated estimators to Plotly figure.
+
+        This method adds multiple ROC curves to compare cross-validated estimators
+        on the provided Plotly figure.
+        """
+        estimator_names = self.roc_auc["estimator_name"].cat.categories
+        colors = px.colors.qualitative.Set1[: len(estimator_names)]
+
+        if self.ml_task == "binary-classification":
+            for report_idx, estimator_name in enumerate(estimator_names):
+                query = f"estimator_name == '{estimator_name}'"
+                roc_curve_est = self.roc_curve.query(query)
+                roc_auc_est = self.roc_auc.query(query)["roc_auc"]
+
+                for split_idx, segment in roc_curve_est.groupby(
+                    "split_index", observed=True
+                ):
+                    showlegend = split_idx == 0  # Only show legend for first fold
+                    name = (
+                        (
+                            f"{estimator_name} (AUC = {roc_auc_est.mean():.2f} +/- "
+                            f"{roc_auc_est.std():.2f})"
+                        )
+                        if showlegend
+                        else None
+                    )
+
+                    fig.add_trace(
+                        go.Scatter(
+                            x=segment["fpr"],
+                            y=segment["tpr"],
+                            mode="lines",
+                            name=name,
+                            showlegend=showlegend,
+                            legendgroup=estimator_name,
+                            line=dict(color=colors[report_idx % len(colors)]),
+                            opacity=0.6,
+                        )
+                    )
+        else:  # multiclass-classification
+            labels = self.roc_curve["label"].cat.categories
+            colors = px.colors.qualitative.Set1[: len(labels)]
+
+            for class_label in labels:
+                for est_idx, estimator_name in enumerate(estimator_names):
+                    query = (
+                        f"label == {class_label} & estimator_name == '{estimator_name}'"
+                    )
+                    roc_auc_class = self.roc_auc.query(query)["roc_auc"]
+
+                    for split_idx in self.roc_curve["split_index"].cat.categories:
+                        fold_query = (
+                            f"label == {class_label} & "
+                            f"estimator_name == '{estimator_name}' & "
+                            f"split_index == {split_idx}"
+                        )
+                        roc_curve_fold = self.roc_curve.query(fold_query)
+                        showlegend = split_idx == 0  # Only show legend for first fold
+                        name = (
+                            (
+                                f"{estimator_name} - {str(class_label).title()} "
+                                f"(AUC = {roc_auc_class.mean():.2f} +/- "
+                                f"{roc_auc_class.std():.2f})"
+                            )
+                            if showlegend
+                            else None
+                        )
+
+                        fig.add_trace(
+                            go.Scatter(
+                                x=roc_curve_fold["fpr"],
+                                y=roc_curve_fold["tpr"],
+                                mode="lines",
+                                name=name,
+                                showlegend=showlegend,
+                                legendgroup=f"{estimator_name}_{class_label}",
+                                line=dict(color=colors[est_idx % len(colors)]),
+                                opacity=0.3,
+                            )
+                        )
+
+        if plot_chance_level:
+            fig.add_trace(
+                go.Scatter(
+                    x=[0, 1],
+                    y=[0, 1],
+                    mode="lines",
+                    name="Chance level (AUC = 0.5)",
+                    line=dict(dash="dash", color="black"),
+                )
+            )
+
     @StyleDisplayMixin.style_plot
     def plot(
         self,
@@ -685,6 +1038,7 @@ class RocCurveDisplay(
         plot_chance_level: bool = True,
         chance_level_kwargs: Optional[dict[str, Any]] = None,
         despine: bool = True,
+        backend: Literal["matplotlib", "plotly"] = "matplotlib",
     ) -> None:
         """Plot visualization.
 
@@ -722,7 +1076,19 @@ class RocCurveDisplay(
         >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
+        >>> display.plot(backend="plotly")
         """
+        if backend == "plotly":
+            fig = self._create_plotly_figure(
+                estimator_name=estimator_name,
+                roc_curve_kwargs=roc_curve_kwargs,
+                plot_chance_level=plot_chance_level,
+                chance_level_kwargs=chance_level_kwargs,
+            )
+            self.fig_ = fig
+            fig.show()
+            return
+
         if (
             self.report_type == "comparison-cross-validation"
             and self.ml_task == "multiclass-classification"
