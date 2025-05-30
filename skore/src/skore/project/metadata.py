@@ -63,21 +63,23 @@ class Metadata(DataFrame):
             if isinstance(value, BaseEstimator) and not isinstance(value, FeatureUnion):
                 itemized_pipeline.append(value)
 
-        class_names = list(set(str(type(est)) for est in itemized_pipeline))
+        class_names = set(type(est) for est in itemized_pipeline)
 
-        sklearn_regex = re.compile(r"sklearn\.(\w+)\.(\w+)")
-        skrub_regex = re.compile(r"skrub\.(\w+)\.(\w+)")
+        sklearn_regex = re.compile(r"sklearn\.(\w+)\.")
+        skrub_regex = re.compile(r"skrub\.(\w+)\.")
 
         pipe_steps: dict[str, list[str]] = defaultdict(list)
         for estimator_class in class_names:
-            sklearn_match = sklearn_regex.search(estimator_class)
-            skrub_match = skrub_regex.search(estimator_class)
+            class_name = estimator_class.__name__
+            estimator_class_str = str(estimator_class)
+            sklearn_match = sklearn_regex.search(estimator_class_str)
+            skrub_match = skrub_regex.search(estimator_class_str)
             if sklearn_match is not None:
-                module, class_name = sklearn_match.groups()
+                module = sklearn_match.group(1)
             elif skrub_match is not None:
-                module, class_name = skrub_match.groups()
+                module = skrub_match.group(1)
             else:
-                module, class_name = "other", estimator_class
+                module = "other"
             pipe_steps[module].append(class_name)
 
         return pipe_steps
