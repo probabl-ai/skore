@@ -68,8 +68,7 @@ class Metadata(DataFrame):
         sklearn_regex = re.compile(r"sklearn\.(\w+)\.(\w+)")
         skrub_regex = re.compile(r"skrub\.(\w+)\.(\w+)")
 
-        # pipe_steps: dict[str, list[str]] = dict()
-        pipe_steps = defaultdict(list)
+        pipe_steps: dict[str, list[str]] = defaultdict(list)
         for estimator_class in class_names:
             sklearn_match = sklearn_regex.search(estimator_class)
             skrub_match = skrub_regex.search(estimator_class)
