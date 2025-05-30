@@ -1283,7 +1283,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
         average: {"threshold"}, default=None
             Method to use for averaging cross-validation ROC curves.
-            Only implemented for threshold averaging [1]_.
+            Possible values are:
+            - `None`: No averaging.
+            - `"threshold"`: Threshold averaging [1]_.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
