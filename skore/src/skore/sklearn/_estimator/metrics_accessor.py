@@ -21,7 +21,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import PositiveLabel, SKLearnScorer, YPlotData
+from skore.sklearn.types import _DEFAULT, PositiveLabel, Scoring, ScoringName, YPlotData
 from skore.utils._accessor import (
     _check_all_checks,
     _check_estimator_has_method,
@@ -63,10 +63,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        scoring: Optional[list[Union[str, Callable, SKLearnScorer]]] = None,
-        scoring_names: Optional[list[Union[str, None]]] = None,
+        scoring: Optional[Union[Scoring, list[Scoring]]] = None,
+        scoring_names: Optional[Union[ScoringName, list[ScoringName]]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
     ) -> pd.DataFrame:
@@ -89,8 +89,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : list of str, callable, or scorer, default=None
-            The metrics to report. The possible values in the list are:
+        scoring : str, callable, scorer or list of such instances, default=None
+            The metrics to report. The possible values (whether or not in a list) are:
 
             - if a string, either one of the built-in metrics or a scikit-learn scorer
               name. You can get the possible list of string using
@@ -103,15 +103,18 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
               same parameter name with different values), you can use scikit-learn
               scorers as provided by :func:`sklearn.metrics.make_scorer`.
 
-        scoring_names : list of str, default=None
+        scoring_names : str, None or list of such instances, default=None
             Used to overwrite the default scoring names in the report. It should be of
             the same length as the `scoring` parameter.
 
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         indicator_favorability : bool, default=False
             Whether or not to add an indicator of the favorability of the metric as
@@ -135,8 +138,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
-        >>> report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+        >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
+        >>> report.metrics.report_metrics(indicator_favorability=True)
                     LogisticRegression Favorability
         Metric
         Precision              0.98...         (↗︎)
@@ -144,13 +147,20 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
-        >>> report.metrics.report_metrics(
-        ...     scoring=["f1"], pos_label=1, indicator_favorability=True
-        ... )
+        >>> report.metrics.report_metrics(scoring=["f1"], indicator_favorability=True)
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
         """
+        if pos_label is _DEFAULT:
+            pos_label = self._parent.pos_label
+
+        if scoring is not None and not isinstance(scoring, list):
+            scoring = [scoring]
+
+        if scoring_names is not None and not isinstance(scoring_names, list):
+            scoring_names = [scoring_names]
+
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
             # FIXME: we are still recomputing the hash for all the metrics that we
@@ -684,7 +694,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
     ) -> Union[float, dict[PositiveLabel, float]]:
         """Compute the precision score.
 
@@ -730,8 +740,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -775,7 +788,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
     ) -> Union[float, dict[PositiveLabel, float]]:
         """Private interface of `precision` to be able to pass `data_source_hash`.
 
@@ -783,6 +796,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
         """
+        if pos_label is _DEFAULT:
+            pos_label = self._parent.pos_label
+
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
@@ -814,7 +830,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
     ) -> Union[float, dict[PositiveLabel, float]]:
         """Compute the recall score.
 
@@ -861,8 +877,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -906,7 +925,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
     ) -> Union[float, dict[PositiveLabel, float]]:
         """Private interface of `recall` to be able to pass `data_source_hash`.
 
@@ -914,6 +933,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
         """
+        if pos_label is _DEFAULT:
+            pos_label = self._parent.pos_label
+
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
@@ -1544,6 +1566,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
         """
+        pos_label = kwargs.pop("pos_label", self._parent.pos_label)
+
         return self._compute_metric_scores(
             metric_function,
             X=X,
@@ -1551,6 +1575,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method=response_method,
+            pos_label=pos_label,
             **kwargs,
         )
 
@@ -1737,7 +1762,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1758,8 +1783,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -1779,6 +1807,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
+        if pos_label is _DEFAULT:
+            pos_label = self._parent.pos_label
+
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
         display = cast(
@@ -1805,7 +1836,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
@@ -1826,8 +1857,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -1847,6 +1881,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> display = report.metrics.precision_recall()
         >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
+        if pos_label is _DEFAULT:
+            pos_label = self._parent.pos_label
+
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
         display = cast(

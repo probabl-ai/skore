@@ -3,11 +3,10 @@ import pytest
 from numpy.testing import assert_allclose
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import accuracy_score, get_scorer, mean_absolute_error
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot.metrics import (
-    PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
 )
 
@@ -510,26 +509,6 @@ def test_comparison_report_aggregate(report):
     "plot_ml_task, plot_name, plot_cls, plot_attributes",
     [
         (
-            "binary_classification",
-            "precision_recall",
-            PrecisionRecallCurveDisplay,
-            {
-                "precision": {
-                    1: [
-                        [0.4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        [0.4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    ],
-                },
-                "recall": {
-                    1: [
-                        [1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0],
-                        [1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0],
-                    ]
-                },
-                "average_precision": {1: [0.99, 0.99]},
-            },
-        ),
-        (
             "regression",
             "prediction_error",
             PredictionErrorDisplay,
@@ -678,3 +657,26 @@ def test_comparison_report_timings_flat_index(report):
     # Check that expected time measurements are in index with _s suffix
     assert "fit_time_s" in results.index
     assert "predict_time_s" in results.index
+
+
+@pytest.mark.parametrize(
+    "scoring, scoring_kwargs",
+    [
+        ("accuracy", None),
+        ("neg_log_loss", None),
+        (accuracy_score, {"response_method": "predict"}),
+        (get_scorer("accuracy"), None),
+    ],
+)
+def test_comparison_report_estimator_report_metrics_scoring_single_list_equivalence(
+    report, scoring, scoring_kwargs
+):
+    """Check that passing a single string, callable, scorer is equivalent to passing a
+    list with a single element."""
+    result_single = report.metrics.report_metrics(
+        scoring=scoring, scoring_kwargs=scoring_kwargs
+    )
+    result_list = report.metrics.report_metrics(
+        scoring=[scoring], scoring_kwargs=scoring_kwargs
+    )
+    assert result_single.equals(result_list)
