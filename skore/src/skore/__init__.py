@@ -7,6 +7,7 @@ import joblib
 from rich.console import Console
 from rich.theme import Theme
 
+from .dataset_utils import compare_datasets, check_data_leakage
 from skore._config import config_context, get_config, set_config
 from skore.externals._sklearn_compat import parse_version
 from skore.project import Project
@@ -37,6 +38,8 @@ __all__ = [
     "config_context",
     "get_config",
     "set_config",
+    "compare_datasets",
+    "check_data_leakage",
 ]
 
 logger = logging.getLogger(__name__)
