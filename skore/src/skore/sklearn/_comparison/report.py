@@ -13,6 +13,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._estimator.report import EstimatorReport
+from skore.sklearn._plot import PairPlotDisplay
 from skore.utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
@@ -397,6 +398,55 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
             for report in self.reports_
         ]
+
+    def pairwise_plot(
+        self,
+        perf_metric_x: str,
+        perf_metric_y: str,
+        data_source: Literal["test", "train", "X_y"] = "test",
+        pos_label: Optional[Any] = None,
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+    ):
+        """Plot a given performance metric against another.
+
+        Parameters
+        ----------
+        perf_metric_x : str
+            The performance metric to plot on the abscissa axis.
+
+        perf_metric_y : str
+            The performance metrics to plot on the ordinates axis.
+
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        pos_label : int, float, bool or str, default=None
+            The positive class when it comes to binary classification. When
+            `response_method="predict_proba"`, it will select the column corresponding
+            to the positive class. When `response_method="decision_function"`, it will
+            negate the decision function if `pos_label` is different from
+            `estimator.classes_[1]`.
+
+        Returns
+        -------
+        A matplotlib plot.
+        """
+        # TODO
+        # - add kwargs (later)
+
+        return PairPlotDisplay.from_metrics(
+            metrics=self.metrics.report_metrics(
+                pos_label=pos_label, data_source=data_source, X=X, y=y
+            ).T.reset_index(),
+            perf_metric_x=perf_metric_x,
+            perf_metric_y=perf_metric_y,
+            data_source=data_source,
+        )
 
     ####################################################################################
     # Methods related to the help and repr
