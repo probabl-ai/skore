@@ -74,12 +74,11 @@ class Metadata(DataFrame):
             skrub_match = skrub_regex.search(estimator_class)
             if sklearn_match is not None:
                 module, class_name = sklearn_match.groups()
-                pipe_steps[module].append(class_name)
             elif skrub_match is not None:
                 module, class_name = skrub_match.groups()
-                pipe_steps[module].append(class_name)
             else:
-                pipe_steps["other"].append(estimator_class)
+                module, class_name = "other", estimator_class
+            pipe_steps[module].append(class_name)
 
         return pipe_steps
 
