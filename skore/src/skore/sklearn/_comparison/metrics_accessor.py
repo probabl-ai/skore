@@ -1628,8 +1628,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
-        if self._parent._reports_type == "CrossValidationReport":
-            raise NotImplementedError()
         display_kwargs = {"subsample": subsample, "seed": seed}
         display = cast(
             PredictionErrorDisplay,
