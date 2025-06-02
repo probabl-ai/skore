@@ -20,6 +20,24 @@ def find_estimators(pipeline: Pipeline) -> dict[str, list[str]]:
     dict[str, list[str]]
         A dict of estimators or transformers class in the pipeline,
         grouped by their module name.
+
+    Examples
+    --------
+    # with a simple scikit-learn pipeline
+    >>> from sklearn.linear import LogisticRegression
+    >>> from sklearn.pipeline import make_pipeline
+    >>> find_estimators(make_pipeline(LogisticRegression()))
+        'defaultdict(list, {'linear_model': ['LogisticRegression']})'
+
+    # with a skrub pipeline
+    >>> from skrub import TableVectorizer
+    >>> find_estimators(TableVectorizer())
+        'defaultdict(list,
+            {'_gap_encoder': ['GapEncoder'],
+             '_datetime_encoder': ['DatetimeEncoder'],
+             'preprocessing': ['OneHotEncoder'],
+             '_table_vectorizer': ['PassThrough']})'
+
     """
     itemized_pipeline = []
     from sklearn.base import BaseEstimator
