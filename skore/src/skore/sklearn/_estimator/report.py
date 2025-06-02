@@ -15,6 +15,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.sklearn.types import _DEFAULT, PositiveLabel
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._measure_time import MeasureTime
 from skore.utils._parallel import Parallel, delayed
@@ -54,6 +55,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Testing target.
+
+    pos_label : int, float, bool or str, default=None
+        For binary classification, the positive class. If `None` and the target labels
+        are `{0, 1}` or `{-1, 1}`, the positive class is set to `1`. For other labels,
+        some metrics might raise an error if `pos_label` is not defined.
 
     Attributes
     ----------
@@ -133,6 +139,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         y_train: Optional[ArrayLike] = None,
         X_test: Optional[ArrayLike] = None,
         y_test: Optional[ArrayLike] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> None:
         # used to know if a parent launch a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
@@ -158,6 +165,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_train = y_train
         self._X_test = X_test
         self._y_test = y_test
+        self._pos_label = pos_label
         self.fit_time_ = fit_time
 
         self._initialize_state()
@@ -294,7 +302,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "predict", "predict_proba", "decision_function"
         ] = "predict",
         X: Optional[ArrayLike] = None,
-        pos_label: Optional[Any] = None,
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
     ) -> ArrayLike:
         """Get estimator's predictions.
 
@@ -308,23 +316,26 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "X_y" : use the provided `X` and `y` to compute the predictions.
 
-        response_method : {"predict", "predict_proba", "decision_function"},
-        default:"predict"
-
+        response_method : {"predict", "predict_proba", "decision_function"}, \
+                default="predict"
             The response method to use.
 
         X : array-like of shape (n_samples, n_features), optional
             When `data_source` is "X_y", the input features on which to compute the
             response method.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class when it comes to binary classification. When
-            `response_method="predict_proba"`, it will select the column corresponding
-            to the positive class. When `response_method="decision_function"`, it will
-            negate the decision function if `pos_label` is different from
-            `estimator.classes_[1]`.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing predictions in
+            binary classification cases. By default, the positive class is set to the
+            one provided when creating the report. If `None`, `estimator_.classes_[1]`
+            is used as positive label.
+
+            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
+            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
+            and `-estimator_.decision_function(X)` for
+            `response_method="decision_function"`.
 
         Returns
         -------
@@ -350,6 +361,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> predictions.shape
         (25,)
         """
+        if pos_label is _DEFAULT:
+            pos_label = self.pos_label
+
         if data_source == "test":
             X_ = self._X_test
         elif data_source == "train":
@@ -411,6 +425,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     @y_test.setter
     def y_test(self, value):
         self._y_test = value
+        self._initialize_state()
+
+    @property
+    def pos_label(self) -> Optional[PositiveLabel]:
+        return self._pos_label
+
+    @pos_label.setter
+    def pos_label(self, value: Optional[PositiveLabel]) -> None:
+        self._pos_label = value
         self._initialize_state()
 
     @property

@@ -1,5 +1,3 @@
-"""Test the `roc_curve` display method."""
-
 from itertools import product
 
 import matplotlib as mpl
@@ -8,9 +6,13 @@ import pytest
 from matplotlib.lines import Line2D
 from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
-from skore.sklearn._plot.metrics.roc_curve import RocCurveDisplay
+from skore.sklearn._plot.metrics.precision_recall_curve import (
+    PrecisionRecallCurveDisplay,
+)
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_roc_curve_display_data as check_display_data
+from skore.utils._testing import (
+    check_precision_recall_curve_display_data as check_display_data,
+)
 
 
 @pytest.fixture
@@ -42,85 +44,84 @@ def multiclass_classification_report(multiclass_classification_data_no_split):
 
 
 def test_binary_classification(pyplot, binary_classification_report):
-    """Check the behaviour of `roc_curve` when ML task is "binary-classification"."""
+    """
+    Check the behaviour of `precision_recall` when ML task is "binary-classification".
+    """
     report = binary_classification_report
-    display = report.metrics.roc()
-    assert isinstance(display, RocCurveDisplay)
+    display = report.metrics.precision_recall()
+    assert isinstance(display, PrecisionRecallCurveDisplay)
     check_display_data(display)
 
     pos_label = 1
     n_reports = len(report.reports_)
-    n_splits = report.reports_[0]._cv_splitter.n_splits
+    n_splits = len(report.reports_[0].estimator_reports_)
 
     display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == n_reports * n_splits
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for i, estimator_name in enumerate(report.report_names_):
-        roc_curve_mpl = display.lines_[i * n_splits]
-        assert isinstance(roc_curve_mpl, Line2D)
-        auc = display.roc_auc.query(
+        precision_recall_mpl = display.lines_[i * n_splits]
+        assert isinstance(precision_recall_mpl, Line2D)
+
+        average_precision = display.average_precision.query(
             f"label == {pos_label} & estimator_name == '{estimator_name}'"
-        )["roc_auc"]
+        )["average_precision"]
 
-        assert roc_curve_mpl.get_label() == (
-            f"{report.report_names_[i]} (AUC = {auc.mean():0.2f} +/- {auc.std():0.2f})"
+        assert precision_recall_mpl.get_label() == (
+            f"{estimator_name} (AUC = {average_precision.mean():0.2f} "
+            f"+/- {average_precision.std():0.2f})"
         )
-        assert list(roc_curve_mpl.get_color()[:3]) == list(default_colors[i][:3])
-
-    assert isinstance(display.chance_level_, mpl.lines.Line2D)
-    assert display.chance_level_.get_label() == "Chance level (AUC = 0.5)"
-    assert display.chance_level_.get_color() == "k"
+        assert list(precision_recall_mpl.get_color()[:3]) == list(default_colors[i][:3])
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == r"Binary-Classification on $\bf{test}$ set"
-    assert len(legend.get_texts()) == n_reports + 1
+    assert len(legend.get_texts()) == n_reports
 
-    assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
-    assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
+    assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
+    assert display.ax_.get_ylabel() == "Precision\n(Positive label: 1)"
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
 def test_multiclass_classification(pyplot, multiclass_classification_report):
-    """Check the behaviour of `roc_curve` when ML task is "multiclass-classification"
-    and `pos_label` is None."""
+    """
+    Check the behaviour of `precision_recall` when ML task is
+    "multiclass-classification" and `pos_label` is None.
+    """
     report = multiclass_classification_report
-    display = report.metrics.roc()
-    assert isinstance(display, RocCurveDisplay)
+    display = report.metrics.precision_recall()
+    assert isinstance(display, PrecisionRecallCurveDisplay)
     check_display_data(display)
 
-    labels = display.roc_curve["label"].unique()
+    labels = display.precision_recall["label"].cat.categories
     n_reports = len(report.reports_)
-    n_splits = report.reports_[0]._cv_splitter.n_splits
+    n_splits = len(report.reports_[0].estimator_reports_)
 
     display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == n_reports * len(labels) * n_splits
+
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for i, ((estimator_idx, estimator_name), label) in enumerate(
         product(enumerate(report.report_names_), labels)
     ):
-        roc_curve_mpl = display.lines_[i * n_splits]
-        assert isinstance(roc_curve_mpl, Line2D)
+        precision_recall_mpl = display.lines_[i * n_splits]
+        assert isinstance(precision_recall_mpl, Line2D)
 
-        auc = display.roc_auc.query(
+        average_precision = display.average_precision.query(
             f"label == {label} & estimator_name == '{estimator_name}'"
-        )["roc_auc"]
+        )["average_precision"]
 
-        assert roc_curve_mpl.get_label() == (
-            f"{estimator_name} (AUC = {auc.mean():0.2f} +/- {auc.std():0.2f})"
+        assert precision_recall_mpl.get_label() == (
+            f"{estimator_name} (AUC = {average_precision.mean():0.2f} "
+            f"+/- {average_precision.std():0.2f})"
         )
-        assert list(roc_curve_mpl.get_color()[:3]) == list(
+        assert list(precision_recall_mpl.get_color()[:3]) == list(
             default_colors[estimator_idx][:3]
         )
-
-    assert isinstance(display.chance_level_, list)
-    assert isinstance(display.chance_level_[0], mpl.lines.Line2D)
-    assert display.chance_level_[0].get_label() == "Chance level (AUC = 0.5)"
-    assert display.chance_level_[0].get_color() == "k"
 
     assert isinstance(display.ax_, np.ndarray)
     for label, ax in zip(labels, display.ax_):
@@ -129,10 +130,10 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
             legend.get_title().get_text()
             == r"Multiclass-Classification on $\bf{test}$ set"
         )
-        assert len(legend.get_texts()) == n_reports + 1
+        assert len(legend.get_texts()) == n_reports
 
-        assert ax.get_xlabel() == f"False Positive Rate\n(Positive label: {label})"
-        assert ax.get_ylabel() == f"True Positive Rate\n(Positive label: {label})"
+        assert ax.get_xlabel() == f"Recall\n(Positive label: {label})"
+        assert ax.get_ylabel() == f"Precision\n(Positive label: {label})"
         assert ax.get_adjustable() == "box"
         assert ax.get_aspect() in ("equal", 1.0)
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
@@ -140,30 +141,27 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
 
 def test_binary_classification_wrong_kwargs(pyplot, binary_classification_report):
     """Check that we raise a proper error message when passing an inappropriate
-    value for the `roc_curve_kwargs` argument."""
+    value for the `pr_curve_kwargs` argument."""
     report = binary_classification_report
-    display = report.metrics.roc()
+    display = report.metrics.precision_recall()
     err_msg = (
-        "You intend to plot multiple curves. We expect `roc_curve_kwargs` to be a "
+        "You intend to plot multiple curves. We expect `pr_curve_kwargs` to be a "
         "list of dictionaries with the same length as the number of curves. "
         "Got 2 instead of 10."
     )
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(roc_curve_kwargs=[{}, {}])
+        display.plot(pr_curve_kwargs=[{}, {}])
 
 
-@pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}] * 10])
+@pytest.mark.parametrize("pr_curve_kwargs", [[{"color": "red"}] * 10])
 def test_binary_classification_kwargs(
-    pyplot, binary_classification_report, roc_curve_kwargs
+    pyplot, binary_classification_report, pr_curve_kwargs
 ):
-    """Check that we can pass keyword arguments to the ROC curve plot."""
+    """Check that we can pass keyword arguments to the PR curve plot."""
     report = binary_classification_report
-    display = report.metrics.roc()
-    display.plot(
-        roc_curve_kwargs=roc_curve_kwargs, chance_level_kwargs={"color": "blue"}
-    )
+    display = report.metrics.precision_recall()
+    display.plot(pr_curve_kwargs=pr_curve_kwargs)
     assert display.lines_[0].get_color() == "red"
-    assert display.chance_level_.get_color() == "blue"
 
     # check the `.style` display setter
     display.plot()  # default style
@@ -173,60 +171,48 @@ def test_binary_classification_kwargs(
         np.float64(0.7058823529411765),
         np.float64(1.0),
     )
-    assert display.chance_level_.get_color() == "k"
 
-    display.set_style(
-        roc_curve_kwargs=roc_curve_kwargs, chance_level_kwargs={"color": "blue"}
-    )
+    display.set_style(pr_curve_kwargs=pr_curve_kwargs)
     display.plot()
     assert display.lines_[0].get_color() == "red"
-    assert display.chance_level_.get_color() == "blue"
 
     # overwrite the style that was set above
-    display.plot(
-        roc_curve_kwargs=[{"color": "#1f77b4"}] * 10,
-        chance_level_kwargs={"color": "red"},
-    )
+    display.plot(pr_curve_kwargs=[{"color": "#1f77b4"}] * 10)
     assert display.lines_[0].get_color() == "#1f77b4"
-    assert display.chance_level_.get_color() == "red"
 
 
 def test_multiclass_classification_wrong_kwargs(
     pyplot, multiclass_classification_report
 ):
     """Check that we raise a proper error message when passing an inappropriate
-    value for the `roc_curve_kwargs` argument."""
+    value for the `pr_curve_kwargs` argument."""
     report = multiclass_classification_report
-    display = report.metrics.roc()
+    display = report.metrics.precision_recall()
     err_msg = "You intend to plot multiple curves."
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(roc_curve_kwargs=[{}, {}])
+        display.plot(pr_curve_kwargs=[{}, {}])
 
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(roc_curve_kwargs={})
+        display.plot(pr_curve_kwargs={})
 
 
 def test_multiclass_classification_kwargs(pyplot, multiclass_classification_report):
-    """Check that we can pass keyword arguments to the ROC curve plot for
+    """Check that we can pass keyword arguments to the PR curve plot for
     multiclass classification."""
     report = multiclass_classification_report
-    display = report.metrics.roc()
+    display = report.metrics.precision_recall()
     display.plot(
-        roc_curve_kwargs=(
+        pr_curve_kwargs=(
             [{"color": "red"}] * 10
             + [{"color": "blue"}] * 10
             + [{"color": "green"}] * 10
-        ),
-        chance_level_kwargs={"color": "blue"},
+        )
     )
     assert display.lines_[0].get_color() == "red"
     assert display.lines_[10].get_color() == "blue"
     assert display.lines_[20].get_color() == "green"
-    assert display.chance_level_[0].get_color() == "blue"
 
-    display.plot(plot_chance_level=False)
-    assert display.chance_level_ is None
+    display.plot()
 
     display.plot(despine=False)
     assert display.ax_[0].spines["top"].get_visible()
-    assert display.ax_[0].spines["right"].get_visible()

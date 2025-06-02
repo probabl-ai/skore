@@ -13,8 +13,9 @@ quickly get insights from any scikit-learn estimator.
 # Loading our dataset and defining our estimator
 # ==============================================
 #
-# First, we load a dataset from skrub. Our goal is to predict if a healthcare manufacturing companies paid a
-# medical doctors or hospitals, in order to detect potential conflict of interest.
+# First, we load a dataset from skrub. Our goal is to predict if a healthcare
+# manufacturing companies paid a medical doctors or hospitals, in order to detect
+# potential conflict of interest.
 
 # %%
 from skrub.datasets import fetch_open_payments
@@ -46,8 +47,8 @@ pos_label, neg_label = "allowed", "disallowed"
 # and a validation set.
 from skore import train_test_split
 
-# If you have many dataframes to split on, you can always ask train_test_split to return a dictionary.
-# Remember, it needs to be passed as a keyword argument!
+# If you have many dataframes to split on, you can always ask train_test_split to return
+# a dictionary. Remember, it needs to be passed as a keyword argument!
 split_data = train_test_split(X=df, y=y, random_state=42, as_dict=True)
 
 # %%
@@ -78,7 +79,7 @@ estimator
 # detect that our estimator is unfitted and will fit it for us on the training data.
 from skore import EstimatorReport
 
-report = EstimatorReport(estimator, **split_data)
+report = EstimatorReport(estimator, **split_data, pos_label=pos_label)
 
 # %%
 #
@@ -105,7 +106,7 @@ report.metrics.help()
 import time
 
 start = time.time()
-metric_report = report.metrics.report_metrics(pos_label=pos_label)
+metric_report = report.metrics.report_metrics()
 end = time.time()
 metric_report
 
@@ -123,7 +124,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # requesting the same metrics report again.
 
 start = time.time()
-metric_report = report.metrics.report_metrics(pos_label=pos_label)
+metric_report = report.metrics.report_metrics()
 end = time.time()
 metric_report
 
@@ -188,10 +189,7 @@ report.metrics.log_loss(data_source="train")
 
 start = time.time()
 metric_report = report.metrics.report_metrics(
-    data_source="X_y",
-    X=split_data["X_test"],
-    y=split_data["y_test"],
-    pos_label=pos_label,
+    data_source="X_y", X=split_data["X_test"], y=split_data["y_test"]
 )
 end = time.time()
 metric_report
@@ -208,10 +206,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # %%
 start = time.time()
 metric_report = report.metrics.report_metrics(
-    data_source="X_y",
-    X=split_data["X_test"],
-    y=split_data["y_test"],
-    pos_label=pos_label,
+    data_source="X_y", X=split_data["X_test"], y=split_data["y_test"]
 )
 end = time.time()
 metric_report
@@ -298,7 +293,6 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 report.metrics.report_metrics(
     scoring=["precision", "recall", operational_decision_cost],
     scoring_names=["Precision", "Recall", "Operational Decision Cost"],
-    pos_label=pos_label,
     scoring_kwargs={"amount": amount, "response_method": "predict"},
 )
 
@@ -310,7 +304,7 @@ report.metrics.report_metrics(
 # function.
 from sklearn.metrics import make_scorer, f1_score
 
-f1_scorer = make_scorer(f1_score, response_method="predict", pos_label=pos_label)
+f1_scorer = make_scorer(f1_score, response_method="predict")
 operational_decision_cost_scorer = make_scorer(
     operational_decision_cost, response_method="predict", amount=amount
 )
@@ -332,7 +326,7 @@ report.metrics.help()
 # %%
 #
 # Let's start by plotting the ROC curve for our binary classification task.
-display = report.metrics.roc(pos_label=pos_label)
+display = report.metrics.roc()
 display.plot()
 
 # %%
@@ -358,7 +352,7 @@ _ = display.ax_.set_title("Example of a ROC curve")
 # performance gain we can get.
 start = time.time()
 # we already trigger the computation of the predictions in a previous call
-display = report.metrics.roc(pos_label=pos_label)
+display = report.metrics.roc()
 display.plot()
 end = time.time()
 
@@ -372,7 +366,7 @@ report.clear_cache()
 
 # %%
 start = time.time()
-display = report.metrics.roc(pos_label=pos_label)
+display = report.metrics.roc()
 display.plot()
 end = time.time()
 
@@ -403,14 +397,15 @@ cm_display.plot()
 plt.show()
 
 # %%
-# More plotting options are available, check out the API on the confusion matrix for more information.
-# We can customize the display labels:
+# More plotting options are available, check out the API on the confusion matrix for
+# more information. We can customize the display labels:
 cm_display = report.metrics.confusion_matrix(display_labels=["Disallowed", "Allowed"])
 cm_display.plot()
 plt.show()
 
 # %%
-# Finally, the confusion matrix can also be exported as a pandas DataFrame for further analysis:
+# Finally, the confusion matrix can also be exported as a pandas DataFrame for further
+# analysis:
 cm_frame = cm_display.frame()
 cm_frame
 
