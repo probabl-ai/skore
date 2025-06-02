@@ -40,5 +40,4 @@ def test_find_estimators_homemade():
     pip = make_pipeline(MockRegressor())
     extracted = find_estimators(pip)
     assert len(extracted) == 1
-    assert extracted == 3
     assert extracted.get("other") == ["MockRegressor"]
