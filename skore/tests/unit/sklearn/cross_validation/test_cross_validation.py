@@ -15,9 +15,7 @@ from sklearn.metrics import (
     get_scorer,
     make_scorer,
     median_absolute_error,
-    precision_score,
     r2_score,
-    recall_score,
 )
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -359,7 +357,7 @@ def test_cross_validation_report_display_regression(pyplot, regression_data, dis
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_cross_validation_report_display_binary_classification_pos_label(
-    pyplot, binary_classification_data, metric
+    pyplot, metric
 ):
     """Check the behaviour of the display methods when `pos_label` needs to be set."""
     X, y = make_classification(
@@ -1058,12 +1056,8 @@ def test_cross_validation_timings_flat_index(binary_classification_data):
     ]
 
 
-@pytest.mark.parametrize(
-    "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
-)
-def test_cross_validation_report_report_metrics_pos_label_overwrite(
-    binary_classification_data, metric, metric_fn
-):
+@pytest.mark.parametrize("metric", [("precision"), ("recall")])
+def test_cross_validation_report_report_metrics_pos_label_overwrite(metric):
     """Check that `pos_label` can be overwritten in `report_metrics`"""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
@@ -1099,12 +1093,8 @@ def test_cross_validation_report_report_metrics_pos_label_overwrite(
     )
 
 
-@pytest.mark.parametrize(
-    "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
-)
-def test_estimator_report_precision_recall_pos_label_overwrite(
-    binary_classification_data, metric, metric_fn
-):
+@pytest.mark.parametrize("metric", [("precision"), ("recall")])
+def test_estimator_report_precision_recall_pos_label_overwrite(metric):
     """Check that `pos_label` can be overwritten in `report_metrics`"""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
