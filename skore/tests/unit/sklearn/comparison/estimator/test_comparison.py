@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 from numpy.testing import assert_allclose
@@ -680,3 +681,37 @@ def test_comparison_report_estimator_report_metrics_scoring_single_list_equivale
         scoring=[scoring], scoring_kwargs=scoring_kwargs
     )
     assert result_single.equals(result_list)
+
+
+@pytest.mark.parametrize("metric", ["roc", "precision_recall"])
+def test_comparison_report_display_binary_classification_pos_label(pyplot, metric):
+    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    report_1 = EstimatorReport(
+        LogisticRegression(C=1), X_train=X, X_test=X, y_train=y, y_test=y
+    )
+    report_2 = EstimatorReport(
+        LogisticRegression(C=2), X_train=X, X_test=X, y_train=y, y_test=y
+    )
+    report = ComparisonReport([report_1, report_2])
+    with pytest.raises(ValueError, match="pos_label is not specified"):
+        getattr(report.metrics, metric)()
+
+    report_1 = EstimatorReport(
+        LogisticRegression(C=1), X_train=X, X_test=X, y_train=y, y_test=y, pos_label="A"
+    )
+    report_2 = EstimatorReport(
+        LogisticRegression(C=2), X_train=X, X_test=X, y_train=y, y_test=y, pos_label="A"
+    )
+    report = ComparisonReport([report_1, report_2])
+    display = getattr(report.metrics, metric)()
+    display.plot()
+    assert "Positive label: A" in display.ax_.get_xlabel()
+
+    display = getattr(report.metrics, metric)(pos_label="B")
+    display.plot()
+    assert "Positive label: B" in display.ax_.get_xlabel()

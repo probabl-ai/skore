@@ -1,6 +1,8 @@
+import numpy as np
 import pytest
-from sklearn.datasets import make_regression
+from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
 
 
@@ -69,3 +71,29 @@ def test_get_predictions(report_cv_reports, classification_data, data_source):
     assert len(predictions) == len(report_cv_reports.reports_)
     for i, cv_report in enumerate(report_cv_reports.reports_):
         assert len(predictions[i]) == cv_report._cv_splitter.n_splits
+
+
+@pytest.mark.parametrize("metric", ["roc", "precision_recall"])
+def test_comparison_report_display_binary_classification_pos_label(pyplot, metric):
+    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    report_1 = CrossValidationReport(LogisticRegression(C=1), X, y)
+    report_2 = CrossValidationReport(LogisticRegression(C=2), X, y)
+    report = ComparisonReport([report_1, report_2])
+    with pytest.raises(ValueError, match="pos_label is not specified"):
+        getattr(report.metrics, metric)()
+
+    report_1 = CrossValidationReport(LogisticRegression(C=1), X, y, pos_label="A")
+    report_2 = CrossValidationReport(LogisticRegression(C=2), X, y, pos_label="A")
+    report = ComparisonReport([report_1, report_2])
+    display = getattr(report.metrics, metric)()
+    display.plot()
+    assert "Positive label: A" in display.ax_.get_xlabel()
+
+    display = getattr(report.metrics, metric)(pos_label="B")
+    display.plot()
+    assert "Positive label: B" in display.ax_.get_xlabel()

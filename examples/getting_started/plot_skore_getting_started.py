@@ -182,7 +182,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 gb = GradientBoostingClassifier(random_state=0)
 gb_report = EstimatorReport(
-    gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+    gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, pos_label=1
 )
 
 # %%
@@ -326,7 +326,7 @@ pprint(reports_get)
 
 # %%
 comparator = ComparisonReport(reports=reports_get)
-comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+comparator.metrics.report_metrics(indicator_favorability=True)
 
 # %%
 # We can retrieve any accessor of our stored estimator reports, for example
