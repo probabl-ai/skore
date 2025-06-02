@@ -765,3 +765,41 @@ def test_comparison_report_report_metrics_pos_label_overwrite(metric):
             result.loc[metric.capitalize(), report_name]
             == result_both_labels.loc[(metric.capitalize(), "A"), report_name]
         )
+
+
+@pytest.mark.parametrize("metric", [("precision"), ("recall")])
+def test_comparison_report_precision_recall_pos_label_overwrite(metric):
+    """Check that `pos_label` can be overwritten in `report_metrics`"""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    report_1 = EstimatorReport(
+        LogisticRegression(), X_train=X, X_test=X, y_train=y, y_test=y
+    )
+    report_2 = EstimatorReport(
+        LogisticRegression(), X_train=X, X_test=X, y_train=y, y_test=y
+    )
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    result_both_labels = getattr(report.metrics, metric)().reset_index()
+    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
+    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+
+    result = getattr(report.metrics, metric)(pos_label="B").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    for report_name in report.report_names_:
+        assert (
+            result.loc[metric.capitalize(), report_name]
+            == result_both_labels.loc[(metric.capitalize(), "B"), report_name]
+        )
+
+    result = getattr(report.metrics, metric)(pos_label="A").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    for report_name in report.report_names_:
+        assert (
+            result.loc[metric.capitalize(), report_name]
+            == result_both_labels.loc[(metric.capitalize(), "A"), report_name]
+        )
