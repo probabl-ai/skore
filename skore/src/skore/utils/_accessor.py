@@ -102,7 +102,7 @@ def _check_estimator_report_has_method(
     method_name: str,
 ) -> Callable:
     def check(accessor: Any) -> bool:
-        estimator_report = accessor._parent.estimator_reports_[0]
+        estimator_report = accessor._parent.reports_[0]
 
         if not hasattr(estimator_report, accessor_name):
             raise AttributeError(

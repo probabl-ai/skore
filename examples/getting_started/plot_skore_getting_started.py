@@ -159,7 +159,7 @@ roc_plot_cv.plot()
 # for example getting the report metrics for the first fold only:
 
 # %%
-cv_report.estimator_reports_[0].metrics.report_metrics()
+cv_report.reports_[0].metrics.report_metrics()
 
 # %%
 # .. seealso::

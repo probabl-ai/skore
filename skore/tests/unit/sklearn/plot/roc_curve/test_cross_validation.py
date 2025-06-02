@@ -24,7 +24,7 @@ def test_binary_classification(
     assert isinstance(display, RocCurveDisplay)
 
     check_display_data(display)
-    pos_label = report.estimator_reports_[0].estimator_.classes_[1]
+    pos_label = report.reports_[0].estimator_.classes_[1]
     assert (
         list(display.roc_curve["label"].unique())
         == list(display.roc_auc["label"].unique())
@@ -89,7 +89,7 @@ def test_multiclass_classification(
 
     # check the structure of the attributes
     check_display_data(display)
-    class_labels = report.estimator_reports_[0].estimator_.classes_
+    class_labels = report.reports_[0].estimator_.classes_
     assert (
         list(display.roc_curve["label"].unique())
         == list(display.roc_auc["label"].unique())

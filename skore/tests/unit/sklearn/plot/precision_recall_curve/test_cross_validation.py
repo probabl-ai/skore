@@ -29,7 +29,7 @@ def test_binary_classification(
 
     display.plot()
 
-    pos_label = report.estimator_reports_[0].estimator_.classes_[1]
+    pos_label = report.reports_[0].estimator_.classes_[1]
 
     assert hasattr(display, "ax_")
     assert hasattr(display, "figure_")
@@ -84,7 +84,7 @@ def test_multiclass_classification(
 
     display.plot()
 
-    class_labels = report.estimator_reports_[0].estimator_.classes_
+    class_labels = report.reports_[0].estimator_.classes_
 
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * cv
