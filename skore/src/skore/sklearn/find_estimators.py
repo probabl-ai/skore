@@ -30,8 +30,8 @@ def find_estimators(pipeline: Pipeline) -> dict[str, list[str]]:
 
     classes = set(type(est) for est in itemized_pipeline)
 
-    sklearn_regex = re.compile(r"sklearn\.(\w+)\.")
-    skrub_regex = re.compile(r"skrub\.(\w+)\.")
+    sklearn_regex = re.compile(r"class \'sklearn\.(\w+)\.")
+    skrub_regex = re.compile(r"class \'skrub\.(\w+)\.")
 
     pipe_steps: dict[str, list[str]] = defaultdict(list)
     for estimator_class in classes:
