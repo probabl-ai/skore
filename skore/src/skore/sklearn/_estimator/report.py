@@ -399,7 +399,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def estimator(self) -> BaseEstimator:
         return self._estimator
 
-    estimator_ = property(estimator)
+    @property
+    def estimator_(self) -> BaseEstimator:
+        return self._estimator
 
     @property
     def X_train(self) -> Optional[ArrayLike]:

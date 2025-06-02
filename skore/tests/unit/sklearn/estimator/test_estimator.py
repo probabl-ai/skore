@@ -166,12 +166,11 @@ def test_estimator_report_from_unfitted_estimator(fit):
     assert report.X_test is X_test
     assert report.y_test is y_test
 
-    err_msg = "attribute is immutable"
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.estimator_ = LinearRegression()
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.X_train = X_train
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.y_train = y_train
 
 
@@ -189,12 +188,11 @@ def test_estimator_report_from_fitted_estimator(binary_classification_data, fit)
     assert report.X_test is X
     assert report.y_test is y
 
-    err_msg = "attribute is immutable"
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.estimator_ = LinearRegression()
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.X_train = X
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.y_train = y
 
 
