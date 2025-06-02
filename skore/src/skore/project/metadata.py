@@ -49,8 +49,7 @@ class Metadata(DataFrame):
 
         Notes
         -----
-        This function is not intended @staticmethod
-        for direct use. Instead simply use the accessor
+        This function is not intended for direct use. Instead simply use the accessor
         :meth:`skore.Project.reports.metadata`.
         """
         metadata = DataFrame(project.reports.metadata(), copy=False)
