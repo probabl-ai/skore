@@ -107,3 +107,27 @@ def test_comparison_report_favorability_undefined_metrics(report):
     expected_values = {"(↗︎)", "(↘︎)"}
     actual_values = set(metrics["Favorability"].to_numpy())
     assert actual_values.issubset(expected_values)
+
+
+@pytest.mark.parametrize("report", [EstimatorReport, CrossValidationReport])
+def test_comparison_report_pos_label_mismatch(report):
+    """Check that we raise an error when the positive labels are not the same."""
+    X, y = make_classification(random_state=0)
+    estimators = {"LinearSVC": LinearSVC(), "LogisticRegression": LogisticRegression()}
+
+    if report is EstimatorReport:
+        reports = {
+            name: EstimatorReport(
+                est, X_train=X, X_test=X, y_train=y, y_test=y, pos_label=i
+            )
+            for i, (name, est) in enumerate(estimators.items())
+        }
+    else:
+        reports = {
+            name: CrossValidationReport(est, X=X, y=y, pos_label=i)
+            for i, (name, est) in enumerate(estimators.items())
+        }
+
+    err_msg = "Expected all estimators to have the same positive label."
+    with pytest.raises(ValueError, match=err_msg):
+        ComparisonReport(reports)

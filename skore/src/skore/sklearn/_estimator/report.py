@@ -319,7 +319,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         response_method : {"predict", "predict_proba", "decision_function"}, \
                 default="predict"
-            The response method to use.
+            The response method to use to get the predictions.
 
         X : array-like of shape (n_samples, n_features), optional
             When `data_source` is "X_y", the input features on which to compute the
