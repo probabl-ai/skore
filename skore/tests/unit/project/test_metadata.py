@@ -1,17 +1,11 @@
 from types import SimpleNamespace
 
-import numpy as np
-import skrub
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
 from pandas.testing import assert_index_equal
 from pytest import fixture, raises
-from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.datasets import make_classification, make_regression
-from sklearn.decomposition import PCA, KernelPCA
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import FeatureUnion, make_pipeline
 from skore import EstimatorReport
 from skore.project.metadata import Metadata
 
@@ -304,36 +298,3 @@ class TestMetadata:
             "or (log_loss >= 0.550000 and log_loss <= 0.550000)) "
             "and learner.isin(['learner1', 'learner3'])"
         )
-
-    def test_find_estimators(self):
-        estimators = [("linear_pca", PCA()), ("kernel_pca", KernelPCA())]
-        combined = FeatureUnion(estimators)
-        combined = FeatureUnion([("test", FeatureUnion(estimators)), ("one", PCA())])
-        pip = make_pipeline(combined, RandomForestClassifier())
-
-        extracted = Metadata._find_estimators(pip)
-        assert len(extracted) == 2
-        assert extracted.get("ensemble") == ["RandomForestClassifier"]
-
-    def test_find_estimators_with_skrub(self):
-        pip = skrub.tabular_learner("classification")
-        extracted = Metadata._find_estimators(pip)
-        assert len(extracted) == 5
-        assert extracted.get("_datetime_encoder") == ["DatetimeEncoder"]
-
-    def test_find_estimators_homemade(self):
-        class MockRegressor(RegressorMixin, BaseEstimator):
-            def __init__(self, n_call_predict=0):
-                self.n_call_predict = n_call_predict
-
-            def fit(self, X, y):
-                self.fitted_ = True
-                return self
-
-            def predict(self, X):
-                return np.ones(X.shape[0])
-
-        pip = make_pipeline(MockRegressor())
-        extracted = Metadata._find_estimators(pip)
-        assert len(extracted) == 1
-        assert extracted.get("other") == ["MockRegressor"]
