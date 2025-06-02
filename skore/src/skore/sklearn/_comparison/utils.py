@@ -61,22 +61,16 @@ def _combine_estimator_results(
     Metric
     Brier score                   ...                   ...
     """
-    pd.DataFrame.from_dict(
-        {
-            "index": ["Brier score"],
-            "columns": ["LogisticRegression"],
-            "data": [[0.026683863888246822]],
-            "index_names": ["Metric"],
-            "column_names": [None],
-        }
-    )
     results = pd.concat(individual_results, axis=1)
 
     # Pop the favorability column if it exists, to:
     # - not use it in the aggregate operation
     # - later to only report a single column and not by split columns
     if indicator_favorability:
-        favorability = results.pop("Favorability").iloc[:, 0]
+        # Some metrics can be undefined for some estimators and NaN are
+        # introduced after the concatenation. We fill the NaN using the
+        # valid favorability
+        favorability = results.pop("Favorability").bfill(axis=1).iloc[:, 0]
     else:
         favorability = None
 
@@ -301,9 +295,14 @@ def _combine_cross_validation_results(
     # - not use it in the aggregate operation
     # - later to only report a single column and not by split columns
     if indicator_favorability:
-        favorability = results[0]["Favorability"]
-        for result in results:
-            result.pop("Favorability")
+        # Some metrics can be undefined for some estimators and NaN are
+        # introduced after the concatenation. We fill the NaN using the
+        # valid favorability
+        favorability = (
+            pd.concat([result.pop("Favorability") for result in results], axis=1)
+            .bfill(axis=1)
+            .iloc[:, 0]
+        )
     else:
         favorability = None
 
