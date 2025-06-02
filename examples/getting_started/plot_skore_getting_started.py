@@ -56,7 +56,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 rf = RandomForestClassifier(random_state=0)
 
 rf_report = EstimatorReport(
-    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, pos_label=1
 )
 
 # %%
@@ -81,7 +81,7 @@ rf_report.help()
 # fit and prediction times):
 
 # %%
-rf_report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+rf_report.metrics.report_metrics(indicator_favorability=True)
 
 # %%
 # For inspection, we can also retrieve the predictions, on the train set for example
@@ -139,13 +139,13 @@ cv_report.help()
 # We display the mean and standard deviation for each metric:
 
 # %%
-cv_report.metrics.report_metrics(pos_label=1)
+cv_report.metrics.report_metrics()
 
 # %%
 # or by individual fold:
 
 # %%
-cv_report.metrics.report_metrics(aggregate=None, pos_label=1)
+cv_report.metrics.report_metrics(aggregate=None)
 
 # %%
 # We display the ROC curves for each fold:
@@ -159,7 +159,7 @@ roc_plot_cv.plot()
 # for example getting the report metrics for the first fold only:
 
 # %%
-cv_report.estimator_reports_[0].metrics.report_metrics(pos_label=1)
+cv_report.estimator_reports_[0].metrics.report_metrics()
 
 # %%
 # .. seealso::
@@ -205,7 +205,7 @@ comparator.help()
 # Let us display the result of our benchmark:
 
 # %%
-comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+comparator.metrics.report_metrics(indicator_favorability=True)
 
 # %%
 # We can highlight the performance metric gain against timings
@@ -269,15 +269,14 @@ _ = skore.train_test_split(
 # =======================
 #
 # Another key feature of skore is its :class:`~skore.Project` that allows us to store
-# and retrieve items of many types.
+# and retrieve :class:`~skore.EstimatorReport` objects.
 
 # %%
 # Setup: creating and loading a skore project
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-#  Let us start by creating a skore project directory named ``my_project.skore`` in our
-#  current directory:
+#  Let us start by creating a skore project named ``my_project``:
 
 # %%
 
@@ -291,66 +290,116 @@ os.environ["SKORE_WORKSPACE"] = temp_dir.name
 my_project = skore.Project("my_project")
 
 # %%
-# Skore project: storing and retrieving some items
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Storing some reports in our project
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# Now that the project exists, we can store some useful items in it (in the same
-# directory) using :func:`~skore.Project.put`, with a key-value convention.
+# Now that the project exists, we can store some useful reports in it using
+# :func:`~skore.Project.put`, with a key-value convention.
 
 # %%
-# Let us store the estimator report of the random forest using
-# :meth:`~skore.Project.put` to help us track our experiments:
+# Let us store the estimator reports of the random forest and the gradient boosting
+# to help us track our experiments:
 
 # %%
 my_project.put("estimator_report", rf_report)
 my_project.put("estimator_report", gb_report)
 
 # %%
-# Now, let us retrieve the data that we previously stored:
+# Retrieving our stored reports
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+# %%
+# Now, let us retrieve the data that we just stored using a
+# :class:`~skore.project.metadata.Metadata` object:
 
 # %%
 metadata = my_project.reports.metadata()
 print(type(metadata))
 
 # %%
-# We can perform some queries on our stored data:
+# We can retrieve the complete list of stored reports:
 
 # %%
 from pprint import pprint
 
-report_get = metadata.query("ml_task.str.contains('classification')").reports()
-pprint(report_get)
+reports_get = metadata.reports()
+pprint(reports_get)
 
 # %%
-# For example, we can retrieve the report metrics from the first estimator report:
+# For example, we can compare the stored reports:
 
 # %%
+comparator = ComparisonReport(reports=reports_get)
+comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+
+# %%
+# We can retrieve any accessor of our stored estimator reports, for example
+# the timings from the first estimator report:
+
+# %%
+reports_get[0].metrics.timings()
+
+# %%
+# But what if instead of having stored only 2 estimators reports, we had a dozen or
+# even a few hundreds over several months of experimenting?
+# We would need to navigate through our stored estimator reports.
+# For that, the skore project provides a convenient search feature.
+
+# %%
+# Searching through our stored reports
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# Using the interactive widget
+# """"""""""""""""""""""""""""
+#
+# If rendered in a Jupyter notebook, ``metadata`` would render an interactive
+# parallel coordinate plot to search for your preferred model based on some metrics.
+# Here is a screenshot:
+#
+# .. image:: /_static/images/screenshot_getting_started.png
+#   :alt: Screenshot of the widget in a Jupyter notebook
+#
+# How to use the widget? You select the estimator(s) you are interested in by clicking
+# on the plot and the metric(s) you are interested in by checking them.
+# Then, using the python API, we can retrieve the *corresponding* list of stored reports:
+#
+# .. code:: python
+#
+#     metadata.reports()
+
+# %%
+# Using the Python API
+# """"""""""""""""""""
+#
+# Alternatively, this search feature can be performed using the Python API.
+
+# %%
+# We can perform some queries on our stored data using the following keys:
+
+# %%
+pprint(metadata.keys())
+
+# %%
+# For example, we can query all the estimators corresponding to a
+# :class:`~sklearn.ensemble.RandomForestClassifier`:
+
+# %%
+report_search_rf = metadata.query(
+    "learner.str.contains('RandomForestClassifier')"
+).reports()
+pprint(report_search_rf)
+
+# %%
+# Or, we can query all the estimator reports corresponding to a classification
+# task:
+
+# %%
+report_search_clf = metadata.query("ml_task.str.contains('classification')").reports()
+pprint(report_search_clf)
 
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
-
-report_get[0].metrics.report_metrics(pos_label=1)
-
-# sphinx_gallery_start_ignore
-temp_dir.cleanup()
-# sphinx_gallery_end_ignore
-
-# %%
-# .. note::
-#   If rendered in a Jupyter notebook, ``metadata`` would render an interactive
-#   parallel coordinate plot to search for your preferred model based on some metrics.
-#   Here is a screenshot:
-#
-#   .. image:: /_static/images/screenshot_getting_started.png
-#       :alt: Screenshot of the widget in a Jupyter notebook
-
-# %%
-# .. note::
-#   These tracking functionalities are very useful to:
-#
-#   -   never lose some key machine learning metrics,
-#   -   and observe the evolution over time / runs.
 
 # %%
 # .. admonition:: Stay tuned!

@@ -2,7 +2,7 @@
 name = "skore"
 description = "the scikit-learn sidekick"
 dynamic = ["license", "readme", "version"]
-requires-python = ">=3.9, <3.13"
+requires-python = ">=3.9"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 classifiers = [
   "Intended Audience :: Science/Research",

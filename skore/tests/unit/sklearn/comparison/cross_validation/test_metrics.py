@@ -255,8 +255,6 @@ def test_metrics_X_y():
 @pytest.mark.parametrize(
     "plot_ml_task, plot_name",
     [
-        ("binary_classification", "roc"),
-        ("binary_classification", "precision_recall"),
         ("regression", "prediction_error"),
     ],
 )

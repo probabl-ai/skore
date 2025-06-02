@@ -14,7 +14,7 @@ from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.sklearn.types import SKLearnCrossValidator
+from skore.sklearn.types import _DEFAULT, PositiveLabel, SKLearnCrossValidator
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
@@ -27,17 +27,22 @@ def _generate_estimator_report(
     estimator: BaseEstimator,
     X: ArrayLike,
     y: Optional[ArrayLike],
+    pos_label: Optional[PositiveLabel],
     train_indices: ArrayLike,
     test_indices: ArrayLike,
-) -> EstimatorReport:
-    return EstimatorReport(
-        estimator,
-        fit=True,
-        X_train=_safe_indexing(X, train_indices),
-        y_train=_safe_indexing(y, train_indices),
-        X_test=_safe_indexing(X, test_indices),
-        y_test=_safe_indexing(y, test_indices),
-    )
+) -> Union[EstimatorReport, KeyboardInterrupt, Exception]:
+    try:
+        return EstimatorReport(
+            estimator,
+            fit=True,
+            X_train=_safe_indexing(X, train_indices),
+            y_train=_safe_indexing(y, train_indices),
+            X_test=_safe_indexing(X, test_indices),
+            y_test=_safe_indexing(y, test_indices),
+            pos_label=pos_label,
+        )
+    except (KeyboardInterrupt, Exception) as e:
+        return e
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
@@ -63,6 +68,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     y : array-like of shape (n_samples,) or (n_samples, n_outputs), default=None
         The target variable to try to predict in the case of supervised learning.
+
+    pos_label : int, float, bool or str, default=None
+        For binary classification, the positive class. If `None` and the target labels
+        are `{0, 1}` or `{-1, 1}`, the positive class is set to `1`. For other labels,
+        some metrics might raise an error if `pos_label` is not defined.
 
     cv_splitter : int, cross-validation generator or an iterable, default=5
         Determines the cross-validation splitting strategy.
@@ -127,6 +137,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         estimator: BaseEstimator,
         X: ArrayLike,
         y: Optional[ArrayLike] = None,
+        pos_label: Optional[PositiveLabel] = None,
         cv_splitter: Optional[Union[int, SKLearnCrossValidator, Generator]] = None,
         n_jobs: Optional[int] = None,
     ) -> None:
@@ -139,6 +150,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         # those attributes
         self._X = X
         self._y = y
+        self._pos_label = pos_label
         self._cv_splitter = check_cv(
             cv_splitter, y, classifier=is_classifier(estimator)
         )
@@ -191,6 +203,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 clone(self._estimator),
                 self._X,
                 self._y,
+                self._pos_label,
                 train_indices,
                 test_indices,
             )
@@ -198,31 +211,52 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
 
         estimator_reports = []
-        try:
-            for report in generator:
-                estimator_reports.append(report)
-                progress.update(task, advance=1, refresh=True)
-        except (Exception, KeyboardInterrupt) as e:
-            from skore import console  # avoid circular import
+        for report in generator:
+            estimator_reports.append(report)
+            progress.update(task, advance=1, refresh=True)
 
-            if isinstance(e, KeyboardInterrupt):
-                message = (
-                    "Cross-validation process was interrupted manually before all "
-                    "estimators could be fitted; CrossValidationReport object "
-                    "might not contain all the expected results."
-                )
-            else:
-                message = (
-                    "Cross-validation process was interrupted by an error before "
-                    "all estimators could be fitted; CrossValidationReport object "
-                    "might not contain all the expected results. "
-                    f"Traceback: \n{e}"
-                )
+        warn_msg = None
+        if not any(isinstance(report, EstimatorReport) for report in estimator_reports):
+            traceback_msg = "\n".join(str(exc) for exc in estimator_reports)
+            raise RuntimeError(
+                "Cross-validation failed: no estimators were successfully fitted. "
+                "Please check your data, estimator, or cross-validation setup.\n"
+                f"Traceback: \n{traceback_msg}"
+            )
+        elif any(isinstance(report, Exception) for report in estimator_reports):
+            msg_traceback = "\n".join(
+                str(exc) for exc in estimator_reports if isinstance(exc, Exception)
+            )
+            warn_msg = (
+                "Cross-validation process was interrupted by an error before "
+                "all estimators could be fitted; CrossValidationReport object "
+                "might not contain all the expected results.\n"
+                f"Traceback: \n{msg_traceback}"
+            )
+            estimator_reports = [
+                report
+                for report in estimator_reports
+                if not isinstance(report, Exception)
+            ]
+        if any(isinstance(report, KeyboardInterrupt) for report in estimator_reports):
+            warn_msg = (
+                "Cross-validation process was interrupted manually before all "
+                "estimators could be fitted; CrossValidationReport object "
+                "might not contain all the expected results."
+            )
+            estimator_reports = [
+                report
+                for report in estimator_reports
+                if not isinstance(report, KeyboardInterrupt)
+            ]
+
+        if warn_msg is not None:
+            from skore import console  # avoid circular import
 
             console.print(
                 Panel(
                     title="Cross-validation interrupted",
-                    renderable=message,
+                    renderable=warn_msg,
                     style="orange1",
                     border_style="cyan",
                 )
@@ -322,8 +356,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             "predict", "predict_proba", "decision_function"
         ] = "predict",
         X: Optional[ArrayLike] = None,
-        pos_label: Optional[Any] = None,
-    ) -> ArrayLike:
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
+    ) -> list[ArrayLike]:
         """Get estimator's predictions.
 
         This method has the advantage to reload from the cache if the predictions
@@ -348,12 +382,16 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             When `data_source` is "X_y", the input features on which to compute the
             response method.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class when it comes to binary classification. When
-            `response_method="predict_proba"`, it will select the column corresponding
-            to the positive class. When `response_method="decision_function"`, it will
-            negate the decision function if `pos_label` is different from
-            `estimator.classes_[1]`.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing predictions in
+            binary classification cases. By default, the positive class is set to the
+            one provided when creating the report. If `None`, `estimator_.classes_[1]`
+            is used as positive label.
+
+            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
+            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
+            and `-estimator_.decision_function(X)` for
+            `response_method="decision_function"`.
 
         Returns
         -------
@@ -430,6 +468,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def y(self, value: Any) -> None:
         raise AttributeError(
             "The y attribute is immutable. "
+            f"Call the constructor of {self.__class__.__name__} to create a new report."
+        )
+
+    @property
+    def pos_label(self) -> Optional[PositiveLabel]:
+        return self._pos_label
+
+    @pos_label.setter
+    def pos_label(self, value: Optional[PositiveLabel]) -> None:
+        raise AttributeError(
+            "The pos_label attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 

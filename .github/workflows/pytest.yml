@@ -4,8 +4,8 @@ name: pytest
 # ================
 #
 # The workflow runs `pytest` jobs on all the repository packages, identified by the JSON
-# list `vars.PACKAGES` managed in the GitHub interface. If you want to run this workflow
-# on a new package, you only have to add its name in the above list.
+# list `env.PACKAGES`. If you want to run this workflow on a new package, you only have
+# to add its name in the above list, and in the `pr-display-code-coverage.yml` workflow.
 #
 # It's important to notice that only one workflow is triggered for all packages.
 #
@@ -38,10 +38,14 @@ defaults:
   run:
     shell: bash
 
+env:
+  PACKAGES: '["skore","skore-hub-project","skore-local-project"]'
+
 jobs:
   pytest-changes:
     runs-on: ubuntu-latest
     outputs:
+      packages: ${{ steps.setup.outputs.packages }}
       modified-packages: ${{ steps.filter.outputs.changes }}
     permissions:
       pull-requests: read
@@ -49,8 +53,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Create dynamically filtering file, based on `vars.PACKAGES`
+      - name: Create dynamically filtering file, based on `env.PACKAGES`
+        id: setup
         run: |
+            echo "packages=${PACKAGES}" >> $GITHUB_OUTPUT
             echo "${PACKAGES}" | jq -r '.[]' | while read package; do
                 >>${FILEPATH} echo "${package}:
                 - '.github/workflows/pytest.yml'
@@ -58,7 +64,7 @@ jobs:
                 - '${package}/**'"
             done
         env:
-          PACKAGES: ${{ vars.PACKAGES }}
+          PACKAGES: ${{ env.PACKAGES }}
           FILEPATH: ${{ runner.temp }}/filters.yaml
 
       - name: Define if at least one file has changed
@@ -122,7 +128,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: ${{ (github.event_name == 'push') && fromJSON(vars.PACKAGES) || fromJSON(needs.pytest-changes.outputs.modified-packages) }}
+        package: ${{ (github.event_name == 'push') && fromJSON(needs.pytest-changes.outputs.packages) || fromJSON(needs.pytest-changes.outputs.modified-packages) }}
         os: ["ubuntu-latest", "windows-latest"]
         python: ["3.9", "3.10", "3.11", "3.12"]
         scikit-learn: ["1.4", "1.5", "1.6"]

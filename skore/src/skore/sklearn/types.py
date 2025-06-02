@@ -18,9 +18,16 @@ MLTask = Literal[
     "unknown",
 ]
 
-PositiveLabel = Union[int, float, bool, str]
+
+class _DefaultType:
+    """Sentinel class for default values."""
+
+    def __repr__(self) -> str:
+        return "<DEFAULT>"
 
 
+_DEFAULT = _DefaultType()
+PositiveLabel = Union[int, float, bool, str, None, _DefaultType]
 Aggregate = Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
 
 
@@ -36,12 +43,25 @@ class YPlotData:
     y: ArrayLike
 
 
+ReportType = Literal[
+    "cross-validation",
+    "estimator",
+    "comparison-estimator",
+    "comparison-cross-validation",
+]
+
+
 class SKLearnScorer(Protocol):
     """Protocol defining the interface of scikit-learn's _BaseScorer."""
 
     _score_func: Callable
     _response_method: Union[str, list[str]]
     _kwargs: dict[str, Any]
+
+
+ScoringName = Union[str, None]
+
+Scoring = Union[str, Callable, SKLearnScorer]
 
 
 class SKLearnCrossValidator(Protocol):

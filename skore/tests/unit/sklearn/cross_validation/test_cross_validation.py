@@ -4,7 +4,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.base import BaseEstimator, ClassifierMixin, clone
+from sklearn.base import clone
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
@@ -12,9 +12,12 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
+    get_scorer,
     make_scorer,
     median_absolute_error,
+    precision_score,
     r2_score,
+    recall_score,
 )
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -26,6 +29,7 @@ from skore.sklearn._cross_validation.report import (
 )
 from skore.sklearn._estimator import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
+from skore.utils._testing import MockEstimator
 
 
 @pytest.fixture
@@ -101,6 +105,7 @@ def test_generate_estimator_report(binary_classification_data):
         y=y,
         train_indices=train_indices,
         test_indices=test_indices,
+        pos_label=1,
     )
 
     assert isinstance(report, EstimatorReport)
@@ -352,6 +357,31 @@ def test_cross_validation_report_display_regression(pyplot, regression_data, dis
     assert display_first_call is display_second_call
 
 
+@pytest.mark.parametrize("metric", ["roc", "precision_recall"])
+def test_cross_validation_report_display_binary_classification_pos_label(
+    pyplot, binary_classification_data, metric
+):
+    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    classifier = LogisticRegression()
+    report = CrossValidationReport(classifier, X, y)
+    with pytest.raises(ValueError, match="pos_label is not specified"):
+        getattr(report.metrics, metric)()
+
+    report = CrossValidationReport(classifier, X, y, pos_label="A")
+    display = getattr(report.metrics, metric)()
+    display.plot()
+    assert "Positive label: A" in display.ax_.get_xlabel()
+
+    display = getattr(report.metrics, metric)(pos_label="B")
+    display.plot()
+    assert "Positive label: B" in display.ax_.get_xlabel()
+
+
 def test_seed_none(regression_data):
     """If `seed` is None (the default) the call should not be cached."""
     estimator, X, y = regression_data
@@ -537,6 +567,31 @@ def test_cross_validation_report_metrics_regression_multioutput(
     (estimator, X, y), cv = regression_multioutput_data, 2
     report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
+
+
+@pytest.mark.parametrize(
+    "scoring, scoring_kwargs",
+    [
+        ("accuracy", None),
+        ("neg_log_loss", None),
+        (accuracy_score, {"response_method": "predict"}),
+        (get_scorer("accuracy"), None),
+    ],
+)
+def test_cross_validation_report_report_metrics_scoring_single_list_equivalence(
+    binary_classification_data, scoring, scoring_kwargs
+):
+    """Check that passing a single string, callable, scorer is equivalent to passing a
+    list with a single element."""
+    (estimator, X, y), cv = binary_classification_data, 2
+    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
+    result_single = report.metrics.report_metrics(
+        scoring=scoring, scoring_kwargs=scoring_kwargs
+    )
+    result_list = report.metrics.report_metrics(
+        scoring=[scoring], scoring_kwargs=scoring_kwargs
+    )
+    assert result_single.equals(result_list)
 
 
 @pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])
@@ -895,38 +950,16 @@ def test_cross_validation_report_custom_metric(binary_classification_data):
         (KeyboardInterrupt(), "Cross-validation interrupted manually"),
     ],
 )
+@pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_cross_validation_report_interrupted(
-    binary_classification_data, capsys, error, error_message
+    binary_classification_data, capsys, error, error_message, n_jobs
 ):
     """Check that we can interrupt cross-validation without losing all
     data."""
-
-    class MockEstimator(ClassifierMixin, BaseEstimator):
-        def __init__(self, n_call=0, fail_after_n_clone=3):
-            self.n_call = n_call
-            self.fail_after_n_clone = fail_after_n_clone
-
-        def fit(self, X, y):
-            if self.n_call > self.fail_after_n_clone:
-                raise error
-            self.classes_ = np.unique(y)
-            return self
-
-        def __sklearn_clone__(self):
-            """Do not clone the estimator
-
-            Instead, we increment a counter each time that
-            `sklearn.clone` is called.
-            """
-            self.n_call += 1
-            return self
-
-        def predict(self, X):
-            return np.ones(X.shape[0])
-
     _, X, y = binary_classification_data
 
-    report = CrossValidationReport(MockEstimator(), X, y, cv_splitter=10)
+    estimator = MockEstimator(error=error, n_call=0, fail_after_n_clone=8)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=10, n_jobs=n_jobs)
 
     captured = capsys.readouterr()
     assert all(word in captured.out for word in error_message.split(" "))
@@ -990,6 +1023,20 @@ def test_cross_validation_timings(
     assert timings.columns.tolist() == expected_columns
 
 
+@pytest.mark.parametrize("n_jobs", [None, 1, 2])
+def test_cross_validation_report_failure_all_splits(n_jobs):
+    """Check that we raise an error when no estimators were successfully fitted.
+    during the cross-validation process."""
+    X, y = make_classification(n_samples=100, n_features=10, random_state=42)
+    estimator = MockEstimator(
+        error=ValueError("Intentional failure for testing"), fail_after_n_clone=0
+    )
+
+    err_msg = "Cross-validation failed: no estimators were successfully fitted"
+    with pytest.raises(RuntimeError, match=err_msg):
+        CrossValidationReport(estimator, X, y, n_jobs=n_jobs)
+
+
 def test_cross_validation_timings_flat_index(binary_classification_data):
     """Check the behaviour of the `timings` method display formatting."""
     estimator, X, y = binary_classification_data
@@ -1009,3 +1056,84 @@ def test_cross_validation_timings_flat_index(binary_classification_data):
         "fit_time_s",
         "predict_time_s",
     ]
+
+
+@pytest.mark.parametrize(
+    "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
+)
+def test_cross_validation_report_report_metrics_pos_label_overwrite(
+    binary_classification_data, metric, metric_fn
+):
+    """Check that `pos_label` can be overwritten in `report_metrics`"""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    classifier = LogisticRegression()
+
+    report = CrossValidationReport(classifier, X, y)
+    result_both_labels = report.metrics.report_metrics(scoring=metric).reset_index()
+    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
+    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+
+    report = CrossValidationReport(classifier, X, y, pos_label="B")
+    result = report.metrics.report_metrics(scoring=metric).reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    assert (
+        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
+        == result_both_labels.loc[
+            (metric.capitalize(), "B"), (report.estimator_name_, "mean")
+        ]
+    )
+
+    result = report.metrics.report_metrics(scoring=metric, pos_label="A").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    assert (
+        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
+        == result_both_labels.loc[
+            (metric.capitalize(), "A"), (report.estimator_name_, "mean")
+        ]
+    )
+
+
+@pytest.mark.parametrize(
+    "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
+)
+def test_estimator_report_precision_recall_pos_label_overwrite(
+    binary_classification_data, metric, metric_fn
+):
+    """Check that `pos_label` can be overwritten in `report_metrics`"""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    classifier = LogisticRegression()
+
+    report = CrossValidationReport(classifier, X, y)
+    result_both_labels = getattr(report.metrics, metric)().reset_index()
+    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
+    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+
+    result = getattr(report.metrics, metric)(pos_label="B").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    assert (
+        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
+        == result_both_labels.loc[
+            (metric.capitalize(), "B"), (report.estimator_name_, "mean")
+        ]
+    )
+
+    result = getattr(report.metrics, metric)(pos_label="A").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    assert (
+        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
+        == result_both_labels.loc[
+            (metric.capitalize(), "A"), (report.estimator_name_, "mean")
+        ]
+    )

@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
-from sklearn.metrics._scorer import _BaseScorer as SKLearnScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
@@ -16,7 +15,13 @@ from skore.sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import Aggregate, PositiveLabel, YPlotData
+from skore.sklearn.types import (
+    Aggregate,
+    PositiveLabel,
+    Scoring,
+    ScoringName,
+    YPlotData,
+)
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
@@ -55,8 +60,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        scoring: Optional[Union[list[str], Callable, SKLearnScorer]] = None,
-        scoring_names: Optional[list[str]] = None,
+        scoring: Optional[Union[Scoring, list[Scoring]]] = None,
+        scoring_names: Optional[Union[ScoringName, list[ScoringName]]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
         pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
@@ -82,8 +87,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : list of str, callable, or scorer, default=None
-            The metrics to report. The possible values in the list are:
+        scoring : str, callable, scorer or list of such instances, default=None
+            The metrics to report. The possible values (whether or not in a list) are:
 
             - if a string, either one of the built-in metrics or a scikit-learn scorer
               name. You can get the possible list of string using
@@ -96,7 +101,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
               same parameter name with different values), you can use scikit-learn
               scorers as provided by :func:`sklearn.metrics.make_scorer`.
 
-        scoring_names : list of str, default=None
+        scoring_names : str, None or list of such instances, default=None
             Used to overwrite the default scoring names in the report. It should be of
             the same length as the ``scoring`` parameter.
 
@@ -1263,9 +1268,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
-        if self._parent._reports_type == "CrossValidationReport":
-            raise NotImplementedError()
-
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
@@ -1288,55 +1290,121 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y_true: list[YPlotData] = []
             y_pred: list[YPlotData] = []
 
-            for report, report_name in zip(
-                self._parent.reports_, self._parent.report_names_
-            ):
-                report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
+            if self._parent._reports_type == "EstimatorReport":
+                for report, report_name in zip(
+                    self._parent.reports_, self._parent.report_names_
+                ):
+                    report_X, report_y, _ = (
+                        report.metrics._get_X_y_and_data_source_hash(
+                            data_source=data_source,
+                            X=X,
+                            y=y,
+                        )
+                    )
+
+                    y_true.append(
+                        YPlotData(
+                            estimator_name=report_name,
+                            split_index=None,
+                            y=report_y,
+                        )
+                    )
+                    results = _get_cached_response_values(
+                        cache=report._cache,
+                        estimator_hash=report._hash,
+                        estimator=report._estimator,
+                        X=report_X,
+                        response_method=response_method,
+                        data_source=data_source,
+                        data_source_hash=None,
+                        pos_label=display_kwargs.get("pos_label"),
+                    )
+                    for key, value, is_cached in results:
+                        if not is_cached:
+                            report._cache[key] = value
+                        if key[-1] != "predict_time":
+                            y_pred.append(
+                                YPlotData(
+                                    estimator_name=report_name,
+                                    split_index=None,
+                                    y=value,
+                                )
+                            )
+
+                    progress.update(main_task, advance=1, refresh=True)
+
+                display = display_class._compute_data_for_display(
+                    y_true=y_true,
+                    y_pred=y_pred,
+                    report_type="comparison-estimator",
+                    estimators=[report.estimator_ for report in self._parent.reports_],
+                    estimator_names=self._parent.report_names_,
+                    ml_task=self._parent._ml_task,
                     data_source=data_source,
-                    X=X,
-                    y=y,
+                    **display_kwargs,
                 )
 
-                y_true.append(
-                    YPlotData(
-                        estimator_name=report_name,
-                        split_index=None,
-                        y=report_y,
-                    )
-                )
-                results = _get_cached_response_values(
-                    cache=report._cache,
-                    estimator_hash=report._hash,
-                    estimator=report._estimator,
-                    X=report_X,
-                    response_method=response_method,
-                    data_source=data_source,
-                    data_source_hash=None,
-                    pos_label=display_kwargs.get("pos_label"),
-                )
-                for key, value, is_cached in results:
-                    if not is_cached:
-                        report._cache[key] = value
-                    if key[-1] != "predict_time":
-                        y_pred.append(
-                            YPlotData(
-                                estimator_name=report_name,
-                                split_index=None,
-                                y=value,
+            else:
+                for report, report_name in zip(
+                    self._parent.reports_, self._parent.report_names_
+                ):
+                    for split_index, estimator_report in enumerate(
+                        report.estimator_reports_
+                    ):
+                        report_X, report_y, _ = (
+                            estimator_report.metrics._get_X_y_and_data_source_hash(
+                                data_source=data_source,
+                                X=X,
+                                y=y,
                             )
                         )
-                progress.update(main_task, advance=1, refresh=True)
 
-            display = display_class._compute_data_for_display(
-                y_true=y_true,
-                y_pred=y_pred,
-                report_type="comparison-estimator",
-                estimators=[report.estimator_ for report in self._parent.reports_],
-                estimator_names=self._parent.report_names_,
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                **display_kwargs,
-            )
+                        y_true.append(
+                            YPlotData(
+                                estimator_name=report_name,
+                                split_index=split_index,
+                                y=report_y,
+                            )
+                        )
+
+                        results = _get_cached_response_values(
+                            cache=estimator_report._cache,
+                            estimator_hash=estimator_report._hash,
+                            estimator=estimator_report.estimator_,
+                            X=report_X,
+                            response_method=response_method,
+                            data_source=data_source,
+                            data_source_hash=None,
+                            pos_label=display_kwargs.get("pos_label"),
+                        )
+                        for key, value, is_cached in results:
+                            if not is_cached:
+                                report._cache[key] = value
+                            if key[-1] != "predict_time":
+                                y_pred.append(
+                                    YPlotData(
+                                        estimator_name=report_name,
+                                        split_index=split_index,
+                                        y=value,
+                                    )
+                                )
+
+                    progress.update(main_task, advance=1, refresh=True)
+
+                display = display_class._compute_data_for_display(
+                    y_true=y_true,
+                    y_pred=y_pred,
+                    report_type="comparison-cross-validation",
+                    estimators=[
+                        estimator_report.estimator_
+                        for report in self._parent.reports_
+                        for estimator_report in report.estimator_reports_
+                    ],
+                    estimator_names=self._parent.report_names_,
+                    ml_task=self._parent._ml_task,
+                    data_source=data_source,
+                    **display_kwargs,
+                )
 
             if cache_key is not None:
                 # Unless seed is an int (i.e. the call is deterministic),
@@ -1560,6 +1628,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
+        if self._parent._reports_type == "CrossValidationReport":
+            raise NotImplementedError()
         display_kwargs = {"subsample": subsample, "seed": seed}
         display = cast(
             PredictionErrorDisplay,
