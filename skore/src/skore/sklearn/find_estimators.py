@@ -24,7 +24,7 @@ def find_estimators(pipeline: Pipeline) -> dict[str, list[str]]:
     Examples
     --------
     # with a simple scikit-learn pipeline
-    >>> from sklearn.linear import LogisticRegression
+    >>> from sklearn.linear_model import LogisticRegression
     >>> from sklearn.pipeline import make_pipeline
     >>> find_estimators(make_pipeline(LogisticRegression()))
 
