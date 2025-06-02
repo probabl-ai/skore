@@ -4,7 +4,7 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import FeatureUnion, make_pipeline
-from skore.sklearn.find_estimators import find_estimators
+from skore import find_estimators
 
 
 def test_find_estimators():
@@ -40,4 +40,5 @@ def test_find_estimators_homemade():
     pip = make_pipeline(MockRegressor())
     extracted = find_estimators(pip)
     assert len(extracted) == 1
+    assert extracted == 3
     assert extracted.get("other") == ["MockRegressor"]
