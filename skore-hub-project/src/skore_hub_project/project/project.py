@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from .. import item as item_module
-from ..client.client import AuthenticatedClient
+from ..client.client import AuthenticatedClient, HTTPStatusError
 from ..item.item import lazy_is_instance
 
 if TYPE_CHECKING:
@@ -207,4 +207,32 @@ class Project:
         return self.run_id and SimpleNamespace(get=get, metadata=metadata)
 
     def __repr__(self) -> str:  # noqa: D105
-        return f"Project(hub://{self.tenant}@{self.name})"
+        return f"Project(mode='hub', name='{self.name}', tenant='{self.tenant}')"
+
+    @staticmethod
+    def delete(tenant: str, name: str):
+        """
+        Delete a hub project.
+
+        Parameters
+        ----------
+        tenant : Path
+            The tenant of the project.
+
+            A tenant is a ``skore hub`` concept that must be configured on the
+            ``skore hub`` interface. It represents an isolated entity managing users,
+            projects, and resources. It can be a company, organization, or team that
+            operates independently within the system.
+        name : str
+            The name of the project.
+        """
+        with AuthenticatedClient(raises=True) as client:
+            try:
+                client.delete(f"projects/{tenant}/{name}")
+            except HTTPStatusError as e:
+                if e.response.status_code == 403:
+                    raise PermissionError(
+                        f"Failed to delete the project; "
+                        f"please contact the '{tenant}' owner"
+                    ) from e
+                raise

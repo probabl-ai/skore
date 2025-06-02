@@ -3,10 +3,10 @@ from types import SimpleNamespace
 
 import joblib
 from pytest import fixture, raises
-from sklearn.datasets import make_regression
-from sklearn.linear_model import LinearRegression
+from sklearn.datasets import make_classification, make_regression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
-from skore import EstimatorReport
+from skore.sklearn import EstimatorReport
 from skore_local_project import Project
 from skore_local_project.storage import DiskCacheStorage
 
@@ -21,6 +21,21 @@ class TestProject:
 
         return EstimatorReport(
             LinearRegression(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+
+    @fixture
+    def classification(self):
+        X, y = make_classification(n_classes=2, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+
+        return EstimatorReport(
+            LogisticRegression(),
             X_train=X_train,
             y_train=y_train,
             X_test=X_test,
@@ -54,7 +69,7 @@ class TestProject:
 
         project = Project("<project>")
 
-        assert project.workspace == str(tmp_path / "skore")
+        assert project.workspace == (tmp_path / "skore")
         assert project.name == "<project>"
         assert project.run_id
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
@@ -77,7 +92,7 @@ class TestProject:
         monkeypatch.setenv("SKORE_WORKSPACE", str(tmp_path))
         project = Project("<project>")
 
-        assert project.workspace == str(tmp_path)
+        assert project.workspace == tmp_path
         assert project.name == "<project>"
         assert project.run_id
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
@@ -86,13 +101,15 @@ class TestProject:
     def test_init_with_workspace(self, tmp_path):
         project = Project("<project>", workspace=tmp_path)
 
-        assert project.workspace == str(tmp_path)
+        assert project.workspace == tmp_path
         assert project.name == "<project>"
         assert project.run_id
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
         assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
-    def test_put_exception(self, tmp_path):
+    def test_put_exception(self, tmp_path, regression):
+        import re
+
         project = Project("<project>", workspace=tmp_path)
 
         with raises(TypeError, match="Key must be a string"):
@@ -100,6 +117,17 @@ class TestProject:
 
         with raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
             project.put("<key>", "<value>")
+
+        Project.delete("<project>", workspace=tmp_path)
+
+        with raises(
+            RuntimeError,
+            match=re.escape(
+                f"Bad condition: {repr(project)} does not exist anymore, "
+                f"it had to be removed.",
+            ),
+        ):
+            project.put("<key>", regression)
 
     def test_put(self, tmp_path, nowstr, regression):
         project = Project("<project>", workspace=tmp_path)
@@ -141,6 +169,21 @@ class TestProject:
         assert isinstance(project.reports, SimpleNamespace)
         assert hasattr(project.reports, "get")
         assert hasattr(project.reports, "metadata")
+
+    def test_reports_exception(self, tmp_path):
+        import re
+
+        project = Project("<project>", workspace=tmp_path)
+        Project.delete("<project>", workspace=tmp_path)
+
+        with raises(
+            RuntimeError,
+            match=re.escape(
+                f"Bad condition: {repr(project)} does not exist anymore, "
+                f"it had to be removed.",
+            ),
+        ):
+            project.reports  # noqa: B018
 
     def test_reports_get(self, tmp_path, regression):
         project = Project("<project>", workspace=tmp_path)
@@ -193,3 +236,31 @@ class TestProject:
                 "predict_time": float(hash("<predict_time_test>")),
             },
         ]
+
+    def test_delete(self, tmp_path, classification, regression):
+        project1 = Project("<project1>", workspace=tmp_path)
+        project1.put("<project1-key1>", classification)
+        project1.put("<project1-key2>", regression)
+
+        project2 = Project("<project2>", workspace=tmp_path)
+        project2.put("<project2-key1>", classification)
+
+        assert len(DiskCacheStorage(tmp_path / "metadata")) == 3
+        assert len(DiskCacheStorage(tmp_path / "artifacts")) == 2
+
+        Project.delete("<project1>", workspace=tmp_path)
+
+        assert len(DiskCacheStorage(tmp_path / "metadata")) == 1
+        assert len(DiskCacheStorage(tmp_path / "artifacts")) == 1
+
+    def test_delete_exception(self, tmp_path):
+        import re
+
+        with raises(
+            LookupError,
+            match=re.escape(
+                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"does not exist."
+            ),
+        ):
+            Project.delete("<project>", workspace=tmp_path)
