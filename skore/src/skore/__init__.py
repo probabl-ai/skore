@@ -17,6 +17,7 @@ from skore.sklearn import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
+    find_estimators,
     train_test_split,
 )
 from skore.sklearn._plot.base import Display
@@ -37,6 +38,7 @@ __all__ = [
     "config_context",
     "get_config",
     "set_config",
+    "find_estimators",
 ]
 
 logger = logging.getLogger(__name__)
