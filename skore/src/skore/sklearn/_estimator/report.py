@@ -382,37 +382,18 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return self._ml_task
 
     @property
-    def estimator_(self) -> BaseEstimator:
+    def estimator(self) -> BaseEstimator:
         return self._estimator
 
-    @estimator_.setter
-    def estimator_(self, value):
-        raise AttributeError(
-            "The estimator attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
+    estimator_ = property(estimator)
 
     @property
     def X_train(self) -> Optional[ArrayLike]:
         return self._X_train
 
-    @X_train.setter
-    def X_train(self, value):
-        raise AttributeError(
-            "The X_train attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
-
     @property
     def y_train(self) -> Optional[ArrayLike]:
         return self._y_train
-
-    @y_train.setter
-    def y_train(self, value):
-        raise AttributeError(
-            "The y_train attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
 
     @property
     def X_test(self) -> Optional[ArrayLike]:

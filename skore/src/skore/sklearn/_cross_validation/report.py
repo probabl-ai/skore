@@ -206,10 +206,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             progress.update(task, advance=1, refresh=True)
 
         warn_msg = None
-        if not any (
-            isinstance(report, EstimatorReport)
-            for report in estimator_reports
-        ):
+        if not any(isinstance(report, EstimatorReport) for report in estimator_reports):
             traceback_msg = "\n".join(str(exc) for exc in estimator_reports)
             raise RuntimeError(
                 "Cross-validation failed: no estimators were successfully fitted. "
@@ -420,15 +417,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         ]
 
     @property
-    def estimator_(self) -> BaseEstimator:
+    def estimator(self) -> BaseEstimator:
         return self._estimator
 
-    @estimator_.setter
-    def estimator_(self, value: Any) -> None:
-        raise AttributeError(
-            "The estimator attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
+    estimator_ = property(estimator)
 
     @property
     def estimator_name_(self) -> str:
@@ -442,23 +434,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def X(self) -> ArrayLike:
         return self._X
 
-    @X.setter
-    def X(self, value: Any) -> None:
-        raise AttributeError(
-            "The X attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
-
     @property
     def y(self) -> Optional[ArrayLike]:
         return self._y
-
-    @y.setter
-    def y(self, value: Any) -> None:
-        raise AttributeError(
-            "The y attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
 
     @property
     def cv_splitter(self) -> SKLearnCrossValidator:

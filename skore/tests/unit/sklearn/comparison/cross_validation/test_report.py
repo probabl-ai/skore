@@ -29,14 +29,9 @@ def test_report_can_be_rebuilt_using_parameters(cv_report_regression):
     assert isinstance(report, CrossValidationReport)
 
     for parameter in inspect.signature(CrossValidationReport).parameters:
-        has_parameter = hasattr(report, parameter)
-        has_parameter_ = hasattr(report, f"{parameter}_")
+        assert hasattr(report, parameter), f"The parameter '{parameter}' must be stored"
 
-        assert has_parameter or has_parameter_, parameter
-
-        parameters[parameter] = getattr(
-            report, parameter if has_parameter else f"{parameter}_"
-        )
+        parameters[parameter] = getattr(report, parameter)
 
     CrossValidationReport(**parameters)
 
