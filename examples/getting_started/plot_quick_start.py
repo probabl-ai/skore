@@ -23,7 +23,12 @@ X, y = make_classification(n_classes=2, n_samples=20_000, n_informative=4)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 log_report = EstimatorReport(
-    LogisticRegression(), X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+    LogisticRegression(),
+    X_train=X_train,
+    X_test=X_test,
+    y_train=y_train,
+    y_test=y_test,
+    pos_label=1,
 )
 
 # %%
@@ -37,7 +42,7 @@ log_report.help()
 # Display the report metrics that was computed for you:
 
 # %%
-df_report_metrics = log_report.metrics.report_metrics(pos_label=1)
+df_report_metrics = log_report.metrics.report_metrics()
 df_report_metrics
 
 # %%
@@ -125,7 +130,7 @@ pprint(report_get)
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
-report_get[0].metrics.report_metrics(pos_label=1)
+report_get[0].metrics.report_metrics()
 
 # %%
 # .. seealso::
