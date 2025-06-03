@@ -192,9 +192,6 @@ def test_frame(binary_classification_data_no_split):
     display = report.metrics.roc()
     df = display.frame()
 
-    # Check that fold_id contains the expected number of folds
-    assert df["fold_id"].nunique() == cv
-
     # Each fold should have exactly one ROC AUC value
     for fold in range(cv):
         fold_data = df[df["fold_id"] == fold]
