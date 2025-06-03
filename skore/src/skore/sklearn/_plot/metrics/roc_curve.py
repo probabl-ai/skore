@@ -1021,23 +1021,23 @@ class RocCurveDisplay(
         # Reorder columns based on task type
         if self.ml_task == "binary-classification":
             column_order = [
+                "model_name",
+                "fold_id",
                 "fpr",
                 "tpr",
                 "threshold",
                 "roc_auc",
-                "model_name",
-                "fold_id",
             ]
         else:
             column_order = [
+                "model_name",
+                "fold_id",
+                "class",
+                "method",
                 "fpr",
                 "tpr",
                 "threshold",
                 "roc_auc",
-                "method",
-                "class",
-                "model_name",
-                "fold_id",
             ]
 
         return result[column_order]

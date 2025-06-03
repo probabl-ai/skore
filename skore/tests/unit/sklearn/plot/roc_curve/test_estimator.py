@@ -258,7 +258,7 @@ def test_binary_classification_frame(binary_classification_data):
     assert isinstance(df, DataFrame)
 
     # Check the columns for binary classification
-    expected_columns = ["fpr", "tpr", "threshold", "roc_auc", "model_name", "fold_id"]
+    expected_columns = ["model_name", "fold_id", "fpr", "tpr", "threshold", "roc_auc"]
     assert list(df.columns) == expected_columns
 
     # Check data types
@@ -292,14 +292,14 @@ def test_multiclass_classification_frame(multiclass_classification_data):
 
     # Check the columns for multiclass classification
     expected_columns = [
+        "model_name",
+        "fold_id",
+        "class",
+        "method",
         "fpr",
         "tpr",
         "threshold",
         "roc_auc",
-        "method",
-        "class",
-        "model_name",
-        "fold_id",
     ]
     assert list(df.columns) == expected_columns
 
