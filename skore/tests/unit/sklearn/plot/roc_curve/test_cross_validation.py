@@ -198,5 +198,4 @@ def test_frame(binary_classification_data_no_split):
     # Each fold should have exactly one ROC AUC value
     for fold in range(cv):
         fold_data = df[df["fold_id"] == fold]
-        assert not fold_data.empty
         assert fold_data["roc_auc"].nunique() == 1  # One AUC score per fold
