@@ -17,6 +17,7 @@ from skore.sklearn import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
+    find_estimators,
     train_test_split,
 )
 from skore.sklearn._plot.backends import (
@@ -49,6 +50,7 @@ __all__ = [
     "reset_backend",
     "list_backends",
     "get_available_backends",
+    "find_estimators",
 ]
 
 logger = logging.getLogger(__name__)
