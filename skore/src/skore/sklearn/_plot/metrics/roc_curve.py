@@ -992,7 +992,6 @@ class RocCurveDisplay(
         >>> display = report.metrics.roc()
         >>> df = display.frame()
         """
-        # Merge ROC curve and ROC AUC data
         merged_data = self.roc_curve.merge(
             self.roc_auc, on=["estimator_name", "split_index", "label"], how="left"
         )
