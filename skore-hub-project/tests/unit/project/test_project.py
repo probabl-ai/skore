@@ -340,3 +340,16 @@ class TestProject:
                 "predict_time": None,
             },
         ]
+
+    def test_delete(self, respx_mock):
+        respx_mock.delete("projects/<tenant>/<name>").mock(Response(204))
+        Project.delete("<tenant>", "<name>")
+
+    def test_delete_exception(self, respx_mock):
+        respx_mock.delete("projects/<tenant>/<name>").mock(Response(403))
+
+        with raises(
+            PermissionError,
+            match="Failed to delete the project; please contact the '<tenant>' owner",
+        ):
+            Project.delete("<tenant>", "<name>")

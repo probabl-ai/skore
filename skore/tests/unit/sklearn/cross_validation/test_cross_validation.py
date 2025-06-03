@@ -15,7 +15,9 @@ from sklearn.metrics import (
     get_scorer,
     make_scorer,
     median_absolute_error,
+    precision_score,
     r2_score,
+    recall_score,
 )
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -103,6 +105,7 @@ def test_generate_estimator_report(binary_classification_data):
         y=y,
         train_indices=train_indices,
         test_indices=test_indices,
+        pos_label=1,
     )
 
     assert isinstance(report, EstimatorReport)
@@ -352,6 +355,31 @@ def test_cross_validation_report_display_regression(pyplot, regression_data, dis
     assert report._cache != {}
     display_second_call = getattr(report.metrics, display)(seed=0)
     assert display_first_call is display_second_call
+
+
+@pytest.mark.parametrize("metric", ["roc", "precision_recall"])
+def test_cross_validation_report_display_binary_classification_pos_label(
+    pyplot, binary_classification_data, metric
+):
+    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    classifier = LogisticRegression()
+    report = CrossValidationReport(classifier, X, y)
+    with pytest.raises(ValueError, match="pos_label is not specified"):
+        getattr(report.metrics, metric)()
+
+    report = CrossValidationReport(classifier, X, y, pos_label="A")
+    display = getattr(report.metrics, metric)()
+    display.plot()
+    assert "Positive label: A" in display.ax_.get_xlabel()
+
+    display = getattr(report.metrics, metric)(pos_label="B")
+    display.plot()
+    assert "Positive label: B" in display.ax_.get_xlabel()
 
 
 def test_seed_none(regression_data):
@@ -1028,3 +1056,84 @@ def test_cross_validation_timings_flat_index(binary_classification_data):
         "fit_time_s",
         "predict_time_s",
     ]
+
+
+@pytest.mark.parametrize(
+    "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
+)
+def test_cross_validation_report_report_metrics_pos_label_overwrite(
+    binary_classification_data, metric, metric_fn
+):
+    """Check that `pos_label` can be overwritten in `report_metrics`"""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    classifier = LogisticRegression()
+
+    report = CrossValidationReport(classifier, X, y)
+    result_both_labels = report.metrics.report_metrics(scoring=metric).reset_index()
+    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
+    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+
+    report = CrossValidationReport(classifier, X, y, pos_label="B")
+    result = report.metrics.report_metrics(scoring=metric).reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    assert (
+        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
+        == result_both_labels.loc[
+            (metric.capitalize(), "B"), (report.estimator_name_, "mean")
+        ]
+    )
+
+    result = report.metrics.report_metrics(scoring=metric, pos_label="A").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    assert (
+        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
+        == result_both_labels.loc[
+            (metric.capitalize(), "A"), (report.estimator_name_, "mean")
+        ]
+    )
+
+
+@pytest.mark.parametrize(
+    "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
+)
+def test_estimator_report_precision_recall_pos_label_overwrite(
+    binary_classification_data, metric, metric_fn
+):
+    """Check that `pos_label` can be overwritten in `report_metrics`"""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    classifier = LogisticRegression()
+
+    report = CrossValidationReport(classifier, X, y)
+    result_both_labels = getattr(report.metrics, metric)().reset_index()
+    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
+    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+
+    result = getattr(report.metrics, metric)(pos_label="B").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    assert (
+        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
+        == result_both_labels.loc[
+            (metric.capitalize(), "B"), (report.estimator_name_, "mean")
+        ]
+    )
+
+    result = getattr(report.metrics, metric)(pos_label="A").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    assert (
+        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
+        == result_both_labels.loc[
+            (metric.capitalize(), "A"), (report.estimator_name_, "mean")
+        ]
+    )
