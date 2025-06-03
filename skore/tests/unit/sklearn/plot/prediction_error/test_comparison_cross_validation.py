@@ -58,7 +58,7 @@ def test_regression(pyplot, report):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Prediction errors on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -87,7 +87,7 @@ def test_regression_actual_vs_predicted(pyplot, report):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Prediction errors on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Predicted values"

@@ -416,10 +416,24 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                     )
                 )
 
-        self.ax_.legend(
-            bbox_to_anchor=(1.02, 1),
-            title=f"Prediction errors on $\\bf{{{self.data_source}}}$ set",
-        )
+        if self.data_source in ("train", "test"):
+            legend_title = f"{self.data_source.capitalize()} set"
+        else:
+            legend_title = "External set"
+
+        # move the perfect model line to the end of the legend
+        handles, labels = self.ax_.get_legend_handles_labels()
+        handles.append(handles.pop(0))
+        labels.append(labels.pop(0))
+
+        if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
+            # too many lines to fit legend in the plot
+            self.ax_.legend(
+                handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
+            )
+        else:
+            self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
+        self.ax_.set_title("Prediction Error")
 
         return scatter
 
