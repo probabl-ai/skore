@@ -1,3 +1,4 @@
+import pickle
 from collections.abc import Callable
 from typing import Any, Literal, Optional, Union, cast
 
@@ -227,21 +228,30 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
         else:
-            parallel = Parallel(
-                **_validate_joblib_parallel_params(
-                    n_jobs=self._parent.n_jobs, return_as="generator"
+            try:
+                parallel = Parallel(
+                    **_validate_joblib_parallel_params(
+                        n_jobs=self._parent.n_jobs, return_as="generator"
+                    )
                 )
-            )
-            generator = parallel(
-                delayed(getattr(report.metrics, report_metric_name))(
-                    data_source=data_source, X=X, y=y, **metric_kwargs
+                generator = parallel(
+                    delayed(getattr(report.metrics, report_metric_name))(
+                        data_source=data_source, X=X, y=y, **metric_kwargs
+                    )
+                    for report in self._parent.reports_
                 )
-                for report in self._parent.reports_
-            )
-            results = []
-            for result in generator:
-                results.append(result)
-                progress.update(main_task, advance=1, refresh=True)
+                results = []
+                for result in generator:
+                    results.append(result)
+                    progress.update(main_task, advance=1, refresh=True)
+            except (pickle.PicklingError, TypeError):
+                # Fall back to sequential execution if parallel fails
+                results = []
+                for report in self._parent.reports_:
+                    method = getattr(report.metrics, report_metric_name)
+                    result = method(data_source=data_source, X=X, y=y, **metric_kwargs)
+                    results.append(result)
+                    progress.update(main_task, advance=1, refresh=True)
 
             results = pd.concat(
                 results,

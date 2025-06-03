@@ -950,24 +950,30 @@ def test_cross_validation_report_custom_metric(binary_classification_data):
         (KeyboardInterrupt(), "Cross-validation interrupted manually"),
     ],
 )
-@pytest.mark.parametrize("n_jobs", [None, 1])
+@pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_cross_validation_report_interrupted(
     binary_classification_data, capsys, error, error_message, n_jobs
 ):
-    """Check that we can interrupt cross-validation without losing all
-    data."""
+    """Check that we can interrupt cross-validation without losing all data."""
     _, X, y = binary_classification_data
-
     estimator = MockEstimator(error=error, n_call=0, fail_after_n_clone=8)
-    report = CrossValidationReport(estimator, X, y, cv_splitter=10, n_jobs=n_jobs)
 
-    captured = capsys.readouterr()
-    assert all(word in captured.out for word in error_message.split(" "))
+    # Use the threading backend which doesn't require pickling
+    with joblib.parallel_backend("threading", n_jobs=n_jobs):
+        # Create the report inside the context manager
+        report = CrossValidationReport(estimator, X, y, cv_splitter=10, n_jobs=n_jobs)
 
-    result = report.metrics.custom_metric(
-        metric_function=accuracy_score,
-        response_method="predict",
-    )
+        # Handle output capture
+        captured = capsys.readouterr()
+        assert all(word in captured.out for word in error_message.split(" "))
+
+        # Also run the metrics inside the same context to maintain threading
+        result = report.metrics.custom_metric(
+            metric_function=accuracy_score,
+            response_method="predict",
+        )
+
+    # Assertions should work outside the context
     assert result.shape == (1, 2)
     assert result.index == ["Accuracy Score"]
 
