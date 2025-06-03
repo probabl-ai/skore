@@ -348,5 +348,8 @@ class TestProject:
     def test_delete_exception(self, respx_mock):
         respx_mock.delete("projects/<tenant>/<name>").mock(Response(403))
 
-        with raises(PermissionError, match="Please contact the '<tenant>' owner"):
+        with raises(
+            PermissionError,
+            match="Failed to delete the project; please contact the '<tenant>' owner",
+        ):
             Project.delete("<tenant>", "<name>")

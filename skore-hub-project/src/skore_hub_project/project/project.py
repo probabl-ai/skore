@@ -207,7 +207,7 @@ class Project:
         return self.run_id and SimpleNamespace(get=get, metadata=metadata)
 
     def __repr__(self) -> str:  # noqa: D105
-        return f"Project(hub://{self.tenant}@{self.name})"
+        return f"Project(mode='hub', name='{self.name}', tenant='{self.tenant}')"
 
     @staticmethod
     def delete(tenant: str, name: str):
@@ -231,5 +231,8 @@ class Project:
                 client.delete(f"projects/{tenant}/{name}")
             except HTTPStatusError as e:
                 if e.response.status_code == 403:
-                    raise PermissionError(f"Please contact the '{tenant}' owner") from e
+                    raise PermissionError(
+                        f"Failed to delete the project; "
+                        f"please contact the '{tenant}' owner"
+                    ) from e
                 raise
