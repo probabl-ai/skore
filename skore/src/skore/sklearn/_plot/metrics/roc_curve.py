@@ -952,3 +952,77 @@ class RocCurveDisplay(
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self) -> DataFrame:
+        """Get the data used to create the ROC curve plot.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the ROC curve data with columns:
+            - For binary classification:
+                - fpr: False Positive Rate
+                - tpr: True Positive Rate
+                - threshold: Classification threshold
+                - roc_auc: Area Under the Curve
+                - model_name: Name of the model
+                - fold_id: Cross-validation fold ID
+            - For multiclass classification:
+                - fpr: False Positive Rate
+                - tpr: True Positive Rate
+                - threshold: Classification threshold
+                - roc_auc: Area Under the Curve
+                - method: One-vs-Rest (OvR)
+                - class: Class label
+                - model_name: Name of the model
+                - fold_id: Cross-validation fold ID
+        """
+        # Merge ROC curve and ROC AUC data
+        merged_data = self.roc_curve.merge(
+            self.roc_auc, on=["estimator_name", "split_index", "label"], how="left"
+        )
+
+        # Convert categorical columns to object type
+        for col in ["label", "split_index", "estimator_name"]:
+            if col in merged_data.columns and merged_data[col].dtype.name == "category":
+                merged_data[col] = merged_data[col].astype(object)
+
+        # Rename columns to match expected output
+        column_mapping = {
+            "estimator_name": "model_name",
+            "split_index": "fold_id",
+        }
+        result = merged_data.rename(columns=column_mapping)
+
+        # For multiclass classification, add method column and rename label to class
+        if self.ml_task == "multiclass-classification":
+            result["method"] = "OvR"
+            result = result.rename(columns={"label": "class"})
+
+        # Convert model_name and fold_id back to category type
+        result["model_name"] = result["model_name"].astype("category")
+        result["fold_id"] = result["fold_id"].astype("category")
+
+        # Reorder columns based on task type
+        if self.ml_task == "binary-classification":
+            column_order = [
+                "fpr",
+                "tpr",
+                "threshold",
+                "roc_auc",
+                "model_name",
+                "fold_id",
+            ]
+        else:
+            column_order = [
+                "fpr",
+                "tpr",
+                "threshold",
+                "roc_auc",
+                "method",
+                "class",
+                "model_name",
+                "fold_id",
+            ]
+
+        return result[column_order]
