@@ -50,14 +50,15 @@ class Project(DirNamesMixin):
     Otherwise, the project is configured to the ``local`` mode to be persisted on
     the user machine in a directory called ``workspace``.
 
-    The workspace can be shared between all the projects.
-    The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-    If not, it will be by default set to a ``skore/`` directory in the USER
-    cache directory:
+    | The workspace can be shared between all the projects.
+    | The workspace can be set using kwargs or the environment variable
+      ``SKORE_WORKSPACE``.
+    | If not, it will be by default set to a ``skore/`` directory in the USER
+      cache directory:
 
-    - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-    - in Linux, usually ``${HOME}/.cache/skore``,
-    - in macOS, usually ``${HOME}/Library/Caches/skore``.
+    - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+    - on Linux, usually ``${HOME}/.cache/skore``,
+    - on macOS, usually ``${HOME}/Library/Caches/skore``.
 
     Refer to the :ref:`project` section of the user guide for more details.
 
@@ -76,14 +77,15 @@ class Project(DirNamesMixin):
         workspace : Path, mode:local only.
             The directory where the local project is persisted.
 
-            The workspace can be shared between all the projects.
-            The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-            If not, it will be by default set to a ``skore/`` directory in the USER
-            cache directory:
+            | The workspace can be shared between all the projects.
+            | The workspace can be set using kwargs or the environment variable
+              ``SKORE_WORKSPACE``.
+            | If not, it will be by default set to a ``skore/`` directory in the USER
+              cache directory:
 
-            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-            - in Linux, usually ``${HOME}/.cache/skore``,
-            - in macOS, usually ``${HOME}/Library/Caches/skore``.
+            - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - on Linux, usually ``${HOME}/.cache/skore``,
+            - on macOS, usually ``${HOME}/Library/Caches/skore``.
 
     Attributes
     ----------
@@ -195,14 +197,15 @@ class Project(DirNamesMixin):
             workspace : Path, mode:local only.
                 The directory where the local project is persisted.
 
-                The workspace can be shared between all the projects.
-                The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-                If not, it will be by default set to a ``skore/`` directory in the USER
-                cache directory:
+                | The workspace can be shared between all the projects.
+                | The workspace can be set using kwargs or the environment variable
+                  ``SKORE_WORKSPACE``.
+                | If not, it will be by default set to a ``skore/`` directory in the
+                  USER cache directory:
 
-                - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-                - in Linux, usually ``${HOME}/.cache/skore``,
-                - in macOS, usually ``${HOME}/Library/Caches/skore``.
+                - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+                - on Linux, usually ``${HOME}/.cache/skore``,
+                - on macOS, usually ``${HOME}/Library/Caches/skore``.
         """
         mode, name, plugin, parameters = Project.__setup_plugin(name)
 
@@ -272,14 +275,15 @@ class Project(DirNamesMixin):
             workspace : Path, mode:local only.
                 The directory where the local project is persisted.
 
-                The workspace can be shared between all the projects.
-                The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-                If not, it will be by default set to a ``skore/`` directory in the USER
-                cache directory:
+                | The workspace can be shared between all the projects.
+                | The workspace can be set using kwargs or the environment variable
+                  ``SKORE_WORKSPACE``.
+                | If not, it will be by default set to a ``skore/`` directory in the
+                  USER cache directory:
 
-                - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-                - in Linux, usually ``${HOME}/.cache/skore``,
-                - in macOS, usually ``${HOME}/Library/Caches/skore``.
+                - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+                - on Linux, usually ``${HOME}/.cache/skore``,
+                - on macOS, usually ``${HOME}/Library/Caches/skore``.
         """
         _, _, plugin, parameters = Project.__setup_plugin(name)
 
