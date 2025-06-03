@@ -23,7 +23,7 @@ def test_regression(pyplot, regression_data_no_split, data_source):
 
     # check the structure of the attributes
     assert isinstance(display.prediction_error, pd.DataFrame)
-    assert len(display.prediction_error["split_index"].unique()) == cv
+    assert display.prediction_error["split_index"].nunique() == cv
     assert display.data_source == data_source
     assert isinstance(display.range_y_true, RangeData)
     assert isinstance(display.range_y_pred, RangeData)
@@ -70,7 +70,7 @@ def test_regression_actual_vs_predicted(pyplot, regression_data_no_split):
 
     # check the structure of the attributes
     assert isinstance(display.prediction_error, pd.DataFrame)
-    assert len(display.prediction_error["split_index"].unique()) == cv
+    assert display.prediction_error["split_index"].nunique() == cv
     assert display.data_source == "test"
 
     assert isinstance(display.line_, mpl.lines.Line2D)

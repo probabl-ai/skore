@@ -232,7 +232,7 @@ def test_frame_with_comparison(binary_classification_data):
     df = display.frame()
 
     # Check that we have data for both estimators
-    assert len(df["model_name"].unique()) == 2
+    assert df["model_name"].nunique() == 2
     assert set(df["model_name"].unique()) == {"estimator_1", "estimator_2"}
 
     # Each estimator should have its own ROC curve data and AUC score

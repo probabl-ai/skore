@@ -32,8 +32,8 @@ def test_binary_classification(
         == [display.pos_label]
     )
     assert (
-        len(display.roc_curve["split_index"].unique())
-        == len(display.roc_auc["split_index"].unique())
+        display.roc_curve["split_index"].nunique()
+        == display.roc_auc["split_index"].nunique()
         == cv
     )
 
@@ -96,8 +96,8 @@ def test_multiclass_classification(
         == list(class_labels)
     )
     assert (
-        len(display.roc_curve["split_index"].unique())
-        == len(display.roc_auc["split_index"].unique())
+        display.roc_curve["split_index"].nunique()
+        == display.roc_auc["split_index"].nunique()
         == cv
     )
 
@@ -193,7 +193,7 @@ def test_frame_with_cross_validation(binary_classification_data_no_split):
     df = display.frame()
 
     # Check that fold_id contains the expected number of folds
-    assert len(df["fold_id"].unique()) == cv
+    assert df["fold_id"].nunique() == cv
 
     # Each fold should have its own ROC curve data
     for fold in range(cv):
