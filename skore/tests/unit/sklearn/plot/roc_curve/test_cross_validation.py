@@ -195,7 +195,7 @@ def test_frame_with_cross_validation(binary_classification_data_no_split):
     # Check that fold_id contains the expected number of folds
     assert df["fold_id"].nunique() == cv
 
-    # Each fold should have its own ROC curve data
+    # Each fold should have exactly one ROC AUC value
     for fold in range(cv):
         fold_data = df[df["fold_id"] == fold]
         assert not fold_data.empty
