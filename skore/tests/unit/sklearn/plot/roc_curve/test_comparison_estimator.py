@@ -206,7 +206,7 @@ def test_multiple_roc_curve_kwargs_error(
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
 
 
-def test_frame_with_comparison(binary_classification_data):
+def test_frame(binary_classification_data):
     """Test the frame method with comparison data."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
