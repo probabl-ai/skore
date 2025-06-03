@@ -141,10 +141,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         """
         if self.report_type == "estimator":
             allow_single_dict = True
-            n_curves = 1
+            n_scatter_groups = 1
         elif self.report_type == "cross-validation":
             allow_single_dict = True
-            n_curves = len(self.prediction_error["split_index"].cat.categories)
+            n_scatter_groups = len(self.prediction_error["split_index"].cat.categories)
         elif self.report_type in (
             "comparison-estimator",
             "comparison-cross-validation",
@@ -152,7 +152,9 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             # since we compare different estimators, it does not make sense to share
             # a single dictionary for all the estimators.
             allow_single_dict = False
-            n_curves = len(self.prediction_error["estimator_name"].cat.categories)
+            n_scatter_groups = len(
+                self.prediction_error["estimator_name"].cat.categories
+            )
         else:
             raise ValueError(
                 f"`report_type` should be one of 'estimator', 'cross-validation', "
@@ -161,8 +163,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             )
 
         if data_points_kwargs is None:
-            return [{}] * n_curves
-        elif n_curves == 1:
+            return [{}] * n_scatter_groups
+        elif n_scatter_groups == 1:
             if isinstance(data_points_kwargs, dict):
                 return [data_points_kwargs]
             raise ValueError(
@@ -179,16 +181,16 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 )
 
             if isinstance(data_points_kwargs, dict):
-                return [data_points_kwargs] * n_curves
+                return [data_points_kwargs] * n_scatter_groups
 
             # From this point, we have a list of dictionaries
-            if len(data_points_kwargs) != n_curves:
+            if len(data_points_kwargs) != n_scatter_groups:
                 raise ValueError(
                     "You intend to plot prediction errors either from multiple "
                     "estimators or from a cross-validated estimator. "
                     "We expect `data_points_kwargs` to be a list of dictionaries "
                     "with the same length as the number of estimators or splits. "
-                    f"Got {len(data_points_kwargs)} instead of {n_curves}."
+                    f"Got {len(data_points_kwargs)} instead of {n_scatter_groups}."
                 )
 
         return data_points_kwargs
