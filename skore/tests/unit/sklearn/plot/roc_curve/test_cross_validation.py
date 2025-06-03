@@ -183,3 +183,20 @@ def test_multiple_roc_curve_kwargs_error(
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
+
+
+def test_frame_with_cross_validation(binary_classification_data_no_split):
+    """Test the frame method with cross-validation data."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.roc()
+    df = display.frame()
+
+    # Check that fold_id contains the expected number of folds
+    assert len(df["fold_id"].unique()) == cv
+
+    # Each fold should have its own ROC curve data
+    for fold in range(cv):
+        fold_data = df[df["fold_id"] == fold]
+        assert not fold_data.empty
+        assert fold_data["roc_auc"].nunique() == 1  # One AUC score per fold

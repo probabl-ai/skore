@@ -1,6 +1,7 @@
 import matplotlib as mpl
 import numpy as np
 import pytest
+from pandas import DataFrame
 from skore import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
@@ -242,3 +243,86 @@ def test_roc_curve_kwargs_multiclass_classification(
     display.plot(despine=False)
     assert display.ax_.spines["top"].get_visible()
     assert display.ax_.spines["right"].get_visible()
+
+
+def test_binary_classification_frame(binary_classification_data):
+    """Test the frame method with binary classification data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    df = display.frame()
+
+    # Check that we get a DataFrame
+    assert isinstance(df, DataFrame)
+
+    # Check the columns for binary classification
+    expected_columns = ["fpr", "tpr", "threshold", "roc_auc", "model_name", "fold_id"]
+    assert list(df.columns) == expected_columns
+
+    # Check data types
+    assert df["fpr"].dtype == np.float64
+    assert df["tpr"].dtype == np.float64
+    assert df["threshold"].dtype == np.float64
+    assert df["roc_auc"].dtype == np.float64
+    assert df["model_name"].dtype.name == "category"
+    assert df["fold_id"].dtype.name == "category"
+
+    # Check that values are within expected ranges
+    assert df["fpr"].between(0, 1).all()
+    assert df["tpr"].between(0, 1).all()
+    assert df["roc_auc"].between(0, 1).all()
+
+    # Check that model_name matches the estimator
+    assert df["model_name"].unique() == [estimator.__class__.__name__]
+
+
+def test_multiclass_classification_frame(multiclass_classification_data):
+    """Test the frame method with multiclass classification data."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    df = display.frame()
+
+    # Check that we get a DataFrame
+    assert isinstance(df, DataFrame)
+
+    # Check the columns for multiclass classification
+    expected_columns = [
+        "fpr",
+        "tpr",
+        "threshold",
+        "roc_auc",
+        "method",
+        "class",
+        "model_name",
+        "fold_id",
+    ]
+    assert list(df.columns) == expected_columns
+
+    # Check data types
+    assert df["fpr"].dtype == np.float64
+    assert df["tpr"].dtype == np.float64
+    assert df["threshold"].dtype == np.float64
+    assert df["roc_auc"].dtype == np.float64
+    assert df["method"].dtype == object
+    assert df["class"].dtype == object
+    assert df["model_name"].dtype.name == "category"
+    assert df["fold_id"].dtype.name == "category"
+
+    # Check that values are within expected ranges
+    assert df["fpr"].between(0, 1).all()
+    assert df["tpr"].between(0, 1).all()
+    assert df["roc_auc"].between(0, 1).all()
+
+    # Check that method is always "OvR" for multiclass
+    assert (df["method"] == "OvR").all()
+
+    # Check that model_name matches the estimator
+    assert df["model_name"].unique() == [estimator.__class__.__name__]
+
+    # Check that we have the right number of classes
+    assert set(df["class"]) == set(estimator.classes_)

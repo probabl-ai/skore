@@ -204,3 +204,39 @@ def test_multiple_roc_curve_kwargs_error(
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
+
+
+def test_frame_with_comparison(binary_classification_data):
+    """Test the frame method with comparison data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.roc()
+    df = display.frame()
+
+    # Check that we have data for both estimators
+    assert len(df["model_name"].unique()) == 2
+    assert set(df["model_name"].unique()) == {"estimator_1", "estimator_2"}
+
+    # Each estimator should have its own ROC curve data and AUC score
+    for estimator_name in ["estimator_1", "estimator_2"]:
+        estimator_data = df[df["model_name"] == estimator_name]
+        assert not estimator_data.empty
+        assert estimator_data["roc_auc"].nunique() == 1  # One AUC score per estimator
