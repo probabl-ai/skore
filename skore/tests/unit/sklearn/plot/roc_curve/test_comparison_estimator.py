@@ -231,7 +231,6 @@ def test_frame(binary_classification_data):
     display = report.metrics.roc()
     df = display.frame()
 
-    # Check that we have data for both estimators
     assert df["model_name"].nunique() == 2
 
     # Each estimator should have exactly one ROC AUC value
