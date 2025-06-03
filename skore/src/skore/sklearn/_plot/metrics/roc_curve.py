@@ -976,6 +976,19 @@ class RocCurveDisplay(
                 - class: Class label
                 - model_name: Name of the model
                 - fold_id: Cross-validation fold ID
+
+        Examples
+        --------
+        >>> # Binary classification example
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import EstimatorReport, train_test_split
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> clf = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(clf, **split_data)
+        >>> display = report.metrics.roc()
+        >>> df = display.frame()
         """
         # Merge ROC curve and ROC AUC data
         merged_data = self.roc_curve.merge(
