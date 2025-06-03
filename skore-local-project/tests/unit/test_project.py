@@ -107,7 +107,9 @@ class TestProject:
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
         assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
-    def test_put_exception(self, tmp_path):
+    def test_put_exception(self, tmp_path, regression):
+        import re
+
         project = Project("<project>", workspace=tmp_path)
 
         with raises(TypeError, match="Key must be a string"):
@@ -115,6 +117,17 @@ class TestProject:
 
         with raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
             project.put("<key>", "<value>")
+
+        Project.delete("<project>", workspace=tmp_path)
+
+        with raises(
+            RuntimeError,
+            match=re.escape(
+                f"Bad condition: {repr(project)} does not exist anymore, "
+                f"it had to be removed.",
+            ),
+        ):
+            project.put("<key>", regression)
 
     def test_put(self, tmp_path, nowstr, regression):
         project = Project("<project>", workspace=tmp_path)
@@ -156,6 +169,21 @@ class TestProject:
         assert isinstance(project.reports, SimpleNamespace)
         assert hasattr(project.reports, "get")
         assert hasattr(project.reports, "metadata")
+
+    def test_reports_exception(self, tmp_path):
+        import re
+
+        project = Project("<project>", workspace=tmp_path)
+        Project.delete("<project>", workspace=tmp_path)
+
+        with raises(
+            RuntimeError,
+            match=re.escape(
+                f"Bad condition: {repr(project)} does not exist anymore, "
+                f"it had to be removed.",
+            ),
+        ):
+            project.reports  # noqa: B018
 
     def test_reports_get(self, tmp_path, regression):
         project = Project("<project>", workspace=tmp_path)
@@ -229,7 +257,10 @@ class TestProject:
         import re
 
         with raises(
-            ValueError,
-            match=re.escape(f"Project(local:{tmp_path}@<project>) doesn't exist"),
+            LookupError,
+            match=re.escape(
+                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"does not exist."
+            ),
         ):
             Project.delete("<project>", workspace=tmp_path)

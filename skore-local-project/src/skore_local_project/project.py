@@ -80,13 +80,14 @@ class Project:
         The directory where the project (metadata and artifacts) are persisted.
 
         | The workspace can be shared between all the projects.
-        | The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+        | The workspace can be set using kwargs or the environment variable
+          ``SKORE_WORKSPACE``.
         | If not, it will be by default set to a ``skore/`` directory in the USER
-        cache directory:
+          cache directory:
 
-        - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-        - in Linux, usually ``${HOME}/.cache/skore``,
-        - in macOS, usually ``${HOME}/Library/Caches/skore``.
+        - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+        - on Linux, usually ``${HOME}/.cache/skore``,
+        - on macOS, usually ``${HOME}/Library/Caches/skore``.
     run_id : str
         The current run identifier of the project.
     """
@@ -98,6 +99,7 @@ class Project:
         Path,
         DiskCacheStorage,
         DiskCacheStorage,
+        DiskCacheStorage,
     ]:
         if workspace is None:
             if "SKORE_WORKSPACE" in os.environ:
@@ -105,11 +107,12 @@ class Project:
             else:
                 workspace = Path(platformdirs.user_cache_dir()) / "skore"
 
-        (workspace / "metadata").mkdir(parents=True, exist_ok=True)
-        (workspace / "artifacts").mkdir(parents=True, exist_ok=True)
+        for directory in ("projects", "metadata", "artifacts"):
+            (workspace / directory).mkdir(parents=True, exist_ok=True)
 
         return (
             workspace,
+            DiskCacheStorage(workspace / "projects"),
             DiskCacheStorage(workspace / "metadata"),
             DiskCacheStorage(workspace / "artifacts"),
         )
@@ -129,19 +132,41 @@ class Project:
             The directory where the project (metadata and artifacts) are persisted.
 
             | The workspace can be shared between all the projects.
-            | The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+            | The workspace can be set using kwargs or the environment variable
+              ``SKORE_WORKSPACE``.
             | If not, it will be by default set to a ``skore/`` directory in the USER
-            cache directory:
+              cache directory:
 
-            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-            - in Linux, usually ``${HOME}/.cache/skore``,
-            - in macOS, usually ``${HOME}/Library/Caches/skore``.
+            - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - on Linux, usually ``${HOME}/.cache/skore``,
+            - on macOS, usually ``${HOME}/Library/Caches/skore``.
         """
-        self.name = name
-        self.run_id = uuid4().hex
-        self.workspace, self.__metadata_storage, self.__artifacts_storage = (
-            Project.__setup_diskcache(workspace)
-        )
+        workspace, projects, metadata, artifacts = Project.__setup_diskcache(workspace)
+
+        self.__name = name
+        self.__run_id = uuid4().hex
+        self.__workspace = workspace
+        self.__projects_storage = projects
+        self.__metadata_storage = metadata
+        self.__artifacts_storage = artifacts
+
+        # Create the project
+        self.__projects_storage[name] = None
+
+    @property
+    def name(self) -> str:
+        """The name of the project."""
+        return self.__name
+
+    @property
+    def run_id(self) -> str:
+        """The run identifier of the project."""
+        return self.__run_id
+
+    @property
+    def workspace(self) -> Path:
+        """The workspace of the project."""
+        return self.__workspace
 
     @staticmethod
     def pickle(report: EstimatorReport) -> tuple[str, bytes]:
@@ -194,6 +219,12 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
+        if self.name not in self.__projects_storage:
+            raise RuntimeError(
+                f"Bad condition: {repr(self)} does not exist anymore, "
+                f"it had to be removed."
+            )
+
         pickle_hash, pickle_bytes = Project.pickle(report)
 
         if pickle_hash not in self.__artifacts_storage:
@@ -236,6 +267,11 @@ class Project:
     @property
     def reports(self):
         """Accessor for interaction with the persisted reports."""
+        if self.name not in self.__projects_storage:
+            raise RuntimeError(
+                f"Bad condition: {repr(self)} does not exist anymore, "
+                f"it had to be removed."
+            )
 
         def get(id: str) -> EstimatorReport:
             """Get a persisted report by its id."""
@@ -272,7 +308,9 @@ class Project:
         return SimpleNamespace(get=get, metadata=metadata)
 
     def __repr__(self) -> str:  # noqa: D105
-        return f"Project(local:{self.workspace}@{self.name})"
+        return (
+            f"Project(mode='local', name='{self.name}', workspace='{self.workspace}')"
+        )
 
     @staticmethod
     def delete(name: str, *, workspace: Optional[Path] = None):
@@ -287,31 +325,36 @@ class Project:
             The directory where the project (metadata and artifacts) are persisted.
 
             | The workspace can be shared between all the projects.
-            | The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+            | The workspace can be set using kwargs or the environment variable
+              ``SKORE_WORKSPACE``.
             | If not, it will be by default set to a ``skore/`` directory in the USER
-            cache directory:
+              cache directory:
 
-            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-            - in Linux, usually ``${HOME}/.cache/skore``,
-            - in macOS, usually ``${HOME}/Library/Caches/skore``.
+            - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - on Linux, usually ``${HOME}/.cache/skore``,
+            - on macOS, usually ``${HOME}/Library/Caches/skore``.
         """
-        workspace, metadata, artifacts = Project.__setup_diskcache(workspace)
+        workspace, projects, metadata, artifacts = Project.__setup_diskcache(workspace)
 
-        # delete all metadata related to the project
+        if name not in projects:
+            raise LookupError(
+                f"Project(mode='local', name='{name}', workspace='{workspace}') "
+                f"does not exist."
+            )
+
+        # Delete all metadata related to the project
         remaining_artifacts = set()
-        found = False
 
         for key, value in metadata.items():
             if value["project_name"] == name:
-                found = True
                 del metadata[key]
             else:
                 remaining_artifacts.add(value["artifact_id"])
 
-        if not found:
-            raise ValueError(f"Project(local:{workspace}@{name}) doesn't exist")
-
-        # prune artifacts not related to a project
+        # Prune artifacts not related to a project
         for artifact in artifacts:
             if artifact not in remaining_artifacts:
                 del artifacts[artifact]
+
+        # Delete the project
+        del projects[name]
