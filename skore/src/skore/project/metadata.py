@@ -7,9 +7,10 @@ from typing import TYPE_CHECKING
 from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
 
 from skore.project.widget import ModelExplorerWidget
+from skore.sklearn import ComparisonReport
 
 if TYPE_CHECKING:
-    from typing import Union
+    from typing import Literal, Union
 
     from skore.sklearn import EstimatorReport
 
@@ -73,7 +74,12 @@ class Metadata(DataFrame):
     def _constructor(self) -> type[Metadata]:
         return Metadata
 
-    def reports(self, *, filter: bool = True) -> list[EstimatorReport]:
+    def reports(
+        self,
+        *,
+        filter: bool = True,
+        return_as: Literal["list", "comparison"] = "list",
+    ) -> Union[list[EstimatorReport], ComparisonReport]:
         """
         Return the reports referenced by the metadata object from the project.
 
@@ -82,6 +88,8 @@ class Metadata(DataFrame):
         filter : bool, optional
             Filter the reports to return with the user query string selection, default
             True.
+        return_as : Literal["list", "comparison"], optional
+            Return reports as flat list or comparison report, default list.
         """
         if self.empty:
             return []
@@ -92,7 +100,21 @@ class Metadata(DataFrame):
         if filter and (querystr := self._query_string_selection()):
             self = self.query(querystr)
 
-        return list(map(self.project.reports.get, self.index.get_level_values("id")))
+        reports = map(self.project.reports.get, self.index.get_level_values("id"))
+
+        if return_as == "comparison":
+            datasets = self["dataset"].unique()
+
+            if len(datasets) > 1:
+                raise RuntimeError(
+                    f"Bad condition: the comparison mode is only applicable when "
+                    f"reports have the same dataset.\n"
+                    f"Found '{datasets}'.\n"
+                    f"Please query the dataframe or use the widget to make your "
+                    f"selection."
+                )
+            return ComparisonReport(list(reports))
+        return list(reports)
 
     def _repr_html_(self):
         """Display the interactive plot and controls."""

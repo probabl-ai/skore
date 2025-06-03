@@ -1,20 +1,22 @@
+from copy import deepcopy
 from types import SimpleNamespace
 
+from joblib import hash as joblib_hash
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
 from pandas.testing import assert_index_equal
 from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
-from skore import EstimatorReport
 from skore.project.metadata import Metadata
+from skore.sklearn import ComparisonReport, EstimatorReport
 
 
 @fixture
-def regression():
-    X, y = make_regression(random_state=42)
+def regression(random_state=42):
+    X, y = make_regression(random_state=random_state)
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=random_state
     )
 
     return EstimatorReport(
@@ -27,9 +29,9 @@ def regression():
 
 
 @fixture
-def binary_classification():
-    X, y = make_classification(random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+def binary_classification(random_state=42):
+    X, y = make_classification(random_state=random_state)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=random_state)
 
     return EstimatorReport(
         LogisticRegression(),
@@ -57,7 +59,7 @@ class FakeProject:
                     "key": None,
                     "date": None,
                     "learner": None,
-                    "dataset": None,
+                    "dataset": joblib_hash(report.y_test),
                     "ml_task": report._ml_task,
                     "rmse": None,
                     "log_loss": None,
@@ -131,7 +133,7 @@ class TestMetadata:
         assert DataFrame.equals(metadata3, metadata)
         assert metadata3.project == project
 
-    def test_reports_with_filter(self, monkeypatch, regression, binary_classification):
+    def test_reports_filter_true(self, monkeypatch, regression, binary_classification):
         project = FakeProject(regression, binary_classification)
         metadata = Metadata.factory(project)
 
@@ -145,9 +147,7 @@ class TestMetadata:
 
         assert metadata.reports() == [regression]
 
-    def test_reports_without_filter(
-        self, monkeypatch, regression, binary_classification
-    ):
+    def test_reports_filter_false(self, monkeypatch, regression, binary_classification):
         project = FakeProject(regression, binary_classification)
         metadata = Metadata.factory(project)
 
@@ -168,9 +168,33 @@ class TestMetadata:
         assert metadata.reports() == []
         assert metadata.reports(filter=False) == []
 
-    def test_reports_exception(self):
-        with raises(RuntimeError, match="Bad condition"):
+    def test_reports_return_as_comparison(self, regression):
+        regression1 = regression
+        regression2 = deepcopy(regression)
+        metadata = Metadata.factory(FakeProject(regression1, regression2))
+        comparison = metadata.reports(return_as="comparison")
+
+        assert isinstance(comparison, ComparisonReport)
+        assert comparison.reports_ == [regression1, regression2]
+
+    def test_reports_exception(self, regression, binary_classification):
+        with raises(
+            RuntimeError,
+            match="Bad condition: it is not a valid `Metadata` object.",
+        ):
             Metadata([{"<column>": "<value>"}]).reports()
+
+        project = FakeProject(regression, binary_classification)
+        metadata = Metadata.factory(project)
+
+        with raises(
+            RuntimeError,
+            match=(
+                "Bad condition: the comparison mode is only applicable when reports "
+                "have the same dataset."
+            ),
+        ):
+            metadata.reports(return_as="comparison")
 
     def test__query_string_selection(self, monkeypatch):
         metadata = DataFrame(
