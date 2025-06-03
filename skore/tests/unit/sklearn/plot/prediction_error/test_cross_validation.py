@@ -136,16 +136,16 @@ def test_legend(pyplot, regression_data_no_split):
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.prediction_error()
     display.plot()
-    check_legend_position(display, loc="upper left", position="outside")
+    check_legend_position(display.ax_, loc="upper left", position="outside")
 
     display.plot(kind="actual_vs_predicted")
-    check_legend_position(display, loc="lower right", position="inside")
+    check_legend_position(display.ax_, loc="lower right", position="inside")
 
     cv = 10
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.prediction_error()
     display.plot()
-    check_legend_position(display, loc="upper left", position="outside")
+    check_legend_position(display.ax_, loc="upper left", position="outside")
 
     display.plot(kind="actual_vs_predicted")
-    check_legend_position(display, loc="upper left", position="outside")
+    check_legend_position(display.ax_, loc="upper left", position="outside")

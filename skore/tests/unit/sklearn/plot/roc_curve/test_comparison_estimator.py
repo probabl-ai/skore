@@ -223,7 +223,7 @@ def test_legend(pyplot, binary_classification_data, multiclass_classification_da
     )
     display = report.metrics.roc()
     display.plot()
-    check_legend_position(display, loc="lower right", position="inside")
+    check_legend_position(display.ax_, loc="lower right", position="inside")
 
     # multiclass classification <= 5 classes
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
@@ -238,4 +238,4 @@ def test_legend(pyplot, binary_classification_data, multiclass_classification_da
     )
     display = report.metrics.roc()
     display.plot()
-    check_legend_position(display, loc="upper left", position="outside")
+    check_legend_position(display.ax_, loc="upper left", position="outside")

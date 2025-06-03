@@ -203,10 +203,10 @@ def test_legend(pyplot, regression_data):
     )
     display = report.metrics.prediction_error()
     display.plot()
-    check_legend_position(display, loc="upper left", position="outside")
+    check_legend_position(display.ax_, loc="upper left", position="outside")
 
     display.plot(kind="actual_vs_predicted")
-    check_legend_position(display, loc="lower right", position="inside")
+    check_legend_position(display.ax_, loc="lower right", position="inside")
 
     reports = {
         f"estimator {i}": EstimatorReport(
@@ -217,7 +217,7 @@ def test_legend(pyplot, regression_data):
     report = ComparisonReport(reports=reports)
     display = report.metrics.prediction_error()
     display.plot()
-    check_legend_position(display, loc="upper left", position="outside")
+    check_legend_position(display.ax_, loc="upper left", position="outside")
 
     display.plot(kind="actual_vs_predicted")
-    check_legend_position(display, loc="upper left", position="outside")
+    check_legend_position(display.ax_, loc="upper left", position="outside")

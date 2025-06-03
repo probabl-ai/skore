@@ -240,7 +240,7 @@ def test_legend(pyplot, binary_classification_report, multiclass_classification_
     report = binary_classification_report
     display = report.metrics.roc()
     display.plot()
-    check_legend_position(display, loc="lower right", position="inside")
+    check_legend_position(display.ax_, loc="lower right", position="inside")
 
     # multiclass classification <= 5 classes
     report = multiclass_classification_report

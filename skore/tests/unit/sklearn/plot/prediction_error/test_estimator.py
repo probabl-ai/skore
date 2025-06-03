@@ -256,7 +256,7 @@ def test_legend(pyplot, regression_data):
     )
     display = report.metrics.prediction_error()
     display.plot()
-    check_legend_position(display, loc="lower right", position="inside")
+    check_legend_position(display.ax_, loc="lower right", position="inside")
 
     display.plot(kind="actual_vs_predicted")
-    check_legend_position(display, loc="lower right", position="inside")
+    check_legend_position(display.ax_, loc="lower right", position="inside")

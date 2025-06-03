@@ -84,13 +84,12 @@ def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDispl
     ]
 
 
-def check_legend_position(display, *, loc: str, position: Literal["inside", "outside"]):
+def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"]):
     """Check the position of the legend in the axes."""
-    legend = display.ax_.get_legend()
+    legend = ax.get_legend()
     assert legend._loc == Legend.codes[loc]
+    bbox = legend.get_window_extent().transformed(ax.transAxes.inverted())
     if position == "inside":
-        bbox = legend.get_window_extent().transformed(display.ax_.transAxes.inverted())
         assert 0 <= bbox.x0 <= 1
     else:
-        bbox = legend.get_window_extent().transformed(display.ax_.transAxes.inverted())
         assert bbox.x0 >= 1

@@ -155,21 +155,21 @@ def test_legend(
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display, loc="lower left", position="inside")
+    check_legend_position(display.ax_, loc="lower left", position="inside")
 
     # binary classification > 5 folds
     estimator, X, y = binary_classification_data_no_split
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display, loc="upper left", position="outside")
+    check_legend_position(display.ax_, loc="upper left", position="outside")
 
     # multiclass classification <= 5 classes
     estimator, X, y = multiclass_classification_data_no_split
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display, loc="lower left", position="inside")
+    check_legend_position(display.ax_, loc="lower left", position="inside")
 
     # multiclass classification > 5 classes
     estimator = LogisticRegression()
@@ -183,4 +183,4 @@ def test_legend(
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display, loc="upper left", position="outside")
+    check_legend_position(display.ax_, loc="upper left", position="outside")
