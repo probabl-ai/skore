@@ -322,7 +322,7 @@ def test_multiclass_classification_frame(multiclass_classification_data):
     assert (df["method"] == "OvR").all()
 
     # Check that model_name matches the estimator
-    assert df["model_name"].unique() == [estimator.__class__.__name__]
+    assert df["model_name"].unique() == [report.estimator_name_]
 
     # Check that we have the right number of classes
     assert set(df["class"]) == set(estimator.classes_)
