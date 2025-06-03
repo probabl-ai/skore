@@ -996,7 +996,6 @@ class RocCurveDisplay(
             self.roc_auc, on=["estimator_name", "split_index", "label"], how="left"
         )
 
-        # Convert categorical columns to object type
         for col in ["label", "split_index", "estimator_name"]:
             if col in merged_data.columns and merged_data[col].dtype.name == "category":
                 merged_data[col] = merged_data[col].astype(object)
