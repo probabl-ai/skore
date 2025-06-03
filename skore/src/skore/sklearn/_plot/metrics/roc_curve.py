@@ -698,16 +698,7 @@ class RocCurveDisplay(
 
             for ax in self.ax_:
                 _, labels = ax.get_legend_handles_labels()
-                if len(labels) > MAX_N_LABELS:
-                    # too many lines to fit legend in the plot
-                    ax.legend(
-                        loc="upper center",
-                        bbox_to_anchor=(0.5, 1.2),
-                        title=legend_title,
-                    )
-                else:
-                    for ax in self.ax_:
-                        ax.legend(loc="lower right", title=legend_title)
+                ax.legend(loc="lower right", title=legend_title)
 
             self.figure_.suptitle("ROC Curve")
 

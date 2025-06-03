@@ -10,6 +10,7 @@ from skore.sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
 from skore.sklearn._plot.utils import sample_mpl_colormap
+from skore.utils._testing import check_legend_position
 from skore.utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
@@ -75,6 +76,7 @@ def test_binary_classification(pyplot, binary_classification_report):
         assert list(precision_recall_mpl.get_color()[:3]) == list(default_colors[i][:3])
 
     assert isinstance(display.ax_, mpl.axes.Axes)
+    check_legend_position(display.ax_, loc="lower right", position="inside")
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == n_reports
@@ -126,6 +128,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
 
     assert isinstance(display.ax_, np.ndarray)
     for label, ax in zip(labels, display.ax_):
+        check_legend_position(ax, loc="lower right", position="inside")
         legend = ax.get_legend()
         assert legend.get_title().get_text() == "Test set"
         assert len(legend.get_texts()) == n_reports
@@ -215,3 +218,5 @@ def test_multiclass_classification_kwargs(pyplot, multiclass_classification_repo
 
     display.plot(despine=False)
     assert display.ax_[0].spines["top"].get_visible()
+
+

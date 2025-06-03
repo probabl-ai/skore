@@ -74,6 +74,7 @@ def test_binary_classification(pyplot, binary_classification_report):
     assert display.chance_level_.get_color() == "k"
 
     assert isinstance(display.ax_, mpl.axes.Axes)
+    check_legend_position(display.ax_, loc="lower right", position="inside")
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == n_reports + 1
@@ -126,6 +127,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
 
     assert isinstance(display.ax_, np.ndarray)
     for label, ax in zip(labels, display.ax_):
+        check_legend_position(ax, loc="lower right", position="inside")
         legend = ax.get_legend()
         assert legend.get_title().get_text() == "Test set"
         assert len(legend.get_texts()) == n_reports + 1
@@ -230,20 +232,3 @@ def test_multiclass_classification_kwargs(pyplot, multiclass_classification_repo
     display.plot(despine=False)
     assert display.ax_[0].spines["top"].get_visible()
     assert display.ax_[0].spines["right"].get_visible()
-
-
-def test_legend(pyplot, binary_classification_report, multiclass_classification_report):
-    """Check the rendering of the legend for ROC curves with a `ComparisonReport`
-    of `CrossValidationReport`s."""
-
-    # binary classification
-    report = binary_classification_report
-    display = report.metrics.roc()
-    display.plot()
-    check_legend_position(display.ax_, loc="lower right", position="inside")
-
-    # multiclass classification <= 5 classes
-    report = multiclass_classification_report
-    display = report.metrics.roc()
-    display.plot()
-    check_legend_position(display, loc="upper left", position="outside")

@@ -2,6 +2,7 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
+from skore.utils._testing import check_legend_position
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from skore import ComparisonReport, CrossValidationReport
@@ -57,6 +58,7 @@ def test_regression(pyplot, report):
         assert isinstance(scatter, mpl.collections.PathCollection)
 
     assert isinstance(display.ax_, mpl.axes.Axes)
+    check_legend_position(display.ax_, loc="upper right", position="outside")
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
@@ -86,6 +88,7 @@ def test_regression_actual_vs_predicted(pyplot, report):
         assert isinstance(scatter, mpl.collections.PathCollection)
 
     assert isinstance(display.ax_, mpl.axes.Axes)
+    check_legend_position(display.ax_, loc="lower right", position="inside")
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
