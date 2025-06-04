@@ -996,10 +996,6 @@ class RocCurveDisplay(
             self.roc_auc, on=["estimator_name", "split_index", "label"], how="left"
         )
 
-        for col in ["label", "split_index", "estimator_name"]:
-            if col in merged_data.columns and merged_data[col].dtype.name == "category":
-                merged_data[col] = merged_data[col].astype(object)
-
         # Rename columns to match expected output
         column_mapping = {
             "estimator_name": "model_name",
@@ -1012,7 +1008,7 @@ class RocCurveDisplay(
             result["method"] = "OvR"
             result = result.rename(columns={"label": "class"})
 
-        # Convert model_name and fold_id back to category type
+        # Convert model_name and fold_id to category type
         result["model_name"] = result["model_name"].astype("category")
         result["fold_id"] = result["fold_id"].astype("category")
 
