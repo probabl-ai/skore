@@ -203,6 +203,7 @@ def test_legend(pyplot, regression_data):
     )
     display = report.metrics.prediction_error()
     display.plot()
+    # The loc doesn't matter because bbox_to_anchor is used
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
     display.plot(kind="actual_vs_predicted")
@@ -217,6 +218,7 @@ def test_legend(pyplot, regression_data):
     report = ComparisonReport(reports=reports)
     display = report.metrics.prediction_error()
     display.plot()
+    # The loc doesn't matter because bbox_to_anchor is used
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
     display.plot(kind="actual_vs_predicted")
