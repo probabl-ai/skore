@@ -996,27 +996,19 @@ class RocCurveDisplay(
             self.roc_auc, on=["estimator_name", "split_index", "label"], how="left"
         )
 
-        # Rename columns to match expected output
-        column_mapping = {
-            "estimator_name": "model_name",
-            "split_index": "fold_id",
-        }
-        result = merged_data.rename(columns=column_mapping)
-
         # For multiclass classification, add method column and rename label to class
         if self.ml_task == "multiclass-classification":
-            result["method"] = "OvR"
-            result = result.rename(columns={"label": "class"})
+            merged_data["method"] = "OvR"
 
         # Convert model_name and fold_id to category type
-        result["model_name"] = result["model_name"].astype("category")
-        result["fold_id"] = result["fold_id"].astype("category")
+        merged_data["estimator_name"] = merged_data["estimator_name"].astype("category")
+        merged_data["split_index"] = merged_data["split_index"].astype("category")
 
         # Reorder columns based on task type
         if self.ml_task == "binary-classification":
             column_order = [
-                "model_name",
-                "fold_id",
+                "estimator_name",
+                "split_index",
                 "fpr",
                 "tpr",
                 "threshold",
@@ -1024,9 +1016,9 @@ class RocCurveDisplay(
             ]
         else:
             column_order = [
-                "model_name",
-                "fold_id",
-                "class",
+                "estimator_name",
+                "split_index",
+                "label",
                 "method",
                 "fpr",
                 "tpr",
@@ -1034,4 +1026,4 @@ class RocCurveDisplay(
                 "roc_auc",
             ]
 
-        return result[column_order]
+        return merged_data[column_order]
