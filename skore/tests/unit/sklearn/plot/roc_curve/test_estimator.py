@@ -309,7 +309,7 @@ def test_multiclass_classification_frame(multiclass_classification_data):
     assert df["threshold"].dtype == np.float64
     assert df["roc_auc"].dtype == np.float64
     assert df["method"].dtype == object
-    assert df["class"].dtype == object
+    assert df["class"].dtype.name == "category"
     assert df["model_name"].dtype.name == "category"
     assert df["fold_id"].dtype.name == "category"
 
