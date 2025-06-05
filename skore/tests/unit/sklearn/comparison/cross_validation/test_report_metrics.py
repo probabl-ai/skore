@@ -7,6 +7,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.metrics import accuracy_score, get_scorer
 from skore import ComparisonReport, CrossValidationReport
+from skore.sklearn._plot import ReportMetricsDisplay
 from skore.utils._testing import check_cache_changed, check_cache_unchanged
 
 
@@ -56,10 +57,12 @@ def report_regression():
 def test_aggregate_none(report):
     """`summarize` works as intended with `aggregate=None`."""
     result = report.metrics.summarize(aggregate=None)
+    assert isinstance(result, ReportMetricsDisplay)
+    result_df = result.frame()
 
-    assert_index_equal(result.columns, pd.Index(["Value"]))
-    assert result.index.names == ["Metric", "Label / Average", "Estimator", "Split"]
-    assert len(result) == 64
+    assert_index_equal(result_df.columns, pd.Index(["Value"]))
+    assert result_df.index.names == ["Metric", "Label / Average", "Estimator", "Split"]
+    assert len(result_df) == 64
 
 
 def test_aggregate_none_flat_index(report):
@@ -69,7 +72,7 @@ def test_aggregate_none_flat_index(report):
     result = report.metrics.summarize(
         aggregate=None,
         flat_index=True,
-    )
+    ).frame()
 
     assert_index_equal(result.columns, pd.Index(["Value"]))
     assert len(result) == 64
@@ -77,7 +80,7 @@ def test_aggregate_none_flat_index(report):
 
 def test_default(report):
     """`summarize` works as intended with its default attributes."""
-    result = report.metrics.summarize()
+    result = report.metrics.summarize().frame()
 
     assert_index_equal(
         result.columns,
@@ -99,7 +102,7 @@ def test_default_regression(report_regression):
     `summarize` works as intended with its default attributes for regression
     models.
     """
-    result = report_regression.metrics.summarize()
+    result = report_regression.metrics.summarize().frame()
 
     assert_index_equal(
         result.columns,
@@ -122,8 +125,8 @@ def test_default_regression(report_regression):
 def test_aggregate_sequence_of_one_element(report):
     """Passing a list of one string is the same as passing the string itself."""
     assert_frame_equal(
-        report.metrics.summarize(aggregate="mean"),
-        report.metrics.summarize(aggregate=["mean"]),
+        report.metrics.summarize(aggregate="mean").frame(),
+        report.metrics.summarize(aggregate=["mean"]).frame(),
     )
 
 
@@ -133,8 +136,8 @@ def test_aggregate_is_used_in_cache(report):
     In other words, if you call `summarize` twice with different values of
     `aggregate`, you should get a different result.
     """
-    call1 = report.metrics.summarize(aggregate="mean")
-    call2 = report.metrics.summarize(aggregate=("mean", "std"))
+    call1 = report.metrics.summarize(aggregate="mean").frame()
+    call2 = report.metrics.summarize(aggregate=("mean", "std")).frame()
     assert list(call1.columns) != list(call2.columns)
 
 
@@ -143,7 +146,7 @@ def test_scoring(report):
     result = report.metrics.summarize(
         scoring=["accuracy"],
         aggregate=None,
-    )
+    ).frame()
 
     assert_index_equal(result.columns, pd.Index(["Value"]))
     assert_index_equal(
@@ -166,7 +169,7 @@ def test_scoring(report):
 
 def test_favorability(report):
     """`summarize` works as intended with `indicator_favorability=True`."""
-    result = report.metrics.summarize(indicator_favorability=True)
+    result = report.metrics.summarize(indicator_favorability=True).frame()
 
     assert_index_equal(
         result.columns,
@@ -188,10 +191,10 @@ def test_cache(report):
     """`summarize` results are cached."""
 
     with check_cache_changed(report._cache):
-        result = report.metrics.summarize()
+        result = report.metrics.summarize().frame()
 
     with check_cache_unchanged(report._cache):
-        cached_result = report.metrics.summarize()
+        cached_result = report.metrics.summarize().frame()
 
     assert_frame_equal(result, cached_result)
 
@@ -210,6 +213,7 @@ def test_init_with_report_names(classification_data):
     assert_index_equal(
         (
             comp.metrics.summarize(aggregate=None)
+            .frame()
             .index.get_level_values("Estimator")
             .unique()
         ),
@@ -220,7 +224,7 @@ def test_init_with_report_names(classification_data):
 def test_X_y(report, classification_data):
     """`summarize` works as intended with `data_source="X_y"`."""
     X, y = classification_data
-    result = report.metrics.summarize(data_source="X_y", X=X, y=y)
+    result = report.metrics.summarize(data_source="X_y", X=X, y=y).frame()
 
     assert_index_equal(
         result.columns,
@@ -253,7 +257,9 @@ def test_cache_poisoning(classification_data):
     )
     report = ComparisonReport({"model_1": report_1, "model_2": report_2})
     report.metrics.summarize(indicator_favorability=True)
-    result = report_1.metrics.summarize(aggregate=None, indicator_favorability=True)
+    result = report_1.metrics.summarize(
+        aggregate=None, indicator_favorability=True
+    ).frame()
 
     assert "Favorability" in result.columns
 
@@ -277,5 +283,5 @@ def test_comparison_report_cv_report_summarize_scoring_single_list_equivalence(
     )
     result_list = report.metrics.summarize(
         scoring=[scoring], scoring_kwargs=scoring_kwargs
-    )
+    ).frame()
     assert result_single.equals(result_list)

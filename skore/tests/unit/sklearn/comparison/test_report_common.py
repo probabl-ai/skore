@@ -12,6 +12,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
+from skore.sklearn._plot import ReportMetricsDisplay
 
 
 @pytest.fixture(params=["report_estimator_reports", "report_cv_reports"])
@@ -100,10 +101,12 @@ def test_comparison_report_favorability_undefined_metrics(report):
     metrics = comparison_report.metrics.summarize(
         pos_label=1, indicator_favorability=True
     )
+    assert isinstance(metrics, ReportMetricsDisplay)
+    metrics_df = metrics.frame()
 
-    assert "Brier score" in metrics.index
-    assert "Favorability" in metrics.columns
-    assert not metrics["Favorability"].isna().any()
+    assert "Brier score" in metrics_df.index
+    assert "Favorability" in metrics_df.columns
+    assert not metrics_df["Favorability"].isna().any()
     expected_values = {"(↗︎)", "(↘︎)"}
-    actual_values = set(metrics["Favorability"].to_numpy())
+    actual_values = set(metrics_df["Favorability"].to_numpy())
     assert actual_values.issubset(expected_values)

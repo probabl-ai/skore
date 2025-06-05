@@ -13,6 +13,7 @@ from skore.sklearn._comparison.report import ComparisonReport
 from skore.sklearn._plot.metrics import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
+    ReportMetricsDisplay,
     RocCurveDisplay,
 )
 from skore.sklearn.types import (
@@ -67,7 +68,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Optional[Aggregate] = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> ReportMetricsDisplay:
         """Report a set of metrics for the estimators.
 
         Parameters
@@ -174,7 +175,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return results
+        return ReportMetricsDisplay(results)
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
@@ -243,10 +244,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             )
             individual_results = []
             for result in generator:
-                if (
-                    report_metric_name == "report_metrics"
-                    and self._parent._reports_type == "EstimatorReport"
-                ):
+                if report_metric_name == "report_metrics":
                     # for report_metrics, the output is a display
                     individual_results.append(result.frame())
                 else:
@@ -428,7 +426,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y=y,
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -533,7 +531,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             pos_label=pos_label,
             scoring_kwargs={"average": average},
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -639,7 +637,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             pos_label=pos_label,
             scoring_kwargs={"average": average},
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
@@ -707,7 +705,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y=y,
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -816,7 +814,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y=y,
             scoring_kwargs={"average": average, "multi_class": multi_class},
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -886,7 +884,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y=y,
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -968,7 +966,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y=y,
             scoring_kwargs={"multioutput": multioutput},
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -1050,7 +1048,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y=y,
             scoring_kwargs={"multioutput": multioutput},
             aggregate=aggregate,
-        )
+        ).frame()
 
     def custom_metric(
         self,
@@ -1158,7 +1156,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y=y,
             scoring_names=[metric_name] if metric_name is not None else None,
             aggregate=aggregate,
-        )
+        ).frame()
 
     ####################################################################################
     # Methods related to the help tree
