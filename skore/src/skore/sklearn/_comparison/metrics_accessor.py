@@ -148,7 +148,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.summarize(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
-        ... )
+        ... ).frame()
         Estimator       LogisticRegression_1  LogisticRegression_2
         Metric
         Precision                    0.96...               0.96...
