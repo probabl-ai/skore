@@ -1,4 +1,3 @@
-import pickle
 from collections.abc import Callable
 from typing import Any, Literal, Optional, Union, cast
 
@@ -188,6 +187,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         aggregate: Optional[Aggregate] = None,
+        allow_nested: bool = False,
         **metric_kwargs: Any,
     ) -> pd.DataFrame:
         if data_source == "X_y":
@@ -228,7 +228,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
         else:
-            try:
+            if allow_nested:
                 parallel = Parallel(
                     **_validate_joblib_parallel_params(
                         n_jobs=self._parent.n_jobs, return_as="generator"
@@ -244,8 +244,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 for result in generator:
                     results.append(result)
                     progress.update(main_task, advance=1, refresh=True)
-            except (pickle.PicklingError, TypeError):
-                # Fall back to sequential execution if parallel fails
+            else:
+                # Sequential execution
                 results = []
                 for report in self._parent.reports_:
                     method = getattr(report.metrics, report_metric_name)
