@@ -415,28 +415,31 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         score: dict | list,
         metric_name: str | None,
         metrics_kwargs: dict,
-        pos_label: Optional[PositiveLabel] = None,
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
     ) -> tuple[NDArray, Union[pd.Index, pd.MultiIndex, list[str], None]]:
         """Build the small chunks of the report per metric given the score.
 
         Parameters
         ----------
-            score : dict | list
-                A dictionary/list containing computed score values.
+        score : dict | list
+            A dictionary/list containing computed score values.
 
-            metric_name : str | None
-                The name of the metric that is going to be shown in the report.
+        metric_name : str | None
+            The name of the metric that is going to be shown in the report.
 
-            metrics_kwargs : dict
-                Keyword arguments for the respective metrics function.
+        metrics_kwargs : dict
+            Keyword arguments for the respective metrics function.
 
-            pos_label : Optional[PositiveLabel], default=None
-                The positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         Returns
         -------
-            tuple[NDArray, Union[pd.Index, pd.MultiIndex, list[str], None]]
-                A small chunk of the report.
+        tuple[NDArray, Union[pd.Index, pd.MultiIndex, list[str], None]]
+            A small chunk of the report.
         """
         if self._parent._ml_task == "binary-classification":
             if isinstance(score, dict):
