@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from contextlib import suppress
 from datetime import datetime, timezone
-from functools import cached_property
+from os import environ
 from urllib.parse import urljoin
 
-from httpx import URL, Client, HTTPStatusError, Response
+from httpx import URL, Client, Headers, HTTPStatusError, Response
+from httpx._types import HeaderTypes
 
 from ..authentication.token import Token
 from .api import URI
@@ -32,29 +33,40 @@ class AuthenticatedClient(Client):
 
         self.raises = raises
 
-    @cached_property
-    def token(self):
-        """Access token."""
-        return Token()
+        if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
+            self.__authorization = f"X-API-Key: {apikey}"
 
-    def request(self, method: str, url: URL | str, **kwargs) -> Response:
-        """Execute request with access token, and refresh the token if needed."""
-        # Check if token is well initialized
-        if not self.token.valid:
+    @property
+    def __authorization(self):
+        token = Token()
+
+        if not token.valid:
             raise AuthenticationError(
                 "You are not logged in. Please run `skore-hub-login`"
             )
 
-        # Check if token must be refreshed
-        if self.token.expires_at <= datetime.now(timezone.utc):
-            self.token.refresh()
+        if token.expires_at <= datetime.now(timezone.utc):
+            token.refresh()
 
-        # Overload headers with authorization token
-        headers = kwargs.pop("headers", None) or {}
-        headers["Authorization"] = f"Bearer {self.token.access_token}"
+        return f"Bearer {token.access_token}"
+
+    def request(
+        self,
+        method: str,
+        url: URL | str,
+        headers: HeaderTypes | None = None,
+        **kwargs,
+    ) -> Response:
+        """Execute request with access token, and refresh the token if needed."""
+        headers = Headers(headers)
+
+        # Overload headers with our own authorization token
+        headers.update({"Authorization": self.__authorization})
+
+        # Send request
         response = super().request(
-            method,
-            urljoin(URI, str(url)),
+            method=method,
+            url=urljoin(URI, str(url)),
             headers=headers,
             **kwargs,
         )

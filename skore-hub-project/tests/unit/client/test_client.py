@@ -3,6 +3,7 @@ from urllib.parse import urljoin
 
 import pytest
 from httpx import HTTPStatusError, Response
+from skore_hub_project.authentication.token import Token
 from skore_hub_project.client.api import URI
 from skore_hub_project.client.client import AuthenticatedClient, AuthenticationError
 
@@ -35,9 +36,10 @@ class TestAuthenticatedClient:
         with AuthenticatedClient() as client:
             client.get("foo")
 
-            assert client.token.access_token == "A"
-            assert client.token.refresh_token == "B"
-            assert client.token.expires_at == DATETIME_MAX
+            token = Token()
+            assert token.access_token == "A"
+            assert token.refresh_token == "B"
+            assert token.expires_at == DATETIME_MAX
 
     @pytest.mark.respx(assert_all_called=True)
     def test_request_with_expired_token(self, tmp_path, respx_mock):
@@ -60,9 +62,10 @@ class TestAuthenticatedClient:
         with AuthenticatedClient() as client:
             client.get("foo")
 
-            assert client.token.access_token == "D"
-            assert client.token.refresh_token == "E"
-            assert client.token.expires_at == DATETIME_MAX
+            token = Token()
+            assert token.access_token == "D"
+            assert token.refresh_token == "E"
+            assert token.expires_at == DATETIME_MAX
 
     @pytest.mark.respx(assert_all_called=True)
     def test_request_raises(self, tmp_path, respx_mock):
