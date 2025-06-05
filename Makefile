@@ -10,6 +10,6 @@ lint:
 	pre-commit run --all-files
 
 test-backend:
-	cd skore && pytest tests
+	cd skore && pytest
 
 test: lint test-backend

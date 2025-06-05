@@ -50,14 +50,15 @@ class Project(DirNamesMixin):
     Otherwise, the project is configured to the ``local`` mode to be persisted on
     the user machine in a directory called ``workspace``.
 
-    The workspace can be shared between all the projects.
-    The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-    If not, it will be by default set to a ``skore/`` directory in the USER
-    cache directory:
+    | The workspace can be shared between all the projects.
+    | The workspace can be set using kwargs or the environment variable
+      ``SKORE_WORKSPACE``.
+    | If not, it will be by default set to a ``skore/`` directory in the USER
+      cache directory:
 
-    - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-    - in Linux, usually ``${HOME}/.cache/skore``,
-    - in macOS, usually ``${HOME}/Library/Caches/skore``.
+    - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+    - on Linux, usually ``${HOME}/.cache/skore``,
+    - on macOS, usually ``${HOME}/Library/Caches/skore``.
 
     Refer to the :ref:`project` section of the user guide for more details.
 
@@ -76,14 +77,15 @@ class Project(DirNamesMixin):
         workspace : Path, mode:local only.
             The directory where the local project is persisted.
 
-            The workspace can be shared between all the projects.
-            The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-            If not, it will be by default set to a ``skore/`` directory in the USER
-            cache directory:
+            | The workspace can be shared between all the projects.
+            | The workspace can be set using kwargs or the environment variable
+              ``SKORE_WORKSPACE``.
+            | If not, it will be by default set to a ``skore/`` directory in the USER
+              cache directory:
 
-            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-            - in Linux, usually ``${HOME}/.cache/skore``,
-            - in macOS, usually ``${HOME}/Library/Caches/skore``.
+            - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - on Linux, usually ``${HOME}/.cache/skore``,
+            - on macOS, usually ``${HOME}/Library/Caches/skore``.
 
     Attributes
     ----------
@@ -149,22 +151,24 @@ class Project(DirNamesMixin):
     """
 
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
+
     reports: _ReportsAccessor
     _Project__project: Any
     _Project__mode: str
     _Project__name: str
 
-    def __init__(self, name: str, **kwargs):
+    @staticmethod
+    def __setup_plugin(name: str) -> tuple[str, str, Any, dict]:
         if not (PLUGINS := entry_points(group="skore.plugins.project")):
             raise SystemError("No project plugin found, please install at least one.")
 
-        if match := re.match(self.__HUB_NAME_PATTERN, name):
+        if match := re.match(Project.__HUB_NAME_PATTERN, name):
             mode = "hub"
             name = match["name"]
-            kwargs |= {"tenant": match["tenant"], "name": name}
+            parameters = {"tenant": match["tenant"], "name": name}
         else:
             mode = "local"
-            kwargs |= {"name": name}
+            parameters = {"name": name}
 
         if mode not in PLUGINS.names:
             raise ValueError(
@@ -172,9 +176,42 @@ class Project(DirNamesMixin):
                 f"Please install the `skore-{mode}-project` python package."
             )
 
+        return mode, name, PLUGINS[mode].load(), parameters
+
+    def __init__(self, name: str, **kwargs):
+        r"""
+        Initialize a project.
+
+        Parameters
+        ----------
+        name : str
+            The name of the project:
+
+            - if the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the
+              project is configured to communicate with the ``skore hub``,
+            - otherwise, the project is configured to communicate with a local storage,
+              on the user machine.
+        **kwargs : dict
+            Extra keyword arguments passed to the project, depending on its mode.
+
+            workspace : Path, mode:local only.
+                The directory where the local project is persisted.
+
+                | The workspace can be shared between all the projects.
+                | The workspace can be set using kwargs or the environment variable
+                  ``SKORE_WORKSPACE``.
+                | If not, it will be by default set to a ``skore/`` directory in the
+                  USER cache directory:
+
+                - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+                - on Linux, usually ``${HOME}/.cache/skore``,
+                - on macOS, usually ``${HOME}/Library/Caches/skore``.
+        """
+        mode, name, plugin, parameters = Project.__setup_plugin(name)
+
         self.__mode = mode
         self.__name = name
-        self.__project = PLUGINS[mode].load()(**kwargs)
+        self.__project = plugin(**(kwargs | parameters))
 
     @property
     def mode(self):
@@ -217,6 +254,40 @@ class Project(DirNamesMixin):
 
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()
+
+    @staticmethod
+    def delete(name: str, **kwargs):
+        r"""
+        Delete a project.
+
+        Parameters
+        ----------
+        name : str
+            The name of the project:
+
+            - if the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the
+              project is configured to communicate with the ``skore hub``,
+            - otherwise, the project is configured to communicate with a local storage,
+              on the user machine.
+        **kwargs : dict
+            Extra keyword arguments passed to the project, depending on its mode.
+
+            workspace : Path, mode:local only.
+                The directory where the local project is persisted.
+
+                | The workspace can be shared between all the projects.
+                | The workspace can be set using kwargs or the environment variable
+                  ``SKORE_WORKSPACE``.
+                | If not, it will be by default set to a ``skore/`` directory in the
+                  USER cache directory:
+
+                - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+                - on Linux, usually ``${HOME}/.cache/skore``,
+                - on macOS, usually ``${HOME}/Library/Caches/skore``.
+        """
+        _, _, plugin, parameters = Project.__setup_plugin(name)
+
+        return plugin.delete(**(kwargs | parameters))
 
 
 _register_accessor("reports", Project)(_ReportsAccessor)
