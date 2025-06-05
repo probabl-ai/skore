@@ -158,7 +158,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         else:
             raise ValueError(
                 f"`report_type` should be one of 'estimator', 'cross-validation', "
-                f"'comparison-cross-validation' or 'comparison-estimator'. "
+                "'comparison-cross-validation' or 'comparison-estimator'. "
                 f"Got '{self.report_type}' instead."
             )
 
@@ -785,13 +785,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         range_y_pred = RangeData(min=y_pred_min, max=y_pred_max)
         range_residuals = RangeData(min=residuals_min, max=residuals_max)
 
-        df = DataFrame.from_records(prediction_error_records)
-        df["estimator_name"] = df["estimator_name"].astype("category")
-        if report_type in ("cross-validation", "comparison-cross-validation"):
-            df["split_index"] = df["split_index"].astype("category")
-
         return cls(
-            prediction_error=df,
+            prediction_error=DataFrame.from_records(prediction_error_records).astype(
+                {"estimator_name": "category", "split_index": "category"}
+            ),
             range_y_true=range_y_true,
             range_y_pred=range_y_pred,
             range_residuals=range_residuals,
