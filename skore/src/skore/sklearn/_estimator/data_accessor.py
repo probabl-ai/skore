@@ -61,8 +61,9 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         y = getattr(self._parent, "y_train", None)
         y_test = getattr(self._parent, "y_test", None)
 
-        if dataset == "all":
-            X = self._parent.X_train
+        if dataset == "test":
+            X, y = X_test, y_test
+        elif dataset == "all":
             if X_test is not None:
                 X = concat(X, X_test, axis=0)
             if y is not None and y_test is not None:
