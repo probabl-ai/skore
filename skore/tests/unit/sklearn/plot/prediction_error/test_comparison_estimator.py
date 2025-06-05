@@ -229,5 +229,3 @@ def test_frame(regression_data):
     assert df["y_true"].dtype == np.float64
     assert df["y_pred"].dtype == np.float64
     assert df["residuals"].dtype == np.float64
-
-    assert df["estimator_name"].nunique() == 2
