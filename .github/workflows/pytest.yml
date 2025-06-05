@@ -151,8 +151,6 @@ jobs:
             scikit-learn: "1.5"
           - os: "windows-latest"
             scikit-learn: "1.5"
-          - os: "windows-latest"
-            scikit-learn: "1.5"
         include:
           - os: "ubuntu-latest"
             python: "3.13"
