@@ -7,7 +7,7 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from skore import EstimatorReport, Project
-from skore.project.metadata import Metadata
+from skore.project.summary import Summary
 
 if version_info < (3, 10):
     from importlib_metadata import EntryPoint, EntryPoints
@@ -155,24 +155,17 @@ class TestProject:
         with raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
             Project("<name>").put("<key>", "<value>")
 
-    def test_reports(self):
+    def test_get(self, FakeLocalProject):
         project = Project("<name>")
 
-        assert hasattr(project, "reports")
-        assert hasattr(project.reports, "get")
-        assert hasattr(project.reports, "metadata")
-
-    def test_reports_get(self, FakeLocalProject):
-        project = Project("<name>")
-
-        project.reports.get("<id>")
+        project.get("<id>")
 
         assert FakeLocalProject.called
         assert project._Project__project.reports.get.called
         assert project._Project__project.reports.get.call_args.args == ("<id>",)
         assert not project._Project__project.reports.get.call_args.kwargs
 
-    def test_reports_metadata(self):
+    def test_summary(self):
         project = Project("<name>")
         project._Project__project.reports.metadata.return_value = [
             {
@@ -182,13 +175,13 @@ class TestProject:
             }
         ]
 
-        metadata = project.reports.metadata()
+        summary = project.summary()
 
         assert project._Project__project.reports.metadata.called
-        assert isinstance(metadata, DataFrame)
-        assert isinstance(metadata, Metadata)
+        assert isinstance(summary, DataFrame)
+        assert isinstance(summary, Summary)
         assert DataFrame.equals(
-            metadata,
+            summary,
             DataFrame(
                 data={
                     "learner": Series(
