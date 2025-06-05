@@ -311,8 +311,10 @@ def test_cross_validation_report_metrics_data_source_external(
     result = report.metrics.report_metrics(data_source="X_y", X=X, y=y, aggregate=None)
     for split_idx in range(cv_splitter):
         # check that it is equivalent to call the individual estimator report
-        report_result = report.estimator_reports_[split_idx].metrics.report_metrics(
-            data_source="X_y", X=X, y=y
+        report_result = (
+            report.estimator_reports_[split_idx]
+            .metrics.report_metrics(data_source="X_y", X=X, y=y)
+            .frame()
         )
         np.testing.assert_allclose(
             report_result.iloc[:, 0].to_numpy(), result.iloc[:, split_idx].to_numpy()

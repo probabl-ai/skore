@@ -243,7 +243,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             )
             individual_results = []
             for result in generator:
-                individual_results.append(result)
+                if (
+                    report_metric_name == "report_metrics"
+                    and self._parent._reports_type == "EstimatorReport"
+                ):
+                    # for report_metrics, the output is a display
+                    individual_results.append(result.frame())
+                else:
+                    individual_results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
             if self._parent._reports_type == "EstimatorReport":
