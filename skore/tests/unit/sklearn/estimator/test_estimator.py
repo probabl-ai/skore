@@ -864,6 +864,11 @@ def test_estimator_report_report_metrics_scoring_kwargs(
             ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
         ),
         (
+            "regression_data",
+            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
+            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
+        ),
+        (
             "multiclass_classification_data",
             ["Precision", "Recall", "ROC AUC", "Log Loss", "Fit Time", "Predict Time"],
             [
@@ -917,26 +922,26 @@ def test_estimator_report_report_metrics_indicator_favorability(
 
 
 @pytest.mark.parametrize(
-    "scoring, scoring_kwargs",
+    "scoring, scoring_names, scoring_kwargs",
     [
-        ("accuracy", None),
-        ("neg_log_loss", None),
-        (accuracy_score, {"response_method": "predict"}),
-        (get_scorer("accuracy"), None),
+        ("accuracy", "accuracy", None),
+        ("neg_log_loss", "neg_log_loss", None),
+        (accuracy_score, "accuracy", {"response_method": "predict"}),
+        (get_scorer("accuracy"), "accuracy", None),
     ],
 )
 def test_estimator_report_report_metrics_scoring_single_list_equivalence(
-    binary_classification_data, scoring, scoring_kwargs
+    binary_classification_data, scoring, scoring_names, scoring_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
-    list with a single element."""
+    list with a single element, and it's possible to overwrite col name."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result_single = report.metrics.report_metrics(
-        scoring=scoring, scoring_kwargs=scoring_kwargs
+        scoring=scoring, scoring_names=scoring_names, scoring_kwargs=scoring_kwargs
     )
     result_list = report.metrics.report_metrics(
-        scoring=[scoring], scoring_kwargs=scoring_kwargs
+        scoring=[scoring], scoring_names=scoring_names, scoring_kwargs=scoring_kwargs
     )
     assert result_single.equals(result_list)
 
