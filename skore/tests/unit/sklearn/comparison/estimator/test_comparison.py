@@ -6,7 +6,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import accuracy_score, get_scorer, mean_absolute_error
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
-from skore.sklearn._plot.metrics import PredictionErrorDisplay, ReportMetricsDisplay
+from skore.sklearn._plot.metrics import ReportMetricsDisplay
 
 
 @pytest.fixture

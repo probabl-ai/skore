@@ -146,7 +146,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
         ...     indicator_favorability=True,
-        ... )
+        ... ).frame()
                   LogisticRegression           Favorability
                                 mean       std
         Metric
