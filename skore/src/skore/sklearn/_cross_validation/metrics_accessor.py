@@ -14,6 +14,7 @@ from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
+    ReportMetricsDisplay,
     RocCurveDisplay,
 )
 from skore.sklearn.types import (
@@ -68,7 +69,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Optional[Aggregate] = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> ReportMetricsDisplay:
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -176,7 +177,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return results
+        return ReportMetricsDisplay(report_metrics_data=results)
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
@@ -398,7 +399,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             aggregate=aggregate,
             X=X,
             y=y,
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "precision"))
     def precision(
@@ -495,7 +496,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             y=y,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "recall"))
     def recall(
@@ -593,7 +594,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             aggregate=aggregate,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "brier_score"))
     def brier_score(
@@ -652,7 +653,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             X=X,
             y=y,
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "roc_auc"))
     def roc_auc(
@@ -747,7 +748,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             y=y,
             aggregate=aggregate,
             scoring_kwargs={"average": average, "multi_class": multi_class},
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
     def log_loss(
@@ -806,7 +807,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             X=X,
             y=y,
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "r2"))
     def r2(
@@ -877,7 +878,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             y=y,
             aggregate=aggregate,
             scoring_kwargs={"multioutput": multioutput},
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "rmse"))
     def rmse(
@@ -948,7 +949,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             y=y,
             aggregate=aggregate,
             scoring_kwargs={"multioutput": multioutput},
-        )
+        ).frame()
 
     def custom_metric(
         self,
@@ -1051,7 +1052,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             aggregate=aggregate,
             scoring_names=[metric_name] if metric_name is not None else None,
             pos_label=pos_label,
-        )
+        ).frame()
 
     ####################################################################################
     # Methods related to the help tree

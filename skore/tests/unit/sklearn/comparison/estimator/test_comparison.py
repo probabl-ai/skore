@@ -6,9 +6,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import accuracy_score, get_scorer, mean_absolute_error
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
-from skore.sklearn._plot.metrics import (
-    PredictionErrorDisplay,
-)
+from skore.sklearn._plot.metrics import PredictionErrorDisplay, ReportMetricsDisplay
 
 
 @pytest.fixture
@@ -389,7 +387,7 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model, repor
         data_source="X_y",
         X=X_train[:10],
         y=y_train[:10],
-    )
+    ).frame()
     assert "Favorability" not in result.columns
 
     expected_index = pd.MultiIndex.from_tuples(
@@ -469,9 +467,11 @@ def test_cross_validation_report_flat_index(binary_classification_model):
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result = report.metrics.report_metrics(flat_index=True)
-    assert result.shape == (8, 2)
-    assert isinstance(result.index, pd.Index)
-    assert result.index.tolist() == [
+    assert isinstance(result, ReportMetricsDisplay)
+    result_df = result.frame()
+    assert result_df.shape == (8, 2)
+    assert isinstance(result_df.index, pd.Index)
+    assert result_df.index.tolist() == [
         "precision_0",
         "precision_1",
         "recall_0",
@@ -481,14 +481,16 @@ def test_cross_validation_report_flat_index(binary_classification_model):
         "fit_time_s",
         "predict_time_s",
     ]
-    assert result.columns.tolist() == ["report_1", "report_2"]
+    assert result_df.columns.tolist() == ["report_1", "report_2"]
 
 
 def test_estimator_report_report_metrics_indicator_favorability(report):
     """Check that the behaviour of `indicator_favorability` is correct."""
     result = report.metrics.report_metrics(indicator_favorability=True)
-    assert "Favorability" in result.columns
-    indicator = result["Favorability"]
+    assert isinstance(result, ReportMetricsDisplay)
+    result_df = result.frame()
+    assert "Favorability" in result_df.columns
+    indicator = result_df["Favorability"]
     assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
@@ -499,8 +501,8 @@ def test_comparison_report_aggregate(report):
     """Passing `aggregate` should have no effect, as this argument is only relevant
     when comparing `CrossValidationReport`s."""
     assert_allclose(
-        report.metrics.report_metrics(aggregate="mean"),
-        report.metrics.report_metrics(),
+        report.metrics.report_metrics(aggregate="mean").frame(),
+        report.metrics.report_metrics().frame(),
     )
 
 
@@ -652,7 +654,7 @@ def test_comparison_report_timings_flat_index(report):
     report.get_predictions(data_source="test")
 
     # Get metrics with flat_index=True
-    results = report.metrics.report_metrics(flat_index=True)
+    results = report.metrics.report_metrics(flat_index=True).frame()
 
     # Check that expected time measurements are in index with _s suffix
     assert "fit_time_s" in results.index
@@ -675,8 +677,8 @@ def test_comparison_report_estimator_report_metrics_scoring_single_list_equivale
     list with a single element."""
     result_single = report.metrics.report_metrics(
         scoring=scoring, scoring_kwargs=scoring_kwargs
-    )
+    ).frame()
     result_list = report.metrics.report_metrics(
         scoring=[scoring], scoring_kwargs=scoring_kwargs
-    )
+    ).frame()
     assert result_single.equals(result_list)
