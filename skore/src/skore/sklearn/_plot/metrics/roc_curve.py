@@ -996,16 +996,13 @@ class RocCurveDisplay(
             self.roc_auc, on=["estimator_name", "split_index", "label"], how="left"
         )
 
-        # For multiclass classification, add method column and rename label to class
         if self.ml_task == "multiclass-classification":
             merged_data["method"] = "OvR"
 
-        # Convert model_name and fold_id to category type
         merged_data["estimator_name"] = merged_data["estimator_name"].astype("category")
         merged_data["split_index"] = merged_data["split_index"].astype("category")
         merged_data["label"] = merged_data["label"].astype("category")
 
-        # Reorder columns based on task type
         if self.ml_task == "binary-classification":
             column_order = [
                 "estimator_name",

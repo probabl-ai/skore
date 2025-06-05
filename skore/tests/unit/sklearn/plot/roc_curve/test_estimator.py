@@ -254,10 +254,8 @@ def test_binary_classification_frame(binary_classification_data):
     display = report.metrics.roc()
     df = display.frame()
 
-    # Check that we get a DataFrame
     assert isinstance(df, DataFrame)
 
-    # Check the columns for binary classification
     expected_columns = [
         "estimator_name",
         "split_index",
@@ -268,7 +266,6 @@ def test_binary_classification_frame(binary_classification_data):
     ]
     assert list(df.columns) == expected_columns
 
-    # Check data types
     assert df["fpr"].dtype == np.float64
     assert df["tpr"].dtype == np.float64
     assert df["threshold"].dtype == np.float64
@@ -276,12 +273,10 @@ def test_binary_classification_frame(binary_classification_data):
     assert df["estimator_name"].dtype.name == "category"
     assert df["split_index"].dtype.name == "category"
 
-    # Check that values are within expected ranges
     assert df["fpr"].between(0, 1).all()
     assert df["tpr"].between(0, 1).all()
     assert df["roc_auc"].between(0, 1).all()
 
-    # Check that model_name matches the estimator
     assert df["estimator_name"].unique() == [estimator.__class__.__name__]
 
 
@@ -294,10 +289,8 @@ def test_multiclass_classification_frame(multiclass_classification_data):
     display = report.metrics.roc()
     df = display.frame()
 
-    # Check that we get a DataFrame
     assert isinstance(df, DataFrame)
 
-    # Check the columns for multiclass classification
     expected_columns = [
         "estimator_name",
         "split_index",
@@ -310,7 +303,6 @@ def test_multiclass_classification_frame(multiclass_classification_data):
     ]
     assert list(df.columns) == expected_columns
 
-    # Check data types
     assert df["fpr"].dtype == np.float64
     assert df["tpr"].dtype == np.float64
     assert df["threshold"].dtype == np.float64
@@ -320,13 +312,10 @@ def test_multiclass_classification_frame(multiclass_classification_data):
     assert df["estimator_name"].dtype.name == "category"
     assert df["split_index"].dtype.name == "category"
 
-    # Check that values are within expected ranges
     assert df["fpr"].between(0, 1).all()
     assert df["tpr"].between(0, 1).all()
     assert df["roc_auc"].between(0, 1).all()
 
-    # Check that method is always "OvR" for multiclass
     assert (df["method"] == "OvR").all()
 
-    # Check that model_name matches the estimator
     assert df["estimator_name"].unique() == [report.estimator_name_]
