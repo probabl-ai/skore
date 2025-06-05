@@ -1003,6 +1003,7 @@ class RocCurveDisplay(
         # Convert model_name and fold_id to category type
         merged_data["estimator_name"] = merged_data["estimator_name"].astype("category")
         merged_data["split_index"] = merged_data["split_index"].astype("category")
+        merged_data["label"] = merged_data["label"].astype("category")
 
         # Reorder columns based on task type
         if self.ml_task == "binary-classification":
