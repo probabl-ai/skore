@@ -999,9 +999,13 @@ class RocCurveDisplay(
         if self.ml_task == "multiclass-classification":
             merged_data["method"] = "OvR"
 
-        merged_data["estimator_name"] = merged_data["estimator_name"].astype("category")
-        merged_data["split_index"] = merged_data["split_index"].astype("category")
-        merged_data["label"] = merged_data["label"].astype("category")
+        merged_data = merged_data.astype(
+            {
+                "estimator_name": "category",
+                "split_index": "category",
+                "label": "category",
+            }
+        )
 
         if self.ml_task == "binary-classification":
             column_order = [
