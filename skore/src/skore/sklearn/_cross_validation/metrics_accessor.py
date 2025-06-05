@@ -240,7 +240,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             )
             results = []
             for result in generator:
-                results.append(result)
+                if report_metric_name == "report_metrics":
+                    # for report_metrics, the output is a display
+                    results.append(result.frame())
+                else:
+                    results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
             results = pd.concat(
