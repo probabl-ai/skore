@@ -9,10 +9,10 @@ Skore project
 These functions and classes are meant for managing a `Project` and its reports.
 
 .. autosummary::
-    :toctree: api/
-    :template: class_with_accessors.rst
+   :toctree: api/
+   :template: class_with_accessors.rst
 
-    Project
+   Project
 
 .. rubric:: Methods
 
@@ -20,43 +20,29 @@ These functions and classes are meant for managing a `Project` and its reports.
    :toctree: api/
    :template: class_methods_no_index.rst
 
-    Project.put
+   Project.put
+   Project.get
+   Project.summary
 
-.. rubric:: Reports
+Skore project's summary
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autosummary::
-   :toctree: api/
-   :template: autosummary/accessor.rst
-
-   Project.reports
-
-.. autosummary::
-   :toctree: api/
-   :template: autosummary/accessor_method.rst
-
-   Project.reports.get
-   Project.reports.metadata
-
-Skore project's metadata
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-When calling :meth:`Project.reports.metadata`, a
-:class:`~skore.project.metadata.Metadata` object is returned. This object is a
-:class:`pandas.DataFrame` with a specific HTML representation to allow you filter and
-retrieve the reports.
+When calling :meth:`Project.summary`, a :class:`~skore.project.summary.Summary` object
+is returned. This object is a :class:`pandas.DataFrame` with a specific HTML
+representation to allow you filter and retrieve the reports.
 
 .. autosummary::
    :toctree: api/
    :template: class_without_inherited_members.rst
 
-   project.metadata.Metadata
+   project.summary.Summary
 
 .. autosummary::
    :toctree: api/
    :template: class_methods_no_index.rst
 
-   project.metadata.Metadata.reports
+   project.summary.Summary.reports
 
 .. note::
-   This class :class:`~skore.project.metadata.Metadata` is not meant to be used
-   directly. Instead, use the accessor :meth:`Project.reports.metadata`.
+   This class :class:`~skore.project.summary.Summary` is not meant to be used
+   directly. Instead, use the accessor :meth:`Project.summary`.
