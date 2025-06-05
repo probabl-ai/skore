@@ -158,7 +158,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         else:
             raise ValueError(
                 f"`report_type` should be one of 'estimator', 'cross-validation', "
-                "'comparison-cross-validation' or 'comparison-estimator'. "
+                f"'comparison-cross-validation' or 'comparison-estimator'. "
                 f"Got '{self.report_type}' instead."
             )
 
@@ -785,10 +785,13 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         range_y_pred = RangeData(min=y_pred_min, max=y_pred_max)
         range_residuals = RangeData(min=residuals_min, max=residuals_max)
 
+        df = DataFrame.from_records(prediction_error_records)
+        df["estimator_name"] = df["estimator_name"].astype("category")
+        if report_type in ("cross-validation", "comparison-cross-validation"):
+            df["split_index"] = df["split_index"].astype("category")
+
         return cls(
-            prediction_error=DataFrame.from_records(prediction_error_records).astype(
-                {"estimator_name": "category", "split_index": "category"}
-            ),
+            prediction_error=df,
             range_y_true=range_y_true,
             range_y_pred=range_y_pred,
             range_residuals=range_residuals,
@@ -796,3 +799,37 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self) -> DataFrame:
+        """Get the data used to create the prediction error plot.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the prediction error data with columns:
+            - estimator_name: Name of the estimator
+            - split_index: Cross-validation fold ID (if applicable)
+            - y_true: True target values
+            - y_pred: Predicted target values
+            - residuals: Difference between true and predicted values (y_true - y_pred)
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import train_test_split, EstimatorReport
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> reg = Ridge()
+        >>> report = EstimatorReport(reg, **split_data)
+        >>> display = report.metrics.prediction_error()
+        >>> df = display.frame()
+        """
+        column_order = [
+            "estimator_name",
+            "split_index",
+            "y_true",
+            "y_pred",
+            "residuals",
+        ]
+        return self.prediction_error[column_order]

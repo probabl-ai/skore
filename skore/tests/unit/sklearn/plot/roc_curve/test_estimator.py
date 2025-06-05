@@ -1,7 +1,7 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
-from pandas import DataFrame
 from skore import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
@@ -254,7 +254,7 @@ def test_binary_classification_frame(binary_classification_data):
     display = report.metrics.roc()
     df = display.frame()
 
-    assert isinstance(df, DataFrame)
+    assert isinstance(df, pd.DataFrame)
 
     expected_columns = [
         "estimator_name",
@@ -289,7 +289,7 @@ def test_multiclass_classification_frame(multiclass_classification_data):
     display = report.metrics.roc()
     df = display.frame()
 
-    assert isinstance(df, DataFrame)
+    assert isinstance(df, pd.DataFrame)
 
     expected_columns = [
         "estimator_name",

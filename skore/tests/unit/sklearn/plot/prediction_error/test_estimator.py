@@ -243,3 +243,31 @@ def test_wrong_report_type(pyplot, regression_data):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot()
+
+
+def test_frame(regression_data):
+    """Test the frame method with regression data."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.prediction_error()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "y_true",
+        "y_pred",
+        "residuals",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["y_true"].dtype == np.float64
+    assert df["y_pred"].dtype == np.float64
+    assert df["residuals"].dtype == np.float64
+
+    assert df["estimator_name"].unique() == [report.estimator_name_]
