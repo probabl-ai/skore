@@ -16,11 +16,11 @@ class ReportMetricsDisplay(HelpDisplayMixin, StyleDisplayMixin):
         self.report_metrics_data = report_metrics_data
 
     def frame(self):
-        """Return the confusion matrix as a dataframe.
+        """Return the report metrics as a dataframe.
 
         Returns
         -------
         frame : pandas.DataFrame
-            The confusion matrix as a dataframe.
+            The report metrics as a dataframe.
         """
         return self.report_metrics_data
