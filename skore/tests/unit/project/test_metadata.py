@@ -177,13 +177,16 @@ class TestMetadata:
         assert isinstance(comparison, ComparisonReport)
         assert comparison.reports_ == [regression1, regression2]
 
-    def test_reports_exception(self, regression, binary_classification):
+    def test_reports_exception_invalid_object(self):
         with raises(
             RuntimeError,
             match="Bad condition: it is not a valid `Metadata` object.",
         ):
             Metadata([{"<column>": "<value>"}]).reports()
 
+    def test_reports_exception_different_datasets(
+        self, regression, binary_classification
+    ):
         project = FakeProject(regression, binary_classification)
         metadata = Metadata.factory(project)
 
