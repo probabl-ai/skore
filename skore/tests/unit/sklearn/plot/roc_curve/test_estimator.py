@@ -277,7 +277,7 @@ def test_binary_classification_frame(binary_classification_data):
     assert df["tpr"].between(0, 1).all()
     assert df["roc_auc"].between(0, 1).all()
 
-    assert df["estimator_name"].unique() == [estimator.__class__.__name__]
+    assert df["estimator_name"].unique() == [report.estimator_name_]
 
 
 def test_multiclass_classification_frame(multiclass_classification_data):
