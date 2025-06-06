@@ -894,7 +894,7 @@ class PrecisionRecallCurveDisplay(
         DataFrame
             A DataFrame containing the precision-recall curve data with columns:
             - estimator_name: Name of the estimator
-            - split_index: Cross-validation fold ID (if applicable)
+            - split_index: Cross-validation fold ID (may be null)
             - label: Class label
             - threshold: Decision threshold
             - precision: Precision score at threshold
