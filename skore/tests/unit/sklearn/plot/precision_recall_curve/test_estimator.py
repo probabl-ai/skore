@@ -247,6 +247,7 @@ def test_frame_binary_classification(binary_classification_data):
         "threshold",
         "precision",
         "recall",
+        "average_precision",
     ]
     assert list(df.columns) == expected_columns
 
@@ -256,9 +257,11 @@ def test_frame_binary_classification(binary_classification_data):
     assert df["threshold"].dtype == np.float64
     assert df["precision"].dtype == np.float64
     assert df["recall"].dtype == np.float64
+    assert df["average_precision"].dtype == np.float64
 
     assert df["precision"].between(0, 1).all()
     assert df["recall"].between(0, 1).all()
+    assert df["average_precision"].between(0, 1).all()
     assert df["estimator_name"].unique() == [report.estimator_name_]
 
 
@@ -283,6 +286,7 @@ def test_frame_multiclass_classification(multiclass_classification_data):
         "threshold",
         "precision",
         "recall",
+        "average_precision",
     ]
     assert list(df.columns) == expected_columns
 
@@ -293,8 +297,10 @@ def test_frame_multiclass_classification(multiclass_classification_data):
     assert df["threshold"].dtype == np.float64
     assert df["precision"].dtype == np.float64
     assert df["recall"].dtype == np.float64
+    assert df["average_precision"].dtype == np.float64
 
     assert df["precision"].between(0, 1).all()
     assert df["recall"].between(0, 1).all()
+    assert df["average_precision"].between(0, 1).all()
     assert df["estimator_name"].unique() == [report.estimator_name_]
     assert df["method"].unique() == ["OvR"]

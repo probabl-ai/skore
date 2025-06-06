@@ -899,6 +899,7 @@ class PrecisionRecallCurveDisplay(
             - threshold: Decision threshold
             - precision: Precision score at threshold
             - recall: Recall score at threshold
+            - average_precision: Average precision score for the class
 
         Examples
         --------
@@ -912,10 +913,13 @@ class PrecisionRecallCurveDisplay(
         >>> display = report.metrics.precision_recall()
         >>> df = display.frame()
         """
-        df = self.precision_recall.copy()
+        merged_data = self.precision_recall.merge(
+            self.average_precision,
+            on=["estimator_name", "split_index", "label"],
+        )
 
         if self.ml_task == "multiclass-classification":
-            df["method"] = "OvR"
+            merged_data["method"] = "OvR"
 
         if self.ml_task == "binary-classification":
             column_order = [
@@ -925,6 +929,7 @@ class PrecisionRecallCurveDisplay(
                 "threshold",
                 "precision",
                 "recall",
+                "average_precision",
             ]
         else:
             column_order = [
@@ -935,5 +940,6 @@ class PrecisionRecallCurveDisplay(
                 "threshold",
                 "precision",
                 "recall",
+                "average_precision",
             ]
-        return df[column_order]
+        return merged_data[column_order]
