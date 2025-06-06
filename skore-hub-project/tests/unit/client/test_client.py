@@ -3,6 +3,7 @@ from urllib.parse import urljoin
 
 import pytest
 from httpx import HTTPStatusError, Response
+from skore_hub_project.authentication.token import Token
 from skore_hub_project.client.api import URI
 from skore_hub_project.client.client import AuthenticatedClient, AuthenticationError
 
@@ -12,17 +13,18 @@ DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc)
 
 
 class TestAuthenticatedClient:
-    @pytest.mark.respx(assert_all_called=False)
-    def test_request_with_invalid_token_raises(self, respx_mock):
-        foo_route = respx_mock.get("foo").mock(Response(200))
+    @pytest.mark.respx(assert_all_called=True)
+    def test_request_with_api_key(self, monkeypatch, respx_mock):
+        monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
+        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
 
-        with (
-            pytest.raises(AuthenticationError, match="not logged in"),
-            AuthenticatedClient() as client,
-        ):
+        with AuthenticatedClient() as client:
             client.get("foo")
 
-        assert not foo_route.called
+        assert (
+            respx_mock.calls.last.request.headers["authorization"]
+            == "X-API-Key: <api-key>"
+        )
 
     @pytest.mark.respx(assert_all_called=True)
     def test_request_with_token(self, tmp_path, respx_mock):
@@ -35,9 +37,24 @@ class TestAuthenticatedClient:
         with AuthenticatedClient() as client:
             client.get("foo")
 
-            assert client.token.access_token == "A"
-            assert client.token.refresh_token == "B"
-            assert client.token.expires_at == DATETIME_MAX
+        assert respx_mock.calls.last.request.headers["authorization"] == "Bearer A"
+
+        token = Token()
+        assert token.access_token == "A"
+        assert token.refresh_token == "B"
+        assert token.expires_at == DATETIME_MAX
+
+    @pytest.mark.respx(assert_all_called=False)
+    def test_request_with_invalid_token_raises(self, respx_mock):
+        respx_mock.get("foo").mock(Response(200))
+
+        with (
+            pytest.raises(AuthenticationError, match="not logged in"),
+            AuthenticatedClient() as client,
+        ):
+            client.get("foo")
+
+        assert not respx_mock.calls
 
     @pytest.mark.respx(assert_all_called=True)
     def test_request_with_expired_token(self, tmp_path, respx_mock):
@@ -60,9 +77,12 @@ class TestAuthenticatedClient:
         with AuthenticatedClient() as client:
             client.get("foo")
 
-            assert client.token.access_token == "D"
-            assert client.token.refresh_token == "E"
-            assert client.token.expires_at == DATETIME_MAX
+        assert respx_mock.calls.last.request.headers["authorization"] == "Bearer D"
+
+        token = Token()
+        assert token.access_token == "D"
+        assert token.refresh_token == "E"
+        assert token.expires_at == DATETIME_MAX
 
     @pytest.mark.respx(assert_all_called=True)
     def test_request_raises(self, tmp_path, respx_mock):
