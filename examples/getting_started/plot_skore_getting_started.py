@@ -306,11 +306,11 @@ my_project.put("estimator_report", gb_report)
 
 # %%
 # Now, let us retrieve the data that we just stored using a
-# :class:`~skore.project.metadata.Metadata` object:
+# :class:`~skore.project.summary.Summary` object:
 
 # %%
-metadata = my_project.reports.metadata()
-print(type(metadata))
+summary = my_project.summarize()
+print(type(summary))
 
 # %%
 # We can retrieve the complete list of stored reports:
@@ -318,7 +318,7 @@ print(type(metadata))
 # %%
 from pprint import pprint
 
-reports_get = metadata.reports()
+reports_get = summary.reports()
 pprint(reports_get)
 
 # %%
@@ -348,7 +348,7 @@ reports_get[0].metrics.timings()
 # Using the interactive widget
 # """"""""""""""""""""""""""""
 #
-# If rendered in a Jupyter notebook, ``metadata`` would render an interactive
+# If rendered in a Jupyter notebook, ``summary`` would render an interactive
 # parallel coordinate plot to search for your preferred model based on some metrics.
 # Here is a screenshot:
 #
@@ -361,7 +361,7 @@ reports_get[0].metrics.timings()
 #
 # .. code:: python
 #
-#     metadata.reports()
+#     summary.reports()
 
 # %%
 # Using the Python API
@@ -373,14 +373,14 @@ reports_get[0].metrics.timings()
 # We can perform some queries on our stored data using the following keys:
 
 # %%
-pprint(metadata.keys())
+pprint(summary.keys())
 
 # %%
 # For example, we can query all the estimators corresponding to a
 # :class:`~sklearn.ensemble.RandomForestClassifier`:
 
 # %%
-report_search_rf = metadata.query(
+report_search_rf = summary.query(
     "learner.str.contains('RandomForestClassifier')"
 ).reports()
 pprint(report_search_rf)
@@ -390,7 +390,7 @@ pprint(report_search_rf)
 # task:
 
 # %%
-report_search_clf = metadata.query("ml_task.str.contains('classification')").reports()
+report_search_clf = summary.query("ml_task.str.contains('classification')").reports()
 pprint(report_search_clf)
 
 # sphinx_gallery_start_ignore
