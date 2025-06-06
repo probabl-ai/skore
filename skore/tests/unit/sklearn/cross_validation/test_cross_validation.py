@@ -357,15 +357,12 @@ def test_cross_validation_report_display_regression(pyplot, regression_data, dis
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_cross_validation_report_display_binary_classification_pos_label(
-    pyplot, metric
+    pyplot, metric, binary_classification_data
 ):
     """Check the behaviour of the display methods when `pos_label` needs to be set."""
-    X, y = make_classification(
-        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
-    )
+    classifier, X, y = binary_classification_data
     labels = np.array(["A", "B"], dtype=object)
     y = labels[y]
-    classifier = LogisticRegression()
     report = CrossValidationReport(classifier, X, y)
     with pytest.raises(ValueError, match="pos_label is not specified"):
         getattr(report.metrics, metric)()
@@ -1057,14 +1054,13 @@ def test_cross_validation_timings_flat_index(binary_classification_data):
 
 
 @pytest.mark.parametrize("metric", [("precision"), ("recall")])
-def test_cross_validation_report_report_metrics_pos_label_overwrite(metric):
+def test_cross_validation_report_report_metrics_pos_label_overwrite(
+    metric, binary_classification_data
+):
     """Check that `pos_label` can be overwritten in `report_metrics`"""
-    X, y = make_classification(
-        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
-    )
+    classifier, X, y = binary_classification_data
     labels = np.array(["A", "B"], dtype=object)
     y = labels[y]
-    classifier = LogisticRegression()
 
     report = CrossValidationReport(classifier, X, y)
     result_both_labels = report.metrics.report_metrics(scoring=metric).reset_index()
@@ -1094,14 +1090,13 @@ def test_cross_validation_report_report_metrics_pos_label_overwrite(metric):
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_estimator_report_precision_recall_pos_label_overwrite(metric):
+def test_cross_validation_report_precision_recall_pos_label_overwrite(
+    metric, binary_classification_data
+):
     """Check that `pos_label` can be overwritten in `report_metrics`"""
-    X, y = make_classification(
-        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
-    )
+    classifier, X, y = binary_classification_data
     labels = np.array(["A", "B"], dtype=object)
     y = labels[y]
-    classifier = LogisticRegression()
 
     report = CrossValidationReport(classifier, X, y)
     result_both_labels = getattr(report.metrics, metric)().reset_index()

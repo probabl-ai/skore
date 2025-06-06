@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from numpy.testing import assert_allclose
+from sklearn.base import clone
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
@@ -688,28 +689,47 @@ def test_comparison_report_estimator_report_metrics_scoring_single_list_equivale
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_comparison_report_display_binary_classification_pos_label(pyplot, metric):
+def test_comparison_report_display_binary_classification_pos_label(
+    pyplot, metric, binary_classification_model
+):
     """Check the behaviour of the display methods when `pos_label` needs to be set."""
-    X, y = make_classification(
-        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
-    )
+    classifier, X_train, X_test, y_train, y_test = binary_classification_model
     labels = np.array(["A", "B"], dtype=object)
-    y = labels[y]
+    y_train = labels[y_train]
+    y_test = labels[y_test]
     report_1 = EstimatorReport(
-        LogisticRegression(C=1), X_train=X, X_test=X, y_train=y, y_test=y
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
     )
     report_2 = EstimatorReport(
-        LogisticRegression(C=2), X_train=X, X_test=X, y_train=y, y_test=y
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
     )
     report = ComparisonReport([report_1, report_2])
     with pytest.raises(ValueError, match="pos_label is not specified"):
         getattr(report.metrics, metric)()
 
     report_1 = EstimatorReport(
-        LogisticRegression(C=1), X_train=X, X_test=X, y_train=y, y_test=y, pos_label="A"
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        pos_label="A",
     )
     report_2 = EstimatorReport(
-        LogisticRegression(C=2), X_train=X, X_test=X, y_train=y, y_test=y, pos_label="A"
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        pos_label="A",
     )
     report = ComparisonReport([report_1, report_2])
     display = getattr(report.metrics, metric)()
@@ -722,32 +742,61 @@ def test_comparison_report_display_binary_classification_pos_label(pyplot, metri
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_comparison_report_report_metrics_pos_label_overwrite(metric):
-    """Check that `pos_label` can be overwritten in `report_metrics`"""
-    X, y = make_classification(
-        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
-    )
+def test_comparison_report_report_metrics_pos_label_default(
+    metric, binary_classification_model
+):
+    """Check the default behaviour of `pos_label` in `report_metrics`."""
+    classifier, X_train, X_test, y_train, y_test = binary_classification_model
     labels = np.array(["A", "B"], dtype=object)
-    y = labels[y]
+    y_train = labels[y_train]
+    y_test = labels[y_test]
 
     report_1 = EstimatorReport(
-        LogisticRegression(), X_train=X, X_test=X, y_train=y, y_test=y
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
     )
     report_2 = EstimatorReport(
-        LogisticRegression(), X_train=X, X_test=X, y_train=y, y_test=y
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result_both_labels = report.metrics.report_metrics(scoring=metric).reset_index()
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
-    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
 
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_comparison_report_report_metrics_pos_label_overwrite(
+    metric, binary_classification_model
+):
+    """Check that `pos_label` can be overwritten in `report_metrics`."""
+    classifier, X_train, X_test, y_train, y_test = binary_classification_model
+    labels = np.array(["A", "B"], dtype=object)
+    y_train = labels[y_train]
+    y_test = labels[y_test]
     report_1 = EstimatorReport(
-        LogisticRegression(), X_train=X, X_test=X, y_train=y, y_test=y, pos_label="B"
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        pos_label="B",
     )
     report_2 = EstimatorReport(
-        LogisticRegression(), X_train=X, X_test=X, y_train=y, y_test=y, pos_label="B"
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        pos_label="B",
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    result_both_labels = report.metrics.report_metrics(scoring=metric, pos_label=None)
     result = report.metrics.report_metrics(scoring=metric).reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
@@ -767,24 +816,60 @@ def test_comparison_report_report_metrics_pos_label_overwrite(metric):
         )
 
 
-@pytest.mark.parametrize("metric", [("precision"), ("recall")])
-def test_comparison_report_precision_recall_pos_label_overwrite(metric):
-    """Check that `pos_label` can be overwritten in `report_metrics`"""
-    X, y = make_classification(
-        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
-    )
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_comparison_report_precision_recall_pos_label_default(
+    metric, binary_classification_model
+):
+    """Check the default behaviour of `pos_label` in `report_metrics`."""
+    classifier, X_train, X_test, y_train, y_test = binary_classification_model
     labels = np.array(["A", "B"], dtype=object)
-    y = labels[y]
+    y_train = labels[y_train]
+    y_test = labels[y_test]
     report_1 = EstimatorReport(
-        LogisticRegression(), X_train=X, X_test=X, y_train=y, y_test=y
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
     )
     report_2 = EstimatorReport(
-        LogisticRegression(), X_train=X, X_test=X, y_train=y, y_test=y
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result_both_labels = getattr(report.metrics, metric)().reset_index()
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
     result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_comparison_report_precision_recall_pos_label_overwrite(
+    metric, binary_classification_model
+):
+    """Check that `pos_label` can be overwritten in `report_metrics`"""
+    classifier, X_train, X_test, y_train, y_test = binary_classification_model
+    labels = np.array(["A", "B"], dtype=object)
+    y_train = labels[y_train]
+    y_test = labels[y_test]
+    report_1 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    report_2 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    result_both_labels = getattr(report.metrics, metric)(pos_label=None)
 
     result = getattr(report.metrics, metric)(pos_label="B").reset_index()
     assert "Label / Average" not in result.columns
