@@ -614,8 +614,7 @@ def test_estimator_report_metrics_binary_classification(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, metric)
     result = getattr(report.metrics, metric)()
-    assert isinstance(result[0], float)
-    assert result[1] is None  # no dummy model so 2nd value is None
+    assert isinstance(result, float)
     # check that we hit the cache
     result_with_cache = getattr(report.metrics, metric)()
     assert result == pytest.approx(result_with_cache)
@@ -629,8 +628,7 @@ def test_estimator_report_metrics_binary_classification(
     result_external_data = getattr(report.metrics, metric)(
         data_source="X_y", X=X_test, y=y_test
     )
-    assert isinstance(result_external_data[0], float)
-    assert result_external_data[1] is None  # no dummy model so 2nd value is None
+    assert isinstance(result_external_data, float)
     assert result == pytest.approx(result_external_data)
     assert report._cache != {}
 
@@ -646,8 +644,7 @@ def test_estimator_report_metrics_binary_classification_pr(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, metric)
     result = getattr(report.metrics, metric)()
-    assert isinstance(result[0], dict)
-    assert result[1] is None  # no dummy model so 2nd value is None
+    assert isinstance(result, dict)
     # check that we hit the cache
     result_with_cache = getattr(report.metrics, metric)()
     assert result == result_with_cache
@@ -661,8 +658,7 @@ def test_estimator_report_metrics_binary_classification_pr(
     result_external_data = getattr(report.metrics, metric)(
         data_source="X_y", X=X_test, y=y_test
     )
-    assert isinstance(result_external_data[0], dict)
-    assert result_external_data[1] is None  # no dummy model so 2nd value is None
+    assert isinstance(result_external_data, dict)
     assert result == result_external_data
     assert report._cache != {}
 
@@ -674,8 +670,7 @@ def test_estimator_report_metrics_regression(regression_data, metric):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, metric)
     result = getattr(report.metrics, metric)()
-    assert isinstance(result[0], float)
-    assert result[1] is None  # no dummy model so 2nd value is None
+    assert isinstance(result, float)
     # check that we hit the cache
     result_with_cache = getattr(report.metrics, metric)()
     assert result == pytest.approx(result_with_cache)
@@ -689,8 +684,7 @@ def test_estimator_report_metrics_regression(regression_data, metric):
     result_external_data = getattr(report.metrics, metric)(
         data_source="X_y", X=X_test, y=y_test
     )
-    assert isinstance(result_external_data[0], float)
-    assert result_external_data[1] is None  # no dummy model so 2nd value is None
+    assert isinstance(result_external_data, float)
     assert result == pytest.approx(result_external_data)
     assert report._cache != {}
 
@@ -984,8 +978,7 @@ def test_estimator_report_interaction_cache_metrics(regression_multioutput_data)
     assert not should_raise, (
         f"The value {multioutput} should be stored in one of the cache keys"
     )
-    assert isinstance(result_r2_uniform_average[0], float)
-    assert result_r2_uniform_average[1] is None
+    assert isinstance(result_r2_uniform_average, float)
 
 
 def test_estimator_report_custom_metric(regression_data):
@@ -1012,9 +1005,8 @@ def test_estimator_report_custom_metric(regression_data):
         f"The value {threshold} should be stored in one of the cache keys"
     )
 
-    assert isinstance(result[0], float)
-    assert result[1] is None
-    assert result[0] == pytest.approx(
+    assert isinstance(result, float)
+    assert result == pytest.approx(
         custom_metric(y_test, estimator.predict(X_test), threshold)
     )
 
@@ -1033,9 +1025,8 @@ def test_estimator_report_custom_metric(regression_data):
         f"The value {threshold} should be stored in one of the cache keys"
     )
 
-    assert isinstance(result[0], float)
-    assert result[1] is None
-    assert result[0] == pytest.approx(
+    assert isinstance(result, float)
+    assert result == pytest.approx(
         custom_metric(y_test, estimator.predict(X_test), threshold)
     )
 
@@ -1078,9 +1069,8 @@ def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
         "The hash of the weights should be stored in one of the cache keys"
     )
 
-    assert isinstance(result[0], float)
-    assert result[1] is None
-    assert result[0] == pytest.approx(
+    assert isinstance(result, float)
+    assert result == pytest.approx(
         custom_metric(y_test, estimator.predict(X_test), weights)
     )
 
@@ -1166,9 +1156,8 @@ def test_estimator_report_custom_metric_compatible_estimator(
         metric_function=lambda y_true, y_pred: 1,
         response_method="predict",
     )
-    assert isinstance(result[0], Real)
-    assert result[1] is None
-    assert result[0] == pytest.approx(1)
+    assert isinstance(result, Real)
+    assert result == pytest.approx(1)
 
 
 @pytest.mark.parametrize(
@@ -1429,8 +1418,7 @@ def test_estimator_report_average_return_float(binary_classification_data):
 
     for metric_name in ("precision", "recall", "roc_auc"):
         result = getattr(report.metrics, metric_name)(average="macro")
-        assert isinstance(result[0], float)
-        assert result[1] is None
+        assert isinstance(result, float)
 
 
 def test_estimator_report_metric_with_neg_metrics(binary_classification_data):
@@ -1441,7 +1429,7 @@ def test_estimator_report_metric_with_neg_metrics(binary_classification_data):
     result = report.metrics.report_metrics(scoring=["neg_log_loss"])
     assert "Log Loss" in result.index
     assert result.loc["Log Loss", "RandomForestClassifier"] == pytest.approx(
-        report.metrics.log_loss()[0]
+        report.metrics.log_loss()
     )
 
 
