@@ -23,7 +23,7 @@ class Project:
     existing one.
 
     The class main methods are :func:`~skore.Project.put`,
-    :func:`~skore.Project.summary` and :func:`~skore.Project.get`, respectively to
+    :func:`~skore.Project.summarize` and :func:`~skore.Project.get`, respectively to
     insert a key-report pair into the project, to obtain the metadata/metrics of the
     inserted reports and to get a specific report by its id.
 
@@ -140,7 +140,7 @@ class Project:
 
     Investigate metadata/metrics to filter the best reports.
 
-    >>> summary = local_project.summary()
+    >>> summary = local_project.summarize()
     >>> summary = summary.query("ml_task.str.contains('regression') and (rmse < 67)")
     >>> reports = summary.reports()
 

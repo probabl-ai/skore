@@ -309,7 +309,7 @@ my_project.put("estimator_report", gb_report)
 # :class:`~skore.project.summary.Summary` object:
 
 # %%
-summary = my_project.summary()
+summary = my_project.summarize()
 print(type(summary))
 
 # %%

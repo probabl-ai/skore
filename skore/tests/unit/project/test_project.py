@@ -175,7 +175,7 @@ class TestProject:
             }
         ]
 
-        summary = project.summary()
+        summary = project.summarize()
 
         assert project._Project__project.reports.metadata.called
         assert isinstance(summary, DataFrame)

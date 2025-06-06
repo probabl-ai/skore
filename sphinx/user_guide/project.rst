@@ -16,7 +16,7 @@ Once a project is created, store :class:`EstimatorReport` via the method
 :meth:`Project.put`.
 
 To retrieve the reports stored in the project, use the project summary by calling the
-method :meth:`Project.summary`. This method returns a
+method :meth:`Project.summarize`. This method returns a
 :class:`~skore.project.summary.Summary` instance that presents a rich HTML
 representation in interactive Jupyter-like environments. A parallel coordinates plot is
 shown to filter the reports based on different criteria. Once the reports are filtered

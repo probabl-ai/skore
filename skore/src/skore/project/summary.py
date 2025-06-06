@@ -50,7 +50,7 @@ class Summary(DataFrame):
         Notes
         -----
         This function is not intended for direct use. Instead simply use the accessor
-        :meth:`skore.Project.summary`.
+        :meth:`skore.Project.summarize`.
         """
         summary = DataFrame(project.reports.metadata(), copy=False)
 

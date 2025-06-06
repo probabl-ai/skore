@@ -22,12 +22,12 @@ These functions and classes are meant for managing a `Project` and its reports.
 
    Project.put
    Project.get
-   Project.summary
+   Project.summarize
 
 Skore project's summary
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-When calling :meth:`Project.summary`, a :class:`~skore.project.summary.Summary` object
+When calling :meth:`Project.summarize`, a :class:`~skore.project.summary.Summary` object
 is returned. This object is a :class:`pandas.DataFrame` with a specific HTML
 representation to allow you filter and retrieve the reports.
 
@@ -45,4 +45,4 @@ representation to allow you filter and retrieve the reports.
 
 .. note::
    This class :class:`~skore.project.summary.Summary` is not meant to be used
-   directly. Instead, use the accessor :meth:`Project.summary`.
+   directly. Instead, use the accessor :meth:`Project.summarize`.

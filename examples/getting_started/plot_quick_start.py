@@ -100,7 +100,7 @@ my_project.put("rf_report", rf_report)
 # Now, let us retrieve the data that we previously stored:
 
 # %%
-summary = my_project.summary()
+summary = my_project.summarize()
 print(type(summary))
 
 # %%
