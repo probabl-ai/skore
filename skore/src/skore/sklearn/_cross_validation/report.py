@@ -373,10 +373,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             - "X_y" : use the train set provided when creating the report and the target
               variable.
 
-        response_method : {"predict", "predict_proba", "decision_function"},
-        default : "predict"
-
-            The response method to use.
+        response_method : {"predict", "predict_proba", "decision_function"}, \
+                default="predict"
+            The response method to use to get the predictions.
 
         X : array-like of shape (n_samples, n_features), optional
             When `data_source` is "X_y", the input features on which to compute the
