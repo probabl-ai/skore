@@ -1093,7 +1093,7 @@ def test_cross_validation_report_report_metrics_pos_label_overwrite(metric):
     )
 
 
-@pytest.mark.parametrize("metric", [("precision"), ("recall")])
+@pytest.mark.parametrize("metric", ["precision", "recall"])
 def test_estimator_report_precision_recall_pos_label_overwrite(metric):
     """Check that `pos_label` can be overwritten in `report_metrics`"""
     X, y = make_classification(
