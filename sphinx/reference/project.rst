@@ -45,4 +45,4 @@ representation to allow you filter and retrieve the reports.
 
 .. note::
    This class :class:`~skore.project.summary.Summary` is not meant to be used
-   directly. Instead, use the accessor :meth:`Project.summarize`.
+   directly. Instead, use the method :meth:`Project.summarize`.
