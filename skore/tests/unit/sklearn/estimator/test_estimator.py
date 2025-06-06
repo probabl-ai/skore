@@ -1,3 +1,4 @@
+import inspect
 import re
 from copy import deepcopy
 from io import BytesIO
@@ -117,6 +118,19 @@ def regression_multioutput_data():
 ########################################################################################
 
 
+def test_report_can_be_rebuilt_using_parameters(regression_data):
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    parameters = {}
+
+    for parameter in inspect.signature(EstimatorReport).parameters:
+        assert hasattr(report, parameter), f"The parameter '{parameter}' must be stored"
+
+        parameters[parameter] = getattr(report, parameter)
+
+    EstimatorReport(**parameters)
+
+
 @pytest.mark.parametrize("fit", [True, "auto"])
 def test_estimator_not_fitted(fit):
     """Test that an error is raised when trying to create a report from an unfitted
@@ -152,12 +166,11 @@ def test_estimator_report_from_unfitted_estimator(fit):
     assert report.X_test is X_test
     assert report.y_test is y_test
 
-    err_msg = "attribute is immutable"
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.estimator_ = LinearRegression()
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.X_train = X_train
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.y_train = y_train
 
 
@@ -175,12 +188,11 @@ def test_estimator_report_from_fitted_estimator(binary_classification_data, fit)
     assert report.X_test is X
     assert report.y_test is y
 
-    err_msg = "attribute is immutable"
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.estimator_ = LinearRegression()
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.X_train = X
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.y_train = y
 
 

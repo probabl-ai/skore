@@ -143,6 +143,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     ) -> None:
         # used to know if a parent launch a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
+        self._fit = fit
 
         fit_time: Optional[float] = None
         if fit == "auto":
@@ -395,37 +396,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return self._ml_task
 
     @property
-    def estimator_(self) -> BaseEstimator:
+    def estimator(self) -> BaseEstimator:
         return self._estimator
 
-    @estimator_.setter
-    def estimator_(self, value):
-        raise AttributeError(
-            "The estimator attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
+    @property
+    def estimator_(self) -> BaseEstimator:
+        return self._estimator
 
     @property
     def X_train(self) -> Optional[ArrayLike]:
         return self._X_train
 
-    @X_train.setter
-    def X_train(self, value):
-        raise AttributeError(
-            "The X_train attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
-
     @property
     def y_train(self) -> Optional[ArrayLike]:
         return self._y_train
-
-    @y_train.setter
-    def y_train(self, value):
-        raise AttributeError(
-            "The y_train attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
 
     @property
     def X_test(self) -> Optional[ArrayLike]:
@@ -461,6 +445,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             name = self._estimator.__class__.__name__
         return name
+
+    @property
+    def fit(self) -> Union[Literal["auto"], bool]:
+        return self._fit
 
     ####################################################################################
     # Methods related to the help and repr
