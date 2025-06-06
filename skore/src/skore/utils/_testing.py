@@ -1,7 +1,9 @@
 import contextlib
 import copy
+from typing import Literal
 
 import numpy as np
+from matplotlib.legend import Legend
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 from skore.sklearn._plot.metrics.precision_recall_curve import (
@@ -80,3 +82,14 @@ def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDispl
         "label",
         "average_precision",
     ]
+
+
+def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"]):
+    """Check the position of the legend in the axes."""
+    legend = ax.get_legend()
+    assert legend._loc == Legend.codes[loc]
+    bbox = legend.get_window_extent().transformed(ax.transAxes.inverted())
+    if position == "inside":
+        assert 0 <= bbox.x0 <= 1
+    else:
+        assert bbox.x0 >= 1

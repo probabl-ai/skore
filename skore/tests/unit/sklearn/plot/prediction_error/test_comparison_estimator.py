@@ -5,6 +5,7 @@ import pytest
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
+from skore.utils._testing import check_legend_position
 
 
 def test_regression(pyplot, regression_data):
@@ -61,7 +62,7 @@ def test_regression(pyplot, regression_data):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Prediction errors on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -109,7 +110,7 @@ def test_regression_actual_vs_predicted(pyplot, regression_data):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Prediction errors on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -184,3 +185,41 @@ def test_wrong_kwargs(pyplot, regression_data, data_points_kwargs):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(data_points_kwargs=data_points_kwargs)
+
+
+def test_legend(pyplot, regression_data):
+    """Check the rendering of the legend for prediction error with a
+    `ComparisonReport`."""
+
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator 1": report_1, "estimator 2": report_2}
+    )
+    display = report.metrics.prediction_error()
+    display.plot()
+    # The loc doesn't matter because bbox_to_anchor is used
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    check_legend_position(display.ax_, loc="lower right", position="inside")
+
+    reports = {
+        f"estimator {i}": EstimatorReport(
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        )
+        for i in range(1, 10)
+    }
+    report = ComparisonReport(reports=reports)
+    display = report.metrics.prediction_error()
+    display.plot()
+    # The loc doesn't matter because bbox_to_anchor is used
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    check_legend_position(display.ax_, loc="upper left", position="outside")
