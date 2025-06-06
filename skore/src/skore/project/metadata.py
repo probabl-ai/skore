@@ -100,21 +100,22 @@ class Metadata(DataFrame):
         if filter and (querystr := self._query_string_selection()):
             self = self.query(querystr)
 
-        reports = map(self.project.reports.get, self.index.get_level_values("id"))
+        reports = [
+            self.project.reports.get(id) for id in self.index.get_level_values("id")
+        ]
 
         if return_as == "comparison":
-            datasets = self["dataset"].unique()
-
-            if len(datasets) > 1:
+            try:
+                return ComparisonReport(reports)
+            except ValueError as e:
                 raise RuntimeError(
                     f"Bad condition: the comparison mode is only applicable when "
                     f"reports have the same dataset.\n"
-                    f"Found '{datasets}'.\n"
+                    f"Found '{self['dataset'].unique()}'.\n"
                     f"Please query the dataframe or use the widget to make your "
                     f"selection."
-                )
-            return ComparisonReport(list(reports))
-        return list(reports)
+                ) from e
+        return reports
 
     def _repr_html_(self):
         """Display the interactive plot and controls."""
