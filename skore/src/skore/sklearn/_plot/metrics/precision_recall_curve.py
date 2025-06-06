@@ -912,12 +912,28 @@ class PrecisionRecallCurveDisplay(
         >>> display = report.metrics.precision_recall()
         >>> df = display.frame()
         """
-        column_order = [
-            "estimator_name",
-            "split_index",
-            "label",
-            "threshold",
-            "precision",
-            "recall",
-        ]
-        return self.precision_recall[column_order]
+        df = self.precision_recall.copy()
+
+        if self.ml_task == "multiclass-classification":
+            df["method"] = "OvR"
+
+        if self.ml_task == "binary-classification":
+            column_order = [
+                "estimator_name",
+                "split_index",
+                "label",
+                "threshold",
+                "precision",
+                "recall",
+            ]
+        else:
+            column_order = [
+                "estimator_name",
+                "split_index",
+                "label",
+                "method",
+                "threshold",
+                "precision",
+                "recall",
+            ]
+        return df[column_order]

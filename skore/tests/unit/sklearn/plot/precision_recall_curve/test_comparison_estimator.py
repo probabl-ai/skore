@@ -270,6 +270,7 @@ def test_frame_multiclass_classification(multiclass_classification_data):
         "estimator_name",
         "split_index",
         "label",
+        "method",
         "threshold",
         "precision",
         "recall",
@@ -279,6 +280,7 @@ def test_frame_multiclass_classification(multiclass_classification_data):
     assert df["estimator_name"].dtype.name == "category"
     assert df["split_index"].dtype.name == "category"
     assert df["label"].dtype.name == "category"
+    assert df["method"].dtype == object
     assert df["threshold"].dtype == np.float64
     assert df["precision"].dtype == np.float64
     assert df["recall"].dtype == np.float64
@@ -287,3 +289,4 @@ def test_frame_multiclass_classification(multiclass_classification_data):
     assert set(df["label"].unique()) == set(estimator.classes_)
     assert df["precision"].between(0, 1).all()
     assert df["recall"].between(0, 1).all()
+    assert df["method"].unique() == ["OvR"]
