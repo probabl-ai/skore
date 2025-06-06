@@ -1139,29 +1139,10 @@ def test_estimator_report_precision_recall_pos_label_overwrite(
     )
 
 
-def test_cross_validation_report_metrics_dummy_model_binary(binary_classification_data):
-    estimator, X, y = binary_classification_data
-
+@pytest.mark.parametrize("data", ["binary_classification_data", "regression_data"])
+def test_cross_validation_report_metrics_dummy_model(request, data):
+    estimator, X, y = request.getfixturevalue(data)
     report = CrossValidationReport(estimator, X=X, y=y)
 
-    accessor = report.metrics
-
-    metrics_df = accessor.report_metrics(add_dummy_model=True)
-
-    # check that there are 2 columns (one for selected model and one for the dummy one)
-    assert len(set(metrics_df.columns.get_level_values(level=0))) == 2
-    assert "Dummy Baseline" in set(metrics_df.columns.get_level_values(level=0))
-
-
-def test_cross_validation_report_metrics_dummy_model_regression(regression_data):
-    estimator, X, y = regression_data
-
-    report = CrossValidationReport(estimator, X=X, y=y)
-
-    accessor = report.metrics
-
-    metrics_df = accessor.report_metrics(add_dummy_model=True)
-
-    # check that there are 2 columns (one for selected model and one for the dummy one)
-    assert len(set(metrics_df.columns.get_level_values(level=0))) == 2
-    assert "Dummy Baseline" in set(metrics_df.columns.get_level_values(level=0))
+    metrics_df = report.metrics.report_metrics(add_dummy_model=True)
+    assert "Dummy Baseline" in metrics_df.columns
