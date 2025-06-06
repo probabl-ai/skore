@@ -9,10 +9,7 @@ class ReportMetricsDisplay(HelpDisplayMixin, StyleDisplayMixin):
     You should not create an instance of this class directly.
     """
 
-    def __init__(
-        self,
-        report_metrics_data,
-    ):
+    def __init__(self, report_metrics_data):
         self.report_metrics_data = report_metrics_data
 
     def frame(self):
