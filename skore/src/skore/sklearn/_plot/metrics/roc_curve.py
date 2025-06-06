@@ -967,7 +967,7 @@ class RocCurveDisplay(
             - threshold: Classification threshold
             - roc_auc: Area Under the Curve
             - model_name: Name of the model
-            - fold_id: Cross-validation fold ID
+            - fold_id: Cross-validation fold ID (may be null)
 
             For multiclass classification:
             - fpr: False Positive Rate
@@ -977,7 +977,7 @@ class RocCurveDisplay(
             - method: One-vs-Rest (OvR)
             - class: Class label
             - model_name: Name of the model
-            - fold_id: Cross-validation fold ID
+            - fold_id: Cross-validation fold ID (may be null)
 
         Examples
         --------
