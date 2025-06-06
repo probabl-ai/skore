@@ -187,6 +187,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         aggregate: Optional[Aggregate] = None,
+        allow_nested: bool = False,
         **metric_kwargs: Any,
     ) -> pd.DataFrame:
         if data_source == "X_y":
@@ -221,27 +222,36 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         progress = self._parent._progress_info["current_progress"]
         main_task = self._parent._progress_info["current_task"]
 
-        total_estimators = len(self._parent.estimator_reports_)
+        total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
 
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
         else:
-            parallel = Parallel(
-                **_validate_joblib_parallel_params(
-                    n_jobs=self._parent.n_jobs, return_as="generator"
+            if allow_nested:
+                parallel = Parallel(
+                    **_validate_joblib_parallel_params(
+                        n_jobs=self._parent.n_jobs, return_as="generator"
+                    )
                 )
-            )
-            generator = parallel(
-                delayed(getattr(report.metrics, report_metric_name))(
-                    data_source=data_source, X=X, y=y, **metric_kwargs
+                generator = parallel(
+                    delayed(getattr(report.metrics, report_metric_name))(
+                        data_source=data_source, X=X, y=y, **metric_kwargs
+                    )
+                    for report in self._parent.reports_
                 )
-                for report in self._parent.estimator_reports_
-            )
-            results = []
-            for result in generator:
-                results.append(result)
-                progress.update(main_task, advance=1, refresh=True)
+                results = []
+                for result in generator:
+                    results.append(result)
+                    progress.update(main_task, advance=1, refresh=True)
+            else:
+                # Sequential execution
+                results = []
+                for report in self._parent.reports_:
+                    method = getattr(report.metrics, report_metric_name)
+                    result = method(data_source=data_source, X=X, y=y, **metric_kwargs)
+                    results.append(result)
+                    progress.update(main_task, advance=1, refresh=True)
 
             results = pd.concat(
                 results,
@@ -312,12 +322,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         Predict time train (s)       ...       ...
         """
         timings: pd.DataFrame = pd.concat(
-            [
-                pd.Series(report.metrics.timings())
-                for report in self._parent.estimator_reports_
-            ],
+            [pd.Series(report.metrics.timings()) for report in self._parent.reports_],
             axis=1,
-            keys=[f"Split #{i}" for i in range(len(self._parent.estimator_reports_))],
+            keys=[f"Split #{i}" for i in range(len(self._parent.reports_))],
         )
         if aggregate:
             if isinstance(aggregate, str):
@@ -1176,7 +1183,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         assert self._parent._progress_info is not None, "Progress info not set"
         progress = self._parent._progress_info["current_progress"]
         main_task = self._parent._progress_info["current_task"]
-        total_estimators = len(self._parent.estimator_reports_)
+        total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
 
         if cache_key in self._parent._cache:
@@ -1184,7 +1191,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         else:
             y_true: list[YPlotData] = []
             y_pred: list[YPlotData] = []
-            for report_idx, report in enumerate(self._parent.estimator_reports_):
+            for report_idx, report in enumerate(self._parent.reports_):
                 if data_source != "X_y":
                     # only retrieve data stored in the reports when we don't want to
                     # use an external common X and y
@@ -1225,9 +1232,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 y_true=y_true,
                 y_pred=y_pred,
                 report_type="cross-validation",
-                estimators=[
-                    report.estimator_ for report in self._parent.estimator_reports_
-                ],
+                estimators=[report.estimator_ for report in self._parent.reports_],
                 estimator_names=[self._parent.estimator_name_],
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
