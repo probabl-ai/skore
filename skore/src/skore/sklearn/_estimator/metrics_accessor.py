@@ -148,9 +148,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
-        >>> report.metrics.summarize(scoring=["f1"],
-                                            indicator_favorability=True
-                                        ).frame()
+        >>> report.metrics.summarize(
+        ...     scoring=["f1"],
+        ...     indicator_favorability=True,
+        ... ).frame()
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
