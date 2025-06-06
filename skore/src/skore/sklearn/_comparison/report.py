@@ -383,7 +383,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         Returns
         -------
         list of np.ndarray of shape (n_samples,) or (n_samples, n_classes) or list of \
-                of such lists
+                such lists
             The predictions for each :class:`~skore.EstimatorReport` or
             :class:`~skore.CrossValidationReport`.
 
