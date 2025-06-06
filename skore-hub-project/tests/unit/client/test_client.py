@@ -37,7 +37,7 @@ class TestAuthenticatedClient:
         with AuthenticatedClient() as client:
             client.get("foo")
 
-        assert respx_mock.calls.last.request.headers["authorization"] == "Bearer: A"
+        assert respx_mock.calls.last.request.headers["authorization"] == "Bearer A"
 
         token = Token()
         assert token.access_token == "A"
@@ -46,7 +46,7 @@ class TestAuthenticatedClient:
 
     @pytest.mark.respx(assert_all_called=False)
     def test_request_with_invalid_token_raises(self, respx_mock):
-        foo_route = respx_mock.get("foo").mock(Response(200))
+        respx_mock.get("foo").mock(Response(200))
 
         with (
             pytest.raises(AuthenticationError, match="not logged in"),
@@ -54,7 +54,7 @@ class TestAuthenticatedClient:
         ):
             client.get("foo")
 
-        assert not foo_route.called
+        assert not respx_mock.calls
 
     @pytest.mark.respx(assert_all_called=True)
     def test_request_with_expired_token(self, tmp_path, respx_mock):
@@ -77,7 +77,7 @@ class TestAuthenticatedClient:
         with AuthenticatedClient() as client:
             client.get("foo")
 
-        assert respx_mock.calls.last.request.headers["authorization"] == "Bearer: D"
+        assert respx_mock.calls.last.request.headers["authorization"] == "Bearer D"
 
         token = Token()
         assert token.access_token == "D"
