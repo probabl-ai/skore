@@ -885,3 +885,39 @@ class PrecisionRecallCurveDisplay(
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self) -> DataFrame:
+        """Get the data used to create the precision-recall curve plot.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the precision-recall curve data with columns:
+            - estimator_name: Name of the estimator
+            - split_index: Cross-validation fold ID (if applicable)
+            - label: Class label
+            - threshold: Decision threshold
+            - precision: Precision score at threshold
+            - recall: Recall score at threshold
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split, EstimatorReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(classifier, **split_data)
+        >>> display = report.metrics.precision_recall()
+        >>> df = display.frame()
+        """
+        column_order = [
+            "estimator_name",
+            "split_index",
+            "label",
+            "threshold",
+            "precision",
+            "recall",
+        ]
+        return self.precision_recall[column_order]

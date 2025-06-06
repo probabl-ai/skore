@@ -1,4 +1,6 @@
 import matplotlib as mpl
+import numpy as np
+import pandas as pd
 import pytest
 from skore import EstimatorReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
@@ -223,3 +225,73 @@ def test_multiclass_classification_data_source(pyplot, multiclass_classification
         assert display.lines_[class_label].get_label() == (
             f"{str(class_label).title()} - AP = {average_precision:0.2f}"
         )
+
+
+def test_frame_binary_classification(binary_classification_data):
+    """Check that the frame method returns the correct DataFrame structure for binary
+    classification data.
+    """
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.precision_recall()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "label",
+        "threshold",
+        "precision",
+        "recall",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    assert df["label"].dtype.name == "category"
+    assert df["threshold"].dtype == np.float64
+    assert df["precision"].dtype == np.float64
+    assert df["recall"].dtype == np.float64
+
+    assert df["precision"].between(0, 1).all()
+    assert df["recall"].between(0, 1).all()
+    assert df["estimator_name"].unique() == [report.estimator_name_]
+
+
+def test_frame_multiclass_classification(multiclass_classification_data):
+    """Check that the frame method returns the correct DataFrame structure for
+    multiclass classification data.
+    """
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.precision_recall()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "label",
+        "threshold",
+        "precision",
+        "recall",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    assert df["label"].dtype.name == "category"
+    assert df["threshold"].dtype == np.float64
+    assert df["precision"].dtype == np.float64
+    assert df["recall"].dtype == np.float64
+
+    assert df["precision"].between(0, 1).all()
+    assert df["recall"].between(0, 1).all()
+    assert df["estimator_name"].unique() == [report.estimator_name_]

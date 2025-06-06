@@ -1,4 +1,6 @@
 import matplotlib as mpl
+import numpy as np
+import pandas as pd
 import pytest
 from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
@@ -184,3 +186,104 @@ def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(pr_curve_kwargs=pr_curve_kwargs)
+
+
+def test_frame_binary_classification(binary_classification_data):
+    """Test the frame method with binary classification comparison data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.precision_recall()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "label",
+        "threshold",
+        "precision",
+        "recall",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    assert df["label"].dtype.name == "category"
+    assert df["threshold"].dtype == np.float64
+    assert df["precision"].dtype == np.float64
+    assert df["recall"].dtype == np.float64
+
+    assert df["estimator_name"].nunique() == 2
+    assert df["label"].nunique() == 1
+    assert df["label"].iloc[0] == estimator.classes_[1]  # positive class
+    assert df["precision"].between(0, 1).all()
+    assert df["recall"].between(0, 1).all()
+
+
+def test_frame_multiclass_classification(multiclass_classification_data):
+    """Test the frame method with multiclass classification comparison data."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.precision_recall()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "label",
+        "threshold",
+        "precision",
+        "recall",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    assert df["label"].dtype.name == "category"
+    assert df["threshold"].dtype == np.float64
+    assert df["precision"].dtype == np.float64
+    assert df["recall"].dtype == np.float64
+
+    assert df["estimator_name"].nunique() == 2
+    assert set(df["label"].unique()) == set(estimator.classes_)
+    assert df["precision"].between(0, 1).all()
+    assert df["recall"].between(0, 1).all()

@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from skore import CrossValidationReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
@@ -138,3 +139,68 @@ def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(pr_curve_kwargs=pr_curve_kwargs)
+
+
+def test_frame_binary_classification(binary_classification_data_no_split):
+    """Test the frame method with binary classification cross-validation data."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.precision_recall()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "label",
+        "threshold",
+        "precision",
+        "recall",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    assert df["label"].dtype.name == "category"
+    assert df["threshold"].dtype == np.float64
+    assert df["precision"].dtype == np.float64
+    assert df["recall"].dtype == np.float64
+
+    assert df["split_index"].nunique() > 0
+    assert df["label"].nunique() == 1
+    assert df["precision"].between(0, 1).all()
+    assert df["recall"].between(0, 1).all()
+    assert df["estimator_name"].unique() == [report.estimator_name_]
+
+
+def test_frame_multiclass_classification(multiclass_classification_data_no_split):
+    """Test the frame method with multiclass classification cross-validation data."""
+    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.precision_recall()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "label",
+        "threshold",
+        "precision",
+        "recall",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    assert df["label"].dtype.name == "category"
+    assert df["threshold"].dtype == np.float64
+    assert df["precision"].dtype == np.float64
+    assert df["recall"].dtype == np.float64
+
+    assert df["split_index"].nunique() > 0
+    assert df["label"].nunique() == 3
+    assert df["precision"].between(0, 1).all()
+    assert df["recall"].between(0, 1).all()
+    assert df["estimator_name"].unique() == [report.estimator_name_]
