@@ -1,4 +1,6 @@
 import matplotlib as mpl
+import numpy as np
+import pandas as pd
 import pytest
 from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
@@ -231,7 +233,26 @@ def test_frame(binary_classification_data):
     display = report.metrics.roc()
     df = display.frame()
 
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "fpr",
+        "tpr",
+        "threshold",
+        "roc_auc",
+    ]
+    assert list(df.columns) == expected_columns
+
     assert df["estimator_name"].nunique() == 2
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    assert df["fpr"].dtype == np.float64
+    assert df["tpr"].dtype == np.float64
+    assert df["threshold"].dtype == np.float64
+    assert df["roc_auc"].dtype == np.float64
 
     # Each estimator should have exactly one ROC AUC value
     for estimator_name in ["estimator_1", "estimator_2"]:

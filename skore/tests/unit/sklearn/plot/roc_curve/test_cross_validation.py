@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from skore import CrossValidationReport
 from skore.sklearn._plot import RocCurveDisplay
@@ -191,6 +192,28 @@ def test_frame(binary_classification_data_no_split):
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.roc()
     df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "fpr",
+        "tpr",
+        "threshold",
+        "roc_auc",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    assert df["fpr"].dtype == np.float64
+    assert df["tpr"].dtype == np.float64
+    assert df["threshold"].dtype == np.float64
+    assert df["roc_auc"].dtype == np.float64
+
+    assert df["estimator_name"].unique() == [report.estimator_name_]
+    assert df["split_index"].nunique() == cv
 
     # Each fold should have exactly one ROC AUC value
     for fold in range(cv):
