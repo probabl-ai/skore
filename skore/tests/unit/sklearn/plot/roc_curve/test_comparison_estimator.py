@@ -1,4 +1,6 @@
 import matplotlib as mpl
+import numpy as np
+import pandas as pd
 import pytest
 from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
@@ -204,3 +206,56 @@ def test_multiple_roc_curve_kwargs_error(
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
+
+
+def test_frame(binary_classification_data):
+    """Test the frame method with comparison data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.roc()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "fpr",
+        "tpr",
+        "threshold",
+        "roc_auc",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].nunique() == 2
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    assert df["fpr"].dtype == np.float64
+    assert df["tpr"].dtype == np.float64
+    assert df["threshold"].dtype == np.float64
+    assert df["roc_auc"].dtype == np.float64
+
+    # Each estimator should have exactly one ROC AUC value
+    for estimator_name in ["estimator_1", "estimator_2"]:
+        estimator_data = df[df["estimator_name"] == estimator_name]
+        assert not estimator_data.empty
+        assert estimator_data["roc_auc"].nunique() == 1  # One AUC score per estimator

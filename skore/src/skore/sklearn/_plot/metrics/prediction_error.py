@@ -796,3 +796,37 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self) -> DataFrame:
+        """Get the data used to create the prediction error plot.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the prediction error data with columns:
+            - estimator_name: Name of the estimator
+            - split_index: Cross-validation fold ID (if applicable)
+            - y_true: True target values
+            - y_pred: Predicted target values
+            - residuals: Difference between true and predicted values (y_true - y_pred)
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import train_test_split, EstimatorReport
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> reg = Ridge()
+        >>> report = EstimatorReport(reg, **split_data)
+        >>> display = report.metrics.prediction_error()
+        >>> df = display.frame()
+        """
+        column_order = [
+            "estimator_name",
+            "split_index",
+            "y_true",
+            "y_pred",
+            "residuals",
+        ]
+        return self.prediction_error[column_order]

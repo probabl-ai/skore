@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from skore import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
@@ -242,3 +243,77 @@ def test_roc_curve_kwargs_multiclass_classification(
     display.plot(despine=False)
     assert display.ax_.spines["top"].get_visible()
     assert display.ax_.spines["right"].get_visible()
+
+
+def test_binary_classification_frame(binary_classification_data):
+    """Test the frame method with binary classification data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "fpr",
+        "tpr",
+        "threshold",
+        "roc_auc",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["fpr"].dtype == np.float64
+    assert df["tpr"].dtype == np.float64
+    assert df["threshold"].dtype == np.float64
+    assert df["roc_auc"].dtype == np.float64
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+
+    assert df["fpr"].between(0, 1).all()
+    assert df["tpr"].between(0, 1).all()
+    assert df["roc_auc"].between(0, 1).all()
+
+    assert df["estimator_name"].unique() == [report.estimator_name_]
+
+
+def test_multiclass_classification_frame(multiclass_classification_data):
+    """Test the frame method with multiclass classification data."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "label",
+        "method",
+        "fpr",
+        "tpr",
+        "threshold",
+        "roc_auc",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["fpr"].dtype == np.float64
+    assert df["tpr"].dtype == np.float64
+    assert df["threshold"].dtype == np.float64
+    assert df["roc_auc"].dtype == np.float64
+    assert df["method"].dtype == object
+    assert df["label"].dtype.name == "category"
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+
+    assert df["fpr"].between(0, 1).all()
+    assert df["tpr"].between(0, 1).all()
+    assert df["roc_auc"].between(0, 1).all()
+    assert df["method"].unique() == ["OvR"]
+    assert df["estimator_name"].unique() == [report.estimator_name_]

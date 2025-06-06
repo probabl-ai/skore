@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from skore import CrossValidationReport
 from skore.sklearn._plot import RocCurveDisplay
@@ -32,8 +33,8 @@ def test_binary_classification(
         == [display.pos_label]
     )
     assert (
-        len(display.roc_curve["split_index"].unique())
-        == len(display.roc_auc["split_index"].unique())
+        display.roc_curve["split_index"].nunique()
+        == display.roc_auc["split_index"].nunique()
         == cv
     )
 
@@ -96,8 +97,8 @@ def test_multiclass_classification(
         == list(class_labels)
     )
     assert (
-        len(display.roc_curve["split_index"].unique())
-        == len(display.roc_auc["split_index"].unique())
+        display.roc_curve["split_index"].nunique()
+        == display.roc_auc["split_index"].nunique()
         == cv
     )
 
@@ -183,3 +184,38 @@ def test_multiple_roc_curve_kwargs_error(
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
+
+
+def test_frame(binary_classification_data_no_split):
+    """Test the frame method with cross-validation data."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.roc()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "fpr",
+        "tpr",
+        "threshold",
+        "roc_auc",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    assert df["fpr"].dtype == np.float64
+    assert df["tpr"].dtype == np.float64
+    assert df["threshold"].dtype == np.float64
+    assert df["roc_auc"].dtype == np.float64
+
+    assert df["estimator_name"].unique() == [report.estimator_name_]
+    assert df["split_index"].nunique() == cv
+
+    # Each fold should have exactly one ROC AUC value
+    for fold in range(cv):
+        fold_data = df[df["split_index"] == fold]
+        assert fold_data["roc_auc"].nunique() == 1  # One AUC score per fold

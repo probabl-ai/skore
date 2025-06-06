@@ -885,3 +885,61 @@ class PrecisionRecallCurveDisplay(
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self) -> DataFrame:
+        """Get the data used to create the precision-recall curve plot.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the precision-recall curve data with columns:
+            - estimator_name: Name of the estimator
+            - split_index: Cross-validation fold ID (may be null)
+            - label: Class label
+            - threshold: Decision threshold
+            - precision: Precision score at threshold
+            - recall: Recall score at threshold
+            - average_precision: Average precision score for the class
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split, EstimatorReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(classifier, **split_data)
+        >>> display = report.metrics.precision_recall()
+        >>> df = display.frame()
+        """
+        merged_data = self.precision_recall.merge(
+            self.average_precision,
+            on=["estimator_name", "split_index", "label"],
+        )
+
+        if self.ml_task == "multiclass-classification":
+            merged_data["method"] = "OvR"
+
+        if self.ml_task == "binary-classification":
+            column_order = [
+                "estimator_name",
+                "split_index",
+                "label",
+                "threshold",
+                "precision",
+                "recall",
+                "average_precision",
+            ]
+        else:
+            column_order = [
+                "estimator_name",
+                "split_index",
+                "label",
+                "method",
+                "threshold",
+                "precision",
+                "recall",
+                "average_precision",
+            ]
+        return merged_data[column_order]

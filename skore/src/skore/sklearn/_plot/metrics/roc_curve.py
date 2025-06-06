@@ -952,3 +952,72 @@ class RocCurveDisplay(
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self) -> DataFrame:
+        """Get the data used to create the ROC curve plot.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the ROC curve data with columns:
+
+            For binary classification:
+            - fpr: False Positive Rate
+            - tpr: True Positive Rate
+            - threshold: Classification threshold
+            - roc_auc: Area Under the Curve
+            - model_name: Name of the model
+            - fold_id: Cross-validation fold ID (may be null)
+
+            For multiclass classification:
+            - fpr: False Positive Rate
+            - tpr: True Positive Rate
+            - threshold: Classification threshold
+            - roc_auc: Area Under the Curve
+            - method: One-vs-Rest (OvR)
+            - class: Class label
+            - model_name: Name of the model
+            - fold_id: Cross-validation fold ID (may be null)
+
+        Examples
+        --------
+        >>> # Binary classification example
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import EstimatorReport, train_test_split
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> clf = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(clf, **split_data)
+        >>> display = report.metrics.roc()
+        >>> df = display.frame()
+        """
+        merged_data = self.roc_curve.merge(
+            self.roc_auc, on=["estimator_name", "split_index", "label"], how="left"
+        )
+
+        if self.ml_task == "multiclass-classification":
+            merged_data["method"] = "OvR"
+
+        if self.ml_task == "binary-classification":
+            column_order = [
+                "estimator_name",
+                "split_index",
+                "fpr",
+                "tpr",
+                "threshold",
+                "roc_auc",
+            ]
+        else:
+            column_order = [
+                "estimator_name",
+                "split_index",
+                "label",
+                "method",
+                "fpr",
+                "tpr",
+                "threshold",
+                "roc_auc",
+            ]
+
+        return merged_data[column_order]

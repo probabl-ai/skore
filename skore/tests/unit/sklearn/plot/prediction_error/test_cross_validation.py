@@ -23,7 +23,7 @@ def test_regression(pyplot, regression_data_no_split, data_source):
 
     # check the structure of the attributes
     assert isinstance(display.prediction_error, pd.DataFrame)
-    assert len(display.prediction_error["split_index"].unique()) == cv
+    assert display.prediction_error["split_index"].nunique() == cv
     assert display.data_source == data_source
     assert isinstance(display.range_y_true, RangeData)
     assert isinstance(display.range_y_pred, RangeData)
@@ -70,7 +70,7 @@ def test_regression_actual_vs_predicted(pyplot, regression_data_no_split):
 
     # check the structure of the attributes
     assert isinstance(display.prediction_error, pd.DataFrame)
-    assert len(display.prediction_error["split_index"].unique()) == cv
+    assert display.prediction_error["split_index"].nunique() == cv
     assert display.data_source == "test"
 
     assert isinstance(display.line_, mpl.lines.Line2D)
@@ -128,3 +128,31 @@ def test_wrong_kwargs(pyplot, regression_data_no_split, data_points_kwargs):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(data_points_kwargs=data_points_kwargs)
+
+
+def test_frame(regression_data_no_split):
+    """Test the frame method with cross-validation data."""
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.prediction_error()
+    df = display.frame()
+
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "y_true",
+        "y_pred",
+        "residuals",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    assert df["y_true"].dtype == np.float64
+    assert df["y_pred"].dtype == np.float64
+    assert df["residuals"].dtype == np.float64
+
+    assert df["estimator_name"].unique() == [report.estimator_name_]
+    assert df["split_index"].nunique() == cv
