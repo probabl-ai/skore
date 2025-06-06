@@ -13,10 +13,10 @@ from skore.sklearn import ComparisonReport, EstimatorReport
 
 
 @fixture
-def regression(random_state=42):
-    X, y = make_regression(random_state=random_state)
+def regression():
+    X, y = make_regression(random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=random_state
+        X, y, test_size=0.2, random_state=42
     )
 
     return EstimatorReport(
@@ -29,9 +29,9 @@ def regression(random_state=42):
 
 
 @fixture
-def binary_classification(random_state=42):
-    X, y = make_classification(random_state=random_state)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=random_state)
+def binary_classification():
+    X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
     return EstimatorReport(
         LogisticRegression(),
