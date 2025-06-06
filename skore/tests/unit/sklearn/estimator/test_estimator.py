@@ -330,7 +330,7 @@ def test_estimator_report_flat_index(binary_classification_data):
     """
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics(flat_index=True)
+    result = report.metrics.report_metrics(flat_index=True).frame()
     assert result.shape == (8, 1)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
@@ -734,7 +734,7 @@ def test_estimator_report_report_metrics_binary(
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.report_metrics(
         pos_label=pos_label, data_source=data_source, **kwargs
-    )
+    ).frame()
     assert "Favorability" not in result.columns
     expected_metrics = (
         "precision",
@@ -759,7 +759,7 @@ def test_estimator_report_report_metrics_binary(
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.report_metrics(
         pos_label=pos_label_name, data_source=data_source, **kwargs
-    )
+    ).frame()
     expected_metrics = (
         "precision",
         "recall",
@@ -778,7 +778,7 @@ def test_estimator_report_report_metrics_binary(
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.report_metrics(
         pos_label=pos_label, data_source=data_source, **kwargs
-    )
+    ).frame()
     expected_metrics = ("precision", "recall", "roc_auc", "fit_time", "predict_time")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -796,7 +796,7 @@ def test_estimator_report_report_metrics_multiclass(
     estimator, X_test, y_test = multiclass_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.report_metrics(data_source=data_source, **kwargs)
+    result = report.metrics.report_metrics(data_source=data_source, **kwargs).frame()
     assert "Favorability" not in result.columns
     expected_metrics = (
         "precision",
@@ -814,7 +814,7 @@ def test_estimator_report_report_metrics_multiclass(
     estimator, X_test, y_test = multiclass_classification_data_svc
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.report_metrics(data_source=data_source, **kwargs)
+    result = report.metrics.report_metrics(data_source=data_source, **kwargs).frame()
     expected_metrics = ("precision", "recall", "fit_time", "predict_time")
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
@@ -828,7 +828,7 @@ def test_estimator_report_report_metrics_regression(regression_data, data_source
     estimator, X_test, y_test = regression_data
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics(data_source=data_source, **kwargs)
+    result = report.metrics.report_metrics(data_source=data_source, **kwargs).frame()
     assert "Favorability" not in result.columns
     expected_metrics = ("r2", "rmse", "fit_time", "predict_time")
     _check_results_report_metrics(result, expected_metrics, len(expected_metrics))
@@ -841,7 +841,9 @@ def test_estimator_report_report_metrics_scoring_kwargs(
     estimator, X_test, y_test = regression_multioutput_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "report_metrics")
-    result = report.metrics.report_metrics(scoring_kwargs={"multioutput": "raw_values"})
+    result = report.metrics.report_metrics(
+        scoring_kwargs={"multioutput": "raw_values"}
+    ).frame()
     assert result.shape == (6, 1)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Output"]
@@ -849,7 +851,7 @@ def test_estimator_report_report_metrics_scoring_kwargs(
     estimator, X_test, y_test = multiclass_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "report_metrics")
-    result = report.metrics.report_metrics(scoring_kwargs={"average": None})
+    result = report.metrics.report_metrics(scoring_kwargs={"average": None}).frame()
     assert result.shape == (12, 1)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Label / Average"]
@@ -889,7 +891,7 @@ def test_estimator_report_report_metrics_overwrite_scoring_names(
     """Test that we can overwrite the scoring names in report_metrics."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics(scoring_names=scoring_names)
+    result = report.metrics.report_metrics(scoring_names=scoring_names).frame()
     assert result.shape == (len(expected_columns), 1)
 
     # Get level 0 names if MultiIndex, otherwise get column names
@@ -907,7 +909,7 @@ def test_estimator_report_report_metrics_indicator_favorability(
     """Check that the behaviour of `indicator_favorability` is correct."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics(indicator_favorability=True)
+    result = report.metrics.report_metrics(indicator_favorability=True).frame()
     assert "Favorability" in result.columns
     indicator = result["Favorability"]
     assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
@@ -934,10 +936,10 @@ def test_estimator_report_report_metrics_scoring_single_list_equivalence(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result_single = report.metrics.report_metrics(
         scoring=scoring, scoring_kwargs=scoring_kwargs
-    )
+    ).frame()
     result_list = report.metrics.report_metrics(
         scoring=[scoring], scoring_kwargs=scoring_kwargs
-    )
+    ).frame()
     assert result_single.equals(result_list)
 
 
@@ -1081,7 +1083,7 @@ def test_estimator_report_report_metrics_with_custom_metric(regression_data):
     result = report.metrics.report_metrics(
         scoring=["r2", custom_metric],
         scoring_kwargs={"some_weights": weights, "response_method": "predict"},
-    )
+    ).frame()
     assert result.shape == (2, 1)
     np.testing.assert_allclose(
         result.to_numpy(),
@@ -1111,7 +1113,7 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
     result = report.metrics.report_metrics(
         scoring=[r2_score, median_absolute_error_scorer, custom_metric_scorer],
         scoring_kwargs={"response_method": "predict"},  # only dispatched to r2_score
-    )
+    ).frame()
     assert result.shape == (3, 1)
     np.testing.assert_allclose(
         result.to_numpy(),
@@ -1186,7 +1188,7 @@ def test_estimator_report_report_metrics_with_scorer_binary_classification(
     result = report.metrics.report_metrics(
         scoring=["accuracy", accuracy_score, scorer],
         scoring_kwargs={"response_method": "predict"},
-    )
+    ).frame()
     assert result.shape == (3, 1)
     np.testing.assert_allclose(
         result.to_numpy(),
@@ -1213,7 +1215,7 @@ def test_estimator_report_report_metrics_with_scorer_pos_label_error(
         "`pos_label` is passed both in the scorer and to the `report_metrics` method."
     )
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.report_metrics(scoring=[f1_scorer], pos_label=0)
+        report.metrics.report_metrics(scoring=[f1_scorer], pos_label=0).frame()
 
 
 def test_estimator_report_report_metrics_invalid_metric_type(regression_data):
@@ -1223,7 +1225,7 @@ def test_estimator_report_report_metrics_invalid_metric_type(regression_data):
 
     err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.report_metrics(scoring=[1])
+        report.metrics.report_metrics(scoring=[1]).frame()
 
 
 def test_estimator_report_get_X_y_and_data_source_hash_error():
@@ -1419,7 +1421,7 @@ def test_estimator_report_metric_with_neg_metrics(binary_classification_data):
     classifier, X_test, y_test = binary_classification_data
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    result = report.metrics.report_metrics(scoring=["neg_log_loss"])
+    result = report.metrics.report_metrics(scoring=["neg_log_loss"]).frame()
     assert "Log Loss" in result.index
     assert result.loc["Log Loss", "RandomForestClassifier"] == pytest.approx(
         report.metrics.log_loss()
@@ -1431,12 +1433,12 @@ def test_estimator_report_with_sklearn_scoring_strings(binary_classification_dat
     classifier, X_test, y_test = binary_classification_data
     class_report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    result = class_report.metrics.report_metrics(scoring=["neg_log_loss"])
+    result = class_report.metrics.report_metrics(scoring=["neg_log_loss"]).frame()
     assert "Log Loss" in result.index.get_level_values(0)
 
     result_multi = class_report.metrics.report_metrics(
         scoring=["accuracy", "neg_log_loss", "roc_auc"], indicator_favorability=True
-    )
+    ).frame()
     assert "Accuracy" in result_multi.index.get_level_values(0)
     assert "Log Loss" in result_multi.index.get_level_values(0)
     assert "ROC AUC" in result_multi.index.get_level_values(0)
@@ -1455,7 +1457,7 @@ def test_estimator_report_with_sklearn_scoring_strings_regression(regression_dat
     reg_result = reg_report.metrics.report_metrics(
         scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
         indicator_favorability=True,
-    )
+    ).frame()
 
     assert "Mean Squared Error" in reg_result.index.get_level_values(0)
     assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
@@ -1473,7 +1475,7 @@ def test_estimator_report_with_scoring_strings_regression(regression_data):
     reg_result = reg_report.metrics.report_metrics(
         scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
         indicator_favorability=True,
-    )
+    ).frame()
 
     assert "Mean Squared Error" in reg_result.index.get_level_values(0)
     assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
@@ -1488,7 +1490,7 @@ def test_estimator_report_sklearn_scorer_names_pos_label(binary_classification_d
     classifier, X_test, y_test = binary_classification_data
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    result = report.metrics.report_metrics(scoring=["f1"], pos_label=0)
+    result = report.metrics.report_metrics(scoring=["f1"], pos_label=0).frame()
     assert "F1 Score" in result.index.get_level_values(0)
     assert 0 in result.index.get_level_values(1)
     f1_scorer = make_scorer(
@@ -1515,7 +1517,7 @@ def test_estimator_report_sklearn_scorer_names_scoring_kwargs(
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.report_metrics(
             scoring=["f1"], scoring_kwargs={"average": "macro"}
-        )
+        ).frame()
 
 
 @pytest.mark.parametrize(
@@ -1533,17 +1535,21 @@ def test_estimator_report_report_metrics_pos_label_overwrite(
     classifier = LogisticRegression().fit(X, y)
 
     report = EstimatorReport(classifier, X_test=X, y_test=y)
-    result = report.metrics.report_metrics(scoring=metric).reset_index()
+    result = report.metrics.report_metrics(scoring=metric).frame().reset_index()
     assert result["Label / Average"].to_list() == ["A", "B"]
 
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="B")
-    result = report.metrics.report_metrics(scoring=metric).reset_index()
+    result = report.metrics.report_metrics(scoring=metric).frame().reset_index()
     assert "Label / Average" not in result.columns
     assert result[report.estimator_name_].item() == pytest.approx(
         metric_fn(y, classifier.predict(X), pos_label="B")
     )
 
-    result = report.metrics.report_metrics(scoring=metric, pos_label="A").reset_index()
+    result = (
+        report.metrics.report_metrics(scoring=metric, pos_label="A")
+        .frame()
+        .reset_index()
+    )
     assert "Label / Average" not in result.columns
     assert result[report.estimator_name_].item() == pytest.approx(
         metric_fn(y, classifier.predict(X), pos_label="A")

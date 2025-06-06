@@ -19,6 +19,7 @@ from skore.sklearn._plot import (
     ConfusionMatrixDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
+    ReportMetricsDisplay,
     RocCurveDisplay,
 )
 from skore.sklearn.types import _DEFAULT, PositiveLabel, Scoring, ScoringName, YPlotData
@@ -69,7 +70,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         pos_label: Optional[PositiveLabel] = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-    ) -> pd.DataFrame:
+    ) -> ReportMetricsDisplay:
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -139,7 +140,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
-        >>> report.metrics.report_metrics(indicator_favorability=True)
+        >>> report.metrics.report_metrics(indicator_favorability=True).frame()
                     LogisticRegression Favorability
         Metric
         Precision              0.98...         (↗︎)
@@ -147,7 +148,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
-        >>> report.metrics.report_metrics(scoring=["f1"], indicator_favorability=True)
+        >>> report.metrics.report_metrics(
+        ...     scoring=["f1"],
+        ...     indicator_favorability=True,
+        ... ).frame()
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
@@ -418,7 +422,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return results
+        return ReportMetricsDisplay(report_metrics_data=results)
 
     def _compute_metric_scores(
         self,

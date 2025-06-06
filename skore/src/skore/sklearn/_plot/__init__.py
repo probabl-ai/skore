@@ -2,6 +2,7 @@ from skore.sklearn._plot.metrics import (
     ConfusionMatrixDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
+    ReportMetricsDisplay,
     RocCurveDisplay,
 )
 
@@ -10,4 +11,5 @@ __all__ = [
     "RocCurveDisplay",
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",
+    "ReportMetricsDisplay",
 ]
