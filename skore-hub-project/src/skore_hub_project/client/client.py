@@ -33,23 +33,6 @@ class AuthenticatedClient(Client):
 
         self.raises = raises
 
-        if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
-            self.__authorization = f"X-API-Key: {apikey}"
-
-    @property
-    def __authorization(self):
-        token = Token()
-
-        if not token.valid:
-            raise AuthenticationError(
-                "You are not logged in. Please run `skore-hub-login`"
-            )
-
-        if token.expires_at <= datetime.now(timezone.utc):
-            token.refresh()
-
-        return f"Bearer {token.access_token}"
-
     def request(
         self,
         method: str,
@@ -57,11 +40,24 @@ class AuthenticatedClient(Client):
         headers: HeaderTypes | None = None,
         **kwargs,
     ) -> Response:
-        """Execute request with access token, and refresh the token if needed."""
+        """Execute request with authorization."""
         headers = Headers(headers)
 
-        # Overload headers with our own authorization token
-        headers.update({"Authorization": self.__authorization})
+        # Overload headers with our custom headers (API key or token)
+        if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
+            headers.update({"X-API-Key": f"{apikey}"})
+        else:
+            token = Token()
+
+            if not token.valid:
+                raise AuthenticationError(
+                    "You are not logged in. Please run `skore-hub-login`"
+                )
+
+            if token.expires_at <= datetime.now(timezone.utc):
+                token.refresh()
+
+            headers.update({"Authorization": f"Bearer {token.access_token}"})
 
         # Send request
         response = super().request(
