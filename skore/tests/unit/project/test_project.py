@@ -165,7 +165,7 @@ class TestProject:
         assert project._Project__project.reports.get.call_args.args == ("<id>",)
         assert not project._Project__project.reports.get.call_args.kwargs
 
-    def test_summary(self):
+    def test_summarize(self):
         project = Project("<name>")
         project._Project__project.reports.metadata.return_value = [
             {

@@ -250,7 +250,7 @@ class Project:
         """Get a persisted report by its id."""
         return self.__project.reports.get(id)
 
-    def summary(self) -> Summary:
+    def summarize(self) -> Summary:
         """Obtain metadata/metrics for all persisted reports."""
         return Summary.factory(self.__project)
 
