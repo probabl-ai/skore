@@ -924,10 +924,10 @@ def test_estimator_report_report_metrics_indicator_favorability(
 @pytest.mark.parametrize(
     "scoring, scoring_names, scoring_kwargs",
     [
-        ("accuracy", "accuracy", None),
-        ("neg_log_loss", "neg_log_loss", None),
-        (accuracy_score, "accuracy", {"response_method": "predict"}),
-        (get_scorer("accuracy"), "accuracy", None),
+        ("accuracy", "this_is_a_test", None),
+        ("neg_log_loss", "this_is_a_test", None),
+        (accuracy_score, "this_is_a_test", {"response_method": "predict"}),
+        (get_scorer("accuracy"), "this_is_a_test", None),
     ],
 )
 def test_estimator_report_report_metrics_scoring_single_list_equivalence(
@@ -943,6 +943,7 @@ def test_estimator_report_report_metrics_scoring_single_list_equivalence(
     result_list = report.metrics.report_metrics(
         scoring=[scoring], scoring_names=scoring_names, scoring_kwargs=scoring_kwargs
     )
+    assert result_single.index[0] == "this_is_a_test"
     assert result_single.equals(result_list)
 
 
