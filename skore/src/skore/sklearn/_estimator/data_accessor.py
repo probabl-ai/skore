@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn.utils.fixes import parse_version
+from skrub import _dataframe as sbd
 from skrub import _join_utils
 from skrub._dataframe._common import dispatch
 
@@ -17,7 +18,7 @@ def concat(*dataframes, axis=0):
     raise NotImplementedError()
 
 
-@concat.specialize("pandas")
+@concat.specialize("pandas", argument_type="DataFrame")
 def _concat_pandas(*dataframes, axis=0):
     kwargs = {"copy": False} if pandas_version < parse_version("3.0") else {}
     if axis == 0:
@@ -31,7 +32,7 @@ def _concat_pandas(*dataframes, axis=0):
         return result
 
 
-@concat.specialize("polars")
+@concat.specialize("polars", argument_type="DataFrame")
 def _concat_polars(*dataframes, axis=0):
     import polars as pl
 
@@ -42,11 +43,31 @@ def _concat_polars(*dataframes, axis=0):
         return pl.concat(dataframes, how="horizontal")
 
 
+@dispatch
+def to_frame(col):
+    """Convert a single Column to a DataFrame."""
+    raise NotImplementedError()
+
+
+@to_frame.specialize("pandas", argument_type="Column")
+def _to_frame_pandas(col):
+    return col.to_frame()
+
+
+@to_frame.specialize("polars", argument_type="Column")
+def _to_frame_polars(col):
+    return col.to_frame()
+
+
+def _to_frame_if_column(obj):
+    return to_frame(obj) if sbd.is_column(obj) else obj
+
+
 class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    def analyze(self, dataset: str, with_y: bool = True) -> TableReportDisplay:
+    def analyze(self, dataset: str = "all", with_y: bool = True) -> TableReportDisplay:
         """Analyse.
 
         Returns
@@ -67,10 +88,14 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if X_test is not None:
                 X = concat(X, X_test, axis=0)
             if y is not None and y_test is not None:
-                y = concat(y, y_test, axis=0)
+                y = concat(
+                    _to_frame_if_column(y),
+                    _to_frame_if_column(y_test),
+                    axis=0,
+                )
 
         if with_y and y is not None:
-            X = concat(X, y, axis=1)
+            X = concat(X, _to_frame_if_column(y), axis=1)
 
         return TableReportDisplay.from_frame(X)
 
