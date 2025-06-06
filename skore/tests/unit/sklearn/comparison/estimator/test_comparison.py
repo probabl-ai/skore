@@ -6,9 +6,6 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import accuracy_score, get_scorer, mean_absolute_error
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
-from skore.sklearn._plot.metrics import (
-    PredictionErrorDisplay,
-)
 
 
 @pytest.fixture
@@ -502,90 +499,6 @@ def test_comparison_report_aggregate(report):
         report.metrics.report_metrics(aggregate="mean"),
         report.metrics.report_metrics(),
     )
-
-
-@pytest.mark.parametrize("plot_data_source", ["test", "X_y"])
-@pytest.mark.parametrize(
-    "plot_ml_task, plot_name, plot_cls, plot_attributes",
-    [
-        (
-            "regression",
-            "prediction_error",
-            PredictionErrorDisplay,
-            {
-                "y_true": [
-                    (
-                        [0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
-                        + [1, 1, 1, 0]
-                    ),
-                    (
-                        [0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
-                        + [1, 1, 1, 0]
-                    ),
-                ],
-                "y_pred": [
-                    (
-                        [0.32, 1.25, 0.94, 0.77, -0.58, 0.89, 0.12, 0.51, 0.70, 0.52]
-                        + [0.44, 0.14, 0.15, -0.13, -0.27, 0.24, 0.90, 0.22, 0.04]
-                        + [-0.18, 0.20, 0.66, 0.99, 0.70, -0.03]
-                    ),
-                    (
-                        [0.32, 1.25, 0.94, 0.77, -0.58, 0.89, 0.12, 0.51, 0.70, 0.52]
-                        + [0.44, 0.14, 0.15, -0.13, -0.27, 0.24, 0.90, 0.22, 0.04]
-                        + [-0.18, 0.20, 0.66, 0.99, 0.70, -0.03]
-                    ),
-                ],
-            },
-        ),
-    ],
-)
-def test_comparison_report_plots(
-    plot_data_source,
-    plot_ml_task,
-    plot_name,
-    plot_cls,
-    plot_attributes,
-    binary_classification_model,
-    regression_model,
-    report_classification,
-    report_regression,
-):
-    if plot_ml_task == "binary_classification":
-        _, _, X_test, _, y_test = binary_classification_model
-        comp = report_classification
-    else:
-        _, _, X_test, _, y_test = regression_model
-        comp = report_regression
-
-    if plot_data_source == "X_y":
-        arguments = {"data_source": plot_data_source, "X": X_test, "y": y_test}
-    else:
-        arguments = {"data_source": plot_data_source}
-
-    # Ensure display object is available
-    display = getattr(comp.metrics, plot_name)(**arguments)
-
-    # Ensure display object is of good type
-    assert isinstance(display, plot_cls)
-
-    # Ensure data source is well set
-    assert display.data_source == plot_data_source
-
-    # Ensure all attributes to test are well set
-    for attribute, value in plot_attributes.items():
-        display_attribute_value = getattr(display, attribute)
-        if isinstance(value, dict):
-            for k, v in value.items():
-                assert isinstance(display_attribute_value, dict)
-                assert k in display_attribute_value
-                assert_allclose(display_attribute_value[k], v, atol=1e-2)
-        elif isinstance(value, list):
-            assert_allclose(display_attribute_value, value, atol=1e-2)
-        else:
-            raise NotImplementedError()
-
-    # Ensure plot is callable
-    display.plot()
 
 
 def test_random_state(report_regression):

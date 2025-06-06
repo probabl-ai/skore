@@ -1,4 +1,4 @@
-"""Class definition of the metadata object, used in ``skore`` project."""
+"""Class definition of the summary object, used in ``skore`` project."""
 
 from __future__ import annotations
 
@@ -15,11 +15,11 @@ if TYPE_CHECKING:
     from skore.sklearn import EstimatorReport
 
 
-class Metadata(DataFrame):
+class Summary(DataFrame):
     """
     Metadata and metrics for all reports persisted in a project at a given moment.
 
-    A metadata object is an extended :class:`pandas.DataFrame`, containing all the
+    A summary object is an extended :class:`pandas.DataFrame`, containing all the
     metadata and metrics of the reports that have been persisted in a project. It
     implements a custom HTML representation, that allows user to filter its reports
     using a parallel coordinates plot. In a Jupyter Notebook, this representation
@@ -29,7 +29,7 @@ class Metadata(DataFrame):
     The parallel coordinates plot is interactive, such the user can select a filter path
     and retrieve the corresponding reports.
 
-    Outside a Jupyter Notebook, the metadata object can be used as a standard
+    Outside a Jupyter Notebook, the summary object can be used as a standard
     :class:`pandas.DataFrame` object. This means that it can be questioned, divided
     etc., using the standard :class:`pandas.DataFrame` functions.
 
@@ -41,38 +41,38 @@ class Metadata(DataFrame):
     @staticmethod
     def factory(project, /):
         """
-        Construct a metadata object from ``project`` at a given moment.
+        Construct a summary object from ``project`` at a given moment.
 
         Parameters
         ----------
         project : Union[skore_local_project.Project, skore_hub_project.Project]
-            The project from which the metadata object is to be constructed.
+            The project from which the summary object is to be constructed.
 
         Notes
         -----
         This function is not intended for direct use. Instead simply use the accessor
-        :meth:`skore.Project.reports.metadata`.
+        :meth:`skore.Project.summarize`.
         """
-        metadata = DataFrame(project.reports.metadata(), copy=False)
+        summary = DataFrame(project.reports.metadata(), copy=False)
 
-        if not metadata.empty:
-            metadata["learner"] = Categorical(metadata["learner"])
-            metadata.index = MultiIndex.from_arrays(
+        if not summary.empty:
+            summary["learner"] = Categorical(summary["learner"])
+            summary.index = MultiIndex.from_arrays(
                 [
-                    RangeIndex(len(metadata)),
-                    Index(metadata.pop("id"), name="id", dtype=str),
+                    RangeIndex(len(summary)),
+                    Index(summary.pop("id"), name="id", dtype=str),
                 ]
             )
 
-        # Cast standard dataframe to Metadata for lazy reports selection.
-        metadata = Metadata(metadata, copy=False)
-        metadata.project = project
+        # Cast standard dataframe to Summary for lazy reports selection.
+        summary = Summary(summary, copy=False)
+        summary.project = project
 
-        return metadata
+        return summary
 
     @property
-    def _constructor(self) -> type[Metadata]:
-        return Metadata
+    def _constructor(self) -> type[Summary]:
+        return Summary
 
     def reports(
         self,
@@ -81,7 +81,7 @@ class Metadata(DataFrame):
         return_as: Literal["list", "comparison"] = "list",
     ) -> Union[list[EstimatorReport], ComparisonReport]:
         """
-        Return the reports referenced by the metadata object from the project.
+        Return the reports referenced by the summary object from the project.
 
         Parameters
         ----------
@@ -95,7 +95,7 @@ class Metadata(DataFrame):
             return []
 
         if not hasattr(self, "project") or "id" not in self.index.names:
-            raise RuntimeError("Bad condition: it is not a valid `Metadata` object.")
+            raise RuntimeError("Bad condition: it is not a valid `Summary` object.")
 
         if filter and (querystr := self._query_string_selection()):
             self = self.query(querystr)
