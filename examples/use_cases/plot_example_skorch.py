@@ -1,16 +1,16 @@
 """
 .. _example_use_case_skorch:
 
-===============================
+====================================================
 Using skore with the skorch deep learning framework
-===============================
+====================================================
 
 This example shows how to leverage skore's capabilities with a deep learning framework like skorch.
 """
 
 # %%
 # Loading the Breast Cancer Winconsin (Diagnostic) Dataset
-# ==============================================
+# ========================================================
 # In this example, we tackle the Breast Cancer Winconsin dataset where the goal is a binary classification task, i.e. predicting whether a tumor is malignant or benign.
 # We shall first perform some preprocessing using `skrub` and then create a shallow neural network to demonstrate `skore`'s ability to support deep learning frameworks such as `skorch` which is an `sklearn` like API over `PyTorch`.
 
@@ -25,7 +25,7 @@ cancer.frame.head(2)
 # We shall explore the dataset using `skrub` library's `TableReport`.
 #
 # Table report
-# ==============================================
+# ============
 
 # %%
 from skrub import TableReport
@@ -35,6 +35,7 @@ TableReport(cancer.frame, max_plot_columns=31)
 # %%
 # Table report inferences
 # -----------------------
+#
 # From the table report, we can make a few inferences:
 #
 # - The *Stats* tab shows there are no null values.
@@ -43,7 +44,7 @@ TableReport(cancer.frame, max_plot_columns=31)
 # - The *Distribution* tab shows a few features that have some outliers, namely: ``radius error``, ``texture error``, ``perimeter error``, ``area error``, ``smoothness error``, ``compactness error``, ``concavity error``, ``concave points error``, ``symmetry error``, ``fractal dimension error``, ``worst area``, ``worst symmetry``, ``worst fractal dimensions``. 
 #   However, it is important to note that the outliers range from 1-8 in all the different columns which is not huge to cause problems in our modeling.
 # - The *Association* tab shows that a table with correlation analysis between the different features. We can infer a few things from this as per below:
-#   
+#
 #   - We can select features that show a strong association with our target.
 #   - Since we're using a deep learning example, multicollinearity is less of a concern compared to linear models as they can handle correlated features through their hidden layers and non-linear transformations. However, we can remove a few redundant features which can improve efficiency, faster convergence and interpretability.
 #   - Some examples of reasoning can be seen below.
@@ -73,7 +74,7 @@ dataset.head(2)
 
 # %%
 # Splitting the data
-# ==============================================
+# ==================
 # We shall split the data using `skore`'s `train_test_split`.
 
 # %%
@@ -86,14 +87,12 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 #
 # - Adhering to the `HighClassImbalanceTooFewExamplesWarning`, we shall employ cross validation in our modeling approach.
 # - The `ShuffleTrueWarning` can be ignored as there are no temporal dependencies in our medical dataset. Each example is IID.
-
-# %%
-# # Creating model using PyTorch
+# Creating model using PyTorch
+# ----------------------------
 # We shall create our neural network model using PyTorch. We consider a neural network with 2 hidden layers and 1 output layer with ReLU activations.
 
 # %%
 from torch import nn
-
 
 class MyNeuralNet(nn.Module):
     def __init__(self, input_dim=6, h1=64, h2=32, output_dim=2):
@@ -108,7 +107,6 @@ class MyNeuralNet(nn.Module):
 
     def forward(self, X):
         return self.layers(X)
-
 
 # %%
 # Since we want to use this with `skorch` that provides a sklearn like API interface that `skore` can utilize, we shall wrap this in `skorch`'s NeuralNetClassifier.
@@ -138,7 +136,8 @@ model = make_pipeline(StandardScaler(), nnet)
 model
 
 # %%
-# # Model development using `CrossValidationReport`
+# Model development using `CrossValidationReport`
+# -----------------------------------------------
 # We use our X_train and y_train set using some specific set of hyperparameters to evaluate our hyperparameter selection. For the sake of example, we do not test against multiple hyperparameters but a single one.
 #
 # You may want to look into `ComparisonReport` that can allow you to compare multiple `CrossValidationReport` instances.
@@ -156,7 +155,8 @@ cv_report.metrics.roc().plot()
 cv_report.metrics.report_metrics(aggregate=["mean", "std"], indicator_favorability=True)
 
 # %%
-# # Model evaluation using `EstimatorReport`
+# Model evaluation using `EstimatorReport`
+# ----------------------------------------
 # Once we have picked the best hyperparmeter configuration, we can create a EstimatorReport with a new model object having best hyperparameter settings along with the test sets to get an evaluation report.
 
 # %%
