@@ -9,9 +9,11 @@ This example shows how to leverage skore's capabilities with a deep learning fra
 """
 
 # %%
-# # Loading the Breast Cancer Winconsin (Diagnostic) Dataset
+# Loading the Breast Cancer Winconsin (Diagnostic) Dataset
+# ==============================================
 # In this example, we tackle the Breast Cancer Winconsin dataset where the goal is a binary classification task, i.e. predicting whether a tumor is malignant or benign.
 # We shall first perform some preprocessing using `skrub` and then create a shallow neural network to demonstrate `skore`'s ability to support deep learning frameworks such as `skorch` which is an `sklearn` like API over `PyTorch`.
+
 # %%
 from sklearn.datasets import load_breast_cancer
 
@@ -19,28 +21,35 @@ cancer = load_breast_cancer(as_frame=True)
 cancer.frame.head(2)
 
 # %%
-# The `documentation <https://sklearn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html>` shows that there are 2 classes `malignant` (M) and `benign` (B) with a slight imbalance 212 `M` samples and 357 `B` samples. Before we approach the balancing problem, let us explore the dataset for any require preprocessing.
-# We shall explore the dataset using the `skrub` library's `TableReport`.
+# The `documentation <https://sklearn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html>`_ shows that there are 2 classes `malignant` (M) and `benign` (B) with a slight imbalance 212 `M` samples and 357 `B` samples. Before we approach the balancing problem, let us explore the dataset for any require preprocessing.
+# We shall explore the dataset using `skrub` library's `TableReport`.
+#
+# Table report
+# ==============================================
 
-# # Table report
 # %%
 from skrub import TableReport
 
 TableReport(cancer.frame, max_plot_columns=31)
 
 # %%
-# ## Table report inferences
-# From the table report, we can make a few inferences.
-# - The _Stats_ tab shows there are no null values.
-# - The _Distribution_ tab shows us there is moderate level of imbalance: 62.7% benign from the mean value and 37.3% malignant values. While we can balance this or add class weights in our neural network, it is important to note that we're modeling the real world and not to achieve an artificial balance!
-# - The _Distributions_ tab shows a few features that have some outliers, namely: `radius error`, `texture error`, `perimeter error`, `area error`, `smoothness error`, `compactness error`, `concavity error`, `concave points error`, `symmetry error`, `fractal dimension error`, `worst area`, `worst symmetry`, `worst fractal dimensions`. However, it is important to note that the outliers range from 1-8 in all the different columns which is not huge to cause problems in our modeling.
-# - The _Associations_ tab shows that a table with correlation analysis between the different features. We can infer a few things from this as per below:
+# Table report inferences
+# -----------------------
+# From the table report, we can make a few inferences:
+#
+# - The *Stats* tab shows there are no null values.
+# - The *Distribution* tab shows us there is moderate level of imbalance: 62.7% benign from the mean value and 37.3% malignant values. While we can balance this or add class weights in our neural network, it is important to note that we're modeling the real world 
+#   and not to achieve an artificial balance!
+# - The *Distribution* tab shows a few features that have some outliers, namely: ``radius error``, ``texture error``, ``perimeter error``, ``area error``, ``smoothness error``, ``compactness error``, ``concavity error``, ``concave points error``, ``symmetry error``, ``fractal dimension error``, ``worst area``, ``worst symmetry``, ``worst fractal dimensions``. 
+#   However, it is important to note that the outliers range from 1-8 in all the different columns which is not huge to cause problems in our modeling.
+# - The *Association* tab shows that a table with correlation analysis between the different features. We can infer a few things from this as per below:
+#   
 #   - We can select features that show a strong association with our target.
 #   - Since we're using a deep learning example, multicollinearity is less of a concern compared to linear models as they can handle correlated features through their hidden layers and non-linear transformations. However, we can remove a few redundant features which can improve efficiency, faster convergence and interpretability.
 #   - Some examples of reasoning can be seen below.
-#     - `mean radius` and `mean perimeter` is one example. They convey the same information and can be removed.
-#     - Similarly, we could remove mathematically related features, and keep the one which is most correlated. For e.g., among `mean radius`, `mean perimeter`, and `mean area`, we could pick one instead of keeping all three.
-#   - We can see that there are no direct correlations between error measurements and the target.
+#   - mean radius and mean perimeter is one example. They convey the same information and can be removed.
+#   - Similarly, we could remove mathematically related features, and keep the one which is most correlated. For e.g., among mean radius, mean perimeter, and mean area, we could pick one instead of keeping all three.
+#   - We can see that there are no direct correlations between error measurements and the target and hence we skip them.
 
 # %%
 import numpy as np
@@ -52,8 +61,9 @@ cols_to_keep = [
     "mean concave points",
     "worst concavity",
     "mean concavity",
-    "target",
-]
+    "target"
+    ]
+
 dataset = cancer.frame[cols_to_keep]
 X, y = (
     dataset.drop("target", axis=1).values.astype(np.float32),
@@ -62,7 +72,8 @@ X, y = (
 dataset.head(2)
 
 # %%
-# # Splitting the data
+# Splitting the data
+# ==============================================
 # We shall split the data using `skore`'s `train_test_split`.
 
 # %%
@@ -117,7 +128,7 @@ nnet = NeuralNetClassifier(
 )
 
 # %%
-# Next, we create our final model by wrapping this into a sklearn `PipeLine` that adds a StandardScaler.
+# Next, we create our final model by wrapping this into a sklearn `Pipeline` that adds a StandardScaler.
 
 # %%
 from sklearn.preprocessing import StandardScaler
