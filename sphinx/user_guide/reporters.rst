@@ -48,7 +48,7 @@ addition, set `data_source` to `X_y` to pass a new dataset using the parameters 
 `y`. This is useful when you want to compare different models on a new left-out dataset.
 
 While there are individual methods to compute each metric specific to the problem at
-hand, we provide the :class:`EstimatorReport.metrics.report_metrics` method that
+hand, we provide the :class:`EstimatorReport.metrics.summarize` method that
 aggregates metrics in a single dataframe. By default, a set of metrics is computed based
 on the type of target variable (e.g. classification or regression). Nevertheless, you
 can specify the metrics you want to compute thanks to the `scoring` parameter. We accept
@@ -63,7 +63,7 @@ methods: (i) `plot` that plots graphically the information contained in the disp
 method at each call.
 
 Refer to the :ref:`displays` section for more details regarding the `skore` display
-API. Refer to the :ref:`estimator_report_metrics` section for more details on all the
+API. Refer to the :ref:`estimator_metrics` section for more details on all the
 available metrics in `skore`.
 
 Caching mechanism
@@ -110,7 +110,7 @@ parameter, `aggregate`, to aggregate the metrics across the splits.
 The :class:`CrossValidationReport` also comes with a caching mechanism by leveraging
 the :class:`EstimatorReport` caching mechanism and exposes the same methods.
 
-Refer to the :ref:`cross_validation_report_metrics` section for more details on the
+Refer to the :ref:`cross_validation_metrics` section for more details on the
 metrics available in `skore` for cross-validation.
 
 .. _comparison_report:
@@ -129,5 +129,5 @@ performance of the different models.
 
 The caching mechanism is also available and exposes the same methods.
 
-Refer to the :ref:`cross_validation_report_metrics` section for more details on the
+Refer to the :ref:`cross_validation_metrics` section for more details on the
 metrics available in `skore` for comparison.

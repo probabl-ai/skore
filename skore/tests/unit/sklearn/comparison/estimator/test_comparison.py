@@ -60,7 +60,7 @@ def test_comparison_report_without_testing_data(binary_classification_model):
     report = ComparisonReport([estimator_report_1, estimator_report_2])
 
     with pytest.raises(ValueError, match="No test data"):
-        report.metrics.report_metrics(data_source="test")
+        report.metrics.summarize(data_source="test")
 
 
 def test_comparison_report_different_test_data(binary_classification_model):
@@ -284,7 +284,7 @@ def report(report_classification):
         ),
     ],
 )
-def test_comparison_report_metrics_binary_classification(
+def test_comparison_summarize_binary_classification(
     metric_name, expected, data_source, binary_classification_model, report
 ):
     """Check the metrics work."""
@@ -337,7 +337,7 @@ def test_comparison_report_metrics_binary_classification(
         ),
     ],
 )
-def test_comparison_report_metrics_linear_regression(
+def test_comparison_summarize_linear_regression(
     metric_name, expected, data_source, regression_model
 ):
     """Check the metrics work."""
@@ -378,11 +378,11 @@ def test_comparison_report_metrics_linear_regression(
     pd.testing.assert_frame_equal(result, expected)
 
 
-def test_comparison_report_report_metrics_X_y(binary_classification_model, report):
-    """Check that `report_metrics` works with an "X_y" data source."""
+def test_comparison_summarize_X_y(binary_classification_model, report):
+    """Check that `summarize` works with an "X_y" data source."""
     _, X_train, _, y_train, _ = binary_classification_model
 
-    result = report.metrics.report_metrics(
+    result = report.metrics.summarize(
         data_source="X_y",
         X=X_train[:10],
         y=y_train[:10],
@@ -465,7 +465,7 @@ def test_cross_validation_report_flat_index(binary_classification_model):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result = report.metrics.report_metrics(flat_index=True)
+    result = report.metrics.summarize(flat_index=True)
     assert result.shape == (8, 2)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
@@ -481,9 +481,9 @@ def test_cross_validation_report_flat_index(binary_classification_model):
     assert result.columns.tolist() == ["report_1", "report_2"]
 
 
-def test_estimator_report_report_metrics_indicator_favorability(report):
+def test_estimator_report_summarize_indicator_favorability(report):
     """Check that the behaviour of `indicator_favorability` is correct."""
-    result = report.metrics.report_metrics(indicator_favorability=True)
+    result = report.metrics.summarize(indicator_favorability=True)
     assert "Favorability" in result.columns
     indicator = result["Favorability"]
     assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
@@ -496,8 +496,8 @@ def test_comparison_report_aggregate(report):
     """Passing `aggregate` should have no effect, as this argument is only relevant
     when comparing `CrossValidationReport`s."""
     assert_allclose(
-        report.metrics.report_metrics(aggregate="mean"),
-        report.metrics.report_metrics(),
+        report.metrics.summarize(aggregate="mean"),
+        report.metrics.summarize(),
     )
 
 
@@ -565,7 +565,7 @@ def test_comparison_report_timings_flat_index(report):
     report.get_predictions(data_source="test")
 
     # Get metrics with flat_index=True
-    results = report.metrics.report_metrics(flat_index=True)
+    results = report.metrics.summarize(flat_index=True)
 
     # Check that expected time measurements are in index with _s suffix
     assert "fit_time_s" in results.index
@@ -581,15 +581,15 @@ def test_comparison_report_timings_flat_index(report):
         (get_scorer("accuracy"), None),
     ],
 )
-def test_comparison_report_estimator_report_metrics_scoring_single_list_equivalence(
+def test_comparison_report_estimator_summarize_scoring_single_list_equivalence(
     report, scoring, scoring_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
     list with a single element."""
-    result_single = report.metrics.report_metrics(
+    result_single = report.metrics.summarize(
         scoring=scoring, scoring_kwargs=scoring_kwargs
     )
-    result_list = report.metrics.report_metrics(
+    result_list = report.metrics.summarize(
         scoring=[scoring], scoring_kwargs=scoring_kwargs
     )
     assert result_single.equals(result_list)

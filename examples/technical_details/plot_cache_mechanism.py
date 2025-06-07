@@ -272,7 +272,7 @@ report.help()
 # exposed.
 # The first call will be slow because it computes the predictions for each fold.
 start = time.time()
-result = report.metrics.report_metrics()
+result = report.metrics.summarize()
 end = time.time()
 result
 
@@ -283,7 +283,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 #
 # But the subsequent calls are fast because the predictions are cached.
 start = time.time()
-result = report.metrics.report_metrics()
+result = report.metrics.summarize()
 end = time.time()
 result
 

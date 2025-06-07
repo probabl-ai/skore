@@ -33,7 +33,7 @@ report are accessible through accessors.
    EstimatorReport.feature_importance
    EstimatorReport.metrics
 
-.. _estimator_report_metrics:
+.. _estimator_metrics:
 
 Metrics
 -------
@@ -46,7 +46,7 @@ estimator.
     :template: autosummary/accessor_method.rst
 
     EstimatorReport.metrics.help
-    EstimatorReport.metrics.report_metrics
+    EstimatorReport.metrics.summarize
     EstimatorReport.metrics.custom_metric
     EstimatorReport.metrics.timings
     EstimatorReport.metrics.accuracy

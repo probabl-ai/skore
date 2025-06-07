@@ -50,14 +50,14 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         "r2": {"name": "R²", "icon": "(↗︎)"},
         "rmse": {"name": "RMSE", "icon": "(↘︎)"},
         "custom_metric": {"name": "Custom metric", "icon": ""},
-        "report_metrics": {"name": "Report metrics", "icon": ""},
+        "summarize": {"name": "Metrics summary", "icon": ""},
         "confusion_matrix": {"name": "Confusion Matrix", "icon": ""},
     }
 
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    def report_metrics(
+    def summarize(
         self,
         *,
         data_source: DataSource = "test",
@@ -139,7 +139,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
-        >>> report.metrics.report_metrics(indicator_favorability=True)
+        >>> report.metrics.summarize(indicator_favorability=True)
                     LogisticRegression Favorability
         Metric
         Precision              0.98...         (↗︎)
@@ -147,7 +147,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
-        >>> report.metrics.report_metrics(scoring=["f1"], indicator_favorability=True)
+        >>> report.metrics.summarize(scoring=["f1"], indicator_favorability=True)
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
@@ -250,9 +250,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         if pos_label != metrics_kwargs["pos_label"]:
                             raise ValueError(
                                 "`pos_label` is passed both in the scorer and to the "
-                                "`report_metrics` method. Please provide a consistent "
+                                "`summarize` method. Please provide a consistent "
                                 "`pos_label` or only pass it whether in the scorer or "
-                                "to the `report_metrics` method."
+                                "to the `summarize` method."
                             )
                     elif pos_label is not None:
                         metrics_kwargs["pos_label"] = pos_label
@@ -1586,14 +1586,14 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     def _sort_methods_for_help(self, methods: list[tuple]) -> list[tuple]:
         """Override sort method for metrics-specific ordering.
 
-        In short, we display the `report_metrics` first and then the `custom_metric`.
+        In short, we display the `summarize` first and then the `custom_metric`.
         """
 
         def _sort_key(method):
             name = method[0]
             if name == "custom_metric":
                 priority = 1
-            elif name == "report_metrics":
+            elif name == "summarize":
                 priority = 2
             else:
                 priority = 0

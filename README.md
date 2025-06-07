@@ -93,8 +93,8 @@ cv_report.help()
 
 ```python
 # Display the report metrics that was computed for you:
-df_cv_report_metrics = cv_report.metrics.report_metrics()
-df_cv_report_metrics
+metrics_summary = cv_report.metrics.summarize()
+metrics_summary
 ```
 
 ```python

@@ -45,7 +45,7 @@ get the common performance metric representations.
     :template: autosummary/accessor_method.rst
 
     ComparisonReport.metrics.help
-    ComparisonReport.metrics.report_metrics
+    ComparisonReport.metrics.summarize
     ComparisonReport.metrics.custom_metric
     ComparisonReport.metrics.accuracy
     ComparisonReport.metrics.brier_score
