@@ -32,7 +32,7 @@ functionalities of the report are exposed through accessors.
 
    CrossValidationReport.metrics
 
-.. _cross_validation_report_metrics:
+.. _cross_validation_:
 
 Metrics
 -------
@@ -45,7 +45,7 @@ estimator across cross-validation folds.
     :template: autosummary/accessor_method.rst
 
     CrossValidationReport.metrics.help
-    CrossValidationReport.metrics.report_metrics
+    CrossValidationReport.metrics.
     CrossValidationReport.metrics.custom_metric
     CrossValidationReport.metrics.accuracy
     CrossValidationReport.metrics.brier_score

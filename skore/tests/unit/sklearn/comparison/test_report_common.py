@@ -60,7 +60,7 @@ def test_cross_validation_report_cleaned_up(report):
     Non-regression test for bug found in:
     https://github.com/probabl-ai/skore/pull/1512
     """
-    report.metrics.report_metrics()
+    report.metrics.summarize()
 
     with BytesIO() as stream:
         joblib.dump(report.reports_[0], stream)
@@ -97,7 +97,7 @@ def test_comparison_report_favorability_undefined_metrics(report):
         }
 
     comparison_report = ComparisonReport(reports)
-    metrics = comparison_report.metrics.report_metrics(
+    metrics = comparison_report.metrics.summarize(
         pos_label=1, indicator_favorability=True
     )
 
