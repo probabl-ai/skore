@@ -333,12 +333,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
 
         # Add (s) to time measurements
-        new_index = []
-        for idx in timings.index:
-            if "time" in idx.lower():
-                new_index.append(f"{idx} (s)")
-            else:
-                new_index.append(idx)
+        new_index = [f"{idx} (s)" for idx in timings.index]
 
         timings.index = pd.Index(new_index)
 

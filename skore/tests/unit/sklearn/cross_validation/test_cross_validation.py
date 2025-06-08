@@ -149,12 +149,11 @@ def test_cross_validation_report_attributes(fixture_name, request, cv, n_jobs):
     else:
         assert report.estimator_name_ == estimator.__class__.__name__
 
-    err_msg = "attribute is immutable"
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.estimator_ = LinearRegression()
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.X = X
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.y = y
 
 

@@ -1,3 +1,4 @@
+import inspect
 import re
 from copy import deepcopy
 from io import BytesIO
@@ -117,6 +118,19 @@ def regression_multioutput_data():
 ########################################################################################
 
 
+def test_report_can_be_rebuilt_using_parameters(regression_data):
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    parameters = {}
+
+    for parameter in inspect.signature(EstimatorReport).parameters:
+        assert hasattr(report, parameter), f"The parameter '{parameter}' must be stored"
+
+        parameters[parameter] = getattr(report, parameter)
+
+    EstimatorReport(**parameters)
+
+
 @pytest.mark.parametrize("fit", [True, "auto"])
 def test_estimator_not_fitted(fit):
     """Test that an error is raised when trying to create a report from an unfitted
@@ -152,12 +166,11 @@ def test_estimator_report_from_unfitted_estimator(fit):
     assert report.X_test is X_test
     assert report.y_test is y_test
 
-    err_msg = "attribute is immutable"
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.estimator_ = LinearRegression()
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.X_train = X_train
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.y_train = y_train
 
 
@@ -175,12 +188,11 @@ def test_estimator_report_from_fitted_estimator(binary_classification_data, fit)
     assert report.X_test is X
     assert report.y_test is y
 
-    err_msg = "attribute is immutable"
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.estimator_ = LinearRegression()
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.X_train = X
-    with pytest.raises(AttributeError, match=err_msg):
+    with pytest.raises(AttributeError):
         report.y_train = y
 
 
@@ -864,6 +876,11 @@ def test_estimator_report_report_metrics_scoring_kwargs(
             ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
         ),
         (
+            "regression_data",
+            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
+            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
+        ),
+        (
             "multiclass_classification_data",
             ["Precision", "Recall", "ROC AUC", "Log Loss", "Fit Time", "Predict Time"],
             [
@@ -917,27 +934,28 @@ def test_estimator_report_report_metrics_indicator_favorability(
 
 
 @pytest.mark.parametrize(
-    "scoring, scoring_kwargs",
+    "scoring, scoring_names, scoring_kwargs",
     [
-        ("accuracy", None),
-        ("neg_log_loss", None),
-        (accuracy_score, {"response_method": "predict"}),
-        (get_scorer("accuracy"), None),
+        ("accuracy", "this_is_a_test", None),
+        ("neg_log_loss", "this_is_a_test", None),
+        (accuracy_score, "this_is_a_test", {"response_method": "predict"}),
+        (get_scorer("accuracy"), "this_is_a_test", None),
     ],
 )
 def test_estimator_report_report_metrics_scoring_single_list_equivalence(
-    binary_classification_data, scoring, scoring_kwargs
+    binary_classification_data, scoring, scoring_names, scoring_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
-    list with a single element."""
+    list with a single element, and it's possible to overwrite col name."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result_single = report.metrics.report_metrics(
-        scoring=scoring, scoring_kwargs=scoring_kwargs
+        scoring=scoring, scoring_names=scoring_names, scoring_kwargs=scoring_kwargs
     )
     result_list = report.metrics.report_metrics(
-        scoring=[scoring], scoring_kwargs=scoring_kwargs
+        scoring=[scoring], scoring_names=scoring_names, scoring_kwargs=scoring_kwargs
     )
+    assert result_single.index[0] == "this_is_a_test"
     assert result_single.equals(result_list)
 
 

@@ -1,9 +1,12 @@
 import matplotlib as mpl
 import numpy as np
 import pytest
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
 from skore import CrossValidationReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
+from skore.utils._testing import check_legend_position
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -47,7 +50,7 @@ def test_binary_classification(
             f"label == {pos_label} & split_index == {split_idx}"
         )["roc_auc"].item()
         assert line.get_label() == (
-            f"Estimator of fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
+            f"Fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
         )
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
 
@@ -57,11 +60,8 @@ def test_binary_classification(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    data_source_title = "external" if data_source == "X_y" else data_source
-    assert (
-        legend.get_title().get_text()
-        == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
-    )
+    data_source_title = "External" if data_source == "X_y" else data_source
+    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
     assert len(legend.get_texts()) == cv + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
@@ -69,6 +69,7 @@ def test_binary_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -126,11 +127,8 @@ def test_multiclass_classification(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    data_source_title = "external" if data_source == "X_y" else data_source
-    assert (
-        legend.get_title().get_text()
-        == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
-    )
+    data_source_title = "External" if data_source == "X_y" else data_source
+    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
     assert len(legend.get_texts()) == cv + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate"
@@ -138,6 +136,7 @@ def test_multiclass_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
 
 
 @pytest.mark.parametrize(
@@ -183,3 +182,45 @@ def test_multiple_roc_curve_kwargs_error(
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
+
+
+def test_legend(
+    pyplot, binary_classification_data_no_split, multiclass_classification_data_no_split
+):
+    """Check the rendering of the legend for ROC curves with a
+    `CrossValidationReport`."""
+
+    # binary classification <= 5 folds
+    estimator, X, y = binary_classification_data_no_split
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="lower right", position="inside")
+
+    # binary classification > 5 folds
+    estimator, X, y = binary_classification_data_no_split
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+    # multiclass classification <= 5 classes
+    estimator, X, y = multiclass_classification_data_no_split
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="lower right", position="inside")
+
+    # multiclass classification > 5 classes
+    estimator = LogisticRegression()
+    X, y = make_classification(
+        n_samples=1_000,
+        n_classes=10,
+        n_clusters_per_class=1,
+        n_informative=10,
+        random_state=42,
+    )
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="upper left", position="outside")
