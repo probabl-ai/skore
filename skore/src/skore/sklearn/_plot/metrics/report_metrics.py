@@ -6,7 +6,7 @@ class ReportMetricsDisplay(HelpDisplayMixin, StyleDisplayMixin):
     """Display for report_metrics.
 
     An instance of this class will be created by `Report.metrics.summarize()`.
-    You should not create an instance of this class directly.
+    This class should not be instantiated directly.
     """
 
     def __init__(self, report_metrics_data):
