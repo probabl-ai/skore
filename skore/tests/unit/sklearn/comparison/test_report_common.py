@@ -13,6 +13,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
+from skore.sklearn._plot import SummarizeDisplay
 
 
 @pytest.fixture(params=["report_estimator_reports", "report_cv_reports"])
@@ -101,12 +102,14 @@ def test_comparison_report_favorability_undefined_metrics(report):
     metrics = comparison_report.metrics.summarize(
         pos_label=1, indicator_favorability=True
     )
+    assert isinstance(metrics, SummarizeDisplay)
+    metrics_df = metrics.frame()
 
-    assert "Brier score" in metrics.index
-    assert "Favorability" in metrics.columns
-    assert not metrics["Favorability"].isna().any()
+    assert "Brier score" in metrics_df.index
+    assert "Favorability" in metrics_df.columns
+    assert not metrics_df["Favorability"].isna().any()
     expected_values = {"(↗︎)", "(↘︎)"}
-    actual_values = set(metrics["Favorability"].to_numpy())
+    actual_values = set(metrics_df["Favorability"].to_numpy())
     assert actual_values.issubset(expected_values)
 
 
@@ -172,7 +175,7 @@ def test_comparison_report_summarize_pos_label_default(metric):
     report_1 = CrossValidationReport(LogisticRegression(), X, y)
     report_2 = CrossValidationReport(LogisticRegression(), X, y)
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(scoring=metric).reset_index()
+    result_both_labels = report.metrics.summarize(scoring=metric).frame().reset_index()
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
     result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
 
@@ -190,9 +193,11 @@ def test_comparison_report_summarize_pos_label_overwrite(metric):
     report_2 = CrossValidationReport(LogisticRegression(), X, y, pos_label="B")
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
 
-    result_both_labels = report.metrics.summarize(scoring=metric, pos_label=None)
+    result_both_labels = report.metrics.summarize(
+        scoring=metric, pos_label=None
+    ).frame()
 
-    result = report.metrics.summarize(scoring=metric).reset_index()
+    result = report.metrics.summarize(scoring=metric).frame().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     for report_name in report.report_names_:
@@ -201,7 +206,9 @@ def test_comparison_report_summarize_pos_label_overwrite(metric):
             == result_both_labels.loc[(metric.capitalize(), "B"), ("mean", report_name)]
         )
 
-    result = report.metrics.summarize(scoring=metric, pos_label="A").reset_index()
+    result = (
+        report.metrics.summarize(scoring=metric, pos_label="A").frame().reset_index()
+    )
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     for report_name in report.report_names_:

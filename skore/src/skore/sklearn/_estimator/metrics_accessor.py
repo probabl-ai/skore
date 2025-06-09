@@ -20,6 +20,7 @@ from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
+    SummarizeDisplay,
 )
 from skore.sklearn.types import _DEFAULT, PositiveLabel, Scoring, ScoringName, YPlotData
 from skore.utils._accessor import (
@@ -69,7 +70,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         pos_label: Optional[PositiveLabel] = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-    ) -> pd.DataFrame:
+    ) -> SummarizeDisplay:
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -126,8 +127,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The statistics for the metrics.
+        SummarizeDisplay
+            A display containing the statistics for the metrics.
 
         Examples
         --------
@@ -139,7 +140,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
-        >>> report.metrics.summarize(indicator_favorability=True)
+        >>> report.metrics.summarize(indicator_favorability=True).frame()
                     LogisticRegression Favorability
         Metric
         Precision              0.98...         (↗︎)
@@ -147,7 +148,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
-        >>> report.metrics.summarize(scoring=["f1"], indicator_favorability=True)
+        >>> report.metrics.summarize(
+        ...     scoring=["f1"],
+        ...     indicator_favorability=True,
+        ... ).frame()
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
@@ -418,7 +422,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return results
+        return SummarizeDisplay(summarize_data=results)
 
     def _compute_metric_scores(
         self,

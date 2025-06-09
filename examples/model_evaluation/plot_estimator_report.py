@@ -106,7 +106,7 @@ report.metrics.help()
 import time
 
 start = time.time()
-metric_report = report.metrics.summarize()
+metric_report = report.metrics.summarize().frame()
 end = time.time()
 metric_report
 
@@ -124,7 +124,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # requesting the same metrics report again.
 
 start = time.time()
-metric_report = report.metrics.summarize()
+metric_report = report.metrics.summarize().frame()
 end = time.time()
 metric_report
 
@@ -190,7 +190,7 @@ report.metrics.log_loss(data_source="train")
 start = time.time()
 metric_report = report.metrics.summarize(
     data_source="X_y", X=split_data["X_test"], y=split_data["y_test"]
-)
+).frame()
 end = time.time()
 metric_report
 
@@ -207,7 +207,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 start = time.time()
 metric_report = report.metrics.summarize(
     data_source="X_y", X=split_data["X_test"], y=split_data["y_test"]
-)
+).frame()
 end = time.time()
 metric_report
 
