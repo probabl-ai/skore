@@ -1559,15 +1559,9 @@ def test_estimator_report_summarize_pos_label_overwrite(
         metric_fn(y, classifier.predict(X), pos_label="B")
     )
 
-<<<<<<< HEAD
-    result = report.metrics.summarize(scoring=metric, pos_label="A").reset_index()
-=======
     result = (
-        report.metrics.summarize(scoring=metric, pos_label="A")
-        .frame()
-        .reset_index()
+        report.metrics.summarize(scoring=metric, pos_label="A").frame().reset_index()
     )
->>>>>>> 0e817b2f (fix tests depending on report_metrics from estimator report)
     assert "Label / Average" not in result.columns
     assert result[report.estimator_name_].item() == pytest.approx(
         metric_fn(y, classifier.predict(X), pos_label="A")
