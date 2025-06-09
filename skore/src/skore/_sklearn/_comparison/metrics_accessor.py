@@ -178,7 +178,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return MetricsSummaryDisplay(results)
+        return MetricsSummaryDisplay(results, report_type="comparison-cross-validation")
 
     @progress_decorator(description="Compute metric for each estimator")
     def _compute_metric_scores(
