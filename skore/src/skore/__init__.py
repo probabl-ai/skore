@@ -20,6 +20,13 @@ from skore.sklearn import (
     find_estimators,
     train_test_split,
 )
+from skore.sklearn._plot.backends import (
+    get_available_backends,
+    get_backend,
+    list_backends,
+    reset_backend,
+    set_backend,
+)
 from skore.sklearn._plot.base import Display
 from skore.utils._patch import setup_jupyter_display
 from skore.utils._show_versions import show_versions
@@ -38,6 +45,11 @@ __all__ = [
     "config_context",
     "get_config",
     "set_config",
+    "get_backend",
+    "set_backend",
+    "reset_backend",
+    "list_backends",
+    "get_available_backends",
     "find_estimators",
 ]
 

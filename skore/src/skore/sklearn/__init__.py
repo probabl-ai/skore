@@ -8,7 +8,6 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.find_estimators import find_estimators
 from skore.sklearn.train_test_split.train_test_split import train_test_split
 
 __all__ = [
@@ -19,5 +18,4 @@ __all__ = [
     "PredictionErrorDisplay",
     "RocCurveDisplay",
     "train_test_split",
-    "find_estimators",
 ]
