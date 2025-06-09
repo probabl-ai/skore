@@ -26,7 +26,7 @@ from skore.sklearn._cross_validation.report import (
     _generate_estimator_report,
 )
 from skore.sklearn._estimator import EstimatorReport
-from skore.sklearn._plot import RocCurveDisplay
+from skore.sklearn._plot import RocCurveDisplay, SummarizeDisplay
 from skore.utils._testing import MockEstimator
 
 
@@ -280,9 +280,11 @@ def test_cross_validation_report_flat_index(binary_classification_data):
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
     result = report.metrics.summarize(flat_index=True)
-    assert result.shape == (8, 2)
-    assert isinstance(result.index, pd.Index)
-    assert result.index.tolist() == [
+    assert isinstance(result, SummarizeDisplay)
+    result_df = result.frame()
+    assert result_df.shape == (8, 2)
+    assert isinstance(result_df.index, pd.Index)
+    assert result_df.index.tolist() == [
         "precision_0",
         "precision_1",
         "recall_0",
@@ -292,7 +294,7 @@ def test_cross_validation_report_flat_index(binary_classification_data):
         "fit_time_s",
         "predict_time_s",
     ]
-    assert result.columns.tolist() == [
+    assert result_df.columns.tolist() == [
         "randomforestclassifier_mean",
         "randomforestclassifier_std",
     ]
@@ -305,11 +307,15 @@ def test_cross_validation_summarize_data_source_external(
     estimator, X, y = binary_classification_data
     cv_splitter = 2
     report = CrossValidationReport(estimator, X, y, cv_splitter=cv_splitter)
-    result = report.metrics.summarize(data_source="X_y", X=X, y=y, aggregate=None)
+    result = report.metrics.summarize(
+        data_source="X_y", X=X, y=y, aggregate=None
+    ).frame()
     for split_idx in range(cv_splitter):
         # check that it is equivalent to call the individual estimator report
-        report_result = report.estimator_reports_[split_idx].metrics.summarize(
-            data_source="X_y", X=X, y=y
+        report_result = (
+            report.estimator_reports_[split_idx]
+            .metrics.summarize(data_source="X_y", X=X, y=y)
+            .frame()
         )
         np.testing.assert_allclose(
             report_result.iloc[:, 0].to_numpy(), result.iloc[:, split_idx].to_numpy()
@@ -391,7 +397,7 @@ def test_seed_none(regression_data):
 ########################################################################################
 
 
-def test_cross_validation_summarize_help(capsys, binary_classification_data):
+def test_cross_validation_report_metrics_help(capsys, binary_classification_data):
     """Check that the help method writes to the console."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -401,7 +407,7 @@ def test_cross_validation_summarize_help(capsys, binary_classification_data):
     assert "Available metrics methods" in captured.out
 
 
-def test_cross_validation_summarize_repr(binary_classification_data):
+def test_cross_validation_report_metrics_repr(binary_classification_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -454,34 +460,36 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     assert list(split_names) == [stats]
 
 
-def _check_results_report_metric(
+def _check_results_summarize(
     report, params, expected_n_splits, expected_metrics, expected_nb_stats
 ):
     result = report.metrics.summarize(**params)
-    assert isinstance(result, pd.DataFrame)
-    assert "Favorability" not in result.columns
-    assert result.shape[1] == expected_n_splits
+    assert isinstance(result, SummarizeDisplay)
+    result_df = result.frame()
+    assert isinstance(result_df, pd.DataFrame)
+    assert "Favorability" not in result_df.columns
+    assert result_df.shape[1] == expected_n_splits
     # check that we hit the cache
-    result_with_cache = report.metrics.summarize(**params)
-    pd.testing.assert_frame_equal(result, result_with_cache)
+    result_with_cache = report.metrics.summarize(**params).frame()
+    pd.testing.assert_frame_equal(result_df, result_with_cache)
 
     # check that the columns contains the expected split names
-    split_names = result.columns.get_level_values(1).unique()
+    split_names = result_df.columns.get_level_values(1).unique()
     # expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
     expected_split_names = ["mean", "std"]
     assert list(split_names) == expected_split_names
 
-    _check_metrics_names(result, expected_metrics, expected_nb_stats)
+    _check_metrics_names(result_df, expected_metrics, expected_nb_stats)
 
     # check the aggregate parameter
     stats = ["mean", "std"]
-    result = report.metrics.summarize(aggregate=stats, **params)
+    result = report.metrics.summarize(aggregate=stats, **params).frame()
     # check that the columns contains the expected split names
     split_names = result.columns.get_level_values(1).unique()
     assert list(split_names) == stats
 
     stats = "mean"
-    result = report.metrics.summarize(aggregate=stats, **params)
+    result = report.metrics.summarize(aggregate=stats, **params).frame()
     # check that the columns contains the expected split names
     split_names = result.columns.get_level_values(1).unique()
     assert list(split_names) == [stats]
@@ -513,7 +521,7 @@ def _check_metrics_names(result, expected_metrics, expected_nb_stats):
         ("log_loss", 1),
     ],
 )
-def test_cross_validation_summarize_binary_classification(
+def test_cross_validation_report_metrics_binary_classification(
     binary_classification_data, metric, nb_stats
 ):
     """Check the behaviour of the metrics methods available for binary
@@ -534,7 +542,7 @@ def test_cross_validation_summarize_binary_classification(
         ("log_loss", 1),
     ],
 )
-def test_cross_validation_summarize_multiclass_classification(
+def test_cross_validation_report_metrics_multiclass_classification(
     multiclass_classification_data, metric, nb_stats
 ):
     """Check the behaviour of the metrics methods available for multiclass
@@ -546,7 +554,7 @@ def test_cross_validation_summarize_multiclass_classification(
 
 
 @pytest.mark.parametrize("metric, nb_stats", [("r2", 1), ("rmse", 1)])
-def test_cross_validation_summarize_regression(regression_data, metric, nb_stats):
+def test_cross_validation_report_metrics_regression(regression_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
     (estimator, X, y), cv = regression_data, 2
     report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
@@ -554,7 +562,7 @@ def test_cross_validation_summarize_regression(regression_data, metric, nb_stats
 
 
 @pytest.mark.parametrize("metric, nb_stats", [("r2", 2), ("rmse", 2)])
-def test_cross_validation_summarize_regression_multioutput(
+def test_cross_validation_report_metrics_regression_multioutput(
     regression_multioutput_data, metric, nb_stats
 ):
     """Check the behaviour of the metrics methods available for regression."""
@@ -581,10 +589,10 @@ def test_cross_validation_report_summarize_scoring_single_list_equivalence(
     report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
     result_single = report.metrics.summarize(
         scoring=scoring, scoring_kwargs=scoring_kwargs
-    )
+    ).frame()
     result_list = report.metrics.summarize(
         scoring=[scoring], scoring_kwargs=scoring_kwargs
-    )
+    ).frame()
     assert result_single.equals(result_list)
 
 
@@ -612,7 +620,7 @@ def test_cross_validation_report_summarize_binary(
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
     expected_nb_stats = 2 * nb_stats + 4
-    _check_results_report_metric(
+    _check_results_summarize(
         report,
         params={"pos_label": pos_label},
         expected_n_splits=2,
@@ -637,7 +645,7 @@ def test_cross_validation_report_summarize_binary(
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
     expected_nb_stats = 2 * nb_stats + 4
-    _check_results_report_metric(
+    _check_results_summarize(
         report,
         params={"pos_label": pos_label_name},
         expected_n_splits=2,
@@ -657,7 +665,7 @@ def test_cross_validation_report_summarize_binary(
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
     expected_nb_stats = 2 * nb_stats + 3
-    _check_results_report_metric(
+    _check_results_summarize(
         report,
         params={"pos_label": pos_label},
         expected_n_splits=2,
@@ -685,7 +693,7 @@ def test_cross_validation_report_summarize_multiclass(
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
     expected_nb_stats = 3 * 3 + 3
-    _check_results_report_metric(
+    _check_results_summarize(
         report,
         params={},
         expected_n_splits=2,
@@ -699,7 +707,7 @@ def test_cross_validation_report_summarize_multiclass(
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
     expected_nb_stats = 3 * 2 + 2
-    _check_results_report_metric(
+    _check_results_summarize(
         report,
         params={},
         expected_n_splits=2,
@@ -713,7 +721,7 @@ def test_cross_validation_report_summarize_regression(regression_data):
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     expected_metrics = ("r2", "rmse", "fit_time_s", "predict_time_s")
-    _check_results_report_metric(
+    _check_results_summarize(
         report,
         params={},
         expected_n_splits=2,
@@ -729,7 +737,9 @@ def test_cross_validation_report_summarize_scoring_kwargs_regression(
     estimator, X, y = regression_multioutput_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics, "summarize")
-    result = report.metrics.summarize(scoring_kwargs={"multioutput": "raw_values"})
+    result = report.metrics.summarize(
+        scoring_kwargs={"multioutput": "raw_values"}
+    ).frame()
     assert result.shape == (6, 2)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Output"]
@@ -742,7 +752,7 @@ def test_cross_validation_report_summarize_scoring_kwargs_multi_class(
     estimator, X, y = multiclass_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics, "summarize")
-    result = report.metrics.summarize(scoring_kwargs={"average": None})
+    result = report.metrics.summarize(scoring_kwargs={"average": None}).frame()
     assert result.shape == (12, 2)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Label / Average"]
@@ -782,7 +792,7 @@ def test_cross_validation_report_summarize_overwrite_scoring_names(
     """Test that we can overwrite the scoring names in summarize."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    result = report.metrics.summarize(scoring_names=scoring_names)
+    result = report.metrics.summarize(scoring_names=scoring_names).frame()
     assert result.shape == (len(expected_index), 2)
 
     # Get level 0 names if MultiIndex, otherwise get column names
@@ -820,7 +830,7 @@ def test_cross_validation_report_summarize_with_scorer(regression_data):
         scoring=[r2_score, median_absolute_error_scorer],
         scoring_kwargs={"response_method": "predict"},  # only dispatched to r2_score
         aggregate=None,
-    )
+    ).frame()
     assert result.shape == (2, 2)
 
     expected_result = [
@@ -871,7 +881,7 @@ def test_cross_validation_report_summarize_with_scorer_binary_classification(
     result = report.metrics.summarize(
         scoring=["accuracy", accuracy_score, scorer],
         scoring_kwargs={"response_method": "predict"},
-    )
+    ).frame()
     assert result.shape == (3, 2)
 
 
@@ -910,7 +920,9 @@ def test_cross_validation_report_summarize_indicator_favorability(
     """Check that the behaviour of `indicator_favorability` is correct."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    result = report.metrics.summarize(indicator_favorability=True, aggregate=aggregate)
+    result = report.metrics.summarize(
+        indicator_favorability=True, aggregate=aggregate
+    ).frame()
     assert "Favorability" in result.columns
     indicator = result["Favorability"]
     assert indicator.shape == (8,)
@@ -1037,7 +1049,7 @@ def test_cross_validation_timings_flat_index(binary_classification_data):
     report.get_predictions(data_source="train")
     report.get_predictions(data_source="test")
 
-    results = report.metrics.summarize(flat_index=True)
+    results = report.metrics.summarize(flat_index=True).frame()
     assert results.index.tolist() == [
         "precision_0",
         "precision_1",
@@ -1060,12 +1072,12 @@ def test_cross_validation_report_summarize_pos_label_overwrite(
     y = labels[y]
 
     report = CrossValidationReport(classifier, X, y)
-    result_both_labels = report.metrics.summarize(scoring=metric).reset_index()
+    result_both_labels = report.metrics.summarize(scoring=metric).frame().reset_index()
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
     result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
 
     report = CrossValidationReport(classifier, X, y, pos_label="B")
-    result = report.metrics.summarize(scoring=metric).reset_index()
+    result = report.metrics.summarize(scoring=metric).frame().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     assert (
@@ -1075,7 +1087,9 @@ def test_cross_validation_report_summarize_pos_label_overwrite(
         ]
     )
 
-    result = report.metrics.summarize(scoring=metric, pos_label="A").reset_index()
+    result = (
+        report.metrics.summarize(scoring=metric, pos_label="A").frame().reset_index()
+    )
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     assert (

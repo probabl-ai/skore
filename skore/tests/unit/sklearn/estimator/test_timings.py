@@ -136,7 +136,9 @@ def test_summarize_fit_time(binary_classification_data):
     estimator, data = binary_classification_data
     report = EstimatorReport(estimator, **data)
 
-    assert isinstance(report.metrics.summarize(scoring=["fit_time"]), pd.DataFrame)
+    assert isinstance(
+        report.metrics.summarize(scoring=["fit_time"]).frame(), pd.DataFrame
+    )
 
 
 @pytest.mark.parametrize("data_source", ["test", "train", "X_y"])
@@ -149,6 +151,6 @@ def test_summarize_predict_time(data_source, binary_classification_data):
     assert isinstance(
         report.metrics.summarize(
             scoring=["predict_time"], data_source=data_source, X=X_, y=y_
-        ),
+        ).frame(),
         pd.DataFrame,
     )
