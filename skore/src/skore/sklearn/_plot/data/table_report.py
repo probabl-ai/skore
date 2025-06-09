@@ -1,18 +1,27 @@
-from matplotlib import pyplot as plt
-from skrub._reporting import _plotting
+from skrub import _dataframe as sbd
+from skrub._reporting import _utils
 from skrub._reporting._html import to_html
 from skrub._reporting._serve import open_in_browser
 from skrub._reporting._summarize import summarize_dataframe
 
+from skore.sklearn._plot.data import _plotting
 from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import HelpDisplayMixin, ReprHTMLMixin
 
 
 def distribution_1d(df, col_x, col_y=None):
     del col_y
-    fig, ax = plt.subplots()
-    _plotting._robust_hist(df[col_x], ax=ax, color=None)
-    ax.set_title(col_x)
+    col = df[col_x]
+
+    if sbd.is_duration(col):
+        col, duration_unit = _utils.duration_to_numeric(col)
+
+    if sbd.is_numeric(col) or sbd.is_any_date(col):
+        duration_unit = None
+        _plotting.histogram(col, duration_unit)
+    else:
+        _, value_counts = _utils.top_k_value_counts(col, k=10)
+        _plotting.value_counts(value_counts, n_rows=sbd.shape(col)[0], title=col_x)
 
 
 def distribution_2d(df, col_x, col_y=None):
