@@ -1,7 +1,7 @@
 <div align="center">
 
   ![license](https://img.shields.io/pypi/l/skore)
-  ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
+  ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue?style=flat&logo=python)
   [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
   [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
   [![Discord](https://img.shields.io/discord/1275821367324840119?label=Discord)](https://discord.probabl.ai/)
@@ -93,8 +93,8 @@ cv_report.help()
 
 ```python
 # Display the report metrics that was computed for you:
-df_cv_report_metrics = cv_report.metrics.report_metrics()
-df_cv_report_metrics
+metrics_summary = cv_report.metrics.summarize()
+metrics_summary
 ```
 
 ```python
@@ -146,6 +146,24 @@ Join our mission to promote open-source and make machine learning development mo
 -   Request a feature or report a bug via [GitHub Issues](https://github.com/probabl-ai/skore/issues).
 
 <br />
+
+
+## Support
+
+Skore is tested on Linux and Windows, for at most 4 versions of Python, and at most 3 versions of scikit-learn:
+- Python 3.9 (will be deprecated)
+  - scikit-learn 1.6
+- Python 3.10
+  - scikit-learn 1.6
+- Python 3.11
+  - scikit-learn 1.6
+- Python 3.12
+  - scikit-learn 1.4
+  - scikit-learn 1.5
+  - scikit-learn 1.6
+- Python 3.13
+  - scikit-learn 1.5
+  - scikit-learn 1.6
 
 ---
 

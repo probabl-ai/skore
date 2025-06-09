@@ -117,7 +117,7 @@ hgbt_model_report.cache_predictions(n_jobs=4)
 # %%
 #
 # We can now have a look at the performance of the model with some standard metrics.
-hgbt_model_report.metrics.report_metrics()
+hgbt_model_report.metrics.summarize()
 
 
 # %%
@@ -226,7 +226,7 @@ with warnings.catch_warnings():
 
 # %%
 # We can now have a look at the performance of the model with some standard metrics.
-linear_model_report.metrics.report_metrics(indicator_favorability=True)
+linear_model_report.metrics.summarize(indicator_favorability=True)
 
 # %%
 # Comparing the models
@@ -239,7 +239,7 @@ linear_model_report.metrics.report_metrics(indicator_favorability=True)
 from skore import ComparisonReport
 
 comparator = ComparisonReport([hgbt_model_report, linear_model_report])
-comparator.metrics.report_metrics(indicator_favorability=True)
+comparator.metrics.summarize(indicator_favorability=True)
 
 # %%
 # In addition, if we forgot to compute a specific metric
@@ -255,7 +255,7 @@ scoring = ["r2", "rmse", mean_absolute_error]
 scoring_kwargs = {"response_method": "predict"}
 scoring_names = ["R²", "RMSE", "MAE"]
 
-comparator.metrics.report_metrics(
+comparator.metrics.summarize(
     scoring=scoring,
     scoring_kwargs=scoring_kwargs,
     scoring_names=scoring_names,

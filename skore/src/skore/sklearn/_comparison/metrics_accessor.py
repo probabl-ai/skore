@@ -49,13 +49,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         "r2": {"name": "R²", "icon": "(↗︎)"},
         "rmse": {"name": "RMSE", "icon": "(↘︎)"},
         "custom_metric": {"name": "Custom metric", "icon": ""},
-        "report_metrics": {"name": "Report metrics", "icon": ""},
+        "summarize": {"name": "Metrics summary", "icon": ""},
     }
 
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
 
-    def report_metrics(
+    def summarize(
         self,
         *,
         data_source: DataSource = "test",
@@ -148,7 +148,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
-        >>> comparison_report.metrics.report_metrics(
+        >>> comparison_report.metrics.summarize(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
         ... )
@@ -158,7 +158,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Recall                       0.97...               0.97...
         """
         results = self._compute_metric_scores(
-            report_metric_name="report_metrics",
+            report_metric_name="summarize",
             data_source=data_source,
             X=X,
             y=y,
@@ -330,12 +330,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             timings.index = timings.index.str.replace("_", " ").str.capitalize()
 
             # Add (s) to time measurements
-            new_index = []
-            for idx in timings.index:
-                if "time" in idx.lower():
-                    new_index.append(f"{idx} (s)")
-                else:
-                    new_index.append(idx)
+            new_index = [f"{idx} (s)" for idx in timings.index]
 
             timings.index = pd.Index(new_index)
 
@@ -424,7 +419,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         Accuracy                    0.96...               0.96...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["accuracy"],
             data_source=data_source,
             X=X,
@@ -530,7 +525,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Precision                 0               0.96...               0.96...
                                   1               0.96...               0.96...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["precision"],
             data_source=data_source,
             X=X,
@@ -639,7 +634,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Recall                    0              0.944...              0.944...
                                   1              0.977...              0.977...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["recall"],
             data_source=data_source,
             X=X,
@@ -709,7 +704,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         Brier score                   0.025...              0.025...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["brier_score"],
             data_source=data_source,
             X=X,
@@ -817,7 +812,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         ROC AUC                     0.99...               0.99...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["roc_auc"],
             data_source=data_source,
             X=X,
@@ -888,7 +883,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         Log loss                   0.082...              0.082...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["log_loss"],
             data_source=data_source,
             X=X,
@@ -969,7 +964,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         R²            0.43...    0.43...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["r2"],
             data_source=data_source,
             X=X,
@@ -1051,7 +1046,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         RMSE          55.726...     55.726...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["rmse"],
             data_source=data_source,
             X=X,
@@ -1159,7 +1154,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             response_method=response_method,
             **kwargs,
         )
-        return self.report_metrics(
+        return self.summarize(
             scoring=[scorer],
             data_source=data_source,
             X=X,
@@ -1177,14 +1172,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     ) -> list[tuple[str, Callable]]:
         """Override sort method for metrics-specific ordering.
 
-        In short, we display the `report_metrics` first and then the `custom_metric`.
+        In short, we display the `summarize` first and then the `custom_metric`.
         """
 
         def _sort_key(method):
             name = method[0]
             if name == "custom_metric":
                 priority = 1
-            elif name == "report_metrics":
+            elif name == "summarize":
                 priority = 2
             else:
                 priority = 0
@@ -1650,8 +1645,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
-        if self._parent._reports_type == "CrossValidationReport":
-            raise NotImplementedError()
         display_kwargs = {"subsample": subsample, "seed": seed}
         display = cast(
             PredictionErrorDisplay,
