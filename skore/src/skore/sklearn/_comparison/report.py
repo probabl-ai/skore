@@ -13,6 +13,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._estimator.report import EstimatorReport
+from skore.sklearn.types import _DEFAULT, PositiveLabel
 from skore.utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
@@ -121,6 +122,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         Union[list[EstimatorReport], list[CrossValidationReport]],
         list[str],
         ReportType,
+        PositiveLabel,
     ]:
         """Validate that reports are in the right format for comparison.
 
@@ -138,6 +140,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             class names.
         {"EstimatorReport", "CrossValidationReport"}
             The inferred type of the reports that will be compared.
+        int, float, bool, str or None
+            The positive label used in the different reports.
         """
         if not isinstance(reports, Iterable):
             raise TypeError(
@@ -191,11 +195,22 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if len(set(id(report) for report in reports_list)) < len(reports_list):
             raise ValueError("Expected reports to be distinct objects")
 
-        ml_tasks = {report: report._ml_task for report in reports_list}
-        if len(set(ml_tasks.values())) > 1:
+        ml_tasks = {report._ml_task for report in reports_list}
+        if len(ml_tasks) > 1:
             raise ValueError(
                 f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
             )
+
+        if ml_tasks == {"binary-classification"}:
+            pos_labels = {report.pos_label for report in reports_list}
+            if len(pos_labels) > 1:
+                raise ValueError(
+                    "Expected all estimators to have the same positive label. "
+                    f"Got {pos_labels}."
+                )
+            pos_label = pos_labels.pop()
+        else:
+            pos_label = None
 
         if report_names is None:
             deduped_report_names = _deduplicate_report_names(
@@ -204,7 +219,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         else:
             deduped_report_names = report_names
 
-        return reports_list, deduped_report_names, reports_type
+        return reports_list, deduped_report_names, reports_type, pos_label
 
     def __init__(
         self,
@@ -228,7 +243,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
-        self.reports_, self.report_names_, self._reports_type = (
+        self.reports_, self.report_names_, self._reports_type, self._pos_label = (
             ComparisonReport._validate_reports(reports)
         )
 
@@ -330,9 +345,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             "predict", "predict_proba", "decision_function"
         ] = "predict",
         X: Optional[ArrayLike] = None,
-        pos_label: Optional[Any] = None,
-    ) -> ArrayLike:
-        """Get estimator's predictions.
+        pos_label: Optional[PositiveLabel] = _DEFAULT,
+    ) -> list[ArrayLike]:
+        """Get predictions from the underlying reports.
 
         This method has the advantage to reload from the cache if the predictions
         were already computed in a previous call.
@@ -346,24 +361,31 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        response_method : {"predict", "predict_proba", "decision_function"},
-        default : "predict"
+        response_method : {"predict", "predict_proba", "decision_function"}, \
+                default="predict"
+            The response method to use to get the predictions.
 
         X : array-like of shape (n_samples, n_features), optional
             When `data_source` is "X_y", the input features on which to compute the
             response method.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class when it comes to binary classification. When
-            `response_method="predict_proba"`, it will select the column corresponding
-            to the positive class. When `response_method="decision_function"`, it will
-            negate the decision function if `pos_label` is different from
-            `estimator.classes_[1]`.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing predictions in
+            binary classification cases. By default, the positive class is set to the
+            one provided when creating the report. If `None`, `estimator_.classes_[1]`
+            is used as positive label.
+
+            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
+            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
+            and `-estimator_.decision_function(X)` for
+            `response_method="decision_function"`.
 
         Returns
         -------
-        list of np.ndarray of shape (n_samples,) or (n_samples, n_classes)
-            The predictions for each cross-validation split.
+        list of np.ndarray of shape (n_samples,) or (n_samples, n_classes) or list of \
+                such lists
+            The predictions for each :class:`~skore.EstimatorReport` or
+            :class:`~skore.CrossValidationReport`.
 
         Raises
         ------
@@ -397,6 +419,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
             for report in self.reports_
         ]
+
+    @property
+    def pos_label(self) -> Optional[PositiveLabel]:
+        return self._pos_label
 
     ####################################################################################
     # Methods related to the help and repr
