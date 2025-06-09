@@ -3,6 +3,7 @@ import copy
 from typing import Literal
 
 import numpy as np
+import pandas as pd
 from matplotlib.legend import Legend
 from sklearn.base import BaseEstimator, ClassifierMixin
 
@@ -93,3 +94,61 @@ def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"
         assert 0 <= bbox.x0 <= 1
     else:
         assert bbox.x0 >= 1
+
+
+def check_roc_frame(
+    df: pd.DataFrame,
+    expected_n_splits: int | None = None,
+    multiclass: bool = False,
+) -> None:
+    """Check the structure of a ROC curve DataFrame.
+
+    Parameters
+    ----------
+    df : DataFrame
+        The DataFrame to check.
+    expected_n_splits : int or None, default=None
+        The expected number of cross-validation splits.
+        If None, does not check the number of splits.
+    multiclass : bool, default=False
+        Whether the DataFrame is from a multiclass classification.
+    """
+    assert isinstance(df, pd.DataFrame)
+
+    if not (multiclass):
+        expected_columns = [
+            "estimator_name",
+            "split_index",
+            "fpr",
+            "tpr",
+            "threshold",
+            "roc_auc",
+        ]
+    else:
+        expected_columns = [
+            "estimator_name",
+            "split_index",
+            "label",
+            "method",
+            "fpr",
+            "tpr",
+            "threshold",
+            "roc_auc",
+        ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    assert df["split_index"].dtype.name == "category"
+    if multiclass:
+        assert df["label"].dtype.name == "category"
+        assert df["method"].dtype == object
+    assert df["fpr"].dtype == np.float64
+    assert df["tpr"].dtype == np.float64
+    assert df["threshold"].dtype == np.float64
+    assert df["roc_auc"].dtype == np.float64
+
+    if expected_n_splits is not None:
+        assert df["split_index"].nunique() == expected_n_splits
+
+    if multiclass:
+        assert df["method"].unique() == ["OvR"]
