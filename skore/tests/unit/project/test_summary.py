@@ -1,13 +1,15 @@
+from copy import deepcopy
 from types import SimpleNamespace
 
+from joblib import hash as joblib_hash
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
 from pandas.testing import assert_index_equal
 from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
-from skore import EstimatorReport
 from skore.project.summary import Summary
+from skore.sklearn import ComparisonReport, EstimatorReport
 
 
 @fixture
@@ -57,7 +59,7 @@ class FakeProject:
                     "key": None,
                     "date": None,
                     "learner": None,
-                    "dataset": None,
+                    "dataset": joblib_hash(report.y_test),
                     "ml_task": report._ml_task,
                     "rmse": None,
                     "log_loss": None,
@@ -131,7 +133,7 @@ class TestSummary:
         assert DataFrame.equals(summary3, summary)
         assert summary3.project == project
 
-    def test_reports_with_filter(self, monkeypatch, regression, binary_classification):
+    def test_reports_filter_true(self, monkeypatch, regression, binary_classification):
         project = FakeProject(regression, binary_classification)
         summary = Summary.factory(project)
 
@@ -145,9 +147,7 @@ class TestSummary:
 
         assert summary.reports() == [regression]
 
-    def test_reports_without_filter(
-        self, monkeypatch, regression, binary_classification
-    ):
+    def test_reports_filter_false(self, monkeypatch, regression, binary_classification):
         project = FakeProject(regression, binary_classification)
         summary = Summary.factory(project)
 
@@ -168,9 +168,36 @@ class TestSummary:
         assert summary.reports() == []
         assert summary.reports(filter=False) == []
 
-    def test_reports_exception(self):
-        with raises(RuntimeError, match="Bad condition"):
+    def test_reports_return_as_comparison(self, regression):
+        regression1 = regression
+        regression2 = deepcopy(regression)
+        summary = Summary.factory(FakeProject(regression1, regression2))
+        comparison = summary.reports(return_as="comparison")
+
+        assert isinstance(comparison, ComparisonReport)
+        assert comparison.reports_ == [regression1, regression2]
+
+    def test_reports_exception_invalid_object(self):
+        with raises(
+            RuntimeError,
+            match="Bad condition: it is not a valid `Summary` object.",
+        ):
             Summary([{"<column>": "<value>"}]).reports()
+
+    def test_reports_exception_different_datasets(
+        self, regression, binary_classification
+    ):
+        project = FakeProject(regression, binary_classification)
+        summary = Summary.factory(project)
+
+        with raises(
+            RuntimeError,
+            match=(
+                "Bad condition: the comparison mode is only applicable when reports "
+                "have the same dataset."
+            ),
+        ):
+            summary.reports(return_as="comparison")
 
     def test__query_string_selection(self, monkeypatch):
         summary = DataFrame(

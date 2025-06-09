@@ -21,6 +21,8 @@ from skore.sklearn.types import MLTask, ReportType, YPlotData
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
+MAX_N_LABELS = 6  # 5 + 1 for the perfect model line
+
 
 class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     """Visualization of the prediction error of a regression model.
@@ -234,7 +236,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         if self.data_source in ("train", "test"):
             scatter_label = f"{self.data_source.title()} set"
         else:  # data_source == "X_y"
-            scatter_label = "Data set"
+            scatter_label = "External data set"
 
         if kind == "actual_vs_predicted":
             scatter.append(
@@ -255,7 +257,13 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 )
             )
 
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+        # move the perfect model line to the end of the legend
+        handles, labels = self.ax_.get_legend_handles_labels()
+        handles.append(handles.pop(0))
+        labels.append(labels.pop(0))
+
+        self.ax_.legend(handles, labels, loc="lower right")
+        self.ax_.set_title(f"Prediction Error for {estimator_name}")
 
         return scatter
 
@@ -304,7 +312,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 data_points_kwargs_fold, samples_kwargs[split_idx]
             )
 
-            label = f"Estimator of fold #{split_idx + 1}"
+            label = f"Fold #{split_idx + 1}"
 
             if kind == "actual_vs_predicted":
                 scatter.append(
@@ -326,10 +334,23 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 )
 
         if self.data_source in ("train", "test"):
-            title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
+            legend_title = f"{self.data_source.capitalize()} set"
         else:
-            title = f"{estimator_name} on $\\bf{{external}}$ set"
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=title)
+            legend_title = "External set"
+
+        # move the perfect model line to the end of the legend
+        handles, labels = self.ax_.get_legend_handles_labels()
+        handles.append(handles.pop(0))
+        labels.append(labels.pop(0))
+
+        if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
+            # too many lines to fit legend in the plot
+            self.ax_.legend(
+                handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
+            )
+        else:
+            self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
+        self.ax_.set_title(f"Prediction Error for {estimator_name}")
 
         return scatter
 
@@ -395,10 +416,24 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                     )
                 )
 
-        self.ax_.legend(
-            bbox_to_anchor=(1.02, 1),
-            title=f"Prediction errors on $\\bf{{{self.data_source}}}$ set",
-        )
+        if self.data_source in ("train", "test"):
+            legend_title = f"{self.data_source.capitalize()} set"
+        else:
+            legend_title = "External set"
+
+        # move the perfect model line to the end of the legend
+        handles, labels = self.ax_.get_legend_handles_labels()
+        handles.append(handles.pop(0))
+        labels.append(labels.pop(0))
+
+        if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
+            # too many lines to fit legend in the plot
+            self.ax_.legend(
+                handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
+            )
+        else:
+            self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
+        self.ax_.set_title("Prediction Error")
 
         return scatter
 
@@ -464,10 +499,24 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                     )
                 )
 
-        self.ax_.legend(
-            bbox_to_anchor=(1.02, 1),
-            title=f"Prediction errors on $\\bf{{{self.data_source}}}$ set",
-        )
+        if self.data_source in ("train", "test"):
+            legend_title = f"{self.data_source.capitalize()} set"
+        else:
+            legend_title = "External set"
+
+        # move the perfect model line to the end of the legend
+        handles, labels = self.ax_.get_legend_handles_labels()
+        handles.append(handles.pop(0))
+        labels.append(labels.pop(0))
+
+        if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
+            # too many lines to fit legend in the plot
+            self.ax_.legend(
+                handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
+            )
+        else:
+            self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
+        self.ax_.set_title("Prediction Error")
 
         return scatter
 

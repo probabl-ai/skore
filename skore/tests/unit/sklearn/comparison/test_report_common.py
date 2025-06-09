@@ -7,6 +7,7 @@ import re
 from io import BytesIO
 
 import joblib
+import numpy as np
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
@@ -60,7 +61,7 @@ def test_cross_validation_report_cleaned_up(report):
     Non-regression test for bug found in:
     https://github.com/probabl-ai/skore/pull/1512
     """
-    report.metrics.report_metrics()
+    report.metrics.summarize()
 
     with BytesIO() as stream:
         joblib.dump(report.reports_[0], stream)
@@ -97,7 +98,7 @@ def test_comparison_report_favorability_undefined_metrics(report):
         }
 
     comparison_report = ComparisonReport(reports)
-    metrics = comparison_report.metrics.report_metrics(
+    metrics = comparison_report.metrics.summarize(
         pos_label=1, indicator_favorability=True
     )
 
@@ -107,3 +108,152 @@ def test_comparison_report_favorability_undefined_metrics(report):
     expected_values = {"(↗︎)", "(↘︎)"}
     actual_values = set(metrics["Favorability"].to_numpy())
     assert actual_values.issubset(expected_values)
+
+
+@pytest.mark.parametrize("report", [EstimatorReport, CrossValidationReport])
+def test_comparison_report_pos_label_mismatch(report):
+    """Check that we raise an error when the positive labels are not the same."""
+    X, y = make_classification(random_state=0)
+    estimators = {"LinearSVC": LinearSVC(), "LogisticRegression": LogisticRegression()}
+
+    if report is EstimatorReport:
+        reports = {
+            name: EstimatorReport(
+                est, X_train=X, X_test=X, y_train=y, y_test=y, pos_label=i
+            )
+            for i, (name, est) in enumerate(estimators.items())
+        }
+    else:
+        reports = {
+            name: CrossValidationReport(est, X=X, y=y, pos_label=i)
+            for i, (name, est) in enumerate(estimators.items())
+        }
+
+    err_msg = "Expected all estimators to have the same positive label."
+    with pytest.raises(ValueError, match=err_msg):
+        ComparisonReport(reports)
+
+
+@pytest.mark.parametrize("metric", ["roc", "precision_recall"])
+def test_comparison_report_display_binary_classification_pos_label(pyplot, metric):
+    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    report_1 = CrossValidationReport(LogisticRegression(C=1), X, y)
+    report_2 = CrossValidationReport(LogisticRegression(C=2), X, y)
+    report = ComparisonReport([report_1, report_2])
+    with pytest.raises(ValueError, match="pos_label is not specified"):
+        getattr(report.metrics, metric)()
+
+    report_1 = CrossValidationReport(LogisticRegression(C=1), X, y, pos_label="A")
+    report_2 = CrossValidationReport(LogisticRegression(C=2), X, y, pos_label="A")
+    report = ComparisonReport([report_1, report_2])
+    display = getattr(report.metrics, metric)()
+    display.plot()
+    assert "Positive label: A" in display.ax_.get_xlabel()
+
+    display = getattr(report.metrics, metric)(pos_label="B")
+    display.plot()
+    assert "Positive label: B" in display.ax_.get_xlabel()
+
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_comparison_report_summarize_pos_label_default(metric):
+    """Check the default behaviour of `pos_label` in `summarize`."""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+
+    report_1 = CrossValidationReport(LogisticRegression(), X, y)
+    report_2 = CrossValidationReport(LogisticRegression(), X, y)
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    result_both_labels = report.metrics.summarize(scoring=metric).reset_index()
+    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
+    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_comparison_report_summarize_pos_label_overwrite(metric):
+    """Check that `pos_label` can be overwritten in `summarize`"""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+
+    report_1 = CrossValidationReport(LogisticRegression(), X, y, pos_label="B")
+    report_2 = CrossValidationReport(LogisticRegression(), X, y, pos_label="B")
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+
+    result_both_labels = report.metrics.summarize(scoring=metric, pos_label=None)
+
+    result = report.metrics.summarize(scoring=metric).reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    for report_name in report.report_names_:
+        assert (
+            result.loc[metric.capitalize(), ("mean", report_name)]
+            == result_both_labels.loc[(metric.capitalize(), "B"), ("mean", report_name)]
+        )
+
+    result = report.metrics.summarize(scoring=metric, pos_label="A").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    for report_name in report.report_names_:
+        assert (
+            result.loc[metric.capitalize(), ("mean", report_name)]
+            == result_both_labels.loc[(metric.capitalize(), "A"), ("mean", report_name)]
+        )
+
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_comparison_report_precision_recall_pos_label_default(metric):
+    """Check the default behaviour of `pos_label` in `summarize`."""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    report_1 = CrossValidationReport(LogisticRegression(), X, y)
+    report_2 = CrossValidationReport(LogisticRegression(), X, y)
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    result_both_labels = getattr(report.metrics, metric)().reset_index()
+    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
+
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_comparison_report_precision_recall_pos_label_overwrite(metric):
+    """Check that `pos_label` can be overwritten in `summarize`."""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    report_1 = CrossValidationReport(LogisticRegression(), X, y)
+    report_2 = CrossValidationReport(LogisticRegression(), X, y)
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+
+    result_both_labels = getattr(report.metrics, metric)(pos_label=None)
+
+    result = getattr(report.metrics, metric)(pos_label="B").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    for report_name in report.report_names_:
+        assert (
+            result.loc[metric.capitalize(), ("mean", report_name)]
+            == result_both_labels.loc[(metric.capitalize(), "B"), ("mean", report_name)]
+        )
+
+    result = getattr(report.metrics, metric)(pos_label="A").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    for report_name in report.report_names_:
+        assert (
+            result.loc[metric.capitalize(), ("mean", report_name)]
+            == result_both_labels.loc[(metric.capitalize(), "A"), ("mean", report_name)]
+        )

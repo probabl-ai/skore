@@ -7,6 +7,7 @@ from sklearn.linear_model import LinearRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
+from skore.utils._testing import check_legend_position
 
 
 @pytest.fixture
@@ -57,8 +58,10 @@ def test_regression(pyplot, report):
         assert isinstance(scatter, mpl.collections.PathCollection)
 
     assert isinstance(display.ax_, mpl.axes.Axes)
+    # The loc doesn't matter because bbox_to_anchor is used
+    check_legend_position(display.ax_, loc="upper left", position="outside")
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Prediction errors on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -86,8 +89,9 @@ def test_regression_actual_vs_predicted(pyplot, report):
         assert isinstance(scatter, mpl.collections.PathCollection)
 
     assert isinstance(display.ax_, mpl.axes.Axes)
+    check_legend_position(display.ax_, loc="lower right", position="inside")
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Prediction errors on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Predicted values"

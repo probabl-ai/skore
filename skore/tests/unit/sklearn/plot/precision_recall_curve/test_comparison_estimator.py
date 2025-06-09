@@ -6,6 +6,7 @@ from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
+from skore.utils._testing import check_legend_position
 from skore.utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
@@ -52,7 +53,7 @@ def test_binary_classification(pyplot, binary_classification_data):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == r"Binary-Classification on $\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 2
 
     assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
@@ -60,6 +61,7 @@ def test_binary_classification(pyplot, binary_classification_data):
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "Precision-Recall Curve"
 
 
 def test_multiclass_classification(pyplot, multiclass_classification_data):
@@ -112,9 +114,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert (
-        legend.get_title().get_text() == r"Multiclass-Classification on $\bf{test}$ set"
-    )
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 6
 
     assert display.ax_.get_xlabel() == "Recall"
@@ -122,6 +122,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "Precision-Recall Curve"
 
 
 def test_binary_classification_kwargs(pyplot, binary_classification_data):
@@ -296,3 +297,37 @@ def test_frame_multiclass_classification(multiclass_classification_data):
     assert df["recall"].between(0, 1).all()
     assert df["average_precision"].between(0, 1).all()
     assert df["method"].unique() == ["OvR"]
+
+    
+def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
+    """Check the rendering of the legend for with a `ComparisonReport`."""
+
+    # binary classification
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.precision_recall()
+    display.plot()
+    check_legend_position(display.ax_, loc="lower left", position="inside")
+
+    # multiclass classification <= 5 classes
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.precision_recall()
+    display.plot()
+    check_legend_position(display.ax_, loc="upper left", position="outside")

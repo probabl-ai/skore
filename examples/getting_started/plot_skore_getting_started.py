@@ -81,7 +81,7 @@ rf_report.help()
 # fit and prediction times):
 
 # %%
-rf_report.metrics.report_metrics(indicator_favorability=True)
+rf_report.metrics.summarize(indicator_favorability=True)
 
 # %%
 # For inspection, we can also retrieve the predictions, on the train set for example
@@ -139,13 +139,13 @@ cv_report.help()
 # We display the mean and standard deviation for each metric:
 
 # %%
-cv_report.metrics.report_metrics()
+cv_report.metrics.summarize()
 
 # %%
 # or by individual fold:
 
 # %%
-cv_report.metrics.report_metrics(aggregate=None)
+cv_report.metrics.summarize(aggregate=None)
 
 # %%
 # We display the ROC curves for each fold:
@@ -159,7 +159,7 @@ roc_plot_cv.plot()
 # for example getting the report metrics for the first fold only:
 
 # %%
-cv_report.estimator_reports_[0].metrics.report_metrics()
+cv_report.estimator_reports_[0].metrics.summarize()
 
 # %%
 # .. seealso::
@@ -182,7 +182,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 gb = GradientBoostingClassifier(random_state=0)
 gb_report = EstimatorReport(
-    gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+    gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, pos_label=1
 )
 
 # %%
@@ -205,7 +205,7 @@ comparator.help()
 # Let us display the result of our benchmark:
 
 # %%
-comparator.metrics.report_metrics(indicator_favorability=True)
+comparator.metrics.summarize(indicator_favorability=True)
 
 # %%
 # Thus, we easily have the result of our benchmark for several recommended metrics.
@@ -326,7 +326,7 @@ pprint(reports_get)
 
 # %%
 comparator = ComparisonReport(reports=reports_get)
-comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+comparator.metrics.summarize(pos_label=1, indicator_favorability=True)
 
 # %%
 # We can retrieve any accessor of our stored estimator reports, for example

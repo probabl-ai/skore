@@ -2,9 +2,13 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
+from skore.utils._testing import check_legend_position
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -45,7 +49,7 @@ def test_binary_classification(pyplot, binary_classification_data):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert legend.get_title().get_text() == ""
     assert len(legend.get_texts()) == 1 + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
@@ -53,6 +57,7 @@ def test_binary_classification(pyplot, binary_classification_data):
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
 
 
 def test_multiclass_classification(pyplot, multiclass_classification_data):
@@ -85,7 +90,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
             "roc_auc"
         ].item()
         assert roc_curve_mpl.get_label() == (
-            f"{str(class_label).title()} - test set (AUC = {roc_auc_class:0.2f})"
+            f"{str(class_label).title()} (AUC = {roc_auc_class:0.2f})"
         )
         assert roc_curve_mpl.get_color() == expected_color
 
@@ -95,7 +100,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == len(estimator.classes_) + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate"
@@ -103,6 +108,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
 
 
 def test_data_source_binary_classification(pyplot, binary_classification_data):
@@ -139,7 +145,7 @@ def test_data_source_multiclass_classification(pyplot, multiclass_classification
             "roc_auc"
         ].item()
         assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} - train set (AUC = {roc_auc_class:0.2f})"
+            f"{str(class_label).title()} (AUC = {roc_auc_class:0.2f})"
         )
 
     display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
@@ -149,7 +155,7 @@ def test_data_source_multiclass_classification(pyplot, multiclass_classification
             "roc_auc"
         ].item()
         assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} - AUC = {roc_auc_class:0.2f}"
+            f"{str(class_label).title()} (AUC = {roc_auc_class:0.2f})"
         )
 
 
@@ -317,3 +323,42 @@ def test_multiclass_classification_frame(multiclass_classification_data):
     assert df["roc_auc"].between(0, 1).all()
     assert df["method"].unique() == ["OvR"]
     assert df["estimator_name"].unique() == [report.estimator_name_]
+
+    
+def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
+    """Check the rendering of the legend for ROC curves with an `EstimatorReport`."""
+
+    # binary classification
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="lower right", position="inside")
+
+    # multiclass classification <= 5 classes
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="lower right", position="inside")
+
+    # multiclass classification > 5 classes
+    estimator = LogisticRegression()
+    X, y = make_classification(
+        n_samples=1_000,
+        n_classes=10,
+        n_clusters_per_class=1,
+        n_informative=10,
+        random_state=42,
+    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="upper left", position="outside")

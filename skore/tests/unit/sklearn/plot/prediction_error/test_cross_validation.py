@@ -5,6 +5,7 @@ import pytest
 from skore import CrossValidationReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
+from skore.utils._testing import check_legend_position
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -48,10 +49,7 @@ def test_regression(pyplot, regression_data_no_split, data_source):
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     data_source_title = "external" if data_source == "X_y" else data_source
-    assert (
-        legend.get_title().get_text()
-        == f"LinearRegression on $\\bf{{{data_source_title}}}$ set"
-    )
+    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
     assert len(legend.get_texts()) == 4
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -83,7 +81,7 @@ def test_regression_actual_vs_predicted(pyplot, regression_data_no_split):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "LinearRegression on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 4
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -156,3 +154,26 @@ def test_frame(regression_data_no_split):
 
     assert df["estimator_name"].unique() == [report.estimator_name_]
     assert df["split_index"].nunique() == cv
+
+
+def test_legend(pyplot, regression_data_no_split):
+    """Check the rendering of the legend for prediction error with an
+    `CrossValidationReport`."""
+
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.prediction_error()
+    display.plot()
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    check_legend_position(display.ax_, loc="lower right", position="inside")
+
+    cv = 10
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.prediction_error()
+    display.plot()
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    check_legend_position(display.ax_, loc="upper left", position="outside")

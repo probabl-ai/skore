@@ -10,6 +10,7 @@ from skore.sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
 from skore.sklearn._plot.utils import sample_mpl_colormap
+from skore.utils._testing import check_legend_position
 from skore.utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
@@ -75,8 +76,9 @@ def test_binary_classification(pyplot, binary_classification_report):
         assert list(precision_recall_mpl.get_color()[:3]) == list(default_colors[i][:3])
 
     assert isinstance(display.ax_, mpl.axes.Axes)
+    check_legend_position(display.ax_, loc="lower left", position="inside")
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == r"Binary-Classification on $\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == n_reports
 
     assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
@@ -84,6 +86,7 @@ def test_binary_classification(pyplot, binary_classification_report):
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "Precision-Recall Curve"
 
 
 def test_multiclass_classification(pyplot, multiclass_classification_report):
@@ -125,11 +128,9 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
 
     assert isinstance(display.ax_, np.ndarray)
     for label, ax in zip(labels, display.ax_):
+        check_legend_position(ax, loc="lower left", position="inside")
         legend = ax.get_legend()
-        assert (
-            legend.get_title().get_text()
-            == r"Multiclass-Classification on $\bf{test}$ set"
-        )
+        assert legend.get_title().get_text() == "Test set"
         assert len(legend.get_texts()) == n_reports
 
         assert ax.get_xlabel() == f"Recall\n(Positive label: {label})"
@@ -137,6 +138,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
         assert ax.get_adjustable() == "box"
         assert ax.get_aspect() in ("equal", 1.0)
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
+    assert display.figure_.get_suptitle() == "Precision-Recall Curve"
 
 
 def test_binary_classification_wrong_kwargs(pyplot, binary_classification_report):
