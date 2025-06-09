@@ -1,6 +1,5 @@
 import matplotlib as mpl
 import numpy as np
-import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
@@ -8,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_roc_frame
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -260,30 +259,16 @@ def test_binary_classification_frame(binary_classification_data):
     display = report.metrics.roc()
     df = display.frame()
 
-    assert isinstance(df, pd.DataFrame)
+    check_roc_frame(
+        df,
+        multiclass=False,
+    )
 
-    expected_columns = [
-        "estimator_name",
-        "split_index",
-        "fpr",
-        "tpr",
-        "threshold",
-        "roc_auc",
-    ]
-    assert list(df.columns) == expected_columns
-
-    assert df["fpr"].dtype == np.float64
-    assert df["tpr"].dtype == np.float64
-    assert df["threshold"].dtype == np.float64
-    assert df["roc_auc"].dtype == np.float64
-    assert df["estimator_name"].dtype.name == "category"
-    assert df["split_index"].dtype.name == "category"
+    assert df["estimator_name"].unique() == [report.estimator_name_]
 
     assert df["fpr"].between(0, 1).all()
     assert df["tpr"].between(0, 1).all()
     assert df["roc_auc"].between(0, 1).all()
-
-    assert df["estimator_name"].unique() == [report.estimator_name_]
 
 
 def test_multiclass_classification_frame(multiclass_classification_data):
@@ -295,34 +280,16 @@ def test_multiclass_classification_frame(multiclass_classification_data):
     display = report.metrics.roc()
     df = display.frame()
 
-    assert isinstance(df, pd.DataFrame)
+    check_roc_frame(
+        df,
+        multiclass=True,
+    )
 
-    expected_columns = [
-        "estimator_name",
-        "split_index",
-        "label",
-        "method",
-        "fpr",
-        "tpr",
-        "threshold",
-        "roc_auc",
-    ]
-    assert list(df.columns) == expected_columns
-
-    assert df["fpr"].dtype == np.float64
-    assert df["tpr"].dtype == np.float64
-    assert df["threshold"].dtype == np.float64
-    assert df["roc_auc"].dtype == np.float64
-    assert df["method"].dtype == object
-    assert df["label"].dtype.name == "category"
-    assert df["estimator_name"].dtype.name == "category"
-    assert df["split_index"].dtype.name == "category"
+    assert df["estimator_name"].unique() == [report.estimator_name_]
 
     assert df["fpr"].between(0, 1).all()
     assert df["tpr"].between(0, 1).all()
     assert df["roc_auc"].between(0, 1).all()
-    assert df["method"].unique() == ["OvR"]
-    assert df["estimator_name"].unique() == [report.estimator_name_]
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

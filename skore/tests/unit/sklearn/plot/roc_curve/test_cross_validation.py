@@ -1,13 +1,12 @@
 import matplotlib as mpl
 import numpy as np
-import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from skore import CrossValidationReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_roc_frame
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -192,27 +191,13 @@ def test_frame(binary_classification_data_no_split):
     display = report.metrics.roc()
     df = display.frame()
 
-    assert isinstance(df, pd.DataFrame)
-
-    expected_columns = [
-        "estimator_name",
-        "split_index",
-        "fpr",
-        "tpr",
-        "threshold",
-        "roc_auc",
-    ]
-    assert list(df.columns) == expected_columns
-
-    assert df["estimator_name"].dtype.name == "category"
-    assert df["split_index"].dtype.name == "category"
-    assert df["fpr"].dtype == np.float64
-    assert df["tpr"].dtype == np.float64
-    assert df["threshold"].dtype == np.float64
-    assert df["roc_auc"].dtype == np.float64
+    check_roc_frame(
+        df,
+        expected_n_splits=cv,
+        multiclass=False,
+    )
 
     assert df["estimator_name"].unique() == [report.estimator_name_]
-    assert df["split_index"].nunique() == cv
 
     # Each fold should have exactly one ROC AUC value
     for fold in range(cv):
