@@ -5,7 +5,7 @@ from skore.sklearn._plot.utils import HelpDisplayMixin
 class ReportMetricsDisplay(HelpDisplayMixin, StyleDisplayMixin):
     """Display for report_metrics.
 
-    An instance of this class is should created by `Report.metrics.report_metrics()`.
+    An instance of this class will be created by `Report.metrics.summarize()`.
     You should not create an instance of this class directly.
     """
 
