@@ -261,7 +261,7 @@ def test_frame(binary_classification_data):
         assert not estimator_data.empty
         assert estimator_data["roc_auc"].nunique() == 1  # One AUC score per estimator
 
-        
+
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
     """Check the rendering of the legend for ROC curves with a `ComparisonReport`."""
 

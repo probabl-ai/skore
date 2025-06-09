@@ -298,7 +298,7 @@ def test_frame_multiclass_classification(multiclass_classification_data):
     assert df["average_precision"].between(0, 1).all()
     assert df["method"].unique() == ["OvR"]
 
-    
+
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
     """Check the rendering of the legend for with a `ComparisonReport`."""
 

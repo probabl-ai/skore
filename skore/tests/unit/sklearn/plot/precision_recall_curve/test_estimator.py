@@ -317,7 +317,7 @@ def test_frame_multiclass_classification(multiclass_classification_data):
     assert df["estimator_name"].unique() == [report.estimator_name_]
     assert df["method"].unique() == ["OvR"]
 
-    
+
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
     """Check the rendering of the legend for with an `EstimatorReport`."""
 
@@ -355,5 +355,3 @@ def test_legend(pyplot, binary_classification_data, multiclass_classification_da
     display = report.metrics.precision_recall()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
-
-    

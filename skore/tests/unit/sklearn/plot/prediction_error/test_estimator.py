@@ -2,7 +2,7 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
-from skore import EstimatorReport
+from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
 from skore.utils._testing import check_legend_position

@@ -219,7 +219,7 @@ def test_frame_multiclass_classification(multiclass_classification_data_no_split
     assert df["estimator_name"].unique() == [report.estimator_name_]
     assert df["method"].unique() == ["OvR"]
 
-    
+
 def test_legend(
     pyplot, binary_classification_data_no_split, multiclass_classification_data_no_split
 ):

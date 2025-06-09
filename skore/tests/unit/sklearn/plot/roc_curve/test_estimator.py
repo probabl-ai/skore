@@ -324,7 +324,7 @@ def test_multiclass_classification_frame(multiclass_classification_data):
     assert df["method"].unique() == ["OvR"]
     assert df["estimator_name"].unique() == [report.estimator_name_]
 
-    
+
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
     """Check the rendering of the legend for ROC curves with an `EstimatorReport`."""
 
