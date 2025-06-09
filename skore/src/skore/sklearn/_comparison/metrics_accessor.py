@@ -1455,7 +1455,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        pos_label : int, float, bool, str or None default=_DEFAULT
+        pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
             this parameter to override the positive class. By default, the positive
             class is set to the one provided when creating the report. If `None`,
