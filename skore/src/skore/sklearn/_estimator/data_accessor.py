@@ -68,11 +68,9 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         super().__init__(parent)
 
     def analyze(self, dataset: str = "all", with_y: bool = True) -> TableReportDisplay:
-        """Analyse.
+        """Plot dataset statistics.
 
-        Returns
-        -------
-        analyzed : str
+        TODO
         """
         if dataset not in (options := ("train", "test", "all")):
             raise ValueError(f"'dataset' options are {options!r}, got {dataset}.")
@@ -97,7 +95,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if with_y and y is not None:
             X = concat(X, _to_frame_if_column(y), axis=1)
 
-        return TableReportDisplay.from_frame(X)
+        return TableReportDisplay._compute_data_for_display(X)
 
     ####################################################################################
     # Methods related to the help tree
