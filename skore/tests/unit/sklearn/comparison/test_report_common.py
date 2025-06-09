@@ -161,8 +161,8 @@ def test_comparison_report_display_binary_classification_pos_label(pyplot, metri
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_comparison_report_report_metrics_pos_label_default(metric):
-    """Check the default behaviour of `pos_label` in `report_metrics`."""
+def test_comparison_report_summarize_pos_label_default(metric):
+    """Check the default behaviour of `pos_label` in `summarize`."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
     )
@@ -172,14 +172,14 @@ def test_comparison_report_report_metrics_pos_label_default(metric):
     report_1 = CrossValidationReport(LogisticRegression(), X, y)
     report_2 = CrossValidationReport(LogisticRegression(), X, y)
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.report_metrics(scoring=metric).reset_index()
+    result_both_labels = report.metrics.summarize(scoring=metric).reset_index()
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
     result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_comparison_report_report_metrics_pos_label_overwrite(metric):
-    """Check that `pos_label` can be overwritten in `report_metrics`"""
+def test_comparison_report_summarize_pos_label_overwrite(metric):
+    """Check that `pos_label` can be overwritten in `summarize`"""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
     )
@@ -190,9 +190,9 @@ def test_comparison_report_report_metrics_pos_label_overwrite(metric):
     report_2 = CrossValidationReport(LogisticRegression(), X, y, pos_label="B")
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
 
-    result_both_labels = report.metrics.report_metrics(scoring=metric, pos_label=None)
+    result_both_labels = report.metrics.summarize(scoring=metric, pos_label=None)
 
-    result = report.metrics.report_metrics(scoring=metric).reset_index()
+    result = report.metrics.summarize(scoring=metric).reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     for report_name in report.report_names_:
@@ -201,7 +201,7 @@ def test_comparison_report_report_metrics_pos_label_overwrite(metric):
             == result_both_labels.loc[(metric.capitalize(), "B"), ("mean", report_name)]
         )
 
-    result = report.metrics.report_metrics(scoring=metric, pos_label="A").reset_index()
+    result = report.metrics.summarize(scoring=metric, pos_label="A").reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     for report_name in report.report_names_:
@@ -213,7 +213,7 @@ def test_comparison_report_report_metrics_pos_label_overwrite(metric):
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
 def test_comparison_report_precision_recall_pos_label_default(metric):
-    """Check the default behaviour of `pos_label` in `report_metrics`."""
+    """Check the default behaviour of `pos_label` in `summarize`."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
     )
@@ -228,7 +228,7 @@ def test_comparison_report_precision_recall_pos_label_default(metric):
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
 def test_comparison_report_precision_recall_pos_label_overwrite(metric):
-    """Check that `pos_label` can be overwritten in `report_metrics`."""
+    """Check that `pos_label` can be overwritten in `summarize`."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
     )

@@ -1051,7 +1051,7 @@ def test_cross_validation_timings_flat_index(binary_classification_data):
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_cross_validation_report_report_metrics_pos_label_overwrite(
+def test_cross_validation_report_summarize_pos_label_overwrite(
     metric, binary_classification_data
 ):
     """Check that `pos_label` can be overwritten in `summarize`"""

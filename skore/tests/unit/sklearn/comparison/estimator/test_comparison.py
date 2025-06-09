@@ -655,10 +655,10 @@ def test_comparison_report_display_binary_classification_pos_label(
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_comparison_report_report_metrics_pos_label_default(
+def test_comparison_report_summarize_pos_label_default(
     metric, binary_classification_model
 ):
-    """Check the default behaviour of `pos_label` in `report_metrics`."""
+    """Check the default behaviour of `pos_label` in `summarize`."""
     classifier, X_train, X_test, y_train, y_test = binary_classification_model
     labels = np.array(["A", "B"], dtype=object)
     y_train = labels[y_train]
@@ -679,15 +679,15 @@ def test_comparison_report_report_metrics_pos_label_default(
         y_test=y_test,
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.report_metrics(scoring=metric).reset_index()
+    result_both_labels = report.metrics.summarize(scoring=metric).reset_index()
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_comparison_report_report_metrics_pos_label_overwrite(
+def test_comparison_report_summarize_pos_label_overwrite(
     metric, binary_classification_model
 ):
-    """Check that `pos_label` can be overwritten in `report_metrics`."""
+    """Check that `pos_label` can be overwritten in `summarize`."""
     classifier, X_train, X_test, y_train, y_test = binary_classification_model
     labels = np.array(["A", "B"], dtype=object)
     y_train = labels[y_train]
@@ -709,8 +709,8 @@ def test_comparison_report_report_metrics_pos_label_overwrite(
         pos_label="B",
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.report_metrics(scoring=metric, pos_label=None)
-    result = report.metrics.report_metrics(scoring=metric).reset_index()
+    result_both_labels = report.metrics.summarize(scoring=metric, pos_label=None)
+    result = report.metrics.summarize(scoring=metric).reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     for report_name in report.report_names_:
@@ -719,7 +719,7 @@ def test_comparison_report_report_metrics_pos_label_overwrite(
             == result_both_labels.loc[(metric.capitalize(), "B"), report_name]
         )
 
-    result = report.metrics.report_metrics(scoring=metric, pos_label="A").reset_index()
+    result = report.metrics.summarize(scoring=metric, pos_label="A").reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     for report_name in report.report_names_:
@@ -733,7 +733,7 @@ def test_comparison_report_report_metrics_pos_label_overwrite(
 def test_comparison_report_precision_recall_pos_label_default(
     metric, binary_classification_model
 ):
-    """Check the default behaviour of `pos_label` in `report_metrics`."""
+    """Check the default behaviour of `pos_label` in `summarize`."""
     classifier, X_train, X_test, y_train, y_test = binary_classification_model
     labels = np.array(["A", "B"], dtype=object)
     y_train = labels[y_train]
@@ -762,7 +762,7 @@ def test_comparison_report_precision_recall_pos_label_default(
 def test_comparison_report_precision_recall_pos_label_overwrite(
     metric, binary_classification_model
 ):
-    """Check that `pos_label` can be overwritten in `report_metrics`"""
+    """Check that `pos_label` can be overwritten in `summarize`"""
     classifier, X_train, X_test, y_train, y_test = binary_classification_model
     labels = np.array(["A", "B"], dtype=object)
     y_train = labels[y_train]
