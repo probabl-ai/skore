@@ -42,8 +42,8 @@ log_report.help()
 # Display the report metrics that was computed for you:
 
 # %%
-df_report_metrics = log_report.metrics.report_metrics()
-df_report_metrics
+metrics_summary = log_report.metrics.summarize()
+metrics_summary
 
 # %%
 # Display the ROC curve that was generated for you:
@@ -130,7 +130,7 @@ pprint(report_get)
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
-report_get[0].metrics.report_metrics()
+report_get[0].metrics.summarize()
 
 # %%
 # .. seealso::

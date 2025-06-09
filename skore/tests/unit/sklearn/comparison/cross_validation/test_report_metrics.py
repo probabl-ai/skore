@@ -1,4 +1,4 @@
-"""Tests of `ComparisonReport.metrics.report_metrics`."""
+"""Tests of `ComparisonReport.metrics.summarize`."""
 
 import pandas as pd
 import pytest
@@ -54,8 +54,8 @@ def report_regression():
 
 
 def test_aggregate_none(report):
-    """`report_metrics` works as intended with `aggregate=None`."""
-    result = report.metrics.report_metrics(aggregate=None)
+    """`summarize` works as intended with `aggregate=None`."""
+    result = report.metrics.summarize(aggregate=None)
 
     assert_index_equal(result.columns, pd.Index(["Value"]))
     assert result.index.names == ["Metric", "Label / Average", "Estimator", "Split"]
@@ -64,9 +64,9 @@ def test_aggregate_none(report):
 
 def test_aggregate_none_flat_index(report):
     """
-    `report_metrics` works as intended with `aggregate=None` and `flat_index=True`.
+    `summarize` works as intended with `aggregate=None` and `flat_index=True`.
     """
-    result = report.metrics.report_metrics(
+    result = report.metrics.summarize(
         aggregate=None,
         flat_index=True,
     )
@@ -76,8 +76,8 @@ def test_aggregate_none_flat_index(report):
 
 
 def test_default(report):
-    """`report_metrics` works as intended with its default attributes."""
-    result = report.metrics.report_metrics()
+    """`summarize` works as intended with its default attributes."""
+    result = report.metrics.summarize()
 
     assert_index_equal(
         result.columns,
@@ -96,10 +96,10 @@ def test_default(report):
 
 def test_default_regression(report_regression):
     """
-    `report_metrics` works as intended with its default attributes for regression
+    `summarize` works as intended with its default attributes for regression
     models.
     """
-    result = report_regression.metrics.report_metrics()
+    result = report_regression.metrics.summarize()
 
     assert_index_equal(
         result.columns,
@@ -122,25 +122,25 @@ def test_default_regression(report_regression):
 def test_aggregate_sequence_of_one_element(report):
     """Passing a list of one string is the same as passing the string itself."""
     assert_frame_equal(
-        report.metrics.report_metrics(aggregate="mean"),
-        report.metrics.report_metrics(aggregate=["mean"]),
+        report.metrics.summarize(aggregate="mean"),
+        report.metrics.summarize(aggregate=["mean"]),
     )
 
 
 def test_aggregate_is_used_in_cache(report):
     """`aggregate` should be used when computing the cache key.
 
-    In other words, if you call `report_metrics` twice with different values of
+    In other words, if you call `summarize` twice with different values of
     `aggregate`, you should get a different result.
     """
-    call1 = report.metrics.report_metrics(aggregate="mean")
-    call2 = report.metrics.report_metrics(aggregate=("mean", "std"))
+    call1 = report.metrics.summarize(aggregate="mean")
+    call2 = report.metrics.summarize(aggregate=("mean", "std"))
     assert list(call1.columns) != list(call2.columns)
 
 
 def test_scoring(report):
-    """`report_metrics` works as intended with the `scoring` parameter."""
-    result = report.metrics.report_metrics(
+    """`summarize` works as intended with the `scoring` parameter."""
+    result = report.metrics.summarize(
         scoring=["accuracy"],
         aggregate=None,
     )
@@ -165,8 +165,8 @@ def test_scoring(report):
 
 
 def test_favorability(report):
-    """`report_metrics` works as intended with `indicator_favorability=True`."""
-    result = report.metrics.report_metrics(indicator_favorability=True)
+    """`summarize` works as intended with `indicator_favorability=True`."""
+    result = report.metrics.summarize(indicator_favorability=True)
 
     assert_index_equal(
         result.columns,
@@ -185,13 +185,13 @@ def test_favorability(report):
 
 
 def test_cache(report):
-    """`report_metrics` results are cached."""
+    """`summarize` results are cached."""
 
     with check_cache_changed(report._cache):
-        result = report.metrics.report_metrics()
+        result = report.metrics.summarize()
 
     with check_cache_unchanged(report._cache):
-        cached_result = report.metrics.report_metrics()
+        cached_result = report.metrics.summarize()
 
     assert_frame_equal(result, cached_result)
 
@@ -209,7 +209,7 @@ def test_init_with_report_names(classification_data):
 
     assert_index_equal(
         (
-            comp.metrics.report_metrics(aggregate=None)
+            comp.metrics.summarize(aggregate=None)
             .index.get_level_values("Estimator")
             .unique()
         ),
@@ -218,9 +218,9 @@ def test_init_with_report_names(classification_data):
 
 
 def test_X_y(report, classification_data):
-    """`report_metrics` works as intended with `data_source="X_y"`."""
+    """`summarize` works as intended with `data_source="X_y"`."""
     X, y = classification_data
-    result = report.metrics.report_metrics(data_source="X_y", X=X, y=y)
+    result = report.metrics.summarize(data_source="X_y", X=X, y=y)
 
     assert_index_equal(
         result.columns,
@@ -252,10 +252,8 @@ def test_cache_poisoning(classification_data):
         DummyClassifier(strategy="uniform", random_state=2), X=X, y=y
     )
     report = ComparisonReport({"model_1": report_1, "model_2": report_2})
-    report.metrics.report_metrics(indicator_favorability=True)
-    result = report_1.metrics.report_metrics(
-        aggregate=None, indicator_favorability=True
-    )
+    report.metrics.summarize(indicator_favorability=True)
+    result = report_1.metrics.summarize(aggregate=None, indicator_favorability=True)
 
     assert "Favorability" in result.columns
 
@@ -269,15 +267,15 @@ def test_cache_poisoning(classification_data):
         (get_scorer("accuracy"), None),
     ],
 )
-def test_comparison_report_cv_report_metrics_scoring_single_list_equivalence(
+def test_comparison_report_cv_report_summarize_scoring_single_list_equivalence(
     report, scoring, scoring_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
     list with a single element."""
-    result_single = report.metrics.report_metrics(
+    result_single = report.metrics.summarize(
         scoring=scoring, scoring_kwargs=scoring_kwargs
     )
-    result_list = report.metrics.report_metrics(
+    result_list = report.metrics.summarize(
         scoring=[scoring], scoring_kwargs=scoring_kwargs
     )
     assert result_single.equals(result_list)
