@@ -13,8 +13,8 @@ from skore.sklearn._comparison.report import ComparisonReport
 from skore.sklearn._plot.metrics import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
-    ReportMetricsDisplay,
     RocCurveDisplay,
+    SummarizeDisplay,
 )
 from skore.sklearn.types import (
     Aggregate,
@@ -68,7 +68,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Optional[Aggregate] = ("mean", "std"),
-    ) -> ReportMetricsDisplay:
+    ) -> SummarizeDisplay:
         """Report a set of metrics for the estimators.
 
         Parameters
@@ -175,7 +175,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return ReportMetricsDisplay(results)
+        return SummarizeDisplay(results)
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
@@ -244,8 +244,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             )
             individual_results = []
             for result in generator:
-                if report_metric_name == "report_metrics":
-                    # for report_metrics, the output is a display
+                if report_metric_name == "summarize":
+                    # for summarize, the output is a display
                     individual_results.append(result.frame())
                 else:
                     individual_results.append(result)

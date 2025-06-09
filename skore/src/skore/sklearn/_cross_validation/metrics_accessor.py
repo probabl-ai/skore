@@ -14,8 +14,8 @@ from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
-    ReportMetricsDisplay,
     RocCurveDisplay,
+    SummarizeDisplay,
 )
 from skore.sklearn.types import (
     _DEFAULT,
@@ -69,7 +69,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Optional[Aggregate] = ("mean", "std"),
-    ) -> ReportMetricsDisplay:
+    ) -> SummarizeDisplay:
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -177,7 +177,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return ReportMetricsDisplay(report_metrics_data=results)
+        return SummarizeDisplay(summarize_data=results)
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
@@ -241,8 +241,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             )
             results = []
             for result in generator:
-                if report_metric_name == "report_metrics":
-                    # for report_metrics, the output is a display
+                if report_metric_name == "summarize":
+                    # for summarize, the output is a display
                     results.append(result.frame())
                 else:
                     results.append(result)

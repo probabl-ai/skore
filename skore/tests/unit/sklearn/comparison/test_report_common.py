@@ -12,7 +12,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
-from skore.sklearn._plot import ReportMetricsDisplay
+from skore.sklearn._plot import SummarizeDisplay
 
 
 @pytest.fixture(params=["report_estimator_reports", "report_cv_reports"])
@@ -101,7 +101,7 @@ def test_comparison_report_favorability_undefined_metrics(report):
     metrics = comparison_report.metrics.summarize(
         pos_label=1, indicator_favorability=True
     )
-    assert isinstance(metrics, ReportMetricsDisplay)
+    assert isinstance(metrics, SummarizeDisplay)
     metrics_df = metrics.frame()
 
     assert "Brier score" in metrics_df.index
