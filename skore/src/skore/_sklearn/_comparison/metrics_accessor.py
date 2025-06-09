@@ -24,6 +24,7 @@ from skore._sklearn.types import (
     _DEFAULT,
     Aggregate,
     PositiveLabel,
+    ReportType,
     Scoring,
     ScoringName,
     YPlotData,
@@ -178,7 +179,18 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return MetricsSummaryDisplay(results, report_type="comparison-cross-validation")
+
+        report_type: ReportType
+        if self._parent._reports_type == "EstimatorReport":
+            report_type = "comparison-estimator"
+        elif self._parent._reports_type == "CrossValidationReport":
+            report_type = "comparison-cross-validation"
+        else:
+            raise ValueError(
+                "Comparison should only apply to EstimatorReport or "
+                "CrossValidationReport"
+            )
+        return MetricsSummaryDisplay(summarize_data=results, report_type=report_type)
 
     @progress_decorator(description="Compute metric for each estimator")
     def _compute_metric_scores(
