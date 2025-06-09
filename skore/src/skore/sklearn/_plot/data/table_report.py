@@ -13,11 +13,11 @@ def distribution_1d(df, col_x, col_y=None):
     del col_y
     col = df[col_x]
 
+    duration_unit = None
     if sbd.is_duration(col):
         col, duration_unit = _utils.duration_to_numeric(col)
 
     if sbd.is_numeric(col) or sbd.is_any_date(col):
-        duration_unit = None
         _plotting.histogram(col, duration_unit)
     else:
         _, value_counts = _utils.top_k_value_counts(col, k=10)
