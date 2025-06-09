@@ -684,7 +684,7 @@ def test_comparison_report_summarize_pos_label_default(
         y_test=y_test,
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(scoring=metric).reset_index()
+    result_both_labels = report.metrics.summarize(scoring=metric).frame().reset_index()
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
 
 
@@ -714,8 +714,10 @@ def test_comparison_report_summarize_pos_label_overwrite(
         pos_label="B",
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(scoring=metric, pos_label=None)
-    result = report.metrics.summarize(scoring=metric).reset_index()
+    result_both_labels = report.metrics.summarize(
+        scoring=metric, pos_label=None
+    ).frame()
+    result = report.metrics.summarize(scoring=metric).frame().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     for report_name in report.report_names_:
@@ -724,7 +726,9 @@ def test_comparison_report_summarize_pos_label_overwrite(
             == result_both_labels.loc[(metric.capitalize(), "B"), report_name]
         )
 
-    result = report.metrics.summarize(scoring=metric, pos_label="A").reset_index()
+    result = (
+        report.metrics.summarize(scoring=metric, pos_label="A").frame().reset_index()
+    )
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     for report_name in report.report_names_:
