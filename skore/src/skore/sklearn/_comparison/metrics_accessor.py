@@ -131,8 +131,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The statistics for the metrics.
+        SummarizeDisplay
+            A display containing the statistics for the metrics.
 
         Examples
         --------

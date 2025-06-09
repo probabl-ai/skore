@@ -13,7 +13,7 @@ class SummarizeDisplay(HelpDisplayMixin, StyleDisplayMixin):
         self.summarize_data = summarize_data
 
     def frame(self):
-        """Return the report metrics as a dataframe.
+        """Return the summarize as a dataframe.
 
         Returns
         -------
