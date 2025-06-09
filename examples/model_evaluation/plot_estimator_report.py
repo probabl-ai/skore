@@ -102,11 +102,11 @@ report.metrics.help()
 # performance of our model on the validation set that we provided. We can access it
 # by calling any of the metrics displayed above. Since we are greedy, we want to get
 # several metrics at once and we will use the
-# :meth:`~skore.EstimatorReport.metrics.report_metrics` method.
+# :meth:`~skore.EstimatorReport.metrics.summarize` method.
 import time
 
 start = time.time()
-metric_report = report.metrics.report_metrics()
+metric_report = report.metrics.summarize().frame()
 end = time.time()
 metric_report
 
@@ -124,7 +124,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # requesting the same metrics report again.
 
 start = time.time()
-metric_report = report.metrics.report_metrics()
+metric_report = report.metrics.summarize().frame()
 end = time.time()
 metric_report
 
@@ -188,9 +188,9 @@ report.metrics.log_loss(data_source="train")
 # a `X` and `y` parameters.
 
 start = time.time()
-metric_report = report.metrics.report_metrics(
+metric_report = report.metrics.summarize(
     data_source="X_y", X=split_data["X_test"], y=split_data["y_test"]
-)
+).frame()
 end = time.time()
 metric_report
 
@@ -205,9 +205,9 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 # %%
 start = time.time()
-metric_report = report.metrics.report_metrics(
+metric_report = report.metrics.summarize(
     data_source="X_y", X=split_data["X_test"], y=split_data["y_test"]
-)
+).frame()
 end = time.time()
 metric_report
 
@@ -290,7 +290,7 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # We observe that caching is working as expected. It is really handy because it means
 # that we can compute some additional metrics without having to recompute the
 # the predictions.
-report.metrics.report_metrics(
+report.metrics.summarize(
     scoring=["precision", "recall", operational_decision_cost],
     scoring_names=["Precision", "Recall", "Operational Decision Cost"],
     scoring_kwargs={"amount": amount, "response_method": "predict"},
@@ -308,7 +308,7 @@ f1_scorer = make_scorer(f1_score, response_method="predict")
 operational_decision_cost_scorer = make_scorer(
     operational_decision_cost, response_method="predict", amount=amount
 )
-report.metrics.report_metrics(
+report.metrics.summarize(
     scoring=[f1_scorer, operational_decision_cost_scorer],
     scoring_names=["F1 Score", "Operational Decision Cost"],
 )

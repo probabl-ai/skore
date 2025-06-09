@@ -42,8 +42,8 @@ log_report.help()
 # Display the report metrics that was computed for you:
 
 # %%
-df_report_metrics = log_report.metrics.report_metrics()
-df_report_metrics
+metrics_summary = log_report.metrics.summarize()
+metrics_summary
 
 # %%
 # Display the ROC curve that was generated for you:
@@ -100,12 +100,12 @@ my_project.put("rf_report", rf_report)
 # Now, let us retrieve the data that we previously stored:
 
 # %%
-metadata = my_project.reports.metadata()
-print(type(metadata))
+summary = my_project.summarize()
+print(type(summary))
 
 # %%
 # .. note::
-#   If rendered in a Jupyter notebook, ``metadata`` would render an interactive
+#   If rendered in a Jupyter notebook, ``summary`` would render an interactive
 #   parallel coordinate plot to search for your preferred model based on some metrics.
 #   Here is a screenshot:
 #
@@ -118,7 +118,7 @@ print(type(metadata))
 # %%
 from pprint import pprint
 
-report_get = metadata.query("ml_task.str.contains('classification')").reports()
+report_get = summary.query("ml_task.str.contains('classification')").reports()
 pprint(report_get)
 
 # %%
@@ -130,7 +130,7 @@ pprint(report_get)
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
-report_get[0].metrics.report_metrics()
+report_get[0].metrics.summarize()
 
 # %%
 # .. seealso::

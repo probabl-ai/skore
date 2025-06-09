@@ -15,6 +15,7 @@ from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
+    SummarizeDisplay,
 )
 from skore.sklearn.types import (
     _DEFAULT,
@@ -49,13 +50,13 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         "r2": {"name": "R²", "icon": "(↗︎)"},
         "rmse": {"name": "RMSE", "icon": "(↘︎)"},
         "custom_metric": {"name": "Custom metric", "icon": ""},
-        "report_metrics": {"name": "Report metrics", "icon": ""},
+        "summarize": {"name": "Metrics summary", "icon": ""},
     }
 
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
-    def report_metrics(
+    def summarize(
         self,
         *,
         data_source: DataSource = "test",
@@ -68,7 +69,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Optional[Aggregate] = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> SummarizeDisplay:
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -130,8 +131,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The statistics for the metrics.
+        SummarizeDisplay
+            A display containing the statistics for the metrics.
 
         Examples
         --------
@@ -141,11 +142,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        >>> report.metrics.report_metrics(
+        >>> report.metrics.summarize(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
         ...     indicator_favorability=True,
-        ... )
+        ... ).frame()
                   LogisticRegression           Favorability
                                 mean       std
         Metric
@@ -156,7 +157,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             pos_label = self._parent.pos_label
 
         results = self._compute_metric_scores(
-            report_metric_name="report_metrics",
+            report_metric_name="summarize",
             data_source=data_source,
             X=X,
             y=y,
@@ -176,7 +177,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return results
+        return SummarizeDisplay(summarize_data=results)
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
@@ -240,7 +241,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             )
             results = []
             for result in generator:
-                results.append(result)
+                if report_metric_name == "summarize":
+                    # for summarize, the output is a display
+                    results.append(result.frame())
+                else:
+                    results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
             results = pd.concat(
@@ -326,12 +331,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
 
         # Add (s) to time measurements
-        new_index = []
-        for idx in timings.index:
-            if "time" in idx.lower():
-                new_index.append(f"{idx} (s)")
-            else:
-                new_index.append(idx)
+        new_index = [f"{idx} (s)" for idx in timings.index]
 
         timings.index = pd.Index(new_index)
 
@@ -388,13 +388,13 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         Metric
         Accuracy           0.94...  0.00...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["accuracy"],
             data_source=data_source,
             aggregate=aggregate,
             X=X,
             y=y,
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "precision"))
     def precision(
@@ -483,7 +483,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         Precision 0                         0.93...  0.04...
                   1                         0.94...  0.02...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["precision"],
             data_source=data_source,
             aggregate=aggregate,
@@ -491,7 +491,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             y=y,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "recall"))
     def recall(
@@ -581,7 +581,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         Recall 0                         0.91...  0.04...
                1                         0.96...  0.02...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["recall"],
             data_source=data_source,
             X=X,
@@ -589,7 +589,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             aggregate=aggregate,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "brier_score"))
     def brier_score(
@@ -642,13 +642,13 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         Metric
         Brier score            0.04...  0.00...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["brier_score"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "roc_auc"))
     def roc_auc(
@@ -736,14 +736,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         Metric
         ROC AUC           0.98...  0.00...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["roc_auc"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
             scoring_kwargs={"average": average, "multi_class": multi_class},
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
     def log_loss(
@@ -796,13 +796,13 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         Metric
         Log loss            0.14...  0.03...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["log_loss"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "r2"))
     def r2(
@@ -866,14 +866,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         Metric
         R²      0.37...  0.02...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["r2"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
             scoring_kwargs={"multioutput": multioutput},
-        )
+        ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "rmse"))
     def rmse(
@@ -937,14 +937,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         Metric
         RMSE    60.7...  1.0...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["rmse"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
             scoring_kwargs={"multioutput": multioutput},
-        )
+        ).frame()
 
     def custom_metric(
         self,
@@ -1039,7 +1039,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             response_method=response_method,
             **kwargs,
         )
-        return self.report_metrics(
+        return self.summarize(
             scoring=[scorer],
             data_source=data_source,
             X=X,
@@ -1047,7 +1047,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             aggregate=aggregate,
             scoring_names=[metric_name] if metric_name is not None else None,
             pos_label=pos_label,
-        )
+        ).frame()
 
     ####################################################################################
     # Methods related to the help tree
@@ -1058,14 +1058,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     ) -> list[tuple[str, Callable]]:
         """Override sort method for metrics-specific ordering.
 
-        In short, we display the `report_metrics` first and then the `custom_metric`.
+        In short, we display the `summarize` first and then the `custom_metric`.
         """
 
         def _sort_key(method):
             name = method[0]
             if name == "custom_metric":
                 priority = 1
-            elif name == "report_metrics":
+            elif name == "summarize":
                 priority = 2
             else:
                 priority = 0

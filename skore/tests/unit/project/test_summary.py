@@ -1,13 +1,15 @@
+from copy import deepcopy
 from types import SimpleNamespace
 
+from joblib import hash as joblib_hash
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
 from pandas.testing import assert_index_equal
 from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
-from skore import EstimatorReport
-from skore.project.metadata import Metadata
+from skore.project.summary import Summary
+from skore.sklearn import ComparisonReport, EstimatorReport
 
 
 @fixture
@@ -57,7 +59,7 @@ class FakeProject:
                     "key": None,
                     "date": None,
                     "learner": None,
-                    "dataset": None,
+                    "dataset": joblib_hash(report.y_test),
                     "ml_task": report._ml_task,
                     "rmse": None,
                     "log_loss": None,
@@ -71,16 +73,16 @@ class FakeProject:
         return SimpleNamespace(metadata=metadata, get=get)
 
 
-class TestMetadata:
+class TestSummary:
     def test_factory(self, regression, binary_classification):
         project = FakeProject(regression, binary_classification)
-        metadata = Metadata.factory(project)
+        summary = Summary.factory(project)
 
-        assert isinstance(metadata, DataFrame)
-        assert isinstance(metadata, Metadata)
-        assert metadata.project == project
+        assert isinstance(summary, DataFrame)
+        assert isinstance(summary, Summary)
+        assert summary.project == project
         assert_index_equal(
-            metadata.index,
+            summary.index,
             MultiIndex.from_arrays(
                 [
                     RangeIndex(2),
@@ -88,7 +90,7 @@ class TestMetadata:
                 ]
             ),
         )
-        assert list(metadata.columns) == [
+        assert list(summary.columns) == [
             "run_id",
             "key",
             "date",
@@ -104,76 +106,101 @@ class TestMetadata:
 
     def test_factory_empty(self):
         project = FakeProject()
-        metadata = Metadata.factory(project)
+        summary = Summary.factory(project)
 
-        assert isinstance(metadata, DataFrame)
-        assert isinstance(metadata, Metadata)
-        assert metadata.project == project
-        assert len(metadata) == 0
+        assert isinstance(summary, DataFrame)
+        assert isinstance(summary, Summary)
+        assert summary.project == project
+        assert len(summary) == 0
 
     def test_constructor(self, regression):
         project = FakeProject(regression)
-        metadata = Metadata.factory(project)
+        summary = Summary.factory(project)
 
         # Test with a bad query, with empty result
-        metadata2 = metadata.query("ml_task=='<ml_task>'")
+        summary2 = summary.query("ml_task=='<ml_task>'")
 
-        assert isinstance(metadata2, DataFrame)
-        assert isinstance(metadata2, Metadata)
-        assert len(metadata2) == 0
-        assert metadata2.project == project
+        assert isinstance(summary2, DataFrame)
+        assert isinstance(summary2, Summary)
+        assert len(summary2) == 0
+        assert summary2.project == project
 
         # Test with a valid query, with identical result
-        metadata3 = metadata.query("ml_task=='regression'")
+        summary3 = summary.query("ml_task=='regression'")
 
-        assert isinstance(metadata3, DataFrame)
-        assert isinstance(metadata3, Metadata)
-        assert DataFrame.equals(metadata3, metadata)
-        assert metadata3.project == project
+        assert isinstance(summary3, DataFrame)
+        assert isinstance(summary3, Summary)
+        assert DataFrame.equals(summary3, summary)
+        assert summary3.project == project
 
-    def test_reports_with_filter(self, monkeypatch, regression, binary_classification):
+    def test_reports_filter_true(self, monkeypatch, regression, binary_classification):
         project = FakeProject(regression, binary_classification)
-        metadata = Metadata.factory(project)
+        summary = Summary.factory(project)
 
-        assert len(metadata) == 2
-        assert metadata.reports() == [regression, binary_classification]
+        assert len(summary) == 2
+        assert summary.reports() == [regression, binary_classification]
 
         monkeypatch.setattr(
-            "skore.project.metadata.Metadata._query_string_selection",
+            "skore.project.summary.Summary._query_string_selection",
             lambda self: "ml_task == 'regression'",
         )
 
-        assert metadata.reports() == [regression]
+        assert summary.reports() == [regression]
 
-    def test_reports_without_filter(
-        self, monkeypatch, regression, binary_classification
-    ):
+    def test_reports_filter_false(self, monkeypatch, regression, binary_classification):
         project = FakeProject(regression, binary_classification)
-        metadata = Metadata.factory(project)
+        summary = Summary.factory(project)
 
-        assert len(metadata) == 2
-        assert metadata.reports(filter=False) == [regression, binary_classification]
+        assert len(summary) == 2
+        assert summary.reports(filter=False) == [regression, binary_classification]
 
         monkeypatch.setattr(
-            "skore.project.metadata.Metadata._query_string_selection",
+            "skore.project.summary.Summary._query_string_selection",
             lambda self: "ml_task == 'regression'",
         )
 
-        assert metadata.reports(filter=False) == [regression, binary_classification]
+        assert summary.reports(filter=False) == [regression, binary_classification]
 
     def test_reports_empty(self):
-        metadata = Metadata.factory(FakeProject())
+        summary = Summary.factory(FakeProject())
 
-        assert len(metadata) == 0
-        assert metadata.reports() == []
-        assert metadata.reports(filter=False) == []
+        assert len(summary) == 0
+        assert summary.reports() == []
+        assert summary.reports(filter=False) == []
 
-    def test_reports_exception(self):
-        with raises(RuntimeError, match="Bad condition"):
-            Metadata([{"<column>": "<value>"}]).reports()
+    def test_reports_return_as_comparison(self, regression):
+        regression1 = regression
+        regression2 = deepcopy(regression)
+        summary = Summary.factory(FakeProject(regression1, regression2))
+        comparison = summary.reports(return_as="comparison")
+
+        assert isinstance(comparison, ComparisonReport)
+        assert comparison.reports_ == [regression1, regression2]
+
+    def test_reports_exception_invalid_object(self):
+        with raises(
+            RuntimeError,
+            match="Bad condition: it is not a valid `Summary` object.",
+        ):
+            Summary([{"<column>": "<value>"}]).reports()
+
+    def test_reports_exception_different_datasets(
+        self, regression, binary_classification
+    ):
+        project = FakeProject(regression, binary_classification)
+        summary = Summary.factory(project)
+
+        with raises(
+            RuntimeError,
+            match=(
+                "Bad condition: the comparison mode is only applicable when reports "
+                "have the same dataset."
+            ),
+        ):
+            summary.reports(return_as="comparison")
 
     def test__query_string_selection(self, monkeypatch):
-        metadata = DataFrame(
+        summary = DataFrame(
             data={
                 "ml_task": [
                     "classification",
@@ -225,14 +252,14 @@ class TestMetadata:
                 names=[None, "id"],
             ),
         )
-        metadata["learner"] = metadata["learner"].astype("category")
-        metadata = Metadata(metadata)
-        metadata._repr_html_()  # trigger the creation of the widget
+        summary["learner"] = summary["learner"].astype("category")
+        summary = Summary(summary)
+        summary._repr_html_()  # trigger the creation of the widget
 
         expected_query = (
             "ml_task.str.contains('classification') and dataset == 'dataset1'"
         )
-        assert metadata._query_string_selection() == expected_query
+        assert summary._query_string_selection() == expected_query
 
         # simulate a selection on the log loss dimension
         select_range_log_loss = {
@@ -242,14 +269,14 @@ class TestMetadata:
         }
 
         def mock_update_selection(*args, **kwargs):
-            metadata._plot_widget.current_selection = select_range_log_loss
-            return metadata._plot_widget
+            summary._plot_widget.current_selection = select_range_log_loss
+            return summary._plot_widget
 
         monkeypatch.setattr(
-            metadata._plot_widget, "update_selection", mock_update_selection
+            summary._plot_widget, "update_selection", mock_update_selection
         )
 
-        assert metadata._query_string_selection() == (
+        assert summary._query_string_selection() == (
             "ml_task.str.contains('classification') and dataset == 'dataset1' "
             "and ((log_loss >= 0.350000 and log_loss <= 0.550000))"
         )
@@ -262,14 +289,14 @@ class TestMetadata:
         }
 
         def mock_update_selection(*args, **kwargs):
-            metadata._plot_widget.current_selection = select_range_log_loss
-            return metadata._plot_widget
+            summary._plot_widget.current_selection = select_range_log_loss
+            return summary._plot_widget
 
         monkeypatch.setattr(
-            metadata._plot_widget, "update_selection", mock_update_selection
+            summary._plot_widget, "update_selection", mock_update_selection
         )
 
-        assert metadata._query_string_selection() == (
+        assert summary._query_string_selection() == (
             "ml_task.str.contains('classification') and dataset == 'dataset1' "
             "and ((log_loss >= 0.350000 and log_loss <= 0.450000) "
             "or (log_loss >= 0.550000 and log_loss <= 0.550000))"
@@ -285,14 +312,14 @@ class TestMetadata:
         }
 
         def mock_update_selection(*args, **kwargs):
-            metadata._plot_widget.current_selection = select_range_log_loss
-            return metadata._plot_widget
+            summary._plot_widget.current_selection = select_range_log_loss
+            return summary._plot_widget
 
         monkeypatch.setattr(
-            metadata._plot_widget, "update_selection", mock_update_selection
+            summary._plot_widget, "update_selection", mock_update_selection
         )
 
-        assert metadata._query_string_selection() == (
+        assert summary._query_string_selection() == (
             "ml_task.str.contains('classification') and dataset == 'dataset1' "
             "and ((log_loss >= 0.350000 and log_loss <= 0.450000) "
             "or (log_loss >= 0.550000 and log_loss <= 0.550000)) "
