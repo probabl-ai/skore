@@ -155,13 +155,13 @@ def train_test_split(
     keys = []
 
     if X is not None:
-        keys.append("X")
         new_arrays.append(X)
+        keys.append("X")
     if y is not None:
-        keys.append("y")
         new_arrays.append(y)
+        keys.append("y")
 
-    if as_dict:
+    if as_dict and arrays:
         # case when X or y is implicit as first 2 args for as_dict=True
         if len(arrays) == 1:
             warnings.warn(
@@ -183,7 +183,11 @@ def train_test_split(
                 "\nEx: train_test_split(X=X, y=y, z=z, sw=sample_weight, as_dict=True)"
             )
 
-    if keyword_arrays:  # case when keyword arg is specified but as_dict isn't used
+    if keyword_arrays:
+        if X is None and y is None:
+            arrays = tuple(
+                keyword_arrays.values()
+            )  # if X and y is not passed but other variables
         new_arrays.extend(keyword_arrays.values())
         keys.extend(keyword_arrays.keys())
 
