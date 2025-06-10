@@ -138,7 +138,8 @@ def check_roc_frame(
     assert list(df.columns) == expected_columns
 
     assert df["estimator_name"].dtype.name == "category"
-    assert df["split_index"].dtype.name == "category"
+    if expected_n_splits is not None:
+        assert df["split_index"].dtype.name == "category"
     if multiclass:
         assert df["label"].dtype.name == "category"
         assert df["method"].dtype == object
@@ -197,7 +198,8 @@ def check_precision_recall_frame(
     assert list(df.columns) == expected_columns
 
     assert df["estimator_name"].dtype.name == "category"
-    assert df["split_index"].dtype.name == "category"
+    if expected_n_splits is not None:
+        assert df["split_index"].dtype.name == "category"
     if multiclass:
         assert df["label"].dtype.name == "category"
         assert df["method"].dtype == object
@@ -211,3 +213,39 @@ def check_precision_recall_frame(
 
     if multiclass:
         assert df["method"].unique() == ["OvR"]
+
+
+def check_prediction_error_frame(
+    df: pd.DataFrame,
+    expected_n_splits: int | None = None,
+) -> None:
+    """Check the structure of a prediction error DataFrame.
+
+    Parameters
+    ----------
+    df : DataFrame
+        The DataFrame to check.
+    expected_n_splits : int or None, default=None
+        The expected number of cross-validation splits.
+        If None, does not check the number of splits.
+    """
+    assert isinstance(df, pd.DataFrame)
+
+    expected_columns = [
+        "estimator_name",
+        "split_index",
+        "y_true",
+        "y_pred",
+        "residuals",
+    ]
+    assert list(df.columns) == expected_columns
+
+    assert df["estimator_name"].dtype.name == "category"
+    if expected_n_splits is not None:
+        assert df["split_index"].dtype.name == "category"
+    assert df["y_true"].dtype == np.float64
+    assert df["y_pred"].dtype == np.float64
+    assert df["residuals"].dtype == np.float64
+
+    if expected_n_splits is not None:
+        assert df["split_index"].nunique() == expected_n_splits

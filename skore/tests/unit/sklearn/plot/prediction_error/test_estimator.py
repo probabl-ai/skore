@@ -5,7 +5,7 @@ import pytest
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_prediction_error_frame
 
 
 @pytest.mark.parametrize("subsample", [None, 1_000])
@@ -255,21 +255,10 @@ def test_frame(regression_data):
     display = report.metrics.prediction_error()
     df = display.frame()
 
-    assert isinstance(df, pd.DataFrame)
-
-    expected_columns = [
-        "estimator_name",
-        "split_index",
-        "y_true",
-        "y_pred",
-        "residuals",
-    ]
-    assert list(df.columns) == expected_columns
-
-    assert df["estimator_name"].dtype.name == "category"
-    assert df["y_true"].dtype == np.float64
-    assert df["y_pred"].dtype == np.float64
-    assert df["residuals"].dtype == np.float64
+    check_prediction_error_frame(
+        df,
+        expected_n_splits=None,
+    )
 
     assert df["estimator_name"].unique() == [report.estimator_name_]
 
