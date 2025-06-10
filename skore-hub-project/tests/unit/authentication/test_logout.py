@@ -10,5 +10,5 @@ def test_logout(nowstr):
 
     logout()
 
-    assert token.valid
+    assert not token.valid
     assert not token.filepath.exists()

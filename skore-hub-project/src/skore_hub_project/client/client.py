@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from datetime import datetime, timezone
 from os import environ
 from urllib.parse import urljoin
 
@@ -47,17 +46,12 @@ class AuthenticatedClient(Client):
         if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
             headers.update({"X-API-Key": f"{apikey}"})
         else:
-            token = Token()
-
-            if not token.valid:
+            if not Token.exists():
                 raise AuthenticationError(
                     "You are not logged in. Please run `skore-hub-login`"
                 )
 
-            if token.expires_at <= datetime.now(timezone.utc):
-                token.refresh()
-
-            headers.update({"Authorization": f"Bearer {token.access_token}"})
+            headers.update({"Authorization": f"Bearer {Token.access()}"})
 
         # Send request
         response = super().request(
