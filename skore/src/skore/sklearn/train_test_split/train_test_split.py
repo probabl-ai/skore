@@ -147,15 +147,25 @@ def train_test_split(
         new_arrays.append(y)
 
     if as_dict:
+        # case when X or y is implicit as first 2 args for as_dict=True
         if len(arrays) == 1:
-            keys += ["X"]
+            warnings.warn(
+                "With as_dict=True, single argument defaults to 'X'."
+                "\nSpecify as keyword argument to rename.",
+                stacklevel=2,
+            )
+            keys.append("X")
         elif len(arrays) == 2:
+            warnings.warn(
+                "With as_dict=True, two arguments defaults to 'X' & 'y'."
+                "\nSpecify as keyword argument to rename.",
+                stacklevel=2,
+            )
             keys.extend(["X", "y"])
-        elif len(arrays) > 2:
+        elif len(arrays) > 2:  # case when as_dict=True and given # arrays > 3
             raise ValueError(
-                ""
-                "With as_dict=True, arguments must be passed as keyword arguments.\n"
-                "Example: train_test_split(X, y, z=z, sw=sample_weight, as_dict=True)"
+                "With as_dict=True, more than two arguments must be keyword arguments."
+                "\nEx: train_test_split(X=X, y=y, z=z, sw=sample_weight, as_dict=True)"
             )
 
     if keyword_arrays:  # case when keyword arg is specified but as_dict isn't used
