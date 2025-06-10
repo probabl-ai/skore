@@ -104,7 +104,7 @@ pyyaml==6.0.2
     # via
     #   huggingface-hub
     #   pre-commit
-requests==2.32.3
+requests==2.32.4
     # via huggingface-hub
 rich==14.0.0
     # via
