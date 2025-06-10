@@ -182,6 +182,50 @@ def test_train_test_split_kwargs():
     assert output1 == output2
 
 
+def test_train_test_split_single_posargs():
+    """Passing single positional argument with as_dict=True should return as dict."""
+
+    X = [[1]] * 20
+
+    output = train_test_split(X, as_dict=True)
+    # assert that first key contains X
+    assert next(iter(output)).startswith("X")
+    # assert that output is a dict
+    assert type(output) is dict
+
+
+def test_train_test_split_two_posargs():
+    """Passing two positional argument with as_dict=True should return as dict."""
+
+    X = [[1]] * 20
+    y = [0] * 10 + [1] * 10
+
+    output = train_test_split(X, y, as_dict=True)
+    keys = list(output.keys())
+    # assert that keys have X and y
+    assert keys[0].startswith("X") and keys[2].startswith("y")
+    # assert that output is a dict
+    assert type(output) is dict
+
+
+def test_train_test_split_mix_args():
+    """Passing mixed positional and keyword argument with as_dict=True
+    should return as dict."""
+
+    X = [[1]] * 20
+    y = [0] * 10 + [1] * 10
+    z = [0] * 10 + [1] * 10
+
+    output = train_test_split(X, y, z=z, as_dict=True)
+    keys = list(output.keys())
+    # assert that keys have X, y, z
+    assert (
+        keys[0].startswith("X") and keys[2].startswith("y") and keys[4].startswith("z")
+    )
+    # assert that output is a dict
+    assert type(output) is dict
+
+
 def test_train_test_split_dict_kwargs():
     """Passing three or more keyword arguments with as_dict=True
     should raise ValueError."""
