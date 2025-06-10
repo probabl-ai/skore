@@ -39,7 +39,9 @@ identify==2.6.6
 idna==3.10
     # via requests
 importlib-metadata==8.6.1
-    # via pytest-randomly
+    # via
+    #   skore (skore/pyproject.toml)
+    #   pytest-randomly
 importlib-resources==6.5.2
     # via matplotlib
 iniconfig==2.0.0
