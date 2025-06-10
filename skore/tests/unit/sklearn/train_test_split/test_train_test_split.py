@@ -183,21 +183,22 @@ def test_train_test_split_kwargs():
 
 
 def test_train_test_split_dict_kwargs():
-    """Passing data without keyword arguments with return_dict=True
+    """Passing three or more keyword arguments with as_dict=True
     should raise ValueError."""
 
     X = [[1]] * 20
     y = [0] * 10 + [1] * 10
+    z = [0] * 10 + [1] * 10
 
     with pytest.raises(
         ValueError,
         match="When as_dict=True, arrays must be passed as keyword arguments",
     ):
-        train_test_split(X, y, random_state=0, as_dict=True)
+        train_test_split(X, y, z, random_state=0, as_dict=True)
 
 
 def test_train_test_split_check_dict():
-    """If `return_dict` is True then the result is a dict."""
+    """If `as_dict` is True then the result is a dict."""
     X = [[1]] * 20
     y = [0] * 10 + [1] * 10
     output = train_test_split(X=X, y=y, random_state=0, as_dict=True)
@@ -205,7 +206,7 @@ def test_train_test_split_check_dict():
 
 
 def test_train_test_split_check_dict_unsupervised_case():
-    """If `return_dict` is True and only `X` is passed,
+    """If `as_dict` is True and only `X` is passed,
     the result is a dict with 2 keys."""
 
     X = [[1]] * 20
