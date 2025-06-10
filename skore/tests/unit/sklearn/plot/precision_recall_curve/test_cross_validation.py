@@ -1,13 +1,12 @@
 import matplotlib as mpl
 import numpy as np
-import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from skore import CrossValidationReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_precision_recall_frame
 from skore.utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
@@ -153,26 +152,11 @@ def test_frame_binary_classification(binary_classification_data_no_split):
     display = report.metrics.precision_recall()
     df = display.frame()
 
-    assert isinstance(df, pd.DataFrame)
-
-    expected_columns = [
-        "estimator_name",
-        "split_index",
-        "label",
-        "threshold",
-        "precision",
-        "recall",
-        "average_precision",
-    ]
-    assert list(df.columns) == expected_columns
-
-    assert df["estimator_name"].dtype.name == "category"
-    assert df["split_index"].dtype.name == "category"
-    assert df["label"].dtype.name == "category"
-    assert df["threshold"].dtype == np.float64
-    assert df["precision"].dtype == np.float64
-    assert df["recall"].dtype == np.float64
-    assert df["average_precision"].dtype == np.float64
+    check_precision_recall_frame(
+        df,
+        expected_n_splits=cv,
+        multiclass=False,
+    )
 
     assert df["split_index"].nunique() > 0
     assert df["label"].nunique() == 1
@@ -189,35 +173,18 @@ def test_frame_multiclass_classification(multiclass_classification_data_no_split
     display = report.metrics.precision_recall()
     df = display.frame()
 
-    assert isinstance(df, pd.DataFrame)
-    expected_columns = [
-        "estimator_name",
-        "split_index",
-        "label",
-        "method",
-        "threshold",
-        "precision",
-        "recall",
-        "average_precision",
-    ]
-    assert list(df.columns) == expected_columns
-
-    assert df["estimator_name"].dtype.name == "category"
-    assert df["split_index"].dtype.name == "category"
-    assert df["label"].dtype.name == "category"
-    assert df["method"].dtype == object
-    assert df["threshold"].dtype == np.float64
-    assert df["precision"].dtype == np.float64
-    assert df["recall"].dtype == np.float64
-    assert df["average_precision"].dtype == np.float64
+    check_precision_recall_frame(
+        df,
+        expected_n_splits=cv,
+        multiclass=True,
+    )
 
     assert df["split_index"].nunique() > 0
-    assert df["label"].nunique() == 3
+    assert df["label"].nunique() == cv
     assert df["precision"].between(0, 1).all()
     assert df["recall"].between(0, 1).all()
     assert df["average_precision"].between(0, 1).all()
     assert df["estimator_name"].unique() == [report.estimator_name_]
-    assert df["method"].unique() == ["OvR"]
 
 
 def test_legend(
