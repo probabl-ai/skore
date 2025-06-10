@@ -2,7 +2,7 @@ import inspect
 from collections.abc import Iterable
 from functools import partial
 from operator import attrgetter
-from typing import Any, Callable, Literal, Optional, Union, cast
+from typing import Any, Callable, Literal, Optional, Protocol, Union, cast
 
 import joblib
 import numpy as np
@@ -16,6 +16,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn._plot import (
+    CalibrationCurveDisplay,
     ConfusionMatrixDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -31,6 +32,11 @@ from skore.utils._accessor import (
 from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
+
+
+class DisplayClassProtocol(Protocol):
+    @classmethod
+    def _compute_data_for_display(cls, *args, **kwargs) -> Any: ...
 
 
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
@@ -1654,11 +1660,15 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         y: Union[ArrayLike, None],
         data_source: DataSource,
         response_method: Union[str, list[str], tuple[str, ...]],
-        display_class: type[
-            Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
-        ],
+        display_class: type[DisplayClassProtocol],
         display_kwargs: dict[str, Any],
-    ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
+    ) -> Union[
+        RocCurveDisplay,
+        PrecisionRecallCurveDisplay,
+        PredictionErrorDisplay,
+        CalibrationCurveDisplay,
+        ConfusionMatrixDisplay,
+    ]:
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1902,6 +1912,99 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             ),
         )
         return display
+
+    @available_if(
+        _check_all_checks(
+            checks=[
+                _check_supported_ml_task(
+                    supported_ml_tasks=[
+                        "binary-classification",
+                        "multiclass-classification",
+                    ]
+                ),
+                _check_estimator_has_method(method_name="predict_proba"),
+            ]
+        )
+    )
+    def calibration_curve(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        pos_label: PositiveLabel,
+        strategy: str = "uniform",
+        n_bins: int = 5,
+    ) -> CalibrationCurveDisplay:
+        """Plot the calibration curve (reliability diagram).
+
+        A calibration curve shows how well a model's predicted probabilities
+        match observed outcomes. It plots the mean predicted probability in each bin
+        against the fraction of positive samples in that bin.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
+
+        pos_label : int, float, bool or str
+            The positive class label.
+
+        strategy : {"uniform", "quantile"}, default="uniform"
+            Strategy used to define the widths of the bins.
+
+            - "uniform" : The bins have identical widths.
+            - "quantile" : The bins have the same number of samples and depend
+              on predicted probabilities.
+
+        n_bins : int, default=5
+            Number of bins to use when calculating the calibration curve.
+
+        Returns
+        -------
+        CalibrationCurveDisplay
+            The calibration curve display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X, y = make_classification(random_state=0)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> classifier = LogisticRegression()
+        >>> report = EstimatorReport(classifier, **split_data)
+        >>> display = report.metrics.calibration_curve(pos_label=1)
+        >>> display.plot()
+        """
+        response_method = "predict_proba"
+        display_kwargs = {
+            "pos_label": pos_label,
+            "strategy": strategy,
+            "n_bins": n_bins,
+        }
+        display = self._get_display(
+            X=X,
+            y=y,
+            data_source=data_source,
+            response_method=response_method,
+            display_class=CalibrationCurveDisplay,
+            display_kwargs=display_kwargs,
+        )
+        return cast(CalibrationCurveDisplay, display)
 
     @available_if(
         _check_supported_ml_task(
