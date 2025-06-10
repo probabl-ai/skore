@@ -1,7 +1,5 @@
 import weakref
 
-from skrub import _dataframe as sbd
-from skrub._reporting import _utils
 from skrub._reporting._html import to_html
 from skrub._reporting._serve import open_in_browser
 from skrub._reporting._summarize import summarize_dataframe
@@ -9,33 +7,6 @@ from skrub._reporting._summarize import summarize_dataframe
 from skore.sklearn._plot.data import _plotting
 from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import HelpDisplayMixin, ReprHTMLMixin
-
-
-def distribution_1d(df, col_x, col_y=None):
-    del col_y
-    col = df[col_x]
-
-    duration_unit = None
-    if sbd.is_duration(col):
-        col, duration_unit = _utils.duration_to_numeric(col)
-
-    if sbd.is_numeric(col) or sbd.is_any_date(col):
-        _plotting.histogram(col, duration_unit)
-    else:
-        _, value_counts = _utils.top_k_value_counts(col, k=10)
-        _plotting.value_counts(value_counts, n_rows=sbd.shape(col)[0], title=col_x)
-
-
-def distribution_2d(df, col_x, col_y=None):
-    del col_y
-
-
-def pearson(df, col_x, col_y=None):
-    del col_y
-
-
-def cramer(df, col_x, col_y=None):
-    del col_y
 
 
 class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
@@ -59,17 +30,16 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         return cls(summary, df)
 
     @StyleDisplayMixin.style_plot
-    def plot(self, kind, col_x, col_y=None):
+    def dist(self, *, x_col=None, y_col=None, c_col=None, kind="dist"):
         plots = {
-            "distribution_1d": distribution_1d,
-            "distribution_2d": distribution_2d,
-            "pearson": pearson,
-            "cramer": cramer,
+            "dist": _plotting.plot_distribution,
+            "pearson": _plotting.plot_pearson,
+            "cramer": _plotting.plot_cramer,
         }
         if (func := plots.get(kind)) is None:
             raise ValueError(f"'kind' options are {list(plots)!r}, got {kind!r}.")
 
-        return func(self.df, col_x, col_y)
+        return func(self.df, x_col, y_col, c_col)
 
     def frame(self):
         return self.summary

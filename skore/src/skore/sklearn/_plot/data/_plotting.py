@@ -1,7 +1,12 @@
 import numpy as np
+import pandas as pd
+import seaborn as sns
 from matplotlib import pyplot as plt
+from skrub import _column_associations
 from skrub import _dataframe as sbd
 from skrub._reporting import _utils
+
+from skore.skrub._skrub_compat import is_in
 
 _RED = "#dd0000"
 _BLUE = "#4878d0"
@@ -121,13 +126,13 @@ def histogram(col, duration_unit=None):
         # version if there are inf or nan)
         col = sbd.to_float32(col)
     values = sbd.to_numpy(col)
-    fig, ax = plt.subplots(dpi=100)
+    fig, ax = plt.subplots(dpi=150)
     n_low_outliers, n_high_outliers = _robust_hist(values, ax)
     if duration_unit is not None:
         ax.set_xlabel(f"{duration_unit.capitalize()}s")
     if sbd.is_any_date(col):
         _rotate_ticklabels(ax)
-    _adjust_fig_size(fig, ax, 4.0, 2.0)
+    _adjust_fig_size(fig, ax, 8.0, 4.0)
     return fig, n_low_outliers, n_high_outliers
 
 
@@ -140,13 +145,13 @@ def line(x_col, y_col):
     """
     x = sbd.to_numpy(x_col)
     y = sbd.to_numpy(y_col)
-    fig, ax = plt.subplots(dpi=100)
+    fig, ax = plt.subplots(dpi=150)
     _despine(ax)
     ax.plot(x, y)
     ax.set_xlabel(_utils.elide_string(x_col.name))
     if sbd.is_any_date(x_col):
         _rotate_ticklabels(ax)
-    _adjust_fig_size(fig, ax, 4.0, 2.0)
+    _adjust_fig_size(fig, ax, 8.0, 4.0)
     return fig
 
 
@@ -201,3 +206,161 @@ def value_counts(value_counts, n_rows, title="", color=_ORANGE):
 
     _adjust_fig_size(fig, ax, 8.0, 0.4 * len(values))
     return fig
+
+
+def plot_distribution_1d(df, x_col):
+    col = df[x_col]
+
+    duration_unit = None
+    if sbd.is_duration(col):
+        col, duration_unit = _utils.duration_to_numeric(col)
+
+    if sbd.is_numeric(col) or sbd.is_any_date(col):
+        fig, _, _ = histogram(col, duration_unit)
+    else:
+        _, counter = _utils.top_k_value_counts(col, k=10)
+        fig = value_counts(counter, n_rows=sbd.shape(col)[0], title=x_col)
+    return fig
+
+
+def scatter(x_col, y_col, c_col):
+    fig, ax = plt.subplots()
+
+    sns.scatterplot(x=x_col, y=y_col, hue=c_col, ax=ax)
+    sns.move_legend(ax, (1.05, 0.0))
+
+    return fig
+
+
+def box(x_col, y_col, c_col):
+    fig, ax = plt.subplots()
+
+    sns.boxplot(
+        x=x_col,
+        y=y_col,
+        fliersize=0,
+        width=0.5,
+        whis=(0, 100),  # spellchecker:disable-line
+        color="white",
+        linecolor="#000000",
+        linewidth=1.0,
+        ax=ax,
+    )
+    sns.stripplot(x=x_col, y=y_col, hue=c_col, dodge=False, size=8, ax=ax)
+    sns.move_legend(ax, (1.05, 0.0))
+
+    return fig
+
+
+def heatmap(x_col, y_col, c_col):
+    fig, ax = plt.subplots()
+
+    # Pivot and groupby operations using Pandas to simplify the logic.
+    cols = [sbd.to_pandas(x_col), sbd.to_pandas(y_col)]
+    names = [col.name for col in cols]
+    kwargs = {}
+    if c_col is None:
+        key = "_skore_count"
+        df = (
+            pd.DataFrame(cols)
+            .T.assign(**{key: 1})
+            .groupby(names)[key]
+            .sum()
+            .reset_index()
+            .pivot(
+                columns=names[0],
+                index=names[1],
+                values=key,
+            )
+        )
+        kwargs["cbar_kws"] = {"label": "total"}
+    else:
+        c_col = sbd.to_pandas(c_col)
+        cols.append(c_col)
+        key = c_col.name
+        df = (
+            pd.DataFrame(cols)
+            .T.groupby(names)[key]
+            .mean()
+            .reset_index()
+            .pivot(columns=names[0], index=names[1], values=key)
+        )
+        kwargs["cbar_kws"] = {"label": key}
+
+    df = df.infer_objects(copy=False).fillna(np.nan)
+    sns.heatmap(df, ax=ax, **kwargs)
+
+    return fig
+
+
+def _truncate_top_k(col, k=10):
+    if col is None or col is sbd.is_numeric(col):
+        return col
+
+    # Use only the top k most frequent items of the color column
+    # if it's categorical.
+    _, counter = _utils.top_k_value_counts(col, k=k)
+    values, _ = zip(*counter)
+    other = sbd.make_column_like(col, ["other"] * sbd.shape(col)[0], name="c")
+    values = (*values, np.nan)
+    col = sbd.where(col, is_in(col, values), other)
+    col = sbd.make_column_like(
+        col,
+        [_utils.elide_string(s, max_len=20) for s in sbd.to_list(col)],
+        name=sbd.name(col),
+    )
+
+    return col
+
+
+def plot_distribution_2d(df, x_col, y_col=None, c_col=None):
+    x_col = df[x_col]
+    if y_col is None:
+        y_col = c_col = df[c_col]
+    elif c_col is None:
+        y_col = df[y_col]
+    else:
+        y_col, c_col = df[y_col], df[c_col]
+
+    is_x_num, is_y_num = sbd.is_numeric(x_col), sbd.is_numeric(y_col)
+    if is_x_num and is_y_num:
+        return scatter(x_col, y_col, _truncate_top_k(c_col))
+    elif is_x_num:
+        # Horizontal box help to avoid x labels overlap.
+        return box(x_col, _truncate_top_k(y_col), _truncate_top_k(c_col))
+    elif is_y_num:
+        return box(y_col, _truncate_top_k(x_col), _truncate_top_k(c_col))
+    else:
+        if not sbd.is_numeric(c_col):
+            raise ValueError(
+                "If 'x_col' and 'y_col' are categories, 'c_col' must be continuous."
+            )
+        return heatmap(_truncate_top_k(x_col), _truncate_top_k(y_col), c_col)
+
+
+def plot_pearson(df):
+    cramer_v_table = _column_associations._compute_pearson(df)
+    return heatmap(
+        x_col=sbd.col(cramer_v_table, "left_column_name"),
+        y_col=sbd.col(cramer_v_table, "right_column_name"),
+        c_col=sbd.col(cramer_v_table, "pearson_corr"),
+    )
+
+
+def plot_cramer(df):
+    cramer_v_table = _column_associations._stack_symmetric_associations(
+        _column_associations._cramer_v_matrix(df),
+        df,
+    )
+    return heatmap(
+        x_col=sbd.col(cramer_v_table, "left_column_name"),
+        y_col=sbd.col(cramer_v_table, "right_column_name"),
+        c_col=sbd.col(cramer_v_table, "cramer_v"),
+    )
+
+
+def plot_distribution(df, x_col, y_col=None, c_col=None):
+    if y_col is None and c_col is None:
+        plot_distribution_1d(df, x_col)
+    else:
+        plot_distribution_2d(df, x_col, y_col, c_col)
