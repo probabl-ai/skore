@@ -172,7 +172,7 @@ def train_test_split(
             keys.append("X")
         elif len(arrays) == 2:
             warnings.warn(
-                "With as_dict=True, two arguments defaults to 'X' & 'y'."
+                "With as_dict=True, first 2 positional arguments defaults to 'X' & 'y'."
                 "\nSpecify as keyword argument to rename.",
                 stacklevel=2,
             )
