@@ -234,11 +234,14 @@ def test_train_test_split_dict_kwargs():
     y = [0] * 10 + [1] * 10
     z = [0] * 10 + [1] * 10
 
-    with pytest.raises(
-        ValueError,
-        match="When as_dict=True, arrays must be passed as keyword arguments",
-    ):
+    err_msg = (
+        "With as_dict=True, more than two arguments must be keyword arguments."
+        "\nEx: train_test_split(X=X, y=y, z=z, sw=sample_weight, as_dict=True)"
+    )
+
+    with pytest.raises(ValueError) as err:
         train_test_split(X, y, z, random_state=0, as_dict=True)
+    assert str(err.value) == err_msg
 
 
 def test_train_test_split_check_dict():
