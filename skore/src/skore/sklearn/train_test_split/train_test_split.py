@@ -145,11 +145,17 @@ def train_test_split(
         new_arrays.append(y)
         keys += ["y"]
 
-    if as_dict and arrays:
-        raise ValueError(
-            "When as_dict=True, arrays must be passed as keyword arguments.\n"
-            "Example: train_test_split(X=X, y=y, sw=sample_weight, as_dict=True)"
-        )
+    if as_dict:
+        if len(arrays) == 1:
+            keys += ["X"]
+        elif len(arrays) == 2:
+            keys.extend(["X", "y"])
+        elif len(arrays) > 2:
+            raise ValueError(
+                ""
+                "With as_dict=True, arguments must be passed as keyword arguments.\n"
+                "Example: train_test_split(X, y, z=z, sw=sample_weight, as_dict=True)"
+            )
 
     if keyword_arrays:
         if X is None and y is None:
