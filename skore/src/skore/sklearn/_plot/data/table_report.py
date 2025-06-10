@@ -1,3 +1,5 @@
+import weakref
+
 from skrub import _dataframe as sbd
 from skrub._reporting import _utils
 from skrub._reporting._html import to_html
@@ -41,7 +43,11 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         self.summary = summary
         self.column_filters = column_filters
         # Use a weakref to store df?
-        self.df = df
+        self._df = weakref.ref(df)
+
+    @property
+    def df(self):
+        return self._df()
 
     @classmethod
     def _compute_data_for_display(cls, df, with_plots=True, title=None):
