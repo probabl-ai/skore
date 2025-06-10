@@ -73,7 +73,8 @@ def train_test_split(
     as_dict : bool, default is False
         If True, returns a Dictionary with keys values ``X_train``, ``X_test``,
         ``y_train``, and ``y_test`` instead of a List. Requires data to be
-        passed as keyword arguments.
+        passed as keyword arguments, though the first two positional arguments are
+        implicitly treated as X and y.
     **keyword_arrays : array-like, optional
         Additional array-like arguments passed by keyword. Used to determine the keys
         of the output dict when ``as_dict=True``.
@@ -129,6 +130,20 @@ def train_test_split(
     >>> sample_weights = np.arange(10).reshape((5, 2))
     >>> split_dict = train_test_split(
     ...     X=X, y=y, sample_weights=sample_weights, as_dict=True, random_state=0)
+    >>> split_dict
+    {'X_train': ..., 'X_test': ...,
+     'y_train': ..., 'y_test': ...,
+     'sample_weights_train': ..., 'sample_weights_test': ...}
+
+    >>> # With as_dict is True, first 2 arguments are implicitly treated as X and y.
+    >>> split_dict = train_test_split(X, as_dict=True)
+    >>> split_dict
+    {'X_train': ..., 'X_test': ...}
+    >>> split_dict = train_test_split(X, y, as_dict=True)
+    >>> split_dict
+    {'X_train': ..., 'X_test': ...,
+     'y_train': ..., 'y_test': ...}
+    >>> split_dict = train_test_split(X, y, sample_weights=sample_weights, as_dict=True)
     >>> split_dict
     {'X_train': ..., 'X_test': ...,
      'y_train': ..., 'y_test': ...,
