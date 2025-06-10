@@ -72,7 +72,7 @@ def test_model_explorer_widget_empty_dataframe(capsys):
     widget.display()
 
     captured = capsys.readouterr()
-    assert "No reports found in the project. Use the `put` method to add reports." in (
+    assert "No report found in the project. Use the `put` method to add reports." in (
         captured.out
     )
 

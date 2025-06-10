@@ -558,7 +558,7 @@ class ModelExplorerWidget:
             from skore import console  # avoid circular import
 
             content = (
-                "No reports found in the project. Use the `put` method to add reports."
+                "No report found in the project. Use the `put` method to add reports."
             )
             console.print(
                 Panel(
