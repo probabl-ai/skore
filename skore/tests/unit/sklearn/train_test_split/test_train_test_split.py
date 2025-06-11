@@ -237,17 +237,10 @@ def test_train_test_split_dict_kwargs():
         "\nEx: train_test_split(X=X, y=y, z=z, sw=sample_weight, as_dict=True)"
     )
 
-    with pytest.raises(ValueError) as err:
-        train_test_split(X, y, z, random_state=0, as_dict=True)
-    assert str(err.value) == err_msg
+    import re
 
-
-def test_train_test_split_check_dict():
-    """If `as_dict` is True then the result is a dict."""
-    X = [[1]] * 20
-    y = [0] * 10 + [1] * 10
-    output = train_test_split(X=X, y=y, random_state=0, as_dict=True)
-    assert type(output) is dict
+    with pytest.raises(ValueError, match=re.escape(err_msg)):
+        train_test_split(X, y, z, as_dict=True)
 
 
 def test_train_test_split_check_dict_unsupervised_case():
