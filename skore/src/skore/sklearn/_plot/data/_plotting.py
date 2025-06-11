@@ -208,6 +208,63 @@ def value_counts(value_counts, n_rows, title="", color=_ORANGE):
     return fig
 
 
+def scatter(x_col, y_col, c_col):
+    fig, ax = plt.subplots()
+
+    sns.scatterplot(x=x_col, y=y_col, hue=c_col, ax=ax)
+    if ax.legend_ is not None:
+        sns.move_legend(ax, (1.05, 0.0))
+    sns.move_legend(ax, (1.05, 0.0))
+
+    return fig
+
+
+def box(x_col, y_col, c_col):
+    fig, ax = plt.subplots()
+
+    sns.stripplot(
+        x=x_col,
+        y=y_col,
+        hue=c_col,
+        dodge=False,
+        size=8,
+        alpha=0.5,
+        zorder=0,
+        palette="viridis",
+        ax=ax,
+    )
+    sns.boxplot(
+        x=x_col,
+        y=y_col,
+        fliersize=0,
+        width=0.5,
+        whis=(0, 100),  # spellchecker:disable-line
+        linecolor="#000000",
+        linewidth=1.0,
+        color="white",
+        boxprops=dict(alpha=0.1),
+        zorder=1,
+        ax=ax,
+    )
+    if ax.legend_ is not None:
+        sns.move_legend(ax, (1.05, 0.0))
+
+    return fig
+
+
+def heatmap(df, title=None, **kwargs):
+    fig, ax = plt.subplots()
+
+    df = df.infer_objects(copy=False).fillna(np.nan)
+    df.index = [_utils.elide_string(s) for s in df.index]
+    df.columns = [_utils.elide_string(s) for s in df.columns]
+    _ = sns.heatmap(df, ax=ax, **kwargs)
+    if title is not None:
+        ax.set_title(title)
+
+    return fig
+
+
 def plot_distribution_1d(df, x_col):
     col = df[x_col]
 
@@ -223,44 +280,40 @@ def plot_distribution_1d(df, x_col):
     return fig
 
 
-def scatter(x_col, y_col, c_col):
-    fig, ax = plt.subplots()
+def _truncate_top_k(col, k=10):
+    if col is None or sbd.is_numeric(col):
+        return col
 
-    sns.scatterplot(x=x_col, y=y_col, hue=c_col, ax=ax)
-    sns.move_legend(ax, (1.05, 0.0))
-
-    return fig
-
-
-def box(x_col, y_col, c_col):
-    fig, ax = plt.subplots()
-
-    sns.boxplot(
-        x=x_col,
-        y=y_col,
-        fliersize=0,
-        width=0.5,
-        whis=(0, 100),  # spellchecker:disable-line
-        color="white",
-        linecolor="#000000",
-        linewidth=1.0,
-        ax=ax,
+    # Use only the top k most frequent items of the color column
+    # if it's categorical.
+    _, counter = _utils.top_k_value_counts(col, k=k)
+    values, _ = zip(*counter)
+    other = sbd.make_column_like(col, ["other"] * sbd.shape(col)[0], name="c")
+    values = (*values, np.nan)
+    col = sbd.where(col, is_in(col, values), other)
+    col = sbd.make_column_like(
+        col,
+        [_utils.elide_string(s, max_len=20) for s in sbd.to_list(col)],
+        name=sbd.name(col),
     )
-    sns.stripplot(x=x_col, y=y_col, hue=c_col, dodge=False, size=8, ax=ax)
-    sns.move_legend(ax, (1.05, 0.0))
 
-    return fig
+    return col
 
 
-def heatmap(x_col, y_col, c_col):
-    fig, ax = plt.subplots()
+def _aggregate_pairwise(x_col, y_col, c_col):
+    """Create a symmetric matrix by a pairwise aggregation of its columns.
 
-    # Pivot and groupby operations using Pandas to simplify the logic.
+    - If the color column c_col is provided, the values of the symmetric matrix are
+      the mean of c_col for a given pair of (x_col, y_col) entries
+    - Otherwise, the values of the symmetric matrix are the frequency of each pair
+      (x_col, y_col).
+    """
+    # We use Pandas for pivot and groupby operations to simplify the logic.
     cols = [sbd.to_pandas(x_col), sbd.to_pandas(y_col)]
     names = [col.name for col in cols]
     kwargs = {}
     if c_col is None:
-        key = "_skore_count"
+        key = "_skore_count"  # an arbitrary column name that disappear after pivoting.
         df = (
             pd.DataFrame(cols)
             .T.assign(**{key: 1})
@@ -286,31 +339,7 @@ def heatmap(x_col, y_col, c_col):
             .pivot(columns=names[0], index=names[1], values=key)
         )
         kwargs["cbar_kws"] = {"label": key}
-
-    df = df.infer_objects(copy=False).fillna(np.nan)
-    sns.heatmap(df, ax=ax, **kwargs)
-
-    return fig
-
-
-def _truncate_top_k(col, k=10):
-    if col is None or col is sbd.is_numeric(col):
-        return col
-
-    # Use only the top k most frequent items of the color column
-    # if it's categorical.
-    _, counter = _utils.top_k_value_counts(col, k=k)
-    values, _ = zip(*counter)
-    other = sbd.make_column_like(col, ["other"] * sbd.shape(col)[0], name="c")
-    values = (*values, np.nan)
-    col = sbd.where(col, is_in(col, values), other)
-    col = sbd.make_column_like(
-        col,
-        [_utils.elide_string(s, max_len=20) for s in sbd.to_list(col)],
-        name=sbd.name(col),
-    )
-
-    return col
+    return {"df": df} | kwargs
 
 
 def plot_distribution_2d(df, x_col, y_col=None, c_col=None):
@@ -326,41 +355,41 @@ def plot_distribution_2d(df, x_col, y_col=None, c_col=None):
     if is_x_num and is_y_num:
         return scatter(x_col, y_col, _truncate_top_k(c_col))
     elif is_x_num:
-        # Horizontal box help to avoid x labels overlap.
+        # We use a horizontal box plot to limit xlabels overlap.
         return box(x_col, _truncate_top_k(y_col), _truncate_top_k(c_col))
     elif is_y_num:
-        return box(y_col, _truncate_top_k(x_col), _truncate_top_k(c_col))
+        c_col = _truncate_top_k(c_col)
+        return box(y_col, _truncate_top_k(x_col), c_col)
     else:
         if not sbd.is_numeric(c_col):
             raise ValueError(
                 "If 'x_col' and 'y_col' are categories, 'c_col' must be continuous."
             )
-        return heatmap(_truncate_top_k(x_col), _truncate_top_k(y_col), c_col)
-
-
-def plot_pearson(df):
-    cramer_v_table = _column_associations._compute_pearson(df)
-    return heatmap(
-        x_col=sbd.col(cramer_v_table, "left_column_name"),
-        y_col=sbd.col(cramer_v_table, "right_column_name"),
-        c_col=sbd.col(cramer_v_table, "pearson_corr"),
-    )
-
-
-def plot_cramer(df):
-    cramer_v_table = _column_associations._stack_symmetric_associations(
-        _column_associations._cramer_v_matrix(df),
-        df,
-    )
-    return heatmap(
-        x_col=sbd.col(cramer_v_table, "left_column_name"),
-        y_col=sbd.col(cramer_v_table, "right_column_name"),
-        c_col=sbd.col(cramer_v_table, "cramer_v"),
-    )
+        return heatmap(**_aggregate_pairwise(x_col, y_col, c_col))
 
 
 def plot_distribution(df, x_col, y_col=None, c_col=None):
     if y_col is None and c_col is None:
-        plot_distribution_1d(df, x_col)
+        # XXX: should we allow 1d plot with a hue value (c_col)?
+        return plot_distribution_1d(df, x_col)
     else:
-        plot_distribution_2d(df, x_col, y_col, c_col)
+        return plot_distribution_2d(df, x_col, y_col, c_col)
+
+
+def plot_pearson(df):
+    pearson_table = _column_associations._compute_pearson(df)
+    pearson_table = sbd.to_pandas(pearson_table).pivot(
+        index="left_column_name",
+        columns="right_column_name",
+        values="pearson_corr",
+    )
+    return heatmap(pearson_table, title="Pearson Corr")
+
+
+def plot_cramer(df):
+    cramer_v_table = pd.DataFrame(
+        _column_associations._cramer_v_matrix(df),
+        columns=df.columns,
+        index=df.columns,
+    )
+    return heatmap(cramer_v_table, title="Cramer's V")
