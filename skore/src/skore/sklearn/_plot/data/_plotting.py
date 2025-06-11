@@ -140,7 +140,7 @@ def line(x_col, y_col):
     fig, ax = plt.subplots(dpi=150)
     _despine(ax)
     ax.plot(x, y)
-    ax.set_xlabel(_utils.elide_string(x_col.name))
+    ax.set_xlabel(_utils.ellide_string(x_col.name))
     if sbd.is_any_date(x_col):
         _rotate_ticklabels(ax)
     _adjust_fig_size(fig, ax, 8.0, 4.0)
@@ -171,7 +171,7 @@ def value_counts(value_counts, n_rows, title="", color=_ORANGE):
     str
         The plot as a XML string.
     """
-    values = [_utils.elide_string(v) for v, _ in value_counts][::-1]
+    values = [_utils.ellide_string(v) for v, _ in value_counts][::-1]
     counts = [c for _, c in value_counts][::-1]
     fig, ax = plt.subplots(dpi=150)
     _despine(ax)
@@ -248,8 +248,8 @@ def heatmap(df, title=None, **kwargs):
     fig, ax = plt.subplots()
 
     df = df.infer_objects(copy=False).fillna(np.nan)
-    df.index = [_utils.elide_string(s) for s in df.index]
-    df.columns = [_utils.elide_string(s) for s in df.columns]
+    df.index = [_utils.ellide_string(s) for s in df.index]
+    df.columns = [_utils.ellide_string(s) for s in df.columns]
     _ = sns.heatmap(df, ax=ax, **kwargs)
     if title is not None:
         ax.set_title(title)
@@ -285,7 +285,7 @@ def _truncate_top_k(col, k=10):
     col = sbd.where(col, is_in(col, values), other)
     col = sbd.make_column_like(
         col,
-        [_utils.elide_string(s, max_len=20) for s in sbd.to_list(col)],
+        [_utils.ellide_string(s, max_len=20) for s in sbd.to_list(col)],
         name=sbd.name(col),
     )
 
