@@ -135,16 +135,13 @@ def train_test_split(
      'y_train': ..., 'y_test': ...,
      'sample_weights_train': ..., 'sample_weights_test': ...}
 
-    >>> # With as_dict is True, first 2 arguments are implicitly treated as X and y.
-    >>> split_dict = train_test_split(X, as_dict=True)
-    >>> split_dict
+    >>> # With as_dict is True, the first 2 arguments are implicitly treated as X and y
+    >>> train_test_split(X, as_dict=True)
     {'X_train': ..., 'X_test': ...}
-    >>> split_dict = train_test_split(X, y, as_dict=True)
-    >>> split_dict
+    >>> train_test_split(X, y, as_dict=True)
     {'X_train': ..., 'X_test': ...,
      'y_train': ..., 'y_test': ...}
-    >>> split_dict = train_test_split(X, y, sample_weights=sample_weights, as_dict=True)
-    >>> split_dict
+    >>> train_test_split(X, y, sample_weights=sample_weights, as_dict=True)
     {'X_train': ..., 'X_test': ...,
      'y_train': ..., 'y_test': ...,
      'sample_weights_train': ..., 'sample_weights_test': ...}
@@ -162,7 +159,7 @@ def train_test_split(
         keys.append("y")
 
     if as_dict and arrays:
-        # case when X or y is implicit as first 2 args for as_dict=True
+        # if X or y are passed by position
         if len(arrays) == 1:
             warnings.warn(
                 "With as_dict=True, single argument defaults to 'X'."
@@ -177,7 +174,7 @@ def train_test_split(
                 stacklevel=2,
             )
             keys.extend(["X", "y"])
-        elif len(arrays) > 2:  # case when as_dict=True and given # arrays > 3
+        elif len(arrays) > 2:
             raise ValueError(
                 "With as_dict=True, more than two arguments must be keyword arguments."
                 "\nEx: train_test_split(X=X, y=y, z=z, sw=sample_weight, as_dict=True)"
