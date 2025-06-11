@@ -20,14 +20,6 @@ def _despine(ax):
     ax.set_facecolor("none")
 
 
-def _to_em(pt_match):
-    attr, pt = pt_match.groups()
-    pt = float(pt)
-    px = pt * 96 / 72
-    em = px / 16
-    return f'{attr}="{em:.2f}em"'
-
-
 def _rotate_ticklabels(ax):
     plt.setp(ax.get_xticklabels(), rotation=45, horizontalalignment="right")
 
