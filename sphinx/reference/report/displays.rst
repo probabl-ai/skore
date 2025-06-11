@@ -11,7 +11,7 @@ the API of each display.
    :template: base.rst
 
    Display
+   MetricsSummaryDisplay
    RocCurveDisplay
    PrecisionRecallCurveDisplay
    PredictionErrorDisplay
-   MetricsSummaryDisplay
