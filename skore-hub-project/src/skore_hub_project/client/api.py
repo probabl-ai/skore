@@ -107,9 +107,16 @@ def get_oauth_device_token(device_code: str):
 
 
 def get_oauth_device_code_probe(device_code: str, *, timeout=600):
-    # tests ???
-    # respx_mock.get(PROBE_URL).mock(side_effect=[Response(400), Response(200)])
-    # Start polling, wait for the authorization code to be acknowledged.
+    """Ensure authorization code is acknowledged.
+
+    Start polling, wait for the authorization code to be acknowledged by the hub.
+    This is mandatory to be authorize to exchange with a token.
+
+    Parameters
+    ----------
+    device_code : str
+        The device code to exchange for tokens.
+    """
     url = urljoin(URI, "identity/oauth/device/code-probe")
     start = datetime.now()
 

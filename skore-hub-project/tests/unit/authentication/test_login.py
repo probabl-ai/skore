@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from itertools import repeat
 from urllib.parse import urljoin
 
-from httpx import TimeoutException, Response
+from httpx import Response, TimeoutException
 from pytest import mark, raises
 from skore_hub_project.authentication import token as Token
 from skore_hub_project.authentication.login import login

@@ -17,8 +17,10 @@ def filepath():
 
 def save(access: str, refreshment: str, expires_at: str):
     """
+    Save the token.
+
     Save the tokens to the disk to prevent user to login more than once, as long as
-    the token is valid or can be refreshed.
+    the access token is valid or can be refreshed.
     """
     filepath().write_text(
         json.dumps(
@@ -37,6 +39,14 @@ def exists() -> bool:
 
 
 def access(*, refresh=True) -> str:
+    """
+    Access token.
+
+    Parameters
+    ----------
+    refresh : bool, optional
+        Refresh the token on-the-fly if necessary, default True.
+    """
     access, refreshment, expiration = json.loads(filepath().read_text())
 
     if refresh and datetime.fromisoformat(expiration) <= datetime.now(timezone.utc):

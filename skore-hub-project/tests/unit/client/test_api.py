@@ -1,7 +1,7 @@
 from urllib.parse import urljoin
 
+from httpx import HTTPError, Response, TimeoutException
 from pytest import mark, raises
-from httpx import Response, HTTPError, TimeoutException
 from skore_hub_project.client import api
 from skore_hub_project.client.api import URI
 
@@ -19,16 +19,10 @@ def test_get_oauth_device_login(respx_mock, success_uri):
         )
     )
 
+    params = {} if success_uri is None else {"success_uri": "toto"}
     authorization_url, device_code, user_code = api.get_oauth_device_login(
         success_uri=success_uri
     )
-
-    params = list()
-
-    if success_uri is None:
-        params = {}
-    else:
-        params = {"success_uri": "toto"}
 
     assert dict(respx_mock.calls.last.request.url.params) == params
     assert authorization_url == "A"
