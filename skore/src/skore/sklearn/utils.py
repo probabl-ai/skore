@@ -14,3 +14,8 @@ _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
     "custom_metric": {"name": "Custom metric", "icon": ""},
     "report_metrics": {"name": "Report metrics", "icon": ""},
 }
+
+_SCORE_OR_LOSS_INFO_ESTIMATOR: dict[str, dict[str, str]] = {
+    **_SCORE_OR_LOSS_INFO,
+    "confusion_matrix": {"name": "Confusion Matrix", "icon": ""},
+}
