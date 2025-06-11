@@ -4,7 +4,7 @@ from urllib.parse import urljoin
 
 import pytest
 from httpx import Response
-from skore_hub_project.authentication.token import Token
+from skore_hub_project.authentication import token as Token
 from skore_hub_project.client.api import URI
 
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()

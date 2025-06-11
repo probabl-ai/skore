@@ -11,7 +11,7 @@ from rich.panel import Panel
 
 from .. import console
 from ..client import api
-from .token import Token
+from . import token as Token
 
 
 def login(*, timeout=600):

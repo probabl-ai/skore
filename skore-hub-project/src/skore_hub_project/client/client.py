@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 from httpx import URL, Client, Headers, HTTPStatusError, Response
 from httpx._types import HeaderTypes
 
-from ..authentication.token import Token
+from ..authentication import token as Token
 from .api import URI
 
 
