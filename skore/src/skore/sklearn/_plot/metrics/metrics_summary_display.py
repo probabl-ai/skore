@@ -2,7 +2,7 @@ from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import HelpDisplayMixin
 
 
-class SummarizeDisplay(HelpDisplayMixin, StyleDisplayMixin):
+class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
     """Display for summarize.
 
     An instance of this class will be created by `Report.metrics.summarize()`.
@@ -21,3 +21,7 @@ class SummarizeDisplay(HelpDisplayMixin, StyleDisplayMixin):
             The report metrics as a dataframe.
         """
         return self.summarize_data
+
+    @StyleDisplayMixin.style_plot
+    def plot(self):
+        raise NotImplementedError

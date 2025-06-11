@@ -26,7 +26,7 @@ from skore.sklearn._cross_validation.report import (
     _generate_estimator_report,
 )
 from skore.sklearn._estimator import EstimatorReport
-from skore.sklearn._plot import RocCurveDisplay, SummarizeDisplay
+from skore.sklearn._plot import MetricsSummaryDisplay, RocCurveDisplay
 from skore.utils._testing import MockEstimator
 
 
@@ -280,7 +280,7 @@ def test_cross_validation_report_flat_index(binary_classification_data):
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
     result = report.metrics.summarize(flat_index=True)
-    assert isinstance(result, SummarizeDisplay)
+    assert isinstance(result, MetricsSummaryDisplay)
     result_df = result.frame()
     assert result_df.shape == (8, 2)
     assert isinstance(result_df.index, pd.Index)
@@ -464,7 +464,7 @@ def _check_results_summarize(
     report, params, expected_n_splits, expected_metrics, expected_nb_stats
 ):
     result = report.metrics.summarize(**params)
-    assert isinstance(result, SummarizeDisplay)
+    assert isinstance(result, MetricsSummaryDisplay)
     result_df = result.frame()
     assert isinstance(result_df, pd.DataFrame)
     assert "Favorability" not in result_df.columns
