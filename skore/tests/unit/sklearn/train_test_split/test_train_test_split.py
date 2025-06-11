@@ -233,10 +233,11 @@ def test_train_test_split_dict_kwargs():
     z = [0] * 10 + [1] * 10
 
     err_msg = (
-        "With as_dict=True, more than two arguments must be keyword arguments."
-        "\nEx: train_test_split(X=X, y=y, z=z, sw=sample_weight, as_dict=True)"
+        "With as_dict=True, expected no more than two positional arguments "
+        "(which will be interpreted as X and y). "
+        "The remaining arrays must be passed by keyword, "
+        "e.g. train_test_split(X, y, z=z, sw=sample_weights, as_dict=True)."
     )
-
     import re
 
     with pytest.raises(ValueError, match=re.escape(err_msg)):
