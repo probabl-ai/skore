@@ -25,6 +25,7 @@ from skore.sklearn.types import (
     ScoringName,
     YPlotData,
 )
+from skore.sklearn.utils import _SCORE_OR_LOSS_INFO
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
@@ -40,19 +41,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     You can access this accessor using the `metrics` attribute.
     """
-
-    _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
-        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
-        "precision": {"name": "Precision", "icon": "(↗︎)"},
-        "recall": {"name": "Recall", "icon": "(↗︎)"},
-        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
-        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
-        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
-        "r2": {"name": "R²", "icon": "(↗︎)"},
-        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
-        "custom_metric": {"name": "Custom metric", "icon": ""},
-        "summarize": {"name": "Metrics summary", "icon": ""},
-    }
 
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
@@ -1195,16 +1183,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22)
-        if name in self._SCORE_OR_LOSS_INFO and self._SCORE_OR_LOSS_INFO[name][
-            "icon"
-        ] in ("(↗︎)", "(↘︎)"):
-            if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
+        if name in _SCORE_OR_LOSS_INFO and _SCORE_OR_LOSS_INFO[name]["icon"] in (
+            "(↗︎)",
+            "(↘︎)",
+        ):
+            if _SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
+                method_name += f"[cyan]{_SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
                 return method_name.ljust(43)
             else:  # (↘︎)
-                method_name += (
-                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
-                )
+                method_name += f"[orange1]{_SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
                 return method_name.ljust(49)
         else:
             return method_name.ljust(29)

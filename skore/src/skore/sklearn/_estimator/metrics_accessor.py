@@ -23,6 +23,7 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.sklearn.types import _DEFAULT, PositiveLabel, Scoring, ScoringName, YPlotData
+from skore.sklearn.utils import _SCORE_OR_LOSS_INFO
 from skore.utils._accessor import (
     _check_all_checks,
     _check_estimator_has_method,
@@ -38,22 +39,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
     You can access this accessor using the `metrics` attribute.
     """
-
-    _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
-        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
-        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
-        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
-        "precision": {"name": "Precision", "icon": "(↗︎)"},
-        "recall": {"name": "Recall", "icon": "(↗︎)"},
-        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
-        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
-        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
-        "r2": {"name": "R²", "icon": "(↗︎)"},
-        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
-        "custom_metric": {"name": "Custom metric", "icon": ""},
-        "summarize": {"name": "Metrics summary", "icon": ""},
-        "confusion_matrix": {"name": "Confusion Matrix", "icon": ""},
-    }
 
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
@@ -213,8 +198,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         favorability_indicator = []
         for metric_name, metric in zip(scoring_names, scoring, strict=False):
             if isinstance(metric, str) and not (
-                (metric.startswith("_") and metric[1:] in self._SCORE_OR_LOSS_INFO)
-                or metric in self._SCORE_OR_LOSS_INFO
+                (metric.startswith("_") and metric[1:] in _SCORE_OR_LOSS_INFO)
+                or metric in _SCORE_OR_LOSS_INFO
             ):
                 try:
                     metric = metrics.get_scorer(metric)
@@ -223,7 +208,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         f"Invalid metric: {metric!r}. "
                         f"Please use a valid metric from the "
                         f"list of supported metrics: "
-                        f"{list(self._SCORE_OR_LOSS_INFO.keys())} "
+                        f"{list(_SCORE_OR_LOSS_INFO.keys())} "
                         "or a valid scikit-learn scoring string."
                     ) from err
                 if scoring_kwargs is not None:
@@ -267,27 +252,20 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
                     # Handle built-in metrics (with underscore prefix)
-                    if (
-                        metric.startswith("_")
-                        and metric[1:] in self._SCORE_OR_LOSS_INFO
-                    ):
+                    if metric.startswith("_") and metric[1:] in _SCORE_OR_LOSS_INFO:
                         metric_fn = getattr(self, metric)
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                         if metric_name is None:
-                            metric_name = (
-                                f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
-                            )
-                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric[1:]][
-                            "icon"
-                        ]
+                            metric_name = f"{_SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
+                        metric_favorability = _SCORE_OR_LOSS_INFO[metric[1:]]["icon"]
 
                     # Handle built-in metrics (without underscore prefix)
-                    elif metric in self._SCORE_OR_LOSS_INFO:
+                    elif metric in _SCORE_OR_LOSS_INFO:
                         metric_fn = getattr(self, f"_{metric}")
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                         if metric_name is None:
-                            metric_name = f"{self._SCORE_OR_LOSS_INFO[metric]['name']}"
-                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric]["icon"]
+                            metric_name = f"{_SCORE_OR_LOSS_INFO[metric]['name']}"
+                        metric_favorability = _SCORE_OR_LOSS_INFO[metric]["icon"]
                 else:
                     # Handle callable metrics
                     metric_fn = partial(self._custom_metric, metric_function=metric)
@@ -1603,16 +1581,15 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22)
-        if name in self._SCORE_OR_LOSS_INFO and self._SCORE_OR_LOSS_INFO[name][
-            "icon"
-        ] in ("(↗︎)", "(↘︎)"):
-            if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
+        if name in _SCORE_OR_LOSS_INFO and _SCORE_OR_LOSS_INFO[name]["icon"] in (
+            "(↗︎)",
+            "(↘︎)",
+        ):
+            if _SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
+                method_name += f"[cyan]{_SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
                 return method_name.ljust(43)
             else:  # (↘︎)
-                method_name += (
-                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
-                )
+                method_name += f"[orange1]{_SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
                 return method_name.ljust(49)
         else:
             return method_name.ljust(29)
