@@ -1,11 +1,10 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from urllib.parse import urljoin
-
+from itertools import repeat
 from pytest import mark, raises
-from httpx import Response
+from httpx import Response, HTTPError
 from skore_hub_project.authentication.login import login
 from skore_hub_project.client.api import URI
-from skore_hub_project.client.client import AuthenticationError
 from skore_hub_project.authentication.token import Token
 
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
@@ -80,7 +79,7 @@ def test_login(monkeypatch, respx_mock):
         )
     )
     respx_mock.get(PROBE_URL).mock(Response(200))
-    respx_mock.get(CALLBACK_URL).mock(Response(200))
+    respx_mock.post(CALLBACK_URL).mock(Response(200))
     respx_mock.get(TOKEN_URL).mock(
         Response(
             200,
@@ -103,12 +102,52 @@ def test_login(monkeypatch, respx_mock):
 
     login()
 
-    # assert routes parameters
-    # faire que probe retourne 1 erreur puis 1 succès ?
-
     assert open_webbrowser.url == "<url>"
     assert Token.exists()
     assert Token.access(refresh=False) == "D"
 
 
-def test_login_timeout(): ...
+def test_login_timeout(monkeypatch, respx_mock):
+    monkeypatch.setattr(
+        "skore_hub_project.authentication.login.open_webbrowser",
+        lambda _: True,
+    )
+
+    respx_mock.post(REFRESH_URL).mock(Response(404))
+    respx_mock.get(LOGIN_URL).mock(
+        Response(
+            200,
+            json={
+                "authorization_url": "<url>",
+                "device_code": "<device>",
+                "user_code": "<user>",
+            },
+        )
+    )
+    respx_mock.get(PROBE_URL).mock(side_effect=repeat(Response(404)))
+    respx_mock.post(CALLBACK_URL).mock(Response(200))
+    respx_mock.get(TOKEN_URL).mock(
+        Response(
+            200,
+            json={
+                "token": {
+                    "access_token": "D",
+                    "refresh_token": "E",
+                    "expires_at": DATETIME_MAX,
+                }
+            },
+        )
+    )
+
+    assert not Token.exists()
+
+    Token.save("A", "B", DATETIME_MIN)
+
+    assert Token.exists()
+    assert Token.access(refresh=False) == "A"
+
+    with raises(HTTPError):
+        login(timeout=2)
+
+    assert Token.exists()
+    assert Token.access(refresh=False) == "A"

@@ -7,9 +7,10 @@ from skore_hub_project.client.api import URI
 from skore_hub_project.client.client import AuthenticatedClient, AuthenticationError
 from skore_hub_project.authentication.token import Token
 
+DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
+DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
+
 REFRESH_URL = urljoin(URI, "identity/oauth/token/refresh")
-DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc)
-DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc)
 
 
 class TestAuthenticatedClient:
@@ -59,7 +60,7 @@ class TestAuthenticatedClient:
                 json={
                     "access_token": "D",
                     "refresh_token": "E",
-                    "expires_at": DATETIME_MAX.isoformat(),
+                    "expires_at": DATETIME_MAX,
                 },
             )
         )
