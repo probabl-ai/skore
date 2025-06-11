@@ -1,14 +1,14 @@
 from urllib.parse import urljoin
 
-import pytest
-from httpx import Response
+from pytest import mark, raises
+from httpx import Response, HTTPError, TimeoutException
 from skore_hub_project.client import api
 from skore_hub_project.client.api import URI
 
 
-@pytest.mark.parametrize("success_uri", [None, "toto"])
+@mark.parametrize("success_uri", [None, "toto"])
 def test_get_oauth_device_login(respx_mock, success_uri):
-    route = respx_mock.get(urljoin(URI, "identity/oauth/device/login")).mock(
+    respx_mock.get(urljoin(URI, "identity/oauth/device/login")).mock(
         Response(
             200,
             json={
@@ -18,17 +18,19 @@ def test_get_oauth_device_login(respx_mock, success_uri):
             },
         )
     )
+
     authorization_url, device_code, user_code = api.get_oauth_device_login(
         success_uri=success_uri
     )
 
-    params = list(route.calls.last.request.url.params.items())
+    params = list()
 
     if success_uri is None:
-        assert params == []
+        params = {}
     else:
-        assert params == [("success_uri", "toto")]
+        params = {"success_uri": "toto"}
 
+    assert dict(respx_mock.calls.last.request.url.params) == params
     assert authorization_url == "A"
     assert device_code == "B"
     assert user_code == "C"
@@ -46,7 +48,7 @@ def test_post_oauth_device_callback(respx_mock):
 
 
 def test_get_oauth_device_token(respx_mock):
-    route = respx_mock.get(urljoin(URI, "identity/oauth/device/token")).mock(
+    respx_mock.get(urljoin(URI, "identity/oauth/device/token")).mock(
         Response(
             200,
             json={
@@ -59,14 +61,70 @@ def test_get_oauth_device_token(respx_mock):
         )
     )
 
-    access_token, refresh_token, expires_at = api.get_oauth_device_token("code")
+    access_token, refresh_token, expires_at = api.get_oauth_device_token(
+        "<device_code>"
+    )
 
-    params = list(route.calls.last.request.url.params.items())
-
-    assert params == [("device_code", "code")]
     assert access_token == "A"
     assert refresh_token == "B"
     assert expires_at == "C"
+    assert dict(respx_mock.calls.last.request.url.params) == {
+        "device_code": "<device_code>"
+    }
+
+
+def test_get_oauth_device_code_probe(respx_mock):
+    respx_mock.get(urljoin(URI, "identity/oauth/device/code-probe")).mock(
+        side_effect=[
+            Response(400),
+            Response(400),
+            Response(200),
+        ]
+    )
+
+    api.get_oauth_device_code_probe("<device_code>", sleeptime=0)
+
+    assert len(respx_mock.calls) == 3
+    assert dict(respx_mock.calls.last.request.url.params) == {
+        "device_code": "<device_code>",
+    }
+
+
+def test_get_oauth_device_code_probe_exception(respx_mock):
+    respx_mock.get(urljoin(URI, "identity/oauth/device/code-probe")).mock(
+        side_effect=[
+            Response(404),
+            Response(400),
+            Response(200),
+        ]
+    )
+
+    with raises(HTTPError) as excinfo:
+        api.get_oauth_device_code_probe("<device_code>")
+
+    assert excinfo.value.response.status_code == 404
+    assert len(respx_mock.calls) == 1
+    assert dict(respx_mock.calls.last.request.url.params) == {
+        "device_code": "<device_code>",
+    }
+
+
+def test_get_oauth_device_code_probe_timeout(respx_mock):
+    respx_mock.get(urljoin(URI, "identity/oauth/device/code-probe")).mock(
+        side_effect=[
+            Response(400),
+            Response(400),
+            Response(200),
+        ]
+    )
+
+    with raises(TimeoutException):
+        api.get_oauth_device_code_probe("<device_code>", timeout=0)
+
+    assert len(respx_mock.calls) == 1
+    assert dict(respx_mock.calls.last.request.url.params) == {
+        "device_code": "<device_code>",
+    }
 
 
 def test_post_oauth_refresh_token(respx_mock):
