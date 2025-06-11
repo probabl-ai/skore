@@ -15,7 +15,7 @@ from . import token as Token
 
 
 def login(*, timeout=600):
-    """Login to the skore-HUB."""
+    """Login to ``skore hub``."""
     with suppress(HTTPError):
         if Token.exists() and (Token.access() is not None):
             return
