@@ -7,7 +7,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.metrics import accuracy_score, get_scorer
 from skore import ComparisonReport, CrossValidationReport
-from skore.sklearn._plot import SummarizeDisplay
+from skore.sklearn._plot import MetricsSummaryDisplay
 from skore.utils._testing import check_cache_changed, check_cache_unchanged
 
 
@@ -57,7 +57,7 @@ def report_regression():
 def test_aggregate_none(report):
     """`summarize` works as intended with `aggregate=None`."""
     result = report.metrics.summarize(aggregate=None)
-    assert isinstance(result, SummarizeDisplay)
+    assert isinstance(result, MetricsSummaryDisplay)
     result_df = result.frame()
 
     assert_index_equal(result_df.columns, pd.Index(["Value"]))

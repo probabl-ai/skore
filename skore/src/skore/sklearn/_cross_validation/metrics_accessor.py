@@ -12,10 +12,10 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._plot import (
+    MetricsSummaryDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
-    SummarizeDisplay,
 )
 from skore.sklearn.types import (
     _DEFAULT,
@@ -69,7 +69,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Optional[Aggregate] = ("mean", "std"),
-    ) -> SummarizeDisplay:
+    ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -131,7 +131,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
         Returns
         -------
-        SummarizeDisplay
+        MetricsSummaryDisplay
             A display containing the statistics for the metrics.
 
         Examples
@@ -177,7 +177,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return SummarizeDisplay(summarize_data=results)
+        return MetricsSummaryDisplay(summarize_data=results)
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
