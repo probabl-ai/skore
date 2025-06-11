@@ -14,3 +14,4 @@ the API of each display.
    RocCurveDisplay
    PrecisionRecallCurveDisplay
    PredictionErrorDisplay
+   MetricsSummaryDisplay

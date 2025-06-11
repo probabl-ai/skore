@@ -2,7 +2,7 @@ from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import HelpDisplayMixin
 
 
-class SummarizeDisplay(HelpDisplayMixin, StyleDisplayMixin):
+class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
     """Display for summarize.
 
     An instance of this class will be created by `Report.metrics.summarize()`.

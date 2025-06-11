@@ -17,10 +17,10 @@ from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn._plot import (
     ConfusionMatrixDisplay,
+    MetricsSummaryDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
-    SummarizeDisplay,
 )
 from skore.sklearn.types import _DEFAULT, PositiveLabel, Scoring, ScoringName, YPlotData
 from skore.utils._accessor import (
@@ -70,7 +70,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         pos_label: Optional[PositiveLabel] = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-    ) -> SummarizeDisplay:
+    ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -127,7 +127,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Returns
         -------
-        SummarizeDisplay
+        MetricsSummaryDisplay
             A display containing the statistics for the metrics.
 
         Examples
@@ -422,7 +422,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return SummarizeDisplay(summarize_data=results)
+        return MetricsSummaryDisplay(summarize_data=results)
 
     def _compute_metric_scores(
         self,
