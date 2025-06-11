@@ -208,6 +208,21 @@ def test_train_test_split_two_posargs():
     assert isinstance(output, dict)
 
 
+def test_train_test_split_dict_pos_kwargs_conflict():
+    """Passing X or y by both position and keyword with as_dict=True
+    should throw an error."""
+
+    X = [[1]] * 20
+    y = [0] * 10 + [1] * 10
+
+    err_msg = "With as_dict=True, X/y cannot be passed by both position and keyword."
+    import re
+
+    with pytest.raises(ValueError, match=re.escape(err_msg)):
+        train_test_split(X, X=X, as_dict=True)
+        train_test_split(y, y=y, as_dict=True)
+
+
 def test_train_test_split_mix_args():
     """Passing mixed positional and keyword argument with as_dict=True
     should return as dict."""
