@@ -150,7 +150,7 @@ pytz==2024.2
     # via pandas
 pyyaml==6.0.2
     # via pre-commit
-requests==2.32.3
+requests==2.32.4
     # via skrub
 rich==13.9.4
     # via
