@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from itertools import repeat
 from urllib.parse import urljoin
 
-from httpx import HTTPError, Response
+from httpx import TimeoutException, Response
 from pytest import mark, raises
 from skore_hub_project.authentication import token as Token
 from skore_hub_project.authentication.login import login
@@ -125,7 +125,7 @@ def test_login_timeout(monkeypatch, respx_mock):
             },
         )
     )
-    respx_mock.get(PROBE_URL).mock(side_effect=repeat(Response(404)))
+    respx_mock.get(PROBE_URL).mock(side_effect=repeat(Response(400)))
     respx_mock.post(CALLBACK_URL).mock(Response(200))
     respx_mock.get(TOKEN_URL).mock(
         Response(
@@ -147,8 +147,8 @@ def test_login_timeout(monkeypatch, respx_mock):
     assert Token.exists()
     assert Token.access(refresh=False) == "A"
 
-    with raises(HTTPError):
-        login(timeout=2)
+    with raises(TimeoutException):
+        login(timeout=0)
 
     assert Token.exists()
     assert Token.access(refresh=False) == "A"

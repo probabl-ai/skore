@@ -106,7 +106,7 @@ def get_oauth_device_token(device_code: str):
         )
 
 
-def get_oauth_device_code_probe(device_code: str, *, sleeptime=0.5, timeout=600):
+def get_oauth_device_code_probe(device_code: str, *, timeout=600):
     # tests ???
     # respx_mock.get(PROBE_URL).mock(side_effect=[Response(400), Response(200)])
     # Start polling, wait for the authorization code to be acknowledged.
@@ -121,10 +121,10 @@ def get_oauth_device_code_probe(device_code: str, *, sleeptime=0.5, timeout=600)
                 if exc.response.status_code != 400:
                     raise
 
-                if (datetime.now() - start).total_seconds() > timeout:
+                if (datetime.now() - start).total_seconds() >= timeout:
                     raise httpx.TimeoutException("Authentication timeout") from exc
 
-                sleep(sleeptime)
+                sleep(0.5)
             else:
                 break
 

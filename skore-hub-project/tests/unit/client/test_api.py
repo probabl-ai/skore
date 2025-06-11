@@ -73,7 +73,8 @@ def test_get_oauth_device_token(respx_mock):
     }
 
 
-def test_get_oauth_device_code_probe(respx_mock):
+def test_get_oauth_device_code_probe(monkeypatch, respx_mock):
+    monkeypatch.setattr("skore_hub_project.client.api.sleep", lambda _: None)
     respx_mock.get(urljoin(URI, "identity/oauth/device/code-probe")).mock(
         side_effect=[
             Response(400),
@@ -82,7 +83,7 @@ def test_get_oauth_device_code_probe(respx_mock):
         ]
     )
 
-    api.get_oauth_device_code_probe("<device_code>", sleeptime=0)
+    api.get_oauth_device_code_probe("<device_code>")
 
     assert len(respx_mock.calls) == 3
     assert dict(respx_mock.calls.last.request.url.params) == {
