@@ -167,20 +167,9 @@ def train_test_split(
 
         # if X or y are passed by position
         if len(arrays) == 1:
-            warnings.warn(
-                "With as_dict=True, single argument defaults to 'X'."
-                "\nSpecify as keyword argument to rename.",
-                stacklevel=2,
-            )
             keys.append("X")
         elif len(arrays) == 2:
-            warnings.warn(
-                "With as_dict=True, first 2 positional arguments defaults to 'X' & 'y'."
-                "\nSpecify as keyword argument to rename.",
-                stacklevel=2,
-            )
             keys.extend(["X", "y"])
-
         elif len(arrays) > 2:
             raise ValueError(
                 "With as_dict=True, expected no more than two positional arguments "
