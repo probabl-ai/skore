@@ -30,8 +30,11 @@ pipeline
 
 # %%
 # We bring the dataset and pipeline into the report, and use `.data.analyze()` to get
-# our insights. The display direct representation is a :class:`skrub.TableReport` of
-# the input dataset.
+# our insights. ``dataset=all`` means analyzing both train and test, and ``with_y=True``
+# include the target in the analysis.
+#
+# The direct representation of the display is a :class:`skrub.TableReport`
+# of the input dataset.
 from skore import EstimatorReport
 
 report = EstimatorReport(
@@ -45,10 +48,55 @@ display = report.data.analyze(dataset="all", with_y=True)
 display
 
 # %%
+# As usual, we can easy glance at the options using ``.help``:
 display.help()
 
 # %%
-display.plot_dist(x_col="gender")
+# To begin with, let's plot the gender distribution to check whether we have some
+# population bias:
+_ = display.plot_dist(x_col="gender")
 # %%
+# The dataset is somewhat balanced, with a clear majority of males.
+# Next, we colorize this distribution using the salary to predict, in the column
+# ``current_annual_salary``.
 
-display.plot_dist(x_col="gender", c_col="current_annual_salary")
+_ = display.plot_dist(x_col="gender", c_col="current_annual_salary")
+
+# %%
+# Interestingly, we see that the median (the black vertical bar) is slightly higher for
+# males. We can also see there is an outlier at $300,000.
+#
+# Let's now add a third dimension to this plot by visualizing the hired year as the
+# y-axis (which becomes the x-axis since the plot is horizontal):
+_ = display.plot_dist(
+    x_col="gender",
+    y_col="year_first_hired",
+    c_col="current_annual_salary",
+)
+# %%
+# The year has replaced the salary as the x-axis, and the salary is still represented by
+# the color. This plot is getting a bit hard to read due to the large number of data
+# points, we can subsample it slightly to see a pattern emerges:
+_ = display.plot_dist(
+    x_col="gender",
+    y_col="year_first_hired",
+    c_col="current_annual_salary",
+    n_subsample=1000,
+)
+# %%
+# As expected, newcomers (at the right of the plot) are paid significantly less than
+# more senior employees (at the left of the plot).
+#
+# Let's now switch gears and observe the pearson correlation among our columns:
+_ = display.plot_pearson()
+
+# %%
+# Since the Pearson correlation is only defined between numerical columns and our
+# dataset contains mostly categorical columns, we're missing associations between
+# most of the columns.
+#
+# To get a broader view of our columns correlations, we can use another metric instead,
+# the :ref:`Cramer's V correlation <https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V>`_,
+# whose interpretation is close to the Pearson's correlation:
+_ = display.plot_cramer()
+# %%
