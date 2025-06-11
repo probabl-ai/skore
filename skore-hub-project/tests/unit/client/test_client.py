@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
 from urllib.parse import urljoin
 
-from pytest import mark, raises
 from httpx import HTTPStatusError, Response
+from pytest import mark, raises
+from skore_hub_project.authentication.token import Token
 from skore_hub_project.client.api import URI
 from skore_hub_project.client.client import AuthenticatedClient, AuthenticationError
-from skore_hub_project.authentication.token import Token
 
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()

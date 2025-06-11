@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 
-from pytest import raises
 from skore_hub_project.authentication.logout import logout
 from skore_hub_project.authentication.token import Token
 

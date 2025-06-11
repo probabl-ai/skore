@@ -7,7 +7,6 @@ from httpx import Response
 from skore_hub_project.authentication.token import Token
 from skore_hub_project.client.api import URI
 
-
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
 
