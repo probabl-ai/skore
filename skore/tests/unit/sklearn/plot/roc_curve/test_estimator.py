@@ -59,6 +59,7 @@ def test_binary_classification(pyplot, binary_classification_data):
     assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
     assert display.data_source == "test"
 
+
 def test_multiclass_classification(pyplot, multiclass_classification_data):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     multiclass data."""
@@ -110,6 +111,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
     assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
     assert display.data_source == "test"
 
+
 def test_data_source_binary_classification(pyplot, binary_classification_data):
     """Check that we can pass the `data_source` argument to the ROC curve plot."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -123,7 +125,7 @@ def test_data_source_binary_classification(pyplot, binary_classification_data):
         display.lines_[0].get_label()
         == f"AUC = {display.roc_auc['roc_auc'].item():0.2f}"
     )
-    
+
     display = report.metrics.roc(data_source="train")
     display.plot()
     assert (
