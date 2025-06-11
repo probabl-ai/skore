@@ -67,6 +67,13 @@ regression). Nevertheless, you can specify the metrics you want to compute thank
 scikit-learn scorer names or a built-in `skore` metric name, (ii) a callable or a (iii)
 scikit-learn scorer constructed with :func:`sklearn.metrics.make_scorer`.
 
+We provide the :class:`EstimatorReport.metrics.summarize` method that aggregates metrics in a single dataframe, available through a Display. By default, a set of metrics is computed based
+on the type of target variable (e.g. classification or regression). Nevertheless, you
+can specify the metrics you want to compute thanks to the `scoring` parameter. We accept
+different types: (i) some strings that correspond to scikit-learn scorer names or a
+built-in `skore` metric name, (ii) a callable or a (iii) scikit-learn scorer constructed
+with :func:`sklearn.metrics.make_scorer`.
+
 Refer to the :ref:`displays` section for more details regarding the `skore` display
 API. Refer to the :ref:`estimator_metrics` section for more details on all the
 available metrics in `skore`.
