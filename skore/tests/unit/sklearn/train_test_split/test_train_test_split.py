@@ -188,10 +188,8 @@ def test_train_test_split_single_posargs():
     X = [[1]] * 20
 
     output = train_test_split(X, as_dict=True)
-    # assert that first key contains X
-    assert next(iter(output)).startswith("X")
-    # assert that output is a dict
-    assert type(output) is dict
+    assert isinstance(output, dict)
+    assert set(output.keys()) == {"X_train", "X_test"}
 
 
 def test_train_test_split_two_posargs():
@@ -201,11 +199,8 @@ def test_train_test_split_two_posargs():
     y = [0] * 10 + [1] * 10
 
     output = train_test_split(X, y, as_dict=True)
-    keys = set(output.keys())
-    # assert that keys have X and y
-    assert keys == {"X_train", "X_test", "y_train", "y_test"}
-    # assert that output is a dict
     assert isinstance(output, dict)
+    assert set(output.keys()) == {"X_train", "X_test", "y_train", "y_test"}
 
 
 def test_train_test_split_dict_pos_kwargs_conflict():
@@ -235,11 +230,8 @@ def test_train_test_split_mix_args():
     z = [0] * 10 + [1] * 10
 
     output = train_test_split(X, y, z=z, as_dict=True)
-    keys = set(output.keys())
-    # assert that keys have X, y, z
-    assert keys == {"X_train", "X_test", "y_train", "y_test", "z_train", "z_test"}
-    # assert that output is a dict
     assert isinstance(output, dict)
+    assert set(output.keys()) == {"X_train", "X_test", "y_train", "y_test", "z_train", "z_test"}
 
 
 def test_train_test_split_dict_kwargs():
