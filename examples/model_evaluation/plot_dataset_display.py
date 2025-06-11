@@ -13,7 +13,7 @@ Let's now take a look at the ``EstimatorReport.data`` accessor and see how to ma
 simple but efficient plots of your dataset.
 
 We begin by loading a dataset whose task is to predict employee salaries, and get
-a baseline pipeline using :func:`skrub.tabular_learner`.
+a baseline pipeline using ``skrub.tabular_learner``.
 """
 
 # %%
@@ -29,7 +29,7 @@ pipeline = skrub.tabular_learner(GradientBoostingRegressor())
 pipeline
 
 # %%
-# We bring the dataset and pipeline into the report, and use `.data.analyze()` to get
+# We bring the dataset and pipeline into the report, and use ``.data.analyze()`` to get
 # our insights. ``dataset=all`` means analyzing both train and test, and ``with_y=True``
 # include the target in the analysis.
 #
@@ -96,7 +96,7 @@ _ = display.plot_pearson()
 # most of the columns.
 #
 # To get a broader view of our columns correlations, we can use another metric instead,
-# the :ref:`Cramer's V correlation <https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V>`_,
+# the `Cramer's V correlation <https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V>`_,
 # whose interpretation is close to the Pearson's correlation:
 _ = display.plot_cramer()
 # %%
