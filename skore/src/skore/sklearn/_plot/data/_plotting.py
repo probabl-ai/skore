@@ -361,7 +361,7 @@ def plot_distribution_2d(df, x_col, y_col=None, c_col=None):
         c_col = _truncate_top_k(c_col)
         return box(y_col, _truncate_top_k(x_col), c_col)
     else:
-        if not sbd.is_numeric(c_col):
+        if (c_col is not None) and (not sbd.is_numeric(c_col)):
             raise ValueError(
                 "If 'x_col' and 'y_col' are categories, 'c_col' must be continuous."
             )
