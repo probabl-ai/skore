@@ -210,14 +210,18 @@ def test_train_test_split_dict_pos_kwargs_conflict():
     X = [[1]] * 20
     y = [0] * 10 + [1] * 10
 
-    err_msg = "With as_dict=True, X/y cannot be passed by both position and keyword."
+    err_msg = (
+        "With as_dict=True, expected {} to be passed either "
+        "by position or keyword, not both."
+    )
+
     import re
 
-    with pytest.raises(ValueError, match=re.escape(err_msg)):
+    with pytest.raises(ValueError, match=re.escape(err_msg.format("X"))):
         train_test_split(X, X=X, as_dict=True)
-    with pytest.raises(ValueError, match=re.escape(err_msg)):
+    with pytest.raises(ValueError, match=re.escape(err_msg.format("y"))):
         train_test_split(y, y=y, as_dict=True)
-    with pytest.raises(ValueError, match=re.escape(err_msg)):
+    with pytest.raises(ValueError, match=re.escape(err_msg.format("X and y"))):
         train_test_split(X, y, X=X, y=y, as_dict=True)
 
 
@@ -231,7 +235,14 @@ def test_train_test_split_mix_args():
 
     output = train_test_split(X, y, z=z, as_dict=True)
     assert isinstance(output, dict)
-    assert set(output.keys()) == {"X_train", "X_test", "y_train", "y_test", "z_train", "z_test"}
+    assert set(output.keys()) == {
+        "X_train",
+        "X_test",
+        "y_train",
+        "y_test",
+        "z_train",
+        "z_test",
+    }
 
 
 def test_train_test_split_dict_kwargs():
