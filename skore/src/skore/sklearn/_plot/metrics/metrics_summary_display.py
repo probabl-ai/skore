@@ -49,7 +49,7 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
             self.plot_comparison_estimator(x, y)
 
     def plot_comparison_estimator(self, x, y):
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         x_label = self._SCORE_OR_LOSS_INFO.get(x, {}).get("name", x)
         y_label = self._SCORE_OR_LOSS_INFO.get(y, {}).get("name", y)
