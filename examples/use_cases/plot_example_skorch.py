@@ -39,9 +39,9 @@ TableReport(cancer.frame, max_plot_columns=31)
 # From the table report, we can make a few inferences:
 #
 # - The *Stats* tab shows there are no null values.
-# - The *Distribution* tab shows us there is moderate level of imbalance: 62.7% benign from the mean value and 37.3% malignant values. While we can balance this or add class weights in our neural network, it is important to note that we're modeling the real world 
+# - The *Distribution* tab shows us there is moderate level of imbalance: 62.7% benign from the mean value and 37.3% malignant values. While we can balance this or add class weights in our neural network, it is important to note that we're modeling the real world
 #   and not to achieve an artificial balance!
-# - The *Distribution* tab shows a few features that have some outliers, namely: ``radius error``, ``texture error``, ``perimeter error``, ``area error``, ``smoothness error``, ``compactness error``, ``concavity error``, ``concave points error``, ``symmetry error``, ``fractal dimension error``, ``worst area``, ``worst symmetry``, ``worst fractal dimensions``. 
+# - The *Distribution* tab shows a few features that have some outliers, namely: ``radius error``, ``texture error``, ``perimeter error``, ``area error``, ``smoothness error``, ``compactness error``, ``concavity error``, ``concave points error``, ``symmetry error``, ``fractal dimension error``, ``worst area``, ``worst symmetry``, ``worst fractal dimensions``.
 #   However, it is important to note that the outliers range from 1-8 in all the different columns which is not huge to cause problems in our modeling.
 # - The *Association* tab shows that a table with correlation analysis between the different features. We can infer a few things from this as per below:
 #
@@ -62,8 +62,8 @@ cols_to_keep = [
     "mean concave points",
     "worst concavity",
     "mean concavity",
-    "target"
-    ]
+    "target",
+]
 
 dataset = cancer.frame[cols_to_keep]
 X, y = (
@@ -94,6 +94,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 # %%
 from torch import nn
 
+
 class MyNeuralNet(nn.Module):
     def __init__(self, input_dim=6, h1=64, h2=32, output_dim=2):
         super(MyNeuralNet, self).__init__()
@@ -107,6 +108,7 @@ class MyNeuralNet(nn.Module):
 
     def forward(self, X):
         return self.layers(X)
+
 
 # %%
 # Since we want to use this with `skorch` that provides a sklearn like API interface that `skore` can utilize, we shall wrap this in `skorch`'s NeuralNetClassifier.
