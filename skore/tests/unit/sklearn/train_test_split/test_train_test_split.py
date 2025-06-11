@@ -201,11 +201,11 @@ def test_train_test_split_two_posargs():
     y = [0] * 10 + [1] * 10
 
     output = train_test_split(X, y, as_dict=True)
-    keys = list(output.keys())
+    keys = set(output.keys())
     # assert that keys have X and y
-    assert keys[0].startswith("X") and keys[2].startswith("y")
+    assert keys == {"X_train", "X_test", "y_train", "y_test"}
     # assert that output is a dict
-    assert type(output) is dict
+    assert isinstance(output, dict)
 
 
 def test_train_test_split_mix_args():
@@ -217,13 +217,11 @@ def test_train_test_split_mix_args():
     z = [0] * 10 + [1] * 10
 
     output = train_test_split(X, y, z=z, as_dict=True)
-    keys = list(output.keys())
+    keys = set(output.keys())
     # assert that keys have X, y, z
-    assert (
-        keys[0].startswith("X") and keys[2].startswith("y") and keys[4].startswith("z")
-    )
+    assert keys == {"X_train", "X_test", "y_train", "y_test", "z_train", "z_test"}
     # assert that output is a dict
-    assert type(output) is dict
+    assert isinstance(output, dict)
 
 
 def test_train_test_split_dict_kwargs():
