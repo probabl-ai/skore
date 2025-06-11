@@ -7,7 +7,6 @@ from skore_hub_project.client.api import URI
 
 
 @pytest.mark.parametrize("success_uri", [None, "toto"])
-@pytest.mark.respx
 def test_get_oauth_device_login(respx_mock, success_uri):
     route = respx_mock.get(urljoin(URI, "identity/oauth/device/login")).mock(
         Response(
@@ -35,7 +34,6 @@ def test_get_oauth_device_login(respx_mock, success_uri):
     assert user_code == "C"
 
 
-@pytest.mark.respx
 def test_post_oauth_device_callback(respx_mock):
     route = respx_mock.post(urljoin(URI, "identity/oauth/device/callback")).mock(
         Response(201, json={})
@@ -47,7 +45,6 @@ def test_post_oauth_device_callback(respx_mock):
     assert route.calls.last.request.read() == b"state=my_state&user_code=my_user_code"
 
 
-@pytest.mark.respx
 def test_get_oauth_device_token(respx_mock):
     route = respx_mock.get(urljoin(URI, "identity/oauth/device/token")).mock(
         Response(
@@ -72,7 +69,6 @@ def test_get_oauth_device_token(respx_mock):
     assert expires_at == "C"
 
 
-@pytest.mark.respx
 def test_post_oauth_refresh_token(respx_mock):
     route = respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
         Response(

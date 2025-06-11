@@ -26,17 +26,16 @@ class Token:
         return pathlib.Path(tempfile.gettempdir(), "skore.token")
 
     @staticmethod
-    def save(access_token: str, refresh_token: str, expires_at: str):
+    def save(access: str, refreshment: str, expires_at: str):
         """
         Save the tokens to the disk to prevent user to login more than once, as long as
         the token is valid or can be refreshed.
         """
-        filepath = Token.filepath()
-        filepath.write_text(
+        Token.filepath().write_text(
             json.dumps(
                 (
-                    access_token,
-                    refresh_token,
+                    access,
+                    refreshment,
                     expires_at,
                 )
             )
@@ -48,21 +47,14 @@ class Token:
         return Token.filepath().exists()
 
     @staticmethod
-    def access() -> str:
-        """
-        Access used to communicate with the ``skore hub`` API.
+    def access(*, refresh=True) -> str:
+        access, refreshment, expiration = json.loads(Token.filepath().read_text())
 
-        Notes
-        -----
-        The token is automatically refreshed on purpose.
-        """
-        access, refresh, expiration = json.loads(Token.filepath().read_text())
-
-        if datetime.fromisoformat(expiration) <= datetime.now(timezone.utc):
+        if refresh and datetime.fromisoformat(expiration) <= datetime.now(timezone.utc):
             # Retrieve freshly updated tokens
-            access, refresh, expiration = post_oauth_refresh_token(refresh)
+            access, refreshment, expiration = post_oauth_refresh_token(refreshment)
 
             # Re-save the refreshed tokens
-            Token.save(access, refresh, expiration)
+            Token.save(access, refreshment, expiration)
 
         return access
