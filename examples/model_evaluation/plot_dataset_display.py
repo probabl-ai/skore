@@ -5,7 +5,7 @@
 Pretty plots of your dataset with a single line of code
 =======================================================
 
-We :ref:`previously explored<_example_estimator_report>` how
+We :ref:`previously explored<example_estimator_report>` how
 :class:`skore.EstimatorReport` can accelerate your ML analysis by bringing a lot
 of scikit-learn techniques under the same roof.
 
