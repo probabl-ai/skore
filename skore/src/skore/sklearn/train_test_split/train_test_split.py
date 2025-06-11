@@ -159,6 +159,12 @@ def train_test_split(
         keys.append("y")
 
     if as_dict and arrays:
+        # if X is passed as both keyword and pos args
+        if len(arrays) <= 2 and (X is not None or y is not None):
+            raise ValueError(
+                "With as_dict=True, X/y cannot be passed by both position and keyword."
+            )
+
         # if X or y are passed by position
         if len(arrays) == 1:
             warnings.warn(
@@ -174,6 +180,7 @@ def train_test_split(
                 stacklevel=2,
             )
             keys.extend(["X", "y"])
+
         elif len(arrays) > 2:
             raise ValueError(
                 "With as_dict=True, expected no more than two positional arguments "
