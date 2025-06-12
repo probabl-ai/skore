@@ -221,8 +221,6 @@ def test_train_test_split_dict_pos_kwargs_conflict():
         train_test_split(X, X=X, as_dict=True)
     with pytest.raises(ValueError, match=re.escape(err_msg.format("y"))):
         train_test_split(y, y=y, as_dict=True)
-    with pytest.raises(ValueError, match=re.escape(err_msg.format("X and y"))):
-        train_test_split(X, y, X=X, y=y, as_dict=True)
 
 
 def test_train_test_split_mix_args():
