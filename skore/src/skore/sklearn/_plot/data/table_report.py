@@ -68,6 +68,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         y_col=None,
         c_col=None,
         kind="dist",
+        top_k_categ=20,
         n_subsample=None,
         subsample_strategy="head",
         random_state=None,
@@ -77,13 +78,20 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         Parameters
         ----------
         x_col : str, default=None
-            The name of the column to use for the x-axis of the plot.
+            The name of the column to use for the x-axis of the plot. Mandatory when
+            ``kind='dist'``.
 
         y_col : str, default=None
-            The name of the column to use for the y-axis of the plot.
+            The name of the column to use for the y-axis of the plot. Only used when
+            ``kind='dist'``.
 
         c_col : str, default=None
-            The name of the column to use for the color or hue axis of the plot.
+            The name of the column to use for the color or hue axis of the plot. Only
+            used when ``kind='dist'``.
+
+        top_k_categ : int, default=20
+            For categorical columns, the number of most frequent elements to display.
+            Only used when ``kind='dist'``.
 
         kind : {'dist', 'pearson', 'cramer'}, default='dist'
             The kind of plot drawn.
@@ -130,6 +138,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 x_col,
                 y_col,
                 c_col,
+                k=top_k_categ,
             )
 
         elif kind == "pearson":

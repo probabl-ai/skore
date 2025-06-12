@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -90,11 +92,8 @@ def _robust_hist(values, ax):
         ax.stairs([n_high_outliers], [bins[-1], stop], color=_RED, fill=True)
         ax.axvline(bins[-1], **line_params)
     ax.text(
-        # we place the text offset from the left rather than centering it to
-        # make room for the factor matplotlib sometimes places on the right of
-        # the axis eg "1e6" when the ticks are labelled in millions.
-        0.15,
-        1.0,
+        0.33,
+        1.05,
         (
             f"{_utils.format_number(n_out)} outliers "
             f"({_utils.format_percent(n_out / len(values))})"
@@ -124,7 +123,7 @@ def histogram(col, duration_unit=None):
         ax.set_xlabel(f"{duration_unit.capitalize()}s")
     if sbd.is_any_date(col):
         _rotate_ticklabels(ax)
-    _adjust_fig_size(fig, ax, 8.0, 4.0)
+    _adjust_fig_size(fig, ax, 6.0, 3.0)
     return fig, n_low_outliers, n_high_outliers
 
 
@@ -196,23 +195,23 @@ def value_counts(value_counts, n_rows, title="", color=_ORANGE):
     if title is not None:
         ax.set_title(title, fontsize=16)
 
-    _adjust_fig_size(fig, ax, 8.0, 0.4 * len(values))
+    _adjust_fig_size(fig, ax, 7.0, 0.4 * len(values))
     return fig
 
 
 def scatter(x_col, y_col, c_col):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(dpi=150)
 
     sns.scatterplot(x=x_col, y=y_col, hue=c_col, ax=ax)
     if ax.legend_ is not None:
         sns.move_legend(ax, (1.05, 0.0))
-    sns.move_legend(ax, (1.05, 0.0))
 
     return fig
 
 
 def box(x_col, y_col, c_col):
-    fig, ax = plt.subplots()
+    h = max(sbd.n_unique(y_col) * 0.3, 3)
+    fig, ax = plt.subplots(dpi=150, figsize=(6, h))
 
     sns.stripplot(
         x=x_col,
@@ -238,26 +237,30 @@ def box(x_col, y_col, c_col):
         zorder=1,
         ax=ax,
     )
+
     if ax.legend_ is not None:
         sns.move_legend(ax, (1.05, 0.0))
 
     return fig
 
 
-def heatmap(df, title=None, **kwargs):
-    fig, ax = plt.subplots()
+def heatmap(df, title=None, adjust_size=False, **kwargs):
+    w = max(sbd.shape(df)[0] * 1, 4)
+    fig, ax = plt.subplots(dpi=150, figsize=(w, w))
 
     df = df.infer_objects(copy=False).fillna(np.nan)
     df.index = [_utils.ellide_string(s) for s in df.index]
     df.columns = [_utils.ellide_string(s) for s in df.columns]
-    _ = sns.heatmap(df, ax=ax, **kwargs)
+    _ = sns.heatmap(
+        df, ax=ax, xticklabels=True, yticklabels=True, robust=True, annot=True, **kwargs
+    )
     if title is not None:
         ax.set_title(title)
 
     return fig
 
 
-def plot_distribution_1d(df, x_col):
+def plot_distribution_1d(df, x_col, k):
     col = df[x_col]
 
     duration_unit = None
@@ -267,12 +270,12 @@ def plot_distribution_1d(df, x_col):
     if sbd.is_numeric(col) or sbd.is_any_date(col):
         fig, _, _ = histogram(col, duration_unit)
     else:
-        _, counter = _utils.top_k_value_counts(col, k=10)
+        _, counter = _utils.top_k_value_counts(col, k=k)
         fig = value_counts(counter, n_rows=sbd.shape(col)[0], title=x_col)
     return fig
 
 
-def _truncate_top_k(col, k=10):
+def _truncate_top_k(col, k):
     if col is None or sbd.is_numeric(col):
         return col
 
@@ -292,7 +295,27 @@ def _truncate_top_k(col, k=10):
     return col
 
 
-def _aggregate_pairwise(x_col, y_col, c_col):
+def _mask_top_k(cols, names, k):
+    key = "_skore_count"  # an arbitrary column name that disappear after pivoting.
+    indices = (
+        pd.DataFrame(cols)
+        .T.assign(**{key: 1})
+        .groupby(names)[key]
+        .sum()
+        .sort_values(ascending=False)
+        .head(k)
+        .index
+    )
+    left, right = zip(*list(indices))
+    left, right = list(set(left)), list(set(right))
+    return list(itertools.product(left, right))
+
+
+def _pairwise_product_index(x_col, y_col):
+    return list(itertools.product(x_col.unique().tolist(), y_col.unique().tolist()))
+
+
+def _aggregate_pairwise(x_col, y_col, c_col, k):
     """Create a symmetric matrix by a pairwise aggregation of its columns.
 
     - If the color column c_col is provided, the values of the symmetric matrix are
@@ -303,7 +326,9 @@ def _aggregate_pairwise(x_col, y_col, c_col):
     # We use Pandas for pivot and groupby operations to simplify the logic.
     cols = [sbd.to_pandas(x_col), sbd.to_pandas(y_col)]
     names = [col.name for col in cols]
-    kwargs = {}
+    mask_top_k = _mask_top_k(cols, names, k)
+    full_index = _pairwise_product_index(*cols)
+    kwargs = {"adjust_size": True}
     if c_col is None:
         key = "_skore_count"  # an arbitrary column name that disappear after pivoting.
         df = (
@@ -311,6 +336,9 @@ def _aggregate_pairwise(x_col, y_col, c_col):
             .T.assign(**{key: 1})
             .groupby(names)[key]
             .sum()
+            .reindex(full_index)
+            .fillna(0)
+            .loc[mask_top_k]
             .reset_index()
             .pivot(
                 columns=names[0],
@@ -327,45 +355,49 @@ def _aggregate_pairwise(x_col, y_col, c_col):
             pd.DataFrame(cols)
             .T.groupby(names)[key]
             .mean()
+            .reindex(full_index)
+            .loc[mask_top_k]
             .reset_index()
             .pivot(columns=names[0], index=names[1], values=key)
         )
-        kwargs["cbar_kws"] = {"label": key}
+        kwargs["cbar_kws"] = {"label": f"average {_utils.ellide_string(key)}"}
     return {"df": df} | kwargs
 
 
-def plot_distribution_2d(df, x_col, y_col=None, c_col=None):
-    x_col = df[x_col]
+def plot_distribution_2d(df, x_col, y_col=None, c_col=None, k=20):
+    x_col, y_col, c_col = df[x_col], df.get(y_col, None), df.get(c_col, None)
     if y_col is None:
-        y_col = c_col = df[c_col]
-    elif c_col is None:
-        y_col = df[y_col]
-    else:
-        y_col, c_col = df[y_col], df[c_col]
+        y_col = c_col
 
     is_x_num, is_y_num = sbd.is_numeric(x_col), sbd.is_numeric(y_col)
     if is_x_num and is_y_num:
-        return scatter(x_col, y_col, _truncate_top_k(c_col))
+        return scatter(x_col, y_col, _truncate_top_k(c_col, k))
     elif is_x_num:
         # We use a horizontal box plot to limit xlabels overlap.
-        return box(x_col, _truncate_top_k(y_col), _truncate_top_k(c_col))
+        return box(x_col, _truncate_top_k(y_col, k), _truncate_top_k(c_col, k))
     elif is_y_num:
-        c_col = _truncate_top_k(c_col)
-        return box(y_col, _truncate_top_k(x_col), c_col)
+        return box(y_col, _truncate_top_k(x_col, k), _truncate_top_k(c_col, k))
     else:
         if (c_col is not None) and (not sbd.is_numeric(c_col)):
             raise ValueError(
                 "If 'x_col' and 'y_col' are categories, 'c_col' must be continuous."
             )
-        return heatmap(**_aggregate_pairwise(x_col, y_col, c_col))
+        return heatmap(
+            **_aggregate_pairwise(
+                x_col,
+                y_col,
+                c_col,
+                k,
+            )
+        )
 
 
-def plot_distribution(df, x_col, y_col=None, c_col=None):
+def plot_distribution(df, x_col, y_col=None, c_col=None, k=20):
     if y_col is None and c_col is None:
         # XXX: should we allow 1d plot with a hue value (c_col)?
-        return plot_distribution_1d(df, x_col)
+        return plot_distribution_1d(df, x_col, k)
     else:
-        return plot_distribution_2d(df, x_col, y_col, c_col)
+        return plot_distribution_2d(df, x_col, y_col, c_col, k)
 
 
 def plot_pearson(df):
