@@ -1,8 +1,9 @@
 """API used to exchange with ``skore hub``."""
 
+from datetime import datetime
 from functools import partial
 from os import environ
-from typing import Optional
+from time import sleep
 from urllib.parse import urljoin
 
 import httpx
@@ -15,7 +16,7 @@ Client = partial(
 )
 
 
-def get_oauth_device_login(success_uri: Optional[str] = None):
+def get_oauth_device_login(success_uri: str | None = None):
     """Initiate device OAuth flow.
 
     Initiates the OAuth device flow.
@@ -102,6 +103,36 @@ def get_oauth_device_token(device_code: str):
             tokens["refresh_token"],
             tokens["expires_at"],
         )
+
+
+def get_oauth_device_code_probe(device_code: str, *, timeout=600):
+    """Ensure authorization code is acknowledged.
+
+    Start polling, wait for the authorization code to be acknowledged by the hub.
+    This is mandatory to be authorize to exchange with a token.
+
+    Parameters
+    ----------
+    device_code : str
+        The device code to exchange for tokens.
+    """
+    url = urljoin(URI, "identity/oauth/device/code-probe")
+    start = datetime.now()
+
+    with Client() as client:
+        while True:
+            try:
+                client.get(url, params={"device_code": device_code})
+            except httpx.HTTPError as exc:
+                if exc.response.status_code != 400:
+                    raise
+
+                if (datetime.now() - start).total_seconds() >= timeout:
+                    raise httpx.TimeoutException("Authentication timeout") from exc
+
+                sleep(0.5)
+            else:
+                break
 
 
 def post_oauth_refresh_token(refresh_token: str):

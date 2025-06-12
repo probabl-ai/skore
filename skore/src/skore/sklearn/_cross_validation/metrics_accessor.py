@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Literal, Optional, Union, cast
+from typing import Any, Literal, cast
 
 import joblib
 import numpy as np
@@ -12,10 +12,10 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._plot import (
+    MetricsSummaryDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
-    SummarizeDisplay,
 )
 from skore.sklearn.types import (
     _DEFAULT,
@@ -60,16 +60,16 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        scoring: Optional[Union[Scoring, list[Scoring]]] = None,
-        scoring_names: Optional[Union[ScoringName, list[ScoringName]]] = None,
-        scoring_kwargs: Optional[dict[str, Any]] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        scoring: Scoring | list[Scoring] | None = None,
+        scoring_names: ScoringName | list[ScoringName] | None = None,
+        scoring_kwargs: dict[str, Any] | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
-    ) -> SummarizeDisplay:
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -131,7 +131,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
         Returns
         -------
-        SummarizeDisplay
+        MetricsSummaryDisplay
             A display containing the statistics for the metrics.
 
         Examples
@@ -177,7 +177,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return SummarizeDisplay(summarize_data=results)
+        return MetricsSummaryDisplay(summarize_data=results)
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
@@ -185,9 +185,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         report_metric_name: str,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = None,
         **metric_kwargs: Any,
     ) -> pd.DataFrame:
         if data_source == "X_y":
@@ -212,7 +212,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             cache_key_parts.extend(tuple(aggregate))
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
         for key in ordered_metric_kwargs:
-            if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
+            if isinstance(metric_kwargs[key], np.ndarray | list | dict):
                 cache_key_parts.append(joblib.hash(metric_kwargs[key]))
             else:
                 cache_key_parts.append(metric_kwargs[key])
@@ -280,7 +280,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
     def timings(
         self,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Get all measured processing times related to the estimator.
 
@@ -342,9 +342,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -401,13 +401,13 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["binary", "macro", "micro", "weighted", "samples"]
-        ] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -498,13 +498,13 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["binary", "macro", "micro", "weighted", "samples"]
-        ] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -596,9 +596,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
@@ -655,11 +655,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: Literal["macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
@@ -750,9 +750,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the log loss.
 
@@ -809,10 +809,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the R² score.
 
@@ -880,10 +880,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
@@ -949,13 +949,13 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     def custom_metric(
         self,
         metric_function: Callable,
-        response_method: Union[str, list[str]],
+        response_method: str | list[str],
         *,
-        metric_name: Optional[str] = None,
+        metric_name: str | None = None,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
         **kwargs,
     ) -> pd.DataFrame:
         """Compute a custom metric.
@@ -1119,15 +1119,15 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     def _get_display(
         self,
         *,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         data_source: DataSource,
         response_method: str,
         display_class: type[
-            Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
+            RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay
         ],
         display_kwargs: dict[str, Any],
-    ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
+    ) -> RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay:
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1251,9 +1251,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1319,9 +1319,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
@@ -1387,10 +1387,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        subsample: Union[float, int, None] = 1_000,
-        seed: Optional[int] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        subsample: float | int | None = 1_000,
+        seed: int | None = None,
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 

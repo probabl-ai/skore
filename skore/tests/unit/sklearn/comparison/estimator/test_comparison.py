@@ -12,7 +12,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
-from skore.sklearn._plot.metrics import SummarizeDisplay
+from skore.sklearn._plot.metrics import MetricsSummaryDisplay
 
 
 @pytest.fixture
@@ -473,7 +473,7 @@ def test_cross_validation_report_flat_index(binary_classification_model):
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result = report.metrics.summarize(flat_index=True)
-    assert isinstance(result, SummarizeDisplay)
+    assert isinstance(result, MetricsSummaryDisplay)
     result_df = result.frame()
     assert result_df.shape == (8, 2)
     assert isinstance(result_df.index, pd.Index)
@@ -493,7 +493,7 @@ def test_cross_validation_report_flat_index(binary_classification_model):
 def test_estimator_report_summarize_indicator_favorability(report):
     """Check that the behaviour of `indicator_favorability` is correct."""
     result = report.metrics.summarize(indicator_favorability=True)
-    assert isinstance(result, SummarizeDisplay)
+    assert isinstance(result, MetricsSummaryDisplay)
     result_df = result.frame()
     assert "Favorability" in result_df.columns
     indicator = result_df["Favorability"]

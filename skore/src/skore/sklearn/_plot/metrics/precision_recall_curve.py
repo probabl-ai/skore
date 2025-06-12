@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Literal, Optional, Union, cast
+from typing import Any, Literal, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,7 +24,7 @@ from skore.sklearn._plot.utils import (
 from skore.sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 
-def _set_axis_labels(ax: Axes, info_pos_label: Union[str, None]) -> None:
+def _set_axis_labels(ax: Axes, info_pos_label: str | None) -> None:
     """Add axis labels."""
     xlabel = "Recall"
     ylabel = "Precision"
@@ -113,14 +113,14 @@ class PrecisionRecallCurveDisplay(
     >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
     """
 
-    _default_pr_curve_kwargs: Union[dict[str, Any], None] = None
+    _default_pr_curve_kwargs: dict[str, Any] | None = None
 
     def __init__(
         self,
         *,
         precision_recall: DataFrame,
         average_precision: DataFrame,
-        pos_label: Optional[PositiveLabel],
+        pos_label: PositiveLabel | None,
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
         report_type: ReportType,
@@ -137,7 +137,7 @@ class PrecisionRecallCurveDisplay(
         *,
         estimator_name: str,
         pr_curve_kwargs: list[dict[str, Any]],
-    ) -> tuple[Axes, list[Line2D], Union[str, None]]:
+    ) -> tuple[Axes, list[Line2D], str | None]:
         """Plot precision-recall curve for a single estimator.
 
         Parameters
@@ -245,7 +245,7 @@ class PrecisionRecallCurveDisplay(
         *,
         estimator_name: str,
         pr_curve_kwargs: list[dict[str, Any]],
-    ) -> tuple[Axes, list[Line2D], Union[str, None]]:
+    ) -> tuple[Axes, list[Line2D], str | None]:
         """Plot precision-recall curve for a cross-validated estimator.
 
         Parameters
@@ -362,7 +362,7 @@ class PrecisionRecallCurveDisplay(
         *,
         estimator_names: list[str],
         pr_curve_kwargs: list[dict[str, Any]],
-    ) -> tuple[Axes, list[Line2D], Union[str, None]]:
+    ) -> tuple[Axes, list[Line2D], str | None]:
         """Plot precision-recall curve of several estimators.
 
         Parameters
@@ -472,7 +472,7 @@ class PrecisionRecallCurveDisplay(
         *,
         estimator_names: list[str],
         pr_curve_kwargs: list[dict[str, Any]],
-    ) -> tuple[Axes, list[Line2D], Union[str, None]]:
+    ) -> tuple[Axes, list[Line2D], str | None]:
         """Plot precision-recall curve of several estimators.
 
         Parameters
@@ -634,8 +634,8 @@ class PrecisionRecallCurveDisplay(
     def plot(
         self,
         *,
-        estimator_name: Optional[str] = None,
-        pr_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
+        estimator_name: str | None = None,
+        pr_curve_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
         despine: bool = True,
     ) -> None:
         """Plot visualization.
@@ -770,7 +770,7 @@ class PrecisionRecallCurveDisplay(
         estimator_names: list[str],
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
-        pos_label: Optional[PositiveLabel],
+        pos_label: PositiveLabel | None,
         drop_intermediate: bool = True,
     ) -> "PrecisionRecallCurveDisplay":
         """Plot precision-recall curve given binary class predictions.
@@ -822,7 +822,7 @@ class PrecisionRecallCurveDisplay(
         average_precision_records = []
 
         if ml_task == "binary-classification":
-            for y_true_i, y_pred_i in zip(y_true, y_pred):
+            for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
                 pos_label_validated = cast(PositiveLabel, pos_label_validated)
                 precision_i, recall_i, thresholds_i = precision_recall_curve(
                     y_true_i.y,
@@ -835,7 +835,7 @@ class PrecisionRecallCurveDisplay(
                 )
 
                 for precision, recall, threshold in zip(
-                    precision_i, recall_i, thresholds_i
+                    precision_i, recall_i, thresholds_i, strict=False
                 ):
                     precision_recall_records.append(
                         {
@@ -856,7 +856,9 @@ class PrecisionRecallCurveDisplay(
                     }
                 )
         else:  # multiclass-classification
-            for y_true_i, y_pred_i, est in zip(y_true, y_pred, estimators):
+            for y_true_i, y_pred_i, est in zip(
+                y_true, y_pred, estimators, strict=False
+            ):
                 label_binarizer = LabelBinarizer().fit(est.classes_)
                 y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)
                 for class_idx, class_ in enumerate(est.classes_):
@@ -873,7 +875,10 @@ class PrecisionRecallCurveDisplay(
                     )
 
                     for precision, recall, threshold in zip(
-                        precision_class_i, recall_class_i, thresholds_class_i
+                        precision_class_i,
+                        recall_class_i,
+                        thresholds_class_i,
+                        strict=False,
                     ):
                         precision_recall_records.append(
                             {

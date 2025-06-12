@@ -21,7 +21,7 @@ from .pickle_item import PickleItem
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from typing import Any, Literal, TypedDict, Union
+    from typing import Any, Literal, TypedDict
 
     from skore.sklearn import EstimatorReport
 
@@ -30,22 +30,22 @@ if TYPE_CHECKING:
 
     class Metric(TypedDict):  # noqa: D101
         name: str
-        verbose_name: Union[str, None]
+        verbose_name: str | None
         value: float
-        data_source: Union[str, None]
-        greater_is_better: Union[bool, None]
-        position: Union[int, None]
+        data_source: str | None
+        greater_is_better: bool | None
+        position: int | None
 
     class Representation(TypedDict):  # noqa: D101
         key: str
-        verbose_name: Union[str, None]
+        verbose_name: str | None
         category: Literal["performance", "feature_importance", "model"]
         attributes: dict
         representation: dict
         parameters: dict
 
 
-def cast_to_float(value: Any) -> Union[float, None]:
+def cast_to_float(value: Any) -> float | None:
     """Cast value to float."""
     with suppress(TypeError):
         if (value := float(value)) and isfinite(value):
@@ -135,9 +135,9 @@ class Metadata:
             verbose_name: str,
             data_source: str,
             greater_is_better: bool,
-            position: Union[int, None],
+            position: int | None,
             /,
-        ) -> Union[Metric, None]:
+        ) -> Metric | None:
             if hasattr(self.report.metrics, name):
                 value = getattr(self.report.metrics, name)(data_source=data_source)
 
@@ -156,11 +156,11 @@ class Metadata:
         def timing(
             name: str,
             verbose_name: str,
-            data_source: Union[str, None],
+            data_source: str | None,
             greater_is_better: bool,
-            position: Union[int, None],
+            position: int | None,
             /,
-        ) -> Union[Metric, None]:
+        ) -> Metric | None:
             timings = self.report.metrics.timings()
             value = timings.get(
                 name if name != "predict_time" else f"{name}_{data_source}"
@@ -243,7 +243,7 @@ class Representations:
         verbose_name,
         category,
         **kwargs,
-    ) -> Union[Representation, None]:
+    ) -> Representation | None:
         """Return sub-representation made of ``matplotlib`` figures."""
         try:
             function = attrgetter(name)(self.report)
@@ -271,7 +271,7 @@ class Representations:
                 "representation": item.__representation__["representation"],
             }
 
-    def pd(self, name, verbose_name, category, **kwargs) -> Union[Representation, None]:
+    def pd(self, name, verbose_name, category, **kwargs) -> Representation | None:
         """Return sub-representation made of ``pandas`` dataframes."""
         try:
             function = attrgetter(name)(self.report)
