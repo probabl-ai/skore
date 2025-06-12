@@ -8,7 +8,7 @@ from skrub import _column_associations
 from skrub import _dataframe as sbd
 from skrub._reporting import _utils
 
-from skore.skrub._skrub_compat import is_in
+from skore.skrub import _skrub_compat as sbd_compat
 
 _RED = "#dd0000"
 _BLUE = "#4878d0"
@@ -177,10 +177,12 @@ def value_counts(value_counts, n_rows, title="", color=_ORANGE):
     rects = ax.barh(list(map(str, range(len(values)))), counts, color=color)
     percent = [_utils.format_percent(c / n_rows) for c in counts]
     large_percent = [
-        f"{p: >6}" if c > counts[-1] / 2 else "" for (p, c) in zip(percent, counts)
+        f"{p: >6}" if c > counts[-1] / 2 else ""
+        for (p, c) in zip(percent, counts, strict=False)
     ]
     small_percent = [
-        p if c <= counts[-1] / 2 else "" for (p, c) in zip(percent, counts)
+        p if c <= counts[-1] / 2 else ""
+        for (p, c) in zip(percent, counts, strict=False)
     ]
 
     # those are written on top of the orange bars so we write them in black
@@ -244,15 +246,45 @@ def box(x_col, y_col, c_col):
     return fig
 
 
-def heatmap(df, title=None, adjust_size=False, **kwargs):
-    w = max(sbd.shape(df)[0] * 1, 4)
-    fig, ax = plt.subplots(dpi=150, figsize=(w, w))
+def _has_no_decimal(df):
+    for col in sbd.to_column_list(df):
+        if sbd.any(col != sbd.cast(col, "int")):
+            return False
+    return True
+
+
+def _global_max(df):
+    return max([sbd.max(col) for col in sbd.to_column_list(df)])
+
+
+def heatmap(df, title=None, **kwargs):
+    n_rows, n_cols = sbd.shape(df)
+    h = min(max(n_rows * 0.9, 4), 8)
+    w = min(max(n_cols * 0.9, 4), 8)
+    fig, ax = plt.subplots(dpi=150, figsize=(w, h))
 
     df = df.infer_objects(copy=False).fillna(np.nan)
+
+    if _global_max(df) < 1000:  # noqa: SIM108
+        # avoid scientific notation for small numbers
+        fmt = ".0f" if _has_no_decimal(df) else ".2f"
+    else:
+        # scientific notation for bigger numbers
+        fmt = ".2g"
+
+    annot = n_cols < 10
+
     df.index = [_utils.ellide_string(s) for s in df.index]
     df.columns = [_utils.ellide_string(s) for s in df.columns]
     _ = sns.heatmap(
-        df, ax=ax, xticklabels=True, yticklabels=True, robust=True, annot=True, **kwargs
+        df,
+        ax=ax,
+        xticklabels=True,
+        yticklabels=True,
+        robust=True,
+        annot=annot,
+        fmt=fmt,
+        **kwargs,
     )
     if title is not None:
         ax.set_title(title)
@@ -261,7 +293,7 @@ def heatmap(df, title=None, adjust_size=False, **kwargs):
 
 
 def plot_distribution_1d(df, x_col, k):
-    col = df[x_col]
+    col = sbd.col(df, x_col)
 
     duration_unit = None
     if sbd.is_duration(col):
@@ -275,17 +307,20 @@ def plot_distribution_1d(df, x_col, k):
     return fig
 
 
-def _truncate_top_k(col, k):
+def _truncate_top_k(col, k, other_label="other"):
     if col is None or sbd.is_numeric(col):
         return col
 
     # Use only the top k most frequent items of the color column
     # if it's categorical.
     _, counter = _utils.top_k_value_counts(col, k=k)
-    values, _ = zip(*counter)
-    other = sbd.make_column_like(col, ["other"] * sbd.shape(col)[0], name="c")
-    values = (*values, np.nan)
-    col = sbd.where(col, is_in(col, values), other)
+    values, _ = zip(*counter, strict=False)
+    other = sbd.make_column_like(col, [other_label] * sbd.shape(col)[0], name="c")
+    keep = (
+        sbd_compat.is_in(col, values)
+        | sbd.is_null(col)  # we don't want to replace NaN with 'other'
+    )
+    col = sbd.where(col, keep, other)
     col = sbd.make_column_like(
         col,
         [_utils.ellide_string(s, max_len=20) for s in sbd.to_list(col)],
@@ -306,7 +341,7 @@ def _mask_top_k(cols, names, k):
         .head(k)
         .index
     )
-    left, right = zip(*list(indices))
+    left, right = zip(*list(indices), strict=False)
     left, right = list(set(left)), list(set(right))
     return list(itertools.product(left, right))
 
@@ -328,7 +363,7 @@ def _aggregate_pairwise(x_col, y_col, c_col, k):
     names = [col.name for col in cols]
     mask_top_k = _mask_top_k(cols, names, k)
     full_index = _pairwise_product_index(*cols)
-    kwargs = {"adjust_size": True}
+    kwargs = {}
     if c_col is None:
         key = "_skore_count"  # an arbitrary column name that disappear after pivoting.
         df = (
@@ -365,7 +400,11 @@ def _aggregate_pairwise(x_col, y_col, c_col, k):
 
 
 def plot_distribution_2d(df, x_col, y_col=None, c_col=None, k=20):
-    x_col, y_col, c_col = df[x_col], df.get(y_col, None), df.get(c_col, None)
+    x_col, y_col, c_col = (
+        sbd.col(df, x_col),
+        sbd.col(df, y_col) if y_col is not None else None,
+        sbd.col(df, c_col) if c_col is not None else None,
+    )
     if y_col is None:
         y_col = c_col
 
