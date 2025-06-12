@@ -44,7 +44,6 @@ test-base = [
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "scikit-learn<1.7",
   "skrub",
   "xdoctest",
 ]
@@ -56,7 +55,6 @@ sphinx-base = [
   "numpydoc",
   "plotly>=5,<6",
   "pydata-sphinx-theme",
-  "scikit-learn<1.7",
   "seaborn",
   "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
   "skrub",
