@@ -162,12 +162,12 @@ def train_test_split(
         # if X or y is passed both by keyword and by position
         if X is not None:
             raise ValueError(
-                f"With as_dict=True, expected X to be passed either "
+                "With as_dict=True, expected X to be passed either "
                 "by position or keyword, not both."
             )
         if y is not None:
             raise ValueError(
-                f"With as_dict=True, expected y to be passed either "
+                "With as_dict=True, expected y to be passed either "
                 "by position or keyword, not both."
             )
 
