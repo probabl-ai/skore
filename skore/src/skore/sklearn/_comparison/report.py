@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from collections import Counter
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import joblib
 import numpy as np
@@ -112,14 +112,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     @staticmethod
     def _validate_reports(
-        reports: Union[
-            list[EstimatorReport],
-            dict[str, EstimatorReport],
-            list[CrossValidationReport],
-            dict[str, CrossValidationReport],
-        ],
+        reports: list[EstimatorReport]
+        | dict[str, EstimatorReport]
+        | list[CrossValidationReport]
+        | dict[str, CrossValidationReport],
     ) -> tuple[
-        Union[list[EstimatorReport], list[CrossValidationReport]],
+        list[EstimatorReport] | list[CrossValidationReport],
         list[str],
         ReportType,
         PositiveLabel,
@@ -164,7 +162,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                         f"Expected all report names to be strings; got {type(key)}"
                     )
             reports_list = cast(
-                Union[list[EstimatorReport], list[CrossValidationReport]],
+                list[EstimatorReport] | list[CrossValidationReport],
                 list(reports.values()),
             )
 
@@ -223,14 +221,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        reports: Union[
-            list[EstimatorReport],
-            dict[str, EstimatorReport],
-            list[CrossValidationReport],
-            dict[str, CrossValidationReport],
-        ],
+        reports: list[EstimatorReport]
+        | dict[str, EstimatorReport]
+        | list[CrossValidationReport]
+        | dict[str, CrossValidationReport],
         *,
-        n_jobs: Optional[int] = None,
+        n_jobs: int | None = None,
     ) -> None:
         """
         ComparisonReport instance initializer.
@@ -247,7 +243,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             ComparisonReport._validate_reports(reports)
         )
 
-        self._progress_info: Optional[dict[str, Any]] = None
+        self._progress_info: dict[str, Any] | None = None
 
         self.n_jobs = n_jobs
         self._rng = np.random.default_rng(time.time_ns())
@@ -288,7 +284,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         response_methods: Literal[
             "auto", "predict", "predict_proba", "decision_function"
         ] = "auto",
-        n_jobs: Optional[int] = None,
+        n_jobs: int | None = None,
     ) -> None:
         """Cache the predictions for sub-estimators reports.
 
@@ -344,8 +340,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
-        X: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> list[ArrayLike]:
         """Get predictions from the underlying reports.
 
@@ -421,7 +417,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ]
 
     @property
-    def pos_label(self) -> Optional[PositiveLabel]:
+    def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
 
     ####################################################################################

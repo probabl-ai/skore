@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from numpy.typing import ArrayLike
 
@@ -31,12 +30,12 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
 
     @staticmethod
     def check(
-        y_test: Optional[Sequence],
-        stratify: Optional[ArrayLike],
-        y_labels: Optional[Sequence],
+        y_test: Sequence | None,
+        stratify: ArrayLike | None,
+        y_labels: Sequence | None,
         ml_task: MLTask,
         **kwargs,
-    ) -> Union[str, None]:
+    ) -> str | None:
         """Check whether the test set has too few examples in one class.
 
         More precisely, we check whether some class in `y_labels` has

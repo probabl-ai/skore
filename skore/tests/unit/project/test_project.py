@@ -1,4 +1,4 @@
-from sys import version_info
+from importlib.metadata import EntryPoint, EntryPoints
 from unittest.mock import Mock
 
 from pandas import DataFrame, MultiIndex, Series
@@ -8,11 +8,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from skore import EstimatorReport, Project
 from skore.project.summary import Summary
-
-if version_info < (3, 10):
-    from importlib_metadata import EntryPoint, EntryPoints
-else:
-    from importlib.metadata import EntryPoint, EntryPoints
 
 
 class FakeEntryPoint(EntryPoint):

@@ -1,5 +1,4 @@
 import copy
-from typing import Optional
 
 import pandas as pd
 
@@ -86,7 +85,7 @@ def _combine_cross_validation_results(
     individual_results: list[pd.DataFrame],
     estimator_names: list[str],
     indicator_favorability: bool,
-    aggregate: Optional[Aggregate],
+    aggregate: Aggregate | None,
 ) -> pd.DataFrame:
     """Combine a list of dataframes provided by `CrossValidationReport`s.
 
@@ -309,7 +308,7 @@ def _combine_cross_validation_results(
     df = pd.concat(
         [
             melt(df_with_name(df, estimator_name))
-            for df, estimator_name in zip(results, estimator_names)
+            for df, estimator_name in zip(results, estimator_names, strict=False)
         ],
         axis=0,
     )
