@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import HelpDisplayMixin
@@ -55,8 +56,6 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
         -------
         A matplotlib plot.
         """
-        self.figure_, self.ax_ = plt.subplots()
-
         if self.report_type in (
             ["estimator", "cross-validation", "comparison-cross-validation"]
         ):
@@ -65,7 +64,7 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
             self.plot_comparison_estimator(x, y)
 
     def plot_comparison_estimator(self, x, y):
-        _, ax = plt.subplots()
+        fig, ax = plt.subplots()
 
         x_label = self._SCORE_OR_LOSS_INFO.get(x, {}).get("name", x)
         y_label = self._SCORE_OR_LOSS_INFO.get(y, {}).get("name", y)
@@ -76,8 +75,11 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
         reverse_score_info = {
             value["name"]: key for key, value in self._SCORE_OR_LOSS_INFO.items()
         }
-        available_columns = self.summarize_data.columns.get_level_values(0).to_list()
-        available_columns.remove("Estimator")
+        index = self.summarize_data.index
+        if isinstance(index, pd.MultiIndex):
+            available_columns = index.get_level_values(0).to_list()
+        else:
+            available_columns = index.tolist()
         supported_metrics = [
             reverse_score_info.get(col, col) for col in available_columns
         ]
@@ -92,16 +94,23 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
                 f"Supported metrics are: {supported_metrics}."
             )
 
-        x_data = self.summarize_data[x_label]
-        y_data = self.summarize_data[y_label]
-        if len(x_data.shape) > 1:
+        x_data = self.summarize_data.loc[x_label]
+        y_data = self.summarize_data.loc[y_label]
+        if len(x_data.shape) > 1 and x_data.shape[0] > 1:
+            # case where we have multiIndex, and the metric is not a single value
             raise ValueError(
                 "The perf metric x requires to add a positive label parameter."
             )
-        if len(y_data.shape) > 1:
+        elif len(x_data.shape) > 1 and x_data.shape[0] == 1:
+            # case where we have multiIndex, but the metric is not affected by the
+            # pos_label
+            x_data = x_data.squeeze()
+        if len(y_data.shape) > 1 and y_data.shape[0] > 1:
             raise ValueError(
                 "The perf metric y requires to add a positive label parameter."
             )
+        elif len(y_data.shape) > 1 and y_data.shape[0] == 1:
+            y_data = y_data.squeeze()
 
         # Make it clear in the axis labels that we are using the train set
         if x == "fit_time" and self.data_source != "train":
@@ -113,18 +122,18 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
         else:
             y_label_text = y_label
 
-        title = f"{self.display_label_x} vs {self.display_label_x}"
+        title = f"{x_label} vs {y_label}"
         if self.data_source is not None:
             title += f" on {self.data_source} data"
 
-        ax.scatter(x=x_data, y=self.summarize_data[y_data])
+        ax.scatter(x=x_data, y=y_data)
         ax.set_title(title)
         ax.set_xlabel(x_label_text)
         ax.set_ylabel(y_label_text)
 
         # Add labels to the points with a small offset
-        text = self.summarize_data["Estimator"]
-        for label, x_coord, y_coord in zip(text, x, y):
+        text = self.summarize_data.columns.tolist()
+        for label, x_coord, y_coord in zip(text, x_data, y_data):
             ax.annotate(
                 label,
                 (x_coord, y_coord),
@@ -138,4 +147,5 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
                 ),
             )
 
-        self.report_metrics_data.scatter(x=0, y=1)
+        plt.tight_layout()
+        return fig
