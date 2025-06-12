@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from datetime import datetime, timezone
-from functools import cached_property
+from os import environ
 from urllib.parse import urljoin
 
-from httpx import URL, Client, HTTPStatusError, Response
+from httpx import URL, Client, Headers, HTTPStatusError, Response
+from httpx._types import HeaderTypes
 
-from ..authentication.token import Token
+from ..authentication import token as Token
 from .api import URI
 
 
@@ -32,29 +32,31 @@ class AuthenticatedClient(Client):
 
         self.raises = raises
 
-    @cached_property
-    def token(self):
-        """Access token."""
-        return Token()
+    def request(
+        self,
+        method: str,
+        url: URL | str,
+        headers: HeaderTypes | None = None,
+        **kwargs,
+    ) -> Response:
+        """Execute request with authorization."""
+        headers = Headers(headers)
 
-    def request(self, method: str, url: URL | str, **kwargs) -> Response:
-        """Execute request with access token, and refresh the token if needed."""
-        # Check if token is well initialized
-        if not self.token.valid:
-            raise AuthenticationError(
-                "You are not logged in. Please run `skore-hub-login`"
-            )
+        # Overload headers with our custom headers (API key or token)
+        if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
+            headers.update({"X-API-Key": f"{apikey}"})
+        else:
+            if not Token.exists():
+                raise AuthenticationError(
+                    "You are not logged in. Please run `skore-hub-login`"
+                )
 
-        # Check if token must be refreshed
-        if self.token.expires_at <= datetime.now(timezone.utc):
-            self.token.refresh()
+            headers.update({"Authorization": f"Bearer {Token.access()}"})
 
-        # Overload headers with authorization token
-        headers = kwargs.pop("headers", None) or {}
-        headers["Authorization"] = f"Bearer {self.token.access_token}"
+        # Send request
         response = super().request(
-            method,
-            urljoin(URI, str(url)),
+            method=method,
+            url=urljoin(URI, str(url)),
             headers=headers,
             **kwargs,
         )
