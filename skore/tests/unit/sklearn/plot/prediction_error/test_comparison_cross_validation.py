@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_prediction_error_frame
 
 
 @pytest.fixture
@@ -128,3 +128,16 @@ def test_wrong_kwargs(pyplot, report, data_points_kwargs):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(data_points_kwargs=data_points_kwargs)
+
+
+def test_frame(report):
+    """Test the frame method with regression comparison cross-validation data."""
+    display = report.metrics.prediction_error()
+    df = display.frame()
+
+    check_prediction_error_frame(
+        df,
+        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
+    )
+
+    assert df["estimator_name"].nunique() == len(report.reports_)

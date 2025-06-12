@@ -250,7 +250,7 @@ def test_roc_curve_kwargs_multiclass_classification(
     assert display.ax_.spines["right"].get_visible()
 
 
-def test_binary_classification_frame(binary_classification_data):
+def test_frame_binary_classification(binary_classification_data):
     """Test the frame method with binary classification data."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     report = EstimatorReport(
@@ -271,7 +271,7 @@ def test_binary_classification_frame(binary_classification_data):
     assert df["roc_auc"].between(0, 1).all()
 
 
-def test_multiclass_classification_frame(multiclass_classification_data):
+def test_frame_multiclass_classification(multiclass_classification_data):
     """Test the frame method with multiclass classification data."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
