@@ -133,7 +133,7 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
 
         # Add labels to the points with a small offset
         text = self.summarize_data.columns.tolist()
-        for label, x_coord, y_coord in zip(text, x_data, y_data):
+        for label, x_coord, y_coord in zip(text, x_data, y_data, strict=False):
             ax.annotate(
                 label,
                 (x_coord, y_coord),
