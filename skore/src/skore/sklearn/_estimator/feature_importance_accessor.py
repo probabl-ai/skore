@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import Any, Callable, Literal, Optional, Union, cast
+from collections.abc import Callable, Iterable
+from typing import Any, Literal, cast
 
 import joblib
 import numpy as np
@@ -42,7 +42,7 @@ Metric = Literal[
 #   - a callable returning a dictionary where the keys are the metric names
 #   and the values are the metric scores;
 #   - a dictionary with metric names as keys and callables a values.
-Scoring = Union[Metric, Callable, Iterable[Metric], dict[str, Callable]]
+Scoring = Metric | Callable | Iterable[Metric] | dict[str, Callable]
 
 metric_to_scorer: dict[Metric, Callable] = {
     "accuracy": make_scorer(metrics.accuracy_score),
@@ -56,7 +56,7 @@ metric_to_scorer: dict[Metric, Callable] = {
 }
 
 
-def _check_scoring(scoring: Any) -> Union[Scoring, None]:
+def _check_scoring(scoring: Any) -> Scoring | None:
     """Check that `scoring` is valid, and convert it to a suitable form as needed.
 
     If `scoring` is a list of strings, it is checked against our own metric names.
@@ -124,7 +124,7 @@ def _check_scoring(scoring: Any) -> Union[Scoring, None]:
             "If scoring is a string, it must be one of "
             f"{list(metric_to_scorer.keys())}; got '{scoring}'"
         )
-    elif isinstance(scoring, (list, tuple)):
+    elif isinstance(scoring, list | tuple):
         result: dict[str, Callable] = {}
         for s in scoring:
             if isinstance(s, str):
@@ -293,14 +293,14 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = None,
-        scoring: Optional[Scoring] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = None,
+        scoring: Scoring | None = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
-        n_jobs: Optional[int] = None,
-        seed: Optional[int] = None,
+        n_jobs: int | None = None,
+        seed: int | None = None,
         flat_index: bool = False,
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
@@ -459,15 +459,15 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = None,
-        scoring: Optional[Scoring] = None,
+        data_source_hash: int | None = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = None,
+        scoring: Scoring | None = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
-        n_jobs: Optional[int] = None,
-        seed: Optional[int] = None,
+        n_jobs: int | None = None,
+        seed: int | None = None,
         flat_index: bool = False,
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
@@ -499,7 +499,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if data_source_hash is not None:
                 cache_key_parts.append(data_source_hash)
 
-            if callable(scoring) or isinstance(scoring, (list, dict)):
+            if callable(scoring) or isinstance(scoring, list | dict):
                 cache_key_parts.append(joblib.hash(scoring))
             else:
                 cache_key_parts.append(scoring)
