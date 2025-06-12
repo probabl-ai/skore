@@ -160,16 +160,14 @@ def train_test_split(
 
     if as_dict and arrays:
         # if X or y is passed both by keyword and by position
-        err = []
         if X is not None:
-            err.append("X")
-        if y is not None:
-            err.append("y")
-
-        if err:
-            args = " and ".join(err)
             raise ValueError(
-                f"With as_dict=True, expected {args} to be passed either "
+                f"With as_dict=True, expected X to be passed either "
+                "by position or keyword, not both."
+            )
+        if y is not None:
+            raise ValueError(
+                f"With as_dict=True, expected y to be passed either "
                 "by position or keyword, not both."
             )
 
