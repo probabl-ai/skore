@@ -2,7 +2,7 @@ import inspect
 import re
 from abc import ABC, abstractmethod
 from io import StringIO
-from typing import Any, Generic, Literal, Optional, TypeVar, Union, cast
+from typing import Any, Generic, Literal, TypeVar, cast
 
 import joblib
 from numpy.typing import ArrayLike, NDArray
@@ -61,7 +61,7 @@ class _HelpMixin(ABC):
         search_result = re.search(regex_pattern, self.__doc__)
         return search_result.group(1) if search_result else "No description available"
 
-    def _get_help_legend(self) -> Optional[str]:
+    def _get_help_legend(self) -> str | None:
         """Get the help legend."""
         return None
 
@@ -75,7 +75,7 @@ class _HelpMixin(ABC):
 
     def _create_help_panel(self) -> Panel:
         """Create the help panel."""
-        content: Union[Tree, Group]
+        content: Tree | Group
         if self._get_help_legend():
             content = Group(
                 self._create_help_tree(),
@@ -116,10 +116,10 @@ class _BaseReport(_HelpMixin):
     """Base class for all reports."""
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
-    _X_train: Optional[ArrayLike]
-    _X_test: Optional[ArrayLike]
-    _y_train: Optional[ArrayLike]
-    _y_test: Optional[ArrayLike]
+    _X_train: ArrayLike | None
+    _X_test: ArrayLike | None
+    _y_train: ArrayLike | None
+    _y_test: ArrayLike | None
     estimator_: BaseEstimator
 
     def _get_help_panel_title(self) -> str:
@@ -245,9 +245,9 @@ class _BaseAccessor(_HelpMixin, Generic[ParentT]):
         self,
         *,
         data_source: Literal["test", "train", "X_y"],
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-    ) -> tuple[ArrayLike, Optional[ArrayLike], Optional[int]]:
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+    ) -> tuple[ArrayLike, ArrayLike | None, int | None]:
         """Get the requested dataset and mention if we should hash before caching.
 
         Parameters
@@ -325,11 +325,11 @@ def _get_cached_response_values(
     cache: dict[tuple[Any, ...], Any],
     estimator_hash: int,
     estimator: BaseEstimator,
-    X: Union[ArrayLike, None],
-    response_method: Union[str, list[str], tuple[str, ...]],
-    pos_label: Optional[PositiveLabel] = None,
+    X: ArrayLike | None,
+    response_method: str | list[str] | tuple[str, ...],
+    pos_label: PositiveLabel | None = None,
     data_source: Literal["test", "train", "X_y"] = "test",
-    data_source_hash: Optional[int] = None,
+    data_source_hash: int | None = None,
 ) -> list[tuple[tuple[Any, ...], Any, bool]]:
     """Compute or load from local cache the response values.
 

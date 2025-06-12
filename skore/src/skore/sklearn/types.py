@@ -1,8 +1,8 @@
 """Types between parts of the sklearn module."""
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, Literal, Optional, Protocol, Union
+from typing import Any, Literal, Protocol
 
 from numpy.typing import ArrayLike
 
@@ -27,8 +27,8 @@ class _DefaultType:
 
 
 _DEFAULT = _DefaultType()
-PositiveLabel = Union[int, float, bool, str, None, _DefaultType]
-Aggregate = Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+PositiveLabel = int | float | bool | str | None | _DefaultType
+Aggregate = Literal["mean", "std"] | Sequence[Literal["mean", "std"]]
 
 
 @dataclass
@@ -39,7 +39,7 @@ class YPlotData:
     """
 
     estimator_name: str
-    split_index: Optional[int]
+    split_index: int | None
     y: ArrayLike
 
 
@@ -55,13 +55,13 @@ class SKLearnScorer(Protocol):
     """Protocol defining the interface of scikit-learn's _BaseScorer."""
 
     _score_func: Callable
-    _response_method: Union[str, list[str]]
+    _response_method: str | list[str]
     _kwargs: dict[str, Any]
 
 
-ScoringName = Union[str, None]
+ScoringName = str | None
 
-Scoring = Union[str, Callable, SKLearnScorer]
+Scoring = str | Callable | SKLearnScorer
 
 
 class SKLearnCrossValidator(Protocol):

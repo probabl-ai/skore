@@ -82,7 +82,9 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(estimator.classes_)
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for class_label, expected_color in zip(estimator.classes_, default_colors):
+    for class_label, expected_color in zip(
+        estimator.classes_, default_colors, strict=False
+    ):
         roc_curve_mpl = display.lines_[class_label]
         assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
         roc_auc_class = display.roc_auc.query(f"label == {class_label}")[

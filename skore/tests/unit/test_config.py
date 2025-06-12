@@ -99,7 +99,9 @@ def test_config_threadsafe_joblib(backend):
 
     items = Parallel(backend=backend, n_jobs=2)(
         delayed(_set_show_progress_for_testing)(show_progress, sleep_duration)
-        for show_progress, sleep_duration in zip(show_progresses, sleep_durations)
+        for show_progress, sleep_duration in zip(
+            show_progresses, sleep_durations, strict=False
+        )
     )
 
     assert items == [False, True, False, True]

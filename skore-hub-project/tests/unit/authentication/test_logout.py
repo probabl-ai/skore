@@ -1,14 +1,17 @@
+from datetime import datetime, timezone
+
+from skore_hub_project.authentication import token as Token
 from skore_hub_project.authentication.logout import logout
-from skore_hub_project.authentication.token import Token
+
+DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
 
 
-def test_logout(nowstr):
-    token = Token("A", "B", nowstr)
+def test_logout():
+    Token.save("A", "B", DATETIME_MAX)
 
-    assert token.valid
-    assert token.filepath.exists()
+    assert Token.exists()
+    assert Token.access(refresh=False) == "A"
 
     logout()
 
-    assert token.valid
-    assert not token.filepath.exists()
+    assert not Token.exists()

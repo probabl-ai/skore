@@ -7,7 +7,7 @@ Currently, only pandas and polars DataFrames are supported.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 from skore.sklearn.train_test_split.warning.train_test_split_warning import (
     TrainTestSplitWarning,
@@ -24,7 +24,7 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
     """
 
     @staticmethod
-    def _MSG(df_name: Union[str, None], offending_column_names: list[str]) -> str:
+    def _MSG(df_name: str | None, offending_column_names: list[str]) -> str:
         s = "" if len(offending_column_names) == 1 else "s"
 
         df_name_info = "" if df_name is None else f', dataframe "{df_name}"'
@@ -40,7 +40,7 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
         )
 
     @staticmethod
-    def check(X: ArrayLike, **kwargs) -> Union[str, None]:
+    def check(X: ArrayLike, **kwargs) -> str | None:
         """Check whether the design matrix ``X`` contains a time-based column.
 
         Currently, only pandas and polars DataFrames are supported.

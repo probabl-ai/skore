@@ -75,9 +75,18 @@ def monkeypatch_matplotlib(monkeypatch):
         matplotlib.rcParams = matplotlib_rcparams
 
 
+@fixture
+def monkeypatch_skore_hub_api_key(monkeypatch):
+    """
+    Delete `SKORE_HUB_API_KEY` from the environment, to avoid biasing the tests.
+    """
+    monkeypatch.delenv("SKORE_HUB_API_KEY", raising=False)
+
+
 @fixture(autouse=True)
 def setup(
     monkeypatch_tmpdir,
     monkeypatch_matplotlib,
     monkeypatch_skrub,
+    monkeypatch_skore_hub_api_key,
 ): ...

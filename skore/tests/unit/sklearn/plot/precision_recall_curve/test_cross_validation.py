@@ -93,7 +93,7 @@ def test_multiclass_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * cv
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for class_label, expected_color in zip(class_labels, default_colors):
+    for class_label, expected_color in zip(class_labels, default_colors, strict=False):
         for split_idx in range(cv):
             precision_recall_curve_mpl = display.lines_[class_label * cv + split_idx]
             assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)

@@ -12,7 +12,7 @@ from ..client.client import AuthenticatedClient, HTTPStatusError
 from ..item.item import lazy_is_instance
 
 if TYPE_CHECKING:
-    from typing import TypedDict, Union
+    from typing import TypedDict
 
     from skore.sklearn import EstimatorReport
 
@@ -24,9 +24,9 @@ if TYPE_CHECKING:
         learner: str
         dataset: str
         ml_task: str
-        rmse: Union[float, None]
-        log_loss: Union[float, None]
-        roc_auc: Union[float, None]
+        rmse: float | None
+        log_loss: float | None
+        roc_auc: float | None
         fit_time: float
         predict_time: float
 

@@ -1,4 +1,5 @@
-from typing import Any, Callable, Literal, Optional, Union, cast
+from collections.abc import Callable
+from typing import Any, Literal, cast
 
 import joblib
 import numpy as np
@@ -61,15 +62,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        scoring: Optional[Union[Scoring, list[Scoring]]] = None,
-        scoring_names: Optional[Union[ScoringName, list[ScoringName]]] = None,
-        scoring_kwargs: Optional[dict[str, Any]] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        scoring: Scoring | list[Scoring] | None = None,
+        scoring_names: ScoringName | list[ScoringName] | None = None,
+        scoring_kwargs: dict[str, Any] | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for the estimators.
 
@@ -199,9 +200,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         report_metric_name: str,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
         **metric_kwargs: Any,
     ):
         # build the cache key components to finally create a tuple that will be used
@@ -222,7 +223,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         # to make sure that we hit the cache in a consistent way
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
         for key in ordered_metric_kwargs:
-            if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
+            if isinstance(metric_kwargs[key], np.ndarray | list | dict):
                 cache_key_parts.append(joblib.hash(metric_kwargs[key]))
             else:
                 cache_key_parts.append(metric_kwargs[key])
@@ -290,7 +291,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     def timings(
         self,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Get all measured processing times related to the different estimators.
 
@@ -383,9 +384,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -453,13 +454,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["binary", "macro", "micro", "weighted", "samples"]
-        ] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -561,13 +562,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["binary", "macro", "micro", "weighted", "samples"]
-        ] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -668,9 +669,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
@@ -738,13 +739,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["auto", "macro", "micro", "weighted", "samples"]
-        ] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: Literal["auto", "macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
@@ -847,9 +846,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the log loss.
 
@@ -917,10 +916,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the R² score.
 
@@ -999,10 +998,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
@@ -1075,13 +1074,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def custom_metric(
         self,
         metric_function: Callable,
-        response_method: Union[str, list[str]],
+        response_method: str | list[str],
         *,
-        metric_name: Optional[str] = None,
+        metric_name: str | None = None,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
         **kwargs: Any,
     ) -> pd.DataFrame:
         """Compute a custom metric.
@@ -1250,15 +1249,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def _get_display(
         self,
         *,
-        X: Union[ArrayLike, None],
-        y: Union[ArrayLike, None],
+        X: ArrayLike | None,
+        y: ArrayLike | None,
         data_source: DataSource,
-        response_method: Union[str, list[str]],
+        response_method: str | list[str],
         display_class: type[
-            Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
+            RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay
         ],
         display_kwargs: dict[str, Any],
-    ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
+    ) -> RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay:
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1314,7 +1313,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             if self._parent._reports_type == "EstimatorReport":
                 for report, report_name in zip(
-                    self._parent.reports_, self._parent.report_names_
+                    self._parent.reports_, self._parent.report_names_, strict=False
                 ):
                     report_X, report_y, _ = (
                         report.metrics._get_X_y_and_data_source_hash(
@@ -1368,7 +1367,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             else:
                 for report, report_name in zip(
-                    self._parent.reports_, self._parent.report_names_
+                    self._parent.reports_, self._parent.report_names_, strict=False
                 ):
                     for split_index, estimator_report in enumerate(
                         report.estimator_reports_
@@ -1444,9 +1443,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1523,9 +1522,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
@@ -1602,10 +1601,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         subsample: int = 1_000,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 

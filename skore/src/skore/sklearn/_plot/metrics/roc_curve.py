@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Literal, Optional, Union, cast
+from typing import Any, Literal, cast
 
 import matplotlib.pyplot as plt
 from matplotlib import colormaps
@@ -25,7 +25,7 @@ from skore.sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 MAX_N_LABELS = 6  # 5 + 1 for the chance level line
 
 
-def _set_axis_labels(ax: Axes, info_pos_label: Union[str, None]) -> None:
+def _set_axis_labels(ax: Axes, info_pos_label: str | None) -> None:
     """Add axis labels."""
     xlabel = "False Positive Rate"
     ylabel = "True Positive Rate"
@@ -44,8 +44,8 @@ def _set_axis_labels(ax: Axes, info_pos_label: Union[str, None]) -> None:
 
 def _add_chance_level(
     ax: Axes,
-    chance_level_kwargs: Union[dict, None],
-    default_chance_level_kwargs: Union[dict, None],
+    chance_level_kwargs: dict | None,
+    default_chance_level_kwargs: dict | None,
 ) -> Line2D:
     """Add the chance-level line."""
     chance_level_kwargs = _validate_style_kwargs(
@@ -129,15 +129,15 @@ class RocCurveDisplay(
     >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
     """
 
-    _default_roc_curve_kwargs: Union[dict[str, Any], None] = None
-    _default_chance_level_kwargs: Union[dict[str, Any], None] = None
+    _default_roc_curve_kwargs: dict[str, Any] | None = None
+    _default_chance_level_kwargs: dict[str, Any] | None = None
 
     def __init__(
         self,
         *,
         roc_curve: DataFrame,
         roc_auc: DataFrame,
-        pos_label: Optional[PositiveLabel],
+        pos_label: PositiveLabel | None,
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
         report_type: ReportType,
@@ -155,8 +155,8 @@ class RocCurveDisplay(
         estimator_name: str,
         roc_curve_kwargs: list[dict[str, Any]],
         plot_chance_level: bool = True,
-        chance_level_kwargs: Optional[dict[str, Any]],
-    ) -> tuple[Axes, list[Line2D], Union[str, None]]:
+        chance_level_kwargs: dict[str, Any] | None,
+    ) -> tuple[Axes, list[Line2D], str | None]:
         """Plot ROC curve for a single estimator.
 
         Parameters
@@ -277,8 +277,8 @@ class RocCurveDisplay(
         estimator_name: str,
         roc_curve_kwargs: list[dict[str, Any]],
         plot_chance_level: bool = True,
-        chance_level_kwargs: Optional[dict[str, Any]],
-    ) -> tuple[Axes, list[Line2D], Union[str, None]]:
+        chance_level_kwargs: dict[str, Any] | None,
+    ) -> tuple[Axes, list[Line2D], str | None]:
         """Plot ROC curve for a cross-validated estimator.
 
         Parameters
@@ -405,8 +405,8 @@ class RocCurveDisplay(
         estimator_names: list[str],
         roc_curve_kwargs: list[dict[str, Any]],
         plot_chance_level: bool = True,
-        chance_level_kwargs: Optional[dict[str, Any]],
-    ) -> tuple[Axes, list[Line2D], Union[str, None]]:
+        chance_level_kwargs: dict[str, Any] | None,
+    ) -> tuple[Axes, list[Line2D], str | None]:
         """Plot ROC curve of several estimators.
 
         Parameters
@@ -528,8 +528,8 @@ class RocCurveDisplay(
         estimator_names: list[str],
         roc_curve_kwargs: list[dict[str, Any]],
         plot_chance_level: bool = True,
-        chance_level_kwargs: Optional[dict[str, Any]],
-    ) -> tuple[Axes, list[Line2D], Union[str, None]]:
+        chance_level_kwargs: dict[str, Any] | None,
+    ) -> tuple[Axes, list[Line2D], str | None]:
         """Plot ROC curve of several cross-validations.
 
         Parameters
@@ -708,10 +708,10 @@ class RocCurveDisplay(
     def plot(
         self,
         *,
-        estimator_name: Optional[str] = None,
-        roc_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
+        estimator_name: str | None = None,
+        roc_curve_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
         plot_chance_level: bool = True,
-        chance_level_kwargs: Optional[dict[str, Any]] = None,
+        chance_level_kwargs: dict[str, Any] | None = None,
         despine: bool = True,
     ) -> None:
         """Plot visualization.
@@ -846,7 +846,7 @@ class RocCurveDisplay(
         estimator_names: list[str],
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
-        pos_label: Optional[PositiveLabel],
+        pos_label: PositiveLabel | None,
         drop_intermediate: bool = True,
     ) -> "RocCurveDisplay":
         """Private method to create a RocCurveDisplay from predictions.
@@ -897,7 +897,7 @@ class RocCurveDisplay(
         roc_auc_records = []
 
         if ml_task == "binary-classification":
-            for y_true_i, y_pred_i in zip(y_true, y_pred):
+            for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
                 fpr_i, tpr_i, thresholds_i = roc_curve(
                     y_true_i.y,
                     y_pred_i.y,
@@ -908,7 +908,9 @@ class RocCurveDisplay(
 
                 pos_label_validated = cast(PositiveLabel, pos_label_validated)
 
-                for fpr, tpr, threshold in zip(fpr_i, tpr_i, thresholds_i):
+                for fpr, tpr, threshold in zip(
+                    fpr_i, tpr_i, thresholds_i, strict=False
+                ):
                     roc_curve_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
@@ -931,7 +933,9 @@ class RocCurveDisplay(
 
         else:  # multiclass-classification
             # OvR fashion to collect fpr, tpr, and roc_auc
-            for y_true_i, y_pred_i, est in zip(y_true, y_pred, estimators):
+            for y_true_i, y_pred_i, est in zip(
+                y_true, y_pred, estimators, strict=False
+            ):
                 label_binarizer = LabelBinarizer().fit(est.classes_)
                 y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)
                 for class_idx, class_ in enumerate(est.classes_):
@@ -944,7 +948,7 @@ class RocCurveDisplay(
                     roc_auc_class_i = auc(fpr_class_i, tpr_class_i)
 
                     for fpr, tpr, threshold in zip(
-                        fpr_class_i, tpr_class_i, thresholds_class_i
+                        fpr_class_i, tpr_class_i, thresholds_class_i, strict=False
                     ):
                         roc_curve_records.append(
                             {

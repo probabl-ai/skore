@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from .token import Token
+from . import token as Token
 
 
 def logout():
     """Logout from ``skore hub`` by deleting tokens."""
-    if (token := Token()).valid:
-        token.filepath.unlink()
+    if Token.exists():
+        Token.filepath().unlink()

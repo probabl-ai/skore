@@ -130,31 +130,27 @@ jobs:
       matrix:
         package: ${{ (github.event_name == 'push') && fromJSON(needs.pytest-changes.outputs.packages) || fromJSON(needs.pytest-changes.outputs.modified-packages) }}
         os: ["ubuntu-latest", "windows-latest"]
-        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-        scikit-learn: ["1.4", "1.5", "1.6"]
+        python: ["3.10", "3.11", "3.12", "3.13"]
+        scikit-learn: ["1.4", "1.5", "1.6", "1.7"]
         exclude:
-          - python: "3.9"
-            scikit-learn: "1.4"
           - python: "3.10"
-            scikit-learn: "1.4"
+            scikit-learn: "1.5"
+          - python: "3.10"
+            scikit-learn: "1.6"
           - python: "3.11"
-            scikit-learn: "1.4"
+            scikit-learn: "1.5"
+          - python: "3.11"
+            scikit-learn: "1.6"
+          - python: "3.12"
+            scikit-learn: "1.5"
+          - python: "3.12"
+            scikit-learn: "1.6"
           - python: "3.13"
             scikit-learn: "1.4"
-          - os: "windows-latest"
-            scikit-learn: "1.4"
-          - python: "3.9"
-            scikit-learn: "1.5"
-          - python: "3.10"
-            scikit-learn: "1.5"
-          - python: "3.11"
-            scikit-learn: "1.5"
-          - os: "windows-latest"
-            scikit-learn: "1.5"
         include:
           - os: "ubuntu-latest"
             python: "3.13"
-            scikit-learn: "1.6"
+            scikit-learn: "1.7"
             coverage: true
     runs-on: ${{ matrix.os }}
     permissions:

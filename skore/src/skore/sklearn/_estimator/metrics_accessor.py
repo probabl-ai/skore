@@ -1,8 +1,8 @@
 import inspect
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import partial
 from operator import attrgetter
-from typing import Any, Callable, Literal, Optional, Union, cast
+from typing import Any, Literal, cast
 
 import joblib
 import numpy as np
@@ -62,12 +62,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        scoring: Optional[Union[Scoring, list[Scoring]]] = None,
-        scoring_names: Optional[Union[ScoringName, list[ScoringName]]] = None,
-        scoring_kwargs: Optional[dict[str, Any]] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        scoring: Scoring | list[Scoring] | None = None,
+        scoring_names: ScoringName | list[ScoringName] | None = None,
+        scoring_kwargs: dict[str, Any] | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
     ) -> MetricsSummaryDisplay:
@@ -211,7 +211,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         scores = []
         favorability_indicator = []
-        for metric_name, metric in zip(scoring_names, scoring):
+        for metric_name, metric in zip(scoring_names, scoring, strict=False):
             if isinstance(metric, str) and not (
                 (metric.startswith("_") and metric[1:] in self._SCORE_OR_LOSS_INFO)
                 or metric in self._SCORE_OR_LOSS_INFO
@@ -239,7 +239,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             if isinstance(metric, _BaseScorer):
                 # scorers have the advantage to have scoped defined kwargs
                 metric_function: Callable = metric._score_func
-                response_method: Union[str, list[str]] = metric._response_method
+                response_method: str | list[str] = metric._response_method
                 metric_fn = partial(
                     self._custom_metric,
                     metric_function=metric_function,
@@ -322,7 +322,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
             score = metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
 
-            index: Union[pd.Index, pd.MultiIndex, list[str], None]
+            index: pd.Index | pd.MultiIndex | list[str] | None
             score_array: NDArray
             if self._parent._ml_task == "binary-classification":
                 if isinstance(score, dict):
@@ -422,20 +422,21 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
+
         return MetricsSummaryDisplay(summarize_data=results, report_type="estimator")
 
     def _compute_metric_scores(
         self,
         metric_fn: Callable,
-        X: Optional[ArrayLike],
-        y_true: Optional[ArrayLike],
+        X: ArrayLike | None,
+        y_true: ArrayLike | None,
         *,
-        response_method: Union[str, list[str], tuple[str, ...]],
+        response_method: str | list[str] | tuple[str, ...],
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        data_source_hash: int | None = None,
+        pos_label: PositiveLabel | None = None,
         **metric_kwargs: Any,
-    ) -> Union[float, dict[PositiveLabel, float], list]:
+    ) -> float | dict[PositiveLabel, float] | list:
         if data_source_hash is None:
             X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y_true
@@ -502,13 +503,15 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         if isinstance(score, list):
             if "classification" in self._parent._ml_task:
-                return dict(zip(self._parent._estimator.classes_.tolist(), score))
+                return dict(
+                    zip(self._parent._estimator.classes_.tolist(), score, strict=False)
+                )
 
             if len(score) == 1:
                 return score[0]
         return score
 
-    def _fit_time(self, cast: bool = True, **kwargs) -> Union[float, None]:
+    def _fit_time(self, cast: bool = True, **kwargs) -> float | None:
         """Get time to fit the estimator.
 
         Parameters
@@ -529,11 +532,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        data_source_hash: int | None = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         cast: bool = True,
-    ) -> Union[float, None]:
+    ) -> float | None:
         """Get prediction time if it has been already measured.
 
         Parameters
@@ -617,8 +620,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
     ) -> float:
         """Compute the accuracy score.
 
@@ -668,9 +671,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        data_source_hash: int | None = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
     ) -> float:
         """Private interface of `accuracy` to be able to pass `data_source_hash`.
 
@@ -693,13 +696,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["binary", "macro", "micro", "weighted", "samples"]
-        ] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
-    ) -> Union[float, dict[PositiveLabel, float]]:
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: Literal["binary", "macro", "micro", "weighted", "samples"]
+        | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+    ) -> float | dict[PositiveLabel, float]:
         """Compute the precision score.
 
         Parameters
@@ -786,14 +788,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["binary", "macro", "micro", "weighted", "samples"]
-        ] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
-    ) -> Union[float, dict[PositiveLabel, float]]:
+        data_source_hash: int | None = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: Literal["binary", "macro", "micro", "weighted", "samples"]
+        | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+    ) -> float | dict[PositiveLabel, float]:
         """Private interface of `precision` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -829,13 +830,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["binary", "macro", "micro", "weighted", "samples"]
-        ] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
-    ) -> Union[float, dict[PositiveLabel, float]]:
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: Literal["binary", "macro", "micro", "weighted", "samples"]
+        | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+    ) -> float | dict[PositiveLabel, float]:
         """Compute the recall score.
 
         Parameters
@@ -923,14 +923,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["binary", "macro", "micro", "weighted", "samples"]
-        ] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
-    ) -> Union[float, dict[PositiveLabel, float]]:
+        data_source_hash: int | None = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: Literal["binary", "macro", "micro", "weighted", "samples"]
+        | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+    ) -> float | dict[PositiveLabel, float]:
         """Private interface of `recall` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -966,8 +965,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
     ) -> float:
         """Compute the Brier score.
 
@@ -1025,9 +1024,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        data_source_hash: int | None = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
     ) -> float:
         """Private interface of `brier_score` to be able to pass `data_source_hash`.
 
@@ -1055,11 +1054,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: Literal["macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-    ) -> Union[float, dict[PositiveLabel, float]]:
+    ) -> float | dict[PositiveLabel, float]:
         """Compute the ROC AUC score.
 
         Parameters
@@ -1148,12 +1147,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
+        data_source_hash: int | None = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: Literal["macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-    ) -> Union[float, dict[PositiveLabel, float]]:
+    ) -> float | dict[PositiveLabel, float]:
         """Private interface of `roc_auc` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -1179,8 +1178,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
     ) -> float:
         """Compute the log loss.
 
@@ -1236,9 +1235,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        data_source_hash: int | None = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
     ) -> float:
         """Private interface of `log_loss` to be able to pass `data_source_hash`.
 
@@ -1261,12 +1260,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        multioutput: Union[
-            Literal["raw_values", "uniform_average"], ArrayLike
-        ] = "raw_values",
-    ) -> Union[float, list]:
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
+    ) -> float | list:
         """Compute the R² score.
 
         Parameters
@@ -1331,13 +1329,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        multioutput: Union[
-            Literal["raw_values", "uniform_average"], ArrayLike
-        ] = "raw_values",
-    ) -> Union[float, list]:
+        data_source_hash: int | None = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
+    ) -> float | list:
         """Private interface of `r2` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -1365,12 +1362,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        multioutput: Union[
-            Literal["raw_values", "uniform_average"], ArrayLike
-        ] = "raw_values",
-    ) -> Union[float, list]:
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
+    ) -> float | list:
         """Compute the root mean squared error.
 
         Parameters
@@ -1435,13 +1431,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        multioutput: Union[
-            Literal["raw_values", "uniform_average"], ArrayLike
-        ] = "raw_values",
-    ) -> Union[float, list]:
+        data_source_hash: int | None = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
+    ) -> float | list:
         """Private interface of `rmse` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -1467,13 +1462,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     def custom_metric(
         self,
         metric_function: Callable,
-        response_method: Union[str, list[str]],
+        response_method: str | list[str],
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         **kwargs: Any,
-    ) -> Union[float, dict[PositiveLabel, float], list]:
+    ) -> float | dict[PositiveLabel, float] | list:
         """Compute a custom metric.
 
         It brings some flexibility to compute any desired metric. However, we need to
@@ -1557,11 +1552,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         metric_function: Callable,
-        response_method: Union[str, list[str]],
+        response_method: str | list[str],
         data_source: DataSource = "test",
-        data_source_hash: Optional[int] = None,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        data_source_hash: int | None = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         **kwargs: Any,
     ) -> Any:
         """Private interface of `custom_metric` to be able to pass `data_source_hash`.
@@ -1650,15 +1645,15 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     def _get_display(
         self,
         *,
-        X: Union[ArrayLike, None],
-        y: Union[ArrayLike, None],
+        X: ArrayLike | None,
+        y: ArrayLike | None,
         data_source: DataSource,
-        response_method: Union[str, list[str], tuple[str, ...]],
+        response_method: str | list[str] | tuple[str, ...],
         display_class: type[
-            Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
+            RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay
         ],
         display_kwargs: dict[str, Any],
-    ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
+    ) -> RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay:
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1764,9 +1759,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1838,9 +1833,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
@@ -1912,10 +1907,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        subsample: Union[float, int, None] = 1_000,
-        seed: Optional[int] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        subsample: float | int | None = 1_000,
+        seed: int | None = None,
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
@@ -1990,13 +1985,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        sample_weight: Optional[ArrayLike] = None,
-        display_labels: Optional[list] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        sample_weight: ArrayLike | None = None,
+        display_labels: list | None = None,
         include_values: bool = True,
-        normalize: Optional[Literal["true", "pred", "all"]] = None,
-        values_format: Optional[str] = None,
+        normalize: Literal["true", "pred", "all"] | None = None,
+        values_format: str | None = None,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 

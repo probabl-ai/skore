@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Sequence
 from io import StringIO
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -137,13 +137,13 @@ class _ClassifierCurveDisplayMixin:
     # defined in the concrete display class
     estimator_name: str
     ml_task: MLTask
-    pos_label: Optional[PositiveLabel]
+    pos_label: PositiveLabel | None
 
     def _validate_curve_kwargs(
         self,
         *,
         curve_param_name: str,
-        curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
+        curve_kwargs: dict[str, Any] | list[dict[str, Any]] | None,
         n_curves: int,
         report_type: ReportType,
     ) -> list[dict[str, Any]]:
@@ -231,9 +231,9 @@ class _ClassifierCurveDisplayMixin:
         y_pred: Sequence[YPlotData],
         *,
         ml_task: str,
-        pos_label: Optional[PositiveLabel] = None,
-    ) -> Union[PositiveLabel, None]:
-        for y_true_i, y_pred_i in zip(y_true, y_pred):
+        pos_label: PositiveLabel | None = None,
+    ) -> PositiveLabel | None:
+        for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
             check_consistent_length(y_true_i.y, y_pred_i.y)
 
         if ml_task == "binary-classification":

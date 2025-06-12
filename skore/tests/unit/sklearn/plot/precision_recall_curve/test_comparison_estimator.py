@@ -40,7 +40,7 @@ def test_binary_classification(pyplot, binary_classification_data):
     display.plot()
     expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for idx, (estimator_name, line) in enumerate(
-        zip(report.report_names_, display.lines_)
+        zip(report.report_names_, display.lines_, strict=False)
     ):
         assert isinstance(line, mpl.lines.Line2D)
         average_precision = display.average_precision.query(
@@ -96,7 +96,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
     assert len(display.lines_) == len(class_labels) * 2
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for idx, (estimator_name, expected_color) in enumerate(
-        zip(report.report_names_, default_colors)
+        zip(report.report_names_, default_colors, strict=False)
     ):
         for class_label_idx, class_label in enumerate(class_labels):
             roc_curve_mpl = display.lines_[idx * len(class_labels) + class_label_idx]

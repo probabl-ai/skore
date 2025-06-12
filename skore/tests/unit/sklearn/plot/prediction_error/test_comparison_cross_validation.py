@@ -109,7 +109,7 @@ def test_kwargs(pyplot, report):
         perfect_model_kwargs={"color": "orange"},
     )
     rgb_colors = [[[1.0, 0.0, 0.0, 0.3]], [[0.0, 0.0, 1.0, 0.3]]]
-    for scatter, rgb_color in zip(display.scatter_, rgb_colors):
+    for scatter, rgb_color in zip(display.scatter_, rgb_colors, strict=False):
         np.testing.assert_allclose(scatter.get_facecolor(), rgb_color, rtol=1e-3)
     assert display.line_.get_color() == "orange"
 

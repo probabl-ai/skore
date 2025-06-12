@@ -8,7 +8,7 @@ import importlib
 import platform
 import re
 import sys
-from typing import Any, Union
+from typing import Any
 
 
 def _get_sys_info() -> dict[str, Any]:
@@ -55,7 +55,7 @@ def _get_deps_info() -> dict[str, Any]:
         package_name: str = re.split(r"[<>=~!]", requirement)[0].strip()
         deps.append(package_name)
 
-    deps_info: dict[str, Union[str, None]] = {
+    deps_info: dict[str, str | None] = {
         "skore": version("skore"),
     }
 

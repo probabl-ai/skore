@@ -10,7 +10,7 @@ from skore.project.widget import ModelExplorerWidget
 from skore.sklearn import ComparisonReport
 
 if TYPE_CHECKING:
-    from typing import Literal, Union
+    from typing import Literal
 
     from skore.sklearn import EstimatorReport
 
@@ -79,7 +79,7 @@ class Summary(DataFrame):
         *,
         filter: bool = True,
         return_as: Literal["list", "comparison"] = "list",
-    ) -> Union[list[EstimatorReport], ComparisonReport]:
+    ) -> list[EstimatorReport] | ComparisonReport:
         """
         Return the reports referenced by the summary object from the project.
 
@@ -123,7 +123,7 @@ class Summary(DataFrame):
         self._plot_widget.display()
         return ""
 
-    def _query_string_selection(self) -> Union[str, None]:
+    def _query_string_selection(self) -> str | None:
         """
         Generate a pandas query string based on user selections in the plot.
 

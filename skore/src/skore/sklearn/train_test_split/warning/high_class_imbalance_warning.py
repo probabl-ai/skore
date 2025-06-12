@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from numpy.typing import ArrayLike
 
@@ -32,11 +31,11 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
 
     @staticmethod
     def check(
-        y: Optional[Sequence],
-        stratify: Optional[ArrayLike],
+        y: Sequence | None,
+        stratify: ArrayLike | None,
         ml_task: MLTask,
         **kwargs,
-    ) -> Union[str, None]:
+    ) -> str | None:
         """Check whether the test set has high class imbalance.
 
         More precisely, we check whether the most populated class in `y` has
