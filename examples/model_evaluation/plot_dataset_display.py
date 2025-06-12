@@ -20,12 +20,12 @@ a baseline pipeline using ``skrub.tabular_learner``.
 import skrub
 from skrub.datasets import fetch_employee_salaries
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor
 
 data = fetch_employee_salaries()
 X_train, X_test, y_train, y_test = train_test_split(data.X, data.y, random_state=0)
 
-pipeline = skrub.tabular_learner(GradientBoostingRegressor())
+pipeline = skrub.tabular_learner(HistGradientBoostingRegressor())
 pipeline
 
 # %%
@@ -54,13 +54,13 @@ display.help()
 # %%
 # To begin with, let's plot the gender distribution to check whether we have some
 # population bias:
-_ = display.plot_dist(x_col="gender")
+_ = display.plot(x_col="gender")
 # %%
 # The dataset is somewhat balanced, with a clear majority of males.
 # Next, we colorize this distribution using the salary to predict, in the column
 # ``current_annual_salary``.
 
-_ = display.plot_dist(x_col="gender", c_col="current_annual_salary")
+_ = display.plot(x_col="gender", c_col="current_annual_salary")
 
 # %%
 # Interestingly, we see that the median (the black vertical bar) is slightly higher for
@@ -68,7 +68,7 @@ _ = display.plot_dist(x_col="gender", c_col="current_annual_salary")
 #
 # Let's now add a third dimension to this plot by visualizing the hired year as the
 # y-axis (which becomes the x-axis since the plot is horizontal):
-_ = display.plot_dist(
+_ = display.plot(
     x_col="gender",
     y_col="year_first_hired",
     c_col="current_annual_salary",
@@ -77,7 +77,7 @@ _ = display.plot_dist(
 # The year has replaced the salary as the x-axis, and the salary is still represented by
 # the color. This plot is getting a bit hard to read due to the large number of data
 # points, we can subsample it slightly to see a pattern emerges:
-_ = display.plot_dist(
+_ = display.plot(
     x_col="gender",
     y_col="year_first_hired",
     c_col="current_annual_salary",
@@ -88,7 +88,7 @@ _ = display.plot_dist(
 # more senior employees (at the left of the plot).
 #
 # Let's now switch gears and observe the pearson correlation among our columns:
-_ = display.plot_pearson()
+_ = display.plot(kind="pearson")
 
 # %%
 # Since the Pearson correlation is only defined between numerical columns and our
@@ -98,5 +98,5 @@ _ = display.plot_pearson()
 # To get a broader view of our columns correlations, we can use another metric instead,
 # the `Cramer's V correlation <https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V>`_,
 # whose interpretation is close to the Pearson's correlation:
-_ = display.plot_cramer()
+_ = display.plot(kind="cramer")
 # %%

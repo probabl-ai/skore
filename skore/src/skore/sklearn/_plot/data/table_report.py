@@ -24,6 +24,22 @@ def _subsample(df, n_subsample, subsample_strategy, random_state):
         )
 
 
+def _require_x_col(x_col, kind):
+    if x_col is None:
+        raise ValueError(f"When {kind=!r}, ``x_col`` is mandatory.")
+
+
+def _check_no_args(x_col, y_col, c_col, kind):
+    params = dict(
+        x_col=x_col,
+        y_col=y_col,
+        c_col=c_col,
+    )
+    for k, v in params.items():
+        if v is not None:
+            raise ValueError(f"When {kind=!r}, this function takes no {k!r} argument.")
+
+
 class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
     def __init__(self, summary, df, column_filters=None):
         self.summary = summary
@@ -46,11 +62,12 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         return cls(summary, df)
 
     @StyleDisplayMixin.style_plot
-    def plot_dist(
+    def plot(
         self,
-        x_col,
+        x_col=None,
         y_col=None,
         c_col=None,
+        kind="dist",
         n_subsample=None,
         subsample_strategy="head",
         random_state=None,
@@ -59,7 +76,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
 
         Parameters
         ----------
-        x_col : str
+        x_col : str, default=None
             The name of the column to use for the x-axis of the plot.
 
         y_col : str, default=None
@@ -68,25 +85,65 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         c_col : str, default=None
             The name of the column to use for the color or hue axis of the plot.
 
+        kind : {'dist', 'pearson', 'cramer'}, default='dist'
+            The kind of plot drawn.
+
+            - If ``'dist'``, plot a distribution parametrized by ``x_col``, ``y_col``
+              and ``c_col``. When only ``x_col`` is defined, the distribution is 1d.
+              When ``y_col`` is also defined, the plot is the 2d. Finally, when the
+              color is set using ``c_col``, the distribution is 2d, with a color per
+              data-point based on ``c_col``. This mode handle both numeric and
+              categorical columns.
+            - If ``'pearson'``, plot Pearson's correlation among numeric columns. This
+              option doesn't take any ``x_col``, ``y_col`` or ``c_col`` argument.
+            - If ``'cramer'``, plot Cramer's V correlation among all columns. This
+              option doesn't take any ``x_col``, ``y_col`` or ``c_col`` argument.
+
+        n_subsample : int, default=None
+            The number of points to subsample the dataframe hold by the display, using
+            the strategy set by ``subsample_strategy``. It must be a strictly positive
+            integer. If ``None``, no subsampling is applied.
+
+        subsample_strategy : {'head', 'random'}, default='head',
+            The strategy used to subsample the dataframe hold by the display. It only
+            has an effect when ``n_subsample`` is not None.
+
+            - If ``'head'``: subsample by taking the ``n_subsample`` first points of the
+              dataframe, similar to Pandas: ``df.head(n)``.
+            - If ``'random'``: randomly subsample the dataframe by using a uniform
+              distribution. The random seed is controlled by ``random_state``.
+
+        random_state : int, default=None
+            The random seed to use when randomly subsampling. It only has an effect when
+            ``n_subsample`` is not Noen and ``subsample_strategy='random'``.
+
         Return
         ------
         fig : matplotlib.figure.Figure
             The drawn figure.
         """
-        return _plotting.plot_distribution(
-            _subsample(self.df, n_subsample, subsample_strategy, random_state),
-            x_col,
-            y_col,
-            c_col,
-        )
+        df = _subsample(self.df, n_subsample, subsample_strategy, random_state)
+        if kind == "dist":
+            _require_x_col(x_col, kind)
+            return _plotting.plot_distribution(
+                df,
+                x_col,
+                y_col,
+                c_col,
+            )
 
-    @StyleDisplayMixin.style_plot
-    def plot_pearson(self):
-        return _plotting.plot_pearson(self.df)
+        elif kind == "pearson":
+            _check_no_args(x_col, y_col, c_col, kind)
+            return _plotting.plot_pearson(df)
 
-    @StyleDisplayMixin.style_plot
-    def plot_cramer(self):
-        return _plotting.plot_cramer(self.df)
+        elif kind == "cramer":
+            _check_no_args(x_col, y_col, c_col, kind)
+            return _plotting.plot_cramer(df)
+
+        else:
+            raise ValueError(
+                f"'kind' options are 'dist', 'pearson', 'cramer', got {kind!r}."
+            )
 
     def frame(self):
         return self.summary
