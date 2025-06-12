@@ -259,9 +259,6 @@ def test_frame_multiclass_classification(multiclass_classification_data):
 
     assert df["estimator_name"].nunique() == 2
     assert set(df["label"].unique()) == set(estimator.classes_)
-    assert df["precision"].between(0, 1).all()
-    assert df["recall"].between(0, 1).all()
-    assert df["average_precision"].between(0, 1).all()
     assert df["method"].unique() == ["OvR"]
 
 

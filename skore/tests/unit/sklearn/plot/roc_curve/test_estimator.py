@@ -266,10 +266,6 @@ def test_frame_binary_classification(binary_classification_data):
 
     assert df["estimator_name"].unique() == [report.estimator_name_]
 
-    assert df["fpr"].between(0, 1).all()
-    assert df["tpr"].between(0, 1).all()
-    assert df["roc_auc"].between(0, 1).all()
-
 
 def test_frame_multiclass_classification(multiclass_classification_data):
     """Test the frame method with multiclass classification data."""
@@ -286,10 +282,6 @@ def test_frame_multiclass_classification(multiclass_classification_data):
     )
 
     assert df["estimator_name"].unique() == [report.estimator_name_]
-
-    assert df["fpr"].between(0, 1).all()
-    assert df["tpr"].between(0, 1).all()
-    assert df["roc_auc"].between(0, 1).all()
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

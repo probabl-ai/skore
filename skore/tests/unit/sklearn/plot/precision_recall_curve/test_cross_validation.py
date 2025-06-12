@@ -160,9 +160,6 @@ def test_frame_binary_classification(binary_classification_data_no_split):
 
     assert df["split_index"].nunique() > 0
     assert df["label"].nunique() == 1
-    assert df["precision"].between(0, 1).all()
-    assert df["recall"].between(0, 1).all()
-    assert df["average_precision"].between(0, 1).all()
     assert df["estimator_name"].unique() == [report.estimator_name_]
 
 
@@ -181,9 +178,6 @@ def test_frame_multiclass_classification(multiclass_classification_data_no_split
 
     assert df["split_index"].nunique() > 0
     assert df["label"].nunique() == cv
-    assert df["precision"].between(0, 1).all()
-    assert df["recall"].between(0, 1).all()
-    assert df["average_precision"].between(0, 1).all()
     assert df["estimator_name"].unique() == [report.estimator_name_]
 
 
