@@ -73,7 +73,8 @@ def train_test_split(
     as_dict : bool, default is False
         If True, returns a Dictionary with keys values ``X_train``, ``X_test``,
         ``y_train``, and ``y_test`` instead of a List. Requires data to be
-        passed as keyword arguments.
+        passed as keyword arguments, though the first two positional arguments are
+        implicitly treated as X and y.
     **keyword_arrays : array-like, optional
         Additional array-like arguments passed by keyword. Used to determine the keys
         of the output dict when ``as_dict=True``.
@@ -133,31 +134,63 @@ def train_test_split(
     {'X_train': ..., 'X_test': ...,
      'y_train': ..., 'y_test': ...,
      'sample_weights_train': ..., 'sample_weights_test': ...}
+
+    >>> # With as_dict is True, the first 2 arguments are implicitly treated as X and y
+    >>> train_test_split(X, as_dict=True)
+    {'X_train': ..., 'X_test': ...}
+    >>> train_test_split(X, y, as_dict=True)
+    {'X_train': ..., 'X_test': ...,
+     'y_train': ..., 'y_test': ...}
+    >>> train_test_split(X, y, sample_weights=sample_weights, as_dict=True)
+    {'X_train': ..., 'X_test': ...,
+     'y_train': ..., 'y_test': ...,
+     'sample_weights_train': ..., 'sample_weights_test': ...}
     """
     import sklearn.model_selection
 
     new_arrays = list(arrays)
     keys = []
+
     if X is not None:
         new_arrays.append(X)
-        keys += ["X"]
+        keys.append("X")
     if y is not None:
         new_arrays.append(y)
-        keys += ["y"]
+        keys.append("y")
 
     if as_dict and arrays:
-        raise ValueError(
-            "When as_dict=True, arrays must be passed as keyword arguments.\n"
-            "Example: train_test_split(X=X, y=y, sw=sample_weight, as_dict=True)"
-        )
+        # if X or y is passed both by keyword and by position
+        if X is not None:
+            raise ValueError(
+                "With as_dict=True, expected X to be passed either "
+                "by position or keyword, not both."
+            )
+        if y is not None:
+            raise ValueError(
+                "With as_dict=True, expected y to be passed either "
+                "by position or keyword, not both."
+            )
+
+        # if X or y are passed by position
+        if len(arrays) == 1:
+            keys.append("X")
+        elif len(arrays) == 2:
+            keys.extend(["X", "y"])
+        elif len(arrays) > 2:
+            raise ValueError(
+                "With as_dict=True, expected no more than two positional arguments "
+                "(which will be interpreted as X and y). "
+                "The remaining arrays must be passed by keyword, "
+                "e.g. train_test_split(X, y, z=z, sw=sample_weights, as_dict=True)."
+            )
 
     if keyword_arrays:
         if X is None and y is None:
             arrays = tuple(
                 keyword_arrays.values()
             )  # if X and y is not passed but other variables
-        keys += list(keyword_arrays.keys())
-        new_arrays += list(keyword_arrays.values())
+        new_arrays.extend(keyword_arrays.values())
+        keys.extend(keyword_arrays.keys())
 
     output = sklearn.model_selection.train_test_split(
         *new_arrays,

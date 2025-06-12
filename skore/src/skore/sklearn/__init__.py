@@ -4,6 +4,7 @@ from skore.sklearn._comparison import ComparisonReport
 from skore.sklearn._cross_validation import CrossValidationReport
 from skore.sklearn._estimator import EstimatorReport
 from skore.sklearn._plot import (
+    MetricsSummaryDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
@@ -18,6 +19,7 @@ __all__ = [
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",
     "RocCurveDisplay",
+    "MetricsSummaryDisplay",
     "train_test_split",
     "find_estimators",
 ]
