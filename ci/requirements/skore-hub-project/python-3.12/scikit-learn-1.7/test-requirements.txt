@@ -224,7 +224,7 @@ rpds-py==0.25.1
     # via
     #   jsonschema
     #   referencing
-scikit-learn==1.5.2
+scikit-learn==1.7.0
     # via
     #   --override skore-hub-project/overrides.txt
     #   skore-hub-project (skore-hub-project/pyproject.toml)
@@ -264,8 +264,10 @@ traitlets==5.14.3
 typing-extensions==4.14.0
     # via
     #   altair
+    #   anyio
     #   anywidget
     #   huggingface-hub
+    #   referencing
 tzdata==2025.2
     # via pandas
 urllib3==2.4.0

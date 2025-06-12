@@ -2,6 +2,10 @@ altair==5.5.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 anyio==4.9.0
     # via httpx
+anywidget==0.9.18
+    # via skore
+asttokens==3.0.0
+    # via stack-data
 attrs==25.3.0
     # via
     #   jsonschema
@@ -13,39 +17,52 @@ certifi==2025.4.26
     #   requests
 cfgv==3.4.0
     # via pre-commit
-charset-normalizer==3.4.1
+charset-normalizer==3.4.2
     # via requests
+comm==0.2.2
+    # via ipywidgets
 contourpy==1.3.2
     # via matplotlib
-coverage[toml]==7.8.0
+coverage[toml]==7.9.0
     # via pytest-cov
 cycler==0.12.1
     # via matplotlib
+decorator==5.2.1
+    # via ipython
 diskcache==5.6.3
-    # via skore
+    # via skore-local-project
 distlib==0.3.9
     # via virtualenv
+exceptiongroup==1.3.0
+    # via
+    #   anyio
+    #   ipython
+    #   pytest
 execnet==2.1.1
     # via pytest-xdist
+executing==2.2.0
+    # via stack-data
 filelock==3.18.0
     # via
     #   huggingface-hub
     #   virtualenv
-fonttools==4.57.0
+fonttools==4.58.2
     # via matplotlib
-fsspec==2025.3.2
+fsspec==2025.5.1
     # via huggingface-hub
 h11==0.16.0
     # via httpcore
+hf-xet==1.1.3
+    # via huggingface-hub
 httpcore==1.0.9
     # via httpx
 httpx==0.28.1
     # via
     #   skore-hub-project (skore-hub-project/pyproject.toml)
     #   respx
-huggingface-hub==0.30.2
+huggingface-hub==0.33.0
     # via skops
-identify==2.6.10
+identify==2.6.12
     # via pre-commit
 idna==3.10
     # via
@@ -54,39 +71,54 @@ idna==3.10
     #   requests
 iniconfig==2.1.0
     # via pytest
+ipython==8.37.0
+    # via
+    #   ipywidgets
+    #   skore
+ipywidgets==8.1.7
+    # via
+    #   anywidget
+    #   skore
+jedi==0.19.2
+    # via ipython
 jinja2==3.1.6
     # via
     #   altair
     #   skrub
-joblib==1.4.2
+joblib==1.5.1
     # via
     #   skore-hub-project (skore-hub-project/pyproject.toml)
     #   scikit-learn
     #   skore
-jsonschema==4.23.0
+    #   skore-local-project
+jsonschema==4.24.0
     # via altair
 jsonschema-specifications==2025.4.1
     # via jsonschema
+jupyterlab-widgets==3.0.15
+    # via ipywidgets
 kiwisolver==1.4.8
     # via matplotlib
 markdown-it-py==3.0.0
     # via rich
 markupsafe==3.0.2
     # via jinja2
-matplotlib==3.10.1
+matplotlib==3.10.3
     # via
     #   skore-hub-project (skore-hub-project/pyproject.toml)
     #   skore
     #   skrub
+matplotlib-inline==0.1.7
+    # via ipython
 mdurl==0.1.2
     # via markdown-it-py
-narwhals==1.37.0
+narwhals==1.42.0
     # via
     #   altair
     #   plotly
 nodeenv==1.9.1
     # via pre-commit
-numpy==2.2.5
+numpy==2.2.6
     # via
     #   skore-hub-project (skore-hub-project/pyproject.toml)
     #   contourpy
@@ -105,44 +137,65 @@ packaging==25.0
     #   pytest
     #   skops
     #   skrub
-pandas==2.2.3
+pandas==2.3.0
     # via
     #   skore
     #   skrub
+parso==0.8.4
+    # via jedi
+pexpect==4.9.0
+    # via ipython
 pillow==11.2.1
     # via
     #   skore-hub-project (skore-hub-project/pyproject.toml)
     #   matplotlib
-platformdirs==4.3.7
-    # via virtualenv
-plotly==6.0.1
-    # via skore-hub-project (skore-hub-project/pyproject.toml)
-pluggy==1.5.0
-    # via pytest
-polars==1.28.1
+platformdirs==4.3.8
+    # via
+    #   skore-local-project
+    #   virtualenv
+plotly==6.1.2
+    # via
+    #   skore-hub-project (skore-hub-project/pyproject.toml)
+    #   skore
+pluggy==1.6.0
+    # via
+    #   pytest
+    #   pytest-cov
+polars==1.30.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 pre-commit==4.2.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
+prompt-toolkit==3.0.51
+    # via ipython
+psygnal==0.13.0
+    # via anywidget
+ptyprocess==0.7.0
+    # via pexpect
+pure-eval==0.2.3
+    # via stack-data
 pyarrow==20.0.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 pygments==2.19.1
-    # via rich
+    # via
+    #   ipython
+    #   pytest
+    #   rich
 pyparsing==3.2.3
     # via matplotlib
-pytest==8.3.5
+pytest==8.4.0
     # via
     #   skore-hub-project (skore-hub-project/pyproject.toml)
     #   pytest-cov
     #   pytest-order
     #   pytest-randomly
     #   pytest-xdist
-pytest-cov==6.1.1
+pytest-cov==6.2.1
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 pytest-order==1.3.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 pytest-randomly==3.16.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
-pytest-xdist==3.6.1
+pytest-xdist==3.7.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 python-dateutil==2.9.0.post0
     # via
@@ -168,52 +221,71 @@ rich==14.0.0
     # via
     #   skore-hub-project (skore-hub-project/pyproject.toml)
     #   skore
-rpds-py==0.24.0
+    #   skore-local-project
+rpds-py==0.25.1
     # via
     #   jsonschema
     #   referencing
-scikit-learn==1.6.1
+scikit-learn==1.4.2
     # via
     #   --override skore-hub-project/overrides.txt
     #   skore-hub-project (skore-hub-project/pyproject.toml)
     #   skops
     #   skore
     #   skrub
-scipy==1.15.2
+scipy==1.15.3
     # via
     #   scikit-learn
     #   skrub
 six==1.17.0
     # via python-dateutil
 skops==0.11.0
-    # via
-    #   skore-hub-project (skore-hub-project/pyproject.toml)
-    #   skore
-skore==0.8.2
     # via skore-hub-project (skore-hub-project/pyproject.toml)
-skrub==0.5.3
+skore==0.9.1
+    # via skore-hub-project (skore-hub-project/pyproject.toml)
+skore-local-project==0.0.2
+    # via skore
+skrub==0.5.4
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 sniffio==1.3.1
     # via anyio
+stack-data==0.6.3
+    # via ipython
 tabulate==0.9.0
     # via skops
 threadpoolctl==3.6.0
     # via scikit-learn
 tomli==2.2.1
-    # via coverage
+    # via
+    #   coverage
+    #   pytest
 tqdm==4.67.1
     # via huggingface-hub
-typing-extensions==4.13.2
+traitlets==5.14.3
+    # via
+    #   comm
+    #   ipython
+    #   ipywidgets
+    #   matplotlib-inline
+typing-extensions==4.14.0
     # via
     #   altair
     #   anyio
+    #   anywidget
+    #   exceptiongroup
     #   huggingface-hub
+    #   ipython
     #   referencing
+    #   rich
 tzdata==2025.2
     # via pandas
 urllib3==2.4.0
     # via requests
-virtualenv==20.30.0
+virtualenv==20.31.2
     # via pre-commit
+wcwidth==0.2.13
+    # via prompt-toolkit
+widgetsnbextension==4.0.14
+    # via ipywidgets
 xdoctest==1.2.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
