@@ -18,7 +18,7 @@ import platformdirs
 from .storage import DiskCacheStorage
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, TypedDict, Union
+    from typing import Any, TypedDict
 
     from skore.sklearn import EstimatorReport
 
@@ -31,9 +31,9 @@ if TYPE_CHECKING:
         learner: str
         dataset: str
         ml_task: str
-        rmse: Union[float, None]
-        log_loss: Union[float, None]
-        roc_auc: Union[float, None]
+        rmse: float | None
+        log_loss: float | None
+        roc_auc: float | None
         fit_time: float
         predict_time: float
 
@@ -45,9 +45,9 @@ if TYPE_CHECKING:
         learner: str
         dataset: str
         ml_task: str
-        rmse: Union[float, None]
-        log_loss: Union[float, None]
-        roc_auc: Union[float, None]
+        rmse: float | None
+        log_loss: float | None
+        roc_auc: float | None
         fit_time: float
         predict_time: float
 
@@ -94,7 +94,7 @@ class Project:
 
     @staticmethod
     def __setup_diskcache(
-        workspace: Union[Path, None],
+        workspace: Path | None,
     ) -> tuple[
         Path,
         DiskCacheStorage,
@@ -117,7 +117,7 @@ class Project:
             DiskCacheStorage(workspace / "artifacts"),
         )
 
-    def __init__(self, name: str, *, workspace: Optional[Path] = None):
+    def __init__(self, name: str, *, workspace: Path | None = None):
         r"""
         Initialize a local project.
 
@@ -313,7 +313,7 @@ class Project:
         )
 
     @staticmethod
-    def delete(name: str, *, workspace: Optional[Path] = None):
+    def delete(name: str, *, workspace: Path | None = None):
         r"""
         Delete a local project.
 

@@ -5,8 +5,6 @@ This warning is shown when ``shuffle`` is set to True.
 
 from __future__ import annotations
 
-from typing import Union
-
 from skore.sklearn.train_test_split.warning.train_test_split_warning import (
     TrainTestSplitWarning,
 )
@@ -28,7 +26,7 @@ class ShuffleTrueWarning(TrainTestSplitWarning):
     def check(
         shuffle: bool,
         **kwargs,
-    ) -> Union[str, None]:
+    ) -> str | None:
         """Check whether ``shuffle`` is set to ``True``.
 
         Parameters
