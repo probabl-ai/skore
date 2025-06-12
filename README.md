@@ -63,13 +63,11 @@ pip install -U skore[hub]
 
 #### With conda
 
-skore is available in `conda-forge` for local use:
+skore is available in `conda-forge` both for local and hub use:
 
 ```bash
 conda install conda-forge::skore
 ```
-
-It is not yet possible to interact with the skore hub when the skore is installed via conda.
 
 You can find information on the latest version [here](https://anaconda.org/conda-forge/skore).
 
