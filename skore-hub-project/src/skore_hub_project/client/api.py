@@ -4,7 +4,6 @@ from datetime import datetime
 from functools import partial
 from os import environ
 from time import sleep
-from typing import Optional
 from urllib.parse import urljoin
 
 import httpx
@@ -17,7 +16,7 @@ Client = partial(
 )
 
 
-def get_oauth_device_login(success_uri: Optional[str] = None):
+def get_oauth_device_login(success_uri: str | None = None):
     """Initiate device OAuth flow.
 
     Initiates the OAuth device flow.

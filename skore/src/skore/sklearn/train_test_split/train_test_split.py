@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from numpy.random import RandomState
@@ -18,13 +18,13 @@ if TYPE_CHECKING:
 
 def train_test_split(
     *arrays: ArrayLike,
-    X: Optional[ArrayLike] = None,
-    y: Optional[ArrayLike] = None,
-    test_size: Optional[Union[int, float]] = None,
-    train_size: Optional[Union[int, float]] = None,
-    random_state: Optional[Union[int, RandomState]] = None,
+    X: ArrayLike | None = None,
+    y: ArrayLike | None = None,
+    test_size: int | float | None = None,
+    train_size: int | float | None = None,
+    random_state: int | RandomState | None = None,
     shuffle: bool = True,
-    stratify: Optional[ArrayLike] = None,
+    stratify: ArrayLike | None = None,
     as_dict: bool = False,
     **keyword_arrays: ArrayLike,
 ):

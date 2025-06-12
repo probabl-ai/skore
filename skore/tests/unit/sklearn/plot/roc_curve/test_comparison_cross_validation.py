@@ -126,7 +126,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
     assert display.chance_level_[0].get_color() == "k"
 
     assert isinstance(display.ax_, np.ndarray)
-    for label, ax in zip(labels, display.ax_):
+    for label, ax in zip(labels, display.ax_, strict=False):
         check_legend_position(ax, loc="lower right", position="inside")
         legend = ax.get_legend()
         assert legend.get_title().get_text() == "Test set"

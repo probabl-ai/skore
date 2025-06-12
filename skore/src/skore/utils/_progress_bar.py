@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, TypeVar, Union
+from typing import Any, TypeVar
 
 from rich.progress import (
     BarColumn,
@@ -11,7 +12,7 @@ from rich.progress import (
 from skore._config import get_config
 
 T = TypeVar("T")
-DescriptionType = Union[str, Callable[..., str]]
+DescriptionType = str | Callable[..., str]
 
 
 def progress_decorator(

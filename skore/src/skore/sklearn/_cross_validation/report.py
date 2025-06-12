@@ -1,6 +1,6 @@
 import time
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -26,11 +26,11 @@ if TYPE_CHECKING:
 def _generate_estimator_report(
     estimator: BaseEstimator,
     X: ArrayLike,
-    y: Optional[ArrayLike],
-    pos_label: Optional[PositiveLabel],
+    y: ArrayLike | None,
+    pos_label: PositiveLabel | None,
     train_indices: ArrayLike,
     test_indices: ArrayLike,
-) -> Union[EstimatorReport, KeyboardInterrupt, Exception]:
+) -> EstimatorReport | KeyboardInterrupt | Exception:
     try:
         return EstimatorReport(
             estimator,
@@ -136,13 +136,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self,
         estimator: BaseEstimator,
         X: ArrayLike,
-        y: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = None,
-        cv_splitter: Optional[Union[int, SKLearnCrossValidator, Generator]] = None,
-        n_jobs: Optional[int] = None,
+        y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = None,
+        cv_splitter: int | SKLearnCrossValidator | Generator | None = None,
+        n_jobs: int | None = None,
     ) -> None:
         # used to know if a parent launch a progress bar manager
-        self._progress_info: Optional[dict[str, Any]] = None
+        self._progress_info: dict[str, Any] | None = None
 
         self._estimator = clone(estimator)
 
@@ -288,7 +288,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def cache_predictions(
         self,
         response_methods: str = "auto",
-        n_jobs: Optional[int] = None,
+        n_jobs: int | None = None,
     ) -> None:
         """Cache the predictions for sub-estimators reports.
 
@@ -355,8 +355,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
-        X: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> list[ArrayLike]:
         """Get estimator's predictions.
 
@@ -450,7 +450,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return self._X
 
     @property
-    def y(self) -> Optional[ArrayLike]:
+    def y(self) -> ArrayLike | None:
         return self._y
 
     @property
@@ -458,11 +458,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return self._cv_splitter
 
     @property
-    def pos_label(self) -> Optional[PositiveLabel]:
+    def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
 
     @pos_label.setter
-    def pos_label(self, value: Optional[PositiveLabel]) -> None:
+    def pos_label(self, value: PositiveLabel | None) -> None:
         raise AttributeError(
             "The pos_label attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."

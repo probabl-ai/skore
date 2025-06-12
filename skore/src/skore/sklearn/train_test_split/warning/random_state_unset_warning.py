@@ -5,7 +5,7 @@ This warning is shown when `random_state` is unset.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from skore.sklearn.train_test_split.warning.train_test_split_warning import (
     TrainTestSplitWarning,
@@ -26,9 +26,9 @@ class RandomStateUnsetWarning(TrainTestSplitWarning):
     @staticmethod
     def check(
         shuffle: bool,
-        random_state: Optional[Union[int, RandomState]],
+        random_state: int | RandomState | None,
         **kwargs,
-    ) -> Union[str, None]:
+    ) -> str | None:
         """Check whether ``random_state`` is set.
 
         Parameters

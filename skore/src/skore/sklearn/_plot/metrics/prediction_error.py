@@ -1,6 +1,6 @@
 import numbers
 from collections import namedtuple
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -97,8 +97,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     >>> display.plot(kind="actual_vs_predicted")
     """
 
-    _default_data_points_kwargs: Union[dict[str, Any], None] = None
-    _default_perfect_model_kwargs: Union[dict[str, Any], None] = None
+    _default_data_points_kwargs: dict[str, Any] | None = None
+    _default_perfect_model_kwargs: dict[str, Any] | None = None
 
     def __init__(
         self,
@@ -122,7 +122,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     def _validate_data_points_kwargs(
         self,
         *,
-        data_points_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
+        data_points_kwargs: dict[str, Any] | list[dict[str, Any]] | None,
     ) -> list[dict[str, Any]]:
         """Validate and format the scatter keyword arguments.
 
@@ -524,14 +524,12 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     def plot(
         self,
         *,
-        estimator_name: Optional[str] = None,
+        estimator_name: str | None = None,
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
-        data_points_kwargs: Optional[
-            Union[dict[str, Any], list[dict[str, Any]]]
-        ] = None,
-        perfect_model_kwargs: Optional[dict[str, Any]] = None,
+        data_points_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
+        perfect_model_kwargs: dict[str, Any] | None = None,
         despine: bool = True,
     ) -> None:
         """Plot visualization.
@@ -703,8 +701,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         report_type: ReportType,
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
-        subsample: Union[float, int, None] = 1_000,
-        seed: Optional[int] = None,
+        subsample: float | int | None = 1_000,
+        seed: int | None = None,
         **kwargs,
     ) -> "PredictionErrorDisplay":
         """Plot the prediction error given the true and predicted targets.
@@ -772,7 +770,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         y_pred_min, y_pred_max = np.inf, -np.inf
         residuals_min, residuals_max = np.inf, -np.inf
 
-        for y_true_i, y_pred_i in zip(y_true, y_pred):
+        for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
             n_samples = _num_samples(y_true_i.y)
             if subsample is None:
                 subsample_ = n_samples
@@ -794,7 +792,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 residuals_sample = y_true_sample - y_pred_sample
 
                 for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
-                    y_true_sample, y_pred_sample, residuals_sample
+                    y_true_sample, y_pred_sample, residuals_sample, strict=False
                 ):
                     prediction_error_records.append(
                         {
@@ -811,7 +809,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 residuals_sample = y_true_i.y - y_pred_i.y
 
                 for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
-                    y_true_sample, y_pred_sample, residuals_sample
+                    y_true_sample, y_pred_sample, residuals_sample, strict=False
                 ):
                     prediction_error_records.append(
                         {
