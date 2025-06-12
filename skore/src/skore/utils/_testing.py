@@ -99,6 +99,8 @@ def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"
 def check_roc_frame(
     df: pd.DataFrame,
     expected_n_splits: int | None = None,
+    report_type: str | None = None,
+    with_auc: bool = False,
     multiclass: bool = False,
 ) -> None:
     """Check the structure of a ROC curve DataFrame.
@@ -110,49 +112,116 @@ def check_roc_frame(
     expected_n_splits : int or None, default=None
         The expected number of cross-validation splits.
         If None, does not check the number of splits.
+    report_type : str or None, default=None
+        The type of report. One of:
+        - "estimator"
+        - "cross-validation"
+        - "comparison-estimator"
+        - "comparison-cross-validation"
+        If None, checks for all possible columns.
+    with_auc : bool, default=False
+        Whether to check for ROC AUC scores in the DataFrame.
     multiclass : bool, default=False
         Whether the DataFrame is from a multiclass classification.
     """
     assert isinstance(df, pd.DataFrame)
 
-    if not (multiclass):
-        expected_columns = [
-            "estimator_name",
-            "split_index",
-            "fpr",
-            "tpr",
-            "threshold",
-            "roc_auc",
-        ]
-    else:
-        expected_columns = [
-            "estimator_name",
-            "split_index",
-            "label",
-            "method",
-            "fpr",
-            "tpr",
-            "threshold",
-            "roc_auc",
-        ]
-    assert list(df.columns) == expected_columns
+    if report_type == "estimator":
+        if not multiclass:
+            expected_columns = ["fpr", "tpr", "threshold"]
+        else:
+            expected_columns = ["label", "method", "fpr", "tpr", "threshold"]
 
-    assert df["estimator_name"].dtype.name == "category"
-    if expected_n_splits is not None:
+    elif report_type == "cross-validation":
+        if not multiclass:
+            expected_columns = ["split_index", "fpr", "tpr", "threshold"]
+        else:
+            expected_columns = [
+                "split_index",
+                "label",
+                "method",
+                "fpr",
+                "tpr",
+                "threshold",
+            ]
+
+    elif report_type == "comparison-estimator":
+        if not multiclass:
+            expected_columns = ["estimator_name", "fpr", "tpr", "threshold"]
+        else:
+            expected_columns = [
+                "estimator_name",
+                "label",
+                "method",
+                "fpr",
+                "tpr",
+                "threshold",
+            ]
+
+    elif report_type == "comparison-cross-validation":
+        if not multiclass:
+            expected_columns = [
+                "estimator_name",
+                "split_index",
+                "fpr",
+                "tpr",
+                "threshold",
+            ]
+        else:
+            expected_columns = [
+                "estimator_name",
+                "split_index",
+                "label",
+                "method",
+                "fpr",
+                "tpr",
+                "threshold",
+            ]
+
+    else:  # when report_type is None
+        if not multiclass:
+            expected_columns = [
+                "estimator_name",
+                "split_index",
+                "fpr",
+                "tpr",
+                "threshold",
+            ]
+        else:
+            expected_columns = [
+                "estimator_name",
+                "split_index",
+                "label",
+                "method",
+                "fpr",
+                "tpr",
+                "threshold",
+            ]
+
+    if with_auc:
+        expected_columns.append("roc_auc")
+
+    assert set(df.columns) == set(expected_columns)
+
+    if "estimator_name" in df.columns:
+        assert df["estimator_name"].dtype.name == "category"
+    if "split_index" in df.columns:
         assert df["split_index"].dtype.name == "category"
-    if multiclass:
+    if "label" in df.columns:
         assert df["label"].dtype.name == "category"
+    if "method" in df.columns:
         assert df["method"].dtype == object
+        assert df["method"].unique() == ["OvR"]
+
     assert df["fpr"].dtype == np.float64
     assert df["tpr"].dtype == np.float64
     assert df["threshold"].dtype == np.float64
-    assert df["roc_auc"].dtype == np.float64
+
+    if with_auc:
+        assert df["roc_auc"].dtype == np.float64
 
     if expected_n_splits is not None:
         assert df["split_index"].nunique() == expected_n_splits
-
-    if multiclass:
-        assert df["method"].unique() == ["OvR"]
 
 
 def check_precision_recall_frame(

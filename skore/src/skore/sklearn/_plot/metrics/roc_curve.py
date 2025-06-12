@@ -985,31 +985,51 @@ class RocCurveDisplay(
             report_type=report_type,
         )
 
-    def frame(self) -> DataFrame:
+    def frame(self, with_auc: bool = False) -> DataFrame:
         """Get the data used to create the ROC curve plot.
+
+        Parameters
+        ----------
+        with_auc : bool, default=False
+            Whether to include ROC AUC scores in the output DataFrame.
 
         Returns
         -------
         DataFrame
-            A DataFrame containing the ROC curve data with columns:
+            A DataFrame containing the ROC curve data with columns depending on the
+            report type:
 
-            For binary classification:
-            - estimator_name: Name of the estimator
-            - split_index: Cross-validation fold ID (may be null)
+            For EstimatorReport:
             - fpr: False Positive Rate
             - tpr: True Positive Rate
             - threshold: Classification threshold
-            - roc_auc: Area Under the Curve
+            - roc_auc: Area Under the Curve (if with_auc=True)
 
-            For multiclass classification:
+            For CrossValidationReport:
+            - split_index: Cross-validation fold ID
+            - fpr: False Positive Rate
+            - tpr: True Positive Rate
+            - threshold: Classification threshold
+            - roc_auc: Area Under the Curve (if with_auc=True)
+
+            For ComparisonReport:
             - estimator_name: Name of the estimator
-            - split_index: Cross-validation fold ID (may be null)
+            - fpr: False Positive Rate
+            - tpr: True Positive Rate
+            - threshold: Classification threshold
+            - roc_auc: Area Under the Curve (if with_auc=True)
+
+            For ComparisonCrossValidationReport:
+            - estimator_name: Name of the estimator
+            - split_index: Cross-validation fold ID
+            - fpr: False Positive Rate
+            - tpr: True Positive Rate
+            - threshold: Classification threshold
+            - roc_auc: Area Under the Curve (if with_auc=True)
+
+            For multiclass classification, these additional columns are included:
             - label: Class label
-            - method: Method used for multiclass (OvR for multiclass)
-            - fpr: False Positive Rate
-            - tpr: True Positive Rate
-            - threshold: Classification threshold
-            - roc_auc: Area Under the Curve
+            - method: Method used for multiclass (OvR)
 
         Examples
         --------
@@ -1024,32 +1044,64 @@ class RocCurveDisplay(
         >>> display = report.metrics.roc()
         >>> df = display.frame()
         """
-        merged_data = self.roc_curve.merge(
-            self.roc_auc, on=["estimator_name", "split_index", "label"], how="left"
-        )
+        data = self.roc_curve.copy()
+
+        if with_auc:
+            data = data.merge(
+                self.roc_auc, on=["estimator_name", "split_index", "label"], how="left"
+            )
 
         if self.ml_task == "multiclass-classification":
-            merged_data["method"] = "OvR"
+            data["method"] = "OvR"
 
-        if self.ml_task == "binary-classification":
-            column_order = [
-                "estimator_name",
-                "split_index",
-                "fpr",
-                "tpr",
-                "threshold",
-                "roc_auc",
-            ]
+        if self.report_type == "estimator":
+            if self.ml_task == "binary-classification":
+                columns = ["fpr", "tpr", "threshold"]
+            else:
+                columns = ["label", "method", "fpr", "tpr", "threshold"]
+            if with_auc:
+                columns.append("roc_auc")
+
+        elif self.report_type == "cross-validation":
+            if self.ml_task == "binary-classification":
+                columns = ["split_index", "fpr", "tpr", "threshold"]
+            else:
+                columns = ["split_index", "label", "method", "fpr", "tpr", "threshold"]
+            if with_auc:
+                columns.append("roc_auc")
+
+        elif self.report_type == "comparison-estimator":
+            if self.ml_task == "binary-classification":
+                columns = ["estimator_name", "fpr", "tpr", "threshold"]
+            else:
+                columns = [
+                    "estimator_name",
+                    "label",
+                    "method",
+                    "fpr",
+                    "tpr",
+                    "threshold",
+                ]
+            if with_auc:
+                columns.append("roc_auc")
+
+        elif self.report_type == "comparison-cross-validation":
+            if self.ml_task == "binary-classification":
+                columns = ["estimator_name", "split_index", "fpr", "tpr", "threshold"]
+            else:
+                columns = [
+                    "estimator_name",
+                    "split_index",
+                    "label",
+                    "method",
+                    "fpr",
+                    "tpr",
+                    "threshold",
+                ]
+            if with_auc:
+                columns.append("roc_auc")
+
         else:
-            column_order = [
-                "estimator_name",
-                "split_index",
-                "label",
-                "method",
-                "fpr",
-                "tpr",
-                "threshold",
-                "roc_auc",
-            ]
+            raise ValueError(f"Invalid report type: {self.report_type}.")
 
-        return merged_data[column_order]
+        return data[columns]

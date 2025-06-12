@@ -189,20 +189,31 @@ def test_frame(binary_classification_data_no_split):
     (estimator, X, y), cv = binary_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.roc()
-    df = display.frame()
 
+    # Without AUC
+    df = display.frame()
     check_roc_frame(
         df,
         expected_n_splits=cv,
+        report_type="cross-validation",
+        with_auc=False,
         multiclass=False,
     )
 
-    assert df["estimator_name"].unique() == [report.estimator_name_]
+    # With AUC
+    df = display.frame(with_auc=True)
+    check_roc_frame(
+        df,
+        expected_n_splits=cv,
+        report_type="cross-validation",
+        with_auc=True,
+        multiclass=False,
+    )
 
     # Each fold should have exactly one ROC AUC value
     for fold in range(cv):
-        fold_data = df[df["split_index"] == fold]
-        assert fold_data["roc_auc"].nunique() == 1  # One AUC score per fold
+        fold_data = df[df["split_index"] == int(fold)]
+        assert fold_data["roc_auc"].nunique() == 1
 
 
 def test_legend(

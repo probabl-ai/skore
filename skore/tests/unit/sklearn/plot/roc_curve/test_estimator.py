@@ -259,14 +259,24 @@ def test_frame_binary_classification(binary_classification_data):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.roc()
-    df = display.frame()
 
+    # With AUC
+    df = display.frame()
     check_roc_frame(
         df,
+        report_type="estimator",
+        with_auc=False,
         multiclass=False,
     )
 
-    assert df["estimator_name"].unique() == [report.estimator_name_]
+    # Without AUC
+    df = display.frame(with_auc=True)
+    check_roc_frame(
+        df,
+        report_type="estimator",
+        with_auc=True,
+        multiclass=False,
+    )
 
 
 def test_frame_multiclass_classification(multiclass_classification_data):
@@ -276,14 +286,24 @@ def test_frame_multiclass_classification(multiclass_classification_data):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.roc()
-    df = display.frame()
 
+    # Without AUC
+    df = display.frame()
     check_roc_frame(
         df,
+        report_type="estimator",
+        with_auc=False,
         multiclass=True,
     )
 
-    assert df["estimator_name"].unique() == [report.estimator_name_]
+    # With AUC
+    df = display.frame(with_auc=True)
+    check_roc_frame(
+        df,
+        report_type="estimator",
+        with_auc=True,
+        multiclass=True,
+    )
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

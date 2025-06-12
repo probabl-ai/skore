@@ -230,20 +230,30 @@ def test_frame(binary_classification_data):
         }
     )
     display = report.metrics.roc()
-    df = display.frame()
 
+    # Without AUC
+    df = display.frame()
     check_roc_frame(
         df,
+        report_type="comparison-estimator",
+        with_auc=False,
+        multiclass=False,
+    )
+    assert df["estimator_name"].nunique() == 2
+
+    # With AUC
+    df = display.frame(with_auc=True)
+    check_roc_frame(
+        df,
+        report_type="comparison-estimator",
+        with_auc=True,
         multiclass=False,
     )
 
-    assert df["estimator_name"].nunique() == 2
-
     # Each estimator should have exactly one ROC AUC value
-    for estimator_name in ["estimator_1", "estimator_2"]:
+    for estimator_name in df["estimator_name"].unique():
         estimator_data = df[df["estimator_name"] == estimator_name]
-        assert not estimator_data.empty
-        assert estimator_data["roc_auc"].nunique() == 1  # One AUC score per estimator
+        assert estimator_data["roc_auc"].nunique() == 1
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
