@@ -218,6 +218,7 @@ def check_precision_recall_frame(
 def check_prediction_error_frame(
     df: pd.DataFrame,
     expected_n_splits: int | None = None,
+    report_type: str | None = None,
 ) -> None:
     """Check the structure of a prediction error DataFrame.
 
@@ -228,24 +229,42 @@ def check_prediction_error_frame(
     expected_n_splits : int or None, default=None
         The expected number of cross-validation splits.
         If None, does not check the number of splits.
+    report_type : str or None, default=None
+        The type of report. One of:
+        - "estimator"
+        - "cross-validation"
+        - "comparison-estimator"
+        - "comparison-cross-validation"
+        If None, checks for all possible columns.
     """
     assert isinstance(df, pd.DataFrame)
 
-    expected_columns = [
-        "estimator_name",
-        "split_index",
-        "y_true",
-        "y_pred",
-        "residuals",
-    ]
+    if report_type == "estimator":
+        expected_columns = ["y_true", "y_pred", "residuals"]
+    elif report_type == "cross-validation":
+        expected_columns = ["split_index", "y_true", "y_pred", "residuals"]
+    elif report_type == "comparison-estimator":
+        expected_columns = ["estimator_name", "y_true", "y_pred", "residuals"]
+    elif report_type == "comparison-cross-validation":
+        expected_columns = [
+            "estimator_name",
+            "split_index",
+            "y_true",
+            "y_pred",
+            "residuals",
+        ]
+    else:
+        raise ValueError(f"Invalid report type: {report_type}")
+
     assert list(df.columns) == expected_columns
 
-    assert df["estimator_name"].dtype.name == "category"
-    if expected_n_splits is not None:
+    if "estimator_name" in df.columns:
+        assert df["estimator_name"].dtype.name == "category"
+    if "split_index" in df.columns:
         assert df["split_index"].dtype.name == "category"
     assert df["y_true"].dtype == np.float64
     assert df["y_pred"].dtype == np.float64
     assert df["residuals"].dtype == np.float64
 
-    if expected_n_splits is not None:
+    if expected_n_splits is not None and "split_index" in df.columns:
         assert df["split_index"].nunique() == expected_n_splits

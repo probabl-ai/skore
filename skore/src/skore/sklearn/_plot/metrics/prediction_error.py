@@ -850,9 +850,29 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         Returns
         -------
         DataFrame
-            A DataFrame containing the prediction error data with columns:
+            A DataFrame containing the prediction error data with columns depending on
+            the report type:
+
+            For EstimatorReport:
+            - y_true: True target values
+            - y_pred: Predicted target values
+            - residuals: Difference between true and predicted values (y_true - y_pred)
+
+            For CrossValidationReport:
+            - split_index: Cross-validation fold ID
+            - y_true: True target values
+            - y_pred: Predicted target values
+            - residuals: Difference between true and predicted values (y_true - y_pred)
+
+            For ComparisonReport:
             - estimator_name: Name of the estimator
-            - split_index: Cross-validation fold ID (if applicable)
+            - y_true: True target values
+            - y_pred: Predicted target values
+            - residuals: Difference between true and predicted values (y_true - y_pred)
+
+            For ComparisonCrossValidationReport:
+            - estimator_name: Name of the estimator
+            - split_index: Cross-validation fold ID
             - y_true: True target values
             - y_pred: Predicted target values
             - residuals: Difference between true and predicted values (y_true - y_pred)
@@ -869,11 +889,18 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         >>> display = report.metrics.prediction_error()
         >>> df = display.frame()
         """
-        column_order = [
-            "estimator_name",
-            "split_index",
-            "y_true",
-            "y_pred",
-            "residuals",
-        ]
+        if self.report_type == "estimator":
+            column_order = ["y_true", "y_pred", "residuals"]
+        elif self.report_type == "cross-validation":
+            column_order = ["split_index", "y_true", "y_pred", "residuals"]
+        elif self.report_type == "comparison-estimator":
+            column_order = ["estimator_name", "y_true", "y_pred", "residuals"]
+        else:  # comparison-cross-validation
+            column_order = [
+                "estimator_name",
+                "split_index",
+                "y_true",
+                "y_pred",
+                "residuals",
+            ]
         return self.prediction_error[column_order]

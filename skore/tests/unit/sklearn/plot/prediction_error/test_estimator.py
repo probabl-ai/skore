@@ -258,9 +258,10 @@ def test_frame(regression_data):
     check_prediction_error_frame(
         df,
         expected_n_splits=None,
+        report_type="estimator",
     )
 
-    assert df["estimator_name"].unique() == [report.estimator_name_]
+    assert set(df.columns) == {"y_true", "y_pred", "residuals"}
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
