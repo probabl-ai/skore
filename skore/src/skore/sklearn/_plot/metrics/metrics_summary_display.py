@@ -69,9 +69,9 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
         ):
             raise NotImplementedError("To come soon!")
         elif self.report_type == "comparison-estimator":
-            self.plot_comparison_estimator(x, y)
+            self._plot_comparison_estimator(x, y)
 
-    def plot_comparison_estimator(self, x, y):
+    def _plot_comparison_estimator(self, x, y):
         self.figure_, self.ax_ = plt.subplots()
 
         x_label = self._SCORE_OR_LOSS_INFO.get(x, {}).get("name", x)
@@ -132,7 +132,7 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
 
         title = f"{x_label} vs {y_label}"
         if self.data_source is not None:
-            title += f" on {self.data_source} data"
+            title += f" on {self.data_source} set"
 
         self.ax_.scatter(x=x_data, y=y_data)
         self.ax_.set_title(title)

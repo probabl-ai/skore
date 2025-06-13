@@ -423,7 +423,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     r"\((.*)\)$", r"\1", regex=True
                 )
 
-        return MetricsSummaryDisplay(summarize_data=results, report_type="estimator")
+        return MetricsSummaryDisplay(
+            summarize_data=results, report_type="estimator", data_source=data_source
+        )
 
     def _compute_metric_scores(
         self,
