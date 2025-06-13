@@ -933,6 +933,7 @@ class PrecisionRecallCurveDisplay(
             depending on the report type:
 
             For EstimatorReport:
+            - label: Class label (if multiclass-classification)
             - threshold: Decision threshold
             - precision: Precision score at threshold
             - recall: Recall score at threshold
@@ -941,6 +942,7 @@ class PrecisionRecallCurveDisplay(
 
             For CrossValidationReport:
             - split_index: Cross-validation fold ID
+            - label (if multiclass-classification)
             - threshold
             - precision
             - recall
@@ -948,6 +950,7 @@ class PrecisionRecallCurveDisplay(
 
             For ComparisonReport:
             - estimator_name: Name of the estimator
+            - label (if multiclass-classification)
             - threshold
             - precision
             - recall
@@ -956,13 +959,11 @@ class PrecisionRecallCurveDisplay(
             For ComparisonCrossValidationReport:
             - estimator_name
             - split_index
+            - label (if multiclass-classification)
             - threshold
             - precision
             - recall
             - average_precision (if with_average_precision=True)
-
-            For multiclass classification, this additional column is included:
-            - label: Class label
 
         Examples
         --------
@@ -976,77 +977,30 @@ class PrecisionRecallCurveDisplay(
         >>> display = report.metrics.precision_recall()
         >>> df = display.frame()
         """
-        merged_data = self.precision_recall.merge(
+        total_frame = self.precision_recall.merge(
             self.average_precision,
             on=["estimator_name", "split_index", "label"],
         )
 
+        base_columns = ["threshold", "precision", "recall"]
+
         if self.report_type == "estimator":
-            if self.ml_task == "binary-classification":
-                columns = ["threshold", "precision", "recall"]
-                if with_average_precision:
-                    columns.append("average_precision")
-            else:
-                columns = ["label", "threshold", "precision", "recall"]
-                if with_average_precision:
-                    columns.append("average_precision")
-
+            new_columns = []
         elif self.report_type == "cross-validation":
-            if self.ml_task == "binary-classification":
-                columns = ["split_index", "threshold", "precision", "recall"]
-                if with_average_precision:
-                    columns.append("average_precision")
-            else:
-                columns = [
-                    "split_index",
-                    "label",
-                    "threshold",
-                    "precision",
-                    "recall",
-                ]
-                if with_average_precision:
-                    columns.append("average_precision")
-
+            new_columns = ["split_index"]
         elif self.report_type == "comparison-estimator":
-            if self.ml_task == "binary-classification":
-                columns = ["estimator_name", "threshold", "precision", "recall"]
-                if with_average_precision:
-                    columns.append("average_precision")
-            else:
-                columns = [
-                    "estimator_name",
-                    "label",
-                    "threshold",
-                    "precision",
-                    "recall",
-                ]
-                if with_average_precision:
-                    columns.append("average_precision")
-
+            new_columns = ["estimator_name"]
         elif self.report_type == "comparison-cross-validation":
-            if self.ml_task == "binary-classification":
-                columns = [
-                    "estimator_name",
-                    "split_index",
-                    "threshold",
-                    "precision",
-                    "recall",
-                ]
-                if with_average_precision:
-                    columns.append("average_precision")
-            else:
-                columns = [
-                    "estimator_name",
-                    "split_index",
-                    "label",
-                    "threshold",
-                    "precision",
-                    "recall",
-                ]
-                if with_average_precision:
-                    columns.append("average_precision")
-
+            new_columns = ["estimator_name", "split_index"]
         else:
             raise ValueError(f"Invalid report type: {self.report_type}.")
 
-        return merged_data[columns]
+        if self.ml_task == "binary-classification":
+            columns = new_columns + base_columns
+        else:
+            columns = new_columns + ["label"] + base_columns
+
+        if with_average_precision:
+            columns.append("average_precision")
+
+        return total_frame[columns]

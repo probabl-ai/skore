@@ -1027,7 +1027,7 @@ class RocCurveDisplay(
             - threshold
             - roc_auc (if with_auc=True)
 
-            For multiclass classification, this additional columns are included:
+            For multiclass classification, this additional columns is included:
             - label: Class label
 
         Examples
