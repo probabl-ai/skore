@@ -1,6 +1,6 @@
 [project]
 name = "skore"
-description = "the scikit-learn sidekick"
+description = "Own Your Data Science"
 dynamic = ["license", "readme", "version"]
 requires-python = ">=3.10"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]

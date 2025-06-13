@@ -8,7 +8,7 @@
          <img src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" class="logo-landing only-light" alt="skore - Home"/>
          <img src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Dark@2x.svg" class="logo-landing only-dark pst-js-only" alt="skore - Home"/>
       </div>
-      <h1 class="hero-title">the scikit-learn sidekick</h1>
+      <h1 class="hero-title">Own Your Data Science</h1>
       <p class="hero-description">Elevate ML Development with Built-in Recommended Practices</p>
    </div>
 
@@ -17,7 +17,7 @@
 
 **Skore** is a product whose core mission is to turn uneven ML development into structured, effective decision-making. It is made of two complementary components:
 
--  **Skore Lib**: the scikit-learn sidekick, an open-source Python library (described here!) designed to help data scientists boost their ML development with effective guidance and tooling.
+-  **Skore Lib**: the open-source Python library (described here!) designed to help data scientists boost their ML development with effective guidance and tooling.
 
 -  **Skore Hub**: the collaborative layer where teams connect, learn more on our `product page <https://probabl.ai/skore>`_.
 
