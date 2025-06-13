@@ -6,6 +6,7 @@ from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
+from skore.project.project import PluginProtocol
 from skore.sklearn import EstimatorReport
 from skore_local_project import Project
 from skore_local_project.storage import DiskCacheStorage
@@ -60,6 +61,9 @@ class TestProject:
                 "predict_time_train": float(hash("<predict_time_train>")),
             },
         )
+
+    def test_class_definition(self):
+        assert issubclass(Project, PluginProtocol)
 
     def test_init(self, monkeypatch, tmp_path):
         monkeypatch.setattr(

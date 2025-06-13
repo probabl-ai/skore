@@ -4,10 +4,26 @@ from __future__ import annotations
 
 import re
 from importlib.metadata import entry_points
-from typing import Any
+from types import SimpleNamespace
+from typing import Any, Protocol, runtime_checkable
 
 from skore.project.summary import Summary
 from skore.sklearn._estimator.report import EstimatorReport
+
+
+@runtime_checkable
+class PluginProtocol(Protocol):
+    """docstr"""
+
+    def put(self, key: str, report: EstimatorReport):
+        """Docstr"""
+
+    def reports(self) -> SimpleNamespace:
+        """Docstr"""
+
+    @staticmethod
+    def delete(**kwargs: Any):
+        """"""
 
 
 class Project:
@@ -197,6 +213,9 @@ class Project:
                 - on macOS, usually ``${HOME}/Library/Caches/skore``.
         """
         mode, name, plugin, parameters = Project.__setup_plugin(name)
+
+        if not issubclass(plugin, PluginProtocol):
+            raise RuntimeError
 
         self.__mode = mode
         self.__name = name
