@@ -7,13 +7,13 @@ from skore.sklearn._plot import TableReportDisplay
 from skore.skrub._skrub_compat import _to_frame_if_column
 
 
-def _subsample(df, n_subsample, subsample_strategy, random_state):
-    if n_subsample is None:
+def _subsample(df, subsample, subsample_strategy, seed):
+    if subsample is None:
         return df
     if subsample_strategy == "head":
-        return sbd.head(df, n_subsample)
+        return sbd.head(df, subsample)
     elif subsample_strategy == "random":
-        return sbd.sample(df, n_subsample, seed=random_state)
+        return sbd.sample(df, subsample, seed=seed)
     else:
         raise ValueError(
             "'subsample_strategy' options are 'head', 'random', "
@@ -29,9 +29,9 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         source_dataset: str = "all",
         with_y: bool = True,
-        n_subsample: int | None = None,
+        subsample: int | None = None,
         subsample_strategy: str = "head",
-        random_state: int | None = None,
+        seed: int | None = None,
     ) -> TableReportDisplay:
         """Plot dataset statistics.
 
@@ -94,7 +94,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if with_y and y is not None:
             X = sbd.concat(X, _to_frame_if_column(y), axis=1)
 
-        X = _subsample(X, n_subsample, subsample_strategy, random_state)
+        X = _subsample(X, subsample, subsample_strategy, seed)
 
         return TableReportDisplay._compute_data_for_display(X)
 

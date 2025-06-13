@@ -44,7 +44,7 @@ report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-display = report.data.analyze(dataset="all", with_y=True)
+display = report.data.analyze(source_dataset="all", with_y=True)
 display
 
 # %%
@@ -54,13 +54,13 @@ display.help()
 # %%
 # To begin with, let's plot the gender distribution to check whether we have some
 # population bias:
-_ = display.plot(x_col="gender")
+display.plot(x="gender")
 # %%
 # The dataset is somewhat balanced, with a clear majority of males.
 # Next, we colorize this distribution using the salary to predict, in the column
 # ``current_annual_salary``.
 
-_ = display.plot(x_col="gender", c_col="current_annual_salary")
+display.plot(x="gender", hue="current_annual_salary")
 
 # %%
 # Interestingly, we see that the median (the black vertical bar) is slightly higher for
@@ -68,35 +68,30 @@ _ = display.plot(x_col="gender", c_col="current_annual_salary")
 #
 # Let's now add a third dimension to this plot by visualizing the hired year as the
 # y-axis (which becomes the x-axis since the plot is horizontal):
-_ = display.plot(
-    x_col="gender",
-    y_col="year_first_hired",
-    c_col="current_annual_salary",
-)
+display.plot(x="gender", y="year_first_hired", hue="current_annual_salary")
+
 # %%
 # The year has replaced the salary as the x-axis, and the salary is still represented by
 # the color. This plot is getting a bit hard to read due to the large number of data
 # points, we can subsample it slightly to see a pattern emerges:
-_ = display.plot(
-    x_col="gender",
-    y_col="year_first_hired",
-    c_col="current_annual_salary",
-    n_subsample=1000,
+report.data.analyze(source_dataset="all", with_y=True, subsample=1000).plot(
+    x="gender",
+    y="year_first_hired",
+    hue="current_annual_salary",
 )
 # %%
 # As expected, newcomers (at the right of the plot) are paid significantly less than
-# more senior employees (at the left of the plot).
+# more senior employees (at the left of the plot). Let's now switch gears and observe
+# the correlation among our columns:
 #
-# Let's now switch gears and observe the pearson correlation among our columns:
-_ = display.plot(kind="pearson")
-
-# %%
-# Since the Pearson correlation is only defined between numerical columns and our
+# Since Pearson's correlation is only defined between numerical columns and our
 # dataset contains mostly categorical columns, we're missing associations between
 # most of the columns.
 #
 # To get a broader view of our columns correlations, we can use another metric instead,
 # the `Cramer's V correlation <https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V>`_,
 # whose interpretation is close to the Pearson's correlation:
-_ = display.plot(kind="cramer")
+#
+# Let's also tweak the keyword arguments of the heatmap to change the color map.
+display.plot(kind="cramer", heatmap_kwargs={"cmap": "viridis"})
 # %%
