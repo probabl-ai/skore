@@ -918,12 +918,12 @@ class PrecisionRecallCurveDisplay(
             report_type=report_type,
         )
 
-    def frame(self, with_average_precision: bool = True) -> DataFrame:
+    def frame(self, with_average_precision: bool = False) -> DataFrame:
         """Get the data used to create the precision-recall curve plot.
 
         Parameters
         ----------
-        with_average_precision : bool, default=True
+        with_average_precision : bool, default=False
             Whether to include the average precision column in the returned DataFrame.
 
         Returns

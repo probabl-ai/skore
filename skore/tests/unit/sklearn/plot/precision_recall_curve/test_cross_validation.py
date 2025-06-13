@@ -151,24 +151,24 @@ def test_frame_binary_classification(binary_classification_data_no_split):
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.precision_recall()
 
-    # With the average precision
+    # Without the average precision
     df = display.frame()
     check_precision_recall_frame(
         df,
         report_type="cross-validation",
         expected_n_splits=cv,
         multiclass=False,
-        with_average_precision=True,
+        with_average_precision=False,
     )
 
-    # Without the average precision
-    df = display.frame(with_average_precision=False)
+    # With the average precision
+    df = display.frame(with_average_precision=True)
     check_precision_recall_frame(
         df,
         report_type="cross-validation",
         expected_n_splits=cv,
         multiclass=False,
-        with_average_precision=False,
+        with_average_precision=True,
     )
 
 
@@ -178,24 +178,24 @@ def test_frame_multiclass_classification(multiclass_classification_data_no_split
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.precision_recall()
 
-    # With the average precision
+    # Without the average precision
     df = display.frame()
     check_precision_recall_frame(
         df,
         report_type="cross-validation",
         expected_n_splits=cv,
         multiclass=True,
-        with_average_precision=True,
+        with_average_precision=False,
     )
 
-    # Without the average precision
-    df = display.frame(with_average_precision=False)
+    # With the average precision
+    df = display.frame(with_average_precision=True)
     check_precision_recall_frame(
         df,
         report_type="cross-validation",
         expected_n_splits=cv,
         multiclass=True,
-        with_average_precision=False,
+        with_average_precision=True,
     )
 
 

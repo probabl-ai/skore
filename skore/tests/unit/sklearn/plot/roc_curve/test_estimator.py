@@ -260,7 +260,7 @@ def test_frame_binary_classification(binary_classification_data):
     )
     display = report.metrics.roc()
 
-    # With AUC
+    # Without AUC
     df = display.frame()
     check_roc_frame(
         df,
@@ -269,7 +269,7 @@ def test_frame_binary_classification(binary_classification_data):
         multiclass=False,
     )
 
-    # Without AUC
+    # With AUC
     df = display.frame(with_auc=True)
     check_roc_frame(
         df,

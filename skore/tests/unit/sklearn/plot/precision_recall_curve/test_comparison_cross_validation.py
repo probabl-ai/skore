@@ -226,25 +226,25 @@ def test_frame_binary_classification(binary_classification_report):
     report = binary_classification_report
     display = report.metrics.precision_recall()
 
-    # With the average precision
+    # Without the average precision
     df = display.frame()
     check_precision_recall_frame(
         df,
         report_type="comparison-cross-validation",
         expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=False,
-        with_average_precision=True,
+        with_average_precision=False,
     )
     assert df["estimator_name"].nunique() == len(report.reports_)
 
-    # Without the average precision
-    df = display.frame(with_average_precision=False)
+    # With the average precision
+    df = display.frame(with_average_precision=True)
     check_precision_recall_frame(
         df,
         report_type="comparison-cross-validation",
         expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=False,
-        with_average_precision=False,
+        with_average_precision=True,
     )
     assert df["estimator_name"].nunique() == len(report.reports_)
 
@@ -255,24 +255,24 @@ def test_frame_multiclass_classification(multiclass_classification_report):
     report = multiclass_classification_report
     display = report.metrics.precision_recall()
 
-    # With the average precision
+    # Without the average precision
     df = display.frame()
     check_precision_recall_frame(
         df,
         report_type="comparison-cross-validation",
         expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=True,
-        with_average_precision=True,
+        with_average_precision=False,
     )
     assert df["estimator_name"].nunique() == len(report.reports_)
 
-    # Without the average precision
-    df = display.frame(with_average_precision=False)
+    # With the average precision
+    df = display.frame(with_average_precision=True)
     check_precision_recall_frame(
         df,
         report_type="comparison-cross-validation",
         expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=True,
-        with_average_precision=False,
+        with_average_precision=True,
     )
     assert df["estimator_name"].nunique() == len(report.reports_)
