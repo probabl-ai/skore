@@ -918,20 +918,54 @@ class PrecisionRecallCurveDisplay(
             report_type=report_type,
         )
 
-    def frame(self) -> DataFrame:
+    def frame(self, with_average_precision: bool = True) -> DataFrame:
         """Get the data used to create the precision-recall curve plot.
+
+        Parameters
+        ----------
+        with_average_precision : bool, default=True
+            Whether to include the average precision column in the returned DataFrame.
 
         Returns
         -------
         DataFrame
-            A DataFrame containing the precision-recall curve data with columns:
-            - estimator_name: Name of the estimator
-            - split_index: Cross-validation fold ID (may be null)
-            - label: Class label
+            A DataFrame containing the precision-recall curve data with columns
+            depending on the report type:
+
+            For EstimatorReport:
             - threshold: Decision threshold
             - precision: Precision score at threshold
             - recall: Recall score at threshold
-            - average_precision: Average precision score for the class
+            - average_precision: Average precision score for the class (if
+            with_average_precision=True)
+
+            For CrossValidationReport:
+            - split_index: Cross-validation fold ID
+            - threshold: Decision threshold
+            - precision: Precision score at threshold
+            - recall: Recall score at threshold
+            - average_precision: Average precision score for the class (if
+            with_average_precision=True)
+
+            For ComparisonReport:
+            - estimator_name: Name of the estimator
+            - threshold: Decision threshold
+            - precision: Precision score at threshold
+            - recall: Recall score at threshold
+            - average_precision: Average precision score for the class (if
+            with_average_precision=True)
+
+            For ComparisonCrossValidationReport:
+            - estimator_name: Name of the estimator
+            - split_index: Cross-validation fold ID
+            - threshold: Decision threshold
+            - precision: Precision score at threshold
+            - recall: Recall score at threshold
+            - average_precision: Average precision score for the class (if
+            with_average_precision=True)
+
+            For multiclass classification, thus additional column is included:
+            - label: Class label
 
         Examples
         --------
@@ -950,28 +984,72 @@ class PrecisionRecallCurveDisplay(
             on=["estimator_name", "split_index", "label"],
         )
 
-        if self.ml_task == "multiclass-classification":
-            merged_data["method"] = "OvR"
+        if self.report_type == "estimator":
+            if self.ml_task == "binary-classification":
+                columns = ["threshold", "precision", "recall"]
+                if with_average_precision:
+                    columns.append("average_precision")
+            else:
+                columns = ["label", "threshold", "precision", "recall"]
+                if with_average_precision:
+                    columns.append("average_precision")
 
-        if self.ml_task == "binary-classification":
-            column_order = [
-                "estimator_name",
-                "split_index",
-                "label",
-                "threshold",
-                "precision",
-                "recall",
-                "average_precision",
-            ]
+        elif self.report_type == "cross-validation":
+            if self.ml_task == "binary-classification":
+                columns = ["split_index", "threshold", "precision", "recall"]
+                if with_average_precision:
+                    columns.append("average_precision")
+            else:
+                columns = [
+                    "split_index",
+                    "label",
+                    "threshold",
+                    "precision",
+                    "recall",
+                ]
+                if with_average_precision:
+                    columns.append("average_precision")
+
+        elif self.report_type == "comparison-estimator":
+            if self.ml_task == "binary-classification":
+                columns = ["estimator_name", "threshold", "precision", "recall"]
+                if with_average_precision:
+                    columns.append("average_precision")
+            else:
+                columns = [
+                    "estimator_name",
+                    "label",
+                    "threshold",
+                    "precision",
+                    "recall",
+                ]
+                if with_average_precision:
+                    columns.append("average_precision")
+
+        elif self.report_type == "comparison-cross-validation":
+            if self.ml_task == "binary-classification":
+                columns = [
+                    "estimator_name",
+                    "split_index",
+                    "threshold",
+                    "precision",
+                    "recall",
+                ]
+                if with_average_precision:
+                    columns.append("average_precision")
+            else:
+                columns = [
+                    "estimator_name",
+                    "split_index",
+                    "label",
+                    "threshold",
+                    "precision",
+                    "recall",
+                ]
+                if with_average_precision:
+                    columns.append("average_precision")
+
         else:
-            column_order = [
-                "estimator_name",
-                "split_index",
-                "label",
-                "method",
-                "threshold",
-                "precision",
-                "recall",
-                "average_precision",
-            ]
-        return merged_data[column_order]
+            raise ValueError(f"Invalid report type: {self.report_type}.")
+
+        return merged_data[columns]

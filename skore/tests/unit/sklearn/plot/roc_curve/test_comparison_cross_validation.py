@@ -268,7 +268,6 @@ def test_frame_multiclass_classification(multiclass_classification_report):
         multiclass=True,
     )
     assert df["estimator_name"].nunique() == len(report.reports_)
-    assert df["method"].unique() == ["OvR"]
     assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
 
     # With AUC

@@ -130,7 +130,7 @@ def check_roc_frame(
         if not multiclass:
             expected_columns = ["fpr", "tpr", "threshold"]
         else:
-            expected_columns = ["label", "method", "fpr", "tpr", "threshold"]
+            expected_columns = ["label", "fpr", "tpr", "threshold"]
 
     elif report_type == "cross-validation":
         if not multiclass:
@@ -139,7 +139,6 @@ def check_roc_frame(
             expected_columns = [
                 "split_index",
                 "label",
-                "method",
                 "fpr",
                 "tpr",
                 "threshold",
@@ -152,7 +151,6 @@ def check_roc_frame(
             expected_columns = [
                 "estimator_name",
                 "label",
-                "method",
                 "fpr",
                 "tpr",
                 "threshold",
@@ -172,7 +170,6 @@ def check_roc_frame(
                 "estimator_name",
                 "split_index",
                 "label",
-                "method",
                 "fpr",
                 "tpr",
                 "threshold",
@@ -192,7 +189,6 @@ def check_roc_frame(
                 "estimator_name",
                 "split_index",
                 "label",
-                "method",
                 "fpr",
                 "tpr",
                 "threshold",
@@ -209,9 +205,6 @@ def check_roc_frame(
         assert df["split_index"].dtype.name == "category"
     if "label" in df.columns:
         assert df["label"].dtype.name == "category"
-    if "method" in df.columns:
-        assert df["method"].dtype == object
-        assert df["method"].unique() == ["OvR"]
 
     assert df["fpr"].dtype == np.float64
     assert df["tpr"].dtype == np.float64
@@ -228,6 +221,8 @@ def check_precision_recall_frame(
     df: pd.DataFrame,
     expected_n_splits: int | None = None,
     multiclass: bool = False,
+    report_type: str | None = None,
+    with_average_precision: bool = True,
 ) -> None:
     """Check the structure of a precision-recall curve DataFrame.
 
@@ -240,48 +235,51 @@ def check_precision_recall_frame(
         If None, does not check the number of splits.
     multiclass : bool, default=False
         Whether the DataFrame is from a multiclass classification.
+    report_type : str or None, default=None
+        The type of report. One of "EstimatorReport", "CrossValidationReport",
+        "ComparisonReport", or "ComparisonCrossValidationReport".
+    with_average_precision : bool, default=True
+        Whether the average precision column should be present in the DataFrame.
     """
     assert isinstance(df, pd.DataFrame)
 
-    if not (multiclass):
-        expected_columns = [
-            "estimator_name",
-            "split_index",
-            "label",
-            "threshold",
-            "precision",
-            "recall",
-            "average_precision",
-        ]
+    base_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        base_columns.append("average_precision")
+
+    if report_type == "estimator":
+        expected_columns = ["label"] + base_columns if multiclass else base_columns
+    elif report_type == "cross-validation":
+        new_cols = ["split_index", "label"] if multiclass else ["split_index"]
+        expected_columns = new_cols + base_columns
+    elif report_type == "comparison-estimator":
+        new_cols = ["estimator_name", "label"] if multiclass else ["estimator_name"]
+        expected_columns = new_cols + base_columns
+    elif report_type == "comparison-cross-validation":
+        if multiclass:
+            new_cols = ["estimator_name", "split_index", "label"]
+        else:
+            new_cols = ["estimator_name", "split_index"]
+        expected_columns = new_cols + base_columns
     else:
-        expected_columns = [
-            "estimator_name",
-            "split_index",
-            "label",
-            "method",
-            "threshold",
-            "precision",
-            "recall",
-            "average_precision",
-        ]
+        raise ValueError(f"Invalid report type: {report_type}")
+
     assert list(df.columns) == expected_columns
 
-    assert df["estimator_name"].dtype.name == "category"
-    if expected_n_splits is not None:
+    if "estimator_name" in df.columns:
+        assert df["estimator_name"].dtype.name == "category"
+    if "split_index" in df.columns:
         assert df["split_index"].dtype.name == "category"
-    if multiclass:
+    if "label" in df.columns:
         assert df["label"].dtype.name == "category"
-        assert df["method"].dtype == object
     assert df["threshold"].dtype == np.float64
     assert df["precision"].dtype == np.float64
     assert df["recall"].dtype == np.float64
-    assert df["average_precision"].dtype == np.float64
+    if with_average_precision:
+        assert df["average_precision"].dtype == np.float64
 
-    if expected_n_splits is not None:
+    if expected_n_splits is not None and "split_index" in df.columns:
         assert df["split_index"].nunique() == expected_n_splits
-
-    if multiclass:
-        assert df["method"].unique() == ["OvR"]
 
 
 def check_prediction_error_frame(

@@ -225,14 +225,27 @@ def test_frame_binary_classification(binary_classification_report):
     data."""
     report = binary_classification_report
     display = report.metrics.precision_recall()
-    df = display.frame()
 
+    # With the average precision
+    df = display.frame()
     check_precision_recall_frame(
         df,
         expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=False,
+        report_type="comparison-cross-validation",
+        with_average_precision=True,
     )
+    assert df["estimator_name"].nunique() == len(report.reports_)
 
+    # Without the average precision
+    df = display.frame(with_average_precision=False)
+    check_precision_recall_frame(
+        df,
+        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
+        multiclass=False,
+        report_type="comparison-cross-validation",
+        with_average_precision=False,
+    )
     assert df["estimator_name"].nunique() == len(report.reports_)
 
 
@@ -241,13 +254,25 @@ def test_frame_multiclass_classification(multiclass_classification_report):
     data."""
     report = multiclass_classification_report
     display = report.metrics.precision_recall()
-    df = display.frame()
 
+    # With the average precision
+    df = display.frame()
     check_precision_recall_frame(
         df,
         expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=True,
+        report_type="comparison-cross-validation",
+        with_average_precision=True,
     )
-
     assert df["estimator_name"].nunique() == len(report.reports_)
-    assert df["method"].unique() == ["OvR"]
+
+    # Without the average precision
+    df = display.frame(with_average_precision=False)
+    check_precision_recall_frame(
+        df,
+        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
+        multiclass=True,
+        report_type="comparison-cross-validation",
+        with_average_precision=False,
+    )
+    assert df["estimator_name"].nunique() == len(report.reports_)

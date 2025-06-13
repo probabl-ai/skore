@@ -150,17 +150,26 @@ def test_frame_binary_classification(binary_classification_data_no_split):
     (estimator, X, y), cv = binary_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.precision_recall()
-    df = display.frame()
 
+    # With the average precision
+    df = display.frame()
     check_precision_recall_frame(
         df,
         expected_n_splits=cv,
         multiclass=False,
+        report_type="cross-validation",
+        with_average_precision=True,
     )
 
-    assert df["split_index"].nunique() > 0
-    assert df["label"].nunique() == 1
-    assert df["estimator_name"].unique() == [report.estimator_name_]
+    # Without the average precision
+    df = display.frame(with_average_precision=False)
+    check_precision_recall_frame(
+        df,
+        expected_n_splits=cv,
+        multiclass=False,
+        report_type="cross-validation",
+        with_average_precision=False,
+    )
 
 
 def test_frame_multiclass_classification(multiclass_classification_data_no_split):
@@ -168,17 +177,26 @@ def test_frame_multiclass_classification(multiclass_classification_data_no_split
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.precision_recall()
-    df = display.frame()
 
+    # With the average precision
+    df = display.frame()
     check_precision_recall_frame(
         df,
         expected_n_splits=cv,
         multiclass=True,
+        report_type="cross-validation",
+        with_average_precision=True,
     )
 
-    assert df["split_index"].nunique() > 0
-    assert df["label"].nunique() == cv
-    assert df["estimator_name"].unique() == [report.estimator_name_]
+    # Without the average precision
+    df = display.frame(with_average_precision=False)
+    check_precision_recall_frame(
+        df,
+        expected_n_splits=cv,
+        multiclass=True,
+        report_type="cross-validation",
+        with_average_precision=False,
+    )
 
 
 def test_legend(

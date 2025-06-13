@@ -210,20 +210,28 @@ def test_frame_binary_classification(binary_classification_data):
         }
     )
     display = report.metrics.precision_recall()
-    df = display.frame()
 
+    # With the average precision
+    df = display.frame()
     check_precision_recall_frame(
         df,
         expected_n_splits=None,
         multiclass=False,
+        report_type="comparison-estimator",
+        with_average_precision=True,
     )
-
     assert df["estimator_name"].nunique() == 2
-    assert df["label"].nunique() == 1
-    assert df["label"].iloc[0] == estimator.classes_[1]  # positive class
-    assert df["precision"].between(0, 1).all()
-    assert df["recall"].between(0, 1).all()
-    assert df["average_precision"].between(0, 1).all()
+
+    # Without the average precision
+    df = display.frame(with_average_precision=False)
+    check_precision_recall_frame(
+        df,
+        expected_n_splits=None,
+        multiclass=False,
+        report_type="comparison-estimator",
+        with_average_precision=False,
+    )
+    assert df["estimator_name"].nunique() == 2
 
 
 def test_frame_multiclass_classification(multiclass_classification_data):
@@ -249,17 +257,28 @@ def test_frame_multiclass_classification(multiclass_classification_data):
         }
     )
     display = report.metrics.precision_recall()
-    df = display.frame()
 
+    # With the average precision
+    df = display.frame()
     check_precision_recall_frame(
         df,
         expected_n_splits=None,
         multiclass=True,
+        report_type="comparison-estimator",
+        with_average_precision=True,
     )
-
     assert df["estimator_name"].nunique() == 2
-    assert set(df["label"].unique()) == set(estimator.classes_)
-    assert df["method"].unique() == ["OvR"]
+
+    # Without the average precision
+    df = display.frame(with_average_precision=False)
+    check_precision_recall_frame(
+        df,
+        expected_n_splits=None,
+        multiclass=True,
+        report_type="comparison-estimator",
+        with_average_precision=False,
+    )
+    assert df["estimator_name"].nunique() == 2
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

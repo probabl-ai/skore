@@ -1027,9 +1027,8 @@ class RocCurveDisplay(
             - threshold: Classification threshold
             - roc_auc: Area Under the Curve (if with_auc=True)
 
-            For multiclass classification, these additional columns are included:
+            For multiclass classification, this additional columns are included:
             - label: Class label
-            - method: Method used for multiclass (OvR)
 
         Examples
         --------
@@ -1051,14 +1050,11 @@ class RocCurveDisplay(
                 self.roc_auc, on=["estimator_name", "split_index", "label"], how="left"
             )
 
-        if self.ml_task == "multiclass-classification":
-            data["method"] = "OvR"
-
         if self.report_type == "estimator":
             if self.ml_task == "binary-classification":
                 columns = ["fpr", "tpr", "threshold"]
             else:
-                columns = ["label", "method", "fpr", "tpr", "threshold"]
+                columns = ["label", "fpr", "tpr", "threshold"]
             if with_auc:
                 columns.append("roc_auc")
 
@@ -1066,7 +1062,7 @@ class RocCurveDisplay(
             if self.ml_task == "binary-classification":
                 columns = ["split_index", "fpr", "tpr", "threshold"]
             else:
-                columns = ["split_index", "label", "method", "fpr", "tpr", "threshold"]
+                columns = ["split_index", "label", "fpr", "tpr", "threshold"]
             if with_auc:
                 columns.append("roc_auc")
 
@@ -1077,7 +1073,6 @@ class RocCurveDisplay(
                 columns = [
                     "estimator_name",
                     "label",
-                    "method",
                     "fpr",
                     "tpr",
                     "threshold",
@@ -1093,7 +1088,6 @@ class RocCurveDisplay(
                     "estimator_name",
                     "split_index",
                     "label",
-                    "method",
                     "fpr",
                     "tpr",
                     "threshold",
