@@ -24,7 +24,6 @@ from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
     ReprHTMLMixin,
     _adjust_fig_size,
-    _despine_matplotlib_axis,
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
@@ -152,7 +151,7 @@ def _pairwise_product_index(x, y):
     return list(itertools.product(x.unique().tolist(), y.unique().tolist()))
 
 
-def _aggregate_pairwise(x, y, hue, k):
+def _aggregate_pairwise(x, y, hue, k, heatmap_kwargs):
     """Create a symmetric matrix by a pairwise aggregation of its columns.
 
     - If the color column hue is provided, the values of the symmetric matrix are
@@ -165,7 +164,6 @@ def _aggregate_pairwise(x, y, hue, k):
     names = [col.name for col in cols]
     mask_top_k = _mask_top_k(cols, names, k)
     full_index = _pairwise_product_index(*cols)
-    kwargs = {}
     if hue is None:
         key = "_skore_count"  # an arbitrary column name that disappear after pivoting.
         df = (
@@ -183,7 +181,7 @@ def _aggregate_pairwise(x, y, hue, k):
                 values=key,
             )
         )
-        kwargs["cbar_kws"] = {"label": "total"}
+        cbar_kws = {"label": "total"}
     else:
         hue = sbd.to_pandas(hue)
         cols.append(hue)
@@ -197,8 +195,14 @@ def _aggregate_pairwise(x, y, hue, k):
             .reset_index()
             .pivot(columns=names[0], index=names[1], values=key)
         )
-        kwargs["cbar_kws"] = {"label": f"average {ellide_string(key)}"}
-    return {"df": df} | kwargs
+        cbar_kws = {"label": f"average {ellide_string(key)}"}
+
+    user_heatmap_kwargs = heatmap_kwargs.get("cbar_kws", {})
+    for k, v in cbar_kws.items():
+        user_heatmap_kwargs.setdefault(k, v)
+    heatmap_kwargs["cbar_kws"] = user_heatmap_kwargs
+
+    return {"df": df, "heatmap_kwargs": heatmap_kwargs}
 
 
 def _require_x_col(x_col, kind):
@@ -239,7 +243,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
     _default_heatmap_kwargs: dict[str, Any] | None = None
     _default_boxplot_kwargs: dict[str, Any] | None = None
     _default_scatterplot_kwargs: dict[str, Any] | None = None
-    _default_strippplot_kwargs: dict[str, Any] | None = None
+    _default_stripplot_kwargs: dict[str, Any] | None = None
 
     def __init__(self, summary, df, column_filters=None):
         self.summary = summary
@@ -316,7 +320,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 hue=hue,
                 k=top_k_categories,
                 scatterplot_kwargs=scatterplot_kwargs,
-                strippplot_kwargs=stripplot_kwargs,
+                stripplot_kwargs=stripplot_kwargs,
                 boxplot_kwargs=boxplot_kwargs,
                 heatmap_kwargs=heatmap_kwargs,
             )
@@ -335,7 +339,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         hue=None,
         k=20,
         scatterplot_kwargs=None,
-        strippplot_kwargs=None,
+        stripplot_kwargs=None,
         boxplot_kwargs=None,
         heatmap_kwargs=None,
     ):
@@ -349,12 +353,12 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 hue=hue,
                 k=k,
                 scatterplot_kwargs=scatterplot_kwargs,
-                strippplot_kwargs=strippplot_kwargs,
+                stripplot_kwargs=stripplot_kwargs,
                 boxplot_kwargs=boxplot_kwargs,
                 heatmap_kwargs=heatmap_kwargs,
             )
 
-    def _plot_distribution_1d(self, x, k):
+    def _plot_distribution_1d(self, *, x, k):
         col = sbd.col(self.df, x)
 
         duration_unit = None
@@ -409,7 +413,6 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         """
         values = [ellide_string(v) for v, _ in value_counts][::-1]
         counts = [c for _, c in value_counts][::-1]
-        _despine_matplotlib_axis(self.ax_)
         rects = self.ax_.barh(list(map(str, range(len(values)))), counts, color=color)
         percent = [format_percent(c / n_rows) for c in counts]
         large_percent = [
@@ -446,7 +449,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         hue=None,
         k=20,
         heatmap_kwargs,
-        strippplot_kwargs,
+        stripplot_kwargs,
         boxplot_kwargs,
         scatterplot_kwargs,
     ):
@@ -461,32 +464,27 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         is_x_num, is_y_num = sbd.is_numeric(x), sbd.is_numeric(y)
         if is_x_num and is_y_num:
             if scatterplot_kwargs is None:
-                scatterplot_kwargs = self._default_scatterplot_kwargs
+                scatterplot_kwargs = self._default_scatterplot_kwargs or {}
             return self._scatterplot(
-                x,
-                y,
-                _truncate_top_k(hue, k),
+                x=x,
+                y=y,
+                hue=_truncate_top_k(hue, k),
                 scatterplot_kwargs=scatterplot_kwargs,
             )
-        elif is_x_num:
+        elif is_x_num or is_y_num:
+            if is_y_num:
+                x, y = y, x
+
             # We use a horizontal box plot to limit xlabels overlap.
             if boxplot_kwargs is None:
-                boxplot_kwargs = self._default_boxplot_kwargs
+                boxplot_kwargs = self._default_boxplot_kwargs or {}
+            if stripplot_kwargs is None:
+                stripplot_kwargs = self._default_stripplot_kwargs or {}
             return self._boxplot(
-                x,
-                _truncate_top_k(y, k),
-                _truncate_top_k(hue, k),
-                strippplot_kwargs=strippplot_kwargs,
-                boxplot_kwargs=boxplot_kwargs,
-            )
-        elif is_y_num:
-            if boxplot_kwargs is None:
-                boxplot_kwargs = self._default_boxplot_kwargs
-            return self._boxplot(
-                y,
-                _truncate_top_k(x, k),
-                _truncate_top_k(hue, k),
-                strippplot_kwargs=strippplot_kwargs,
+                x=x,
+                y=_truncate_top_k(y, k),
+                hue=_truncate_top_k(hue, k),
+                stripplot_kwargs=stripplot_kwargs,
                 boxplot_kwargs=boxplot_kwargs,
             )
         else:
@@ -494,14 +492,15 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 raise ValueError(
                     "If 'x' and 'y' are categories, 'hue' must be continuous."
                 )
+            if heatmap_kwargs is None:
+                heatmap_kwargs = self._default_heatmap_kwargs or {}
             return self._heatmap(
-                **_aggregate_pairwise(x, y, hue, k),
-                heatmap_kwargs=heatmap_kwargs,
+                **_aggregate_pairwise(x, y, hue, k, heatmap_kwargs=heatmap_kwargs),
             )
 
     def _scatterplot(self, *, x, y, hue, scatterplot_kwargs):
         scatterplot_kwargs_validated = _validate_style_kwargs(
-            {},
+            {"alpha": 0.1},
             scatterplot_kwargs,
         )
         sns.scatterplot(x=x, y=y, hue=hue, ax=self.ax_, **scatterplot_kwargs_validated)
@@ -597,7 +596,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
     def _plot_cramer(self, *, heatmap_kwargs: dict[str, Any] | None):
         """Plot Cramer's V correlation among all columns."""
         if heatmap_kwargs is None:
-            heatmap_kwargs = self._default_heatmap_kwargs
+            heatmap_kwargs = self._default_heatmap_kwargs or {}
 
         cramer_v_table = pd.DataFrame(
             _column_associations._cramer_v_matrix(self.df),
