@@ -232,3 +232,79 @@ def test_multiclass_classification_kwargs(pyplot, multiclass_classification_repo
     display.plot(despine=False)
     assert display.ax_[0].spines["top"].get_visible()
     assert display.ax_[0].spines["right"].get_visible()
+
+
+def test_data_source_binary_classification(pyplot, binary_classification_data_no_split):
+    """
+    Test passing data_source to ROC plot in ComparisonReport with CrossValidationReport
+    """
+    estimator, X, y = binary_classification_data_no_split
+    estimator_1 = LogisticRegression()
+    estimator_2 = LogisticRegression(C=10)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": CrossValidationReport(estimator_1, X, y),
+            "estimator_2": CrossValidationReport(estimator_2, X, y),
+        }
+    )
+
+    display = report.metrics.roc(data_source="X_y", X=X, y=y)
+    assert display.data_source == "X_y"
+    display.plot()
+
+    display = report.metrics.roc(data_source="train")
+    assert display.data_source == "train"
+    display.plot()
+
+    display = report.metrics.roc(data_source="test")
+    assert display.data_source == "test"
+    display.plot()
+
+    n_reports = len(report.reports_)
+    n_splits = report.reports_[0]._cv_splitter.n_splits
+    expected_auc_entries = n_reports * n_splits
+
+    assert len(display.roc_auc) == expected_auc_entries
+    auc_values = display.roc_auc["roc_auc"].values
+    assert all(0 <= auc <= 1 for auc in auc_values)
+
+
+def test_data_source_multiclass_classification(
+    pyplot, multiclass_classification_data_no_split
+):
+    "Test data_source in ROC plot for ComparisonReport with multiclass and CV report"
+    estimator, X, y = multiclass_classification_data_no_split
+    estimator_1 = LogisticRegression()
+    estimator_2 = LogisticRegression(C=10)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": CrossValidationReport(estimator_1, X, y),
+            "estimator_2": CrossValidationReport(estimator_2, X, y),
+        }
+    )
+
+    class_labels = np.unique(y)
+
+    display = report.metrics.roc(data_source="X_y", X=X, y=y)
+    assert display.data_source == "X_y"
+    display.plot()
+
+    display = report.metrics.roc(data_source="train")
+    assert display.data_source == "train"
+    display.plot()
+
+    display = report.metrics.roc(data_source="test")
+    assert display.data_source == "test"
+    display.plot()
+
+    n_reports = len(report.reports_)
+    n_splits = report.reports_[0]._cv_splitter.n_splits
+    n_classes = len(class_labels)
+    expected_combinations = n_reports * n_classes * n_splits
+
+    assert len(display.roc_auc) == expected_combinations
+
+    auc_values = display.roc_auc["roc_auc"].values
+    assert all(0 <= auc <= 1 for auc in auc_values)
