@@ -178,7 +178,9 @@ class _MetricsAccessor(
                     r"\((.*)\)$", r"\1", regex=True
                 )
         return MetricsSummaryDisplay(
-            summarize_data=results, report_type="cross-validation"
+            summarize_data=results,
+            report_type="cross-validation",
+            data_source=data_source,
         )
 
     @progress_decorator(description="Compute metric for each split")

@@ -190,7 +190,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 "Comparison should only apply to EstimatorReport or "
                 "CrossValidationReport"
             )
-        return MetricsSummaryDisplay(summarize_data=results, report_type=report_type)
+        return MetricsSummaryDisplay(
+            summarize_data=results, report_type=report_type, data_source=data_source
+        )
 
     @progress_decorator(description="Compute metric for each estimator")
     def _compute_metric_scores(
