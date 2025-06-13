@@ -76,7 +76,6 @@ class _MetricsAccessor(
         flat_index: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> MetricsSummaryDisplay:
-        aggregate: Aggregate | None = (("mean", "std"),)
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -140,8 +139,6 @@ class _MetricsAccessor(
         -------
         MetricsSummaryDisplay
             A display containing the statistics for the metrics.
-        MetricsSummaryDisplay
-            A display containing the statistics for the metrics.
 
         Examples
         --------
@@ -152,11 +149,9 @@ class _MetricsAccessor(
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.summarize(
-        >>> report.metrics.summarize(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
         ...     indicator_favorability=True,
-        ... ).frame()
         ... ).frame()
                   LogisticRegression           Favorability
                                 mean       std
