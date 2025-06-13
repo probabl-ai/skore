@@ -26,7 +26,6 @@ test-base = [
   "pytest-randomly",
   "pytest-xdist",
   "respx",
-  "scikit-learn<1.7",
   "skore",
   "skrub",
   "xdoctest",

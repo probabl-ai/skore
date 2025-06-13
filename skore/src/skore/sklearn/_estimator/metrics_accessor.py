@@ -13,7 +13,11 @@ from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore.sklearn._base import (
+    _BaseAccessor,
+    _BaseMetricsAccessor,
+    _get_cached_response_values,
+)
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -33,25 +37,16 @@ from skore.utils._index import flatten_multi_index
 DataSource = Literal["test", "train", "X_y"]
 
 
-class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
+class _MetricsAccessor(
+    _BaseMetricsAccessor, _BaseAccessor["EstimatorReport"], DirNamesMixin
+):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
 
-    _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
-        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
-        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
-        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
-        "precision": {"name": "Precision", "icon": "(↗︎)"},
-        "recall": {"name": "Recall", "icon": "(↗︎)"},
-        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
-        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
-        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
-        "r2": {"name": "R²", "icon": "(↗︎)"},
-        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
-        "custom_metric": {"name": "Custom metric", "icon": ""},
-        "summarize": {"name": "Metrics summary", "icon": ""},
+    _score_or_loss_info: dict[str, dict[str, str]] = {
+        **_BaseMetricsAccessor._score_or_loss_info,
         "confusion_matrix": {"name": "Confusion Matrix", "icon": ""},
     }
 
@@ -213,8 +208,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         favorability_indicator = []
         for metric_name, metric in zip(scoring_names, scoring, strict=False):
             if isinstance(metric, str) and not (
-                (metric.startswith("_") and metric[1:] in self._SCORE_OR_LOSS_INFO)
-                or metric in self._SCORE_OR_LOSS_INFO
+                (metric.startswith("_") and metric[1:] in self._score_or_loss_info)
+                or metric in self._score_or_loss_info
             ):
                 try:
                     metric = metrics.get_scorer(metric)
@@ -223,7 +218,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         f"Invalid metric: {metric!r}. "
                         f"Please use a valid metric from the "
                         f"list of supported metrics: "
-                        f"{list(self._SCORE_OR_LOSS_INFO.keys())} "
+                        f"{list(self._score_or_loss_info.keys())} "
                         "or a valid scikit-learn scoring string."
                     ) from err
                 if scoring_kwargs is not None:
@@ -269,25 +264,25 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     # Handle built-in metrics (with underscore prefix)
                     if (
                         metric.startswith("_")
-                        and metric[1:] in self._SCORE_OR_LOSS_INFO
+                        and metric[1:] in self._score_or_loss_info
                     ):
                         metric_fn = getattr(self, metric)
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                         if metric_name is None:
                             metric_name = (
-                                f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
+                                f"{self._score_or_loss_info[metric[1:]]['name']}"
                             )
-                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric[1:]][
+                        metric_favorability = self._score_or_loss_info[metric[1:]][
                             "icon"
                         ]
 
                     # Handle built-in metrics (without underscore prefix)
-                    elif metric in self._SCORE_OR_LOSS_INFO:
+                    elif metric in self._score_or_loss_info:
                         metric_fn = getattr(self, f"_{metric}")
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                         if metric_name is None:
-                            metric_name = f"{self._SCORE_OR_LOSS_INFO[metric]['name']}"
-                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric]["icon"]
+                            metric_name = f"{self._score_or_loss_info[metric]['name']}"
+                        metric_favorability = self._score_or_loss_info[metric]["icon"]
                 else:
                     # Handle callable metrics
                     metric_fn = partial(self._custom_metric, metric_function=metric)
@@ -1581,57 +1576,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     # Methods related to the help tree
     ####################################################################################
 
-    def _sort_methods_for_help(self, methods: list[tuple]) -> list[tuple]:
-        """Override sort method for metrics-specific ordering.
-
-        In short, we display the `summarize` first and then the `custom_metric`.
-        """
-
-        def _sort_key(method):
-            name = method[0]
-            if name == "custom_metric":
-                priority = 1
-            elif name == "summarize":
-                priority = 2
-            else:
-                priority = 0
-            return priority, name
-
-        return sorted(methods, key=_sort_key)
-
-    def _format_method_name(self, name: str) -> str:
-        """Override format method for metrics-specific naming."""
-        method_name = f"{name}(...)"
-        method_name = method_name.ljust(22)
-        if name in self._SCORE_OR_LOSS_INFO and self._SCORE_OR_LOSS_INFO[name][
-            "icon"
-        ] in ("(↗︎)", "(↘︎)"):
-            if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
-                return method_name.ljust(43)
-            else:  # (↘︎)
-                method_name += (
-                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
-                )
-                return method_name.ljust(49)
-        else:
-            return method_name.ljust(29)
-
-    def _get_methods_for_help(self) -> list[tuple]:
+    def _get_methods_for_help(self) -> list[tuple[str, Callable]]:
         """Override to exclude the plot accessor from methods list."""
         methods = super()._get_methods_for_help()
         return [(name, method) for name, method in methods if name != "plot"]
-
-    def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available metrics methods[/bold cyan]"
-
-    def _get_help_legend(self) -> str:
-        return (
-            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
-        )
-
-    def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.metrics[/bold cyan]"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
