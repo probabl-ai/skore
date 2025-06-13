@@ -50,7 +50,7 @@ test-base = [
   "skrub",
   "xdoctest",
 ]
-test = ["skore[test-base]", "polars"]
+test = ["skore[test-base]", "polars", "pyarrow"]
 test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
 sphinx-base = [
   "altair",

@@ -295,10 +295,6 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             The name of the column to use for the color or hue axis of the plot. Only
             used when ``kind='dist'``.
 
-        top_k_categories : int, default=20
-            For categorical columns, the number of most frequent elements to display.
-            Only used when ``kind='dist'``.
-
         kind : {'dist', 'cramer'}, default='dist'
             The kind of plot drawn.
 
@@ -310,6 +306,29 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
               categorical columns.
             - If ``'cramer'``, plot Cramer's V correlation among all columns. This
               option doesn't take any ``x_col``, ``y_col`` or ``c_col`` argument.
+
+        top_k_categories : int, default=20
+            For categorical columns, the number of most frequent elements to display.
+            Only used when ``kind='dist'``.
+
+        scatterplot_kwargs: dict, default=None
+            Keyword arguments to be passed to seaborn's ``scatterplot`` for rendering
+            the distribution 2D plot, when both ``x_col`` and ``y_col`` are numeric.
+
+        stripplot_kwargs: dict, default=None
+            Keyword arguments to be passed to seaborn's ``stripplot`` for rendering
+            the distribution 2D plot, when either ``x_col`` or ``y_col`` is numeric, and
+            the other is categorical. This plot is drawn on top of the boxplot.
+
+        boxplot_kwargs: dict, default=None
+            Keyword arguments to be passed to seaborn's ``boxplot`` for rendering
+            the distribution 2D plot, when either ``x_col`` or ``y_col`` is numeric, and
+            the other is categorical. This plot is drawn below the stripplot.
+
+        heatmap_kwargs: dict, default=None
+            Keyword arguments to be passed to seaborn's ``heatmap`` for rendering
+            the Cramer's V correlation matrix, when ``kind='cramer'`` or when
+            ``kind='dist'`` and both ``x_col`` and ``y_col`` are categorical.
         """
         self.fig_, self.ax_ = plt.subplots(dpi=150)
         if kind == "dist":
@@ -373,6 +392,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
 
     def _histogram(self, col, duration_unit=None):
         """Histogram for a numeric column."""
+        # XXX: adapt to use hist_kwargs and seaborn histplot?
         col = sbd.drop_nulls(col)
         if sbd.is_float(col):
             # avoid any issues with pandas nullable dtypes
@@ -411,6 +431,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         str
             The plot as a XML string.
         """
+        # XXX: adapt to use value_counts_kwargs and seaborn barplot?
         values = [ellide_string(v) for v, _ in value_counts][::-1]
         counts = [c for _, c in value_counts][::-1]
         rects = self.ax_.barh(list(map(str, range(len(values)))), counts, color=color)
