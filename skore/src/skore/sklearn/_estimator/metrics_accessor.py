@@ -45,8 +45,8 @@ class _MetricsAccessor(
     You can access this accessor using the `metrics` attribute.
     """
 
-    _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
-        **_BaseMetricsAccessor._SCORE_OR_LOSS_INFO,
+    _score_or_loss_info: dict[str, dict[str, str]] = {
+        **_BaseMetricsAccessor._score_or_loss_info,
         "confusion_matrix": {"name": "Confusion Matrix", "icon": ""},
     }
 
@@ -208,8 +208,8 @@ class _MetricsAccessor(
         favorability_indicator = []
         for metric_name, metric in zip(scoring_names, scoring, strict=False):
             if isinstance(metric, str) and not (
-                (metric.startswith("_") and metric[1:] in self._SCORE_OR_LOSS_INFO)
-                or metric in self._SCORE_OR_LOSS_INFO
+                (metric.startswith("_") and metric[1:] in self._score_or_loss_info)
+                or metric in self._score_or_loss_info
             ):
                 try:
                     metric = metrics.get_scorer(metric)
@@ -218,7 +218,7 @@ class _MetricsAccessor(
                         f"Invalid metric: {metric!r}. "
                         f"Please use a valid metric from the "
                         f"list of supported metrics: "
-                        f"{list(self._SCORE_OR_LOSS_INFO.keys())} "
+                        f"{list(self._score_or_loss_info.keys())} "
                         "or a valid scikit-learn scoring string."
                     ) from err
                 if scoring_kwargs is not None:
@@ -264,25 +264,25 @@ class _MetricsAccessor(
                     # Handle built-in metrics (with underscore prefix)
                     if (
                         metric.startswith("_")
-                        and metric[1:] in self._SCORE_OR_LOSS_INFO
+                        and metric[1:] in self._score_or_loss_info
                     ):
                         metric_fn = getattr(self, metric)
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                         if metric_name is None:
                             metric_name = (
-                                f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
+                                f"{self._score_or_loss_info[metric[1:]]['name']}"
                             )
-                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric[1:]][
+                        metric_favorability = self._score_or_loss_info[metric[1:]][
                             "icon"
                         ]
 
                     # Handle built-in metrics (without underscore prefix)
-                    elif metric in self._SCORE_OR_LOSS_INFO:
+                    elif metric in self._score_or_loss_info:
                         metric_fn = getattr(self, f"_{metric}")
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                         if metric_name is None:
-                            metric_name = f"{self._SCORE_OR_LOSS_INFO[metric]['name']}"
-                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric]["icon"]
+                            metric_name = f"{self._score_or_loss_info[metric]['name']}"
+                        metric_favorability = self._score_or_loss_info[metric]["icon"]
                 else:
                     # Handle callable metrics
                     metric_fn = partial(self._custom_metric, metric_function=metric)

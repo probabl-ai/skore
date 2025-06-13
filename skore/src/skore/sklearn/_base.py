@@ -432,7 +432,7 @@ def _get_cached_response_values(
 
 
 class _BaseMetricsAccessor:
-    _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
+    _score_or_loss_info: dict[str, dict[str, str]] = {
         "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
         "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
         "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
@@ -473,18 +473,18 @@ class _BaseMetricsAccessor:
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22)
-        if name in self._SCORE_OR_LOSS_INFO and self._SCORE_OR_LOSS_INFO[name][
+        if name in self._score_or_loss_info and self._score_or_loss_info[name][
             "icon"
         ] in (
             "(↗︎)",
             "(↘︎)",
         ):
-            if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
+            if self._score_or_loss_info[name]["icon"] == "(↗︎)":
+                method_name += f"[cyan]{self._score_or_loss_info[name]['icon']}[/cyan]"
                 return method_name.ljust(43)
             else:  # (↘︎)
                 method_name += (
-                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
+                    f"[orange1]{self._score_or_loss_info[name]['icon']}[/orange1]"
                 )
                 return method_name.ljust(49)
         else:
