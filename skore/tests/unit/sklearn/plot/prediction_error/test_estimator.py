@@ -2,10 +2,10 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
-from skore import EstimatorReport
+from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_prediction_error_frame
 
 
 @pytest.mark.parametrize("subsample", [None, 1_000])
@@ -246,17 +246,51 @@ def test_wrong_report_type(pyplot, regression_data):
         display.plot()
 
 
-def test_legend(pyplot, regression_data):
-    """Check the rendering of the legend for prediction error with an
-    `EstimatorReport`."""
-
+def test_frame(regression_data):
+    """Test the frame method with regression data."""
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.prediction_error()
+    df = display.frame()
+
+    check_prediction_error_frame(
+        df,
+        report_type="estimator",
+        expected_n_splits=None,
+    )
+
+
+def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
+    """Check the rendering of the legend for ROC curves with a `ComparisonReport`."""
+
+    # binary classification
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.roc()
     display.plot()
     check_legend_position(display.ax_, loc="lower right", position="inside")
 
-    display.plot(kind="actual_vs_predicted")
-    check_legend_position(display.ax_, loc="lower right", position="inside")
+    # multiclass classification <= 5 classes
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="upper left", position="outside")

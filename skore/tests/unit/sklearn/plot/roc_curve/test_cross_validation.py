@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from skore import CrossValidationReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_roc_frame
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -35,8 +35,8 @@ def test_binary_classification(
         == [display.pos_label]
     )
     assert (
-        len(display.roc_curve["split_index"].unique())
-        == len(display.roc_auc["split_index"].unique())
+        display.roc_curve["split_index"].nunique()
+        == display.roc_auc["split_index"].nunique()
         == cv
     )
 
@@ -97,8 +97,8 @@ def test_multiclass_classification(
         == list(class_labels)
     )
     assert (
-        len(display.roc_curve["split_index"].unique())
-        == len(display.roc_auc["split_index"].unique())
+        display.roc_curve["split_index"].nunique()
+        == display.roc_auc["split_index"].nunique()
         == cv
     )
 
@@ -182,6 +182,38 @@ def test_multiple_roc_curve_kwargs_error(
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
+
+
+def test_frame(binary_classification_data_no_split):
+    """Test the frame method with cross-validation data."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.roc()
+
+    # Without AUC
+    df = display.frame()
+    check_roc_frame(
+        df,
+        report_type="cross-validation",
+        expected_n_splits=cv,
+        with_auc=False,
+        multiclass=False,
+    )
+
+    # With AUC
+    df = display.frame(with_auc=True)
+    check_roc_frame(
+        df,
+        report_type="cross-validation",
+        expected_n_splits=cv,
+        with_auc=True,
+        multiclass=False,
+    )
+
+    # Each fold should have exactly one ROC AUC value
+    for fold in range(cv):
+        fold_data = df[df["split_index"] == int(fold)]
+        assert fold_data["roc_auc"].nunique() == 1
 
 
 def test_legend(

@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_roc_frame
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -250,6 +250,60 @@ def test_roc_curve_kwargs_multiclass_classification(
     display.plot(despine=False)
     assert display.ax_.spines["top"].get_visible()
     assert display.ax_.spines["right"].get_visible()
+
+
+def test_frame_binary_classification(binary_classification_data):
+    """Test the frame method with binary classification data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+
+    # Without AUC
+    df = display.frame()
+    check_roc_frame(
+        df,
+        report_type="estimator",
+        with_auc=False,
+        multiclass=False,
+    )
+
+    # With AUC
+    df = display.frame(with_auc=True)
+    check_roc_frame(
+        df,
+        report_type="estimator",
+        with_auc=True,
+        multiclass=False,
+    )
+
+
+def test_frame_multiclass_classification(multiclass_classification_data):
+    """Test the frame method with multiclass classification data."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+
+    # Without AUC
+    df = display.frame()
+    check_roc_frame(
+        df,
+        report_type="estimator",
+        with_auc=False,
+        multiclass=True,
+    )
+
+    # With AUC
+    df = display.frame(with_auc=True)
+    check_roc_frame(
+        df,
+        report_type="estimator",
+        with_auc=True,
+        multiclass=True,
+    )
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

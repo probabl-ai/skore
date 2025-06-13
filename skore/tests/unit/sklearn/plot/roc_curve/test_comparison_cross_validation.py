@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore.sklearn._plot.metrics.roc_curve import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_roc_frame
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -232,3 +232,63 @@ def test_multiclass_classification_kwargs(pyplot, multiclass_classification_repo
     display.plot(despine=False)
     assert display.ax_[0].spines["top"].get_visible()
     assert display.ax_[0].spines["right"].get_visible()
+
+
+def test_frame_binary_classification(binary_classification_report):
+    """Test the frame method with binary classification comparison
+    cross-validation data.
+    """
+    report = binary_classification_report
+    display = report.metrics.roc()
+    df = display.frame()
+
+    # Without AUC
+    check_roc_frame(
+        df,
+        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
+        report_type="comparison-cross-validation",
+        with_auc=False,
+        multiclass=False,
+    )
+
+    # With AUC
+    df = display.frame(with_auc=True)
+    check_roc_frame(
+        df,
+        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
+        report_type="comparison-cross-validation",
+        with_auc=True,
+        multiclass=False,
+    )
+
+    assert df["estimator_name"].nunique() == len(report.reports_)
+
+
+def test_frame_multiclass_classification(multiclass_classification_report):
+    """Test the frame method with multiclass classification comparison
+    cross-validation data.
+    """
+    report = multiclass_classification_report
+    display = report.metrics.roc()
+
+    # Without AUC
+    df = display.frame()
+    check_roc_frame(
+        df,
+        report_type="comparison-cross-validation",
+        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
+        multiclass=True,
+        with_auc=False,
+    )
+    assert df["estimator_name"].nunique() == len(report.reports_)
+    assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
+
+    # With AUC
+    df = display.frame(with_auc=True)
+    check_roc_frame(
+        df,
+        report_type="comparison-cross-validation",
+        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
+        multiclass=True,
+        with_auc=True,
+    )

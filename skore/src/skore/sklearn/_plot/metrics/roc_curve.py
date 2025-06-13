@@ -984,3 +984,67 @@ class RocCurveDisplay(
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self, with_auc: bool = False) -> DataFrame:
+        """Get the data used to create the ROC curve plot.
+
+        Parameters
+        ----------
+        with_auc : bool, default=False
+            Whether to include ROC AUC scores in the output DataFrame.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the ROC curve data with columns depending on the
+            report type:
+            - estimator_name: Name of the estimator (when comparing estimators)
+            - split_index: Cross-validation fold ID (when doing cross-validation)
+            - label: Class label (if multiclass-classification)
+            - threshold: Decision threshold
+            - fpr: False Positive Rate
+            - tpr: True Positive Rate
+            - roc_auc: Area Under the Curve (if with_auc=True)
+
+        Examples
+        --------
+        >>> # Binary classification example
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import EstimatorReport, train_test_split
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> clf = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(clf, **split_data)
+        >>> display = report.metrics.roc()
+        >>> df = display.frame()
+        """
+        if not with_auc:
+            total_frame = self.roc_curve
+        else:
+            total_frame = self.roc_curve.merge(
+                self.roc_auc,
+                on=["estimator_name", "split_index", "label"],
+            )
+
+        base_columns = ["threshold", "fpr", "tpr"]
+        if with_auc:
+            base_columns.append("roc_auc")
+
+        if self.report_type == "estimator":
+            extra_columns = []
+        elif self.report_type == "cross-validation":
+            extra_columns = ["split_index"]
+        elif self.report_type == "comparison-estimator":
+            extra_columns = ["estimator_name"]
+        elif self.report_type == "comparison-cross-validation":
+            extra_columns = ["estimator_name", "split_index"]
+        else:
+            raise ValueError(f"Invalid report type: {self.report_type}.")
+
+        if self.ml_task == "binary-classification":
+            columns = extra_columns + base_columns
+        else:
+            columns = extra_columns + ["label"] + base_columns
+
+        return total_frame[columns]

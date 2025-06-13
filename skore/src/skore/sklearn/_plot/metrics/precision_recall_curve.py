@@ -917,3 +917,66 @@ class PrecisionRecallCurveDisplay(
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self, with_average_precision: bool = False) -> DataFrame:
+        """Get the data used to create the precision-recall curve plot.
+
+        Parameters
+        ----------
+        with_average_precision : bool, default=False
+            Whether to include the average precision column in the returned DataFrame.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the precision-recall curve data with columns
+            depending on the report type:
+            - estimator_name: Name of the estimator (when comparing estimators)
+            - split_index: Cross-validation fold ID (when doing cross-validation)
+            - label: Class label (if multiclass-classification)
+            - threshold: Decision threshold
+            - precision: Precision score at threshold
+            - recall: Recall score at threshold
+            - average_precision (if with_average_precision=True)
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split, EstimatorReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(classifier, **split_data)
+        >>> display = report.metrics.precision_recall()
+        >>> df = display.frame()
+        """
+        if not with_average_precision:
+            total_frame = self.precision_recall
+        else:
+            total_frame = self.precision_recall.merge(
+                self.average_precision,
+                on=["estimator_name", "split_index", "label"],
+            )
+
+        base_columns = ["threshold", "precision", "recall"]
+        if with_average_precision:
+            base_columns.append("average_precision")
+
+        if self.report_type == "estimator":
+            extra_columns = []
+        elif self.report_type == "cross-validation":
+            extra_columns = ["split_index"]
+        elif self.report_type == "comparison-estimator":
+            extra_columns = ["estimator_name"]
+        elif self.report_type == "comparison-cross-validation":
+            extra_columns = ["estimator_name", "split_index"]
+        else:
+            raise ValueError(f"Invalid report type: {self.report_type}.")
+
+        if self.ml_task == "binary-classification":
+            columns = extra_columns + base_columns
+        else:
+            columns = extra_columns + ["label"] + base_columns
+
+        return total_frame[columns]

@@ -843,3 +843,44 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self) -> DataFrame:
+        """Get the data used to create the prediction error plot.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the prediction error data with columns depending on
+            the report type:
+            - estimator_name: Name of the estimator (when comparing estimators)
+            - split_index: Cross-validation fold ID (when doing cross-validation)
+            - y_true: True target values
+            - y_pred: Predicted target values
+            - residuals: Difference between true and predicted values (y_true - y_pred)
+
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import train_test_split, EstimatorReport
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> reg = Ridge()
+        >>> report = EstimatorReport(reg, **split_data)
+        >>> display = report.metrics.prediction_error()
+        >>> df = display.frame()
+        """
+        base_columns = ["y_true", "y_pred", "residuals"]
+        if self.report_type == "estimator":
+            column_order = base_columns
+        elif self.report_type == "cross-validation":
+            column_order = ["split_index"] + base_columns
+        elif self.report_type == "comparison-estimator":
+            column_order = ["estimator_name"] + base_columns
+        elif self.report_type == "comparison-cross-validation":
+            column_order = ["estimator_name", "split_index"] + base_columns
+        else:
+            raise ValueError(f"Invalid report type: {self.report_type}.")
+
+        return self.prediction_error[column_order]
