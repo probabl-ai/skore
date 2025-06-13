@@ -60,6 +60,7 @@ def regression_comparator():
 
 
 def test_regression_comparator(regression_comparator):
+    """Test that the regression comparator can summarize metrics and plot them."""
     display_summary = regression_comparator.metrics.summarize()
     display_summary.plot("r2", "fit_time")
     assert display_summary.ax_.get_xlabel() == "R²"
@@ -68,6 +69,7 @@ def test_regression_comparator(regression_comparator):
 
 
 def test_data_source_affect_title_and_axis(regression_comparator):
+    """Test that the data source does change the title and axis labels."""
     comp = regression_comparator
     display_summary = comp.metrics.summarize(data_source="train")
     display_summary.plot("r2", "fit_time")
@@ -76,6 +78,7 @@ def test_data_source_affect_title_and_axis(regression_comparator):
 
 
 def test_error_invalid_metric(regression_comparator):
+    """Test the error raised when an invalid metric is used."""
     comp = regression_comparator
     with pytest.raises(ValueError):
         comp.metrics.summarize().plot("invalid_metric", "fit_time")
@@ -84,6 +87,10 @@ def test_error_invalid_metric(regression_comparator):
 
 
 def test_needs_positive_label(binary_classification_comparator):
+    """
+    Test the error raised when a metric requiring a positive label is selected,
+    without giving the pos_label.
+    """
     comp = binary_classification_comparator
     with pytest.raises(
         ValueError,
@@ -98,6 +105,10 @@ def test_needs_positive_label(binary_classification_comparator):
 
 
 def test_no_positive_label_unrequired(binary_classification_comparator):
+    """
+    Test that no error is raised when a metric not requiring a positive label is
+    selected.
+    """
     display_summary = binary_classification_comparator.metrics.summarize()
     display_summary.plot("brier_score", "fit_time")
     assert display_summary.ax_.get_xlabel() == "Brier score"
