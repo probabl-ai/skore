@@ -941,30 +941,27 @@ class PrecisionRecallCurveDisplay(
 
             For CrossValidationReport:
             - split_index: Cross-validation fold ID
-            - threshold: Decision threshold
-            - precision: Precision score at threshold
-            - recall: Recall score at threshold
-            - average_precision: Average precision score for the class (if
-            with_average_precision=True)
+            - threshold
+            - precision
+            - recall
+            - average_precision (if with_average_precision=True)
 
             For ComparisonReport:
             - estimator_name: Name of the estimator
-            - threshold: Decision threshold
-            - precision: Precision score at threshold
-            - recall: Recall score at threshold
-            - average_precision: Average precision score for the class (if
-            with_average_precision=True)
+            - threshold
+            - precision
+            - recall
+            - average_precision (if with_average_precision=True)
 
             For ComparisonCrossValidationReport:
-            - estimator_name: Name of the estimator
-            - split_index: Cross-validation fold ID
-            - threshold: Decision threshold
-            - precision: Precision score at threshold
-            - recall: Recall score at threshold
-            - average_precision: Average precision score for the class (if
-            with_average_precision=True)
+            - estimator_name
+            - split_index
+            - threshold
+            - precision
+            - recall
+            - average_precision (if with_average_precision=True)
 
-            For multiclass classification, thus additional column is included:
+            For multiclass classification, this additional column is included:
             - label: Class label
 
         Examples

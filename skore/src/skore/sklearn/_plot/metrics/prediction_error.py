@@ -860,22 +860,22 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
 
             For CrossValidationReport:
             - split_index: Cross-validation fold ID
-            - y_true: True target values
-            - y_pred: Predicted target values
-            - residuals: Difference between true and predicted values (y_true - y_pred)
+            - y_true
+            - y_pred
+            - residuals
 
             For ComparisonReport:
             - estimator_name: Name of the estimator
-            - y_true: True target values
-            - y_pred: Predicted target values
-            - residuals: Difference between true and predicted values (y_true - y_pred)
+            - y_true
+            - y_pred
+            - residuals
 
             For ComparisonCrossValidationReport:
-            - estimator_name: Name of the estimator
-            - split_index: Cross-validation fold ID
-            - y_true: True target values
-            - y_pred: Predicted target values
-            - residuals: Difference between true and predicted values (y_true - y_pred)
+            - estimator_name
+            - split_index
+            - y_true
+            - y_pred
+            - residuals
 
         Examples
         --------

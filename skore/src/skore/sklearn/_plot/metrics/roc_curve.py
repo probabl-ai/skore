@@ -1007,25 +1007,25 @@ class RocCurveDisplay(
 
             For CrossValidationReport:
             - split_index: Cross-validation fold ID
-            - fpr: False Positive Rate
-            - tpr: True Positive Rate
-            - threshold: Classification threshold
-            - roc_auc: Area Under the Curve (if with_auc=True)
+            - fpr
+            - tpr
+            - threshold
+            - roc_auc (if with_auc=True)
 
             For ComparisonReport:
             - estimator_name: Name of the estimator
-            - fpr: False Positive Rate
-            - tpr: True Positive Rate
-            - threshold: Classification threshold
-            - roc_auc: Area Under the Curve (if with_auc=True)
+            - fpr
+            - tpr
+            - threshold
+            - roc_auc (if with_auc=True)
 
             For ComparisonCrossValidationReport:
-            - estimator_name: Name of the estimator
-            - split_index: Cross-validation fold ID
-            - fpr: False Positive Rate
-            - tpr: True Positive Rate
-            - threshold: Classification threshold
-            - roc_auc: Area Under the Curve (if with_auc=True)
+            - estimator_name
+            - split_index
+            - fpr
+            - tpr
+            - threshold
+            - roc_auc (if with_auc=True)
 
             For multiclass classification, this additional columns are included:
             - label: Class label
