@@ -4,6 +4,7 @@ from io import StringIO
 from typing import Any
 
 import numpy as np
+from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from rich.console import Console
@@ -240,6 +241,34 @@ class _ClassifierCurveDisplayMixin:
             pos_label = _check_pos_label_consistency(pos_label, y_true[0].y)
 
         return pos_label
+
+
+def _rotate_ticklabels(ax):
+    plt.setp(ax.get_xticklabels(), rotation=45, horizontalalignment="right")
+
+
+def _get_adjusted_fig_size(fig, ax, direction, target_size):
+    size_display = getattr(ax.get_window_extent(), direction)
+    size = fig.dpi_scale_trans.inverted().transform((size_display, 0))[0]
+    dim = 0 if direction == "width" else 1
+    fig_size = fig.get_size_inches()[dim]
+    return target_size * (fig_size / size)
+
+
+def _adjust_fig_size(fig, ax, target_w, target_h):
+    """Rescale a figure to the target width and height.
+
+    This allows us to have all figures of a given type (bar plots, lines or
+    histograms) have the same size, so that the displayed report looks more
+    uniform, without having to do manual adjustments to account for the length
+    of labels, occurrence of titles etc. We let pyplot generate the figure
+    without any size constraints then resize it and thus let matplotlib deal
+    with resizing the appropriate elements (eg shorter bars when the labels
+    take more horizontal space).
+    """
+    w = _get_adjusted_fig_size(fig, ax, "width", target_w)
+    h = _get_adjusted_fig_size(fig, ax, "height", target_h)
+    fig.set_size_inches((w, h))
 
 
 def _despine_matplotlib_axis(
