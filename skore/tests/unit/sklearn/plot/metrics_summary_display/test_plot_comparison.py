@@ -93,15 +93,37 @@ def regression_comparator():
 
 def test_regression_comparator(regression_comparator):
     display_summary = regression_comparator.metrics.summarize()
-    display_summary.plot_comparison_estimator("r2", "fit_time")
+    display_summary.plot("r2", "fit_time")
     assert display_summary.ax_.get_xlabel() == "R²"
     assert display_summary.ax_.get_ylabel() == "Fit time (s) on train set"
     assert len(display_summary.ax_.get_title()) > 4
 
 
+def test_data_source_affect_title_and_axis(regression_comparator):
+    comp = regression_comparator
+    display_summary = comp.metrics.summarize(data_source="train")
+    display_summary.plot("r2", "fit_time")
+    assert "on train set" in display_summary.ax_.get_title()
+    assert "on test set" not in display_summary.ax_.get_ylabel()
+
+
 def test_error_invalid_metric(regression_comparator):
     comp = regression_comparator
     with pytest.raises(ValueError):
-        comp.metrics.summarize().plot_comparison_estimator(
-            "invalid_metric", "invalid_metric_bis"
-        )
+        comp.metrics.summarize().plot("invalid_metric", "fit_time")
+    with pytest.raises(ValueError):
+        comp.metrics.summarize().plot("fit_time", "invalid_metric")
+
+
+def test_needs_positive_label(binary_classification_comparator):
+    comp = binary_classification_comparator
+    with pytest.raises(
+        ValueError,
+        match="The perf metric x requires to add a positive label parameter.",
+    ):
+        comp.metrics.summarize().plot("precision", "fit_time")
+    with pytest.raises(
+        ValueError,
+        match="The perf metric y requires to add a positive label parameter.",
+    ):
+        comp.metrics.summarize().plot("fit_time", "precision")
