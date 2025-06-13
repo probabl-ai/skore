@@ -1043,7 +1043,7 @@ class _MetricsAccessor(
         ).frame()
 
     ####################################################################################
-    # Method related to the help tree
+    # Methods related to the help tree
     ####################################################################################
 
     def _get_methods_for_help(self) -> list[tuple[str, Callable]]:
