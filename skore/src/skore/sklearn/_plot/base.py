@@ -13,7 +13,7 @@ class Display(Protocol):
     def set_style(self, **kwargs: Any) -> None:
         """Set the style of the display."""
 
-    def frame(self) -> pd.DataFrame:
+    def frame(self, **kwargs: Any) -> pd.DataFrame:
         """Get the data used to create the display.
 
         Returns
