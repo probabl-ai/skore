@@ -10,38 +10,6 @@ from skore import ComparisonReport, EstimatorReport
 
 
 @pytest.fixture
-def multi_classification_comparator():
-    X, y = make_classification(
-        n_samples=100,
-        n_features=5,
-        n_informative=3,
-        n_redundant=0,
-        n_classes=3,
-        random_state=42,
-    )
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=0
-    )
-
-    report_1 = EstimatorReport(
-        estimator=HistGradientBoostingClassifier(),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    report_2 = EstimatorReport(
-        estimator=LogisticRegression(max_iter=50),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    comp = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    return comp
-
-
-@pytest.fixture
 def binary_classification_comparator():
     X, y = make_classification(random_state=0)
     X_train, X_test, y_train, y_test = train_test_split(
@@ -127,3 +95,17 @@ def test_needs_positive_label(binary_classification_comparator):
         match="The perf metric y requires to add a positive label parameter.",
     ):
         comp.metrics.summarize().plot("fit_time", "precision")
+
+
+def test_no_positive_label_unrequired(binary_classification_comparator):
+    display_summary = binary_classification_comparator.metrics.summarize()
+    display_summary.plot("brier_score", "fit_time")
+    assert display_summary.ax_.get_xlabel() == "Brier score"
+    assert display_summary.ax_.get_ylabel() == "Fit time (s) on train set"
+    assert len(display_summary.ax_.get_title()) > 4
+
+    display_summary = binary_classification_comparator.metrics.summarize()
+    display_summary.plot("fit_time", "brier_score")
+    assert display_summary.ax_.get_xlabel() == "Fit time (s) on train set"
+    assert display_summary.ax_.get_ylabel() == "Brier score"
+    assert len(display_summary.ax_.get_title()) > 4
