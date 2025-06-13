@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from typing import Any, Literal, cast
+from typing import Any, Literal, cast
 
 import joblib
 import numpy as np
@@ -9,9 +10,14 @@ from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore.sklearn._base import (
+    _BaseAccessor,
+    _BaseMetricsAccessor,
+    _get_cached_response_values,
+)
 from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._plot import (
+    MetricsSummaryDisplay,
     MetricsSummaryDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -34,7 +40,9 @@ from skore.utils._progress_bar import progress_decorator
 DataSource = Literal["test", "train", "X_y"]
 
 
-class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
+class _MetricsAccessor(
+    _BaseMetricsAccessor, _BaseAccessor["CrossValidationReport"], DirNamesMixin
+):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -70,6 +78,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         flat_index: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> MetricsSummaryDisplay:
+        aggregate: Aggregate | None = ("mean", "std"),
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -133,6 +142,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         -------
         MetricsSummaryDisplay
             A display containing the statistics for the metrics.
+        MetricsSummaryDisplay
+            A display containing the statistics for the metrics.
 
         Examples
         --------
@@ -143,9 +154,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.summarize(
+        >>> report.metrics.summarize(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
         ...     indicator_favorability=True,
+        ... ).frame()
         ... ).frame()
                   LogisticRegression           Favorability
                                 mean       std
@@ -157,6 +170,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             pos_label = self._parent.pos_label
 
         results = self._compute_metric_scores(
+            report_metric_name="summarize",
             report_metric_name="summarize",
             data_source=data_source,
             X=X,
@@ -1092,17 +1106,6 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         """Override to exclude the plot accessor from methods list."""
         methods = super()._get_methods_for_help()
         return [(name, method) for name, method in methods if name != "plot"]
-
-    def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available metrics methods[/bold cyan]"
-
-    def _get_help_legend(self) -> str:
-        return (
-            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
-        )
-
-    def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.metrics[/bold cyan]"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""

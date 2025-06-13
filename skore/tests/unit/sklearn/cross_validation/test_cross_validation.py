@@ -316,7 +316,7 @@ def test_cross_validation_summarize_data_source_external(
             report.reports_[split_idx]
             .metrics.summarize(data_source="X_y", X=X, y=y)
             .frame()
-        ) 
+        )
         np.testing.assert_allclose(
             report_result.iloc[:, 0].to_numpy(), result.iloc[:, split_idx].to_numpy()
         )
