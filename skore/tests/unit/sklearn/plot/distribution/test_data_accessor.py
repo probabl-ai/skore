@@ -11,6 +11,8 @@ from skrub.datasets import fetch_employee_salaries
 
 try:
     import polars as pl
+
+    # Ensure pl.from_pandas is available
     import pyarrow  # noqa: F401
 
     _POLARS_INSTALLED = True
