@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 
 from httpx import Client, Response
 from pytest import fixture, mark, raises
+from skore.project.project import PluginProtocol
 from skore_hub_project import Project
 from skore_hub_project.item.skore_estimator_report_item import (
     SkoreEstimatorReportItem,
@@ -46,6 +47,9 @@ class TestProject:
             "skore_hub_project.project.project.AuthenticatedClient",
             FakeClient,
         )
+
+    def test_class_definition(self):
+        assert issubclass(Project, PluginProtocol)
 
     def test_tenant(self):
         assert Project("<tenant>", "<name>").tenant == "<tenant>"
