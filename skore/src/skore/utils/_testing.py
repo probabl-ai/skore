@@ -98,10 +98,10 @@ def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"
 
 def check_roc_frame(
     df: pd.DataFrame,
-    expected_n_splits: int | None = None,
     report_type: str | None = None,
-    with_auc: bool = False,
+    expected_n_splits: int | None = None,
     multiclass: bool = False,
+    with_auc: bool = False,
 ) -> None:
     """Check the structure of a ROC curve DataFrame.
 
@@ -109,9 +109,6 @@ def check_roc_frame(
     ----------
     df : DataFrame
         The DataFrame to check.
-    expected_n_splits : int or None, default=None
-        The expected number of cross-validation splits.
-        If None, does not check the number of splits.
     report_type : str or None, default=None
         The type of report. One of:
         - "estimator"
@@ -119,85 +116,37 @@ def check_roc_frame(
         - "comparison-estimator"
         - "comparison-cross-validation"
         If None, checks for all possible columns.
-    with_auc : bool, default=False
-        Whether to check for ROC AUC scores in the DataFrame.
+    expected_n_splits : int or None, default=None
+        The expected number of cross-validation splits.
+        If None, does not check the number of splits.
     multiclass : bool, default=False
         Whether the DataFrame is from a multiclass classification.
+    with_auc : bool, default=False
+        Whether to check for ROC AUC scores in the DataFrame.
     """
     assert isinstance(df, pd.DataFrame)
 
-    if report_type == "estimator":
-        if not multiclass:
-            expected_columns = ["fpr", "tpr", "threshold"]
-        else:
-            expected_columns = ["label", "fpr", "tpr", "threshold"]
-
-    elif report_type == "cross-validation":
-        if not multiclass:
-            expected_columns = ["split_index", "fpr", "tpr", "threshold"]
-        else:
-            expected_columns = [
-                "split_index",
-                "label",
-                "fpr",
-                "tpr",
-                "threshold",
-            ]
-
-    elif report_type == "comparison-estimator":
-        if not multiclass:
-            expected_columns = ["estimator_name", "fpr", "tpr", "threshold"]
-        else:
-            expected_columns = [
-                "estimator_name",
-                "label",
-                "fpr",
-                "tpr",
-                "threshold",
-            ]
-
-    elif report_type == "comparison-cross-validation":
-        if not multiclass:
-            expected_columns = [
-                "estimator_name",
-                "split_index",
-                "fpr",
-                "tpr",
-                "threshold",
-            ]
-        else:
-            expected_columns = [
-                "estimator_name",
-                "split_index",
-                "label",
-                "fpr",
-                "tpr",
-                "threshold",
-            ]
-
-    else:  # when report_type is None
-        if not multiclass:
-            expected_columns = [
-                "estimator_name",
-                "split_index",
-                "fpr",
-                "tpr",
-                "threshold",
-            ]
-        else:
-            expected_columns = [
-                "estimator_name",
-                "split_index",
-                "label",
-                "fpr",
-                "tpr",
-                "threshold",
-            ]
-
+    base_columns = ["threshold", "fpr", "tpr"]
     if with_auc:
-        expected_columns.append("roc_auc")
+        base_columns.append("roc_auc")
 
-    assert set(df.columns) == set(expected_columns)
+    if report_type == "estimator":
+        extra_columns = []
+    elif report_type == "cross-validation":
+        extra_columns = ["split_index"]
+    elif report_type == "comparison-estimator":
+        extra_columns = ["estimator_name"]
+    elif report_type == "comparison-cross-validation":
+        extra_columns = ["estimator_name", "split_index"]
+    else:
+        raise ValueError(f"Invalid report type: {report_type}.")
+
+    if not multiclass:
+        expected_columns = extra_columns + base_columns
+    else:
+        expected_columns = extra_columns + ["label"] + base_columns
+
+    assert list(df.columns) == expected_columns
 
     if "estimator_name" in df.columns:
         assert df["estimator_name"].dtype.name == "category"
@@ -205,11 +154,9 @@ def check_roc_frame(
         assert df["split_index"].dtype.name == "category"
     if "label" in df.columns:
         assert df["label"].dtype.name == "category"
-
     assert df["fpr"].dtype == np.float64
     assert df["tpr"].dtype == np.float64
     assert df["threshold"].dtype == np.float64
-
     if with_auc:
         assert df["roc_auc"].dtype == np.float64
 
@@ -219,9 +166,9 @@ def check_roc_frame(
 
 def check_precision_recall_frame(
     df: pd.DataFrame,
+    report_type: str | None = None,
     expected_n_splits: int | None = None,
     multiclass: bool = False,
-    report_type: str | None = None,
     with_average_precision: bool = True,
 ) -> None:
     """Check the structure of a precision-recall curve DataFrame.
@@ -230,14 +177,14 @@ def check_precision_recall_frame(
     ----------
     df : DataFrame
         The DataFrame to check.
+    report_type : str or None, default=None
+        The type of report. One of "EstimatorReport", "CrossValidationReport",
+        "ComparisonReport", or "ComparisonCrossValidationReport".
     expected_n_splits : int or None, default=None
         The expected number of cross-validation splits.
         If None, does not check the number of splits.
     multiclass : bool, default=False
         Whether the DataFrame is from a multiclass classification.
-    report_type : str or None, default=None
-        The type of report. One of "EstimatorReport", "CrossValidationReport",
-        "ComparisonReport", or "ComparisonCrossValidationReport".
     with_average_precision : bool, default=True
         Whether the average precision column should be present in the DataFrame.
     """
@@ -248,21 +195,20 @@ def check_precision_recall_frame(
         base_columns.append("average_precision")
 
     if report_type == "estimator":
-        expected_columns = ["label"] + base_columns if multiclass else base_columns
+        extra_columns = []
     elif report_type == "cross-validation":
-        new_cols = ["split_index", "label"] if multiclass else ["split_index"]
-        expected_columns = new_cols + base_columns
+        extra_columns = ["split_index"]
     elif report_type == "comparison-estimator":
-        new_cols = ["estimator_name", "label"] if multiclass else ["estimator_name"]
-        expected_columns = new_cols + base_columns
+        extra_columns = ["estimator_name"]
     elif report_type == "comparison-cross-validation":
-        if multiclass:
-            new_cols = ["estimator_name", "split_index", "label"]
-        else:
-            new_cols = ["estimator_name", "split_index"]
-        expected_columns = new_cols + base_columns
+        extra_columns = ["estimator_name", "split_index"]
     else:
-        raise ValueError(f"Invalid report type: {report_type}")
+        raise ValueError(f"Invalid report type: {report_type}.")
+
+    if not multiclass:
+        expected_columns = extra_columns + base_columns
+    else:
+        expected_columns = extra_columns + ["label"] + base_columns
 
     assert list(df.columns) == expected_columns
 
@@ -284,8 +230,8 @@ def check_precision_recall_frame(
 
 def check_prediction_error_frame(
     df: pd.DataFrame,
-    expected_n_splits: int | None = None,
     report_type: str | None = None,
+    expected_n_splits: int | None = None,
 ) -> None:
     """Check the structure of a prediction error DataFrame.
 
@@ -293,9 +239,6 @@ def check_prediction_error_frame(
     ----------
     df : DataFrame
         The DataFrame to check.
-    expected_n_splits : int or None, default=None
-        The expected number of cross-validation splits.
-        If None, does not check the number of splits.
     report_type : str or None, default=None
         The type of report. One of:
         - "estimator"
@@ -303,26 +246,23 @@ def check_prediction_error_frame(
         - "comparison-estimator"
         - "comparison-cross-validation"
         If None, checks for all possible columns.
+    expected_n_splits : int or None, default=None
+        The expected number of cross-validation splits.
+        If None, does not check the number of splits.
     """
     assert isinstance(df, pd.DataFrame)
 
+    base_columns = ["y_true", "y_pred", "residuals"]
     if report_type == "estimator":
-        expected_columns = ["y_true", "y_pred", "residuals"]
+        expected_columns = base_columns
     elif report_type == "cross-validation":
-        expected_columns = ["split_index", "y_true", "y_pred", "residuals"]
+        expected_columns = ["split_index"] + base_columns
     elif report_type == "comparison-estimator":
-        expected_columns = ["estimator_name", "y_true", "y_pred", "residuals"]
+        expected_columns = ["estimator_name"] + base_columns
     elif report_type == "comparison-cross-validation":
-        expected_columns = [
-            "estimator_name",
-            "split_index",
-            "y_true",
-            "y_pred",
-            "residuals",
-        ]
+        expected_columns = ["estimator_name", "split_index"] + base_columns
     else:
         raise ValueError(f"Invalid report type: {report_type}")
-
     assert list(df.columns) == expected_columns
 
     if "estimator_name" in df.columns:

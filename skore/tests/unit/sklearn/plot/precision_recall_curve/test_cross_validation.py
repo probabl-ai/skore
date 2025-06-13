@@ -155,9 +155,9 @@ def test_frame_binary_classification(binary_classification_data_no_split):
     df = display.frame()
     check_precision_recall_frame(
         df,
+        report_type="cross-validation",
         expected_n_splits=cv,
         multiclass=False,
-        report_type="cross-validation",
         with_average_precision=True,
     )
 
@@ -165,9 +165,9 @@ def test_frame_binary_classification(binary_classification_data_no_split):
     df = display.frame(with_average_precision=False)
     check_precision_recall_frame(
         df,
+        report_type="cross-validation",
         expected_n_splits=cv,
         multiclass=False,
-        report_type="cross-validation",
         with_average_precision=False,
     )
 
@@ -182,9 +182,9 @@ def test_frame_multiclass_classification(multiclass_classification_data_no_split
     df = display.frame()
     check_precision_recall_frame(
         df,
+        report_type="cross-validation",
         expected_n_splits=cv,
         multiclass=True,
-        report_type="cross-validation",
         with_average_precision=True,
     )
 
@@ -192,9 +192,9 @@ def test_frame_multiclass_classification(multiclass_classification_data_no_split
     df = display.frame(with_average_precision=False)
     check_precision_recall_frame(
         df,
+        report_type="cross-validation",
         expected_n_splits=cv,
         multiclass=True,
-        report_type="cross-validation",
         with_average_precision=False,
     )
 

@@ -215,11 +215,10 @@ def test_frame(regression_data):
 
     check_prediction_error_frame(
         df,
-        expected_n_splits=None,
         report_type="comparison-estimator",
+        expected_n_splits=None,
     )
 
-    assert set(df.columns) == {"estimator_name", "y_true", "y_pred", "residuals"}
     assert df["estimator_name"].nunique() == 2
 
 

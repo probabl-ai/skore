@@ -242,9 +242,22 @@ def test_frame_binary_classification(binary_classification_report):
     display = report.metrics.roc()
     df = display.frame()
 
+    # Without AUC
     check_roc_frame(
         df,
         expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
+        report_type="comparison-cross-validation",
+        with_auc=False,
+        multiclass=False,
+    )
+
+    # With AUC
+    df = display.frame(with_auc=True)
+    check_roc_frame(
+        df,
+        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
+        report_type="comparison-cross-validation",
+        with_auc=True,
         multiclass=False,
     )
 
@@ -262,10 +275,10 @@ def test_frame_multiclass_classification(multiclass_classification_report):
     df = display.frame()
     check_roc_frame(
         df,
-        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         report_type="comparison-cross-validation",
-        with_auc=False,
+        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=True,
+        with_auc=False,
     )
     assert df["estimator_name"].nunique() == len(report.reports_)
     assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
@@ -274,8 +287,8 @@ def test_frame_multiclass_classification(multiclass_classification_report):
     df = display.frame(with_auc=True)
     check_roc_frame(
         df,
-        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         report_type="comparison-cross-validation",
-        with_auc=True,
+        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=True,
+        with_auc=True,
     )

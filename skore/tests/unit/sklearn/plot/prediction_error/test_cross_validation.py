@@ -137,11 +137,9 @@ def test_frame(regression_data_no_split):
 
     check_prediction_error_frame(
         df,
-        expected_n_splits=cv,
         report_type="cross-validation",
+        expected_n_splits=cv,
     )
-
-    assert set(df.columns) == {"split_index", "y_true", "y_pred", "residuals"}
 
 
 def test_legend(pyplot, regression_data_no_split):

@@ -236,8 +236,8 @@ def test_frame(binary_classification_data):
     check_roc_frame(
         df,
         report_type="comparison-estimator",
-        with_auc=False,
         multiclass=False,
+        with_auc=False,
     )
     assert df["estimator_name"].nunique() == 2
 
@@ -246,8 +246,8 @@ def test_frame(binary_classification_data):
     check_roc_frame(
         df,
         report_type="comparison-estimator",
-        with_auc=True,
         multiclass=False,
+        with_auc=True,
     )
 
     # Each estimator should have exactly one ROC AUC value

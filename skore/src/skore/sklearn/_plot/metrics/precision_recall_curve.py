@@ -986,6 +986,8 @@ class PrecisionRecallCurveDisplay(
             )
 
         base_columns = ["threshold", "precision", "recall"]
+        if with_average_precision:
+            base_columns.append("average_precision")
 
         if self.report_type == "estimator":
             extra_columns = []
@@ -1002,8 +1004,5 @@ class PrecisionRecallCurveDisplay(
             columns = extra_columns + base_columns
         else:
             columns = extra_columns + ["label"] + base_columns
-
-        if with_average_precision:
-            columns.append("average_precision")
 
         return total_frame[columns]

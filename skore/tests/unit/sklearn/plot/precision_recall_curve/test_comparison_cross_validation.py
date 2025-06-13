@@ -230,9 +230,9 @@ def test_frame_binary_classification(binary_classification_report):
     df = display.frame()
     check_precision_recall_frame(
         df,
+        report_type="comparison-cross-validation",
         expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=False,
-        report_type="comparison-cross-validation",
         with_average_precision=True,
     )
     assert df["estimator_name"].nunique() == len(report.reports_)
@@ -241,9 +241,9 @@ def test_frame_binary_classification(binary_classification_report):
     df = display.frame(with_average_precision=False)
     check_precision_recall_frame(
         df,
+        report_type="comparison-cross-validation",
         expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=False,
-        report_type="comparison-cross-validation",
         with_average_precision=False,
     )
     assert df["estimator_name"].nunique() == len(report.reports_)
@@ -259,9 +259,9 @@ def test_frame_multiclass_classification(multiclass_classification_report):
     df = display.frame()
     check_precision_recall_frame(
         df,
+        report_type="comparison-cross-validation",
         expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=True,
-        report_type="comparison-cross-validation",
         with_average_precision=True,
     )
     assert df["estimator_name"].nunique() == len(report.reports_)
@@ -270,9 +270,9 @@ def test_frame_multiclass_classification(multiclass_classification_report):
     df = display.frame(with_average_precision=False)
     check_precision_recall_frame(
         df,
+        report_type="comparison-cross-validation",
         expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
         multiclass=True,
-        report_type="comparison-cross-validation",
         with_average_precision=False,
     )
     assert df["estimator_name"].nunique() == len(report.reports_)

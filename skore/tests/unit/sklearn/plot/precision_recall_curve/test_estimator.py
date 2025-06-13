@@ -253,9 +253,9 @@ def test_frame_binary_classification(binary_classification_data):
     df = display.frame()
     check_precision_recall_frame(
         df,
+        report_type="estimator",
         expected_n_splits=None,
         multiclass=False,
-        report_type="estimator",
         with_average_precision=True,
     )
 
@@ -263,9 +263,9 @@ def test_frame_binary_classification(binary_classification_data):
     df = display.frame(with_average_precision=False)
     check_precision_recall_frame(
         df,
+        report_type="estimator",
         expected_n_splits=None,
         multiclass=False,
-        report_type="estimator",
         with_average_precision=False,
     )
 
@@ -284,9 +284,9 @@ def test_frame_multiclass_classification(multiclass_classification_data):
     df = display.frame()
     check_precision_recall_frame(
         df,
+        report_type="estimator",
         expected_n_splits=None,
         multiclass=True,
-        report_type="estimator",
         with_average_precision=True,
     )
 
@@ -294,9 +294,9 @@ def test_frame_multiclass_classification(multiclass_classification_data):
     df = display.frame(with_average_precision=False)
     check_precision_recall_frame(
         df,
+        report_type="estimator",
         expected_n_splits=None,
         multiclass=True,
-        report_type="estimator",
         with_average_precision=False,
     )
 

@@ -194,8 +194,8 @@ def test_frame(binary_classification_data_no_split):
     df = display.frame()
     check_roc_frame(
         df,
-        expected_n_splits=cv,
         report_type="cross-validation",
+        expected_n_splits=cv,
         with_auc=False,
         multiclass=False,
     )
@@ -204,8 +204,8 @@ def test_frame(binary_classification_data_no_split):
     df = display.frame(with_auc=True)
     check_roc_frame(
         df,
-        expected_n_splits=cv,
         report_type="cross-validation",
+        expected_n_splits=cv,
         with_auc=True,
         multiclass=False,
     )

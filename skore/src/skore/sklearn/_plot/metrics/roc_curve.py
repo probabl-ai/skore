@@ -1053,6 +1053,8 @@ class RocCurveDisplay(
             )
 
         base_columns = ["threshold", "fpr", "tpr"]
+        if with_auc:
+            base_columns.append("roc_auc")
 
         if self.report_type == "estimator":
             extra_columns = []
@@ -1069,8 +1071,5 @@ class RocCurveDisplay(
             columns = extra_columns + base_columns
         else:
             columns = extra_columns + ["label"] + base_columns
-
-        if with_auc:
-            columns.append("roc_auc")
 
         return total_frame[columns]
