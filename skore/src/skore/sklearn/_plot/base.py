@@ -16,9 +16,6 @@ class Display(Protocol):
     def frame(self) -> pd.DataFrame:
         """Get the data used to create the display.
 
-        The returned DataFrame structure depends on the type of plot (ROC curve,
-        precision-recall curve, prediction error, etc.).
-
         Returns
         -------
         DataFrame
