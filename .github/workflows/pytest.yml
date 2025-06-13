@@ -230,6 +230,9 @@ jobs:
         run: |
           mkdir coverage
           python -m pytest -n auto src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
+          sed -i -E "s/filename=\"venv\/lib\/python[^/]*\/site-packages\/${PACKAGE//-/_}/filename=\"${PACKAGE}\/src\/${PACKAGE//-/_}/g" coverage/pytest-coverage.xml
+        env:
+          PACKAGE: ${{ matrix.package }}
 
       - name: Upload coverage reports
         if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
