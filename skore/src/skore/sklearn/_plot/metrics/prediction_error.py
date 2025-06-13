@@ -889,18 +889,16 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         >>> display = report.metrics.prediction_error()
         >>> df = display.frame()
         """
+        base_columns = ["y_true", "y_pred", "residuals"]
         if self.report_type == "estimator":
-            column_order = ["y_true", "y_pred", "residuals"]
+            column_order = base_columns
         elif self.report_type == "cross-validation":
-            column_order = ["split_index", "y_true", "y_pred", "residuals"]
+            column_order = ["split_index"] + base_columns
         elif self.report_type == "comparison-estimator":
-            column_order = ["estimator_name", "y_true", "y_pred", "residuals"]
-        else:  # comparison-cross-validation
-            column_order = [
-                "estimator_name",
-                "split_index",
-                "y_true",
-                "y_pred",
-                "residuals",
-            ]
+            column_order = ["estimator_name"] + base_columns
+        elif self.report_type == "comparison-cross-validation":
+            column_order = ["estimator_name", "split_index"] + base_columns
+        else:
+            raise ValueError(f"Invalid report type: {self.report_type}.")
+
         return self.prediction_error[column_order]

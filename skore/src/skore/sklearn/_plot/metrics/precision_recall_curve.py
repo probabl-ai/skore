@@ -977,28 +977,31 @@ class PrecisionRecallCurveDisplay(
         >>> display = report.metrics.precision_recall()
         >>> df = display.frame()
         """
-        total_frame = self.precision_recall.merge(
-            self.average_precision,
-            on=["estimator_name", "split_index", "label"],
-        )
+        if not with_average_precision:
+            total_frame = self.precision_recall
+        else:
+            total_frame = self.precision_recall.merge(
+                self.average_precision,
+                on=["estimator_name", "split_index", "label"],
+            )
 
         base_columns = ["threshold", "precision", "recall"]
 
         if self.report_type == "estimator":
-            new_columns = []
+            extra_columns = []
         elif self.report_type == "cross-validation":
-            new_columns = ["split_index"]
+            extra_columns = ["split_index"]
         elif self.report_type == "comparison-estimator":
-            new_columns = ["estimator_name"]
+            extra_columns = ["estimator_name"]
         elif self.report_type == "comparison-cross-validation":
-            new_columns = ["estimator_name", "split_index"]
+            extra_columns = ["estimator_name", "split_index"]
         else:
             raise ValueError(f"Invalid report type: {self.report_type}.")
 
         if self.ml_task == "binary-classification":
-            columns = new_columns + base_columns
+            columns = extra_columns + base_columns
         else:
-            columns = new_columns + ["label"] + base_columns
+            columns = extra_columns + ["label"] + base_columns
 
         if with_average_precision:
             columns.append("average_precision")

@@ -1000,6 +1000,7 @@ class RocCurveDisplay(
             report type:
 
             For EstimatorReport:
+            - label: Class label (if multiclass-classification)
             - fpr: False Positive Rate
             - tpr: True Positive Rate
             - threshold: Classification threshold
@@ -1007,6 +1008,7 @@ class RocCurveDisplay(
 
             For CrossValidationReport:
             - split_index: Cross-validation fold ID
+            - label (if multiclass-classification)
             - fpr
             - tpr
             - threshold
@@ -1014,6 +1016,7 @@ class RocCurveDisplay(
 
             For ComparisonReport:
             - estimator_name: Name of the estimator
+            - label (if multiclass-classification)
             - fpr
             - tpr
             - threshold
@@ -1022,13 +1025,11 @@ class RocCurveDisplay(
             For ComparisonCrossValidationReport:
             - estimator_name
             - split_index
+            - label (if multiclass-classification)
             - fpr
             - tpr
             - threshold
             - roc_auc (if with_auc=True)
-
-            For multiclass classification, this additional columns is included:
-            - label: Class label
 
         Examples
         --------
@@ -1043,59 +1044,33 @@ class RocCurveDisplay(
         >>> display = report.metrics.roc()
         >>> df = display.frame()
         """
-        data = self.roc_curve.copy()
-
-        if with_auc:
-            data = data.merge(
-                self.roc_auc, on=["estimator_name", "split_index", "label"], how="left"
+        if not with_auc:
+            total_frame = self.roc_curve
+        else:
+            total_frame = self.roc_curve.merge(
+                self.roc_auc,
+                on=["estimator_name", "split_index", "label"],
             )
 
+        base_columns = ["threshold", "fpr", "tpr"]
+
         if self.report_type == "estimator":
-            if self.ml_task == "binary-classification":
-                columns = ["fpr", "tpr", "threshold"]
-            else:
-                columns = ["label", "fpr", "tpr", "threshold"]
-            if with_auc:
-                columns.append("roc_auc")
-
+            extra_columns = []
         elif self.report_type == "cross-validation":
-            if self.ml_task == "binary-classification":
-                columns = ["split_index", "fpr", "tpr", "threshold"]
-            else:
-                columns = ["split_index", "label", "fpr", "tpr", "threshold"]
-            if with_auc:
-                columns.append("roc_auc")
-
+            extra_columns = ["split_index"]
         elif self.report_type == "comparison-estimator":
-            if self.ml_task == "binary-classification":
-                columns = ["estimator_name", "fpr", "tpr", "threshold"]
-            else:
-                columns = [
-                    "estimator_name",
-                    "label",
-                    "fpr",
-                    "tpr",
-                    "threshold",
-                ]
-            if with_auc:
-                columns.append("roc_auc")
-
+            extra_columns = ["estimator_name"]
         elif self.report_type == "comparison-cross-validation":
-            if self.ml_task == "binary-classification":
-                columns = ["estimator_name", "split_index", "fpr", "tpr", "threshold"]
-            else:
-                columns = [
-                    "estimator_name",
-                    "split_index",
-                    "label",
-                    "fpr",
-                    "tpr",
-                    "threshold",
-                ]
-            if with_auc:
-                columns.append("roc_auc")
-
+            extra_columns = ["estimator_name", "split_index"]
         else:
             raise ValueError(f"Invalid report type: {self.report_type}.")
 
-        return data[columns]
+        if self.ml_task == "binary-classification":
+            columns = extra_columns + base_columns
+        else:
+            columns = extra_columns + ["label"] + base_columns
+
+        if with_auc:
+            columns.append("roc_auc")
+
+        return total_frame[columns]
