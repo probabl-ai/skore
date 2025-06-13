@@ -52,6 +52,14 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
         y : str, default=None
             The metric to display on y-axis. By default, the second column.
 
+        Attributes
+        ----------
+        ax_ : matplotlib axes or ndarray of axes
+            The axes on which the precision-recall curve is plotted.
+
+        figure_ : matplotlib figure
+            The figure on which the precision-recall curve is plotted.
+
         Returns
         -------
         A matplotlib plot.
@@ -64,7 +72,7 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
             self.plot_comparison_estimator(x, y)
 
     def plot_comparison_estimator(self, x, y):
-        fig, ax = plt.subplots()
+        self.figure_, self.ax_ = plt.subplots()
 
         x_label = self._SCORE_OR_LOSS_INFO.get(x, {}).get("name", x)
         y_label = self._SCORE_OR_LOSS_INFO.get(y, {}).get("name", y)
@@ -126,15 +134,15 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
         if self.data_source is not None:
             title += f" on {self.data_source} data"
 
-        ax.scatter(x=x_data, y=y_data)
-        ax.set_title(title)
-        ax.set_xlabel(x_label_text)
-        ax.set_ylabel(y_label_text)
+        self.ax_.scatter(x=x_data, y=y_data)
+        self.ax_.set_title(title)
+        self.ax_.set_xlabel(x_label_text)
+        self.ax_.set_ylabel(y_label_text)
 
         # Add labels to the points with a small offset
         text = self.summarize_data.columns.tolist()
         for label, x_coord, y_coord in zip(text, x_data, y_data, strict=False):
-            ax.annotate(
+            self.ax_.annotate(
                 label,
                 (x_coord, y_coord),
                 textcoords="offset points",
@@ -148,4 +156,4 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
             )
 
         plt.tight_layout()
-        return fig
+        return self.figure_, self.ax_
