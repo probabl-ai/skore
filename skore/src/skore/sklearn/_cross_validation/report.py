@@ -106,7 +106,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     estimator_name_ : str
         The name of the estimator.
 
-    estimator_reports_ : list of EstimatorReport
+    reports_ : list of EstimatorReport
         The estimator reports for each split.
 
     See Also
@@ -156,16 +156,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
         self.n_jobs = n_jobs
 
-        self.estimator_reports_ = self._fit_estimator_reports()
+        self.reports_ = self._fit_estimator_reports()
 
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache: dict[tuple[Any, ...], Any] = {}
-        self._ml_task = _find_ml_task(
-            y, estimator=self.estimator_reports_[0]._estimator
-        )
+        self._ml_task = _find_ml_task(y, estimator=self.reports_[0]._estimator)
 
     @progress_decorator(
         description=lambda self: (
@@ -280,7 +278,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> report._cache
         {}
         """
-        for report in self.estimator_reports_:
+        for report in self.reports_:
             report.clear_cache()
         self._cache = {}
 
@@ -323,10 +321,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
-        total_estimators = len(self.estimator_reports_)
+        total_estimators = len(self.reports_)
         progress.update(main_task, total=total_estimators)
 
-        for fold_idx, estimator_report in enumerate(self.estimator_reports_, 1):
+        for fold_idx, estimator_report in enumerate(self.reports_, 1):
             # Share the parent's progress bar with child report
             estimator_report._progress_info = {
                 "current_progress": progress,
@@ -426,7 +424,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 X=X,
                 pos_label=pos_label,
             )
-            for report in self.estimator_reports_
+            for report in self.reports_
         ]
 
     @property

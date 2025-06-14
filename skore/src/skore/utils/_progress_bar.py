@@ -17,6 +17,7 @@ DescriptionType = str | Callable[..., str]
 
 def progress_decorator(
     description: DescriptionType,
+    allow_nested: bool = True,
 ) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """Decorate class methods to add a progress bar.
 
@@ -28,6 +29,11 @@ def progress_decorator(
     description : str or callable
         The description of the progress bar. If a callable, it should take the
         self object as an argument and return a string.
+
+    allow_nested : bool, default=True
+       Whether to allow nested progress bars. Disabling progress bars is useful when
+       the nested reports will need to be pickled and that we cannot pass the
+       progress bar containing a lock.
 
     Returns
     -------
@@ -69,7 +75,7 @@ def progress_decorator(
 
             # assigning progress to child reports
             reports_to_cleanup: list[Any] = []
-            if hasattr(self_obj, "reports_"):
+            if allow_nested and hasattr(self_obj, "reports_"):
                 for report in self_obj.reports_:
                     if hasattr(report, "_progress_info"):
                         report._progress_info = {"current_progress": progress}
