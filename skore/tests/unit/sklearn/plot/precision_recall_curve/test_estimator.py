@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_precision_recall_frame
 from skore.utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
@@ -237,6 +237,68 @@ def test_multiclass_classification_data_source(pyplot, multiclass_classification
         assert display.lines_[class_label].get_label() == (
             f"{str(class_label).title()} (AP = {average_precision:0.2f})"
         )
+
+
+def test_frame_binary_classification(binary_classification_data):
+    """Check that the frame method returns the correct DataFrame structure for binary
+    classification data.
+    """
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.precision_recall()
+
+    # Without the average precision
+    df = display.frame()
+    check_precision_recall_frame(
+        df,
+        report_type="estimator",
+        expected_n_splits=None,
+        multiclass=False,
+        with_average_precision=False,
+    )
+
+    # With the average precision
+    df = display.frame(with_average_precision=True)
+    check_precision_recall_frame(
+        df,
+        report_type="estimator",
+        expected_n_splits=None,
+        multiclass=False,
+        with_average_precision=True,
+    )
+
+
+def test_frame_multiclass_classification(multiclass_classification_data):
+    """Check that the frame method returns the correct DataFrame structure for
+    multiclass classification data.
+    """
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.precision_recall()
+
+    # Without the average precision
+    df = display.frame()
+    check_precision_recall_frame(
+        df,
+        report_type="estimator",
+        expected_n_splits=None,
+        multiclass=True,
+        with_average_precision=False,
+    )
+
+    # With the average precision
+    df = display.frame(with_average_precision=True)
+    check_precision_recall_frame(
+        df,
+        report_type="estimator",
+        expected_n_splits=None,
+        multiclass=True,
+        with_average_precision=True,
+    )
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

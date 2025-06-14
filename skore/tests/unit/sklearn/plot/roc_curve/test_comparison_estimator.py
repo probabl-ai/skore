@@ -4,7 +4,7 @@ from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_roc_frame
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -205,6 +205,55 @@ def test_multiple_roc_curve_kwargs_error(
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
+
+
+def test_frame(binary_classification_data):
+    """Test the frame method with comparison data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.roc()
+
+    # Without AUC
+    df = display.frame()
+    check_roc_frame(
+        df,
+        report_type="comparison-estimator",
+        multiclass=False,
+        with_auc=False,
+    )
+    assert df["estimator_name"].nunique() == 2
+
+    # With AUC
+    df = display.frame(with_auc=True)
+    check_roc_frame(
+        df,
+        report_type="comparison-estimator",
+        multiclass=False,
+        with_auc=True,
+    )
+
+    # Each estimator should have exactly one ROC AUC value
+    for estimator_name in df["estimator_name"].unique():
+        estimator_data = df[df["estimator_name"] == estimator_name]
+        assert estimator_data["roc_auc"].nunique() == 1
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

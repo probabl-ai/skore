@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from skore import CrossValidationReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_precision_recall_frame
 from skore.utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
@@ -143,6 +143,60 @@ def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(pr_curve_kwargs=pr_curve_kwargs)
+
+
+def test_frame_binary_classification(binary_classification_data_no_split):
+    """Test the frame method with binary classification cross-validation data."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.precision_recall()
+
+    # Without the average precision
+    df = display.frame()
+    check_precision_recall_frame(
+        df,
+        report_type="cross-validation",
+        expected_n_splits=cv,
+        multiclass=False,
+        with_average_precision=False,
+    )
+
+    # With the average precision
+    df = display.frame(with_average_precision=True)
+    check_precision_recall_frame(
+        df,
+        report_type="cross-validation",
+        expected_n_splits=cv,
+        multiclass=False,
+        with_average_precision=True,
+    )
+
+
+def test_frame_multiclass_classification(multiclass_classification_data_no_split):
+    """Test the frame method with multiclass classification cross-validation data."""
+    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.precision_recall()
+
+    # Without the average precision
+    df = display.frame()
+    check_precision_recall_frame(
+        df,
+        report_type="cross-validation",
+        expected_n_splits=cv,
+        multiclass=True,
+        with_average_precision=False,
+    )
+
+    # With the average precision
+    df = display.frame(with_average_precision=True)
+    check_precision_recall_frame(
+        df,
+        report_type="cross-validation",
+        expected_n_splits=cv,
+        multiclass=True,
+        with_average_precision=True,
+    )
 
 
 def test_legend(

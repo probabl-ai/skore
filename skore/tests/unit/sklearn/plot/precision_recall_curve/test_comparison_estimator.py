@@ -4,7 +4,7 @@ from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_legend_position, check_precision_recall_frame
 from skore.utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
@@ -185,6 +185,100 @@ def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(pr_curve_kwargs=pr_curve_kwargs)
+
+
+def test_frame_binary_classification(binary_classification_data):
+    """Test the frame method with binary classification comparison data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.precision_recall()
+
+    # Without the average precision
+    df = display.frame()
+    check_precision_recall_frame(
+        df,
+        report_type="comparison-estimator",
+        expected_n_splits=None,
+        multiclass=False,
+        with_average_precision=False,
+    )
+    assert df["estimator_name"].nunique() == 2
+
+    # With the average precision
+    df = display.frame(with_average_precision=True)
+    check_precision_recall_frame(
+        df,
+        report_type="comparison-estimator",
+        expected_n_splits=None,
+        multiclass=False,
+        with_average_precision=True,
+    )
+    assert df["estimator_name"].nunique() == 2
+
+
+def test_frame_multiclass_classification(multiclass_classification_data):
+    """Test the frame method with multiclass classification comparison data."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.precision_recall()
+
+    # Without the average precision
+    df = display.frame()
+    check_precision_recall_frame(
+        df,
+        report_type="comparison-estimator",
+        expected_n_splits=None,
+        multiclass=True,
+        with_average_precision=False,
+    )
+    assert df["estimator_name"].nunique() == 2
+
+    # With the average precision
+    df = display.frame(with_average_precision=True)
+    check_precision_recall_frame(
+        df,
+        report_type="comparison-estimator",
+        expected_n_splits=None,
+        multiclass=True,
+        with_average_precision=True,
+    )
+    assert df["estimator_name"].nunique() == 2
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
