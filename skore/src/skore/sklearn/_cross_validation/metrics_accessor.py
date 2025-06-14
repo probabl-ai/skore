@@ -1,6 +1,5 @@
 from collections.abc import Callable
 from typing import Any, Literal, cast
-from typing import Any, Literal, cast
 
 import joblib
 import numpy as np
@@ -17,7 +16,6 @@ from skore.sklearn._base import (
 )
 from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._plot import (
-    MetricsSummaryDisplay,
     MetricsSummaryDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -78,7 +76,7 @@ class _MetricsAccessor(
         flat_index: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> MetricsSummaryDisplay:
-        aggregate: Aggregate | None = ("mean", "std"),
+        aggregate: Aggregate | None = (("mean", "std"),)
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -170,7 +168,6 @@ class _MetricsAccessor(
             pos_label = self._parent.pos_label
 
         results = self._compute_metric_scores(
-            report_metric_name="summarize",
             report_metric_name="summarize",
             data_source=data_source,
             X=X,
