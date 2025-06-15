@@ -1,5 +1,6 @@
 import inspect
-from collections.abc import Callable, Iterable
+from collections import defaultdict
+from collections.abc import Callable
 from functools import partial
 from operator import attrgetter
 from typing import Any, Literal, cast
@@ -7,7 +8,7 @@ from typing import Any, Literal, cast
 import joblib
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import ArrayLike
 from sklearn import metrics
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
@@ -32,7 +33,6 @@ from skore.utils._accessor import (
     _check_estimator_has_method,
     _check_supported_ml_task,
 )
-from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
 
@@ -204,9 +204,10 @@ class _MetricsAccessor(
         elif scoring_names is None:
             scoring_names = [None] * len(scoring)
 
-        scores = []
-        favorability_indicator = []
-        for metric_name, metric in zip(scoring_names, scoring, strict=False):
+        scores = defaultdict(list)
+        # scores = []
+        # favorability_indicator = []
+        for verbose_metric_name, metric in zip(scoring_names, scoring, strict=False):
             if isinstance(metric, str) and not (
                 (metric.startswith("_") and metric[1:] in self._score_or_loss_info)
                 or metric in self._score_or_loss_info
@@ -255,10 +256,12 @@ class _MetricsAccessor(
                             )
                     elif pos_label is not None:
                         metrics_kwargs["pos_label"] = pos_label
-                if metric_name is None:
-                    metric_name = metric._score_func.__name__.replace("_", " ").title()
+
+                metric_name = metric._score_func.__name__
+                if verbose_metric_name is None:
+                    verbose_metric_name = metric_name.replace("_", " ").title()
+
                 metric_favorability = "(↗︎)" if metric._sign == 1 else "(↘︎)"
-                favorability_indicator.append(metric_favorability)
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
                     # Handle built-in metrics (with underscore prefix)
@@ -268,10 +271,13 @@ class _MetricsAccessor(
                     ):
                         metric_fn = getattr(self, metric)
                         metrics_kwargs = {"data_source_hash": data_source_hash}
-                        if metric_name is None:
-                            metric_name = (
+
+                        metric_name = metric[1:]
+                        if verbose_metric_name is None:
+                            verbose_metric_name = (
                                 f"{self._score_or_loss_info[metric[1:]]['name']}"
                             )
+
                         metric_favorability = self._score_or_loss_info[metric[1:]][
                             "icon"
                         ]
@@ -280,8 +286,13 @@ class _MetricsAccessor(
                     elif metric in self._score_or_loss_info:
                         metric_fn = getattr(self, f"_{metric}")
                         metrics_kwargs = {"data_source_hash": data_source_hash}
-                        if metric_name is None:
-                            metric_name = f"{self._score_or_loss_info[metric]['name']}"
+
+                        metric_name = metric
+                        if verbose_metric_name is None:
+                            verbose_metric_name = (
+                                f"{self._score_or_loss_info[metric]['name']}"
+                            )
+
                         metric_favorability = self._score_or_loss_info[metric]["icon"]
                 else:
                     # Handle callable metrics
@@ -298,10 +309,12 @@ class _MetricsAccessor(
                             if param in scoring_kwargs
                         }
                     metrics_kwargs["data_source_hash"] = data_source_hash
-                    if metric_name is None:
-                        metric_name = metric.__name__
+
+                    metric_name = metric.__name__
+                    if verbose_metric_name is None:
+                        verbose_metric_name = metric_name.replace("_", " ").title()
+
                     metric_favorability = ""
-                    favorability_indicator.append(metric_favorability)
 
                 metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
@@ -317,107 +330,137 @@ class _MetricsAccessor(
 
             score = metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
 
-            index: pd.Index | pd.MultiIndex | list[str] | None
-            score_array: NDArray
             if self._parent._ml_task == "binary-classification":
                 if isinstance(score, dict):
                     classes = list(score.keys())
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name] * len(classes), classes],
-                        names=["Metric", "Label / Average"],
-                    )
-                    score_array = np.hstack([score[c] for c in classes]).reshape(-1, 1)
+                    for label in classes:
+                        scores["metric"].append(metric_name)
+                        scores["verbose_name"].append(verbose_metric_name)
+                        scores["estimator_name"].append(self._parent.estimator_name_)
+                        scores["label"].append(label)
+                        scores["average"].append(None)
+                        scores["output"].append(None)
+                        scores["favorability"].append(metric_favorability)
+                        scores["score"].append(score[label])
                 elif "average" in metrics_kwargs:
                     if metrics_kwargs["average"] == "binary":
-                        index = pd.MultiIndex.from_arrays(
-                            [[metric_name], [pos_label]],
-                            names=["Metric", "Label / Average"],
-                        )
+                        scores["metric"].append(metric_name)
+                        scores["verbose_name"].append(verbose_metric_name)
+                        scores["estimator_name"].append(self._parent.estimator_name_)
+                        scores["average"].append(None)
+                        scores["label"].append(pos_label)
+                        scores["output"].append(None)
                     elif metrics_kwargs["average"] is not None:
-                        index = pd.MultiIndex.from_arrays(
-                            [[metric_name], [metrics_kwargs["average"]]],
-                            names=["Metric", "Label / Average"],
-                        )
+                        scores["metric"].append(metric_name)
+                        scores["verbose_name"].append(verbose_metric_name)
+                        scores["estimator_name"].append(self._parent.estimator_name_)
+                        scores["label"].append(None)
+                        scores["average"].append(metrics_kwargs["average"])
+                        scores["output"].append(None)
                     else:
-                        index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
+                        scores["metric"].append(metric_name)
+                        scores["verbose_name"].append(verbose_metric_name)
+                        scores["estimator_name"].append(self._parent.estimator_name_)
+                        scores["label"].append(None)
+                        scores["average"].append(None)
+                        scores["output"].append(None)
+                    scores["favorability"].append(metric_favorability)
+                    scores["score"].append(score)
                 else:
-                    index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
+                    scores["metric"].append(metric_name)
+                    scores["verbose_name"].append(verbose_metric_name)
+                    scores["estimator_name"].append(self._parent.estimator_name_)
+                    scores["label"].append(None)
+                    scores["average"].append(None)
+                    scores["output"].append(None)
+                    scores["favorability"].append(metric_favorability)
+                    scores["score"].append(score)
             elif self._parent._ml_task == "multiclass-classification":
                 if isinstance(score, dict):
                     classes = list(score.keys())
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name] * len(classes), classes],
-                        names=["Metric", "Label / Average"],
-                    )
-                    score_array = np.hstack([score[c] for c in classes]).reshape(-1, 1)
+                    for label in classes:
+                        scores["metric"].append(metric_name)
+                        scores["verbose_name"].append(verbose_metric_name)
+                        scores["estimator_name"].append(self._parent.estimator_name_)
+                        scores["label"].append(label)
+                        scores["average"].append(None)
+                        scores["output"].append(None)
+                        scores["favorability"].append(metric_favorability)
+                        scores["score"].append(score[label])
                 elif (
                     "average" in metrics_kwargs
                     and metrics_kwargs["average"] is not None
                 ):
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name], [metrics_kwargs["average"]]],
-                        names=["Metric", "Label / Average"],
-                    )
-                    score_array = np.array(score).reshape(-1, 1)
+                    scores["metric"].append(metric_name)
+                    scores["verbose_name"].append(verbose_metric_name)
+                    scores["estimator_name"].append(self._parent.estimator_name_)
+                    scores["label"].append(None)
+                    scores["average"].append(metrics_kwargs["average"])
+                    scores["output"].append(None)
+                    scores["favorability"].append(metric_favorability)
+                    scores["score"].append(score)
                 else:
-                    index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
-            elif self._parent._ml_task in ("regression", "multioutput-regression"):
+                    scores["metric"].append(metric_name)
+                    scores["verbose_name"].append(verbose_metric_name)
+                    scores["estimator_name"].append(self._parent.estimator_name_)
+                    scores["label"].append(None)
+                    scores["average"].append(None)
+                    scores["output"].append(None)
+                    scores["favorability"].append(metric_favorability)
+                    scores["score"].append(score)
+            elif self._parent._ml_task == "regression":
+                scores["metric"].append(metric_name)
+                scores["verbose_name"].append(verbose_metric_name)
+                scores["estimator_name"].append(self._parent.estimator_name_)
+                scores["label"].append(None)
+                scores["average"].append(None)
+                scores["output"].append(None)
+                scores["favorability"].append(metric_favorability)
+                scores["score"].append(score)
+            elif self._parent._ml_task == "multioutput-regression":
                 if isinstance(score, list):
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name] * len(score), list(range(len(score)))],
-                        names=["Metric", "Output"],
-                    )
-                    score_array = np.array(score).reshape(-1, 1)
+                    for output_idx, output_score in enumerate(score):
+                        scores["metric"].append(metric_name)
+                        scores["verbose_name"].append(verbose_metric_name)
+                        scores["estimator_name"].append(self._parent.estimator_name_)
+                        scores["label"].append(None)
+                        scores["average"].append(None)
+                        scores["output"].append(output_idx)
+                        scores["favorability"].append(metric_favorability)
+                        scores["score"].append(output_score)
                 else:
-                    index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
+                    scores["metric"].append(metric_name)
+                    scores["verbose_name"].append(verbose_metric_name)
+                    scores["estimator_name"].append(self._parent.estimator_name_)
+                    scores["label"].append(None)
+                    scores["average"].append(metrics_kwargs.get("multioutput", None))
+                    scores["output"].append(None)
+                    scores["favorability"].append(metric_favorability)
+                    scores["score"].append(score)
             else:  # unknown task - try our best
-                index = None if isinstance(score, Iterable) else [metric_name]
+                scores["metric"].append(metric_name)
+                scores["verbose_name"].append(verbose_metric_name)
+                scores["estimator_name"].append(self._parent.estimator_name_)
+                scores["label"].append(None)
+                scores["average"].append(None)
+                scores["output"].append(None)
+                scores["favorability"].append(metric_favorability)
+                scores["score"].append(score)
 
-            score_df = pd.DataFrame(
-                score_array, index=index, columns=[self._parent.estimator_name_]
-            )
-            if indicator_favorability:
-                score_df["Favorability"] = metric_favorability
-
-            scores.append(score_df)
-
-        has_multilevel = any(
-            isinstance(df, pd.DataFrame) and isinstance(df.index, pd.MultiIndex)
-            for df in scores
-        )
-
-        if has_multilevel:
-            # Convert single-level dataframes to multi-level
-            for i, df in enumerate(scores):
-                if hasattr(df, "index") and not isinstance(df.index, pd.MultiIndex):
-                    if self._parent._ml_task in (
-                        "regression",
-                        "multioutput-regression",
-                    ):
-                        name_index = ["Metric", "Output"]
-                    else:
-                        name_index = ["Metric", "Label / Average"]
-
-                    scores[i].index = pd.MultiIndex.from_tuples(
-                        [(idx, "") for idx in df.index],
-                        names=name_index,
-                    )
-
-        results = pd.concat(scores, axis=0)
-        if flat_index:
-            if isinstance(results.columns, pd.MultiIndex):
-                results.columns = flatten_multi_index(results.columns)
-            if isinstance(results.index, pd.MultiIndex):
-                results.index = flatten_multi_index(results.index)
-            if isinstance(results.index, pd.Index):
-                results.index = results.index.str.replace(
-                    r"\((.*)\)$", r"\1", regex=True
-                )
-        return MetricsSummaryDisplay(summarize_data=results)
+        # convert each column to the correct data type since it can't be done in the
+        # constructor of the DataFrame
+        constructor_data = {
+            "metric": pd.Categorical,
+            "verbose_name": pd.Categorical,
+            "estimator_name": pd.Categorical,
+            "label": pd.Categorical,
+            "average": pd.Categorical,
+            "output": pd.Categorical,
+            "favorability": pd.Categorical,
+            "score": np.array,
+        }
+        scores = {key: constructor_data[key](values) for key, values in scores.items()}
+        return MetricsSummaryDisplay(summarize_data=pd.DataFrame(scores))
 
     def _compute_metric_scores(
         self,
@@ -692,8 +735,9 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        average: Literal["binary", "macro", "micro", "weighted", "samples"]
-        | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> float | dict[PositiveLabel, float]:
         """Compute the precision score.
@@ -785,8 +829,9 @@ class _MetricsAccessor(
         data_source_hash: int | None = None,
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        average: Literal["binary", "macro", "micro", "weighted", "samples"]
-        | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> float | dict[PositiveLabel, float]:
         """Private interface of `precision` to be able to pass `data_source_hash`.
@@ -826,8 +871,9 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        average: Literal["binary", "macro", "micro", "weighted", "samples"]
-        | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> float | dict[PositiveLabel, float]:
         """Compute the recall score.
@@ -920,8 +966,9 @@ class _MetricsAccessor(
         data_source_hash: int | None = None,
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        average: Literal["binary", "macro", "micro", "weighted", "samples"]
-        | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> float | dict[PositiveLabel, float]:
         """Private interface of `recall` to be able to pass `data_source_hash`.
@@ -1256,8 +1303,9 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        multioutput: Literal["raw_values", "uniform_average"]
-        | ArrayLike = "raw_values",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
     ) -> float | list:
         """Compute the R² score.
 
@@ -1326,8 +1374,9 @@ class _MetricsAccessor(
         data_source_hash: int | None = None,
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        multioutput: Literal["raw_values", "uniform_average"]
-        | ArrayLike = "raw_values",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
     ) -> float | list:
         """Private interface of `r2` to be able to pass `data_source_hash`.
 
@@ -1358,8 +1407,9 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        multioutput: Literal["raw_values", "uniform_average"]
-        | ArrayLike = "raw_values",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
     ) -> float | list:
         """Compute the root mean squared error.
 
@@ -1428,8 +1478,9 @@ class _MetricsAccessor(
         data_source_hash: int | None = None,
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        multioutput: Literal["raw_values", "uniform_average"]
-        | ArrayLike = "raw_values",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
     ) -> float | list:
         """Private interface of `rmse` to be able to pass `data_source_hash`.
 
