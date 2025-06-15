@@ -63,8 +63,6 @@ class _MetricsAccessor(
         scoring_names: ScoringName | list[ScoringName] | None = None,
         scoring_kwargs: dict[str, Any] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
-        indicator_favorability: bool = False,
-        flat_index: bool = False,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -111,14 +109,6 @@ class _MetricsAccessor(
             this parameter to override the positive class. By default, the positive
             class is set to the one provided when creating the report. If `None`,
             the metric is computed considering each class as a positive class.
-
-        indicator_favorability : bool, default=False
-            Whether or not to add an indicator of the favorability of the metric as
-            an extra column in the returned DataFrame.
-
-        flat_index : bool, default=False
-            Whether to flatten the multi-index columns. Flat index will always be lower
-            case, do not include spaces and remove the hash symbol to ease indexing.
 
         Returns
         -------
@@ -460,7 +450,7 @@ class _MetricsAccessor(
             "score": np.array,
         }
         scores = {key: constructor_data[key](values) for key, values in scores.items()}
-        return MetricsSummaryDisplay(summarize_data=pd.DataFrame(scores))
+        return MetricsSummaryDisplay(data=pd.DataFrame(scores), report_type="estimator")
 
     def _compute_metric_scores(
         self,

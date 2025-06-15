@@ -1,3 +1,5 @@
+import pandas as pd
+
 from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import HelpDisplayMixin
 
@@ -7,20 +9,55 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
 
     An instance of this class will be created by `Report.metrics.summarize()`.
     This class should not be instantiated directly.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        The data to display.
+
+    report_type : {"estimator", "comparison-estimator", "cross-validation", \
+            "comparison-cross-validation"}
+        The type of report.
     """
 
-    def __init__(self, summarize_data):
-        self.summarize_data = summarize_data
+    _possible_index_columns: set[str] = {"metric", "label", "average"}
 
-    def frame(self):
+    def __init__(self, data, report_type):
+        self.data = data
+        self.report_type = report_type
+
+    def frame(
+        self,
+        *,
+        indicator_favorability: bool = False,
+        flat_index: bool = True,
+    ):
         """Return the summarize as a dataframe.
+
+        Parameters
+        ----------
+        indicator_favorability : bool, default=False
+            Whether or not to add an indicator of the favorability of the metric as
+            an extra column in the returned DataFrame.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
 
         Returns
         -------
         frame : pandas.DataFrame
             The report metrics as a dataframe.
         """
-        return self.summarize_data
+        df = self.data.dropna(axis="columns", how="all").drop(columns="verbose_name")
+        if not indicator_favorability:
+            df = df.drop(columns="favorability")
+
+        if self.report_type == "estimator":
+            df = df.drop(columns="estimator_name")
+            return df.set_index(
+                df.columns.intersection(self._possible_index_columns).tolist()
+            )
+        return df
 
     @StyleDisplayMixin.style_plot
     def plot(self):
