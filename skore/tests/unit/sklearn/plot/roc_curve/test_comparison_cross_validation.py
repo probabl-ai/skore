@@ -234,44 +234,38 @@ def test_multiclass_classification_kwargs(pyplot, multiclass_classification_repo
     assert display.ax_[0].spines["right"].get_visible()
 
 
-def test_frame_binary_classification(binary_classification_report):
+@pytest.mark.parametrize("with_auc", [False, True])
+def test_frame_binary_classification(binary_classification_report, with_auc):
     """Test the frame method with binary classification comparison
     cross-validation data.
     """
     report = binary_classification_report
     display = report.metrics.roc()
-    df = display.frame()
+    df = display.frame(with_auc=with_auc)
 
-    # Without AUC
     expected_index = ["estimator_name", "split_index"]
     expected_columns = ["threshold", "fpr", "tpr"]
+    if with_auc:
+        expected_columns.append("roc_auc")
+
     check_roc_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
 
-    # With AUC
-    df = display.frame(with_auc=True)
-    expected_index = ["estimator_name", "split_index"]
-    expected_columns = ["threshold", "fpr", "tpr", "roc_auc"]
-    check_roc_frame(df, expected_index, expected_columns)
 
-
-def test_frame_multiclass_classification(multiclass_classification_report):
+@pytest.mark.parametrize("with_auc", [False, True])
+def test_frame_multiclass_classification(multiclass_classification_report, with_auc):
     """Test the frame method with multiclass classification comparison
     cross-validation data.
     """
     report = multiclass_classification_report
     display = report.metrics.roc()
+    df = display.frame(with_auc=with_auc)
 
-    # Without AUC
-    df = display.frame()
     expected_index = ["estimator_name", "split_index", "label"]
     expected_columns = ["threshold", "fpr", "tpr"]
+    if with_auc:
+        expected_columns.append("roc_auc")
+
     check_roc_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
     assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
-
-    # With AUC
-    df = display.frame(with_auc=True)
-    expected_index = ["estimator_name", "split_index", "label"]
-    expected_columns = ["threshold", "fpr", "tpr", "roc_auc"]
-    check_roc_frame(df, expected_index, expected_columns)

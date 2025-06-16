@@ -207,7 +207,8 @@ def test_multiple_roc_curve_kwargs_error(
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
 
 
-def test_frame(binary_classification_data):
+@pytest.mark.parametrize("with_auc", [False, True])
+def test_frame(binary_classification_data, with_auc):
     """Test the frame method with comparison data."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
@@ -230,24 +231,21 @@ def test_frame(binary_classification_data):
         }
     )
     display = report.metrics.roc()
+    df = display.frame(with_auc=with_auc)
 
-    # Without AUC
-    df = display.frame()
     expected_index = ["estimator_name"]
     expected_columns = ["threshold", "fpr", "tpr"]
+    if with_auc:
+        expected_columns.append("roc_auc")
+
     check_roc_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == 2
 
-    # With AUC
-    df = display.frame(with_auc=True)
-    expected_index = ["estimator_name"]
-    expected_columns = ["threshold", "fpr", "tpr", "roc_auc"]
-    check_roc_frame(df, expected_index, expected_columns)
-
-    # Each estimator should have exactly one ROC AUC value
-    for estimator_name in df["estimator_name"].unique():
-        estimator_data = df[df["estimator_name"] == estimator_name]
-        assert estimator_data["roc_auc"].nunique() == 1
+    if with_auc:
+        # Each estimator should have exactly one ROC AUC value
+        for estimator_name in df["estimator_name"].unique():
+            estimator_data = df[df["estimator_name"] == estimator_name]
+            assert estimator_data["roc_auc"].nunique() == 1
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
