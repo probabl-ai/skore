@@ -57,6 +57,7 @@ def test_binary_classification(pyplot, binary_classification_data):
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
     assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
+    assert display.data_source == "test"
 
 
 def test_multiclass_classification(pyplot, multiclass_classification_data):
@@ -110,6 +111,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
     assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
+    assert display.data_source == "test"
 
 
 def test_data_source_binary_classification(pyplot, binary_classification_data):
@@ -118,6 +120,14 @@ def test_data_source_binary_classification(pyplot, binary_classification_data):
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
+    display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
+    assert display.data_source == "X_y"
+    display.plot()
+    assert (
+        display.lines_[0].get_label()
+        == f"AUC = {display.roc_auc['roc_auc'].item():0.2f}"
+    )
+
     display = report.metrics.roc(data_source="train")
     display.plot()
     assert (

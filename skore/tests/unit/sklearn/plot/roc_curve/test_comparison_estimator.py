@@ -141,6 +141,92 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
     assert display.ax_.get_title() == "ROC Curve"
 
 
+def test_data_source_binary_classification(pyplot, binary_classification_data):
+    """Test data_source in ROC plot for ComparisonReport."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+
+    display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
+    assert display.data_source == "X_y"
+    display.plot()
+
+    display = report.metrics.roc(data_source="train")
+    assert display.data_source == "train"
+    display.plot()
+
+    display = report.metrics.roc(data_source="test")
+    assert display.data_source == "test"
+    display.plot()
+
+    train_auc = display.roc_auc["roc_auc"].values
+    assert len(train_auc) == 2
+    assert all(0 <= auc <= 1 for auc in train_auc)
+
+
+def test_data_source_multiclass_classification(pyplot, multiclass_classification_data):
+    """Test data_source in ROC plot for ComparisonReport with multiclass data"""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+
+    class_labels = report.reports_[0].estimator_.classes_
+
+    display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
+    assert display.data_source == "X_y"
+    display.plot()
+
+    display = report.metrics.roc(data_source="train")
+    assert display.data_source == "train"
+    display.plot()
+
+    display = report.metrics.roc(data_source="test")
+    assert display.data_source == "test"
+    display.plot()
+
+    expected_combinations = len(report.report_names_) * len(class_labels)
+    assert len(display.roc_auc) == expected_combinations
+
+    auc_values = display.roc_auc["roc_auc"].values
+    assert all(0 <= auc <= 1 for auc in auc_values)
+
+
 def test_binary_classification_kwargs(pyplot, binary_classification_data):
     """Check that we can pass keyword arguments to the ROC curve plot for
     cross-validation."""
