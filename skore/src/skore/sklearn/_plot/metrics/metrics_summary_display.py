@@ -1,7 +1,6 @@
-import pandas as pd
-
 from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import HelpDisplayMixin
+from skore.utils._index import flatten_multi_index
 
 
 class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
@@ -20,7 +19,7 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
         The type of report.
     """
 
-    _possible_index_columns: set[str] = {"metric", "label", "average"}
+    _possible_index_columns: set[str] = {"metric", "label", "output", "average"}
 
     def __init__(self, data, report_type):
         self.data = data
@@ -52,11 +51,22 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
         if not indicator_favorability:
             df = df.drop(columns="favorability")
 
+        for col in ("label", "output", "average"):
+            if col in df.columns:
+                if df[col].isna().any():
+                    df[col] = df[col].cat.add_categories([""])
+                    df[col] = df[col].fillna("")
+
         if self.report_type == "estimator":
-            df = df.drop(columns="estimator_name")
-            return df.set_index(
-                df.columns.intersection(self._possible_index_columns).tolist()
-            )
+            estimator_name = df.pop("estimator_name")
+            index = df.columns.intersection(self._possible_index_columns).tolist()
+            df = df.set_index(index)
+            df = df.rename(columns={"score": estimator_name.cat.categories.item()})
+
+        if flat_index:
+            df.index = flatten_multi_index(df.index)
+            df.index.name = "metric"
+
         return df
 
     @StyleDisplayMixin.style_plot

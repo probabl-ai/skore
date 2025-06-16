@@ -330,8 +330,8 @@ class _MetricsAccessor(
                         scores["label"].append(label)
                         scores["average"].append(None)
                         scores["output"].append(None)
-                        scores["favorability"].append(metric_favorability)
                         scores["score"].append(score[label])
+                        scores["favorability"].append(metric_favorability)
                 elif "average" in metrics_kwargs:
                     if metrics_kwargs["average"] == "binary":
                         scores["metric"].append(metric_name)
@@ -354,8 +354,8 @@ class _MetricsAccessor(
                         scores["label"].append(None)
                         scores["average"].append(None)
                         scores["output"].append(None)
-                    scores["favorability"].append(metric_favorability)
                     scores["score"].append(score)
+                    scores["favorability"].append(metric_favorability)
                 else:
                     scores["metric"].append(metric_name)
                     scores["verbose_name"].append(verbose_metric_name)
@@ -363,8 +363,8 @@ class _MetricsAccessor(
                     scores["label"].append(None)
                     scores["average"].append(None)
                     scores["output"].append(None)
-                    scores["favorability"].append(metric_favorability)
                     scores["score"].append(score)
+                    scores["favorability"].append(metric_favorability)
             elif self._parent._ml_task == "multiclass-classification":
                 if isinstance(score, dict):
                     classes = list(score.keys())
@@ -375,8 +375,8 @@ class _MetricsAccessor(
                         scores["label"].append(label)
                         scores["average"].append(None)
                         scores["output"].append(None)
-                        scores["favorability"].append(metric_favorability)
                         scores["score"].append(score[label])
+                        scores["favorability"].append(metric_favorability)
                 elif (
                     "average" in metrics_kwargs
                     and metrics_kwargs["average"] is not None
@@ -387,8 +387,8 @@ class _MetricsAccessor(
                     scores["label"].append(None)
                     scores["average"].append(metrics_kwargs["average"])
                     scores["output"].append(None)
-                    scores["favorability"].append(metric_favorability)
                     scores["score"].append(score)
+                    scores["favorability"].append(metric_favorability)
                 else:
                     scores["metric"].append(metric_name)
                     scores["verbose_name"].append(verbose_metric_name)
@@ -396,8 +396,8 @@ class _MetricsAccessor(
                     scores["label"].append(None)
                     scores["average"].append(None)
                     scores["output"].append(None)
-                    scores["favorability"].append(metric_favorability)
                     scores["score"].append(score)
+                    scores["favorability"].append(metric_favorability)
             elif self._parent._ml_task == "regression":
                 scores["metric"].append(metric_name)
                 scores["verbose_name"].append(verbose_metric_name)
@@ -405,8 +405,8 @@ class _MetricsAccessor(
                 scores["label"].append(None)
                 scores["average"].append(None)
                 scores["output"].append(None)
-                scores["favorability"].append(metric_favorability)
                 scores["score"].append(score)
+                scores["favorability"].append(metric_favorability)
             elif self._parent._ml_task == "multioutput-regression":
                 if isinstance(score, list):
                     for output_idx, output_score in enumerate(score):
@@ -416,8 +416,8 @@ class _MetricsAccessor(
                         scores["label"].append(None)
                         scores["average"].append(None)
                         scores["output"].append(output_idx)
-                        scores["favorability"].append(metric_favorability)
                         scores["score"].append(output_score)
+                        scores["favorability"].append(metric_favorability)
                 else:
                     scores["metric"].append(metric_name)
                     scores["verbose_name"].append(verbose_metric_name)
@@ -425,8 +425,8 @@ class _MetricsAccessor(
                     scores["label"].append(None)
                     scores["average"].append(metrics_kwargs.get("multioutput", None))
                     scores["output"].append(None)
-                    scores["favorability"].append(metric_favorability)
                     scores["score"].append(score)
+                    scores["favorability"].append(metric_favorability)
             else:  # unknown task - try our best
                 scores["metric"].append(metric_name)
                 scores["verbose_name"].append(verbose_metric_name)
@@ -434,8 +434,8 @@ class _MetricsAccessor(
                 scores["label"].append(None)
                 scores["average"].append(None)
                 scores["output"].append(None)
-                scores["favorability"].append(metric_favorability)
                 scores["score"].append(score)
+                scores["favorability"].append(metric_favorability)
 
         # convert each column to the correct data type since it can't be done in the
         # constructor of the DataFrame
