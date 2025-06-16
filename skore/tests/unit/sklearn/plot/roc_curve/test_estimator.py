@@ -252,58 +252,36 @@ def test_roc_curve_kwargs_multiclass_classification(
     assert display.ax_.spines["right"].get_visible()
 
 
-def test_frame_binary_classification(binary_classification_data):
+@pytest.mark.parametrize("with_auc", [False, True])
+def test_frame_binary_classification(binary_classification_data, with_auc):
     """Test the frame method with binary classification data."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.roc()
+    df = report.metrics.roc().frame(with_auc=with_auc)
+    expected_index = []
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_auc:
+        expected_columns.append("roc_auc")
 
-    # Without AUC
-    df = display.frame()
-    check_roc_frame(
-        df,
-        report_type="estimator",
-        with_auc=False,
-        multiclass=False,
-    )
-
-    # With AUC
-    df = display.frame(with_auc=True)
-    check_roc_frame(
-        df,
-        report_type="estimator",
-        with_auc=True,
-        multiclass=False,
-    )
+    check_roc_frame(df, expected_index, expected_columns)
 
 
-def test_frame_multiclass_classification(multiclass_classification_data):
+@pytest.mark.parametrize("with_auc", [False, True])
+def test_frame_multiclass_classification(multiclass_classification_data, with_auc):
     """Test the frame method with multiclass classification data."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.roc()
+    df = report.metrics.roc().frame(with_auc=with_auc)
+    expected_index = ["label"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_auc:
+        expected_columns.append("roc_auc")
 
-    # Without AUC
-    df = display.frame()
-    check_roc_frame(
-        df,
-        report_type="estimator",
-        with_auc=False,
-        multiclass=True,
-    )
-
-    # With AUC
-    df = display.frame(with_auc=True)
-    check_roc_frame(
-        df,
-        report_type="estimator",
-        with_auc=True,
-        multiclass=True,
-    )
+    check_roc_frame(df, expected_index, expected_columns)
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
