@@ -25,7 +25,7 @@ Elevate ML Development with Built-in Recommended Practices \
 
 ## 🧩 What is Skore?
 
-**Skore** is a product whose core mission is to turn uneven ML development into structured, effective decision-making. It is made of two complementary components:
+The core mission of **Skore** is to turn uneven ML development into structured, effective decision-making. It is made of two complementary components:
 - **Skore Lib**: the open-source Python library (described here!) designed to help data scientists boost their ML development with effective guidance and tooling.
 - **Skore Hub**: the collaborative layer where teams connect, learn more on our [product page](https://probabl.ai/skore).
 

@@ -429,3 +429,74 @@ def _get_cached_response_values(
         (cache_key, predictions, False),
         (predict_time_cache_key, predict_time(), False),
     ]
+
+
+class _BaseMetricsAccessor:
+    _score_or_loss_info: dict[str, dict[str, str]] = {
+        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
+        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
+        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
+        "precision": {"name": "Precision", "icon": "(↗︎)"},
+        "recall": {"name": "Recall", "icon": "(↗︎)"},
+        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
+        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
+        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
+        "r2": {"name": "R²", "icon": "(↗︎)"},
+        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
+        "custom_metric": {"name": "Custom metric", "icon": ""},
+        "report_metrics": {"name": "Report metrics", "icon": ""},
+    }
+
+    ####################################################################################
+    # Methods related to the help tree
+    ####################################################################################
+
+    def _sort_methods_for_help(self, methods: list[tuple]) -> list[tuple]:
+        """Override sort method for metrics-specific ordering.
+
+        In short, we display the `summarize` first and then the `custom_metric`.
+        """
+
+        def _sort_key(method):
+            name = method[0]
+            if name == "custom_metric":
+                priority = 1
+            elif name == "summarize":
+                priority = 2
+            else:
+                priority = 0
+            return priority, name
+
+        return sorted(methods, key=_sort_key)
+
+    def _format_method_name(self, name: str) -> str:
+        """Override format method for metrics-specific naming."""
+        method_name = f"{name}(...)"
+        method_name = method_name.ljust(22)
+        if name in self._score_or_loss_info and self._score_or_loss_info[name][
+            "icon"
+        ] in (
+            "(↗︎)",
+            "(↘︎)",
+        ):
+            if self._score_or_loss_info[name]["icon"] == "(↗︎)":
+                method_name += f"[cyan]{self._score_or_loss_info[name]['icon']}[/cyan]"
+                return method_name.ljust(43)
+            else:  # (↘︎)
+                method_name += (
+                    f"[orange1]{self._score_or_loss_info[name]['icon']}[/orange1]"
+                )
+                return method_name.ljust(49)
+        else:
+            return method_name.ljust(29)
+
+    def _get_help_panel_title(self) -> str:
+        return "[bold cyan]Available metrics methods[/bold cyan]"
+
+    def _get_help_tree_title(self) -> str:
+        return "[bold cyan]report.metrics[/bold cyan]"
+
+    def _get_help_legend(self) -> str:
+        return (
+            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
+        )
