@@ -123,17 +123,7 @@ def check_precision_recall_frame(df, expected_index, expected_data_columns):
 
 
 def check_prediction_error_frame(df, expected_index, expected_data_columns):
-    """Check the structure of a prediction error DataFrame.
-
-    Parameters
-    ----------
-    df : DataFrame
-        The DataFrame to check.
-    expected_index : list of str
-        The expected index columns.
-    expected_data_columns : list of str
-        The expected data columns.
-    """
+    """Check the structure of a prediction error DataFrame."""
     assert isinstance(df, pd.DataFrame)
     assert sorted(df.columns.tolist()) == sorted(expected_index + expected_data_columns)
 
