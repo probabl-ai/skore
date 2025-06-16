@@ -1172,7 +1172,7 @@ class _MetricsAccessor(
                 y_pred=y_pred,
                 report_type="cross-validation",
                 estimators=[
-                    report.estimator_ for report in self._parent.estimator_reports_
+                    report.estimator_ for report in self._parent.reports_
                 ],
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
