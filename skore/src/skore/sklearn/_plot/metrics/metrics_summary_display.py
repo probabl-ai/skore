@@ -172,5 +172,4 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
                 ),
             )
 
-        plt.tight_layout()
         return self.figure_, self.ax_
