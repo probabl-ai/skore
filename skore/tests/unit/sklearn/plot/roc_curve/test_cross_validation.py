@@ -184,36 +184,32 @@ def test_multiple_roc_curve_kwargs_error(
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
 
 
-def test_frame(binary_classification_data_no_split):
-    """Test the frame method with cross-validation data."""
+@pytest.mark.parametrize("with_auc", [False, True])
+def test_frame_binary_classification(binary_classification_data_no_split, with_auc):
+    """Test the frame method with binary classification data."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.roc()
+    df = report.metrics.roc().frame(with_auc=with_auc)
+    expected_index = ["split_index"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_auc:
+        expected_columns.append("roc_auc")
 
-    # Without AUC
-    df = display.frame()
-    check_roc_frame(
-        df,
-        report_type="cross-validation",
-        expected_n_splits=cv,
-        with_auc=False,
-        multiclass=False,
-    )
+    check_roc_frame(df, expected_index, expected_columns)
 
-    # With AUC
-    df = display.frame(with_auc=True)
-    check_roc_frame(
-        df,
-        report_type="cross-validation",
-        expected_n_splits=cv,
-        with_auc=True,
-        multiclass=False,
-    )
 
-    # Each fold should have exactly one ROC AUC value
-    for fold in range(cv):
-        fold_data = df[df["split_index"] == int(fold)]
-        assert fold_data["roc_auc"].nunique() == 1
+@pytest.mark.parametrize("with_auc", [False, True])
+def test_frame_multiclass_classification(multiclass_classification_data_no_split, with_auc):
+    """Test the frame method with multiclass classification data."""
+    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    df = report.metrics.roc().frame(with_auc=with_auc)
+    expected_index = ["split_index", "label"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_auc:
+        expected_columns.append("roc_auc")
+
+    check_roc_frame(df, expected_index, expected_columns)
 
 
 def test_legend(
