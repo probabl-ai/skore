@@ -139,5 +139,5 @@ def test_frame(report):
     expected_columns = ["y_true", "y_pred", "residuals"]
 
     check_prediction_error_frame(df, expected_index, expected_columns)
-
     assert df["estimator_name"].nunique() == len(report.reports_)
+    assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits

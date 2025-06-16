@@ -217,7 +217,6 @@ def test_frame(regression_data):
     expected_columns = ["y_true", "y_pred", "residuals"]
 
     check_prediction_error_frame(df, expected_index, expected_columns)
-
     assert df["estimator_name"].nunique() == 2
 
 

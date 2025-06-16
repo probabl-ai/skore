@@ -139,6 +139,7 @@ def test_frame(regression_data_no_split):
     expected_columns = ["y_true", "y_pred", "residuals"]
 
     check_prediction_error_frame(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == report.cv_splitter.n_splits
 
 
 def test_legend(pyplot, regression_data_no_split):
