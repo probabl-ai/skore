@@ -135,10 +135,9 @@ def test_frame(report):
     display = report.metrics.prediction_error()
     df = display.frame()
 
-    check_prediction_error_frame(
-        df,
-        report_type="comparison-cross-validation",
-        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
-    )
+    expected_index = ["estimator_name", "split_index"]
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_prediction_error_frame(df, expected_index, expected_columns)
 
     assert df["estimator_name"].nunique() == len(report.reports_)

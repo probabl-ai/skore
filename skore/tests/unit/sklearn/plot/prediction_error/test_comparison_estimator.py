@@ -213,11 +213,10 @@ def test_frame(regression_data):
     display = report.metrics.prediction_error()
     df = display.frame()
 
-    check_prediction_error_frame(
-        df,
-        report_type="comparison-estimator",
-        expected_n_splits=None,
-    )
+    expected_index = ["estimator_name"]
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_prediction_error_frame(df, expected_index, expected_columns)
 
     assert df["estimator_name"].nunique() == 2
 

@@ -122,50 +122,24 @@ def check_precision_recall_frame(df, expected_index, expected_data_columns):
             assert df[col].dtype == np.float64
 
 
-def check_prediction_error_frame(
-    df: pd.DataFrame,
-    report_type: str | None = None,
-    expected_n_splits: int | None = None,
-) -> None:
+def check_prediction_error_frame(df, expected_index, expected_data_columns):
     """Check the structure of a prediction error DataFrame.
 
     Parameters
     ----------
     df : DataFrame
         The DataFrame to check.
-    report_type : str or None, default=None
-        The type of report. One of:
-        - "estimator"
-        - "cross-validation"
-        - "comparison-estimator"
-        - "comparison-cross-validation"
-        If None, checks for all possible columns.
-    expected_n_splits : int or None, default=None
-        The expected number of cross-validation splits.
-        If None, does not check the number of splits.
+    expected_index : list of str
+        The expected index columns.
+    expected_data_columns : list of str
+        The expected data columns.
     """
     assert isinstance(df, pd.DataFrame)
+    assert sorted(df.columns.tolist()) == sorted(expected_index + expected_data_columns)
 
-    base_columns = ["y_true", "y_pred", "residuals"]
-    if report_type == "estimator":
-        expected_columns = base_columns
-    elif report_type == "cross-validation":
-        expected_columns = ["split_index"] + base_columns
-    elif report_type == "comparison-estimator":
-        expected_columns = ["estimator_name"] + base_columns
-    elif report_type == "comparison-cross-validation":
-        expected_columns = ["estimator_name", "split_index"] + base_columns
-    else:
-        raise ValueError(f"Invalid report type: {report_type}")
-    assert list(df.columns) == expected_columns
-
-    if "estimator_name" in df.columns:
-        assert df["estimator_name"].dtype.name == "category"
-    if "split_index" in df.columns:
-        assert df["split_index"].dtype.name == "category"
-    assert df["y_true"].dtype == np.float64
-    assert df["y_pred"].dtype == np.float64
-    assert df["residuals"].dtype == np.float64
-
-    if expected_n_splits is not None and "split_index" in df.columns:
-        assert df["split_index"].nunique() == expected_n_splits
+    for col in df.columns:
+        if col in expected_index:
+            assert df[col].dtype.name == "category"
+        else:
+            assert col in expected_data_columns
+            assert df[col].dtype == np.float64

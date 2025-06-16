@@ -252,14 +252,12 @@ def test_frame(regression_data):
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.prediction_error()
-    df = display.frame()
+    df = report.metrics.prediction_error().frame()
 
-    check_prediction_error_frame(
-        df,
-        report_type="estimator",
-        expected_n_splits=None,
-    )
+    expected_index = []
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_prediction_error_frame(df, expected_index, expected_columns)
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
