@@ -233,22 +233,16 @@ def test_frame(binary_classification_data):
 
     # Without AUC
     df = display.frame()
-    check_roc_frame(
-        df,
-        report_type="comparison-estimator",
-        multiclass=False,
-        with_auc=False,
-    )
+    expected_index = ["estimator_name"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    check_roc_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == 2
 
     # With AUC
     df = display.frame(with_auc=True)
-    check_roc_frame(
-        df,
-        report_type="comparison-estimator",
-        multiclass=False,
-        with_auc=True,
-    )
+    expected_index = ["estimator_name"]
+    expected_columns = ["threshold", "fpr", "tpr", "roc_auc"]
+    check_roc_frame(df, expected_index, expected_columns)
 
     # Each estimator should have exactly one ROC AUC value
     for estimator_name in df["estimator_name"].unique():

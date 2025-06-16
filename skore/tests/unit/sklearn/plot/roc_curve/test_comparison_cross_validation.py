@@ -243,25 +243,16 @@ def test_frame_binary_classification(binary_classification_report):
     df = display.frame()
 
     # Without AUC
-    check_roc_frame(
-        df,
-        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
-        report_type="comparison-cross-validation",
-        with_auc=False,
-        multiclass=False,
-    )
+    expected_index = ["estimator_name", "split_index"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    check_roc_frame(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == len(report.reports_)
 
     # With AUC
     df = display.frame(with_auc=True)
-    check_roc_frame(
-        df,
-        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
-        report_type="comparison-cross-validation",
-        with_auc=True,
-        multiclass=False,
-    )
-
-    assert df["estimator_name"].nunique() == len(report.reports_)
+    expected_index = ["estimator_name", "split_index"]
+    expected_columns = ["threshold", "fpr", "tpr", "roc_auc"]
+    check_roc_frame(df, expected_index, expected_columns)
 
 
 def test_frame_multiclass_classification(multiclass_classification_report):
@@ -273,22 +264,14 @@ def test_frame_multiclass_classification(multiclass_classification_report):
 
     # Without AUC
     df = display.frame()
-    check_roc_frame(
-        df,
-        report_type="comparison-cross-validation",
-        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
-        multiclass=True,
-        with_auc=False,
-    )
+    expected_index = ["estimator_name", "split_index", "label"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    check_roc_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
     assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
 
     # With AUC
     df = display.frame(with_auc=True)
-    check_roc_frame(
-        df,
-        report_type="comparison-cross-validation",
-        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
-        multiclass=True,
-        with_auc=True,
-    )
+    expected_index = ["estimator_name", "split_index", "label"]
+    expected_columns = ["threshold", "fpr", "tpr", "roc_auc"]
+    check_roc_frame(df, expected_index, expected_columns)
