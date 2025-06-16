@@ -9,7 +9,11 @@ from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore.sklearn._base import (
+    _BaseAccessor,
+    _BaseMetricsAccessor,
+    _get_cached_response_values,
+)
 from skore.sklearn._comparison.report import ComparisonReport
 from skore.sklearn._plot.metrics import (
     MetricsSummaryDisplay,
@@ -35,24 +39,11 @@ from .utils import _combine_cross_validation_results, _combine_estimator_results
 DataSource = Literal["test", "train", "X_y"]
 
 
-class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
+class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
-
-    _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
-        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
-        "precision": {"name": "Precision", "icon": "(↗︎)"},
-        "recall": {"name": "Recall", "icon": "(↗︎)"},
-        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
-        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
-        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
-        "r2": {"name": "R²", "icon": "(↗︎)"},
-        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
-        "custom_metric": {"name": "Custom metric", "icon": ""},
-        "summarize": {"name": "Metrics summary", "icon": ""},
-    }
 
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
@@ -1171,59 +1162,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     # Methods related to the help tree
     ####################################################################################
 
-    def _sort_methods_for_help(
-        self, methods: list[tuple[str, Callable]]
-    ) -> list[tuple[str, Callable]]:
-        """Override sort method for metrics-specific ordering.
-
-        In short, we display the `summarize` first and then the `custom_metric`.
-        """
-
-        def _sort_key(method):
-            name = method[0]
-            if name == "custom_metric":
-                priority = 1
-            elif name == "summarize":
-                priority = 2
-            else:
-                priority = 0
-            return priority, name
-
-        return sorted(methods, key=_sort_key)
-
-    def _format_method_name(self, name: str) -> str:
-        """Override format method for metrics-specific naming."""
-        method_name = f"{name}(...)"
-        method_name = method_name.ljust(22)
-        if name in self._SCORE_OR_LOSS_INFO and self._SCORE_OR_LOSS_INFO[name][
-            "icon"
-        ] in ("(↗︎)", "(↘︎)"):
-            if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
-                return method_name.ljust(43)
-            else:  # (↘︎)
-                method_name += (
-                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
-                )
-                return method_name.ljust(49)
-        else:
-            return method_name.ljust(29)
-
     def _get_methods_for_help(self) -> list[tuple[str, Callable]]:
         """Override to exclude the plot accessor from methods list."""
         methods = super()._get_methods_for_help()
         return [(name, method) for name, method in methods if name != "plot"]
-
-    def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available metrics methods[/bold cyan]"
-
-    def _get_help_legend(self) -> str:
-        return (
-            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
-        )
-
-    def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.metrics[/bold cyan]"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
@@ -1347,7 +1289,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     y_pred=y_pred,
                     report_type="comparison-estimator",
                     estimators=[report.estimator_ for report in self._parent.reports_],
-                    estimator_names=self._parent.report_names_,
                     ml_task=self._parent._ml_task,
                     data_source=data_source,
                     **display_kwargs,
@@ -1409,7 +1350,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         for report in self._parent.reports_
                         for estimator_report in report.estimator_reports_
                     ],
-                    estimator_names=self._parent.report_names_,
                     ml_task=self._parent._ml_task,
                     data_source=data_source,
                     **display_kwargs,
