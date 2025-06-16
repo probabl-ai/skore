@@ -1171,9 +1171,8 @@ class _MetricsAccessor(
                 y_true=y_true,
                 y_pred=y_pred,
                 report_type="cross-validation",
-                estimators=[
-                    report.estimator_ for report in self._parent.reports_
-                ],
+                estimators=[report.estimator_ for report in self._parent.reports_],
+                estimator_names=[self._parent.estimator_name_],
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,
