@@ -208,8 +208,8 @@ def test_multiple_roc_curve_kwargs_error(
 
 
 @pytest.mark.parametrize("with_auc", [False, True])
-def test_frame(binary_classification_data, with_auc):
-    """Test the frame method with comparison data."""
+def test_frame_binary_classification(binary_classification_data, with_auc):
+    """Test the frame method with binary classification comparison data."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
     report = ComparisonReport(
@@ -246,6 +246,41 @@ def test_frame(binary_classification_data, with_auc):
         for estimator_name in df["estimator_name"].unique():
             estimator_data = df[df["estimator_name"] == estimator_name]
             assert estimator_data["roc_auc"].nunique() == 1
+
+
+@pytest.mark.parametrize("with_auc", [False, True])
+def test_frame_multiclass_classification(multiclass_classification_data, with_auc):
+    """Test the frame method with multiclass classification comparison data."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.roc()
+    df = display.frame(with_auc=with_auc)
+
+    expected_index = ["estimator_name", "label"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_auc:
+        expected_columns.append("roc_auc")
+
+    check_roc_frame(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == 2
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
