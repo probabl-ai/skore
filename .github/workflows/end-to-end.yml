@@ -1,0 +1,127 @@
+name: end-to-end
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PACKAGES: '["skore","skore-hub-project","skore-local-project"]'
+
+jobs:
+  end-to-end-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      modified-packages: ${{ steps.filter.outputs.changes }}
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Create dynamically filtering file, based on `env.PACKAGES`
+        id: setup
+        run: |
+            echo "${PACKAGES}" | jq -r '.[]' | while read package; do
+                >>${FILEPATH} echo "${package}:
+                - '.github/workflows/end-to-end.yml'
+                - 'ci/requirements/${package}/**'
+                - '${package}/**'"
+            done
+        env:
+          FILEPATH: ${{ runner.temp }}/filters.yaml
+
+      - name: Define if at least one file has changed
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: ${{ runner.temp }}/filters.yaml
+
+
+  end-to-end:
+    runs-on: ubuntu-latest
+    needs: [end-to-end-changes]
+    if: ${{ (github.event_name == 'push') || (needs.pytest-changes.outputs.modified-packages != '[]') }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        id: setup-python
+        with:
+          python-version: 3.13
+          check-latest: True
+          cache: pip
+
+      - name: Restore python-venv
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        id: cache-python-venv
+        with:
+          path: venv/
+          key: >-
+            python-venv
+            -ubuntu-latest
+            -3.13
+            -${{ hashFiles('ci/requirements/skore/python-3.13/scikit-learn-1.7/test-requirements.txt') }}
+            -${{ hashFiles('ci/requirements/skore-hub-project/python-3.13/scikit-learn-1.7/test-requirements.txt') }}
+            -${{ hashFiles('ci/requirements/skore-local-project/python-3.13/scikit-learn-1.7/test-requirements.txt') }}
+
+      - name: Setup python-venv
+        run: |
+          set -eu
+
+          # Ensure venv is created
+          python -m venv venv
+
+          # Activate venv for each step depending on the OS
+          echo "${GITHUB_WORKSPACE}/venv/bin" >> ${GITHUB_PATH}
+          echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}/venv" >> ${GITHUB_ENV}
+
+      - name: Install dependencies in python-venv
+        if: steps.cache-python-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --upgrade pip build
+
+          echo "${PACKAGES}" | jq -r '.[]' | while read package; do
+              python -m pip install --requirement "ci/requirements/${package}/python-3.13/scikit-learn-1.7/test-requirements.txt"
+          done
+
+      - name: Save python-venv
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        if: steps.cache-python-venv.outputs.cache-hit != 'true'
+        with:
+          path: venv/
+          key: ${{ steps.cache-python-venv.outputs.cache-primary-key }}
+
+      - name: Build and install
+        run: |
+          echo "${PACKAGES}" | jq -r '.[]' | while read package; do
+              (
+                  cd "${package}/"
+
+                  # build
+                  python -m build
+
+                  # install
+                  wheel=(dist/*.whl); python -m pip install --force-reinstall --no-deps "${wheel}"
+              )
+          done
+
+      - name: Test
+        timeout-minutes: 10
+        working-directory: ci/tests/end-to-end
+        run: python -m pytest --import-mode=importlib --no-header --verbosity=2 --dist=loadscope --numprocesses auto --no-cov
