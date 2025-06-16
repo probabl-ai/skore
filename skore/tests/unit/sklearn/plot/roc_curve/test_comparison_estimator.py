@@ -282,6 +282,12 @@ def test_frame_multiclass_classification(multiclass_classification_data, with_au
     check_roc_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == 2
 
+    if with_auc:
+        # Each estimator should have exactly 3 ROC AUC value (one per class)
+        for estimator_name in df["estimator_name"].unique():
+            estimator_data = df[df["estimator_name"] == estimator_name]
+            assert estimator_data["roc_auc"].nunique() == 3
+
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
     """Check the rendering of the legend for ROC curves with a `ComparisonReport`."""

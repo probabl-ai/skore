@@ -250,6 +250,7 @@ def test_frame_binary_classification(binary_classification_report, with_auc):
 
     check_roc_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
+    assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
 
 
 @pytest.mark.parametrize("with_auc", [False, True])

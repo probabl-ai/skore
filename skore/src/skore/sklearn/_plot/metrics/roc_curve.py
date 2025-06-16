@@ -1020,7 +1020,6 @@ class RocCurveDisplay(
         else:
             total_frame = self.roc_curve.merge(
                 self.roc_auc,
-                on=["estimator_name", "split_index", "label"],
             )
 
         base_columns = ["threshold", "fpr", "tpr"]
