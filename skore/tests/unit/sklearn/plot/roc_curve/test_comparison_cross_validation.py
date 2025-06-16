@@ -252,6 +252,15 @@ def test_frame_binary_classification(binary_classification_report, with_auc):
     assert df["estimator_name"].nunique() == len(report.reports_)
     assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
 
+    if with_auc:
+        for estimator_name in df["estimator_name"].unique():
+            for split_index in df["split_index"].unique():
+                estimator_data = df[
+                    (df["estimator_name"] == estimator_name)
+                    & (df["split_index"] == split_index)
+                ]
+                assert estimator_data["roc_auc"].nunique() == 1
+
 
 @pytest.mark.parametrize("with_auc", [False, True])
 def test_frame_multiclass_classification(multiclass_classification_report, with_auc):
@@ -270,3 +279,14 @@ def test_frame_multiclass_classification(multiclass_classification_report, with_
     check_roc_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
     assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
+
+    if with_auc:
+        for estimator_name in df["estimator_name"].unique():
+            for split_index in df["split_index"].unique():
+                for label in df["label"].unique():
+                    estimator_data = df[
+                        (df["estimator_name"] == estimator_name)
+                        & (df["split_index"] == split_index)
+                        & (df["label"] == label)
+                    ]
+                    assert estimator_data["roc_auc"].nunique() == 1

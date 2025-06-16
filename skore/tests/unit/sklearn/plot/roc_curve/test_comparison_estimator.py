@@ -283,10 +283,12 @@ def test_frame_multiclass_classification(multiclass_classification_data, with_au
     assert df["estimator_name"].nunique() == 2
 
     if with_auc:
-        # Each estimator should have exactly 3 ROC AUC value (one per class)
         for estimator_name in df["estimator_name"].unique():
-            estimator_data = df[df["estimator_name"] == estimator_name]
-            assert estimator_data["roc_auc"].nunique() == 3
+            for label in df["label"].unique():
+                estimator_data = df[
+                    (df["estimator_name"] == estimator_name) & (df["label"] == label)
+                ]
+                assert estimator_data["roc_auc"].nunique() == 1
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
