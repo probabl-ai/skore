@@ -1,3 +1,5 @@
+import itertools
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -153,23 +155,21 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
         if self.data_source is not None:
             title += f" on {self.data_source} set"
 
-        self.ax_.scatter(x=x_data, y=y_data)
-        self.ax_.set(title=title, xlabel=x_label_text, ylabel=y_label_text)
-
-        # Add labels to the points with a small offset
+        # Use a set of markers and colors for each data point
         text = self.summarize_data.columns.tolist()
+        markers = itertools.cycle(("o", "s", "^", "D", "v", "P", "*", "X", "h", "8"))
+        colors = itertools.cycle(plt.rcParams["axes.prop_cycle"].by_key()["color"])
+
+        handles = []
         for label, x_coord, y_coord in zip(text, x_data, y_data, strict=False):
-            self.ax_.annotate(
-                label,
-                (x_coord, y_coord),
-                textcoords="offset points",
-                xytext=(10, 0),
-                bbox=dict(
-                    boxstyle="round,pad=0.3",
-                    edgecolor="gray",
-                    facecolor="white",
-                    alpha=0.7,
-                ),
+            marker = next(markers)
+            color = next(colors)
+            sc = self.ax_.scatter(
+                x_coord, y_coord, marker=marker, color=color, label=label
             )
+            handles.append(sc)
+
+        self.ax_.set(title=title, xlabel=x_label_text, ylabel=y_label_text)
+        self.ax_.legend(title="Models", loc="best")
 
         return self.figure_, self.ax_
