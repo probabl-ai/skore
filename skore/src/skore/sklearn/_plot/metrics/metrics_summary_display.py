@@ -83,9 +83,9 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
         >>> display = comparison_report.metrics.summarize()
         >>> display.plot(x="accuracy", y="roc_auc")
         """
-        if self.report_type in (
-            ["estimator", "cross-validation", "comparison-cross-validation"]
-        ):
+        if self.report_type == "estimator":
+            raise NotImplementedError()
+        elif self.report_type in ["cross-validation", "comparison-cross-validation"]:
             raise NotImplementedError("To come soon!")
         elif self.report_type == "comparison-estimator":
             self._plot_comparison_estimator(x, y)

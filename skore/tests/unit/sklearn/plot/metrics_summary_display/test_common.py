@@ -2,7 +2,7 @@ import pytest
 from sklearn.datasets import make_classification
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.model_selection import train_test_split
-from skore import EstimatorReport
+from skore import CrossValidationReport, EstimatorReport
 
 
 @pytest.fixture
@@ -22,13 +22,27 @@ def estimator_report_classification():
     return estimator_report
 
 
-def test_not_implemented(estimator_report_classification):
+def test_not_implemented_estimator(estimator_report_classification):
     """
     Test that the plot_comparison_estimator method raises NotImplementedError
     when called with a binary classification comparator.
     """
-    estimator_report_classification.metrics.summarize()
     with pytest.raises(NotImplementedError):
         estimator_report_classification.metrics.summarize().plot(
             x="accuracy", y="f1_score"
         )
+
+
+def test_not_implemented_other_categories():
+    """
+    Test that the plot_comparison_estimator method raises NotImplementedError
+    when called with a binary classification comparator.
+    """
+    X, y = make_classification(random_state=0)
+    cv_report = CrossValidationReport(
+        estimator=HistGradientBoostingClassifier(),
+        X=X,
+        y=y,
+    )
+    with pytest.raises(NotImplementedError, match="To come soon!"):
+        cv_report.metrics.summarize().plot(x="accuracy", y="f1_score")
