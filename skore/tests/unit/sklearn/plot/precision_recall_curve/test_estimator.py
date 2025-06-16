@@ -280,6 +280,7 @@ def test_frame_multiclass_classification(
         expected_columns.append("average_precision")
 
     check_precision_recall_frame(df, expected_index, expected_columns)
+    assert df["label"].nunique() == len(estimator.classes_)
 
     if with_average_precision:
         for label in df["label"].unique():

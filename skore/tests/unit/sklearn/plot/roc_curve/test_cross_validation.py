@@ -196,6 +196,7 @@ def test_frame_binary_classification(binary_classification_data_no_split, with_a
         expected_columns.append("roc_auc")
 
     check_roc_frame(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == report.cv_splitter.n_splits
 
     if with_auc:
         for split_index in df["split_index"].unique():
@@ -217,6 +218,10 @@ def test_frame_multiclass_classification(
         expected_columns.append("roc_auc")
 
     check_roc_frame(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == report.cv_splitter.n_splits
+    assert df["label"].nunique() == len(
+        report.estimator_reports_[0].estimator_.classes_
+    )
 
     if with_auc:
         for split_index in df["split_index"].unique():

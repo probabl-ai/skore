@@ -264,6 +264,7 @@ def test_frame_multiclass_classification(
 
     check_precision_recall_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == 2
+    assert df["label"].nunique() == len(report.reports_[0].estimator_.classes_)
 
     if with_average_precision:
         for estimator_name in df["estimator_name"].unique():

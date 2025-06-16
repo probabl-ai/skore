@@ -285,6 +285,7 @@ def test_frame_multiclass_classification(multiclass_classification_data, with_au
         expected_columns.append("roc_auc")
 
     check_roc_frame(df, expected_index, expected_columns)
+    assert df["label"].nunique() == len(estimator.classes_)
 
     if with_auc:
         for label in df["label"].unique():

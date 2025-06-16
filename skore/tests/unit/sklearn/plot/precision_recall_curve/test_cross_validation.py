@@ -161,6 +161,7 @@ def test_frame_binary_classification(
         expected_columns.append("average_precision")
 
     check_precision_recall_frame(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == report.cv_splitter.n_splits
 
     if with_average_precision:
         for split_index in df["split_index"].unique():
@@ -184,6 +185,10 @@ def test_frame_multiclass_classification(
         expected_columns.append("average_precision")
 
     check_precision_recall_frame(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == report.cv_splitter.n_splits
+    assert df["label"].nunique() == len(
+        report.estimator_reports_[0].estimator_.classes_
+    )
 
     if with_average_precision:
         for split_index in df["split_index"].unique():

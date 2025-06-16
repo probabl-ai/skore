@@ -242,7 +242,6 @@ def test_frame_binary_classification(binary_classification_data, with_auc):
     assert df["estimator_name"].nunique() == 2
 
     if with_auc:
-        # Each estimator should have exactly one ROC AUC value
         for estimator_name in df["estimator_name"].unique():
             estimator_data = df[df["estimator_name"] == estimator_name]
             assert estimator_data["roc_auc"].nunique() == 1
@@ -281,6 +280,7 @@ def test_frame_multiclass_classification(multiclass_classification_data, with_au
 
     check_roc_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == 2
+    assert df["label"].nunique() == len(estimator.classes_)
 
     if with_auc:
         for estimator_name in df["estimator_name"].unique():
