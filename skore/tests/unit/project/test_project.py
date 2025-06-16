@@ -7,6 +7,7 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from skore import EstimatorReport, Project
+from skore.project.project import PluginProtocol
 from skore.project.summary import Summary
 
 
@@ -17,12 +18,12 @@ class FakeEntryPoint(EntryPoint):
 
 @fixture
 def FakeLocalProject():
-    return Mock()
+    return Mock(spec=PluginProtocol)
 
 
 @fixture
 def FakeHubProject():
-    return Mock()
+    return Mock(spec=PluginProtocol)
 
 
 @fixture(autouse=True)
