@@ -1289,7 +1289,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     y_pred=y_pred,
                     report_type="comparison-estimator",
                     estimators=[report.estimator_ for report in self._parent.reports_],
-                    estimator_names=self._parent.report_names_,
                     ml_task=self._parent._ml_task,
                     data_source=data_source,
                     **display_kwargs,
@@ -1351,7 +1350,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                         for report in self._parent.reports_
                         for estimator_report in report.estimator_reports_
                     ],
-                    estimator_names=self._parent.report_names_,
                     ml_task=self._parent._ml_task,
                     data_source=data_source,
                     **display_kwargs,

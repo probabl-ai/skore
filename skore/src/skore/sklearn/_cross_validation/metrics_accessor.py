@@ -1177,7 +1177,6 @@ class _MetricsAccessor(
                 estimators=[
                     report.estimator_ for report in self._parent.estimator_reports_
                 ],
-                estimator_names=[self._parent.estimator_name_],
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,
