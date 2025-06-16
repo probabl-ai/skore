@@ -949,7 +949,6 @@ class PrecisionRecallCurveDisplay(
         else:
             total_frame = self.precision_recall.merge(
                 self.average_precision,
-                on=["estimator_name", "split_index", "label"],
             )
 
         base_columns = ["threshold", "precision", "recall"]
