@@ -199,7 +199,9 @@ def test_frame_binary_classification(binary_classification_data_no_split, with_a
 
 
 @pytest.mark.parametrize("with_auc", [False, True])
-def test_frame_multiclass_classification(multiclass_classification_data_no_split, with_auc):
+def test_frame_multiclass_classification(
+    multiclass_classification_data_no_split, with_auc
+):
     """Test the frame method with multiclass classification data."""
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
