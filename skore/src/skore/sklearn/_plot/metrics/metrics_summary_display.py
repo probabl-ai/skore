@@ -154,9 +154,7 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
             title += f" on {self.data_source} set"
 
         self.ax_.scatter(x=x_data, y=y_data)
-        self.ax_.set_title(title)
-        self.ax_.set_xlabel(x_label_text)
-        self.ax_.set_ylabel(y_label_text)
+        self.ax_.set(title=title, xlabel=x_label_text, y_label=y_label_text)
 
         # Add labels to the points with a small offset
         text = self.summarize_data.columns.tolist()
