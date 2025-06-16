@@ -239,66 +239,44 @@ def test_multiclass_classification_data_source(pyplot, multiclass_classification
         )
 
 
-def test_frame_binary_classification(binary_classification_data):
-    """Check that the frame method returns the correct DataFrame structure for binary
-    classification data.
-    """
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_binary_classification(
+    binary_classification_data, with_average_precision
+):
+    """Test the frame method with binary classification data."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.precision_recall()
-
-    # Without the average precision
-    df = display.frame()
-    check_precision_recall_frame(
-        df,
-        report_type="estimator",
-        expected_n_splits=None,
-        multiclass=False,
-        with_average_precision=False,
+    df = report.metrics.precision_recall().frame(
+        with_average_precision=with_average_precision
     )
+    expected_index = []
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
 
-    # With the average precision
-    df = display.frame(with_average_precision=True)
-    check_precision_recall_frame(
-        df,
-        report_type="estimator",
-        expected_n_splits=None,
-        multiclass=False,
-        with_average_precision=True,
-    )
+    check_precision_recall_frame(df, expected_index, expected_columns)
 
 
-def test_frame_multiclass_classification(multiclass_classification_data):
-    """Check that the frame method returns the correct DataFrame structure for
-    multiclass classification data.
-    """
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_multiclass_classification(
+    multiclass_classification_data, with_average_precision
+):
+    """Test the frame method with multiclass classification data."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.precision_recall()
-
-    # Without the average precision
-    df = display.frame()
-    check_precision_recall_frame(
-        df,
-        report_type="estimator",
-        expected_n_splits=None,
-        multiclass=True,
-        with_average_precision=False,
+    df = report.metrics.precision_recall().frame(
+        with_average_precision=with_average_precision
     )
+    expected_index = ["label"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
 
-    # With the average precision
-    df = display.frame(with_average_precision=True)
-    check_precision_recall_frame(
-        df,
-        report_type="estimator",
-        expected_n_splits=None,
-        multiclass=True,
-        with_average_precision=True,
-    )
+    check_precision_recall_frame(df, expected_index, expected_columns)
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

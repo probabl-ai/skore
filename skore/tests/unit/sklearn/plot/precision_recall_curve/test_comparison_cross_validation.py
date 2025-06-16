@@ -220,59 +220,41 @@ def test_multiclass_classification_kwargs(pyplot, multiclass_classification_repo
     assert display.ax_[0].spines["top"].get_visible()
 
 
-def test_frame_binary_classification(binary_classification_report):
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_binary_classification(
+    binary_classification_report, with_average_precision
+):
     """Test the frame method with binary classification comparison cross-validation
     data."""
     report = binary_classification_report
     display = report.metrics.precision_recall()
 
-    # Without the average precision
-    df = display.frame()
-    check_precision_recall_frame(
-        df,
-        report_type="comparison-cross-validation",
-        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
-        multiclass=False,
-        with_average_precision=False,
-    )
+    df = display.frame(with_average_precision=with_average_precision)
+    expected_index = ["estimator_name", "split_index"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
+
+    check_precision_recall_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
-
-    # With the average precision
-    df = display.frame(with_average_precision=True)
-    check_precision_recall_frame(
-        df,
-        report_type="comparison-cross-validation",
-        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
-        multiclass=False,
-        with_average_precision=True,
-    )
-    assert df["estimator_name"].nunique() == len(report.reports_)
+    assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
 
 
-def test_frame_multiclass_classification(multiclass_classification_report):
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_multiclass_classification(
+    multiclass_classification_report, with_average_precision
+):
     """Test the frame method with multiclass classification comparison cross-validation
     data."""
     report = multiclass_classification_report
     display = report.metrics.precision_recall()
 
-    # Without the average precision
-    df = display.frame()
-    check_precision_recall_frame(
-        df,
-        report_type="comparison-cross-validation",
-        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
-        multiclass=True,
-        with_average_precision=False,
-    )
-    assert df["estimator_name"].nunique() == len(report.reports_)
+    df = display.frame(with_average_precision=with_average_precision)
+    expected_index = ["estimator_name", "split_index", "label"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
 
-    # With the average precision
-    df = display.frame(with_average_precision=True)
-    check_precision_recall_frame(
-        df,
-        report_type="comparison-cross-validation",
-        expected_n_splits=report.reports_[0]._cv_splitter.n_splits,
-        multiclass=True,
-        with_average_precision=True,
-    )
+    check_precision_recall_frame(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
+    assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits

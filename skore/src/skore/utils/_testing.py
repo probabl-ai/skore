@@ -109,68 +109,17 @@ def check_roc_frame(df, expected_index, expected_data_columns):
             assert df[col].dtype == np.float64
 
 
-def check_precision_recall_frame(
-    df: pd.DataFrame,
-    report_type: str | None = None,
-    expected_n_splits: int | None = None,
-    multiclass: bool = False,
-    with_average_precision: bool = True,
-) -> None:
-    """Check the structure of a precision-recall curve DataFrame.
-
-    Parameters
-    ----------
-    df : DataFrame
-        The DataFrame to check.
-    report_type : str or None, default=None
-        The type of report. One of "EstimatorReport", "CrossValidationReport",
-        "ComparisonReport", or "ComparisonCrossValidationReport".
-    expected_n_splits : int or None, default=None
-        The expected number of cross-validation splits.
-        If None, does not check the number of splits.
-    multiclass : bool, default=False
-        Whether the DataFrame is from a multiclass classification.
-    with_average_precision : bool, default=True
-        Whether the average precision column should be present in the DataFrame.
-    """
+def check_precision_recall_frame(df, expected_index, expected_data_columns):
+    """Check the structure of the precision-recall curve DataFrame."""
     assert isinstance(df, pd.DataFrame)
+    assert sorted(df.columns.tolist()) == sorted(expected_index + expected_data_columns)
 
-    base_columns = ["threshold", "precision", "recall"]
-    if with_average_precision:
-        base_columns.append("average_precision")
-
-    if report_type == "estimator":
-        extra_columns = []
-    elif report_type == "cross-validation":
-        extra_columns = ["split_index"]
-    elif report_type == "comparison-estimator":
-        extra_columns = ["estimator_name"]
-    elif report_type == "comparison-cross-validation":
-        extra_columns = ["estimator_name", "split_index"]
-    else:
-        raise ValueError(f"Invalid report type: {report_type}.")
-
-    if not multiclass:
-        expected_columns = extra_columns + base_columns
-    else:
-        expected_columns = extra_columns + ["label"] + base_columns
-
-    assert list(df.columns) == expected_columns
-
-    if "estimator_name" in df.columns:
-        assert df["estimator_name"].dtype.name == "category"
-    if "split_index" in df.columns:
-        assert df["split_index"].dtype.name == "category"
-    if "label" in df.columns:
-        assert df["label"].dtype.name == "category"
-    assert df["threshold"].dtype == np.float64
-    assert df["precision"].dtype == np.float64
-    assert df["recall"].dtype == np.float64
-    if with_average_precision:
-        assert df["average_precision"].dtype == np.float64
-
-    if expected_n_splits is not None and "split_index" in df.columns:
-        assert df["split_index"].nunique() == expected_n_splits
+    for col in df.columns:
+        if col in expected_index:
+            assert df[col].dtype.name == "category"
+        else:
+            assert col in expected_data_columns
+            assert df[col].dtype == np.float64
 
 
 def check_prediction_error_frame(

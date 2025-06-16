@@ -145,58 +145,40 @@ def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
         display.plot(pr_curve_kwargs=pr_curve_kwargs)
 
 
-def test_frame_binary_classification(binary_classification_data_no_split):
-    """Test the frame method with binary classification cross-validation data."""
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_binary_classification(
+    binary_classification_data_no_split, with_average_precision
+):
+    """Test the frame method with binary classification data."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.precision_recall()
-
-    # Without the average precision
-    df = display.frame()
-    check_precision_recall_frame(
-        df,
-        report_type="cross-validation",
-        expected_n_splits=cv,
-        multiclass=False,
-        with_average_precision=False,
+    df = report.metrics.precision_recall().frame(
+        with_average_precision=with_average_precision
     )
+    expected_index = ["split_index"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
 
-    # With the average precision
-    df = display.frame(with_average_precision=True)
-    check_precision_recall_frame(
-        df,
-        report_type="cross-validation",
-        expected_n_splits=cv,
-        multiclass=False,
-        with_average_precision=True,
-    )
+    check_precision_recall_frame(df, expected_index, expected_columns)
 
 
-def test_frame_multiclass_classification(multiclass_classification_data_no_split):
-    """Test the frame method with multiclass classification cross-validation data."""
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_multiclass_classification(
+    multiclass_classification_data_no_split, with_average_precision
+):
+    """Test the frame method with multiclass classification data."""
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.precision_recall()
-
-    # Without the average precision
-    df = display.frame()
-    check_precision_recall_frame(
-        df,
-        report_type="cross-validation",
-        expected_n_splits=cv,
-        multiclass=True,
-        with_average_precision=False,
+    df = report.metrics.precision_recall().frame(
+        with_average_precision=with_average_precision
     )
+    expected_index = ["split_index", "label"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
 
-    # With the average precision
-    df = display.frame(with_average_precision=True)
-    check_precision_recall_frame(
-        df,
-        report_type="cross-validation",
-        expected_n_splits=cv,
-        multiclass=True,
-        with_average_precision=True,
-    )
+    check_precision_recall_frame(df, expected_index, expected_columns)
 
 
 def test_legend(
