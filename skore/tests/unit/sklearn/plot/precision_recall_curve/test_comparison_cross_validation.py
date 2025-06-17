@@ -237,7 +237,7 @@ def test_frame_binary_classification(
 
     check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
-    assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
+    assert df["split_index"].nunique() == report.reports_[0].cv_splitter.n_splits
 
     if with_average_precision:
         for (_, _), group in df.groupby(["estimator_name", "split_index"]):
