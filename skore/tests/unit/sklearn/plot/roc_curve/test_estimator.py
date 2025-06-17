@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position, check_roc_frame
+from skore.utils._testing import check_frame_structure, check_legend_position
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -265,7 +265,7 @@ def test_frame_binary_classification(binary_classification_data, with_auc):
     if with_auc:
         expected_columns.append("roc_auc")
 
-    check_roc_frame(df, expected_index, expected_columns)
+    check_frame_structure(df, expected_index, expected_columns)
 
     if with_auc:
         assert df["roc_auc"].nunique() == 1
@@ -284,7 +284,7 @@ def test_frame_multiclass_classification(multiclass_classification_data, with_au
     if with_auc:
         expected_columns.append("roc_auc")
 
-    check_roc_frame(df, expected_index, expected_columns)
+    check_frame_structure(df, expected_index, expected_columns)
     assert df["label"].nunique() == len(estimator.classes_)
 
     if with_auc:

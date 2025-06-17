@@ -6,7 +6,7 @@ from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position, check_prediction_error_frame
+from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 def test_regression(pyplot, regression_data):
@@ -216,7 +216,7 @@ def test_frame(regression_data):
     expected_index = ["estimator_name"]
     expected_columns = ["y_true", "y_pred", "residuals"]
 
-    check_prediction_error_frame(df, expected_index, expected_columns)
+    check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == 2
 
 

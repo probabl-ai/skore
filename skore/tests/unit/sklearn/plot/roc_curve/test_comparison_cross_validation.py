@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore.sklearn._plot.metrics.roc_curve import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position, check_roc_frame
+from skore.utils._testing import check_frame_structure, check_legend_position
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -248,7 +248,7 @@ def test_frame_binary_classification(binary_classification_report, with_auc):
     if with_auc:
         expected_columns.append("roc_auc")
 
-    check_roc_frame(df, expected_index, expected_columns)
+    check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
     assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
 
@@ -276,7 +276,7 @@ def test_frame_multiclass_classification(multiclass_classification_report, with_
     if with_auc:
         expected_columns.append("roc_auc")
 
-    check_roc_frame(df, expected_index, expected_columns)
+    check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
     assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
     assert df["label"].nunique() == len(

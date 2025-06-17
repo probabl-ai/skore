@@ -10,7 +10,7 @@ from skore.sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position, check_precision_recall_frame
+from skore.utils._testing import check_frame_structure, check_legend_position
 from skore.utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
@@ -235,7 +235,7 @@ def test_frame_binary_classification(
     if with_average_precision:
         expected_columns.append("average_precision")
 
-    check_precision_recall_frame(df, expected_index, expected_columns)
+    check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
     assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
 
@@ -264,7 +264,7 @@ def test_frame_multiclass_classification(
     if with_average_precision:
         expected_columns.append("average_precision")
 
-    check_precision_recall_frame(df, expected_index, expected_columns)
+    check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
     assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits
     assert df["label"].nunique() == len(

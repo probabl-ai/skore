@@ -96,34 +96,20 @@ def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"
         assert bbox.x0 >= 1
 
 
-def check_roc_frame(df, expected_index, expected_data_columns):
-    """Check the structure of the ROC curve DataFrame."""
-    assert isinstance(df, pd.DataFrame)
-    assert sorted(df.columns.tolist()) == sorted(expected_index + expected_data_columns)
+def check_frame_structure(df, expected_index, expected_data_columns):
+    """Check the structure of ROC, precision-recall, and prediction error DataFrames.
 
-    for col in df.columns:
-        if col in expected_index:
-            assert df[col].dtype.name == "category"
-        else:
-            assert col in expected_data_columns
-            assert df[col].dtype == np.float64
-
-
-def check_precision_recall_frame(df, expected_index, expected_data_columns):
-    """Check the structure of the precision-recall curve DataFrame."""
-    assert isinstance(df, pd.DataFrame)
-    assert sorted(df.columns.tolist()) == sorted(expected_index + expected_data_columns)
-
-    for col in df.columns:
-        if col in expected_index:
-            assert df[col].dtype.name == "category"
-        else:
-            assert col in expected_data_columns
-            assert df[col].dtype == np.float64
-
-
-def check_prediction_error_frame(df, expected_index, expected_data_columns):
-    """Check the structure of a prediction error DataFrame."""
+    Parameters
+    ----------
+    df : DataFrame
+        The DataFrame to check.
+    expected_index : list of str
+        The expected index column names (e.g., estimator_name, split_index, label).
+        These columns should be of categorical type.
+    expected_data_columns : list of str
+        The expected data column names (e.g., threshold, fpr, tpr, precision, recall).
+        These columns should be of float64 type.
+    """
     assert isinstance(df, pd.DataFrame)
     assert sorted(df.columns.tolist()) == sorted(expected_index + expected_data_columns)
 

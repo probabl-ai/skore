@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position, check_prediction_error_frame
+from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.fixture
@@ -138,6 +138,6 @@ def test_frame(report):
     expected_index = ["estimator_name", "split_index"]
     expected_columns = ["y_true", "y_pred", "residuals"]
 
-    check_prediction_error_frame(df, expected_index, expected_columns)
+    check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
     assert df["split_index"].nunique() == report.reports_[0]._cv_splitter.n_splits

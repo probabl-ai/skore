@@ -5,7 +5,7 @@ import pytest
 from skore import CrossValidationReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position, check_prediction_error_frame
+from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -138,7 +138,7 @@ def test_frame(regression_data_no_split):
     expected_index = ["split_index"]
     expected_columns = ["y_true", "y_pred", "residuals"]
 
-    check_prediction_error_frame(df, expected_index, expected_columns)
+    check_frame_structure(df, expected_index, expected_columns)
     assert df["split_index"].nunique() == report.cv_splitter.n_splits
 
 

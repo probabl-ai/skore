@@ -4,7 +4,7 @@ from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position, check_precision_recall_frame
+from skore.utils._testing import check_frame_structure, check_legend_position
 from skore.utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
@@ -220,7 +220,7 @@ def test_frame_binary_classification(
     if with_average_precision:
         expected_columns.append("average_precision")
 
-    check_precision_recall_frame(df, expected_index, expected_columns)
+    check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == 2
 
     if with_average_precision:
@@ -262,7 +262,7 @@ def test_frame_multiclass_classification(
     if with_average_precision:
         expected_columns.append("average_precision")
 
-    check_precision_recall_frame(df, expected_index, expected_columns)
+    check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == 2
     assert df["label"].nunique() == len(report.reports_[0].estimator_.classes_)
 
