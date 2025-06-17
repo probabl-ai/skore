@@ -63,7 +63,7 @@ Development
 Quick start
 -----------
 
-You'll need ``python >=3.9, <3.13``.
+You'll need ``python >=3.10, <=3.13``.
 
 Setting up your development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
