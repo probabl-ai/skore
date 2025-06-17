@@ -925,14 +925,13 @@ class PrecisionRecallCurveDisplay(
             A DataFrame containing the precision-recall curve data with columns
             depending on the report type:
 
-            - `estimator_name`: Name of the estimator (available when comparing estimators)
-            - `split_index`: Cross-validation fold ID (available when doing cross-validation)
-            - `label`: Class label (available for multiclass-classification)
-            - `threshold`: Decision threshold
-            - `precision`: Precision score at threshold
-            - `recall`: Recall score at threshold
-            - `average_precision`: Area under the precision recall curve also
-              called average precision (available when `with_average_precision=True`)
+            - estimator_name: Name of the estimator (when comparing estimators)
+            - split_index: Cross-validation fold ID (when doing cross-validation)
+            - label: Class label (for multiclass-classification)
+            - threshold: Decision threshold
+            - precision: Precision score at threshold
+            - recall: Recall score at threshold
+            - average_precision: average precision (when `with_average_precision=True`)
 
         Examples
         --------

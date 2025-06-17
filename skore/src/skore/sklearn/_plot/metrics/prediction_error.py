@@ -852,6 +852,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         DataFrame
             A DataFrame containing the prediction error data with columns depending on
             the report type:
+
             - estimator_name: Name of the estimator (when comparing estimators)
             - split_index: Cross-validation fold ID (when doing cross-validation)
             - y_true: True target values
