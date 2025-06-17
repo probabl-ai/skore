@@ -952,6 +952,11 @@ class PrecisionRecallCurveDisplay(
             if not with_average_precision
             else self.precision_recall.merge(self.average_precision)
         )
+        # If done, the merge between the precision-recall curve and the average
+        # precision is done without specifying the columns to merge on, hence done on
+        # all columns that are present in both DataFrames.
+        # In this case, the common columns are all columns but not the one containing
+        # the statistics.
 
         statistical_columns = ["threshold", "precision", "recall"]
         if with_average_precision:

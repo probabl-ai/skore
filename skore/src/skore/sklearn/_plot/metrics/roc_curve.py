@@ -1018,6 +1018,11 @@ class RocCurveDisplay(
         >>> df = display.frame()
         """
         df = self.roc_curve if not with_auc else self.roc_curve.merge(self.roc_auc)
+        # If done, the merge between the ROC curve and the ROC AUC is done without
+        # specifying the columns to merge on, hence done on all columns that are
+        # present in both DataFrames.
+        # In this case, the common columns are all columns excepts the ones containing
+        # the statistics.
 
         statistical_columns = ["threshold", "fpr", "tpr"]
         if with_auc:
