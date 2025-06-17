@@ -39,6 +39,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     ----------
     prediction_error : DataFrame
         The prediction error data to display. The columns are
+
         - "estimator_name"
         - "split_index" (may be null)
         - "y_true"

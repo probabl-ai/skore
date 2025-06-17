@@ -74,6 +74,7 @@ class RocCurveDisplay(
     ----------
     roc_curve : DataFrame
         The ROC curve data to display. The columns are
+
         - "estimator_name"
         - "split_index" (may be null)
         - "label"
@@ -83,6 +84,7 @@ class RocCurveDisplay(
 
     roc_auc : DataFrame
         The ROC AUC data to display. The columns are
+
         - "estimator_name"
         - "split_index" (may be null)
         - "label"

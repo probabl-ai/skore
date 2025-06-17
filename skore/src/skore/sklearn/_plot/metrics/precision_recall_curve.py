@@ -57,6 +57,7 @@ class PrecisionRecallCurveDisplay(
     ----------
     precision_recall : DataFrame
         The precision-recall curve data to display. The columns are
+
         - "estimator_name"
         - "split_index" (may be null)
         - "label"
@@ -66,6 +67,7 @@ class PrecisionRecallCurveDisplay(
 
     average_precision : DataFrame
         The average precision data to display. The columns are
+
         - "estimator_name"
         - "split_index" (may be null)
         - "label"
