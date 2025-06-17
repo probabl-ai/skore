@@ -288,9 +288,8 @@ def test_frame_multiclass_classification(multiclass_classification_data, with_au
     assert df["label"].nunique() == len(estimator.classes_)
 
     if with_auc:
-        for label in df["label"].unique():
-            estimator_data = df[df["label"] == label]
-            assert estimator_data["roc_auc"].nunique() == 1
+        for (_), group in df.groupby(["label"]):
+            assert group["roc_auc"].nunique() == 1
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

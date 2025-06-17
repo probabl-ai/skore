@@ -242,9 +242,8 @@ def test_frame_binary_classification(binary_classification_data, with_auc):
     assert df["estimator_name"].nunique() == 2
 
     if with_auc:
-        for estimator_name in df["estimator_name"].unique():
-            estimator_data = df[df["estimator_name"] == estimator_name]
-            assert estimator_data["roc_auc"].nunique() == 1
+        for (_), group in df.groupby(["estimator_name"]):
+            assert group["roc_auc"].nunique() == 1
 
 
 @pytest.mark.parametrize("with_auc", [False, True])
@@ -283,12 +282,8 @@ def test_frame_multiclass_classification(multiclass_classification_data, with_au
     assert df["label"].nunique() == len(estimator.classes_)
 
     if with_auc:
-        for estimator_name in df["estimator_name"].unique():
-            for label in df["label"].unique():
-                estimator_data = df[
-                    (df["estimator_name"] == estimator_name) & (df["label"] == label)
-                ]
-                assert estimator_data["roc_auc"].nunique() == 1
+        for (_, _), group in df.groupby(["estimator_name", "label"]):
+            assert group["roc_auc"].nunique() == 1
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

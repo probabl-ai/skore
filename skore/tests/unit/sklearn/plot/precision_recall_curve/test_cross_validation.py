@@ -164,9 +164,8 @@ def test_frame_binary_classification(
     assert df["split_index"].nunique() == report.cv_splitter.n_splits
 
     if with_average_precision:
-        for split_index in df["split_index"].unique():
-            estimator_data = df[df["split_index"] == split_index]
-            assert estimator_data["average_precision"].nunique() == 1
+        for (_), group in df.groupby(["split_index"]):
+            assert group["average_precision"].nunique() == 1
 
 
 @pytest.mark.parametrize("with_average_precision", [False, True])
@@ -191,12 +190,8 @@ def test_frame_multiclass_classification(
     )
 
     if with_average_precision:
-        for split_index in df["split_index"].unique():
-            for label in df["label"].unique():
-                estimator_data = df[
-                    (df["split_index"] == split_index) & (df["label"] == label)
-                ]
-                assert estimator_data["average_precision"].nunique() == 1
+        for (_, _), group in df.groupby(["split_index", "label"]):
+            assert group["average_precision"].nunique() == 1
 
 
 def test_legend(

@@ -283,9 +283,8 @@ def test_frame_multiclass_classification(
     assert df["label"].nunique() == len(estimator.classes_)
 
     if with_average_precision:
-        for label in df["label"].unique():
-            estimator_data = df[df["label"] == label]
-            assert estimator_data["average_precision"].nunique() == 1
+        for (_), group in df.groupby(["label"]):
+            assert group["average_precision"].nunique() == 1
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

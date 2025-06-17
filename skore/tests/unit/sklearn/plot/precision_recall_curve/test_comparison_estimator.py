@@ -224,9 +224,8 @@ def test_frame_binary_classification(
     assert df["estimator_name"].nunique() == 2
 
     if with_average_precision:
-        for estimator_name in df["estimator_name"].unique():
-            estimator_data = df[df["estimator_name"] == estimator_name]
-            assert estimator_data["average_precision"].nunique() == 1
+        for (_), group in df.groupby(["estimator_name"]):
+            assert group["average_precision"].nunique() == 1
 
 
 @pytest.mark.parametrize("with_average_precision", [False, True])
@@ -267,12 +266,8 @@ def test_frame_multiclass_classification(
     assert df["label"].nunique() == len(report.reports_[0].estimator_.classes_)
 
     if with_average_precision:
-        for estimator_name in df["estimator_name"].unique():
-            for label in df["label"].unique():
-                estimator_data = df[
-                    (df["estimator_name"] == estimator_name) & (df["label"] == label)
-                ]
-                assert estimator_data["average_precision"].nunique() == 1
+        for (_, _), group in df.groupby(["estimator_name", "label"]):
+            assert group["average_precision"].nunique() == 1
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

@@ -199,9 +199,8 @@ def test_frame_binary_classification(binary_classification_data_no_split, with_a
     assert df["split_index"].nunique() == report.cv_splitter.n_splits
 
     if with_auc:
-        for split_index in df["split_index"].unique():
-            estimator_data = df[df["split_index"] == split_index]
-            assert estimator_data["roc_auc"].nunique() == 1
+        for (_), group in df.groupby(["split_index"]):
+            assert group["roc_auc"].nunique() == 1
 
 
 @pytest.mark.parametrize("with_auc", [False, True])
@@ -224,12 +223,8 @@ def test_frame_multiclass_classification(
     )
 
     if with_auc:
-        for split_index in df["split_index"].unique():
-            for class_label in df["label"].unique():
-                estimator_data = df[
-                    (df["split_index"] == split_index) & (df["label"] == class_label)
-                ]
-                assert estimator_data["roc_auc"].nunique() == 1
+        for (_, _), group in df.groupby(["split_index", "label"]):
+            assert group["roc_auc"].nunique() == 1
 
 
 def test_legend(
