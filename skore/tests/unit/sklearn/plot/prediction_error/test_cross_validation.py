@@ -149,3 +149,16 @@ def test_legend(pyplot, regression_data_no_split):
 
     display.plot(kind="actual_vs_predicted")
     check_legend_position(display.ax_, loc="upper left", position="outside")
+
+
+def test_constructor(regression_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.prediction_error()
+
+    index_columns = ["estimator_name", "split_index"]
+    for df in [display.prediction_error]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].unique().tolist() == list(range(cv))
