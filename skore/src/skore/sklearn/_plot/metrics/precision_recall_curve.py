@@ -947,31 +947,30 @@ class PrecisionRecallCurveDisplay(
         >>> display = report.metrics.precision_recall()
         >>> df = display.frame()
         """
-        if not with_average_precision:
-            total_frame = self.precision_recall
-        else:
-            total_frame = self.precision_recall.merge(
-                self.average_precision,
-            )
+        df = (
+            self.precision_recall
+            if not with_average_precision
+            else self.precision_recall.merge(self.average_precision)
+        )
 
-        base_columns = ["threshold", "precision", "recall"]
+        statistical_columns = ["threshold", "precision", "recall"]
         if with_average_precision:
-            base_columns.append("average_precision")
+            statistical_columns.append("average_precision")
 
         if self.report_type == "estimator":
-            extra_columns = []
+            indexing_columns = []
         elif self.report_type == "cross-validation":
-            extra_columns = ["split_index"]
+            indexing_columns = ["split_index"]
         elif self.report_type == "comparison-estimator":
-            extra_columns = ["estimator_name"]
+            indexing_columns = ["estimator_name"]
         elif self.report_type == "comparison-cross-validation":
-            extra_columns = ["estimator_name", "split_index"]
+            indexing_columns = ["estimator_name", "split_index"]
         else:
             raise ValueError(f"Invalid report type: {self.report_type}.")
 
         if self.ml_task == "binary-classification":
-            columns = extra_columns + base_columns
+            columns = indexing_columns + statistical_columns
         else:
-            columns = extra_columns + ["label"] + base_columns
+            columns = indexing_columns + ["label"] + statistical_columns
 
-        return total_frame[columns]
+        return df[columns]

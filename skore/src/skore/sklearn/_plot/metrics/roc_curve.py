@@ -1007,7 +1007,6 @@ class RocCurveDisplay(
 
         Examples
         --------
-        >>> # Binary classification example
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import EstimatorReport, train_test_split
@@ -1018,31 +1017,26 @@ class RocCurveDisplay(
         >>> display = report.metrics.roc()
         >>> df = display.frame()
         """
-        if not with_auc:
-            total_frame = self.roc_curve
-        else:
-            total_frame = self.roc_curve.merge(
-                self.roc_auc,
-            )
+        df = self.roc_curve if not with_auc else self.roc_curve.merge(self.roc_auc)
 
-        base_columns = ["threshold", "fpr", "tpr"]
+        statistical_columns = ["threshold", "fpr", "tpr"]
         if with_auc:
-            base_columns.append("roc_auc")
+            statistical_columns.append("roc_auc")
 
         if self.report_type == "estimator":
-            extra_columns = []
+            indexing_columns = []
         elif self.report_type == "cross-validation":
-            extra_columns = ["split_index"]
+            indexing_columns = ["split_index"]
         elif self.report_type == "comparison-estimator":
-            extra_columns = ["estimator_name"]
+            indexing_columns = ["estimator_name"]
         elif self.report_type == "comparison-cross-validation":
-            extra_columns = ["estimator_name", "split_index"]
+            indexing_columns = ["estimator_name", "split_index"]
         else:
             raise ValueError(f"Invalid report type: {self.report_type}.")
 
         if self.ml_task == "binary-classification":
-            columns = extra_columns + base_columns
+            columns = indexing_columns + statistical_columns
         else:
-            columns = extra_columns + ["label"] + base_columns
+            columns = indexing_columns + ["label"] + statistical_columns
 
-        return total_frame[columns]
+        return df[columns]
