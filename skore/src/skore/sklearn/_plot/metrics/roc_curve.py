@@ -1029,10 +1029,8 @@ class RocCurveDisplay(
             indexing_columns = ["split_index"]
         elif self.report_type == "comparison-estimator":
             indexing_columns = ["estimator_name"]
-        elif self.report_type == "comparison-cross-validation":
+        else:  # self.report_type == "comparison-cross-validation"
             indexing_columns = ["estimator_name", "split_index"]
-        else:
-            raise ValueError(f"Invalid report type: {self.report_type}.")
 
         if self.ml_task == "binary-classification":
             columns = indexing_columns + statistical_columns

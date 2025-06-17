@@ -880,9 +880,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             columns = ["split_index"] + statistical_columns
         elif self.report_type == "comparison-estimator":
             columns = ["estimator_name"] + statistical_columns
-        elif self.report_type == "comparison-cross-validation":
+        else:  # self.report_type == "comparison-cross-validation"
             columns = ["estimator_name", "split_index"] + statistical_columns
-        else:
-            raise ValueError(f"Invalid report type: {self.report_type}.")
 
         return self.prediction_error[columns]
