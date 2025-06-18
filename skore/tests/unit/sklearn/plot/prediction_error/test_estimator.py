@@ -274,3 +274,21 @@ def test_legend(pyplot, regression_data):
 
     display.plot(kind="actual_vs_predicted")
     check_legend_position(display.ax_, loc="lower right", position="inside")
+
+
+def test_constructor(regression_data):
+    """Check that the dataframe has the correct structure at initialization."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.prediction_error()
+
+    index_columns = ["estimator_name", "split_index"]
+    for df in [display.prediction_error]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].isnull().all()
+        np.testing.assert_allclose(df["y_true"], y_test)
+        np.testing.assert_allclose(df["y_pred"], estimator.predict(X_test))
+        np.testing.assert_allclose(df["residuals"], y_test - estimator.predict(X_test))

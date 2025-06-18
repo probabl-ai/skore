@@ -265,3 +265,35 @@ def test_legend(
     display = report.metrics.roc()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
+
+
+def test_binary_classification_constructor(binary_classification_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.roc()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    for df in [display.roc_curve, display.roc_auc]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].nunique() == cv
+        assert df["label"].unique() == 1
+
+    assert len(display.roc_auc) == cv
+
+
+def test_multiclass_classification_constructor(multiclass_classification_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.roc()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    for df in [display.roc_curve, display.roc_auc]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].unique().tolist() == list(range(cv))
+        np.testing.assert_array_equal(df["label"].unique(), np.unique(y))
+
+    assert len(display.roc_auc) == len(np.unique(y)) * cv

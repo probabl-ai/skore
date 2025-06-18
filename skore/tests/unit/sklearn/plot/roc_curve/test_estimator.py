@@ -329,3 +329,39 @@ def test_legend(pyplot, binary_classification_data, multiclass_classification_da
     display = report.metrics.roc()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
+
+
+def test_binary_classification_constructor(binary_classification_data):
+    """Check that the dataframe has the correct structure at initialization."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    for df in [display.roc_curve, display.roc_auc]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].isnull().all()
+        assert df["label"].unique() == 1
+
+    assert len(display.roc_auc) == 1
+
+
+def test_multiclass_classification_constructor(multiclass_classification_data):
+    """Check that the dataframe has the correct structure at initialization."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.roc()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    for df in [display.roc_curve, display.roc_auc]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].isnull().all()
+        np.testing.assert_array_equal(df["label"].unique(), estimator.classes_)
+
+    assert len(display.roc_auc) == len(estimator.classes_)
