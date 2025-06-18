@@ -75,7 +75,7 @@ def _robust_hist(values, ax):
         ax.axvline(bins[-1], **line_params)
     ax.text(
         0.33,
-        1.05,
+        0.90,
         (f"{format_number(n_out)} outliers ({format_percent(n_out / len(values))})"),
         transform=ax.transAxes,
         ha="left",
@@ -382,7 +382,9 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             self._histogram(col, duration_unit)
         else:
             _, value_counts = top_k_value_counts(col, k=k)
-            self._value_counts(value_counts, n_rows=sbd.shape(col)[0], title=x)
+            self._value_counts(value_counts, n_rows=sbd.shape(col)[0])
+        self.ax_.set_xlabel(x)
+        self.ax_.set_ylabel("Total")
 
     def _histogram(self, col, duration_unit=None):
         """Histogram for a numeric column."""
@@ -401,7 +403,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             _rotate_ticklabels(self.ax_)
         _adjust_fig_size(self.fig_, self.ax_, 6.0, 3.0)
 
-    def _value_counts(self, value_counts, n_rows, title="", color=_ORANGE):
+    def _value_counts(self, value_counts, n_rows, color=_ORANGE):
         """Bar plot of the frequencies of the most frequent values in a column.
 
         Parameters
@@ -451,8 +453,6 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
 
         self.ax_.set_yticks(self.ax_.get_yticks())
         self.ax_.set_yticklabels(list(map(str, values)))
-        if title is not None:
-            self.ax_.set_title(title, fontsize=16)
 
         _adjust_fig_size(self.fig_, self.ax_, 7.0, 0.4 * len(values))
 
@@ -480,7 +480,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         if is_x_num and is_y_num:
             if scatterplot_kwargs is None:
                 scatterplot_kwargs = self._default_scatterplot_kwargs or {}
-            return self._scatterplot(
+            self._scatterplot(
                 x=x,
                 y=y,
                 hue=_truncate_top_k(hue, k),
@@ -495,7 +495,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 boxplot_kwargs = self._default_boxplot_kwargs or {}
             if stripplot_kwargs is None:
                 stripplot_kwargs = self._default_stripplot_kwargs or {}
-            return self._boxplot(
+            self._boxplot(
                 x=x,
                 y=_truncate_top_k(y, k),
                 hue=_truncate_top_k(hue, k),
@@ -509,9 +509,11 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 )
             if heatmap_kwargs is None:
                 heatmap_kwargs = self._default_heatmap_kwargs or {}
-            return self._heatmap(
+            self._heatmap(
                 **_aggregate_pairwise(x, y, hue, k, heatmap_kwargs=heatmap_kwargs),
             )
+        self.ax_.set_xlabel(sbd.name(x))
+        self.ax_.set_ylabel(sbd.name(y))
 
     def _scatterplot(self, *, x, y, hue, scatterplot_kwargs):
         scatterplot_kwargs_validated = _validate_style_kwargs(
@@ -531,7 +533,6 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 "dodge": False,
                 "size": 8,
                 "alpha": 0.5,
-                "palette": "viridis",
                 "zorder": 0,
             },
             stripplot_kwargs,
@@ -620,7 +621,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         )
         return self._heatmap(
             cramer_v_table,
-            title="Cramer's V",
+            title="Cramer's V Correlation",
             heatmap_kwargs=heatmap_kwargs,
         )
 
