@@ -283,7 +283,7 @@ def test_frame_multiclass_classification(
     assert df["label"].nunique() == len(estimator.classes_)
 
     if with_average_precision:
-        for (_), group in df.groupby(["label"]):
+        for (_), group in df.groupby(["label"], observed=True):
             assert group["average_precision"].nunique() == 1
 
 

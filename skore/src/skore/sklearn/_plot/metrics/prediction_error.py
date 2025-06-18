@@ -858,7 +858,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             - `split_index`: Cross-validation fold ID (when doing cross-validation)
             - `y_true`: True target values
             - `y_pred`: Predicted target values
-            - `residuals`: Difference between true and predicted values `(y_true - y_pred)`
+            - `residuals`: Difference between true and predicted values
+              `(y_true - y_pred)`
 
 
         Examples

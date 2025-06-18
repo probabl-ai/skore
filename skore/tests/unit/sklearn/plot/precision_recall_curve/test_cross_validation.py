@@ -164,7 +164,7 @@ def test_frame_binary_classification(
     assert df["split_index"].nunique() == report.cv_splitter.n_splits
 
     if with_average_precision:
-        for (_), group in df.groupby(["split_index"]):
+        for (_), group in df.groupby(["split_index"], observed=True):
             assert group["average_precision"].nunique() == 1
 
 

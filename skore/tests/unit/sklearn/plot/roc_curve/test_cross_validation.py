@@ -184,36 +184,36 @@ def test_multiple_roc_curve_kwargs_error(
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
 
 
-@pytest.mark.parametrize("with_auc", [False, True])
-def test_frame_binary_classification(binary_classification_data_no_split, with_auc):
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_binary_classification(binary_classification_data_no_split, with_roc_auc):
     """Test the frame method with binary classification data."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    df = report.metrics.roc().frame(with_auc=with_auc)
+    df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
     expected_index = ["split_index"]
     expected_columns = ["threshold", "fpr", "tpr"]
-    if with_auc:
+    if with_roc_auc:
         expected_columns.append("roc_auc")
 
     check_frame_structure(df, expected_index, expected_columns)
     assert df["split_index"].nunique() == report.cv_splitter.n_splits
 
-    if with_auc:
-        for (_), group in df.groupby(["split_index"]):
+    if with_roc_auc:
+        for (_), group in df.groupby(["split_index"], observed=True):
             assert group["roc_auc"].nunique() == 1
 
 
-@pytest.mark.parametrize("with_auc", [False, True])
+@pytest.mark.parametrize("with_roc_auc", [False, True])
 def test_frame_multiclass_classification(
-    multiclass_classification_data_no_split, with_auc
+    multiclass_classification_data_no_split, with_roc_auc
 ):
     """Test the frame method with multiclass classification data."""
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    df = report.metrics.roc().frame(with_auc=with_auc)
+    df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
     expected_index = ["split_index", "label"]
     expected_columns = ["threshold", "fpr", "tpr"]
-    if with_auc:
+    if with_roc_auc:
         expected_columns.append("roc_auc")
 
     check_frame_structure(df, expected_index, expected_columns)
@@ -222,8 +222,8 @@ def test_frame_multiclass_classification(
         report.estimator_reports_[0].estimator_.classes_
     )
 
-    if with_auc:
-        for (_, _), group in df.groupby(["split_index", "label"]):
+    if with_roc_auc:
+        for (_, _), group in df.groupby(["split_index", "label"], observed=True):
             assert group["roc_auc"].nunique() == 1
 
 

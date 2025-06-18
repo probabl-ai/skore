@@ -224,7 +224,7 @@ def test_frame_binary_classification(
     assert df["estimator_name"].nunique() == 2
 
     if with_average_precision:
-        for (_), group in df.groupby(["estimator_name"]):
+        for (_), group in df.groupby(["estimator_name"], observed=True):
             assert group["average_precision"].nunique() == 1
 
 
@@ -266,7 +266,7 @@ def test_frame_multiclass_classification(
     assert df["label"].nunique() == len(report.reports_[0].estimator_.classes_)
 
     if with_average_precision:
-        for (_, _), group in df.groupby(["estimator_name", "label"]):
+        for (_, _), group in df.groupby(["estimator_name", "label"], observed=True):
             assert group["average_precision"].nunique() == 1
 
 

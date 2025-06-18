@@ -933,7 +933,8 @@ class PrecisionRecallCurveDisplay(
             - `threshold`: Decision threshold
             - `precision`: Precision score at threshold
             - `recall`: Recall score at threshold
-            - `average_precision`: average precision (when `with_average_precision=True`)
+            - `average_precision`: average precision
+              (when `with_average_precision=True`)
 
         Examples
         --------
@@ -955,7 +956,7 @@ class PrecisionRecallCurveDisplay(
         # If done, the merge between the precision-recall curve and the average
         # precision is done without specifying the columns to merge on, hence done on
         # all columns that are present in both DataFrames.
-        # In this case, the common columns are all columns but not the one containing
+        # In this case, the common columns are all columns excepts the ones containing
         # the statistics.
 
         statistical_columns = ["threshold", "precision", "recall"]

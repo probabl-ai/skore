@@ -1017,7 +1017,7 @@ class RocCurveDisplay(
         >>> display = report.metrics.roc()
         >>> df = display.frame()
         """
-        df = self.roc_curve if not with_auc else self.roc_curve.merge(self.roc_auc)
+        df = self.roc_curve if not with_roc_auc else self.roc_curve.merge(self.roc_auc)
         # If done, the merge between the ROC curve and the ROC AUC is done without
         # specifying the columns to merge on, hence done on all columns that are
         # present in both DataFrames.
@@ -1025,7 +1025,7 @@ class RocCurveDisplay(
         # the statistics.
 
         statistical_columns = ["threshold", "fpr", "tpr"]
-        if with_auc:
+        if with_roc_auc:
             statistical_columns.append("roc_auc")
 
         if self.report_type == "estimator":

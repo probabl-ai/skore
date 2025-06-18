@@ -234,40 +234,44 @@ def test_multiclass_classification_kwargs(pyplot, multiclass_classification_repo
     assert display.ax_[0].spines["right"].get_visible()
 
 
-@pytest.mark.parametrize("with_auc", [False, True])
-def test_frame_binary_classification(binary_classification_report, with_auc):
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_binary_classification(binary_classification_report, with_roc_auc):
     """Test the frame method with binary classification comparison
     cross-validation data.
     """
     report = binary_classification_report
     display = report.metrics.roc()
-    df = display.frame(with_auc=with_auc)
+    df = display.frame(with_roc_auc=with_roc_auc)
 
     expected_index = ["estimator_name", "split_index"]
     expected_columns = ["threshold", "fpr", "tpr"]
-    if with_auc:
+    if with_roc_auc:
         expected_columns.append("roc_auc")
 
     check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
 
-    if with_auc:
-        for (_, _), group in df.groupby(["estimator_name", "split_index"]):
+    if with_roc_auc:
+        for (_, _), group in df.groupby(
+            ["estimator_name", "split_index"], observed=True
+        ):
             assert group["roc_auc"].nunique() == 1
 
 
-@pytest.mark.parametrize("with_auc", [False, True])
-def test_frame_multiclass_classification(multiclass_classification_report, with_auc):
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_multiclass_classification(
+    multiclass_classification_report, with_roc_auc
+):
     """Test the frame method with multiclass classification comparison
     cross-validation data.
     """
     report = multiclass_classification_report
     display = report.metrics.roc()
-    df = display.frame(with_auc=with_auc)
+    df = display.frame(with_roc_auc=with_roc_auc)
 
     expected_index = ["estimator_name", "split_index", "label"]
     expected_columns = ["threshold", "fpr", "tpr"]
-    if with_auc:
+    if with_roc_auc:
         expected_columns.append("roc_auc")
 
     check_frame_structure(df, expected_index, expected_columns)
@@ -276,6 +280,8 @@ def test_frame_multiclass_classification(multiclass_classification_report, with_
         report.reports_[0].estimator_reports_[0].estimator_.classes_
     )
 
-    if with_auc:
-        for (_, _, _), group in df.groupby(["estimator_name", "split_index", "label"]):
+    if with_roc_auc:
+        for (_, _, _), group in df.groupby(
+            ["estimator_name", "split_index", "label"], observed=True
+        ):
             assert group["roc_auc"].nunique() == 1

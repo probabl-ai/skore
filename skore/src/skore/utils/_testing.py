@@ -104,10 +104,12 @@ def check_frame_structure(df, expected_index, expected_data_columns):
     df : DataFrame
         The DataFrame to check.
     expected_index : list of str
-        The expected index column names (e.g., `estimator_name`, `split_index`, `label`).
+        The expected index column names (e.g., `estimator_name`, `split_index`,
+        `label`).
         These columns should be of categorical type.
     expected_data_columns : list of str
-        The expected data column names (e.g., `threshold`, `fpr`, `tpr`, `precision`, `recall`).
+        The expected data column names (e.g., `threshold`, `fpr`, `tpr`,
+        `precision`, `recall`).
         These columns should be of `np.float64` type.
     """
     assert isinstance(df, pd.DataFrame)

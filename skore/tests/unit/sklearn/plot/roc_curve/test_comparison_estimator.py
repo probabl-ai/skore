@@ -207,8 +207,8 @@ def test_multiple_roc_curve_kwargs_error(
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
 
 
-@pytest.mark.parametrize("with_auc", [False, True])
-def test_frame_binary_classification(binary_classification_data, with_auc):
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_binary_classification(binary_classification_data, with_roc_auc):
     """Test the frame method with binary classification comparison data."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
@@ -231,23 +231,23 @@ def test_frame_binary_classification(binary_classification_data, with_auc):
         }
     )
     display = report.metrics.roc()
-    df = display.frame(with_auc=with_auc)
+    df = display.frame(with_roc_auc=with_roc_auc)
 
     expected_index = ["estimator_name"]
     expected_columns = ["threshold", "fpr", "tpr"]
-    if with_auc:
+    if with_roc_auc:
         expected_columns.append("roc_auc")
 
     check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == 2
 
-    if with_auc:
-        for (_), group in df.groupby(["estimator_name"]):
+    if with_roc_auc:
+        for (_), group in df.groupby(["estimator_name"], observed=True):
             assert group["roc_auc"].nunique() == 1
 
 
-@pytest.mark.parametrize("with_auc", [False, True])
-def test_frame_multiclass_classification(multiclass_classification_data, with_auc):
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_multiclass_classification(multiclass_classification_data, with_roc_auc):
     """Test the frame method with multiclass classification comparison data."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
@@ -270,19 +270,19 @@ def test_frame_multiclass_classification(multiclass_classification_data, with_au
         }
     )
     display = report.metrics.roc()
-    df = display.frame(with_auc=with_auc)
+    df = display.frame(with_roc_auc=with_roc_auc)
 
     expected_index = ["estimator_name", "label"]
     expected_columns = ["threshold", "fpr", "tpr"]
-    if with_auc:
+    if with_roc_auc:
         expected_columns.append("roc_auc")
 
     check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == 2
     assert df["label"].nunique() == len(estimator.classes_)
 
-    if with_auc:
-        for (_, _), group in df.groupby(["estimator_name", "label"]):
+    if with_roc_auc:
+        for (_, _), group in df.groupby(["estimator_name", "label"], observed=True):
             assert group["roc_auc"].nunique() == 1
 
 
