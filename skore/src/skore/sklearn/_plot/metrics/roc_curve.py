@@ -997,13 +997,13 @@ class RocCurveDisplay(
             A DataFrame containing the ROC curve data with columns depending on the
             report type:
 
-            - estimator_name: Name of the estimator (when comparing estimators)
-            - split_index: Cross-validation fold ID (when doing cross-validation)
-            - label: Class label (for multiclass-classification)
-            - threshold: Decision threshold
-            - fpr: False Positive Rate
-            - tpr: True Positive Rate
-            - roc_auc: Area Under the Curve (if with_auc=True)
+            - `estimator_name`: Name of the estimator (when comparing estimators)
+            - `split_index`: Cross-validation fold ID (when doing cross-validation)
+            - `label`: Class label (for multiclass-classification)
+            - `threshold`: Decision threshold
+            - `fpr`: False Positive Rate
+            - `tpr`: True Positive Rate
+            - `roc_auc`: Area Under the Curve (when `with_roc_auc=True`)
 
         Examples
         --------
