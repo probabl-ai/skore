@@ -1,5 +1,4 @@
 import itertools
-import weakref
 from typing import Any
 
 import numpy as np
@@ -9,7 +8,6 @@ from matplotlib import pyplot as plt
 from skrub import _column_associations
 from skrub import _dataframe as sbd
 from skrub._reporting._html import to_html
-from skrub._reporting._serve import open_in_browser
 from skrub._reporting._summarize import summarize_dataframe
 from skrub._reporting._utils import (
     duration_to_numeric,
@@ -205,16 +203,16 @@ def _aggregate_pairwise(x, y, hue, k, heatmap_kwargs):
     return {"df": df, "heatmap_kwargs": heatmap_kwargs}
 
 
-def _require_x_col(x_col, kind):
-    if x_col is None:
-        raise ValueError(f"When {kind=!r}, ``x_col`` is mandatory.")
+def _require_x(x, kind):
+    if x is None:
+        raise ValueError(f"When {kind=!r}, ``x`` is mandatory.")
 
 
-def _check_no_args(x_col, y_col, c_col, kind):
+def _check_no_args(x, y, hue, kind):
     params = dict(
-        x_col=x_col,
-        y_col=y_col,
-        c_col=c_col,
+        x=x,
+        y=y,
+        hue=hue,
     )
     for k, v in params.items():
         if v is not None:
@@ -222,17 +220,17 @@ def _check_no_args(x_col, y_col, c_col, kind):
 
 
 class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
-    """Display a report of a dataset as an HTML table.
+    """Display reporting information about a given dataset.
 
     This display summarizes the dataset and provides a way to visualize
     the distribution of its columns.
 
     Parameters
     ----------
-    summary : pandas DataFrame
+    summary : dict
         The summary of the dataset, as returned by ``summarize_dataframe``.
 
-    df : pandas or polars DataFrame
+    dataset : DataFrame
         The original dataset that was summarized.
 
     column_filters : dict[str, Any] | None, default=None
@@ -245,25 +243,19 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
     _default_scatterplot_kwargs: dict[str, Any] | None = None
     _default_stripplot_kwargs: dict[str, Any] | None = None
 
-    def __init__(self, summary, df, column_filters=None):
+    def __init__(self, summary, dataset, column_filters=None):
         self.summary = summary
         self.column_filters = column_filters
-        self._df = weakref.ref(df)
-
-    @property
-    def df(self):
-        if (_df := self._df()) is None:
-            raise ValueError("The dataset is not accessible by the report anymore.")
-        return _df
+        self.dataset = dataset
 
     @classmethod
-    def _compute_data_for_display(cls, df, with_plots=True, title=None):
+    def _compute_data_for_display(cls, dataset, with_plots=True, title=None):
         summary = summarize_dataframe(
-            df,
+            dataset,
             with_plots=with_plots,
             title=title,
         )
-        return cls(summary, df)
+        return cls(summary, dataset)
 
     @StyleDisplayMixin.style_plot
     def plot(
@@ -295,17 +287,19 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             The name of the column to use for the color or hue axis of the plot. Only
             used when ``kind='dist'``.
 
-        kind : {'dist', 'cramer'}, default='dist'
+        kind : {'dist', 'corr'}, default='dist'
             The kind of plot drawn.
 
-            - If ``'dist'``, plot a distribution parametrized by ``x_col``, ``y_col``
-              and ``c_col``. When only ``x_col`` is defined, the distribution is 1d.
-              When ``y_col`` is also defined, the plot is the 2d. Finally, when the
-              color is set using ``c_col``, the distribution is 2d, with a color per
-              data-point based on ``c_col``. This mode handle both numeric and
+            - If ``'dist'``, plot a distribution parametrized by ``x``, ``y``
+              and ``hue``. When only ``x`` is defined, the distribution is 1d.
+              When ``y`` is also defined, the plot is the 2d. Finally, when the
+              color is set using ``hue``, the distribution is 2d, with a color per
+              data-point based on ``hue``. This mode handle both numeric and
               categorical columns.
-            - If ``'cramer'``, plot Cramer's V correlation among all columns. This
-              option doesn't take any ``x_col``, ``y_col`` or ``c_col`` argument.
+            - If ``'corr'``, plot
+              `Cramer's V <https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V>`_
+              correlation among all columns. This option doesn't take any ``x``,
+              ``y`` or ``hue`` argument.
 
         top_k_categories : int, default=20
             For categorical columns, the number of most frequent elements to display.
@@ -313,26 +307,26 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
 
         scatterplot_kwargs: dict, default=None
             Keyword arguments to be passed to seaborn's ``scatterplot`` for rendering
-            the distribution 2D plot, when both ``x_col`` and ``y_col`` are numeric.
+            the distribution 2D plot, when both ``x`` and ``y`` are numeric.
 
         stripplot_kwargs: dict, default=None
             Keyword arguments to be passed to seaborn's ``stripplot`` for rendering
-            the distribution 2D plot, when either ``x_col`` or ``y_col`` is numeric, and
+            the distribution 2D plot, when either ``x`` or ``y`` is numeric, and
             the other is categorical. This plot is drawn on top of the boxplot.
 
         boxplot_kwargs: dict, default=None
             Keyword arguments to be passed to seaborn's ``boxplot`` for rendering
-            the distribution 2D plot, when either ``x_col`` or ``y_col`` is numeric, and
+            the distribution 2D plot, when either ``x`` or ``y`` is numeric, and
             the other is categorical. This plot is drawn below the stripplot.
 
         heatmap_kwargs: dict, default=None
             Keyword arguments to be passed to seaborn's ``heatmap`` for rendering
             the Cramer's V correlation matrix, when ``kind='cramer'`` or when
-            ``kind='dist'`` and both ``x_col`` and ``y_col`` are categorical.
+            ``kind='dist'`` and both ``x`` and ``y`` are categorical.
         """
         self.fig_, self.ax_ = plt.subplots(dpi=150)
         if kind == "dist":
-            _require_x_col(x, kind)
+            _require_x(x, kind)
             self._plot_distribution(
                 x=x,
                 y=y,
@@ -378,7 +372,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             )
 
     def _plot_distribution_1d(self, *, x, k):
-        col = sbd.col(self.df, x)
+        col = sbd.col(self.dataset, x)
 
         duration_unit = None
         if sbd.is_duration(col):
@@ -475,9 +469,9 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         scatterplot_kwargs,
     ):
         x, y, hue = (
-            sbd.col(self.df, x),
-            sbd.col(self.df, y) if y is not None else None,
-            sbd.col(self.df, hue) if hue is not None else None,
+            sbd.col(self.dataset, x),
+            sbd.col(self.dataset, y) if y is not None else None,
+            sbd.col(self.dataset, hue) if hue is not None else None,
         )
         if y is None:
             y = hue
@@ -620,9 +614,9 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             heatmap_kwargs = self._default_heatmap_kwargs or {}
 
         cramer_v_table = pd.DataFrame(
-            _column_associations._cramer_v_matrix(self.df),
-            columns=self.df.columns,
-            index=self.df.columns,
+            _column_associations._cramer_v_matrix(self.dataset),
+            columns=self.dataset.columns,
+            index=self.dataset.columns,
         )
         return self._heatmap(
             cramer_v_table,
@@ -633,7 +627,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
     def frame(self):
         return self.summary
 
-    def html_snippet(self):
+    def _html_snippet(self):
         """Get the report as an HTML fragment that can be inserted in a page.
 
         Returns
@@ -647,26 +641,8 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             column_filters=self.column_filters,
         )
 
-    def html(self):
-        """Get the report as a full HTML page.
-
-        Returns
-        -------
-        str :
-            The HTML page.
-        """
-        return to_html(
-            self.summary,
-            standalone=True,
-            column_filters=self.column_filters,
-        )
-
     def _html_repr(self, include=None, exclude=None):
-        return self.html_snippet()
+        return self._html_snippet()
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: use .open() to display>"
-
-    def open(self):
-        """Open the HTML report in a web browser."""
-        open_in_browser(self.html())
