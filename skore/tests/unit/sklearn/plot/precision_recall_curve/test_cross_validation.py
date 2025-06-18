@@ -161,7 +161,7 @@ def test_frame_binary_classification(
         expected_columns.append("average_precision")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["split_index"].nunique() == report.cv_splitter.n_splits
+    assert df["split_index"].nunique() == cv
 
     if with_average_precision:
         for (_), group in df.groupby(["split_index"], observed=True):
