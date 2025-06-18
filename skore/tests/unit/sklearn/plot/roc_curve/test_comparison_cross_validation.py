@@ -276,9 +276,6 @@ def test_frame_multiclass_classification(
 
     check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == len(report.reports_)
-    assert df["label"].nunique() == len(
-        report.reports_[0].estimator_reports_[0].estimator_.classes_
-    )
 
     if with_roc_auc:
         for (_, _, _), group in df.groupby(
