@@ -1,4 +1,5 @@
 import itertools
+import json
 from typing import Any
 
 import numpy as np
@@ -10,6 +11,7 @@ from skrub import _dataframe as sbd
 from skrub._reporting._html import to_html
 from skrub._reporting._summarize import summarize_dataframe
 from skrub._reporting._utils import (
+    JSONEncoder,
     duration_to_numeric,
     ellide_string,
     format_number,
@@ -647,3 +649,8 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: use .open() to display>"
+
+    def _json(self):
+        to_remove = ["dataframe"]
+        data = {k: v for k, v in self.summary.items() if k not in to_remove}
+        return json.dumps(data, cls=JSONEncoder)

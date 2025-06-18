@@ -1,3 +1,5 @@
+import json
+
 import matplotlib as mpl
 import polars as pl
 import pytest
@@ -67,6 +69,18 @@ def test_display(pyplot, skrub_data):
     assert (
         summary_1["n_columns"] == summary_2["n_columns"] + 1
     )  # +1 for the target column
+
+    assert list(json.loads(display._json())) == [
+        "dataframe_module",
+        "n_rows",
+        "n_columns",
+        "columns",
+        "dataframe_is_empty",
+        "plots_skipped",
+        "sample_table",
+        "n_constant_columns",
+        "top_associations",
+    ]
 
 
 @pytest.mark.parametrize(
