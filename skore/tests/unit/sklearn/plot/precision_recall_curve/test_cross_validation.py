@@ -185,9 +185,7 @@ def test_frame_multiclass_classification(
 
     check_frame_structure(df, expected_index, expected_columns)
     assert df["split_index"].nunique() == cv
-    assert df["label"].nunique() == len(
-        report.estimator_reports_[0].estimator_.classes_
-    )
+    assert df["label"].nunique() == len(np.unique(y))
 
     if with_average_precision:
         for (_, _), group in df.groupby(["split_index", "label"], observed=True):
