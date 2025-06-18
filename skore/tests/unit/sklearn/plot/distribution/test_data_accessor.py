@@ -23,10 +23,10 @@ except ImportError:
 @pytest.fixture
 def skrub_data(request):
     data = fetch_employee_salaries()
+    split = train_test_split(data.X, data.y, random_state=0)
     if request.param == "polars":
-        data.X = pl.from_pandas(data.X)
-        data.y = pl.from_pandas(data.y)
-    return train_test_split(data.X, data.y, random_state=0)
+        split = tuple(pl.from_pandas(frame) for frame in split)
+    return split
 
 
 @pytest.mark.parametrize(
