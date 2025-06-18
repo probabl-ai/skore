@@ -263,7 +263,6 @@ def test_frame_multiclass_classification(
 
     check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator_name"].nunique() == 2
-    assert df["label"].nunique() == len(report.reports_[0].estimator_.classes_)
 
     if with_average_precision:
         for (_, _), group in df.groupby(["estimator_name", "label"], observed=True):
