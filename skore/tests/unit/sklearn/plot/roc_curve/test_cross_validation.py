@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from skore import CrossValidationReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_frame_structure, check_legend_position
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -35,8 +35,8 @@ def test_binary_classification(
         == [display.pos_label]
     )
     assert (
-        len(display.roc_curve["split_index"].unique())
-        == len(display.roc_auc["split_index"].unique())
+        display.roc_curve["split_index"].nunique()
+        == display.roc_auc["split_index"].nunique()
         == cv
     )
 
@@ -97,8 +97,8 @@ def test_multiclass_classification(
         == list(class_labels)
     )
     assert (
-        len(display.roc_curve["split_index"].unique())
-        == len(display.roc_auc["split_index"].unique())
+        display.roc_curve["split_index"].nunique()
+        == display.roc_auc["split_index"].nunique()
         == cv
     )
 
@@ -182,6 +182,47 @@ def test_multiple_roc_curve_kwargs_error(
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
+
+
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_binary_classification(binary_classification_data_no_split, with_roc_auc):
+    """Test the frame method with binary classification data."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
+    expected_index = ["split_index"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_roc_auc:
+        expected_columns.append("roc_auc")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == cv
+
+    if with_roc_auc:
+        for (_), group in df.groupby(["split_index"], observed=True):
+            assert group["roc_auc"].nunique() == 1
+
+
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_multiclass_classification(
+    multiclass_classification_data_no_split, with_roc_auc
+):
+    """Test the frame method with multiclass classification data."""
+    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
+    expected_index = ["split_index", "label"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_roc_auc:
+        expected_columns.append("roc_auc")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == cv
+    assert df["label"].nunique() == len(np.unique(y))
+
+    if with_roc_auc:
+        for (_, _), group in df.groupby(["split_index", "label"], observed=True):
+            assert group["roc_auc"].nunique() == 1
 
 
 def test_legend(

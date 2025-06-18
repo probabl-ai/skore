@@ -2,10 +2,11 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 def test_regression(pyplot, regression_data):
@@ -185,6 +186,38 @@ def test_wrong_kwargs(pyplot, regression_data, data_points_kwargs):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(data_points_kwargs=data_points_kwargs)
+
+
+def test_frame(regression_data):
+    """Test the frame method with comparison data."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    estimator_2 = clone(estimator).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.prediction_error()
+    df = display.frame()
+
+    expected_index = ["estimator_name"]
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == 2
 
 
 def test_legend(pyplot, regression_data):

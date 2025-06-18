@@ -3,6 +3,7 @@ import copy
 from typing import Literal
 
 import numpy as np
+import pandas as pd
 from matplotlib.legend import Legend
 from sklearn.base import BaseEstimator, ClassifierMixin
 
@@ -93,3 +94,30 @@ def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"
         assert 0 <= bbox.x0 <= 1
     else:
         assert bbox.x0 >= 1
+
+
+def check_frame_structure(df, expected_index, expected_data_columns):
+    """Check the structure of ROC, precision-recall, and prediction error DataFrames.
+
+    Parameters
+    ----------
+    df : DataFrame
+        The DataFrame to check.
+    expected_index : list of str
+        The expected index column names (e.g., `estimator_name`, `split_index`,
+        `label`).
+        These columns should be of categorical type.
+    expected_data_columns : list of str
+        The expected data column names (e.g., `threshold`, `fpr`, `tpr`,
+        `precision`, `recall`).
+        These columns should be of `np.float64` type.
+    """
+    assert isinstance(df, pd.DataFrame)
+    assert sorted(df.columns.tolist()) == sorted(expected_index + expected_data_columns)
+
+    for col in df.columns:
+        if col in expected_index:
+            assert df[col].dtype.name == "category"
+        else:
+            assert col in expected_data_columns
+            assert df[col].dtype == np.float64
