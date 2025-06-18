@@ -190,7 +190,7 @@ def test_frame_multiclass_classification(
     )
 
     if with_average_precision:
-        for (_, _), group in df.groupby(["split_index", "label"]):
+        for (_, _), group in df.groupby(["split_index", "label"], observed=True):
             assert group["average_precision"].nunique() == 1
 
 
