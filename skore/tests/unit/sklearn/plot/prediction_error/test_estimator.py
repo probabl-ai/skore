@@ -5,7 +5,7 @@ import pytest
 from skore import EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.mark.parametrize("subsample", [None, 1_000])
@@ -244,6 +244,20 @@ def test_wrong_report_type(pyplot, regression_data):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot()
+
+
+def test_frame(regression_data):
+    """Test the frame method with regression data."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    df = report.metrics.prediction_error().frame()
+
+    expected_index = []
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
 
 
 def test_legend(pyplot, regression_data):

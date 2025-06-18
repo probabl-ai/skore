@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore.sklearn._plot.metrics.roc_curve import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_frame_structure, check_legend_position
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -284,3 +284,53 @@ def test_multiclass_classification_constructor(multiclass_classification_data_no
         np.testing.assert_array_equal(df["label"].unique(), classes)
 
     assert len(display.roc_auc) == len(classes) * cv + len(classes) * (cv + 1)
+
+
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_binary_classification(binary_classification_report, with_roc_auc):
+    """Test the frame method with binary classification comparison
+    cross-validation data.
+    """
+    report = binary_classification_report
+    display = report.metrics.roc()
+    df = display.frame(with_roc_auc=with_roc_auc)
+
+    expected_index = ["estimator_name", "split_index"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_roc_auc:
+        expected_columns.append("roc_auc")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == len(report.reports_)
+
+    if with_roc_auc:
+        for (_, _), group in df.groupby(
+            ["estimator_name", "split_index"], observed=True
+        ):
+            assert group["roc_auc"].nunique() == 1
+
+
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_multiclass_classification(
+    multiclass_classification_report, with_roc_auc
+):
+    """Test the frame method with multiclass classification comparison
+    cross-validation data.
+    """
+    report = multiclass_classification_report
+    display = report.metrics.roc()
+    df = display.frame(with_roc_auc=with_roc_auc)
+
+    expected_index = ["estimator_name", "split_index", "label"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_roc_auc:
+        expected_columns.append("roc_auc")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == len(report.reports_)
+
+    if with_roc_auc:
+        for (_, _, _), group in df.groupby(
+            ["estimator_name", "split_index", "label"], observed=True
+        ):
+            assert group["roc_auc"].nunique() == 1

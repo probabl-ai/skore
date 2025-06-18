@@ -57,6 +57,7 @@ class PrecisionRecallCurveDisplay(
     ----------
     precision_recall : DataFrame
         The precision-recall curve data to display. The columns are
+
         - "estimator_name"
         - "split_index" (may be null)
         - "label"
@@ -66,6 +67,7 @@ class PrecisionRecallCurveDisplay(
 
     average_precision : DataFrame
         The average precision data to display. The columns are
+
         - "estimator_name"
         - "split_index" (may be null)
         - "label"
@@ -910,3 +912,68 @@ class PrecisionRecallCurveDisplay(
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self, with_average_precision: bool = False) -> DataFrame:
+        """Get the data used to create the precision-recall curve plot.
+
+        Parameters
+        ----------
+        with_average_precision : bool, default=False
+            Whether to include the average precision column in the returned DataFrame.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the precision-recall curve data with columns
+            depending on the report type:
+
+            - `estimator_name`: Name of the estimator (when comparing estimators)
+            - `split_index`: Cross-validation fold ID (when doing cross-validation)
+            - `label`: Class label (for multiclass-classification)
+            - `threshold`: Decision threshold
+            - `precision`: Precision score at threshold
+            - `recall`: Recall score at threshold
+            - `average_precision`: average precision
+              (when `with_average_precision=True`)
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split, EstimatorReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> clf = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(clf, **split_data)
+        >>> display = report.metrics.precision_recall()
+        >>> df = display.frame()
+        """
+        if with_average_precision:
+            # The merge between the precision-recall curve and the average precision is
+            # done without specifying the columns to merge on, hence done on all column
+            # that are present in both DataFrames.
+            # In this case, the common columns are all columns but not the ones
+            # containing the statistics.
+            df = self.precision_recall.merge(self.average_precision)
+        else:
+            df = self.precision_recall
+
+        statistical_columns = ["threshold", "precision", "recall"]
+        if with_average_precision:
+            statistical_columns.append("average_precision")
+
+        if self.report_type == "estimator":
+            indexing_columns = []
+        elif self.report_type == "cross-validation":
+            indexing_columns = ["split_index"]
+        elif self.report_type == "comparison-estimator":
+            indexing_columns = ["estimator_name"]
+        else:  # self.report_type == "comparison-cross-validation"
+            indexing_columns = ["estimator_name", "split_index"]
+
+        if self.ml_task == "binary-classification":
+            columns = indexing_columns + statistical_columns
+        else:
+            columns = indexing_columns + ["label"] + statistical_columns
+
+        return df[columns]

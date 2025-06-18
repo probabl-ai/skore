@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_frame_structure, check_legend_position
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -250,6 +250,46 @@ def test_roc_curve_kwargs_multiclass_classification(
     display.plot(despine=False)
     assert display.ax_.spines["top"].get_visible()
     assert display.ax_.spines["right"].get_visible()
+
+
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_binary_classification(binary_classification_data, with_roc_auc):
+    """Test the frame method with binary classification data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
+    expected_index = []
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_roc_auc:
+        expected_columns.append("roc_auc")
+
+    check_frame_structure(df, expected_index, expected_columns)
+
+    if with_roc_auc:
+        assert df["roc_auc"].nunique() == 1
+
+
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_multiclass_classification(multiclass_classification_data, with_roc_auc):
+    """Test the frame method with multiclass classification data."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
+    expected_index = ["label"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_roc_auc:
+        expected_columns.append("roc_auc")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["label"].nunique() == len(estimator.classes_)
+
+    if with_roc_auc:
+        for (_), group in df.groupby(["label"], observed=True):
+            assert group["roc_auc"].nunique() == 1
 
 
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):

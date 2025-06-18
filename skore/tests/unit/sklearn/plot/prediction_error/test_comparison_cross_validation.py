@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.fixture
@@ -151,3 +151,15 @@ def test_constructor(regression_data_no_split):
             "split_index"
         ].unique().tolist() == list(range(cv + 1))
         assert df["estimator_name"].unique().tolist() == report.report_names_
+
+
+def test_frame(report):
+    """Test the frame method with regression comparison cross-validation data."""
+    display = report.metrics.prediction_error()
+    df = display.frame()
+
+    expected_index = ["estimator_name", "split_index"]
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == len(report.reports_)
