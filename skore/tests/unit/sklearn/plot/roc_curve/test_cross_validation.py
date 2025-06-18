@@ -196,7 +196,7 @@ def test_frame_binary_classification(binary_classification_data_no_split, with_r
         expected_columns.append("roc_auc")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["split_index"].nunique() == report.cv_splitter.n_splits
+    assert df["split_index"].nunique() == cv
 
     if with_roc_auc:
         for (_), group in df.groupby(["split_index"], observed=True):
