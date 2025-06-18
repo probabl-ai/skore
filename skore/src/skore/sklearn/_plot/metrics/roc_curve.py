@@ -983,7 +983,7 @@ class RocCurveDisplay(
             report_type=report_type,
         )
 
-    def frame(self, with_auc: bool = False) -> DataFrame:
+    def frame(self, with_roc_auc: bool = False) -> DataFrame:
         """Get the data used to create the ROC curve plot.
 
         Parameters
