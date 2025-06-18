@@ -58,7 +58,7 @@ def test_distribution_plot(pyplot, skrub_data):
         strict=False,
     ):
         display = report.data.analyze(source_dataset=source_dataset, with_y=True)
-        assert sbd.shape(display.df)[0] == n_samples
+        assert sbd.shape(display.dataset)[0] == n_samples
 
     display = report.data.analyze(source_dataset="train", with_y=True)
     assert isinstance(display, TableReportDisplay)
