@@ -988,7 +988,7 @@ class RocCurveDisplay(
 
         Parameters
         ----------
-        with_auc : bool, default=False
+        with_roc_auc : bool, default=False
             Whether to include ROC AUC scores in the output DataFrame.
 
         Returns
