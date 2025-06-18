@@ -943,8 +943,8 @@ class PrecisionRecallCurveDisplay(
         >>> from skore import train_test_split, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> clf = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(clf, **split_data)
         >>> display = report.metrics.precision_recall()
         >>> df = display.frame()
         """
@@ -952,7 +952,7 @@ class PrecisionRecallCurveDisplay(
             # The merge between the precision-recall curve and the average precision is
             # done without specifying the columns to merge on, hence done on all column
             # that are present in both DataFrames.
-            # In this case, the common columns are all columns but not the one
+            # In this case, the common columns are all columns but not the ones
             # containing the statistics.
             df = self.precision_recall.merge(self.average_precision)
         else:
