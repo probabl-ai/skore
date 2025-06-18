@@ -184,7 +184,7 @@ def test_frame_multiclass_classification(
         expected_columns.append("average_precision")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["split_index"].nunique() == report.cv_splitter.n_splits
+    assert df["split_index"].nunique() == cv
     assert df["label"].nunique() == len(
         report.estimator_reports_[0].estimator_.classes_
     )
