@@ -108,7 +108,7 @@ def check_frame_structure(df, expected_index, expected_data_columns):
         These columns should be of categorical type.
     expected_data_columns : list of str
         The expected data column names (e.g., `threshold`, `fpr`, `tpr`, `precision`, `recall`).
-        These columns should be of float64 type.
+        These columns should be of `np.float64` type.
     """
     assert isinstance(df, pd.DataFrame)
     assert sorted(df.columns.tolist()) == sorted(expected_index + expected_data_columns)
