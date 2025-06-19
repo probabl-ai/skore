@@ -30,7 +30,7 @@ pipeline
 
 # %%
 # We bring the dataset and pipeline into the report, and use ``.data.analyze()`` to get
-# our insights. ``dataset=all`` means analyzing both train and test, and ``with_y=True``
+# our insights. ``dataset="all"`` means analyzing both train and test, and ``with_y=True``
 # include the target in the analysis.
 #
 # The direct representation of the display is a :class:`skrub.TableReport`
