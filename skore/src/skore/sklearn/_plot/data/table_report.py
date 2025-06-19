@@ -256,6 +256,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             dataset,
             with_plots=with_plots,
             title=title,
+            verbose=0,
         )
         return cls(summary, dataset)
 
