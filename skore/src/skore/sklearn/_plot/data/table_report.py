@@ -323,7 +323,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
 
         heatmap_kwargs: dict, default=None
             Keyword arguments to be passed to seaborn's ``heatmap`` for rendering
-            the Cramer's V correlation matrix, when ``kind='cramer'`` or when
+            the Cramer's V correlation matrix, when ``kind='corr'`` or when
             ``kind='dist'`` and both ``x`` and ``y`` are categorical.
         """
         self.fig_, self.ax_ = plt.subplots(dpi=150)
@@ -340,12 +340,12 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 heatmap_kwargs=heatmap_kwargs,
             )
 
-        elif kind == "cramer":
+        elif kind == "corr":
             _check_no_args(x, y, hue, kind)
             self._plot_cramer(heatmap_kwargs=heatmap_kwargs)
 
         else:
-            raise ValueError(f"'kind' options are 'dist', 'cramer', got {kind!r}.")
+            raise ValueError(f"'kind' options are 'dist', 'corr', got {kind!r}.")
 
     def _plot_distribution(
         self,

@@ -174,8 +174,6 @@ def test_distribution_plot(pyplot, skrub_data):
     assert display.ax_.get_xticklabels()[0].get_text() == "Child Welfare Services"
 
     # Test Cramer's V correlation plot
-    display.plot(
-        kind="cramer", heatmap_kwargs={"xticklabels": False, "cmap": "viridis"}
-    )
+    display.plot(kind="corr", heatmap_kwargs={"xticklabels": False, "cmap": "viridis"})
     assert display.ax_.get_title() == "Cramer's V Correlation"
     assert display.ax_.get_xticklabels() == []

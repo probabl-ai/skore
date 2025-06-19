@@ -93,5 +93,5 @@ report.data.analyze(source_dataset="all", with_y=True, subsample=1000).plot(
 # whose interpretation is close to the Pearson's correlation:
 #
 # Let's also tweak the keyword arguments of the heatmap to change the color map.
-display.plot(kind="cramer", heatmap_kwargs={"cmap": "viridis"})
+display.plot(kind="corr", heatmap_kwargs={"cmap": "viridis"})
 # %%
