@@ -5,11 +5,11 @@ from operator import attrgetter
 from typing import Any, Literal, cast
 
 import joblib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
 from sklearn import metrics
-from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
@@ -1934,7 +1934,6 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        sample_weight: ArrayLike | None = None,
         display_labels: list | None = None,
         include_values: bool = True,
         normalize: Literal["true", "pred", "all"] | None = None,
@@ -1961,9 +1960,6 @@ class _MetricsAccessor(
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
-
-        sample_weight : array-like of shape (n_samples,), default=None
-            Sample weights.
 
         display_labels : list of str, default=None
             Display labels for plot. If None, display labels are set from 0 to
@@ -2007,17 +2003,40 @@ class _MetricsAccessor(
             pos_label=None,
         )
 
-        cm = sklearn_confusion_matrix(
-            y_true=y, y_pred=y_pred, sample_weight=sample_weight
-        )
-
         if display_labels is None:
             display_labels = np.unique(np.concatenate([y, y_pred]))
 
-        return ConfusionMatrixDisplay(
-            confusion_matrix=cm,
-            display_labels=display_labels,
-            include_values=include_values,
-            normalize=normalize,
-            values_format=values_format,
+        display = ConfusionMatrixDisplay._compute_data_for_display(
+            y_true=[
+                YPlotData(
+                    estimator_name=self._parent.estimator_name_,
+                    split_index=None,
+                    y=y,
+                )
+            ],
+            y_pred=[
+                YPlotData(
+                    estimator_name=self._parent.estimator_name_,
+                    split_index=None,
+                    y=y_pred,
+                )
+            ],
+            report_type="estimator",
+            estimators=[self._parent.estimator_],
+            ml_task=self._parent._ml_task,
+            data_source=data_source,
         )
+
+        display.display_labels = display_labels
+
+        n_classes = display.confusion_matrix.shape[0]
+        if display_labels is None or len(display_labels) == n_classes:
+            display.plot(
+                display_labels=display_labels,
+                include_values=include_values,
+                normalize=normalize,
+                values_format=values_format,
+            )
+            plt.close(display.figure_)
+
+        return display
