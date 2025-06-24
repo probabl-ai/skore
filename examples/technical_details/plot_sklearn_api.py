@@ -7,16 +7,8 @@ Using skore for models compatible with the scikit-learn API
 """
 
 # %%
-if False:
-    from sklearn.datasets import make_classification
-
-    X, y = make_classification(
-        n_samples=500,
-        n_classes=2,
-        class_sep=0.3,
-        n_clusters_per_class=1,
-        random_state=42,
-    )
+# Loading the data
+# ================
 
 # %%
 from sklearn.datasets import load_breast_cancer
@@ -32,35 +24,97 @@ from skore import train_test_split
 split_data = train_test_split(X, y, random_state=42, as_dict=True)
 
 # %%
-from tabpfn import TabPFNClassifier
-from tabicl import TabICLClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import make_pipeline
-from skrub import tabular_learner
+# Tree-based models
+# =================
 
-estimators = [
-    make_pipeline(StandardScaler(), LogisticRegression(max_iter=10_000)),
-    tabular_learner("classification"),
-    TabICLClassifier(),
-    TabPFNClassifier(),
-]
+# %%
+# XGBoost
+# -------
 
 # %%
 from skore import EstimatorReport
+from xgboost import XGBClassifier
 
-estimator_reports = [
-    EstimatorReport(est, pos_label=1, **split_data) for est in estimators
-]
+xgb = XGBClassifier(n_estimators=100, random_state=42)
 
-# %%
-from skore import ComparisonReport
-
-comparator = ComparisonReport(estimator_reports)
+xgb_report = EstimatorReport(xgb, pos_label=1, **split_data)
+xgb_report.metrics.summarize().frame()
 
 # %%
-comparator.metrics.summarize().frame()
+# Neural networks
+# ===============
 
 # %%
-comparator.metrics.roc().plot()
+# Pytorch using skorch
+# --------------------
+
 # %%
+from torch import nn
+
+
+class MyNeuralNet(nn.Module):
+    def __init__(self, input_dim=30, h1=64, h2=32, output_dim=2):
+        super(MyNeuralNet, self).__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(input_dim, h1),
+            nn.ReLU(),
+            nn.Linear(h1, h2),
+            nn.ReLU(),
+            nn.Linear(h2, output_dim),
+        )
+
+    def forward(self, X):
+        return self.layers(X)
+
+
+# %%
+import torch
+from skorch import NeuralNetClassifier
+
+torch.manual_seed(42)
+
+nnet = NeuralNetClassifier(
+    MyNeuralNet,
+    max_epochs=10,
+    lr=1e-2,
+    criterion=torch.nn.CrossEntropyLoss,
+    classes=list(range(2)),
+)
+
+# %%
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+
+skorch_nn = make_pipeline(StandardScaler(), nnet)
+skorch_nn
+
+# %%
+if False:
+    skorch_nn_report = EstimatorReport(skorch_nn, pos_label=1, **split_data)
+    skorch_nn_report.metrics.summarize().frame()
+
+# %%
+# Tabular foundation models
+# =========================
+
+# %%
+# TabICL
+# ------
+
+# %%
+from tabicl import TabICLClassifier
+
+tabicl = TabICLClassifier()
+tabicl_report = EstimatorReport(tabicl, pos_label=1, **split_data)
+tabicl_report.metrics.summarize().frame()
+
+# %%
+# TabPFN
+# ------
+
+# %%
+from tabpfn import TabPFNClassifier
+
+tabpfn = TabPFNClassifier()
+tabpfn_report = EstimatorReport(tabpfn, pos_label=1, **split_data)
+tabpfn_report.metrics.summarize().frame()
