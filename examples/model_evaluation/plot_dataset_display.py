@@ -30,8 +30,8 @@ pipeline
 
 # %%
 # We bring the dataset and pipeline into the report, and use ``.data.analyze()`` to get
-# our insights. ``dataset="all"`` means analyzing both train and test, and ``with_y=True``
-# include the target in the analysis.
+# our insights. ``dataset="all"`` means analyzing both train and test sets, and ``with_y=True``
+# includes the target in the analysis.
 #
 # The direct representation of the display is a :class:`skrub.TableReport`
 # of the input dataset.
@@ -48,7 +48,7 @@ display = report.data.analyze(data_source="all", with_y=True)
 display
 
 # %%
-# As usual, we can easy glance at the options using ``.help``:
+# As usual, we can easily glance at the options using ``.help``:
 display.help()
 
 # %%
@@ -63,8 +63,8 @@ display.plot(x="gender")
 display.plot(x="gender", hue="current_annual_salary")
 
 # %%
-# Interestingly, we see that the median (the black vertical bar) is slightly higher for
-# males. We can also see there is an outlier at $300,000.
+# Interestingly, we observe that the median (the black vertical bar) is slightly higher for
+# males. We can also observe that there is an outlier at $300,000.
 #
 # Let's now add a third dimension to this plot by visualizing the hired year as the
 # y-axis (which becomes the x-axis since the plot is horizontal):
@@ -72,8 +72,8 @@ display.plot(x="gender", y="year_first_hired", hue="current_annual_salary")
 
 # %%
 # The year has replaced the salary as the x-axis, and the salary is still represented by
-# the color. This plot is getting a bit hard to read due to the large number of data
-# points, we can subsample it slightly to see a pattern emerges:
+# the color. As this plot is getting a bit hard to read due to the large number of data
+# points, we can slightly subsample it to see that a pattern emerges:
 report.data.analyze(data_source="all", with_y=True, subsample=1000).plot(
     x="gender",
     y="year_first_hired",
@@ -82,15 +82,15 @@ report.data.analyze(data_source="all", with_y=True, subsample=1000).plot(
 # %%
 # As expected, newcomers (at the right of the plot) are paid significantly less than
 # more senior employees (at the left of the plot). Let's now switch gears and observe
-# the correlation among our columns:
+# the correlation among our columns.
 #
 # Since Pearson's correlation is only defined between numerical columns and our
 # dataset contains mostly categorical columns, we're missing associations between
 # most of the columns.
 #
-# To get a broader view of our columns correlations, we can use another metric instead,
+# To get a broader view of our columns' correlations, we can use another metric instead,
 # the `Cramer's V correlation <https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V>`_,
-# whose interpretation is close to the Pearson's correlation:
+# whose interpretation is close to the Pearson's correlation.
 #
 # Let's also tweak the keyword arguments of the heatmap to change the color map.
 display.plot(kind="corr", heatmap_kwargs={"cmap": "viridis"})
