@@ -118,3 +118,30 @@ from tabpfn import TabPFNClassifier
 tabpfn = TabPFNClassifier()
 tabpfn_report = EstimatorReport(tabpfn, pos_label=1, **split_data)
 tabpfn_report.metrics.summarize().frame()
+
+# %%
+# Time series models
+# ==================
+
+# %%
+# tslearn
+# -------
+
+# %%
+if False:
+    from tslearn.neighbors import KNeighborsTimeSeriesClassifier
+
+    ts_model = KNeighborsTimeSeriesClassifier(n_neighbors=1)
+    ts_model_report = EstimatorReport(ts_model, pos_label=1, **split_data)
+    ts_model_report.metrics.summarize().frame()
+
+# %%
+# aeon
+# ----
+
+# %%
+from aeon.classification.distance_based import KNeighborsTimeSeriesClassifier
+
+aeon_model = KNeighborsTimeSeriesClassifier(n_neighbors=1)
+aeon_model_report = EstimatorReport(aeon_model, pos_label=1, **split_data)
+aeon_model_report.metrics.summarize().frame()
