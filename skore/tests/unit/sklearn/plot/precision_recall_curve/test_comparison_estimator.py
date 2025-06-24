@@ -1,10 +1,11 @@
 import matplotlib as mpl
+import numpy as np
 import pytest
 from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_frame_structure, check_legend_position
 from skore.utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
@@ -187,6 +188,88 @@ def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
         display.plot(pr_curve_kwargs=pr_curve_kwargs)
 
 
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_binary_classification(
+    binary_classification_data, with_average_precision
+):
+    """Test the frame method with binary classification comparison data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.precision_recall()
+    df = display.frame(with_average_precision=with_average_precision)
+
+    expected_index = ["estimator_name"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == 2
+
+    if with_average_precision:
+        for (_), group in df.groupby(["estimator_name"], observed=True):
+            assert group["average_precision"].nunique() == 1
+
+
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_multiclass_classification(
+    multiclass_classification_data, with_average_precision
+):
+    """Test the frame method with multiclass classification comparison data."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.precision_recall()
+    df = display.frame(with_average_precision=with_average_precision)
+
+    expected_index = ["estimator_name", "label"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == 2
+
+    if with_average_precision:
+        for (_, _), group in df.groupby(["estimator_name", "label"], observed=True):
+            assert group["average_precision"].nunique() == 1
+
+
 def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
     """Check the rendering of the legend for with a `ComparisonReport`."""
 
@@ -219,3 +302,51 @@ def test_legend(pyplot, binary_classification_data, multiclass_classification_da
     display = report.metrics.precision_recall()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
+
+
+def test_binary_classification_constructor(binary_classification_data):
+    """Check that the dataframe has the correct structure at initialization."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.precision_recall()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    for df in [display.precision_recall, display.average_precision]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique().tolist() == report.report_names_
+        assert df["split_index"].isnull().all()
+        assert df["label"].unique() == 1
+
+    assert len(display.average_precision) == 2
+
+
+def test_multiclass_classification_constructor(multiclass_classification_data):
+    """Check that the dataframe has the correct structure at initialization."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.precision_recall()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    for df in [display.precision_recall, display.average_precision]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique().tolist() == report.report_names_
+        assert df["split_index"].isnull().all()
+        np.testing.assert_array_equal(df["label"].unique(), np.unique(y_train))
+
+    assert len(display.average_precision) == len(np.unique(y_train)) * 2

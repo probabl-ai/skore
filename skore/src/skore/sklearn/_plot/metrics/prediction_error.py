@@ -39,6 +39,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     ----------
     prediction_error : DataFrame
         The prediction error data to display. The columns are
+
         - "estimator_name"
         - "split_index" (may be null)
         - "y_true"
@@ -843,3 +844,44 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self) -> DataFrame:
+        """Get the data used to create the prediction error plot.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the prediction error data with columns depending on
+            the report type:
+
+            - `estimator_name`: Name of the estimator (when comparing estimators)
+            - `split_index`: Cross-validation fold ID (when doing cross-validation)
+            - `y_true`: True target values
+            - `y_pred`: Predicted target values
+            - `residuals`: Difference between true and predicted values
+              `(y_true - y_pred)`
+
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import train_test_split, EstimatorReport
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> reg = Ridge()
+        >>> report = EstimatorReport(reg, **split_data)
+        >>> display = report.metrics.prediction_error()
+        >>> df = display.frame()
+        """
+        statistical_columns = ["y_true", "y_pred", "residuals"]
+        if self.report_type == "estimator":
+            columns = statistical_columns
+        elif self.report_type == "cross-validation":
+            columns = ["split_index"] + statistical_columns
+        elif self.report_type == "comparison-estimator":
+            columns = ["estimator_name"] + statistical_columns
+        else:  # self.report_type == "comparison-cross-validation"
+            columns = ["estimator_name", "split_index"] + statistical_columns
+
+        return self.prediction_error[columns]

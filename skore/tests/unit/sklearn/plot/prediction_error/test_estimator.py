@@ -5,7 +5,7 @@ import pytest
 from skore import EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.mark.parametrize("subsample", [None, 1_000])
@@ -246,6 +246,20 @@ def test_wrong_report_type(pyplot, regression_data):
         display.plot()
 
 
+def test_frame(regression_data):
+    """Test the frame method with regression data."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    df = report.metrics.prediction_error().frame()
+
+    expected_index = []
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+
+
 def test_legend(pyplot, regression_data):
     """Check the rendering of the legend for prediction error with an
     `EstimatorReport`."""
@@ -260,3 +274,21 @@ def test_legend(pyplot, regression_data):
 
     display.plot(kind="actual_vs_predicted")
     check_legend_position(display.ax_, loc="lower right", position="inside")
+
+
+def test_constructor(regression_data):
+    """Check that the dataframe has the correct structure at initialization."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.prediction_error()
+
+    index_columns = ["estimator_name", "split_index"]
+    for df in [display.prediction_error]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].isnull().all()
+        np.testing.assert_allclose(df["y_true"], y_test)
+        np.testing.assert_allclose(df["y_pred"], estimator.predict(X_test))
+        np.testing.assert_allclose(df["residuals"], y_test - estimator.predict(X_test))

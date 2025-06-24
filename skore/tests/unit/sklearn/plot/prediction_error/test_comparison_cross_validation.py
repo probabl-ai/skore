@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position
+from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.fixture
@@ -128,3 +128,38 @@ def test_wrong_kwargs(pyplot, report, data_points_kwargs):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(data_points_kwargs=data_points_kwargs)
+
+
+def test_constructor(regression_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    # add a different number of splits for the second report
+    report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.prediction_error()
+
+    index_columns = ["estimator_name", "split_index"]
+    for df in [display.prediction_error]:
+        assert all(col in df.columns for col in index_columns)
+        assert df.query("estimator_name == 'estimator_1'")[
+            "split_index"
+        ].unique().tolist() == list(range(cv))
+        assert df.query("estimator_name == 'estimator_2'")[
+            "split_index"
+        ].unique().tolist() == list(range(cv + 1))
+        assert df["estimator_name"].unique().tolist() == report.report_names_
+
+
+def test_frame(report):
+    """Test the frame method with regression comparison cross-validation data."""
+    display = report.metrics.prediction_error()
+    df = display.frame()
+
+    expected_index = ["estimator_name", "split_index"]
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == len(report.reports_)
