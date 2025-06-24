@@ -124,16 +124,44 @@ tabpfn_report.metrics.summarize().frame()
 # ==================
 
 # %%
+# Load a time series dataset
+# --------------------------
+
+# %%
+from tslearn.generators import random_walk_blobs
+from tslearn.preprocessing import TimeSeriesScalerMinMax
+import numpy as np
+
+np.random.seed(0)
+n_ts_per_blob, sz, d, n_blobs = 20, 100, 1, 2
+
+# Prepare data
+X, y = random_walk_blobs(n_ts_per_blob=n_ts_per_blob, sz=sz, d=d, n_blobs=n_blobs)
+scaler = TimeSeriesScalerMinMax(value_range=(0.0, 1.0))  # Rescale time series
+X_scaled = scaler.fit_transform(X)
+
+# %%
+print(f"X_scaled.shape: {X_scaled.shape}")
+print(f"y.shape: {y.shape}")
+
+# %%
+split_data = train_test_split(X_scaled, y, random_state=42, as_dict=True)
+
+# %%
+# .. note::
+#
+#   We have a dataset of several time series, and we want to classify them.
+
+# %%
 # tslearn
 # -------
 
 # %%
-if False:
-    from tslearn.neighbors import KNeighborsTimeSeriesClassifier
+from tslearn.neighbors import KNeighborsTimeSeriesClassifier
 
-    ts_model = KNeighborsTimeSeriesClassifier(n_neighbors=1)
-    ts_model_report = EstimatorReport(ts_model, pos_label=1, **split_data)
-    ts_model_report.metrics.summarize().frame()
+ts_model = KNeighborsTimeSeriesClassifier(n_neighbors=1, metric="dtw")
+ts_model_report = EstimatorReport(ts_model, pos_label=1, **split_data)
+ts_model_report.metrics.summarize().frame()
 
 # %%
 # aeon
@@ -145,3 +173,5 @@ from aeon.classification.distance_based import KNeighborsTimeSeriesClassifier
 aeon_model = KNeighborsTimeSeriesClassifier(n_neighbors=1)
 aeon_model_report = EstimatorReport(aeon_model, pos_label=1, **split_data)
 aeon_model_report.metrics.summarize().frame()
+
+# %%
