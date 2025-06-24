@@ -27,7 +27,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def analyze(
         self,
-        source_dataset: str = "all",
+        data_source: str = "all",
         with_y: bool = True,
         subsample: int | None = None,
         subsample_strategy: str = "head",
@@ -37,7 +37,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Parameters
         ----------
-        source_dataset : {'train', 'test', 'all'}, default='all'
+        data_source : {'train', 'test', 'all'}, default='all'
             The dataset to analyze. If 'train', only the training set is used.
             If 'test', only the test set is used. If 'all', both sets are concatenated
             vertically.
@@ -69,19 +69,17 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         TableReportDisplay
             A display object containing the dataset statistics and plots.
         """
-        if source_dataset not in (options := ("train", "test", "all")):
-            raise ValueError(
-                f"'dataset' options are {options!r}, got {source_dataset}."
-            )
+        if data_source not in (options := ("train", "test", "all")):
+            raise ValueError(f"'dataset' options are {options!r}, got {data_source}.")
 
         X = self._parent.X_train
         X_test = getattr(self._parent, "X_test", None)
         y = getattr(self._parent, "y_train", None)
         y_test = getattr(self._parent, "y_test", None)
 
-        if source_dataset == "test":
+        if data_source == "test":
             X, y = X_test, y_test
-        elif source_dataset == "all":
+        elif data_source == "all":
             if X_test is not None:
                 X = sbd.concat(X, X_test, axis=0)
             if y is not None and y_test is not None:

@@ -44,7 +44,7 @@ report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-display = report.data.analyze(source_dataset="all", with_y=True)
+display = report.data.analyze(data_source="all", with_y=True)
 display
 
 # %%
@@ -74,7 +74,7 @@ display.plot(x="gender", y="year_first_hired", hue="current_annual_salary")
 # The year has replaced the salary as the x-axis, and the salary is still represented by
 # the color. This plot is getting a bit hard to read due to the large number of data
 # points, we can subsample it slightly to see a pattern emerges:
-report.data.analyze(source_dataset="all", with_y=True, subsample=1000).plot(
+report.data.analyze(data_source="all", with_y=True, subsample=1000).plot(
     x="gender",
     y="year_first_hired",
     hue="current_annual_salary",

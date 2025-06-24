@@ -1,5 +1,6 @@
 import itertools
 import json
+from functools import partial
 from typing import Any
 
 import numpy as np
@@ -14,8 +15,6 @@ from skrub._reporting._utils import (
     JSONEncoder,
     duration_to_numeric,
     ellide_string,
-    format_number,
-    format_percent,
     top_k_value_counts,
 )
 
@@ -27,66 +26,8 @@ from skore.sklearn._plot.utils import (
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
-from skore.skrub import _skrub_compat as sbd_compat
 
-_RED = "tab:red"
 _ORANGE = "tab:orange"
-_TEXT_COLOR_PLACEHOLDER = "#123456"
-
-
-def _get_range(values, frac=0.2, factor=3.0):
-    min_value, low_p, high_p, max_value = np.quantile(
-        values, [0.0, frac, 1.0 - frac, 1.0]
-    )
-    delta = high_p - low_p
-    if not delta:
-        return min_value, max_value
-    margin = factor * delta
-    low = low_p - margin
-    high = high_p + margin
-
-    # Chosen low bound should be max(low, min_value). Moreover, we add a small
-    # tolerance: if the clipping value is close to the actual minimum, extend
-    # it (so we don't clip right above the minimum which looks a bit silly).
-    if low - margin * 0.15 < min_value:
-        low = min_value
-    if max_value < high + margin * 0.15:
-        high = max_value
-    return low, high
-
-
-def _robust_hist(values, ax):
-    low, high = _get_range(values)
-    inliers = values[(low <= values) & (values <= high)]
-    n_low_outliers = (values < low).sum()
-    n_high_outliers = (high < values).sum()
-    n, bins, patches = ax.hist(inliers)
-    n_out = n_low_outliers + n_high_outliers
-    if not n_out:
-        return 0, 0
-    width = bins[1] - bins[0]
-    start, stop = bins[0], bins[-1]
-    line_params = dict(color=_RED, linestyle="--", ymax=0.95)
-    if n_low_outliers:
-        start = bins[0] - width
-        ax.stairs([n_low_outliers], [start, bins[0]], color=_RED, fill=True)
-        ax.axvline(bins[0], **line_params)
-    if n_high_outliers:
-        stop = bins[-1] + width
-        ax.stairs([n_high_outliers], [bins[-1], stop], color=_RED, fill=True)
-        ax.axvline(bins[-1], **line_params)
-    ax.text(
-        0.33,
-        0.90,
-        (f"{format_number(n_out)} outliers ({format_percent(n_out / len(values))})"),
-        transform=ax.transAxes,
-        ha="left",
-        va="baseline",
-        fontweight="bold",
-        color=_RED,
-    )
-    ax.set_xlim(start, stop)
-    return n_low_outliers, n_high_outliers
 
 
 def _has_no_decimal(df):
@@ -113,7 +54,7 @@ def _truncate_top_k(col, k, other_label="other"):
     _, counter = top_k_value_counts(col, k=k)
     values, _ = zip(*counter, strict=False)
     other = sbd.make_column_like(col, [other_label] * sbd.shape(col)[0], name="c")
-    keep = sbd_compat.is_in(col, values) | sbd.is_null(
+    keep = sbd.is_in(col, values) | sbd.is_null(
         col
     )  # we don't want to replace NaN with 'other'
     col = sbd.where(col, keep, other)
@@ -244,11 +185,12 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
     _default_boxplot_kwargs: dict[str, Any] | None = None
     _default_scatterplot_kwargs: dict[str, Any] | None = None
     _default_stripplot_kwargs: dict[str, Any] | None = None
+    _default_histplot_kwargs: dict[str, Any] | None = None
 
     def __init__(self, summary, dataset, column_filters=None):
         self.summary = summary
-        self.column_filters = column_filters
         self.dataset = dataset
+        self.column_filters = column_filters
 
     @classmethod
     def _compute_data_for_display(cls, dataset, with_plots=True, title=None):
@@ -273,6 +215,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         stripplot_kwargs: dict[str, Any] | None = None,
         boxplot_kwargs: dict[str, Any] | None = None,
         heatmap_kwargs: dict[str, Any] | None = None,
+        histplot_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """Plot a 1d or 2d distribution of the column(s) from the dataset.
 
@@ -293,41 +236,48 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         kind : {'dist', 'corr'}, default='dist'
             The kind of plot drawn.
 
-            - If ``'dist'``, plot a distribution parametrized by ``x``, ``y``
-              and ``hue``. When only ``x`` is defined, the distribution is 1d.
-              When ``y`` is also defined, the plot is the 2d. Finally, when the
-              color is set using ``hue``, the distribution is 2d, with a color per
-              data-point based on ``hue``. This mode handle both numeric and
-              categorical columns.
-            - If ``'corr'``, plot
-              `Cramer's V <https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V>`_
-              correlation among all columns. This option doesn't take any ``x``,
-              ``y`` or ``hue`` argument.
+            - If ``'dist'``, plot a distribution parametrized by ``x``, ``y`` and
+              ``hue``. When only ``x`` is defined, the distribution is 1d. When ``y`` is
+              also defined, the plot is the 2d. Finally, when the color is set using
+              ``hue``, the distribution is 2d, with a color per data-point based on
+              ``hue``. This mode handle both numeric and categorical columns.
+            - If ``'corr'``, plot `Cramer's V
+              <https://en.wikipedia.org/wiki/Cram%C3%A9r%27s_V>`_ correlation among all
+              columns. This option doesn't take any ``x``, ``y`` or ``hue`` argument.
 
         top_k_categories : int, default=20
             For categorical columns, the number of most frequent elements to display.
             Only used when ``kind='dist'``.
 
         scatterplot_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's ``scatterplot`` for rendering
-            the distribution 2D plot, when both ``x`` and ``y`` are numeric.
+            Keyword arguments to be passed to seaborn's :ref:`scatterplot
+            <https://seaborn.pydata.org/generated/seaborn.scatterplot.html>`_ for
+            rendering the distribution 2D plot, when both ``x`` and ``y`` are numeric.
 
         stripplot_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's ``stripplot`` for rendering
-            the distribution 2D plot, when either ``x`` or ``y`` is numeric, and
-            the other is categorical. This plot is drawn on top of the boxplot.
+            Keyword arguments to be passed to seaborn's :ref:`stripplot
+            <https://seaborn.pydata.org/generated/seaborn.stripplot.html>`_ for
+            rendering the distribution 2D plot, when either ``x`` or ``y`` is numeric,
+            and the other is categorical. This plot is drawn on top of the boxplot.
 
         boxplot_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's ``boxplot`` for rendering
-            the distribution 2D plot, when either ``x`` or ``y`` is numeric, and
-            the other is categorical. This plot is drawn below the stripplot.
+            Keyword arguments to be passed to seaborn's :ref:`boxplot
+            <https://seaborn.pydata.org/generated/seaborn.boxplot.html>`_ for rendering
+            the distribution 2D plot, when either ``x`` or ``y`` is numeric, and the
+            other is categorical. This plot is drawn below the stripplot.
 
         heatmap_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's ``heatmap`` for rendering
-            the Cramer's V correlation matrix, when ``kind='corr'`` or when
-            ``kind='dist'`` and both ``x`` and ``y`` are categorical.
+            Keyword arguments to be passed to seaborn's :ref:`heatmap
+            <https://seaborn.pydata.org/generated/seaborn.heatmap.html>`_ for rendering
+            Cramer's V correlation matrix, when ``kind='corr'`` or when ``kind='dist'``
+            and both ``x`` and ``y`` are categorical.
+
+        histplot_kwargs: dict, default=None
+            Keyword arguments to be passed to seaborn's :ref:`histplot
+            <https://seaborn.pydata.org/generated/seaborn.histplot.html>`_ for rendering
+            the distribution 1D plot, when only ``x`` is provided.
         """
-        self.fig_, self.ax_ = plt.subplots(dpi=150)
+        self.fig_, self.ax_ = plt.subplots()
         if kind == "dist":
             _require_x(x, kind)
             self._plot_distribution(
@@ -339,6 +289,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 stripplot_kwargs=stripplot_kwargs,
                 boxplot_kwargs=boxplot_kwargs,
                 heatmap_kwargs=heatmap_kwargs,
+                histplot_kwargs=histplot_kwargs,
             )
 
         elif kind == "corr":
@@ -358,10 +309,10 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         stripplot_kwargs=None,
         boxplot_kwargs=None,
         heatmap_kwargs=None,
+        histplot_kwargs=None,
     ):
         if y is None and hue is None:
-            # XXX: should we allow 1d plot with a hue value (hue)?
-            self._plot_distribution_1d(x=x, k=k)
+            self._plot_distribution_1d(x=x, k=k, histplot_kwargs=histplot_kwargs)
         else:
             self._plot_distribution_2d(
                 x=x,
@@ -374,96 +325,66 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 heatmap_kwargs=heatmap_kwargs,
             )
 
-    def _plot_distribution_1d(self, *, x, k):
-        col = sbd.col(self.dataset, x)
+    def _plot_distribution_1d(self, *, x, k, histplot_kwargs):
+        x = sbd.col(self.dataset, x)
 
         duration_unit = None
-        if sbd.is_duration(col):
-            col, duration_unit = duration_to_numeric(col)
+        if sbd.is_duration(x):
+            x, duration_unit = duration_to_numeric(x)
 
-        if sbd.is_numeric(col) or sbd.is_any_date(col):
-            self._histogram(col, duration_unit)
+        if histplot_kwargs is None:
+            histplot_kwargs = self._default_histplot_kwargs or {"despine": True}
+
+        if is_object := not (sbd.is_numeric(x) or sbd.is_any_date(x)):
+            top_k = sbd.col(sbd.head(sbd.value_counts(x), k), "value")
+
+            x = sbd.filter(x, sbd.is_in(x, top_k))
+            x = sbd.to_pandas(x)
+            x = x.astype(
+                pd.CategoricalDtype(categories=sbd.to_list(top_k), ordered=True)
+            )
+            histplot_kwargs["color"] = _ORANGE
+
+        if sbd.is_integer(x) or is_object:
+            histplot_kwargs["discrete"] = True
+
+        despine = histplot_kwargs.pop("despine", True)
+        histplot_kwargs_validated = _validate_style_kwargs(
+            histplot_kwargs,
+            {},
+        )
+
+        histplot = partial(sns.histplot, ax=self.ax_, **histplot_kwargs_validated)
+        if is_object:
+            histplot(y=x)
         else:
-            _, value_counts = top_k_value_counts(col, k=k)
-            self._value_counts(value_counts, n_rows=sbd.shape(col)[0])
-        self.ax_.set_xlabel(x)
-        self.ax_.set_ylabel("Total")
+            histplot(x=x)
 
-    def _histogram(self, col, duration_unit=None):
-        """Histogram for a numeric column."""
-        # XXX: adapt to use hist_kwargs and seaborn histplot?
-        col = sbd.drop_nulls(col)
-        if sbd.is_float(col):
-            # avoid any issues with pandas nullable dtypes
-            # (to_numpy can yield a numpy array with object dtype in old pandas
-            # version if there are inf or nan)
-            col = sbd.to_float32(col)
-        values = sbd.to_numpy(col)
-        _robust_hist(values, self.ax_)
         if duration_unit is not None:
             self.ax_.set_xlabel(f"{duration_unit.capitalize()}s")
-        if sbd.is_any_date(col):
+        if sbd.is_any_date(x):
             _rotate_ticklabels(self.ax_)
-        _adjust_fig_size(self.fig_, self.ax_, 6.0, 3.0)
+        if despine:
+            # _despine_matplotlib_axis doesn't help.
+            offset = -sbd.n_unique(x) + 10 if is_object else 0
+            sns.despine(
+                self.fig_,
+                top=True,
+                right=True,
+                trim=is_object,
+                offset={"bottom": offset},
+            )
 
-    def _value_counts(self, value_counts, n_rows, color=_ORANGE):
-        """Bar plot of the frequencies of the most frequent values in a column.
-
-        Parameters
-        ----------
-        value_counts : list
-            Pairs of (value, count). Must be sorted from most to least frequent.
-
-        n_unique : int
-            Cardinality of the plotted column, used to determine if all unique
-            values are plotted or if there are too many and some have been
-            omitted. The figure's title is adjusted accordingly.
-
-        n_rows : int
-            Total length of the column, used to convert the counts to proportions.
-
-        color : str
-            The color for the bars.
-
-        Returns
-        -------
-        str
-            The plot as a XML string.
-        """
-        # XXX: adapt to use value_counts_kwargs and seaborn barplot?
-        values = [ellide_string(v) for v, _ in value_counts][::-1]
-        counts = [c for _, c in value_counts][::-1]
-        rects = self.ax_.barh(list(map(str, range(len(values)))), counts, color=color)
-        percent = [format_percent(c / n_rows) for c in counts]
-        large_percent = [
-            f"{p: >6}" if c > counts[-1] / 2 else ""
-            for (p, c) in zip(percent, counts, strict=False)
-        ]
-        small_percent = [
-            p if c <= counts[-1] / 2 else ""
-            for (p, c) in zip(percent, counts, strict=False)
-        ]
-
-        # those are written on top of the orange bars so we write them in black
-        self.ax_.bar_label(
-            rects, large_percent, padding=-30, color="black", fontsize=14
-        )
-        # those are written on top of the background so we write them in foreground
-        # color
-        self.ax_.bar_label(
-            rects, small_percent, padding=5, color=_TEXT_COLOR_PLACEHOLDER, fontsize=14
-        )
-
-        self.ax_.set_yticks(self.ax_.get_yticks())
-        self.ax_.set_yticklabels(list(map(str, values)))
-
-        _adjust_fig_size(self.fig_, self.ax_, 7.0, 0.4 * len(values))
+        if is_object:
+            h = sbd.n_unique(x) * 0.3
+            w = 6
+            _adjust_fig_size(self.fig_, self.ax_, w, h)
 
     def _plot_distribution_2d(
         self,
         *,
         x,
-        y=None,
+        y,
         hue=None,
         k=20,
         heatmap_kwargs,

@@ -54,15 +54,15 @@ def test_display(pyplot, skrub_data):
         y_train=y_train,
         y_test=y_test,
     )
-    for source_dataset, n_samples in zip(
+    for data_source, n_samples in zip(
         ["train", "test", "all"],
         [n_train, n_test, n_train + n_test],
         strict=False,
     ):
-        display = report.data.analyze(source_dataset=source_dataset, with_y=True)
+        display = report.data.analyze(data_source=data_source, with_y=True)
         assert sbd.shape(display.dataset)[0] == n_samples
 
-    display = report.data.analyze(source_dataset="train", with_y=True)
+    display = report.data.analyze(data_source="train", with_y=True)
     assert isinstance(display, TableReportDisplay)
     summary_1, summary_2 = display.summary, summarize_dataframe(X_train)
     assert summary_1["n_rows"] == summary_2["n_rows"]
@@ -105,21 +105,21 @@ def test_distribution_plot(pyplot, skrub_data):
         y_train=y_train,
         y_test=y_test,
     )
-    display = report.data.analyze(source_dataset="train", with_y=True)
+    display = report.data.analyze(data_source="train", with_y=True)
 
     # Test distribution plot for a categorical column
     display.plot(x="gender")
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert display.ax_.get_title() == ""
     assert display.ax_.get_adjustable() == "box"
-    assert display.ax_.get_xlabel() == "gender"
-    assert display.ax_.get_ylabel() == "Total"
+    assert display.ax_.get_ylabel() == "gender"
+    assert display.ax_.get_xlabel() == "Count"
 
     # Test distribution plot for a numerical column
     display.plot(x="current_annual_salary")
     assert display.ax_.get_title() == ""
     assert display.ax_.get_xlabel() == "current_annual_salary"
-    assert display.ax_.get_ylabel() == "Total"
+    assert display.ax_.get_ylabel() == "Count"
 
     # Test distribution plot for a numerical column with y-axis
     display.plot(

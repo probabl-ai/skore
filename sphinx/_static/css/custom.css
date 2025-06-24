@@ -1,45 +1,45 @@
 div.docutils.container.index-features {
-    width: 450px;
+  width: 450px;
 }
 
 div.docutils.container.index-box {
-    background-color: var(--pst-color-white-highlight);
-    border-radius: 10px;
-    color: black;
-    padding: 5px;
-    margin-left: 15px;
-    float: right;
-    width: 400px;
+  background-color: var(--pst-color-white-highlight);
+  border-radius: 10px;
+  color: black;
+  padding: 5px;
+  margin-left: 15px;
+  float: right;
+  width: 400px;
 }
 
 /* Need to be able to have absolute positioning for the div inside */
 .bd-main .bd-content .bd-article-container .bd-article {
-    position: relative;
+  position: relative;
 }
 
 @media (min-width: 792px) {
-    div.docutils.container.index-features {
-        position: absolute;
-        top: 10px;
-        right: 0px;
-    }
+  div.docutils.container.index-features {
+    position: absolute;
+    top: 10px;
+    right: 0px;
+  }
 }
 
 @media (min-width: 1092px) {
-    div.docutils.container.index-box {
-        margin-left: 30px;
-        margin-right: -15px;
-    }
+  div.docutils.container.index-box {
+    margin-left: 30px;
+    margin-right: -15px;
+  }
 }
 
 @media (max-width: 892px) {
-    div.docutils.container.index-box {
-        max-width: 500px;
-        width: unset;
-        float: unset;
-        margin-left: auto;
-        margin-right: auto;
-    }
+  div.docutils.container.index-box {
+    max-width: 500px;
+    width: unset;
+    float: unset;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 /* Download/laucher links and top hint (sphinx-gallery) */
@@ -55,73 +55,72 @@ div.docutils.container.index-box {
 
 /* Make left sidebar thinner to avoid cropping things in main pane */
 .bd-sidebar-primary {
-    width: 20%;
+  width: 20%;
 }
 
 /* sphinx-gallery */
 
 /* add padding to images */
 .bd-article img {
-    height: unset !important;
-    margin-top: 2%;
-    margin-bottom: 2%;
+  height: unset !important;
+  margin-top: 2%;
+  margin-bottom: 2%;
 }
 
 /** Landing page features *************************************************************/
 
 .logo-container {
-    width: 100%;
-    text-align: center;
-    margin-bottom: 1rem;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 1rem;
 }
 
 /* logo at the top left (not just the landing page) */
 .logo {
-    max-width: 100px;
-    height: auto;
+  max-width: 100px;
+  height: auto;
 }
 
 /* logo for the landing page */
 .logo-landing {
-    max-width: 200px;
-    height: auto;
+  max-width: 200px;
+  height: auto;
 }
 
 .hero-title {
-    color: #F68D2E;
-    font-family: var(--pst-font-family-heading);
-    font-size: 2.5rem;
-    margin-bottom: 2rem;
-    margin-top: 0px;
-    text-align: center;
+  color: #f68d2e;
+  font-family: var(--pst-font-family-heading);
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  margin-top: 0px;
+  text-align: center;
 }
 
 .hero-description {
-    font-family: var(--pst-font-family-base);
-    text-align: center;
-    font-size: 1.1rem;
-    margin-bottom: 10px;
+  font-family: var(--pst-font-family-base);
+  text-align: center;
+  font-size: 1.1rem;
+  margin-bottom: 10px;
 }
 
 .row-padding-main-container {
-    padding-top: 1.5rem !important;
-    padding-bottom: 2.5rem !important;
+  padding-top: 1.5rem !important;
+  padding-bottom: 2.5rem !important;
 }
 
-
 /* Change the colors to the orange and blue of skore */
-html[data-theme="dark"]{
-    --pst-color-primary: #f89a36;
-    --pst-color-secondary: #3499cd;
-    --pst-color-inline-code-links: var(--pst-color-primary);
+html[data-theme="dark"] {
+  --pst-color-primary: #f89a36;
+  --pst-color-secondary: #3499cd;
+  --pst-color-inline-code-links: var(--pst-color-primary);
 }
 
 /*
 Choose darker colors for light to ensure at least AA contrast https://www.w3.org/TR/WCAG20/#visual-audio-contrast-contrast
 Tool to test: https://docusaurus.io/docs/styling-layout
 */
-html[data-theme="light"]{
-    --pst-color-primary: #ad5d06;
-    --pst-color-secondary: #297ba6;
-    --pst-color-inline-code-links: var(--pst-color-primary);
+html[data-theme="light"] {
+  --pst-color-primary: #ad5d06;
+  --pst-color-secondary: #297ba6;
+  --pst-color-inline-code-links: var(--pst-color-primary);
 }

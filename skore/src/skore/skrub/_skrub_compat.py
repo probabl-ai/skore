@@ -74,3 +74,7 @@ def _is_in_pandas(col, values):
 @is_in.specialize("polars", argument_type="Column")
 def _is_in_polars(col, values):
     return col.is_in(values)
+
+
+sbd.to_frame = to_frame
+sbd.is_in = is_in
