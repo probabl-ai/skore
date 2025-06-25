@@ -12,7 +12,7 @@ This example shows how to leverage skore's capabilities with a deep learning fra
 # Loading the Breast Cancer Winconsin (Diagnostic) Dataset
 # ========================================================
 # In this example, we tackle the Breast Cancer Winconsin dataset where the goal is a binary classification task, i.e. predicting whether a tumor is malignant or benign.
-# We shall first perform some preprocessing using `skrub` and then create a shallow neural network to demonstrate `skore`'s ability to support deep learning frameworks such as `skorch` which is an `sklearn` like API over `PyTorch`.
+# We shall first perform some preprocessing using `skrub` and then create a shallow neural network to demonstrate `skore`'s ability to support deep learning frameworks such as `skorch` which is a `sklearn`-like API over `PyTorch`.
 
 # %%
 from sklearn.datasets import load_breast_cancer
