@@ -50,6 +50,7 @@ test-base = [
 test = ["skore[test-base]", "polars"]
 test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
 sphinx-base = [
+  "aeon",
   "altair",
   "kaleido",
   "numpydoc",
@@ -57,14 +58,20 @@ sphinx-base = [
   "pydata-sphinx-theme",
   "seaborn",
   "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
+  "skorch",
   "skrub",
+  "sphinx<8.2.0",
   "sphinx-copybutton",
   "sphinx-design",
   "sphinx-gallery",
   "sphinx-tabs",
-  "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
+  "tabicl @ git+https://github.com/soda-inria/tabicl.git",
+  "tabpfn",
+  "torch",
   "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
+  "tslearn",
+  "xgboost",
 ]
 sphinx = ["skore[sphinx-base]", "polars"]
 sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]
