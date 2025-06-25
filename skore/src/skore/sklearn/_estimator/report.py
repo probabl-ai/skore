@@ -2,7 +2,7 @@ import copy
 import time
 import warnings
 from itertools import product
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -102,8 +102,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     @staticmethod
     def _fit_estimator(
         estimator: BaseEstimator,
-        X_train: Union[ArrayLike, None],
-        y_train: Union[ArrayLike, None],
+        X_train: ArrayLike | None,
+        y_train: ArrayLike | None,
     ) -> tuple[BaseEstimator, float]:
         if X_train is None or (y_train is None and not is_clusterer(estimator)):
             raise ValueError(
@@ -134,17 +134,18 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self,
         estimator: BaseEstimator,
         *,
-        fit: Union[Literal["auto"], bool] = "auto",
-        X_train: Optional[ArrayLike] = None,
-        y_train: Optional[ArrayLike] = None,
-        X_test: Optional[ArrayLike] = None,
-        y_test: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        fit: Literal["auto"] | bool = "auto",
+        X_train: ArrayLike | None = None,
+        y_train: ArrayLike | None = None,
+        X_test: ArrayLike | None = None,
+        y_test: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = None,
     ) -> None:
         # used to know if a parent launch a progress bar manager
-        self._progress_info: Optional[dict[str, Any]] = None
+        self._progress_info: dict[str, Any] | None = None
+        self._fit = fit
 
-        fit_time: Optional[float] = None
+        fit_time: float | None = None
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
@@ -208,8 +209,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     @progress_decorator(description="Caching predictions")
     def cache_predictions(
         self,
-        response_methods: Union[Literal["auto"], list[str]] = "auto",
-        n_jobs: Optional[int] = None,
+        response_methods: Literal["auto"] | list[str] = "auto",
+        n_jobs: int | None = None,
     ) -> None:
         """Cache estimator's predictions.
 
@@ -300,8 +301,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
-        X: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = _DEFAULT,
+        X: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> ArrayLike:
         """Get estimator's predictions.
 
@@ -319,7 +320,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         response_method : {"predict", "predict_proba", "decision_function"}, \
                 default="predict"
-            The response method to use.
+            The response method to use to get the predictions.
 
         X : array-like of shape (n_samples, n_features), optional
             When `data_source` is "X_y", the input features on which to compute the
@@ -395,40 +396,23 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return self._ml_task
 
     @property
+    def estimator(self) -> BaseEstimator:
+        return self._estimator
+
+    @property
     def estimator_(self) -> BaseEstimator:
         return self._estimator
 
-    @estimator_.setter
-    def estimator_(self, value):
-        raise AttributeError(
-            "The estimator attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
-
     @property
-    def X_train(self) -> Optional[ArrayLike]:
+    def X_train(self) -> ArrayLike | None:
         return self._X_train
 
-    @X_train.setter
-    def X_train(self, value):
-        raise AttributeError(
-            "The X_train attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
-
     @property
-    def y_train(self) -> Optional[ArrayLike]:
+    def y_train(self) -> ArrayLike | None:
         return self._y_train
 
-    @y_train.setter
-    def y_train(self, value):
-        raise AttributeError(
-            "The y_train attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
-
     @property
-    def X_test(self) -> Optional[ArrayLike]:
+    def X_test(self) -> ArrayLike | None:
         return self._X_test
 
     @X_test.setter
@@ -437,7 +421,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._initialize_state()
 
     @property
-    def y_test(self) -> Optional[ArrayLike]:
+    def y_test(self) -> ArrayLike | None:
         return self._y_test
 
     @y_test.setter
@@ -446,11 +430,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._initialize_state()
 
     @property
-    def pos_label(self) -> Optional[PositiveLabel]:
+    def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
 
     @pos_label.setter
-    def pos_label(self, value: Optional[PositiveLabel]) -> None:
+    def pos_label(self, value: PositiveLabel | None) -> None:
         self._pos_label = value
         self._initialize_state()
 
@@ -461,6 +445,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             name = self._estimator.__class__.__name__
         return name
+
+    @property
+    def fit(self) -> Literal["auto"] | bool:
+        return self._fit
 
     ####################################################################################
     # Methods related to the help and repr

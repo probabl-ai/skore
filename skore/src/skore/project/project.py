@@ -3,20 +3,14 @@
 from __future__ import annotations
 
 import re
-import sys
+from importlib.metadata import entry_points
 from typing import Any
 
-if sys.version_info < (3, 10):  # pragma: no cover
-    from importlib_metadata import entry_points
-else:
-    from importlib.metadata import entry_points
-
-from skore.externals._pandas_accessors import DirNamesMixin, _register_accessor
-from skore.project.reports import _ReportsAccessor
+from skore.project.summary import Summary
 from skore.sklearn._estimator.report import EstimatorReport
 
 
-class Project(DirNamesMixin):
+class Project:
     r"""
     API to manage a collection of key-report pairs.
 
@@ -24,9 +18,9 @@ class Project(DirNamesMixin):
     existing one.
 
     The class main methods are :func:`~skore.Project.put`,
-    :func:`~skore.Project.reports.metadata` and :func:`~skore.Project.reports.get`,
-    respectively to insert a key-report pair into the project, to obtain the metadata of
-    the inserted reports and to get a specific report by its id.
+    :func:`~skore.Project.summarize` and :func:`~skore.Project.get`, respectively to
+    insert a key-report pair into the project, to obtain the metadata/metrics of the
+    inserted reports and to get a specific report by its id.
 
     Two mutually exclusive modes are available and can be configured using the ``name``
     parameter of the constructor:
@@ -141,9 +135,9 @@ class Project(DirNamesMixin):
 
     Investigate metadata/metrics to filter the best reports.
 
-    >>> metadata = local_project.reports.metadata()
-    >>> metadata = metadata.query("ml_task.str.contains('regression') and (rmse < 67)")
-    >>> reports = metadata.reports()
+    >>> summary = local_project.summarize()
+    >>> summary = summary.query("ml_task.str.contains('regression') and (rmse < 67)")
+    >>> reports = summary.reports()
 
     See Also
     --------
@@ -151,11 +145,6 @@ class Project(DirNamesMixin):
     """
 
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
-
-    reports: _ReportsAccessor
-    _Project__project: Any
-    _Project__mode: str
-    _Project__name: str
 
     @staticmethod
     def __setup_plugin(name: str) -> tuple[str, str, Any, dict]:
@@ -252,6 +241,14 @@ class Project(DirNamesMixin):
 
         return self.__project.put(key=key, report=report)
 
+    def get(self, id: str) -> EstimatorReport:
+        """Get a persisted report by its id."""
+        return self.__project.reports.get(id)
+
+    def summarize(self) -> Summary:
+        """Obtain metadata/metrics for all persisted reports."""
+        return Summary.factory(self.__project)
+
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()
 
@@ -288,6 +285,3 @@ class Project(DirNamesMixin):
         _, _, plugin, parameters = Project.__setup_plugin(name)
 
         return plugin.delete(**(kwargs | parameters))
-
-
-_register_accessor("reports", Project)(_ReportsAccessor)

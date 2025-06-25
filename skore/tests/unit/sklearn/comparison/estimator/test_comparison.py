@@ -1,11 +1,18 @@
+import numpy as np
 import pandas as pd
 import pytest
 from numpy.testing import assert_allclose
+from sklearn.base import clone
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.metrics import accuracy_score, get_scorer, mean_absolute_error
+from sklearn.metrics import (
+    accuracy_score,
+    get_scorer,
+    mean_absolute_error,
+)
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
+from skore.sklearn._plot.metrics import MetricsSummaryDisplay
 
 
 @pytest.fixture
@@ -60,7 +67,7 @@ def test_comparison_report_without_testing_data(binary_classification_model):
     report = ComparisonReport([estimator_report_1, estimator_report_2])
 
     with pytest.raises(ValueError, match="No test data"):
-        report.metrics.report_metrics(data_source="test")
+        report.metrics.summarize(data_source="test")
 
 
 def test_comparison_report_different_test_data(binary_classification_model):
@@ -284,7 +291,7 @@ def report(report_classification):
         ),
     ],
 )
-def test_comparison_report_metrics_binary_classification(
+def test_comparison_summarize_binary_classification(
     metric_name, expected, data_source, binary_classification_model, report
 ):
     """Check the metrics work."""
@@ -337,7 +344,7 @@ def test_comparison_report_metrics_binary_classification(
         ),
     ],
 )
-def test_comparison_report_metrics_linear_regression(
+def test_comparison_summarize_linear_regression(
     metric_name, expected, data_source, regression_model
 ):
     """Check the metrics work."""
@@ -378,15 +385,15 @@ def test_comparison_report_metrics_linear_regression(
     pd.testing.assert_frame_equal(result, expected)
 
 
-def test_comparison_report_report_metrics_X_y(binary_classification_model, report):
-    """Check that `report_metrics` works with an "X_y" data source."""
+def test_comparison_summarize_X_y(binary_classification_model, report):
+    """Check that `summarize` works with an "X_y" data source."""
     _, X_train, _, y_train, _ = binary_classification_model
 
-    result = report.metrics.report_metrics(
+    result = report.metrics.summarize(
         data_source="X_y",
         X=X_train[:10],
         y=y_train[:10],
-    )
+    ).frame()
     assert "Favorability" not in result.columns
 
     expected_index = pd.MultiIndex.from_tuples(
@@ -465,10 +472,12 @@ def test_cross_validation_report_flat_index(binary_classification_model):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result = report.metrics.report_metrics(flat_index=True)
-    assert result.shape == (8, 2)
-    assert isinstance(result.index, pd.Index)
-    assert result.index.tolist() == [
+    result = report.metrics.summarize(flat_index=True)
+    assert isinstance(result, MetricsSummaryDisplay)
+    result_df = result.frame()
+    assert result_df.shape == (8, 2)
+    assert isinstance(result_df.index, pd.Index)
+    assert result_df.index.tolist() == [
         "precision_0",
         "precision_1",
         "recall_0",
@@ -478,14 +487,16 @@ def test_cross_validation_report_flat_index(binary_classification_model):
         "fit_time_s",
         "predict_time_s",
     ]
-    assert result.columns.tolist() == ["report_1", "report_2"]
+    assert result_df.columns.tolist() == ["report_1", "report_2"]
 
 
-def test_estimator_report_report_metrics_indicator_favorability(report):
+def test_estimator_report_summarize_indicator_favorability(report):
     """Check that the behaviour of `indicator_favorability` is correct."""
-    result = report.metrics.report_metrics(indicator_favorability=True)
-    assert "Favorability" in result.columns
-    indicator = result["Favorability"]
+    result = report.metrics.summarize(indicator_favorability=True)
+    assert isinstance(result, MetricsSummaryDisplay)
+    result_df = result.frame()
+    assert "Favorability" in result_df.columns
+    indicator = result_df["Favorability"]
     assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
@@ -496,8 +507,8 @@ def test_comparison_report_aggregate(report):
     """Passing `aggregate` should have no effect, as this argument is only relevant
     when comparing `CrossValidationReport`s."""
     assert_allclose(
-        report.metrics.report_metrics(aggregate="mean"),
-        report.metrics.report_metrics(),
+        report.metrics.summarize(aggregate="mean").frame(),
+        report.metrics.summarize().frame(),
     )
 
 
@@ -565,7 +576,7 @@ def test_comparison_report_timings_flat_index(report):
     report.get_predictions(data_source="test")
 
     # Get metrics with flat_index=True
-    results = report.metrics.report_metrics(flat_index=True)
+    results = report.metrics.summarize(flat_index=True).frame()
 
     # Check that expected time measurements are in index with _s suffix
     assert "fit_time_s" in results.index
@@ -581,15 +592,221 @@ def test_comparison_report_timings_flat_index(report):
         (get_scorer("accuracy"), None),
     ],
 )
-def test_comparison_report_estimator_report_metrics_scoring_single_list_equivalence(
+def test_comparison_report_estimator_summarize_scoring_single_list_equivalence(
     report, scoring, scoring_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
     list with a single element."""
-    result_single = report.metrics.report_metrics(
+    result_single = report.metrics.summarize(
         scoring=scoring, scoring_kwargs=scoring_kwargs
-    )
-    result_list = report.metrics.report_metrics(
+    ).frame()
+    result_list = report.metrics.summarize(
         scoring=[scoring], scoring_kwargs=scoring_kwargs
-    )
+    ).frame()
     assert result_single.equals(result_list)
+
+
+@pytest.mark.parametrize("metric", ["roc", "precision_recall"])
+def test_comparison_report_display_binary_classification_pos_label(
+    pyplot, metric, binary_classification_model
+):
+    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    classifier, X_train, X_test, y_train, y_test = binary_classification_model
+    labels = np.array(["A", "B"], dtype=object)
+    y_train = labels[y_train]
+    y_test = labels[y_test]
+    report_1 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    report_2 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    report = ComparisonReport([report_1, report_2])
+    with pytest.raises(ValueError, match="pos_label is not specified"):
+        getattr(report.metrics, metric)()
+
+    report_1 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        pos_label="A",
+    )
+    report_2 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        pos_label="A",
+    )
+    report = ComparisonReport([report_1, report_2])
+    display = getattr(report.metrics, metric)()
+    display.plot()
+    assert "Positive label: A" in display.ax_.get_xlabel()
+
+    display = getattr(report.metrics, metric)(pos_label="B")
+    display.plot()
+    assert "Positive label: B" in display.ax_.get_xlabel()
+
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_comparison_report_summarize_pos_label_default(
+    metric, binary_classification_model
+):
+    """Check the default behaviour of `pos_label` in `summarize`."""
+    classifier, X_train, X_test, y_train, y_test = binary_classification_model
+    labels = np.array(["A", "B"], dtype=object)
+    y_train = labels[y_train]
+    y_test = labels[y_test]
+
+    report_1 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    report_2 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    result_both_labels = report.metrics.summarize(scoring=metric).frame().reset_index()
+    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
+
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_comparison_report_summarize_pos_label_overwrite(
+    metric, binary_classification_model
+):
+    """Check that `pos_label` can be overwritten in `summarize`."""
+    classifier, X_train, X_test, y_train, y_test = binary_classification_model
+    labels = np.array(["A", "B"], dtype=object)
+    y_train = labels[y_train]
+    y_test = labels[y_test]
+    report_1 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        pos_label="B",
+    )
+    report_2 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        pos_label="B",
+    )
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    result_both_labels = report.metrics.summarize(
+        scoring=metric, pos_label=None
+    ).frame()
+    result = report.metrics.summarize(scoring=metric).frame().reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    for report_name in report.report_names_:
+        assert (
+            result.loc[metric.capitalize(), report_name]
+            == result_both_labels.loc[(metric.capitalize(), "B"), report_name]
+        )
+
+    result = (
+        report.metrics.summarize(scoring=metric, pos_label="A").frame().reset_index()
+    )
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    for report_name in report.report_names_:
+        assert (
+            result.loc[metric.capitalize(), report_name]
+            == result_both_labels.loc[(metric.capitalize(), "A"), report_name]
+        )
+
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_comparison_report_precision_recall_pos_label_default(
+    metric, binary_classification_model
+):
+    """Check the default behaviour of `pos_label` in `summarize`."""
+    classifier, X_train, X_test, y_train, y_test = binary_classification_model
+    labels = np.array(["A", "B"], dtype=object)
+    y_train = labels[y_train]
+    y_test = labels[y_test]
+    report_1 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    report_2 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    result_both_labels = getattr(report.metrics, metric)().reset_index()
+    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
+    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_comparison_report_precision_recall_pos_label_overwrite(
+    metric, binary_classification_model
+):
+    """Check that `pos_label` can be overwritten in `summarize`"""
+    classifier, X_train, X_test, y_train, y_test = binary_classification_model
+    labels = np.array(["A", "B"], dtype=object)
+    y_train = labels[y_train]
+    y_test = labels[y_test]
+    report_1 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    report_2 = EstimatorReport(
+        clone(classifier),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    result_both_labels = getattr(report.metrics, metric)(pos_label=None)
+
+    result = getattr(report.metrics, metric)(pos_label="B").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    for report_name in report.report_names_:
+        assert (
+            result.loc[metric.capitalize(), report_name]
+            == result_both_labels.loc[(metric.capitalize(), "B"), report_name]
+        )
+
+    result = getattr(report.metrics, metric)(pos_label="A").reset_index()
+    assert "Label / Average" not in result.columns
+    result = result.set_index("Metric")
+    for report_name in report.report_names_:
+        assert (
+            result.loc[metric.capitalize(), report_name]
+            == result_both_labels.loc[(metric.capitalize(), "A"), report_name]
+        )

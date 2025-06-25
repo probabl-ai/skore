@@ -1,4 +1,5 @@
 from skore.sklearn._plot.metrics.confusion_matrix import ConfusionMatrixDisplay
+from skore.sklearn._plot.metrics.metrics_summary_display import MetricsSummaryDisplay
 from skore.sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
@@ -10,4 +11,5 @@ __all__ = [
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",
     "RocCurveDisplay",
+    "MetricsSummaryDisplay",
 ]

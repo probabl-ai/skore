@@ -2,9 +2,11 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
+from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 def test_regression(pyplot, regression_data):
@@ -61,7 +63,7 @@ def test_regression(pyplot, regression_data):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Prediction errors on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -109,7 +111,7 @@ def test_regression_actual_vs_predicted(pyplot, regression_data):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Prediction errors on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -146,7 +148,7 @@ def test_kwargs(pyplot, regression_data):
         perfect_model_kwargs={"color": "orange"},
     )
     rgb_colors = [[[1.0, 0.0, 0.0, 0.3]], [[0.0, 0.0, 1.0, 0.3]]]
-    for scatter, rgb_color in zip(display.scatter_, rgb_colors):
+    for scatter, rgb_color in zip(display.scatter_, rgb_colors, strict=False):
         np.testing.assert_allclose(scatter.get_facecolor(), rgb_color, rtol=1e-3)
     assert display.line_.get_color() == "orange"
 
@@ -184,3 +186,94 @@ def test_wrong_kwargs(pyplot, regression_data, data_points_kwargs):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(data_points_kwargs=data_points_kwargs)
+
+
+def test_frame(regression_data):
+    """Test the frame method with comparison data."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    estimator_2 = clone(estimator).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.prediction_error()
+    df = display.frame()
+
+    expected_index = ["estimator_name"]
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == 2
+
+
+def test_legend(pyplot, regression_data):
+    """Check the rendering of the legend for prediction error with a
+    `ComparisonReport`."""
+
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator 1": report_1, "estimator 2": report_2}
+    )
+    display = report.metrics.prediction_error()
+    display.plot()
+    # The loc doesn't matter because bbox_to_anchor is used
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    check_legend_position(display.ax_, loc="lower right", position="inside")
+
+    reports = {
+        f"estimator {i}": EstimatorReport(
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        )
+        for i in range(1, 10)
+    }
+    report = ComparisonReport(reports=reports)
+    display = report.metrics.prediction_error()
+    display.plot()
+    # The loc doesn't matter because bbox_to_anchor is used
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+
+def test_constructor(regression_data):
+    """Check that the dataframe has the correct structure at initialization."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.prediction_error()
+
+    index_columns = ["estimator_name", "split_index"]
+    for df in [display.prediction_error]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique().tolist() == report.report_names_
+        assert df["split_index"].isnull().all()

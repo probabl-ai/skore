@@ -1,7 +1,7 @@
 [project]
 name = "skore-hub-project"
 dynamic = ["license", "readme", "version"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 dependencies = [
   "httpx",
@@ -26,7 +26,6 @@ test-base = [
   "pytest-randomly",
   "pytest-xdist",
   "respx",
-  "scikit-learn<1.7",
   "skore",
   "skrub",
   "xdoctest",
@@ -91,7 +90,6 @@ select = ["E", "F", "UP", "B", "SIM", "T", "I", "D"]
 convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
-"src/*" = ["UP007"]
 "tests/*" = ["D"]
 
 [tool.mypy]

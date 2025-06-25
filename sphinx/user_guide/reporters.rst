@@ -47,23 +47,28 @@ metrics. Set it to `train` or `test` to rely on the data provided to the constru
 addition, set `data_source` to `X_y` to pass a new dataset using the parameters `X` and
 `y`. This is useful when you want to compare different models on a new left-out dataset.
 
-While there are individual methods to compute each metric specific to the problem at
-hand, we provide the :class:`EstimatorReport.metrics.report_metrics` method that
-aggregates metrics in a single dataframe. By default, a set of metrics is computed based
-on the type of target variable (e.g. classification or regression). Nevertheless, you
-can specify the metrics you want to compute thanks to the `scoring` parameter. We accept
-different types: (i) some strings that correspond to scikit-learn scorer names or a
-built-in `skore` metric name, (ii) a callable or a (iii) scikit-learn scorer constructed
-with :func:`sklearn.metrics.make_scorer`.
+There are individual methods to compute each metric specific to the problem at hand.
+They return usual python objects such as floats, integers, or dictionaries.
 
 The second type of methods provided by :obj:`EstimatorReport.metrics` are methods that
-return a `skore` display object. They have a common API as well. They expose two
-methods: (i) `plot` that plots graphically the information contained in the display and
+return a :class:`~skore.Display` object. They have a common API as well. They expose
+three methods:
+(i) `plot` that plots graphically the information contained in the display,
 (ii) `set_style` that sets some graphical settings instead of passing them to the `plot`
 method at each call.
+(iii) `frame` that returns a `pandas.DataFrame` with the information contained in the
+display.
+
+We provide the :class:`EstimatorReport.metrics.summarize` method that aggregates metrics
+in a single dataframe, available through a :class:`~skore.Display`. By default, a set of
+metrics is computed based on the type of target variable (e.g. classification or
+regression). Nevertheless, you can specify the metrics you want to compute thanks to the
+`scoring` parameter. We accept different types: (i) some strings that correspond to
+scikit-learn scorer names or a built-in `skore` metric name, (ii) a callable or a (iii)
+scikit-learn scorer constructed with :func:`sklearn.metrics.make_scorer`.
 
 Refer to the :ref:`displays` section for more details regarding the `skore` display
-API. Refer to the :ref:`estimator_report_metrics` section for more details on all the
+API. Refer to the :ref:`estimator_metrics` section for more details on all the
 available metrics in `skore`.
 
 Caching mechanism
@@ -110,7 +115,7 @@ parameter, `aggregate`, to aggregate the metrics across the splits.
 The :class:`CrossValidationReport` also comes with a caching mechanism by leveraging
 the :class:`EstimatorReport` caching mechanism and exposes the same methods.
 
-Refer to the :ref:`cross_validation_report_metrics` section for more details on the
+Refer to the :ref:`cross_validation_metrics` section for more details on the
 metrics available in `skore` for cross-validation.
 
 .. _comparison_report:
@@ -129,5 +134,5 @@ performance of the different models.
 
 The caching mechanism is also available and exposes the same methods.
 
-Refer to the :ref:`cross_validation_report_metrics` section for more details on the
+Refer to the :ref:`cross_validation_metrics` section for more details on the
 metrics available in `skore` for comparison.

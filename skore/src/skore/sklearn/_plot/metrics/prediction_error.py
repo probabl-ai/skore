@@ -1,6 +1,6 @@
 import numbers
 from collections import namedtuple
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,6 +21,8 @@ from skore.sklearn.types import MLTask, ReportType, YPlotData
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
+MAX_N_LABELS = 6  # 5 + 1 for the perfect model line
+
 
 class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     """Visualization of the prediction error of a regression model.
@@ -37,6 +39,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     ----------
     prediction_error : DataFrame
         The prediction error data to display. The columns are
+
         - "estimator_name"
         - "split_index" (may be null)
         - "y_true"
@@ -95,8 +98,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     >>> display.plot(kind="actual_vs_predicted")
     """
 
-    _default_data_points_kwargs: Union[dict[str, Any], None] = None
-    _default_perfect_model_kwargs: Union[dict[str, Any], None] = None
+    _default_data_points_kwargs: dict[str, Any] | None = None
+    _default_perfect_model_kwargs: dict[str, Any] | None = None
 
     def __init__(
         self,
@@ -120,7 +123,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     def _validate_data_points_kwargs(
         self,
         *,
-        data_points_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
+        data_points_kwargs: dict[str, Any] | list[dict[str, Any]] | None,
     ) -> list[dict[str, Any]]:
         """Validate and format the scatter keyword arguments.
 
@@ -234,7 +237,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         if self.data_source in ("train", "test"):
             scatter_label = f"{self.data_source.title()} set"
         else:  # data_source == "X_y"
-            scatter_label = "Data set"
+            scatter_label = "External data set"
 
         if kind == "actual_vs_predicted":
             scatter.append(
@@ -255,7 +258,13 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 )
             )
 
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+        # move the perfect model line to the end of the legend
+        handles, labels = self.ax_.get_legend_handles_labels()
+        handles.append(handles.pop(0))
+        labels.append(labels.pop(0))
+
+        self.ax_.legend(handles, labels, loc="lower right")
+        self.ax_.set_title(f"Prediction Error for {estimator_name}")
 
         return scatter
 
@@ -304,7 +313,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 data_points_kwargs_fold, samples_kwargs[split_idx]
             )
 
-            label = f"Estimator of fold #{split_idx + 1}"
+            label = f"Fold #{split_idx + 1}"
 
             if kind == "actual_vs_predicted":
                 scatter.append(
@@ -326,10 +335,23 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 )
 
         if self.data_source in ("train", "test"):
-            title = f"{estimator_name} on $\\bf{{{self.data_source}}}$ set"
+            legend_title = f"{self.data_source.capitalize()} set"
         else:
-            title = f"{estimator_name} on $\\bf{{external}}$ set"
-        self.ax_.legend(bbox_to_anchor=(1.02, 1), title=title)
+            legend_title = "External set"
+
+        # move the perfect model line to the end of the legend
+        handles, labels = self.ax_.get_legend_handles_labels()
+        handles.append(handles.pop(0))
+        labels.append(labels.pop(0))
+
+        if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
+            # too many lines to fit legend in the plot
+            self.ax_.legend(
+                handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
+            )
+        else:
+            self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
+        self.ax_.set_title(f"Prediction Error for {estimator_name}")
 
         return scatter
 
@@ -395,10 +417,24 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                     )
                 )
 
-        self.ax_.legend(
-            bbox_to_anchor=(1.02, 1),
-            title=f"Prediction errors on $\\bf{{{self.data_source}}}$ set",
-        )
+        if self.data_source in ("train", "test"):
+            legend_title = f"{self.data_source.capitalize()} set"
+        else:
+            legend_title = "External set"
+
+        # move the perfect model line to the end of the legend
+        handles, labels = self.ax_.get_legend_handles_labels()
+        handles.append(handles.pop(0))
+        labels.append(labels.pop(0))
+
+        if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
+            # too many lines to fit legend in the plot
+            self.ax_.legend(
+                handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
+            )
+        else:
+            self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
+        self.ax_.set_title("Prediction Error")
 
         return scatter
 
@@ -464,10 +500,24 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                     )
                 )
 
-        self.ax_.legend(
-            bbox_to_anchor=(1.02, 1),
-            title=f"Prediction errors on $\\bf{{{self.data_source}}}$ set",
-        )
+        if self.data_source in ("train", "test"):
+            legend_title = f"{self.data_source.capitalize()} set"
+        else:
+            legend_title = "External set"
+
+        # move the perfect model line to the end of the legend
+        handles, labels = self.ax_.get_legend_handles_labels()
+        handles.append(handles.pop(0))
+        labels.append(labels.pop(0))
+
+        if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
+            # too many lines to fit legend in the plot
+            self.ax_.legend(
+                handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
+            )
+        else:
+            self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
+        self.ax_.set_title("Prediction Error")
 
         return scatter
 
@@ -475,14 +525,12 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     def plot(
         self,
         *,
-        estimator_name: Optional[str] = None,
+        estimator_name: str | None = None,
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
-        data_points_kwargs: Optional[
-            Union[dict[str, Any], list[dict[str, Any]]]
-        ] = None,
-        perfect_model_kwargs: Optional[dict[str, Any]] = None,
+        data_points_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
+        perfect_model_kwargs: dict[str, Any] | None = None,
         despine: bool = True,
     ) -> None:
         """Plot visualization.
@@ -654,8 +702,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         report_type: ReportType,
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
-        subsample: Union[float, int, None] = 1_000,
-        seed: Optional[int] = None,
+        subsample: float | int | None = 1_000,
+        seed: int | None = None,
         **kwargs,
     ) -> "PredictionErrorDisplay":
         """Plot the prediction error given the true and predicted targets.
@@ -723,7 +771,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         y_pred_min, y_pred_max = np.inf, -np.inf
         residuals_min, residuals_max = np.inf, -np.inf
 
-        for y_true_i, y_pred_i in zip(y_true, y_pred):
+        for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
             n_samples = _num_samples(y_true_i.y)
             if subsample is None:
                 subsample_ = n_samples
@@ -745,7 +793,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 residuals_sample = y_true_sample - y_pred_sample
 
                 for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
-                    y_true_sample, y_pred_sample, residuals_sample
+                    y_true_sample, y_pred_sample, residuals_sample, strict=False
                 ):
                     prediction_error_records.append(
                         {
@@ -762,7 +810,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 residuals_sample = y_true_i.y - y_pred_i.y
 
                 for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
-                    y_true_sample, y_pred_sample, residuals_sample
+                    y_true_sample, y_pred_sample, residuals_sample, strict=False
                 ):
                     prediction_error_records.append(
                         {
@@ -796,3 +844,44 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             ml_task=ml_task,
             report_type=report_type,
         )
+
+    def frame(self) -> DataFrame:
+        """Get the data used to create the prediction error plot.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame containing the prediction error data with columns depending on
+            the report type:
+
+            - `estimator_name`: Name of the estimator (when comparing estimators)
+            - `split_index`: Cross-validation fold ID (when doing cross-validation)
+            - `y_true`: True target values
+            - `y_pred`: Predicted target values
+            - `residuals`: Difference between true and predicted values
+              `(y_true - y_pred)`
+
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import train_test_split, EstimatorReport
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> reg = Ridge()
+        >>> report = EstimatorReport(reg, **split_data)
+        >>> display = report.metrics.prediction_error()
+        >>> df = display.frame()
+        """
+        statistical_columns = ["y_true", "y_pred", "residuals"]
+        if self.report_type == "estimator":
+            columns = statistical_columns
+        elif self.report_type == "cross-validation":
+            columns = ["split_index"] + statistical_columns
+        elif self.report_type == "comparison-estimator":
+            columns = ["estimator_name"] + statistical_columns
+        else:  # self.report_type == "comparison-cross-validation"
+            columns = ["estimator_name", "split_index"] + statistical_columns
+
+        return self.prediction_error[columns]

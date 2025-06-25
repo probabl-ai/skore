@@ -1,7 +1,7 @@
 <div align="center">
 
   ![license](https://img.shields.io/pypi/l/skore)
-  ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue?style=flat&logo=python)
+  ![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue?style=flat&logo=python)
   [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
   [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
   [![Discord](https://img.shields.io/discord/1275821367324840119?label=Discord)](https://discord.probabl.ai/)
@@ -14,7 +14,7 @@
     <source srcset="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Dark@2x.svg" media="(prefers-color-scheme: dark)">
     <img width="200" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" alt="skore logo">
   </picture>
-  <h3>the scikit-learn sidekick</h3>
+  <h3>Own Your Data Science</h3>
 
 Elevate ML Development with Built-in Recommended Practices \
 [Documentation](https://docs.skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3) — [Skore Hub](https://probabl.ai/skore)
@@ -25,8 +25,8 @@ Elevate ML Development with Built-in Recommended Practices \
 
 ## 🧩 What is Skore?
 
-**Skore** is a product whose core mission is to turn uneven ML development into structured, effective decision-making. It is made of two complementary components:
-- **Skore Lib**: the scikit-learn sidekick, an open-source Python library (described here!) designed to help data scientists boost their ML development with effective guidance and tooling.
+The core mission of **Skore** is to turn uneven ML development into structured, effective decision-making. It is made of two complementary components:
+- **Skore Lib**: the open-source Python library (described here!) designed to help data scientists boost their ML development with effective guidance and tooling.
 - **Skore Hub**: the collaborative layer where teams connect, learn more on our [product page](https://probabl.ai/skore).
 
 ⭐ Support us with a star and spread the word - it means a lot! ⭐
@@ -51,7 +51,7 @@ Skore Lib is just at the beginning of its journey, but we’re shipping fast! Fr
 
 #### With pip
 
-We recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.9`.
+We recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.10`.
 
 Then, you can install skore by using `pip`:
 ```bash
@@ -63,13 +63,11 @@ pip install -U skore[hub]
 
 #### With conda
 
-skore is available in `conda-forge` for local use:
+skore is available in `conda-forge` both for local and hub use:
 
 ```bash
 conda install conda-forge::skore
 ```
-
-It is not yet possible to interact with the skore hub when the skore is installed via conda.
 
 You can find information on the latest version [here](https://anaconda.org/conda-forge/skore).
 
@@ -93,8 +91,8 @@ cv_report.help()
 
 ```python
 # Display the report metrics that was computed for you:
-df_cv_report_metrics = cv_report.metrics.report_metrics()
-df_cv_report_metrics
+metrics_summary = cv_report.metrics.summarize()
+metrics_summary
 ```
 
 ```python
@@ -150,20 +148,20 @@ Join our mission to promote open-source and make machine learning development mo
 
 ## Support
 
-Skore is tested on Linux and Windows, for at most 4 versions of Python, and at most 3 versions of scikit-learn:
-- Python 3.9 (will be deprecated)
-  - scikit-learn 1.6
+Skore is tested on Linux and Windows, for at most 4 versions of Python, and at most 4 versions of scikit-learn:
 - Python 3.10
-  - scikit-learn 1.6
+  - scikit-learn 1.4
+  - scikit-learn 1.7
 - Python 3.11
-  - scikit-learn 1.6
+  - scikit-learn 1.4
+  - scikit-learn 1.7
 - Python 3.12
   - scikit-learn 1.4
-  - scikit-learn 1.5
-  - scikit-learn 1.6
+  - scikit-learn 1.7
 - Python 3.13
   - scikit-learn 1.5
   - scikit-learn 1.6
+  - scikit-learn 1.7
 
 ---
 

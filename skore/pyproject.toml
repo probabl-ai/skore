@@ -1,8 +1,8 @@
 [project]
 name = "skore"
-description = "the scikit-learn sidekick"
+description = "Own Your Data Science"
 dynamic = ["license", "readme", "version"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 classifiers = [
   "Intended Audience :: Science/Research",
@@ -17,7 +17,6 @@ classifiers = [
   "Operating System :: Unix",
   "Operating System :: MacOS",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -45,7 +44,6 @@ test-base = [
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "scikit-learn<1.7",
   "skrub",
   "xdoctest",
 ]
@@ -57,7 +55,6 @@ sphinx-base = [
   "numpydoc",
   "plotly>=5,<6",
   "pydata-sphinx-theme",
-  "scikit-learn<1.7",
   "seaborn",
   "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
   "skrub",
@@ -153,7 +150,6 @@ select = [
 convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
-"src/*" = ["UP007"]
 "tests/*" = ["D"]
 
 [tool.mypy]

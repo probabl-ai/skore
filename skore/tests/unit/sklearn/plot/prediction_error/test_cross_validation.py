@@ -5,6 +5,7 @@ import pytest
 from skore import CrossValidationReport
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
+from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -23,7 +24,7 @@ def test_regression(pyplot, regression_data_no_split, data_source):
 
     # check the structure of the attributes
     assert isinstance(display.prediction_error, pd.DataFrame)
-    assert len(display.prediction_error["split_index"].unique()) == cv
+    assert display.prediction_error["split_index"].nunique() == cv
     assert display.data_source == data_source
     assert isinstance(display.range_y_true, RangeData)
     assert isinstance(display.range_y_pred, RangeData)
@@ -48,10 +49,7 @@ def test_regression(pyplot, regression_data_no_split, data_source):
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     data_source_title = "external" if data_source == "X_y" else data_source
-    assert (
-        legend.get_title().get_text()
-        == f"LinearRegression on $\\bf{{{data_source_title}}}$ set"
-    )
+    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
     assert len(legend.get_texts()) == 4
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -70,7 +68,7 @@ def test_regression_actual_vs_predicted(pyplot, regression_data_no_split):
 
     # check the structure of the attributes
     assert isinstance(display.prediction_error, pd.DataFrame)
-    assert len(display.prediction_error["split_index"].unique()) == cv
+    assert display.prediction_error["split_index"].nunique() == cv
     assert display.data_source == "test"
 
     assert isinstance(display.line_, mpl.lines.Line2D)
@@ -83,7 +81,7 @@ def test_regression_actual_vs_predicted(pyplot, regression_data_no_split):
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "LinearRegression on $\\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == 4
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -107,7 +105,7 @@ def test_kwargs(pyplot, regression_data_no_split):
         [[0.0, 0.50196078, 0.0, 0.3]],
         [[0.0, 0.0, 1.0, 0.3]],
     ]
-    for scatter, rgb_color in zip(display.scatter_, rgb_colors):
+    for scatter, rgb_color in zip(display.scatter_, rgb_colors, strict=False):
         np.testing.assert_allclose(scatter.get_facecolor(), rgb_color, rtol=1e-3)
     assert display.line_.get_color() == "orange"
 
@@ -128,3 +126,53 @@ def test_wrong_kwargs(pyplot, regression_data_no_split, data_points_kwargs):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(data_points_kwargs=data_points_kwargs)
+
+
+def test_frame(regression_data_no_split):
+    """Test the frame method with cross-validation data."""
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.prediction_error()
+    df = display.frame()
+
+    expected_index = ["split_index"]
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == cv
+
+
+def test_legend(pyplot, regression_data_no_split):
+    """Check the rendering of the legend for prediction error with an
+    `CrossValidationReport`."""
+
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.prediction_error()
+    display.plot()
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    check_legend_position(display.ax_, loc="lower right", position="inside")
+
+    cv = 10
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.prediction_error()
+    display.plot()
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+    display.plot(kind="actual_vs_predicted")
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+
+def test_constructor(regression_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.prediction_error()
+
+    index_columns = ["estimator_name", "split_index"]
+    for df in [display.prediction_error]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].unique().tolist() == list(range(cv))

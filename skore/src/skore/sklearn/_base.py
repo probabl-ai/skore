@@ -2,7 +2,7 @@ import inspect
 import re
 from abc import ABC, abstractmethod
 from io import StringIO
-from typing import Any, Generic, Literal, Optional, TypeVar, Union, cast
+from typing import Any, Generic, Literal, TypeVar, cast
 
 import joblib
 from numpy.typing import ArrayLike, NDArray
@@ -61,7 +61,7 @@ class _HelpMixin(ABC):
         search_result = re.search(regex_pattern, self.__doc__)
         return search_result.group(1) if search_result else "No description available"
 
-    def _get_help_legend(self) -> Optional[str]:
+    def _get_help_legend(self) -> str | None:
         """Get the help legend."""
         return None
 
@@ -75,7 +75,7 @@ class _HelpMixin(ABC):
 
     def _create_help_panel(self) -> Panel:
         """Create the help panel."""
-        content: Union[Tree, Group]
+        content: Tree | Group
         if self._get_help_legend():
             content = Group(
                 self._create_help_tree(),
@@ -116,10 +116,10 @@ class _BaseReport(_HelpMixin):
     """Base class for all reports."""
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
-    _X_train: Optional[ArrayLike]
-    _X_test: Optional[ArrayLike]
-    _y_train: Optional[ArrayLike]
-    _y_test: Optional[ArrayLike]
+    _X_train: ArrayLike | None
+    _X_test: ArrayLike | None
+    _y_train: ArrayLike | None
+    _y_test: ArrayLike | None
     estimator_: BaseEstimator
 
     def _get_help_panel_title(self) -> str:
@@ -245,9 +245,9 @@ class _BaseAccessor(_HelpMixin, Generic[ParentT]):
         self,
         *,
         data_source: Literal["test", "train", "X_y"],
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-    ) -> tuple[ArrayLike, Optional[ArrayLike], Optional[int]]:
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+    ) -> tuple[ArrayLike, ArrayLike | None, int | None]:
         """Get the requested dataset and mention if we should hash before caching.
 
         Parameters
@@ -325,11 +325,11 @@ def _get_cached_response_values(
     cache: dict[tuple[Any, ...], Any],
     estimator_hash: int,
     estimator: BaseEstimator,
-    X: Union[ArrayLike, None],
-    response_method: Union[str, list[str], tuple[str, ...]],
-    pos_label: Optional[PositiveLabel] = None,
+    X: ArrayLike | None,
+    response_method: str | list[str] | tuple[str, ...],
+    pos_label: PositiveLabel | None = None,
     data_source: Literal["test", "train", "X_y"] = "test",
-    data_source_hash: Optional[int] = None,
+    data_source_hash: int | None = None,
 ) -> list[tuple[tuple[Any, ...], Any, bool]]:
     """Compute or load from local cache the response values.
 
@@ -429,3 +429,74 @@ def _get_cached_response_values(
         (cache_key, predictions, False),
         (predict_time_cache_key, predict_time(), False),
     ]
+
+
+class _BaseMetricsAccessor:
+    _score_or_loss_info: dict[str, dict[str, str]] = {
+        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
+        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
+        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
+        "precision": {"name": "Precision", "icon": "(↗︎)"},
+        "recall": {"name": "Recall", "icon": "(↗︎)"},
+        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
+        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
+        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
+        "r2": {"name": "R²", "icon": "(↗︎)"},
+        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
+        "custom_metric": {"name": "Custom metric", "icon": ""},
+        "report_metrics": {"name": "Report metrics", "icon": ""},
+    }
+
+    ####################################################################################
+    # Methods related to the help tree
+    ####################################################################################
+
+    def _sort_methods_for_help(self, methods: list[tuple]) -> list[tuple]:
+        """Override sort method for metrics-specific ordering.
+
+        In short, we display the `summarize` first and then the `custom_metric`.
+        """
+
+        def _sort_key(method):
+            name = method[0]
+            if name == "custom_metric":
+                priority = 1
+            elif name == "summarize":
+                priority = 2
+            else:
+                priority = 0
+            return priority, name
+
+        return sorted(methods, key=_sort_key)
+
+    def _format_method_name(self, name: str) -> str:
+        """Override format method for metrics-specific naming."""
+        method_name = f"{name}(...)"
+        method_name = method_name.ljust(22)
+        if name in self._score_or_loss_info and self._score_or_loss_info[name][
+            "icon"
+        ] in (
+            "(↗︎)",
+            "(↘︎)",
+        ):
+            if self._score_or_loss_info[name]["icon"] == "(↗︎)":
+                method_name += f"[cyan]{self._score_or_loss_info[name]['icon']}[/cyan]"
+                return method_name.ljust(43)
+            else:  # (↘︎)
+                method_name += (
+                    f"[orange1]{self._score_or_loss_info[name]['icon']}[/orange1]"
+                )
+                return method_name.ljust(49)
+        else:
+            return method_name.ljust(29)
+
+    def _get_help_panel_title(self) -> str:
+        return "[bold cyan]Available metrics methods[/bold cyan]"
+
+    def _get_help_tree_title(self) -> str:
+        return "[bold cyan]report.metrics[/bold cyan]"
+
+    def _get_help_legend(self) -> str:
+        return (
+            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
+        )

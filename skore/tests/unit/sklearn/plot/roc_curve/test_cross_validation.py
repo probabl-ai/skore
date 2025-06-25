@@ -1,9 +1,12 @@
 import matplotlib as mpl
 import numpy as np
 import pytest
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
 from skore import CrossValidationReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
+from skore.utils._testing import check_frame_structure, check_legend_position
 from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
@@ -32,8 +35,8 @@ def test_binary_classification(
         == [display.pos_label]
     )
     assert (
-        len(display.roc_curve["split_index"].unique())
-        == len(display.roc_auc["split_index"].unique())
+        display.roc_curve["split_index"].nunique()
+        == display.roc_auc["split_index"].nunique()
         == cv
     )
 
@@ -47,7 +50,7 @@ def test_binary_classification(
             f"label == {pos_label} & split_index == {split_idx}"
         )["roc_auc"].item()
         assert line.get_label() == (
-            f"Estimator of fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
+            f"Fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
         )
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
 
@@ -57,11 +60,8 @@ def test_binary_classification(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    data_source_title = "external" if data_source == "X_y" else data_source
-    assert (
-        legend.get_title().get_text()
-        == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
-    )
+    data_source_title = "External" if data_source == "X_y" else data_source
+    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
     assert len(legend.get_texts()) == cv + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
@@ -69,6 +69,7 @@ def test_binary_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -96,8 +97,8 @@ def test_multiclass_classification(
         == list(class_labels)
     )
     assert (
-        len(display.roc_curve["split_index"].unique())
-        == len(display.roc_auc["split_index"].unique())
+        display.roc_curve["split_index"].nunique()
+        == display.roc_auc["split_index"].nunique()
         == cv
     )
 
@@ -105,7 +106,7 @@ def test_multiclass_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * cv
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for class_label, expected_color in zip(class_labels, default_colors):
+    for class_label, expected_color in zip(class_labels, default_colors, strict=False):
         for split_idx in range(cv):
             roc_curve_mpl = display.lines_[class_label * cv + split_idx]
             assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
@@ -126,11 +127,8 @@ def test_multiclass_classification(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    data_source_title = "external" if data_source == "X_y" else data_source
-    assert (
-        legend.get_title().get_text()
-        == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
-    )
+    data_source_title = "External" if data_source == "X_y" else data_source
+    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
     assert len(legend.get_texts()) == cv + 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate"
@@ -138,6 +136,7 @@ def test_multiclass_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
 
 
 @pytest.mark.parametrize(
@@ -183,3 +182,118 @@ def test_multiple_roc_curve_kwargs_error(
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
+
+
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_binary_classification(binary_classification_data_no_split, with_roc_auc):
+    """Test the frame method with binary classification data."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
+    expected_index = ["split_index"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_roc_auc:
+        expected_columns.append("roc_auc")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == cv
+
+    if with_roc_auc:
+        for (_), group in df.groupby(["split_index"], observed=True):
+            assert group["roc_auc"].nunique() == 1
+
+
+@pytest.mark.parametrize("with_roc_auc", [False, True])
+def test_frame_multiclass_classification(
+    multiclass_classification_data_no_split, with_roc_auc
+):
+    """Test the frame method with multiclass classification data."""
+    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
+    expected_index = ["split_index", "label"]
+    expected_columns = ["threshold", "fpr", "tpr"]
+    if with_roc_auc:
+        expected_columns.append("roc_auc")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == cv
+    assert df["label"].nunique() == len(np.unique(y))
+
+    if with_roc_auc:
+        for (_, _), group in df.groupby(["split_index", "label"], observed=True):
+            assert group["roc_auc"].nunique() == 1
+
+
+def test_legend(
+    pyplot, binary_classification_data_no_split, multiclass_classification_data_no_split
+):
+    """Check the rendering of the legend for ROC curves with a
+    `CrossValidationReport`."""
+
+    # binary classification <= 5 folds
+    estimator, X, y = binary_classification_data_no_split
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="lower right", position="inside")
+
+    # binary classification > 5 folds
+    estimator, X, y = binary_classification_data_no_split
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+    # multiclass classification <= 5 classes
+    estimator, X, y = multiclass_classification_data_no_split
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="lower right", position="inside")
+
+    # multiclass classification > 5 classes
+    estimator = LogisticRegression()
+    X, y = make_classification(
+        n_samples=1_000,
+        n_classes=10,
+        n_clusters_per_class=1,
+        n_informative=10,
+        random_state=42,
+    )
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
+    display = report.metrics.roc()
+    display.plot()
+    check_legend_position(display.ax_, loc="upper left", position="outside")
+
+
+def test_binary_classification_constructor(binary_classification_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.roc()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    for df in [display.roc_curve, display.roc_auc]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].nunique() == cv
+        assert df["label"].unique() == 1
+
+    assert len(display.roc_auc) == cv
+
+
+def test_multiclass_classification_constructor(multiclass_classification_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.roc()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    for df in [display.roc_curve, display.roc_auc]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].unique().tolist() == list(range(cv))
+        np.testing.assert_array_equal(df["label"].unique(), np.unique(y))
+
+    assert len(display.roc_auc) == len(np.unique(y)) * cv

@@ -10,6 +10,7 @@ from skore.sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
 from skore.sklearn._plot.utils import sample_mpl_colormap
+from skore.utils._testing import check_frame_structure, check_legend_position
 from skore.utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
@@ -75,8 +76,9 @@ def test_binary_classification(pyplot, binary_classification_report):
         assert list(precision_recall_mpl.get_color()[:3]) == list(default_colors[i][:3])
 
     assert isinstance(display.ax_, mpl.axes.Axes)
+    check_legend_position(display.ax_, loc="lower left", position="inside")
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == r"Binary-Classification on $\bf{test}$ set"
+    assert legend.get_title().get_text() == "Test set"
     assert len(legend.get_texts()) == n_reports
 
     assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
@@ -84,6 +86,7 @@ def test_binary_classification(pyplot, binary_classification_report):
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_title() == "Precision-Recall Curve"
 
 
 def test_multiclass_classification(pyplot, multiclass_classification_report):
@@ -124,12 +127,10 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
         )
 
     assert isinstance(display.ax_, np.ndarray)
-    for label, ax in zip(labels, display.ax_):
+    for label, ax in zip(labels, display.ax_, strict=False):
+        check_legend_position(ax, loc="lower left", position="inside")
         legend = ax.get_legend()
-        assert (
-            legend.get_title().get_text()
-            == r"Multiclass-Classification on $\bf{test}$ set"
-        )
+        assert legend.get_title().get_text() == "Test set"
         assert len(legend.get_texts()) == n_reports
 
         assert ax.get_xlabel() == f"Recall\n(Positive label: {label})"
@@ -137,6 +138,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
         assert ax.get_adjustable() == "box"
         assert ax.get_aspect() in ("equal", 1.0)
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
+    assert display.figure_.get_suptitle() == "Precision-Recall Curve"
 
 
 def test_binary_classification_wrong_kwargs(pyplot, binary_classification_report):
@@ -216,3 +218,105 @@ def test_multiclass_classification_kwargs(pyplot, multiclass_classification_repo
 
     display.plot(despine=False)
     assert display.ax_[0].spines["top"].get_visible()
+
+
+def test_binary_classification_constructor(binary_classification_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    # add a different number of splits for the second report
+    report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.precision_recall()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    for df in [display.precision_recall, display.average_precision]:
+        assert all(col in df.columns for col in index_columns)
+        assert df.query("estimator_name == 'estimator_1'")[
+            "split_index"
+        ].unique().tolist() == list(range(cv))
+        assert df.query("estimator_name == 'estimator_2'")[
+            "split_index"
+        ].unique().tolist() == list(range(cv + 1))
+        assert df["estimator_name"].unique().tolist() == report.report_names_
+        assert df["label"].unique() == 1
+
+    assert len(display.average_precision) == cv + (cv + 1)
+
+
+def test_multiclass_classification_constructor(multiclass_classification_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.precision_recall()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    classes = np.unique(y)
+    for df in [display.precision_recall, display.average_precision]:
+        assert all(col in df.columns for col in index_columns)
+        assert df.query("estimator_name == 'estimator_1'")[
+            "split_index"
+        ].unique().tolist() == list(range(cv))
+        assert df.query("estimator_name == 'estimator_2'")[
+            "split_index"
+        ].unique().tolist() == list(range(cv + 1))
+        assert df["estimator_name"].unique().tolist() == report.report_names_
+        np.testing.assert_array_equal(df["label"].unique(), classes)
+
+    assert len(display.average_precision) == len(classes) * cv + len(classes) * (cv + 1)
+
+
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_binary_classification(
+    binary_classification_report, with_average_precision
+):
+    """Test the frame method with binary classification comparison cross-validation
+    data."""
+    report = binary_classification_report
+    display = report.metrics.precision_recall()
+
+    df = display.frame(with_average_precision=with_average_precision)
+    expected_index = ["estimator_name", "split_index"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == len(report.reports_)
+
+    if with_average_precision:
+        for (_, _), group in df.groupby(
+            ["estimator_name", "split_index"], observed=True
+        ):
+            assert group["average_precision"].nunique() == 1
+
+
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_multiclass_classification(
+    multiclass_classification_report, with_average_precision
+):
+    """Test the frame method with multiclass classification comparison cross-validation
+    data."""
+    report = multiclass_classification_report
+    display = report.metrics.precision_recall()
+
+    df = display.frame(with_average_precision=with_average_precision)
+    expected_index = ["estimator_name", "split_index", "label"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == len(report.reports_)
+
+    if with_average_precision:
+        for (_, _, _), group in df.groupby(
+            ["estimator_name", "split_index", "label"], observed=True
+        ):
+            assert group["average_precision"].nunique() == 1

@@ -1,6 +1,6 @@
 """Widget for interactive parallel coordinate plots of ML experiment metadata."""
 
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -35,7 +35,7 @@ class ModelExplorerWidget:
     """
 
     _plot_width: int = 800
-    _metrics: dict[str, dict[str, Union[str, bool]]] = {
+    _metrics: dict[str, dict[str, str | bool]] = {
         "fit_time": {
             "name": "Fit Time",
             "greater_is_better": False,
@@ -77,7 +77,7 @@ class ModelExplorerWidget:
     _required_columns: list[str] = (
         ["ml_task", "dataset"] + list(_estimators.keys()) + list(_metrics.keys())
     )
-    _required_index: list[Union[str, None]] = [None, "id"]
+    _required_index: list[str | None] = [None, "id"]
 
     def _check_dataframe_schema(self, dataframe: pd.DataFrame) -> None:
         """Check if the dataframe has the required columns and index."""
@@ -102,7 +102,7 @@ class ModelExplorerWidget:
         self.dataframe = dataframe
         self.seed = seed
 
-        self.current_fig: Optional[go.FigureWidget] = None
+        self.current_fig: go.FigureWidget | None = None
         self.current_selection: dict[str, Any] = {}
 
         self._clf_datasets: np.ndarray = self.dataframe.query(
@@ -412,7 +412,7 @@ class ModelExplorerWidget:
         rng = np.random.default_rng(seed)
         encoded_categories = categorical_series.cat.codes.to_numpy()
         jitter = rng.uniform(-amount, amount, size=len(encoded_categories))
-        for sign, cat in zip([1, -1], [0, len(encoded_categories) - 1]):
+        for sign, cat in zip([1, -1], [0, len(encoded_categories) - 1], strict=False):
             jitter[encoded_categories == cat] = (
                 np.abs(
                     jitter[encoded_categories == cat],
@@ -423,7 +423,7 @@ class ModelExplorerWidget:
 
         return encoded_categories + jitter
 
-    def _update_plot(self, change: Optional[dict[str, Any]] = None) -> None:
+    def _update_plot(self, change: dict[str, Any] | None = None) -> None:
         """Update the parallel coordinates plot based on the selected options.
 
         Creates a new plotly figure with dimensions for the selected metrics
@@ -558,7 +558,7 @@ class ModelExplorerWidget:
             from skore import console  # avoid circular import
 
             content = (
-                "No reports found in the project. Use the `put` method to add reports."
+                "No report found in the project. Use the `put` method to add reports."
             )
             console.print(
                 Panel(

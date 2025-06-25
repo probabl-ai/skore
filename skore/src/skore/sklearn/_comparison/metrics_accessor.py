@@ -1,4 +1,5 @@
-from typing import Any, Callable, Literal, Optional, Union, cast
+from collections.abc import Callable
+from typing import Any, Literal, cast
 
 import joblib
 import numpy as np
@@ -8,14 +9,20 @@ from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore.sklearn._base import (
+    _BaseAccessor,
+    _BaseMetricsAccessor,
+    _get_cached_response_values,
+)
 from skore.sklearn._comparison.report import ComparisonReport
 from skore.sklearn._plot.metrics import (
+    MetricsSummaryDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
 from skore.sklearn.types import (
+    _DEFAULT,
     Aggregate,
     PositiveLabel,
     Scoring,
@@ -32,42 +39,29 @@ from .utils import _combine_cross_validation_results, _combine_estimator_results
 DataSource = Literal["test", "train", "X_y"]
 
 
-class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
+class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
 
-    _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
-        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
-        "precision": {"name": "Precision", "icon": "(↗︎)"},
-        "recall": {"name": "Recall", "icon": "(↗︎)"},
-        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
-        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
-        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
-        "r2": {"name": "R²", "icon": "(↗︎)"},
-        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
-        "custom_metric": {"name": "Custom metric", "icon": ""},
-        "report_metrics": {"name": "Report metrics", "icon": ""},
-    }
-
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
 
-    def report_metrics(
+    def summarize(
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        scoring: Optional[Union[Scoring, list[Scoring]]] = None,
-        scoring_names: Optional[Union[ScoringName, list[ScoringName]]] = None,
-        scoring_kwargs: Optional[dict[str, Any]] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        scoring: Scoring | list[Scoring] | None = None,
+        scoring_names: ScoringName | list[ScoringName] | None = None,
+        scoring_kwargs: dict[str, Any] | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
-    ) -> pd.DataFrame:
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> MetricsSummaryDisplay:
         """Report a set of metrics for the estimators.
 
         Parameters
@@ -108,8 +102,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         indicator_favorability : bool, default=False
             Whether or not to add an indicator of the favorability of the metric as
@@ -126,8 +123,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The statistics for the metrics.
+        MetricsSummaryDisplay
+            A display containing the statistics for the metrics.
 
         Examples
         --------
@@ -144,17 +141,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
-        >>> comparison_report.metrics.report_metrics(
+        >>> comparison_report.metrics.summarize(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
-        ... )
+        ... ).frame()
         Estimator       LogisticRegression_1  LogisticRegression_2
         Metric
         Precision                    0.96...               0.96...
         Recall                       0.97...               0.97...
         """
         results = self._compute_metric_scores(
-            report_metric_name="report_metrics",
+            report_metric_name="summarize",
             data_source=data_source,
             X=X,
             y=y,
@@ -174,17 +171,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return results
+        return MetricsSummaryDisplay(results)
 
-    @progress_decorator(description="Compute metric for each split")
+    @progress_decorator(description="Compute metric for each estimator")
     def _compute_metric_scores(
         self,
         report_metric_name: str,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
         **metric_kwargs: Any,
     ):
         # build the cache key components to finally create a tuple that will be used
@@ -205,7 +202,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         # to make sure that we hit the cache in a consistent way
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
         for key in ordered_metric_kwargs:
-            if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
+            if isinstance(metric_kwargs[key], np.ndarray | list | dict):
                 cache_key_parts.append(joblib.hash(metric_kwargs[key]))
             else:
                 cache_key_parts.append(metric_kwargs[key])
@@ -243,7 +240,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             )
             individual_results = []
             for result in generator:
-                individual_results.append(result)
+                if report_metric_name == "summarize":
+                    # for summarize, the output is a display
+                    individual_results.append(result.frame())
+                else:
+                    individual_results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
             if self._parent._reports_type == "EstimatorReport":
@@ -269,7 +270,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     def timings(
         self,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Get all measured processing times related to the different estimators.
 
@@ -362,9 +363,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -415,13 +416,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         Accuracy                    0.96...               0.96...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["accuracy"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -432,13 +433,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["binary", "macro", "micro", "weighted", "samples"]
-        ] = None,
-        pos_label: Optional[PositiveLabel] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -484,8 +485,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -518,7 +522,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Precision                 0               0.96...               0.96...
                                   1               0.96...               0.96...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["precision"],
             data_source=data_source,
             X=X,
@@ -526,7 +530,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             pos_label=pos_label,
             scoring_kwargs={"average": average},
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -537,13 +541,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["binary", "macro", "micro", "weighted", "samples"]
-        ] = None,
-        pos_label: Optional[PositiveLabel] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -590,8 +594,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -624,7 +631,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Recall                    0              0.944...              0.944...
                                   1              0.977...              0.977...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["recall"],
             data_source=data_source,
             X=X,
@@ -632,7 +639,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             pos_label=pos_label,
             scoring_kwargs={"average": average},
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
@@ -641,9 +648,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
@@ -694,13 +701,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         Brier score                   0.025...              0.025...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["brier_score"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -711,13 +718,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        average: Optional[
-            Literal["auto", "macro", "micro", "weighted", "samples"]
-        ] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        average: Literal["auto", "macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
@@ -802,14 +807,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         ROC AUC                     0.99...               0.99...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["roc_auc"],
             data_source=data_source,
             X=X,
             y=y,
             scoring_kwargs={"average": average, "multi_class": multi_class},
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -820,9 +825,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the log loss.
 
@@ -873,13 +878,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         Log loss                   0.082...              0.082...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["log_loss"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -890,10 +895,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the R² score.
 
@@ -954,14 +959,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         R²            0.43...    0.43...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["r2"],
             data_source=data_source,
             X=X,
             y=y,
             scoring_kwargs={"multioutput": multioutput},
             aggregate=aggregate,
-        )
+        ).frame()
 
     @available_if(
         _check_supported_ml_task(
@@ -972,10 +977,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
@@ -1036,25 +1041,25 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric
         RMSE          55.726...     55.726...
         """
-        return self.report_metrics(
+        return self.summarize(
             scoring=["rmse"],
             data_source=data_source,
             X=X,
             y=y,
             scoring_kwargs={"multioutput": multioutput},
             aggregate=aggregate,
-        )
+        ).frame()
 
     def custom_metric(
         self,
         metric_function: Callable,
-        response_method: Union[str, list[str]],
+        response_method: str | list[str],
         *,
-        metric_name: Optional[str] = None,
+        metric_name: str | None = None,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        aggregate: Aggregate | None = ("mean", "std"),
         **kwargs: Any,
     ) -> pd.DataFrame:
         """Compute a custom metric.
@@ -1144,72 +1149,23 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             response_method=response_method,
             **kwargs,
         )
-        return self.report_metrics(
+        return self.summarize(
             scoring=[scorer],
             data_source=data_source,
             X=X,
             y=y,
             scoring_names=[metric_name] if metric_name is not None else None,
             aggregate=aggregate,
-        )
+        ).frame()
 
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
 
-    def _sort_methods_for_help(
-        self, methods: list[tuple[str, Callable]]
-    ) -> list[tuple[str, Callable]]:
-        """Override sort method for metrics-specific ordering.
-
-        In short, we display the `report_metrics` first and then the `custom_metric`.
-        """
-
-        def _sort_key(method):
-            name = method[0]
-            if name == "custom_metric":
-                priority = 1
-            elif name == "report_metrics":
-                priority = 2
-            else:
-                priority = 0
-            return priority, name
-
-        return sorted(methods, key=_sort_key)
-
-    def _format_method_name(self, name: str) -> str:
-        """Override format method for metrics-specific naming."""
-        method_name = f"{name}(...)"
-        method_name = method_name.ljust(22)
-        if name in self._SCORE_OR_LOSS_INFO and self._SCORE_OR_LOSS_INFO[name][
-            "icon"
-        ] in ("(↗︎)", "(↘︎)"):
-            if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
-                return method_name.ljust(43)
-            else:  # (↘︎)
-                method_name += (
-                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
-                )
-                return method_name.ljust(49)
-        else:
-            return method_name.ljust(29)
-
     def _get_methods_for_help(self) -> list[tuple[str, Callable]]:
         """Override to exclude the plot accessor from methods list."""
         methods = super()._get_methods_for_help()
         return [(name, method) for name, method in methods if name != "plot"]
-
-    def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available metrics methods[/bold cyan]"
-
-    def _get_help_legend(self) -> str:
-        return (
-            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
-        )
-
-    def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.metrics[/bold cyan]"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
@@ -1223,15 +1179,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def _get_display(
         self,
         *,
-        X: Union[ArrayLike, None],
-        y: Union[ArrayLike, None],
+        X: ArrayLike | None,
+        y: ArrayLike | None,
         data_source: DataSource,
-        response_method: Union[str, list[str]],
+        response_method: str | list[str],
         display_class: type[
-            Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
+            RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay
         ],
         display_kwargs: dict[str, Any],
-    ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
+    ) -> RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay:
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1287,7 +1243,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             if self._parent._reports_type == "EstimatorReport":
                 for report, report_name in zip(
-                    self._parent.reports_, self._parent.report_names_
+                    self._parent.reports_, self._parent.report_names_, strict=False
                 ):
                     report_X, report_y, _ = (
                         report.metrics._get_X_y_and_data_source_hash(
@@ -1333,7 +1289,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     y_pred=y_pred,
                     report_type="comparison-estimator",
                     estimators=[report.estimator_ for report in self._parent.reports_],
-                    estimator_names=self._parent.report_names_,
                     ml_task=self._parent._ml_task,
                     data_source=data_source,
                     **display_kwargs,
@@ -1341,7 +1296,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             else:
                 for report, report_name in zip(
-                    self._parent.reports_, self._parent.report_names_
+                    self._parent.reports_, self._parent.report_names_, strict=False
                 ):
                     for split_index, estimator_report in enumerate(
                         report.estimator_reports_
@@ -1395,7 +1350,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         for report in self._parent.reports_
                         for estimator_report in report.estimator_reports_
                     ],
-                    estimator_names=self._parent.report_names_,
                     ml_task=self._parent._ml_task,
                     data_source=data_source,
                     **display_kwargs,
@@ -1417,9 +1371,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1440,8 +1394,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -1466,6 +1423,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.roc()
         >>> display.plot()
         """
+        if pos_label == _DEFAULT:
+            pos_label = self._parent.pos_label
+
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
         display = cast(
@@ -1490,9 +1450,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        pos_label: Optional[PositiveLabel] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
@@ -1513,8 +1473,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -1539,6 +1502,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.precision_recall()
         >>> display.plot()
         """
+        if pos_label == _DEFAULT:
+            pos_label = self._parent.pos_label
+
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
         display = cast(
@@ -1563,10 +1529,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         subsample: int = 1_000,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
