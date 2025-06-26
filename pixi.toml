@@ -1,0 +1,71 @@
+[workspace]
+authors = ["skore developers <skore@signal.probabl.ai>"]
+channels = ["conda-forge"]
+name = "skore"
+platforms = ["linux-64", "win-64"]
+
+[dependencies]
+python = ">=3.10,<=3.13"
+
+[pypi-dependencies]
+skore = { path = "./skore", editable = true, extras = [
+  "test",
+  "sphinx",
+  "dev",
+] }
+skore-hub-project = { path = "./skore-hub-project", editable = true, extras = [
+  "test",
+] }
+skore-local-project = { path = "./skore-local-project", editable = true, extras = [
+  "test",
+] }
+
+[feature.lts-cpu.pypi-dependencies]
+skore = { path = "./skore", editable = true, extras = [
+  "test-lts-cpu",
+  "sphinx-lts-cpu",
+  "dev",
+] }
+
+[environments]
+default = ["default"]
+lts-cpu = ["default", "lts-cpu"]
+
+[tasks]
+lint = { cmd = ["pre-commit", "run", "--all-files"] }
+test = { cmd = ["pytest"] }
+
+[tasks.docs]
+cwd = "sphinx"
+cmd = ["sphinx-build", "$SOURCEDIR", "$BUILDDIR", "$SPHINXOPTS"]
+
+[tasks.docs.env]
+SPHINXOPTS = "--fail-on-warning"
+SOURCEDIR = "."
+BUILDDIR = "build"
+SPHINX_APIDOC_OPTIONS = "members,show-inheritance"
+SPHINX_DOMAIN = "docs.skore.probabl.ai"
+SPHINX_VERSION = "dev"
+SPHINX_RELEASE = "0.0.0+dev"
+
+[tasks.docs-no-examples]
+cwd = "sphinx"
+cmd = [
+  "sphinx-build",
+  "--builder",
+  "html",
+  "--define",
+  "plot_gallery=0",
+  "$SOURCEDIR",
+  "$BUILDDIR/html",
+  "$SPHINXOPTS",
+]
+
+[tasks.docs-no-examples.env]
+SPHINXOPTS = "--fail-on-warning"
+SOURCEDIR = "."
+BUILDDIR = "build"
+SPHINX_APIDOC_OPTIONS = "members,show-inheritance"
+SPHINX_DOMAIN = "docs.skore.probabl.ai"
+SPHINX_VERSION = "dev"
+SPHINX_RELEASE = "0.0.0+dev"
