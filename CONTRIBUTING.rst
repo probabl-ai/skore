@@ -99,6 +99,9 @@ Once your environment is set up, install the development dependencies and setup 
 
         make install-skore-lts-cpu
 
+Consider re-executing this command each time you rebase your branch with main, as dependencies can change.
+
+
 Choosing an issue
 -----------------
 
