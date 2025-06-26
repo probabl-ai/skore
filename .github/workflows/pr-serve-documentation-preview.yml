@@ -24,6 +24,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download HTML artifacts
+        id: download-html-artifacts
+        continue-on-error: True
         uses: actions/download-artifact@v4
         with:
           name: sphinx-html-artifact
@@ -32,10 +34,12 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
 
       - name: Acquire PR context
+        if: ${{ steps.download-html-artifacts.outcome == 'success' }}
         id: acquire-pr-context
         uses: ./.github/actions/workflow-run/context
 
       - name: Serve documentation preview
+        if: ${{ steps.download-html-artifacts.outcome == 'success' }}
         uses: ./.github/actions/sphinx/deploy
         with:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOC_PREVIEW }}
@@ -44,6 +48,7 @@ jobs:
           DESTINATION: ${{ steps.acquire-pr-context.outputs.pr-number }}/
 
       - name: Comment with documentation preview link
+        if: ${{ steps.download-html-artifacts.outcome == 'success' }}
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           number: ${{ steps.acquire-pr-context.outputs.pr-number }}
