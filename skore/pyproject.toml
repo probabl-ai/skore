@@ -65,8 +65,6 @@ sphinx-base = [
   "sphinx-tabs",
   "sphinx_autosummary_accessors",
   "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
-]
-sphinx-ml = [
   "aeon",
   "skorch",
   "tabicl @ git+https://github.com/soda-inria/tabicl.git",
@@ -75,8 +73,8 @@ sphinx-ml = [
   "tslearn",
   "xgboost",
 ]
-sphinx = ["skore[sphinx-base,sphinx-ml]", "polars"]
-sphinx-lts-cpu = ["skore[sphinx-base,sphinx-ml]", "polars-lts-cpu"]
+sphinx = ["skore[sphinx-base]", "polars"]
+sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]
 dev = [
   "nbformat",
   "ipykernel",
