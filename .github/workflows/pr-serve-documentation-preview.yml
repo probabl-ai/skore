@@ -21,12 +21,14 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          sparse-checkout: .github
 
       - name: Download HTML artifacts
         id: download-html-artifacts
         continue-on-error: True
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
         with:
           name: sphinx-html-artifact
           path: html/
@@ -49,7 +51,7 @@ jobs:
 
       - name: Comment with documentation preview link
         if: ${{ steps.download-html-artifacts.outcome == 'success' }}
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@d2ad0de260ae8b0235ce059e63f2949ba9e05943 # v2.9.3
         with:
           number: ${{ steps.acquire-pr-context.outputs.pr-number }}
           header: documentation-preview
