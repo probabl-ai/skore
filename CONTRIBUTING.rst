@@ -109,6 +109,8 @@ If you are new to open-source, you can start by an `issue tagged "good first iss
 
 The implementation of some issues are not very detailed. You can either propose a solution, or choose only the issues with a "Ready" status.
 
+The contributor has to comment existing issue to be assigned by maintainers (this is a GH limitation), to highlight that an issue is ongoing and avoid overlapping work. If someone is already assigned to the issue, unless the PR has been stalled for weeks, maintainers will not assign someone else. Then, the contributor must link the PR to the issue.
+
 Pull requests
 -------------
 
