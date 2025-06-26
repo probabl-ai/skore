@@ -11,7 +11,8 @@ estimators, including:
 - libraries like ``xgboost``, ``catboost``, and ``lightgbm``,
 - deep learning frameworks such as ``skorch`` (a wrapper for PyTorch) and ``keras``,
 - foundation models such as `TabICL <https://github.com/soda-inria/tabicl>`_ and
-  `TabPFN <https://github.com/PriorLabs/TabPFN>`_.
+  `TabPFN <https://github.com/PriorLabs/TabPFN>`_,
+- models specific to time series data such as `tslearn <https://tslearn.readthedocs.io/en/stable/>`_ and `aeon <https://github.com/aeon-toolkit/aeon>`_.
 """
 
 # %%
@@ -97,16 +98,30 @@ X_numpy = X.values.astype(np.float32)
 # %%
 from skore import train_test_split
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-X_train_numpy, X_test_numpy, y_train, y_test = train_test_split(
-    X_numpy, y, random_state=42
-)
+split_data = train_test_split(X_numpy, y, random_state=42, as_dict=True)
 
 # %%
 # We can see how `skore` gives us 2 warnings on split to help us with our modeling approach.
 #
 # - Adhering to the `HighClassImbalanceTooFewExamplesWarning`, we shall employ cross validation in our modeling approach.
 # - The `ShuffleTrueWarning` can be ignored as there are no temporal dependencies in our medical dataset. Each example is IID.
+
+# %%
+# Tree-based models
+# =================
+
+# %%
+# XGBoost
+# -------
+
+# %%
+from skore import EstimatorReport
+from xgboost import XGBClassifier
+
+xgb = XGBClassifier(n_estimators=100, random_state=42)
+
+xgb_report = EstimatorReport(xgb, pos_label=1, **split_data)
+xgb_report.metrics.summarize().frame()
 
 # %%
 # Deep learning with neural networks
@@ -164,31 +179,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 
 model = make_pipeline(StandardScaler(), nnet)
-model
-
-# %%
-# We use our X_train and y_train set using some specific set of hyperparameters to evaluate our hyperparameter selection. For the sake of example, we do not test against multiple hyperparameters but a single one.
-#
-# You may want to look into `ComparisonReport` that can allow you to compare multiple `CrossValidationReport` instances.
-
-# %%
-from skore import CrossValidationReport
-
-cv_report = CrossValidationReport(
-    estimator=model, X=X_train_numpy, y=y_train, cv_splitter=3
-)
-
-# %%
-# We can observe the different ROC curves and cumulative scores across different folds for our binary classification task.
-
-# %%
-cv_report.metrics.roc().plot()
-cv_report.metrics.summarize(
-    aggregate=["mean", "std"], indicator_favorability=True
-).frame()
-
-# %%
-# Once we have picked the best hyperparmeter configuration, we can create a EstimatorReport with a new model object having best hyperparameter settings along with the test sets to get an evaluation report.
+model.fit(split_data["X_train"], split_data["y_train"])
 
 # %%
 from skore import EstimatorReport
@@ -196,10 +187,7 @@ from skore import EstimatorReport
 report = EstimatorReport(
     model,
     fit=True,
-    X_train=X_train_numpy,
-    y_train=y_train,
-    X_test=X_test_numpy,
-    y_test=y_test,
+    **split_data,
 )
 
 # %%
@@ -208,5 +196,86 @@ report = EstimatorReport(
 # %%
 report.metrics.roc().plot()
 report.metrics.summarize(indicator_favorability=True).frame()
+
+# %%
+# Tabular foundation models
+# =========================
+
+# %%
+# TabICL
+# ------
+
+# %%
+from tabicl import TabICLClassifier
+
+tabicl = TabICLClassifier()
+tabicl_report = EstimatorReport(tabicl, pos_label=1, **split_data)
+tabicl_report.metrics.summarize().frame()
+
+# %%
+# TabPFN
+# ------
+
+# %%
+from tabpfn import TabPFNClassifier
+
+tabpfn = TabPFNClassifier()
+tabpfn_report = EstimatorReport(tabpfn, pos_label=1, **split_data)
+tabpfn_report.metrics.summarize().frame()
+
+# %%
+# Time series models
+# ==================
+
+# %%
+# Load a time series dataset
+# --------------------------
+
+# %%
+from tslearn.generators import random_walk_blobs
+from tslearn.preprocessing import TimeSeriesScalerMinMax
+import numpy as np
+
+np.random.seed(0)
+n_ts_per_blob, sz, d, n_blobs = 20, 100, 1, 2
+
+# Prepare data
+X, y = random_walk_blobs(n_ts_per_blob=n_ts_per_blob, sz=sz, d=d, n_blobs=n_blobs)
+scaler = TimeSeriesScalerMinMax(value_range=(0.0, 1.0))  # Rescale time series
+X_scaled = scaler.fit_transform(X)
+
+# %%
+print(f"X_scaled.shape: {X_scaled.shape}")
+print(f"y.shape: {y.shape}")
+
+# %%
+split_data = train_test_split(X_scaled, y, random_state=42, as_dict=True)
+
+# %%
+# .. note::
+#
+#   We have a dataset of several time series, and we want to classify them.
+
+# %%
+# tslearn
+# -------
+
+# %%
+from tslearn.neighbors import KNeighborsTimeSeriesClassifier
+
+ts_model = KNeighborsTimeSeriesClassifier(n_neighbors=1, metric="dtw")
+ts_model_report = EstimatorReport(ts_model, pos_label=1, **split_data)
+ts_model_report.metrics.summarize().frame()
+
+# %%
+# aeon
+# ----
+
+# %%
+from aeon.classification.distance_based import KNeighborsTimeSeriesClassifier
+
+aeon_model = KNeighborsTimeSeriesClassifier(n_neighbors=1)
+aeon_model_report = EstimatorReport(aeon_model, pos_label=1, **split_data)
+aeon_model_report.metrics.summarize().frame()
 
 # %%

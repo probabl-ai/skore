@@ -58,18 +58,25 @@ sphinx-base = [
   "seaborn",
   "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
   "skrub",
+  "sphinx<8.2.0",
   "sphinx-copybutton",
   "sphinx-design",
   "sphinx-gallery",
   "sphinx-tabs",
-  "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
   "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
-  "torch",
-  "skorch"
 ]
-sphinx = ["skore[sphinx-base]", "polars"]
-sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]
+sphinx-ml = [
+  "aeon",
+  "skorch",
+  "tabicl @ git+https://github.com/soda-inria/tabicl.git",
+  "tabpfn",
+  "torch",
+  "tslearn",
+  "xgboost",
+]
+sphinx = ["skore[sphinx-base,sphinx-ml]", "polars"]
+sphinx-lts-cpu = ["skore[sphinx-base,sphinx-ml]", "polars-lts-cpu"]
 dev = [
   "nbformat",
   "ipykernel",
