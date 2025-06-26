@@ -98,6 +98,10 @@ version-default = "0.0.0+unknown"
 license = { "file" = "../LICENSE" }
 readme = { "file" = "../README.md" }
 
+[tool.hatch.metadata]
+# Allow direct references for tabicl Git dependency
+allow-direct-references = true
+
 [tool.hatch.build.targets.sdist]
 only-include = ["src/", "hatch/"]
 
