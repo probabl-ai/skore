@@ -63,7 +63,7 @@ Development
 Quick start
 -----------
 
-You will need ``python >=3.10``.
+You will need ``python>=3.10``.
 
 Setting up your development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -87,17 +87,18 @@ You will find below some code you can use in your terminal, using HTTPS connecti
 
 We strongly recommend using a virtual environment to isolate your development dependencies.
 
-Once your environment is set up, install the development dependencies and setup pre-commit with:
+It is also possible to use `pixi <https://pixi.sh/>`_ to run common workflow tasks while ensuring that your environment is correct. For example ``pixi run test skore`` will install dependencies if needed, and run the tests of the ``skore`` package.
 
-    .. code-block:: bash
+A note on older CPUs
+^^^^^^^^^^^^^^^^^^^^
 
-        make install-skore
+On some older machines, it might be necessary to use the pixi environment ``lts-cpu`` when running commands:
 
-    On `old CPU architecture <https://github.com/pola-rs/polars?tab=readme-ov-file#legacy>`_ to get the support of ``polars``:
+.. code-block:: bash
 
-    .. code-block:: bash
+    pixi run -e lts-cpu test skore
 
-        make install-skore-lts-cpu
+This is due to a `quirk of the polars package <https://github.com/pola-rs/polars#legacy>`_.
 
 Choosing an issue
 -----------------
@@ -144,13 +145,13 @@ When adding a new feature to skore, please make sure to:
 
     Check if your newly introduced changes do not impact existing examples.
 
-    You can run all examples with:
+    You can build all examples with:
 
     .. code-block:: bash
 
-        cd sphinx && make html
+        pixi run docs
 
-    *Alternatively*, you can run individual examples with:
+    If you wish to run a specific example (e.g. if you are adding a new one), you can run it like a normal Python script:
 
     .. code-block:: bash
 
@@ -164,29 +165,33 @@ When adding a new feature to skore, please make sure to:
     -   For a major feature, add a single, concise example under `examples/` (or update
         the gallery) that highlights the new capability.
 
-To run the tests locally, you may run:
+    To run the tests locally, you may run:
 
-.. code-block:: bash
+    .. code-block:: bash
 
-    make test
+        # Will run tests in the `skore` project
+        pixi run test skore
+
+        # Will run tests in the `skore-local-project` project
+        pixi run test skore-local-project
+
+    If you wish to run a specific test, you can pass any parameter that `pytest` accepts, e.g.
+
+    .. code-block:: bash
+
+        # Will run tests in the `skore` project whose name contains "hello"
+        pixi run test skore -k hello
+
+    Refer to `the pytest docs <https://docs.pytest.org/en/stable/how-to/usage.html#how-to-invoke-pytest>`_ for more examples.
 
 Linting
 -------
 
-We use the linter ruff to make sure that the code is formatted correctly:
+Use the following command to make sure that the code is formatted correctly:
 
 .. code-block:: bash
 
-    make lint
-
-Pre-commit Hooks
-^^^^^^^^^^^^^^^^
-
-We use pre-commit hooks to ensure code quality before changes are committed. These hooks were installed during setup, but you can manually run them with:
-
-.. code-block:: bash
-
-    pre-commit run --all-files
+    pixi run lint
 
 
 Documentation
@@ -201,25 +206,24 @@ To build the docs:
 
 .. code-block:: bash
 
-    cd sphinx
-    make html
+    pixi run docs
 
-You can access the local build at:
+You can then access the local build at:
 
 .. code-block:: bash
 
-    open build/html/index.html
+    open sphinx/build/html/index.html
 
 A bot will automatically comment on your PR with a link to a documentation preview. Use this link to verify that your changes render correctly.
 
 Skipping examples when building the docs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The examples can take a long time to build, so if you are not working on them you can instead run the following to avoid building them altogether:
+Examples can take a long time to build, so if you are not working on them you can instead run the following to avoid building them altogether:
 
 .. code-block:: bash
 
-    make html-noplot
+    pixi run docs-no-examples
 
 If you are working on an example and wish to only build that one, you can do so by temporarily editing `sphinx/conf.py`.
 Follow `the sphinx-gallery documentation <https://sphinx-gallery.github.io/stable/configuration.html#parsing-and-executing-examples-via-matching-patterns>`_ for more information.
