@@ -67,7 +67,7 @@ sphinx-base = [
   "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
   "aeon",
   "skorch",
-  "tabicl @ git+https://github.com/soda-inria/tabicl.git",
+  "tabicl",
   "tabpfn",
   "torch",
   "tslearn",
