@@ -29,10 +29,6 @@ jobs:
         with:
           sparse-checkout: .github
 
-      - name: Acquire PR context
-        id: acquire-pr-context
-        uses: ./.github/actions/workflow-run/context
-
       - name: Download coverage reports
         id: download-coverage-reports
         continue-on-error: True
@@ -42,6 +38,11 @@ jobs:
           path: coverage/
           github-token: ${{ github.token }}
           run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Acquire PR context
+        if: ${{ steps.download-coverage-reports.outcome == 'success' }}
+        id: acquire-pr-context
+        uses: ./.github/actions/workflow-run/context
 
       - name: Display coverage reports
         if: ${{ steps.download-coverage-reports.outcome == 'success' }}
