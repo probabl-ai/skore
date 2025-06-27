@@ -95,9 +95,9 @@ class _MetricsAccessor(
               and will be forwarded with `scoring_kwargs`.
             - if the callable API is too restrictive (e.g. need to pass
               same parameter name with different values), you can use scikit-learn
-              scorers as provided by :func:`sklearn.metrics.make_scorer`. With its
-              `greater_is_better` parameter, the favorability of the metric will be
-              displayed.
+              scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
+              the metric favorability will only be displayed if it is given explicitly via
+              `make_scorer`'s `greater_is_better` parameter.
 
         scoring_names : str, None or list of such instances, default=None
             Used to overwrite the default scoring names in the report. If a list,
