@@ -42,6 +42,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     reports : list of reports or dict
         Reports to compare. If a dict, keys will be used to label the estimators;
         if a list, the labels are computed from the estimator class names.
+        Expects at least two reports to compare, with he same test target.
 
     n_jobs : int, default=None
         Number of jobs to run in parallel. Training the estimators and computing
