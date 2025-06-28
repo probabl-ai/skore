@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
+from matplotlib.figure import Figure
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -243,11 +244,46 @@ class _ClassifierCurveDisplayMixin:
         return pos_label
 
 
-def _rotate_ticklabels(ax):
-    plt.setp(ax.get_xticklabels(), rotation=45, horizontalalignment="right")
+def _rotate_ticklabels(
+    ax: Axes, *, rotation: float = 45, horizontalalignment: str = "right"
+) -> None:
+    """Rotate the tick labels of the axis.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axis to rotate.
+    rotation : float, default=45
+        The rotation of the tick labels.
+    horizontalalignment : {"left", "center", "right"}, default="right"
+        The horizontal alignment of the tick labels.
+    """
+    plt.setp(
+        ax.get_xticklabels(), rotation=rotation, horizontalalignment=horizontalalignment
+    )
 
 
-def _get_adjusted_fig_size(fig, ax, direction, target_size):
+def _get_adjusted_fig_size(
+    fig: Figure, ax: Axes, direction: str, target_size: float
+) -> float:
+    """Get the adjusted figure size.
+
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        The figure to adjust.
+    ax : matplotlib.axes.Axes
+        The axis to adjust.
+    direction : {"width", "height"}
+        The direction to adjust.
+    target_size : float
+        The target size.
+
+    Returns
+    -------
+    float
+        The adjusted figure size.
+    """
     size_display = getattr(ax.get_window_extent(), direction)
     size = fig.dpi_scale_trans.inverted().transform((size_display, 0))[0]
     dim = 0 if direction == "width" else 1
@@ -255,7 +291,7 @@ def _get_adjusted_fig_size(fig, ax, direction, target_size):
     return target_size * (fig_size / size)
 
 
-def _adjust_fig_size(fig, ax, target_w, target_h):
+def _adjust_fig_size(fig: Figure, ax: Axes, target_w: float, target_h: float) -> None:
     """Rescale a figure to the target width and height.
 
     This allows us to have all figures of a given type (bar plots, lines or
@@ -265,6 +301,17 @@ def _adjust_fig_size(fig, ax, target_w, target_h):
     without any size constraints then resize it and thus let matplotlib deal
     with resizing the appropriate elements (eg shorter bars when the labels
     take more horizontal space).
+
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        The figure to adjust.
+    ax : matplotlib.axes.Axes
+        The axis to adjust.
+    target_w : float
+        The target width.
+    target_h : float
+        The target height.
     """
     w = _get_adjusted_fig_size(fig, ax, "width", target_w)
     h = _get_adjusted_fig_size(fig, ax, "height", target_h)
@@ -382,21 +429,3 @@ def sample_mpl_colormap(
     """
     indices = np.linspace(0, 1, n)
     return [cmap(i) for i in indices]
-
-
-class ReprHTMLMixin:
-    """Mixin to handle consistently the HTML representation.
-
-    When inheriting from this class, you need to define an attribute `_html_repr`
-    which is a callable that returns the HTML representation to be shown.
-    """
-
-    @property
-    def _repr_html_(self):
-        return self._repr_html_inner
-
-    def _repr_html_inner(self):
-        return self._html_repr()
-
-    def _repr_mimebundle_(self, **kwargs):
-        return {"text/plain": repr(self), "text/html": self._html_repr()}
