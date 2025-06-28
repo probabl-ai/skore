@@ -5,11 +5,11 @@ from typing import Any
 import matplotlib.pyplot as plt
 
 DEFAULT_STYLE = {
-    "font.size": 11,
-    "axes.labelsize": 11,
-    "axes.titlesize": 11,
-    "xtick.labelsize": 11,
-    "ytick.labelsize": 11,
+    "font.size": 14,
+    "axes.labelsize": 14,
+    "axes.titlesize": 14,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
     "legend.fontsize": 10,
     "legend.title_fontsize": 11,
     "axes.linewidth": 1.25,

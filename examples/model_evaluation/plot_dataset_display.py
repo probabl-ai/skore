@@ -94,4 +94,5 @@ report.data.analyze(data_source="all", with_y=True, subsample=1000).plot(
 #
 # Let's also tweak the keyword arguments of the heatmap to change the color map.
 display.plot(kind="corr", heatmap_kwargs={"cmap": "viridis"})
+
 # %%

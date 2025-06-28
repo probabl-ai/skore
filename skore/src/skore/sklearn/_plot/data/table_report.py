@@ -21,11 +21,11 @@ from skrub._reporting._utils import (
 from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
-    ReprHTMLMixin,
     _adjust_fig_size,
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
+from skore.utils._repr_html import ReprHTMLMixin
 
 _ORANGE = "tab:orange"
 
@@ -552,7 +552,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
     def frame(self):
         return self.summary
 
-    def _html_snippet(self):
+    def _html_snippet(self) -> str:
         """Get the report as an HTML fragment that can be inserted in a page.
 
         Returns
@@ -566,13 +566,13 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             column_filters=self.column_filters,
         )
 
-    def _html_repr(self, include=None, exclude=None):
+    def _html_repr(self) -> str:
         return self._html_snippet()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: use .open() to display>"
 
-    def _json(self):
+    def _json(self) -> str:
         to_remove = ["dataframe"]
         data = {k: v for k, v in self.summary.items() if k not in to_remove}
         return json.dumps(data, cls=JSONEncoder)

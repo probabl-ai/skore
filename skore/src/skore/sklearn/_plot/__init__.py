@@ -13,6 +13,5 @@ __all__ = [
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",
     "TableReportDisplay",
-    "SummarizeDisplay",
     "MetricsSummaryDisplay",
 ]
