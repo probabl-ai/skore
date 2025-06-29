@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pandas as pd
 from skrub import _dataframe as sbd
 
@@ -11,7 +13,12 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    def _retrieve_data_as_frame(self, dataset: str, with_y: bool, data_source: str):
+    def _retrieve_data_as_frame(
+        self,
+        dataset: Literal["train", "test"],
+        with_y: bool,
+        data_source: Literal["train", "test", "all"],
+    ):
         """Retrieve data as DataFrame.
 
         Parameters
@@ -61,10 +68,10 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def analyze(
         self,
-        data_source: str = "all",
+        data_source: Literal["train", "test", "all"] = "all",
         with_y: bool = True,
         subsample: int | None = None,
-        subsample_strategy: str = "head",
+        subsample_strategy: Literal["head", "random"] = "head",
         seed: int | None = None,
     ) -> TableReportDisplay:
         """Plot dataset statistics.

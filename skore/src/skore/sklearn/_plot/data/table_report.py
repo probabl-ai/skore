@@ -1,7 +1,7 @@
 import itertools
 import json
 from functools import partial
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -564,8 +564,25 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             heatmap_kwargs=heatmap_kwargs,
         )
 
-    def frame(self):
-        return self.summary
+    def frame(self, *, kind: Literal["dataset", "top-associations"] = "dataset"):
+        """Get the data related to the table report.
+
+        Parameters
+        ----------
+        kind : {'dataset', 'top-associations'}
+            The kind of data to return.
+
+        Returns
+        -------
+        DataFrame
+            The dataset used to create the table report.
+        """
+        if kind == "dataset":
+            return self.summary["dataframe"]
+        elif kind == "top-associations":
+            return pd.DataFrame(self.summary["top_associations"])
+        else:
+            return ValueError(f"Invalid kind: {kind!r}")
 
     def _html_snippet(self) -> str:
         """Get the report as an HTML fragment that can be inserted in a page.
