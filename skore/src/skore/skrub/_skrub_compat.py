@@ -57,10 +57,6 @@ def _to_frame_polars(col):
     return col.to_frame()
 
 
-def _to_frame_if_column(obj):
-    return to_frame(obj) if sbd.is_column(obj) else obj
-
-
 @dispatch
 def is_in(col, values):
     raise NotImplementedError()

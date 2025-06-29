@@ -1,29 +1,63 @@
+import pandas as pd
 from skrub import _dataframe as sbd
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn._plot import TableReportDisplay
-from skore.skrub._skrub_compat import _to_frame_if_column
-
-
-def _subsample(df, subsample, subsample_strategy, seed):
-    if subsample is None:
-        return df
-    if subsample_strategy == "head":
-        return sbd.head(df, subsample)
-    elif subsample_strategy == "random":
-        return sbd.sample(df, subsample, seed=seed)
-    else:
-        raise ValueError(
-            "'subsample_strategy' options are 'head', 'random', "
-            f"got {subsample_strategy}."
-        )
 
 
 class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
+
+    def _retrieve_data_as_frame(self, dataset: str, with_y: bool, data_source: str):
+        """Retrieve data as DataFrame.
+
+        Parameters
+        ----------
+        dataset : {'train', 'test'}
+            The dataset to retrieve.
+
+        with_y : bool
+            Whether we should check that `y` is not None.
+
+        data_source : {'train', 'test', 'all'}
+            The dataset to analyze. If 'train', only the training set is used.
+            If 'test', only the test set is used. If 'all', both sets are concatenated
+            vertically.
+
+        Returns
+        -------
+        X : DataFrame
+            The input data.
+
+        y : DataFrame or None
+            The target data.
+        """
+        err_msg = "{} is required when `data_source={}`."
+        X = getattr(self._parent, f"_X_{dataset}")
+        y = getattr(self._parent, f"_y_{dataset}")
+
+        if X is None:
+            raise ValueError(err_msg.format(f"X_{dataset}", data_source))
+        elif not sbd.is_dataframe(X):
+            X = pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])])
+
+        if with_y:
+            if y is None:
+                raise ValueError(err_msg.format(f"y_{dataset}", data_source))
+
+            if isinstance(y, pd.Series):
+                y = y.to_frame()
+            elif not sbd.is_dataframe(y):
+                if y.ndim == 1:
+                    columns = ["Target"]
+                else:
+                    columns = [f"Target {i}" for i in range(y.shape[1])]
+                y = pd.DataFrame(y, columns=columns)
+
+        return X, y
 
     def analyze(
         self,
@@ -68,33 +102,52 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -------
         TableReportDisplay
             A display object containing the dataset statistics and plots.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
+        >>> report.data.analyze().frame()
         """
-        if data_source not in (options := ("train", "test", "all")):
-            raise ValueError(f"'dataset' options are {options!r}, got {data_source}.")
+        if data_source not in (data_source_options := ("train", "test", "all")):
+            raise ValueError(
+                f"'data_source' options are {data_source_options!r}, got {data_source}."
+            )
 
-        X = self._parent.X_train
-        X_test = getattr(self._parent, "X_test", None)
-        y = getattr(self._parent, "y_train", None)
-        y_test = getattr(self._parent, "y_test", None)
+        if subsample_strategy not in (subsample_strategy_options := ("head", "random")):
+            raise ValueError(
+                f"'subsample_strategy' options are {subsample_strategy_options!r}, got "
+                f"{subsample_strategy}."
+            )
 
-        if data_source == "test":
-            X, y = X_test, y_test
-        elif data_source == "all":
-            if X_test is not None:
-                X = sbd.concat(X, X_test, axis=0)
-            if y is not None and y_test is not None:
-                y = sbd.concat(
-                    _to_frame_if_column(y),
-                    _to_frame_if_column(y_test),
-                    axis=0,
-                )
+        if data_source == "train":
+            X, y = self._retrieve_data_as_frame("train", with_y, data_source)
+        elif data_source == "test":
+            X, y = self._retrieve_data_as_frame("test", with_y, data_source)
+        else:
+            X_train, y_train = self._retrieve_data_as_frame(
+                "train", with_y, data_source
+            )
+            X_test, y_test = self._retrieve_data_as_frame("test", with_y, data_source)
+            X = sbd.concat(X_train, X_test, axis=0)
+            if with_y:
+                y = sbd.concat(y_train, y_test, axis=0)
 
-        if with_y and y is not None:
-            X = sbd.concat(X, _to_frame_if_column(y), axis=1)
+        df = sbd.concat(X, y, axis=1) if with_y else X
 
-        X = _subsample(X, subsample, subsample_strategy, seed)
+        if subsample:
+            if subsample_strategy == "head":
+                df = sbd.head(df, subsample)
+            else:  # subsample_strategy == "random":
+                df = sbd.sample(df, subsample, seed=seed)
 
-        return TableReportDisplay._compute_data_for_display(X)
+        return TableReportDisplay._compute_data_for_display(df)
 
     ####################################################################################
     # Methods related to the help tree

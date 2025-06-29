@@ -8,7 +8,6 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from skrub import _column_associations
-from skrub import _dataframe as sbd
 from skrub._reporting._html import to_html
 from skrub._reporting._summarize import summarize_dataframe
 from skrub._reporting._utils import (
@@ -25,6 +24,7 @@ from skore.sklearn._plot.utils import (
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
+from skore.skrub._skrub_compat import sbd
 from skore.utils._repr_html import ReprHTMLMixin
 
 _ORANGE = "tab:orange"
@@ -173,12 +173,26 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
     summary : dict
         The summary of the dataset, as returned by ``summarize_dataframe``.
 
-    dataset : DataFrame
-        The original dataset that was summarized.
+    Attributes
+    ----------
+    ax_ : matplotlib axes
+        The axes of the figure.
 
-    column_filters : dict[str, Any] | None, default=None
-        Names of the column to keep in the display of the TableReport. If None,
-        all columns are kept.
+    figure_ : matplotlib figure.
+        The figure of the plot.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_breast_cancer
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import train_test_split
+    >>> from skore import EstimatorReport
+    >>> X, y = load_breast_cancer(return_X_y=True)
+    >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+    >>> classifier = LogisticRegression(max_iter=10_000)
+    >>> report = EstimatorReport(classifier, **split_data)
+    >>> display = report.data.analyze()
+    >>> display.plot(kind="corr")
     """
 
     _default_heatmap_kwargs: dict[str, Any] | None = None
@@ -187,20 +201,24 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
     _default_stripplot_kwargs: dict[str, Any] | None = None
     _default_histplot_kwargs: dict[str, Any] | None = None
 
-    def __init__(self, summary, dataset, column_filters=None):
+    def __init__(self, summary: dict[str, Any]) -> None:
         self.summary = summary
-        self.dataset = dataset
-        self.column_filters = column_filters
 
     @classmethod
-    def _compute_data_for_display(cls, dataset, with_plots=True, title=None):
-        summary = summarize_dataframe(
-            dataset,
-            with_plots=with_plots,
-            title=title,
-            verbose=0,
-        )
-        return cls(summary, dataset)
+    def _compute_data_for_display(cls, dataset: pd.DataFrame) -> "TableReportDisplay":
+        """Private method to create a TableReportDisplay from a dataset.
+
+        Parameters
+        ----------
+        dataset : DataFrame
+            The dataset to summarize.
+
+        Returns
+        -------
+        display : TableReportDisplay
+            Object that stores computed values.
+        """
+        return cls(summarize_dataframe(dataset, with_plots=True, title=None, verbose=0))
 
     @StyleDisplayMixin.style_plot
     def plot(
@@ -326,7 +344,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             )
 
     def _plot_distribution_1d(self, *, x, k, histplot_kwargs):
-        x = sbd.col(self.dataset, x)
+        x = sbd.col(self.summary["dataframe"], x)
 
         duration_unit = None
         if sbd.is_duration(x):
@@ -349,10 +367,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             histplot_kwargs["discrete"] = True
 
         despine = histplot_kwargs.pop("despine", True)
-        histplot_kwargs_validated = _validate_style_kwargs(
-            histplot_kwargs,
-            {},
-        )
+        histplot_kwargs_validated = _validate_style_kwargs(histplot_kwargs, {})
 
         histplot = partial(sns.histplot, ax=self.ax_, **histplot_kwargs_validated)
         if is_object:
@@ -393,9 +408,9 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         scatterplot_kwargs,
     ):
         x, y, hue = (
-            sbd.col(self.dataset, x),
-            sbd.col(self.dataset, y) if y is not None else None,
-            sbd.col(self.dataset, hue) if hue is not None else None,
+            sbd.col(self.summary["dataframe"], x),
+            sbd.col(self.summary["dataframe"], y) if y is not None else None,
+            sbd.col(self.summary["dataframe"], hue) if hue is not None else None,
         )
         if y is None:
             y = hue
@@ -539,9 +554,9 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             heatmap_kwargs = self._default_heatmap_kwargs or {}
 
         cramer_v_table = pd.DataFrame(
-            _column_associations._cramer_v_matrix(self.dataset),
-            columns=self.dataset.columns,
-            index=self.dataset.columns,
+            _column_associations._cramer_v_matrix(self.summary["dataframe"]),
+            columns=self.summary["dataframe"].columns,
+            index=self.summary["dataframe"].columns,
         )
         return self._heatmap(
             cramer_v_table,
@@ -560,11 +575,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         str :
             The HTML snippet.
         """
-        return to_html(
-            self.summary,
-            standalone=False,
-            column_filters=self.column_filters,
-        )
+        return to_html(self.summary, standalone=False, column_filters=None)
 
     def _html_repr(self) -> str:
         return self._html_snippet()

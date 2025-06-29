@@ -11,6 +11,8 @@ from skrub import tabular_learner
 from skrub._reporting._summarize import summarize_dataframe
 from skrub.datasets import fetch_employee_salaries
 
+# TODO: add a tests for the support of numpy arrays
+
 try:
     import polars as pl
 
