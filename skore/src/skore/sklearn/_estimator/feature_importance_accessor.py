@@ -22,6 +22,7 @@ from skore.utils._accessor import _check_has_coef, _check_has_feature_importance
 from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
+Stage = Literal["start", "end"]
 
 Metric = Literal[
     "accuracy",
@@ -302,6 +303,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
         flat_index: bool = False,
+        stage: Stage = "start",
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
 
@@ -453,6 +455,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             n_jobs=n_jobs,
             seed=seed,
             flat_index=flat_index,
+            stage=stage,
         )
 
     def _feature_permutation(
@@ -469,6 +472,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
         flat_index: bool = False,
+        stage: Stage = "start",
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
 
@@ -494,6 +498,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 self._parent._hash,
                 "permutation_importance",
                 data_source,
+                stage,
             ]
 
             if data_source_hash is not None:
