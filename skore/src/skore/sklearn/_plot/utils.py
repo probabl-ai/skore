@@ -272,10 +272,13 @@ def _get_adjusted_fig_size(
     ----------
     fig : matplotlib.figure.Figure
         The figure to adjust.
+
     ax : matplotlib.axes.Axes
         The axis to adjust.
+
     direction : {"width", "height"}
         The direction to adjust.
+
     target_size : float
         The target size.
 
@@ -291,7 +294,9 @@ def _get_adjusted_fig_size(
     return target_size * (fig_size / size)
 
 
-def _adjust_fig_size(fig: Figure, ax: Axes, target_w: float, target_h: float) -> None:
+def _adjust_fig_size(
+    fig: Figure, ax: Axes, target_width: float, target_height: float
+) -> None:
     """Rescale a figure to the target width and height.
 
     This allows us to have all figures of a given type (bar plots, lines or
@@ -306,21 +311,25 @@ def _adjust_fig_size(fig: Figure, ax: Axes, target_w: float, target_h: float) ->
     ----------
     fig : matplotlib.figure.Figure
         The figure to adjust.
+
     ax : matplotlib.axes.Axes
         The axis to adjust.
-    target_w : float
+
+    target_width : float
         The target width.
-    target_h : float
+
+    target_height : float
         The target height.
     """
-    w = _get_adjusted_fig_size(fig, ax, "width", target_w)
-    h = _get_adjusted_fig_size(fig, ax, "height", target_h)
-    fig.set_size_inches((w, h))
+    width = _get_adjusted_fig_size(fig, ax, "width", target_width)
+    height = _get_adjusted_fig_size(fig, ax, "height", target_height)
+    fig.set_size_inches((width, height))
 
 
 def _despine_matplotlib_axis(
     ax: Axes,
     *,
+    axis_to_despine: tuple = ("top", "right"),
     x_range: tuple[float, float] = (0, 1),
     y_range: tuple[float, float] = (0, 1),
     offset: float = 10,
@@ -338,12 +347,12 @@ def _despine_matplotlib_axis(
     offset : float, default=10
         The offset to add to the x-axis and y-axis.
     """
-    for s in ["top", "right"]:
-        ax.spines[s].set_visible(False)
     ax.spines["bottom"].set_bounds(x_range[0], x_range[1])
     ax.spines["left"].set_bounds(y_range[0], y_range[1])
     ax.spines["left"].set_position(("outward", offset))
     ax.spines["bottom"].set_position(("outward", offset))
+    for s in axis_to_despine:
+        ax.spines[s].set_visible(False)
 
 
 def _validate_style_kwargs(

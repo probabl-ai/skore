@@ -17,13 +17,16 @@ a baseline pipeline using ``skrub.tabular_learner``.
 """
 
 # %%
+import pandas as pd
 import skrub
 from skrub.datasets import fetch_employee_salaries
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import HistGradientBoostingRegressor
 
 data = fetch_employee_salaries()
-X_train, X_test, y_train, y_test = train_test_split(data.X, data.y, random_state=0)
+X, y = data.X, data.y
+X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 pipeline = skrub.tabular_learner(HistGradientBoostingRegressor())
 pipeline

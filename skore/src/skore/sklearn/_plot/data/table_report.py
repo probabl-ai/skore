@@ -1,6 +1,5 @@
 import itertools
 import json
-from functools import partial
 from typing import Any, Literal
 
 import numpy as np
@@ -26,8 +25,6 @@ from skore.sklearn._plot.utils import (
 )
 from skore.skrub._skrub_compat import sbd
 from skore.utils._repr_html import ReprHTMLMixin
-
-_ORANGE = "tab:orange"
 
 
 def _has_no_decimal(df):
@@ -279,21 +276,34 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             <https://seaborn.pydata.org/generated/seaborn.histplot.html>`_ for rendering
             the distribution 1D plot, when only ``x`` is provided.
         """
-        self.fig_, self.ax_ = plt.subplots()
+        self.figure_, self.ax_ = plt.subplots()
         if kind == "dist":
             if x is None:
                 raise ValueError(f"When {kind=!r}, ``x`` is mandatory.")
-            self._plot_distribution(
-                x=x,
-                y=y,
-                hue=hue,
-                k=top_k_categories,
-                scatterplot_kwargs=scatterplot_kwargs,
-                stripplot_kwargs=stripplot_kwargs,
-                boxplot_kwargs=boxplot_kwargs,
-                heatmap_kwargs=heatmap_kwargs,
-                histplot_kwargs=histplot_kwargs,
-            )
+            if y is None and hue is None:
+                if histplot_kwargs is None:
+                    histplot_kwargs = self._default_histplot_kwargs
+
+                self._plot_distribution_1d(
+                    x=x, k=top_k_categories, histplot_kwargs=histplot_kwargs
+                )
+            else:
+                if scatterplot_kwargs is None:
+                    scatterplot_kwargs = self._default_scatterplot_kwargs
+                if stripplot_kwargs is None:
+                    stripplot_kwargs = self._default_stripplot_kwargs
+                if boxplot_kwargs is None:
+                    boxplot_kwargs = self._default_boxplot_kwargs
+                self._plot_distribution_2d(
+                    x=x,
+                    y=y,
+                    hue=hue,
+                    k=top_k_categories,
+                    scatterplot_kwargs=scatterplot_kwargs,
+                    stripplot_kwargs=stripplot_kwargs,
+                    boxplot_kwargs=boxplot_kwargs,
+                    heatmap_kwargs=heatmap_kwargs,
+                )
 
         elif kind == "corr":
             for param_name, param_value in zip(
@@ -303,88 +313,81 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                     raise ValueError(
                         f"When {kind=!r}, {param_name!r} argument should be None."
                     )
+            if heatmap_kwargs is None:
+                heatmap_kwargs = self._default_heatmap_kwargs
             self._plot_cramer(heatmap_kwargs=heatmap_kwargs)
 
         else:
             raise ValueError(f"'kind' options are 'dist', 'corr', got {kind!r}.")
 
-    def _plot_distribution(
-        self,
-        x,
-        y=None,
-        hue=None,
-        k=20,
-        scatterplot_kwargs=None,
-        stripplot_kwargs=None,
-        boxplot_kwargs=None,
-        heatmap_kwargs=None,
-        histplot_kwargs=None,
-    ):
-        if y is None and hue is None:
-            self._plot_distribution_1d(x=x, k=k, histplot_kwargs=histplot_kwargs)
-        else:
-            self._plot_distribution_2d(
-                x=x,
-                y=y,
-                hue=hue,
-                k=k,
-                scatterplot_kwargs=scatterplot_kwargs,
-                stripplot_kwargs=stripplot_kwargs,
-                boxplot_kwargs=boxplot_kwargs,
-                heatmap_kwargs=heatmap_kwargs,
-            )
+    def _plot_distribution_1d(
+        self, *, x: str, k: int, histplot_kwargs: dict[str, Any] | None
+    ) -> None:
+        """Plot 1-dimensional distribution of a feature.
 
-    def _plot_distribution_1d(self, *, x, k, histplot_kwargs):
-        x = sbd.col(self.summary["dataframe"], x)
+        Parameters
+        ----------
+        x : str
+            The name of the column to plot.
+
+        k : int
+            The number of most frequent categories to plot.
+
+        histplot_kwargs : dict, default=None
+            Keyword arguments to be passed to seaborn's :ref:`histplot
+            <https://seaborn.pydata.org/generated/seaborn.histplot.html>`_ for rendering
+            the distribution 1D plot.
+        """
+        default_histplot_kwargs: dict[str, Any] = {}
+
+        column = sbd.col(self.summary["dataframe"], x)
 
         duration_unit = None
-        if sbd.is_duration(x):
-            x, duration_unit = duration_to_numeric(x)
+        if sbd.is_duration(column):
+            column, duration_unit = duration_to_numeric(column)
 
-        if histplot_kwargs is None:
-            histplot_kwargs = self._default_histplot_kwargs or {"despine": True}
+        if is_categorical := not (sbd.is_numeric(column) or sbd.is_any_date(column)):
+            top_k = sbd.col(sbd.head(sbd.value_counts(column), k), "value")
 
-        if is_object := not (sbd.is_numeric(x) or sbd.is_any_date(x)):
-            top_k = sbd.col(sbd.head(sbd.value_counts(x), k), "value")
-
-            x = sbd.filter(x, sbd.is_in(x, top_k))
-            x = sbd.to_pandas(x)
-            x = x.astype(
+            column = sbd.filter(column, sbd.is_in(column, top_k))
+            column = sbd.to_pandas(column)
+            column = column.astype(
                 pd.CategoricalDtype(categories=sbd.to_list(top_k), ordered=True)
             )
-            histplot_kwargs["color"] = _ORANGE
+            default_histplot_kwargs["color"] = "tab:orange"
 
-        if sbd.is_integer(x) or is_object:
-            histplot_kwargs["discrete"] = True
+        if sbd.is_integer(column) or is_categorical:
+            default_histplot_kwargs["discrete"] = True
 
-        despine = histplot_kwargs.pop("despine", True)
-        histplot_kwargs_validated = _validate_style_kwargs(histplot_kwargs, {})
+        histplot_kwargs_validated = _validate_style_kwargs(
+            default_histplot_kwargs, histplot_kwargs or {}
+        )
 
-        histplot = partial(sns.histplot, ax=self.ax_, **histplot_kwargs_validated)
-        if is_object:
-            histplot(y=x)
+        if is_categorical:
+            sns.histplot(y=column, ax=self.ax_, **histplot_kwargs_validated)
         else:
-            histplot(x=x)
+            sns.histplot(x=column, ax=self.ax_, **histplot_kwargs_validated)
+
+        sns.despine(
+            self.figure_,
+            top=True,
+            right=True,
+            left=is_categorical,
+            trim=True,
+            offset=10,
+        )
 
         if duration_unit is not None:
             self.ax_.set_xlabel(f"{duration_unit.capitalize()}s")
-        if sbd.is_any_date(x):
+        if sbd.is_any_date(column):
             _rotate_ticklabels(self.ax_)
-        if despine:
-            # _despine_matplotlib_axis doesn't help.
-            offset = -sbd.n_unique(x) + 10 if is_object else 0
-            sns.despine(
-                self.fig_,
-                top=True,
-                right=True,
-                trim=is_object,
-                offset={"bottom": offset},
-            )
 
-        if is_object:
-            h = sbd.n_unique(x) * 0.3
-            w = 6
-            _adjust_fig_size(self.fig_, self.ax_, w, h)
+        if is_categorical:
+            self.ax_.tick_params(axis="y", length=0)
+            # dynamically set the height of the axis based on the number of categories
+            target_height = sbd.n_unique(column) * 0.3
+            target_width = self.figure_.get_size_inches()[0]
+            _adjust_fig_size(self.figure_, self.ax_, target_width, target_height)
 
     def _plot_distribution_2d(
         self,
@@ -495,8 +498,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             **boxplot_kwargs_validated,
         )
 
-        _adjust_fig_size(self.fig_, self.ax_, w, h)
-
+        _adjust_fig_size(self.figure_, self.ax_, w, h)
         if self.ax_.legend_ is not None:
             sns.move_legend(self.ax_, (1.05, 0.0))
 
@@ -507,7 +509,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         n_rows, n_cols = sbd.shape(df)
         h = min(max(n_rows * 0.9, 4), 8)
         w = min(max(n_cols * 0.9, 4), 8)
-        _adjust_fig_size(self.fig_, self.ax_, w, h)
+        _adjust_fig_size(self.figure_, self.ax_, w, h)
 
         df = df.infer_objects(copy=False).fillna(np.nan)
 
@@ -575,23 +577,18 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         else:
             return ValueError(f"Invalid kind: {kind!r}")
 
-    def _html_snippet(self) -> str:
-        """Get the report as an HTML fragment that can be inserted in a page.
-
-        Returns
-        -------
-        str :
-            The HTML snippet.
-        """
+    def _html_repr(self) -> str:
+        """Show the HTML representation of the report."""
         return to_html(self.summary, standalone=False, column_filters=None)
 
-    def _html_repr(self) -> str:
-        return self._html_snippet()
-
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}: use .open() to display>"
+        return f"<{self.__class__.__name__}(...)>"
 
     def _json(self) -> str:
+        """Serialize the data of this report in JSON format.
+
+        It the serialization chosen to be sent to skore-hub.
+        """
         to_remove = ["dataframe"]
         data = {k: v for k, v in self.summary.items() if k not in to_remove}
         return json.dumps(data, cls=JSONEncoder)
