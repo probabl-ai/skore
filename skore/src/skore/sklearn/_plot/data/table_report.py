@@ -146,22 +146,6 @@ def _aggregate_pairwise(x, y, hue, k, heatmap_kwargs):
     return {"df": df, "heatmap_kwargs": heatmap_kwargs}
 
 
-def _require_x(x, kind):
-    if x is None:
-        raise ValueError(f"When {kind=!r}, ``x`` is mandatory.")
-
-
-def _check_no_args(x, y, hue, kind):
-    params = dict(
-        x=x,
-        y=y,
-        hue=hue,
-    )
-    for k, v in params.items():
-        if v is not None:
-            raise ValueError(f"When {kind=!r}, this function takes no {k!r} argument.")
-
-
 class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
     """Display reporting information about a given dataset.
 
@@ -297,7 +281,8 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         """
         self.fig_, self.ax_ = plt.subplots()
         if kind == "dist":
-            _require_x(x, kind)
+            if x is None:
+                raise ValueError(f"When {kind=!r}, ``x`` is mandatory.")
             self._plot_distribution(
                 x=x,
                 y=y,
@@ -311,7 +296,13 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             )
 
         elif kind == "corr":
-            _check_no_args(x, y, hue, kind)
+            for param_name, param_value in zip(
+                ("x", "y", "hue"), (x, y, hue), strict=True
+            ):
+                if param_value is not None:
+                    raise ValueError(
+                        f"When {kind=!r}, {param_name!r} argument should be None."
+                    )
             self._plot_cramer(heatmap_kwargs=heatmap_kwargs)
 
         else:
