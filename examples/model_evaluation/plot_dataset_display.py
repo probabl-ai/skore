@@ -63,7 +63,7 @@ display.plot(y="gender")
 # The dataset is somewhat balanced, with a clear majority of males.
 # Next, we colorize this distribution using the salary to predict, in the column
 # ``current_annual_salary``.
-display.plot(x="gender", hue="current_annual_salary")
+display.plot(y="gender", hue="current_annual_salary")
 
 # %%
 # Interestingly, we observe that the median (the black vertical bar) is slightly higher for
@@ -71,15 +71,15 @@ display.plot(x="gender", hue="current_annual_salary")
 #
 # Let's now add a third dimension to this plot by visualizing the hired year as the
 # y-axis (which becomes the x-axis since the plot is horizontal):
-display.plot(x="gender", y="year_first_hired", hue="current_annual_salary")
+display.plot(y="gender", x="year_first_hired", hue="current_annual_salary")
 
 # %%
 # The year has replaced the salary as the x-axis, and the salary is still represented by
 # the color. As this plot is getting a bit hard to read due to the large number of data
 # points, we can slightly subsample it to see that a pattern emerges:
 report.data.analyze(data_source="all", with_y=True, subsample=1000).plot(
-    x="gender",
-    y="year_first_hired",
+    y="gender",
+    x="year_first_hired",
     hue="current_annual_salary",
 )
 # %%
