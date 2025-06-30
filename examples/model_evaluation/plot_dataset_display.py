@@ -57,12 +57,12 @@ display.help()
 # %%
 # To begin with, let's plot the gender distribution to check whether we have some
 # population bias:
-display.plot(x="gender")
+display.plot(y="gender")
+
 # %%
 # The dataset is somewhat balanced, with a clear majority of males.
 # Next, we colorize this distribution using the salary to predict, in the column
 # ``current_annual_salary``.
-
 display.plot(x="gender", hue="current_annual_salary")
 
 # %%
