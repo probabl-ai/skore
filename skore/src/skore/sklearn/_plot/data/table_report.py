@@ -211,7 +211,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         x: str | None = None,
         y: str | None = None,
         hue: str | None = None,
-        kind: str = "dist",
+        kind: Literal["dist", "corr"] = "dist",
         top_k_categories: int = 20,
         scatterplot_kwargs: dict[str, Any] | None = None,
         stripplot_kwargs: dict[str, Any] | None = None,
