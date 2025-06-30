@@ -135,13 +135,13 @@ def test_cross_validation_report_attributes(fixture_name, request, cv, n_jobs):
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, cv_splitter=cv, n_jobs=n_jobs)
     assert isinstance(report, CrossValidationReport)
-    assert isinstance(report.estimator_reports_, list)
-    for estimator_report in report.estimator_reports_:
+    assert isinstance(report.reports_, list)
+    for estimator_report in report.reports_:
         assert isinstance(estimator_report, EstimatorReport)
     assert report.X is X
     assert report.y is y
     assert report.n_jobs == n_jobs
-    assert len(report.estimator_reports_) == cv
+    assert len(report.reports_) == cv
     if isinstance(estimator, Pipeline):
         assert report.estimator_name_ == estimator[-1].__class__.__name__
     else:
@@ -200,12 +200,12 @@ def test_cross_validation_report_cache_predictions(
     # underlying estimator reports
     assert report._cache == {}
 
-    for estimator_report in report.estimator_reports_:
+    for estimator_report in report.reports_:
         assert len(estimator_report._cache) == expected_n_keys
 
     report.clear_cache()
     assert report._cache == {}
-    for estimator_report in report.estimator_reports_:
+    for estimator_report in report.reports_:
         assert estimator_report._cache == {}
 
 
@@ -238,9 +238,9 @@ def test_cross_validation_report_get_predictions(
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_shape = report.estimator_reports_[split_idx].y_train.shape
+            expected_shape = report.reports_[split_idx].y_train.shape
         elif data_source == "test":
-            expected_shape = report.estimator_reports_[split_idx].y_test.shape
+            expected_shape = report.reports_[split_idx].y_test.shape
         else:  # data_source == "X_y"
             expected_shape = (X.shape[0],)
         assert split_predictions.shape == expected_shape
@@ -313,7 +313,7 @@ def test_cross_validation_summarize_data_source_external(
     for split_idx in range(cv_splitter):
         # check that it is equivalent to call the individual estimator report
         report_result = (
-            report.estimator_reports_[split_idx]
+            report.reports_[split_idx]
             .metrics.summarize(data_source="X_y", X=X, y=y)
             .frame()
         )
@@ -840,7 +840,7 @@ def test_cross_validation_report_summarize_with_scorer(regression_data):
                 est_rep.y_test, est_rep.estimator_.predict(est_rep.X_test)
             ),
         ]
-        for est_rep in report.estimator_reports_
+        for est_rep in report.reports_
     ]
     np.testing.assert_allclose(
         result.to_numpy(),

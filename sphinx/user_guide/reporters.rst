@@ -107,7 +107,7 @@ difference is in the initialization. It accepts an estimator, a dataset (i.e. `X
 `y`) and a cross-validation strategy. Internally, the dataset is split according to the
 cross-validation strategy and an estimator report is created for each split. Therefore,
 a :class:`CrossValidationReport` is a collection of :class:`EstimatorReport` instances,
-available through the :obj:`CrossValidationReport.estimator_reports_` attribute.
+available through the :obj:`CrossValidationReport.reports_` attribute.
 
 For metrics and displays, the same API is exposed with an extra
 parameter, `aggregate`, to aggregate the metrics across the splits.

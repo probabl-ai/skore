@@ -175,7 +175,7 @@ class _MetricsAccessor(
                 )
         return MetricsSummaryDisplay(summarize_data=results)
 
-    @progress_decorator(description="Compute metric for each split")
+    @progress_decorator(description="Compute metric for each split", allow_nested=False)
     def _compute_metric_scores(
         self,
         report_metric_name: str,
@@ -218,7 +218,7 @@ class _MetricsAccessor(
         progress = self._parent._progress_info["current_progress"]
         main_task = self._parent._progress_info["current_task"]
 
-        total_estimators = len(self._parent.estimator_reports_)
+        total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
 
         if cache_key in self._parent._cache:
@@ -233,7 +233,7 @@ class _MetricsAccessor(
                 delayed(getattr(report.metrics, report_metric_name))(
                     data_source=data_source, X=X, y=y, **metric_kwargs
                 )
-                for report in self._parent.estimator_reports_
+                for report in self._parent.reports_
             )
             results = []
             for result in generator:
@@ -313,12 +313,9 @@ class _MetricsAccessor(
         Predict time train (s)       ...       ...
         """
         timings: pd.DataFrame = pd.concat(
-            [
-                pd.Series(report.metrics.timings())
-                for report in self._parent.estimator_reports_
-            ],
+            [pd.Series(report.metrics.timings()) for report in self._parent.reports_],
             axis=1,
-            keys=[f"Split #{i}" for i in range(len(self._parent.estimator_reports_))],
+            keys=[f"Split #{i}" for i in range(len(self._parent.reports_))],
         )
         if aggregate:
             if isinstance(aggregate, str):
@@ -1128,7 +1125,7 @@ class _MetricsAccessor(
         assert self._parent._progress_info is not None, "Progress info not set"
         progress = self._parent._progress_info["current_progress"]
         main_task = self._parent._progress_info["current_task"]
-        total_estimators = len(self._parent.estimator_reports_)
+        total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
 
         if cache_key in self._parent._cache:
@@ -1136,7 +1133,7 @@ class _MetricsAccessor(
         else:
             y_true: list[YPlotData] = []
             y_pred: list[YPlotData] = []
-            for report_idx, report in enumerate(self._parent.estimator_reports_):
+            for report_idx, report in enumerate(self._parent.reports_):
                 if data_source != "X_y":
                     # only retrieve data stored in the reports when we don't want to
                     # use an external common X and y
@@ -1177,9 +1174,8 @@ class _MetricsAccessor(
                 y_true=y_true,
                 y_pred=y_pred,
                 report_type="cross-validation",
-                estimators=[
-                    report.estimator_ for report in self._parent.estimator_reports_
-                ],
+                estimators=[report.estimator_ for report in self._parent.reports_],
+                estimator_names=[self._parent.estimator_name_],
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,

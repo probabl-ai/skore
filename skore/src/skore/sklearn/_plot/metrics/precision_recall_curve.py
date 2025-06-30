@@ -73,6 +73,9 @@ class PrecisionRecallCurveDisplay(
         - "label"
         - "average_precision".
 
+    estimator_names : list of str
+        Name of the estimators.
+
     pos_label : int, float, bool, str or None
         The class considered as the positive class. If None, the class will not
         be shown in the legend.
@@ -766,6 +769,7 @@ class PrecisionRecallCurveDisplay(
         *,
         report_type: ReportType,
         estimators: Sequence[BaseEstimator],
+        estimator_names: list[str],
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
         pos_label: PositiveLabel | None,
@@ -789,6 +793,9 @@ class PrecisionRecallCurveDisplay(
 
         estimators : list of estimator instances
             The estimators from which `y_pred` is obtained.
+
+        estimator_names : list of str
+            Name of the estimators used to plot the precision-recall curve.
 
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
