@@ -530,9 +530,19 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if cache_key in self._parent._cache:
             score = self._parent._cache[cache_key]
         else:
+            if stage == "start" or not isinstance(self._parent.estimator_, Pipeline):
+                estimator = self._parent.estimator_
+                X_transformed = X_
+                feature_names_source = estimator
+            else:
+                pipeline = self._parent.estimator_
+                X_transformed = pipeline[:-1].transform(X_)
+                estimator = pipeline[-1]
+                feature_names_source = self._parent.estimator_
+
             sklearn_score = permutation_importance(
-                estimator=self._parent.estimator_,
-                X=X_,
+                estimator=estimator,
+                X=X_transformed,
                 y=y_true,
                 scoring=checked_scoring,
                 n_repeats=n_repeats,
@@ -567,9 +577,9 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
                 # Get score name
                 if scoring is None:
-                    if is_classifier(self._parent.estimator_):
+                    if is_classifier(estimator):
                         scoring_name = "accuracy"
-                    elif is_regressor(self._parent.estimator_):
+                    elif is_regressor(estimator):
                         scoring_name = "r2"
                 else:
                     # e.g. if scoring is a callable
