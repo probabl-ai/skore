@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def flatten_multi_index(index: pd.MultiIndex) -> pd.Index:
+def flatten_multi_index(index: pd.MultiIndex | pd.Index) -> pd.Index:
     """Flatten a pandas MultiIndex into a single-level Index.
 
     Flatten a pandas `MultiIndex` into a single-level Index by joining the levels
@@ -28,7 +28,7 @@ def flatten_multi_index(index: pd.MultiIndex) -> pd.Index:
     Index(['a', 'b_2'], dtype='object')
     """
     if not isinstance(index, pd.MultiIndex):
-        raise ValueError("`index` must be a MultiIndex.")
+        return index
 
     return pd.Index(
         [
