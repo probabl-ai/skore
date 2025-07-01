@@ -133,7 +133,7 @@ performance of the different models.
 In order for the comparison to make sense, the reports must all have the same test target.
 However, they may have different training data or target; this might be the case when comparing a new model with the current production model, for example.
 They may also have different testing data ($X_\text{test}$), which means the compared model pipelines do not necessarily need to be the same.
-This comparison of testing target is done thanks to hashing of the table. Therefore, if
+The comparison of test targets is done by computing a hash of the arrays. Therefore, if
 the y_test are functionally equal, but have different data types, they will be
 considered as different.
 
