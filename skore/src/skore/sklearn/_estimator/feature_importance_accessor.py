@@ -442,6 +442,22 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         r2_feature_0  0.792...  0.131...
         r2_feature_1  2.478...  0.223...
         r2_feature_2  0.025...  0.003...
+
+        # If using a pipeline, compute feature importance at the end of feature eng
+        >>> from sklearn.pipeline import make_pipeline
+        >>> from sklearn.preprocessing import StandardScaler
+        >>> pipeline = make_pipeline(StandardScaler(), Ridge())
+        >>> pipeline_report = EstimatorReport(pipeline, **split_data)
+        >>> pipeline_report.feature_importance.permutation(
+        ...    n_repeats=2,
+        ...    seed=0,
+        ...    stage="end",
+        ... )
+        Repeat             Repeat #0  Repeat #1
+        Metric Feature
+        r2     Feature #0   0.699...   0.884...
+               Feature #1   2.318...   2.633...
+               Feature #2   0.028...   0.022...
         """
         return self._feature_permutation(
             data_source=data_source,
@@ -553,8 +569,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             score = sklearn_score.get("importances")
 
             feature_names = (
-                self._parent.estimator_.feature_names_in_
-                if hasattr(self._parent.estimator_, "feature_names_in_")
+                feature_names_source.feature_names_in_
+                if hasattr(feature_names_source, "feature_names_in_")
                 else [f"Feature #{i}" for i in range(X_.shape[1])]
             )
 
