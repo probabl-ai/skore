@@ -130,11 +130,9 @@ To compare the performance of different predictive models, `skore` provides the
 :class:`CrossValidationReport` instances. It then provides methods to compare the
 performance of the different models.
 
-The reports to be compared must share the same test target, for the comparison to make
-sense. The reports may not share the same training data or target, therefore the
-:class:`ComparisonReport` can be used to diagnose the performance of a new model,
-compared to a historical one in production for instance. They may also not share the
-same testing X, to remove the constraints of having consistent pipeline input.
+In order for the comparison to make sense, the reports must all have the same test target.
+However, they may have different training data or target; this might be the case when comparing a new model with the current production model, for example.
+They may also have different testing data ($X_\text{test}$), which means the compared model pipelines do not necessarily need to be the same.
 This comparison of testing target is done thanks to hashing of the table.
 
 The caching mechanism is also available and exposes the same methods.
