@@ -172,38 +172,42 @@ class Project:
         # ask for upload
         with AuthenticatedClient(raises=True) as client:
             response = client.post(
-                f"projects/{self.tenant}/{self.name}/artefacts",
+                url=f"projects/{self.tenant}/{self.name}/artefacts",
                 json=[{"checksum": checksum, "content_type": "<default>"}],
             )
 
         if response := response.json():
-            upload_url = response[0]["upload_url"]
-
             # upload
-
             with io.BytesIO(pickle) as stream:
                 with Client() as client:
-                    client.post("https://httpbin.org/post", files=(("file", stream),))
+                    client.put(
+                        url=response[0]["upload_url"],
+                        content=stream,
+                        headers={"Content-Type": "application/octet-stream"},
+                    )
 
             # complete
+            with AuthenticatedClient(raises=True) as client:
+                client.post(
+                    url=f"projects/{self.tenant}/{self.name}/artefacts/complete",
+                    json=[{"checksum": checksum, "etags": {}}],
+                )
 
         del pickle
-        breakpoint()
 
         item = item_module.object_to_item(report)
-        # with AuthenticatedClient(raises=True) as client:
-        #     client.post(
-        #         f"projects/{self.tenant}/{self.name}/items",
-        #         json={
-        #             **item.__metadata__,
-        #             **item.__representation__,
-        #             "parameters": {
-        #                 "checksum": checksum_b64_str
-        #             },
-        #             "key": key,
-        #             "run_id": self.run_id,
-        #         },
-        #     )
+
+        with AuthenticatedClient(raises=True) as client:
+            client.post(
+                f"projects/{self.tenant}/{self.name}/items",
+                json={
+                    **item.__metadata__,
+                    **item.__representation__,
+                    "parameters": {"checksum": checksum},
+                    "key": key,
+                    "run_id": self.run_id,
+                },
+            )
 
     @property
     def reports(self):
@@ -213,9 +217,15 @@ class Project:
             """Get a persisted report by its id."""
 
             def dto(report):
-                checksum_b64_str = report["raw"]["checksum"]
+                checksum = report["raw"]["checksum"]
 
-                #
+                # ask for read
+                with AuthenticatedClient(raises=True) as client:
+                    response = client.get(
+                        url="/probabl-ai/test_project/artefacts/read",
+                        params={"artefact_checksum": [checksum]},
+                    )
+
                 # Download artefact
                 #
 
