@@ -1072,6 +1072,55 @@ plot_permutation_train_test(tree_report)
 # and ``AveOccup``.
 
 # %%
+# Computing permutation importance at different stages of a pipeline
+# =================================================================
+#
+# When working with pipelines that contain feature engineering steps, we might be interested
+# in measuring feature importance at different stages:
+#
+# - At the beginning of the pipeline (raw features)
+# - Before the final estimator (engineered features)
+#
+# The `stage` parameter in the `permutation` method allows us to control where the feature
+# importance is calculated.
+
+# %%
+# Here's a pipeline with feature engineering (standardization) and a Ridge regression:
+
+# %%
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+
+pipeline_model = make_pipeline(StandardScaler(), Ridge())
+pipeline_model.fit(X_train, y_train)
+
+pipeline_report = EstimatorReport(
+    pipeline_model,
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_test,
+    y_test=y_test,
+)
+
+# %%
+# Now we can compute feature importance at the beginning of the pipeline (default behavior):
+
+# %%
+pipeline_report.feature_importance.permutation(seed=0, stage="start")
+
+# %%
+# And also at the end of feature engineering, right before the Ridge regression:
+
+# %%
+pipeline_report.feature_importance.permutation(seed=0, stage="end")
+
+# %%
+# This capability is particularly useful we want to understand:
+#
+# 1. Which raw input features are most important overall (stage="start")
+# 2. Which engineered features are most important for the final model (stage="end")
+
+# %%
 # Conclusion
 # ==========
 #
