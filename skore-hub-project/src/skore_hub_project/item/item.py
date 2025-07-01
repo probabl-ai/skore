@@ -71,22 +71,16 @@ class Item(ABC):
     """
 
     @property
-    def __parameters__(self) -> dict[str, dict[str, Any]]:
+    def __parameters__(self) -> dict[str, Any]:
         """
         Get the parameters of the ``Item`` instance.
 
         These parameters must be sufficient to recreate the instance.
         They are persisted in the ``skore`` hub project and retrieved as needed.
         """
-        cls = self.__class__
-        cls_name = cls.__name__
-        cls_parameters = inspect_signature(cls).parameters
-
         return {
-            "parameters": {
-                "class": cls_name,
-                "parameters": {p: getattr(self, p) for p in cls_parameters},
-            }
+            parameter: getattr(self, parameter)
+            for parameter in inspect_signature(self.__class__).parameters
         }
 
     @property

@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import io
 from functools import cached_property
 from operator import itemgetter
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
+import blake3.blake3 as Blake3
+import joblib
+
 from .. import item as item_module
+from ..client.api import Client
 from ..client.client import AuthenticatedClient, HTTPStatusError
-from ..item.item import lazy_is_instance
+from ..item.item import bytes_to_b64_str, lazy_is_instance
 
 if TYPE_CHECKING:
     from typing import TypedDict
@@ -29,6 +34,31 @@ if TYPE_CHECKING:
         roc_auc: float | None
         fit_time: float
         predict_time: float
+
+
+def dumps(report: EstimatorReport) -> tuple[bytes, str]:
+    """
+    Notes
+    -----
+    The report is pickled without its cache, to avoid salting the checksum.
+    """
+    cache = report._cache
+    report._cache = {}
+
+    try:
+        with io.BytesIO() as stream:
+            joblib.dump(report, stream)
+            pickle = stream.getvalue()
+    finally:
+        report._cache = cache
+
+    hasher = Blake3(max_threads=(1 if len(pickle) < 1**6 else Blake3.AUTO))
+    checksum = hasher.update(pickle).digest()
+
+    return pickle, bytes_to_b64_str(checksum)
+
+
+def loads(pickle, checksum) -> EstimatorReport: ...
 
 
 class Project:
@@ -136,19 +166,44 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
-        item = item_module.object_to_item(report)
+        #
+        pickle, checksum = dumps(report)
 
+        # ask for upload
         with AuthenticatedClient(raises=True) as client:
-            client.post(
-                f"projects/{self.tenant}/{self.name}/items",
-                json={
-                    **item.__metadata__,
-                    **item.__representation__,
-                    **item.__parameters__,
-                    "key": key,
-                    "run_id": self.run_id,
-                },
+            response = client.post(
+                f"projects/{self.tenant}/{self.name}/artefacts",
+                json=[{"checksum": checksum, "content_type": "<default>"}],
             )
+
+        if response := response.json():
+            upload_url = response[0]["upload_url"]
+
+            # upload
+
+            with io.BytesIO(pickle) as stream:
+                with Client() as client:
+                    client.post("https://httpbin.org/post", files=(("file", stream),))
+
+            # complete
+
+        del pickle
+        breakpoint()
+
+        item = item_module.object_to_item(report)
+        # with AuthenticatedClient(raises=True) as client:
+        #     client.post(
+        #         f"projects/{self.tenant}/{self.name}/items",
+        #         json={
+        #             **item.__metadata__,
+        #             **item.__representation__,
+        #             "parameters": {
+        #                 "checksum": checksum_b64_str
+        #             },
+        #             "key": key,
+        #             "run_id": self.run_id,
+        #         },
+        #     )
 
     @property
     def reports(self):
@@ -158,11 +213,16 @@ class Project:
             """Get a persisted report by its id."""
 
             def dto(report):
-                item_class_name = report["raw"]["class"]
-                item_class = getattr(item_module, item_class_name)
-                item_parameters = report["raw"]["parameters"]
-                item = item_class(**item_parameters)
-                return item.__raw__
+                checksum_b64_str = report["raw"]["checksum"]
+
+                #
+                # Download artefact
+                #
+
+                pickle_bytes = b64_str_to_bytes(pickle_b64_str)
+
+                with io.BytesIO(pickle_bytes) as stream:
+                    return load(stream)
 
             with AuthenticatedClient(raises=True) as client:
                 response = client.get(
