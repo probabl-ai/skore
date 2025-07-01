@@ -66,7 +66,7 @@ import skore
 import os
 import tempfile
 
-temp_dir = tempfile.TemporaryDirectory()
+temp_dir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 os.environ["SKORE_WORKSPACE"] = temp_dir.name
 # sphinx_gallery_end_ignore
 my_project = skore.Project("my_project")
