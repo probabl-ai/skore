@@ -27,30 +27,41 @@ from skore.skrub._skrub_compat import sbd
 from skore.utils._repr_html import ReprHTMLMixin
 
 
-def _truncate_top_k(col, k, other_label="other"):
+def _truncate_top_k(col: pd.Series, k: int, other_label: str = "other") -> pd.Series:
     """Truncate a column to the top k most frequent values.
 
-    Replaces the rest with a label 'other'.
+    Replaces the rest with a label defined by ``other_label``.
+
+    Parameters
+    ----------
+    col : pd.Series
+        The column to truncate.
+
+    k : int
+        The number of most frequent values to keep.
+
+    other_label : str, default="other"
+        The label to use for the rest of the values.
+
+    Returns
+    -------
+    pd.Series
+        The truncated column.
     """
     if col is None or sbd.is_numeric(col):
         return col
 
-    # Use only the top k most frequent items of the color column
-    # if it's categorical.
     _, counter = top_k_value_counts(col, k=k)
     values, _ = zip(*counter, strict=False)
     other = sbd.make_column_like(col, [other_label] * sbd.shape(col)[0], name="c")
-    keep = sbd.is_in(col, values) | sbd.is_null(
-        col
-    )  # we don't want to replace NaN with 'other'
+    # we don't want to replace NaN with 'other'
+    keep = sbd.is_in(col, values) | sbd.is_null(col)
     col = sbd.where(col, keep, other)
-    col = sbd.make_column_like(
+    return sbd.make_column_like(
         col,
         [ellide_string(s, max_len=20) for s in sbd.to_list(col)],
         name=sbd.name(col),
     )
-
-    return col
 
 
 def _compute_contingency_table(
