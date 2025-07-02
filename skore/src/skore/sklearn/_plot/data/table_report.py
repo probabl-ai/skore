@@ -212,7 +212,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         heatmap_kwargs: dict[str, Any] | None = None,
         histplot_kwargs: dict[str, Any] | None = None,
     ) -> None:
-        """Plot a 1d or 2d distribution of the column(s) from the dataset.
+        """Plot distribution or correlation of the columns from the dataset.
 
         Parameters
         ----------
@@ -271,6 +271,19 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             Keyword arguments to be passed to seaborn's :ref:`histplot
             <https://seaborn.pydata.org/generated/seaborn.histplot.html>`_ for rendering
             the distribution 1D plot, when only ``x`` is provided.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(classifier, **split_data)
+        >>> display = report.data.analyze()
+        >>> display.plot(kind="corr")
         """
         self.figure_, self.ax_ = plt.subplots()
         if kind == "dist":
@@ -417,7 +430,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         stripplot_kwargs: dict[str, Any] | None = None,
         boxplot_kwargs: dict[str, Any] | None = None,
         scatterplot_kwargs: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Plot 2-dimensional distribution of two features.
 
         This function plots a 2-dimensional distribution of two features, with optional
@@ -565,7 +578,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         if self.ax_.legend_ is not None:
             sns.move_legend(self.ax_, (1.05, 0.0))
 
-    def _plot_cramer(self, *, heatmap_kwargs: dict[str, Any] | None):
+    def _plot_cramer(self, *, heatmap_kwargs: dict[str, Any] | None) -> None:
         """Plot Cramer's V correlation among all columns.
 
         Parameters
@@ -601,7 +614,9 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         sns.heatmap(cramer_v_table, mask=mask, ax=self.ax_, **heatmap_kwargs_validated)
         self.ax_.set(title="Cramer's V Correlation")
 
-    def frame(self, *, kind: Literal["dataset", "top-associations"] = "dataset"):
+    def frame(
+        self, *, kind: Literal["dataset", "top-associations"] = "dataset"
+    ) -> pd.DataFrame:
         """Get the data related to the table report.
 
         Parameters
