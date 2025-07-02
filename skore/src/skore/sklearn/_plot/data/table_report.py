@@ -554,21 +554,37 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             sns.move_legend(self.ax_, (1.05, 0.0))
 
     def _plot_cramer(self, *, heatmap_kwargs: dict[str, Any] | None):
-        """Plot Cramer's V correlation among all columns."""
+        """Plot Cramer's V correlation among all columns.
+
+        Parameters
+        ----------
+        heatmap_kwargs : dict, default=None
+            Keyword arguments to be passed to seaborn's heatmap.
+        """
         if heatmap_kwargs is None:
             heatmap_kwargs = self._default_heatmap_kwargs or {}
+
+        heatmap_kwargs_validated = _validate_style_kwargs(
+            {
+                "xticklabels": True,
+                "yticklabels": True,
+                "robust": True,
+                "square": True,
+                "annot": True,
+                "annot_kws": {"size": 10},
+                "fmt": ".2f",
+            },
+            heatmap_kwargs or {},
+        )
 
         cramer_v_table = pd.DataFrame(
             _column_associations._cramer_v_matrix(self.summary["dataframe"]),
             columns=self.summary["dataframe"].columns,
             index=self.summary["dataframe"].columns,
         )
-        # return self._heatmap(
-        #     cramer_v_table,
-        #     title="Cramer's V Correlation",
-        #     heatmap_kwargs=heatmap_kwargs,
-        # )
-        sns.heatmap(cramer_v_table, ax=self.ax_, **heatmap_kwargs)
+
+        sns.heatmap(cramer_v_table, ax=self.ax_, **heatmap_kwargs_validated)
+        self.ax_.set(title="Cramer's V Correlation")
 
     def frame(self, *, kind: Literal["dataset", "top-associations"] = "dataset"):
         """Get the data related to the table report.
