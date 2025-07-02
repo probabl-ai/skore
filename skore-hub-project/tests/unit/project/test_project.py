@@ -5,9 +5,7 @@ from urllib.parse import urljoin
 from httpx import Client, Response
 from pytest import fixture, mark, raises
 from skore_hub_project import Project
-from skore_hub_project.item.skore_estimator_report_item import (
-    SkoreEstimatorReportItem,
-)
+from skore_hub_project.project.project import dumps
 
 
 class FakeClient(Client):
@@ -19,6 +17,9 @@ class FakeClient(Client):
         response.raise_for_status()
 
         return response
+
+
+def test_dumps(): ...
 
 
 class TestProject:
@@ -68,20 +69,26 @@ class TestProject:
         with raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
             Project("<tenant>", "<name>").put("<key>", "<value>")
 
-    def test_put(self, respx_mock, regression):
+    def test_put_with_upload(self, respx_mock, regression): ...
+
+    def test_put_without_upload(self, respx_mock, regression):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
             Response(200, json={"id": "<run_id>"})
+        )
+        respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
+            Response(200, json=[])
         )
         respx_mock.post("projects/<tenant>/<name>/items").mock(Response(200))
 
         Project("<tenant>", "<name>").put("<key>", regression)
+
+        _, checksum = dumps(regression)
 
         # Retrieve the content of the request
         content = loads(respx_mock.calls.last.request.content.decode())
 
         # Prepare the content to be compared
         content["dataset_fingerprint"] = None
-        content["parameters"]["parameters"]["pickle_b64_str"] = None
 
         for item in content["related_items"]:
             item["representation"]["value"] = None
@@ -218,10 +225,7 @@ class TestProject:
                     "representation": {"media_type": "text/html", "value": None},
                 },
             ],
-            "parameters": {
-                "class": "SkoreEstimatorReportItem",
-                "parameters": {"pickle_b64_str": None},
-            },
+            "parameters": {"checksum": checksum},
             "key": "<key>",
             "run_id": "<run_id>",
         }
@@ -246,18 +250,7 @@ class TestProject:
         respx_mock.get(url).mock(
             Response(
                 200,
-                json={
-                    "raw": {
-                        "class": "SkoreEstimatorReportItem",
-                        "parameters": {
-                            "pickle_b64_str": (
-                                SkoreEstimatorReportItem.factory(
-                                    regression
-                                ).pickle_b64_str
-                            )
-                        },
-                    }
-                },
+                json={"raw": {"checksum": "<checksum>"}},
             )
         )
 
