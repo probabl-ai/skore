@@ -55,15 +55,15 @@ def dumps(report: _BaseReport) -> tuple[bytes, str]:
     cache = report._cache
     report._cache = {}
 
-    try:
-        with io.BytesIO() as stream:
+    with io.BytesIO() as stream:
+        try:
             joblib.dump(report, stream)
-            pickle = stream.getvalue()
-    finally:
-        report._cache = cache
+        finally:
+            report._cache = cache
 
-    hasher = Blake3(max_threads=(1 if len(pickle) < 1**6 else Blake3.AUTO))
-    checksum = hasher.update(pickle).digest()
+        pickle = stream.getvalue()
+        hasher = Blake3(max_threads=(1 if len(pickle) < 1**6 else Blake3.AUTO))
+        checksum = hasher.update(pickle).digest()
 
     return pickle, bytes_to_b64_str(checksum)
 
