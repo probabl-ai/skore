@@ -120,6 +120,7 @@ class _BaseReport(_HelpMixin):
     _X_test: ArrayLike | None
     _y_train: ArrayLike | None
     _y_test: ArrayLike | None
+    _cache: dict[tuple[Any, ...], Any]
     estimator_: BaseEstimator
 
     def _get_help_panel_title(self) -> str:

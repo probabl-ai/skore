@@ -11,15 +11,16 @@ from typing import TYPE_CHECKING
 import blake3.blake3 as Blake3
 import joblib
 
-from .. import item as item_module
 from ..client.api import Client
 from ..client.client import AuthenticatedClient, HTTPStatusError
 from ..item.item import bytes_to_b64_str, lazy_is_instance
+from ..item.skore_estimator_report_item import Metadata, Representations
 
 if TYPE_CHECKING:
     from typing import TypedDict
 
     from skore.sklearn import EstimatorReport
+    from skore.sklearn._base import _BaseReport
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -36,7 +37,7 @@ if TYPE_CHECKING:
         predict_time: float
 
 
-def dumps(report: EstimatorReport) -> tuple[bytes, str]:
+def dumps(report: _BaseReport) -> tuple[bytes, str]:
     """
     Notes
     -----
@@ -56,9 +57,6 @@ def dumps(report: EstimatorReport) -> tuple[bytes, str]:
     checksum = hasher.update(pickle).digest()
 
     return pickle, bytes_to_b64_str(checksum)
-
-
-def loads(pickle, checksum) -> EstimatorReport: ...
 
 
 class Project:
@@ -166,22 +164,24 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
-        #
+        # pickle report
         pickle, checksum = dumps(report)
 
-        # ask for upload
+        # ask for upload url
         with AuthenticatedClient(raises=True) as client:
             response = client.post(
                 url=f"projects/{self.tenant}/{self.name}/artefacts",
                 json=[{"checksum": checksum, "content_type": "<default>"}],
             )
 
-        if response := response.json():
-            # upload
+        url = next(iter(response.json()), None)
+
+        if url:
+            # upload pickled report if necessary
             with io.BytesIO(pickle) as stream:
                 with Client() as client:
                     client.put(
-                        url=response[0]["upload_url"],
+                        url=url["upload_url"],
                         content=stream,
                         headers={"Content-Type": "application/octet-stream"},
                     )
@@ -195,18 +195,18 @@ class Project:
 
         del pickle
 
-        item = item_module.object_to_item(report)
-
         with AuthenticatedClient(raises=True) as client:
             client.post(
                 url=f"projects/{self.tenant}/{self.name}/items",
-                json={
-                    **item.__metadata__,
-                    **item.__representation__,
-                    "parameters": {"checksum": checksum},
-                    "key": key,
-                    "run_id": self.run_id,
-                },
+                json=dict(
+                    (
+                        *Metadata(report),
+                        ("related_items", list(Representations(report))),
+                        ("parameters", {"checksum": checksum}),
+                        ("key", key),
+                        ("run_id", self.run_id),
+                    )
+                ),
             )
 
     @property
@@ -216,28 +216,33 @@ class Project:
         def get(id: str) -> EstimatorReport:
             """Get a persisted report by its id."""
 
-            def dto(report):
-                # ask for read using artifact checksum
-                with AuthenticatedClient(raises=True) as client:
-                    response = client.get(
-                        url=f"projects/{self.tenant}/{self.name}/artefacts/read",
-                        params={"artefact_checksum": [report["raw"]["checksum"]]},
-                    )
-
-                # Download artifact
-                with Client() as client:
-                    reponse = client.get(url=response.json()[0]["url"])
-
-                # Depickle artifact
-                with io.BytesIO(reponse.content) as stream:
-                    return joblib.load(stream)
-
+            # retrieve report metadata
             with AuthenticatedClient(raises=True) as client:
                 response = client.get(
                     url=f"projects/{self.tenant}/{self.name}/experiments/estimator-reports/{id}"
                 )
 
-            return dto(response.json())
+            metadata = response.json()
+            checksum = metadata["raw"]["checksum"]
+
+            # ask for read url
+            with AuthenticatedClient(raises=True) as client:
+                response = client.get(
+                    url=f"projects/{self.tenant}/{self.name}/artefacts/read",
+                    params={"artefact_checksum": [checksum]},
+                )
+
+            url = response.json()[0]["url"]
+
+            # download pickled report
+            with Client() as client:
+                response = client.get(url=url)
+
+            pickle = response.content
+
+            # unpickle report
+            with io.BytesIO(pickle) as stream:
+                return joblib.load(stream)
 
         def metadata() -> list[Metadata]:
             """Obtain metadata for all persisted reports regardless of their run."""
