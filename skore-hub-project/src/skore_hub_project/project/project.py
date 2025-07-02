@@ -13,8 +13,8 @@ import joblib
 
 from ..client.api import Client
 from ..client.client import AuthenticatedClient, HTTPStatusError
+from ..item import skore_estimator_report_item as SkoreEstimatorReportItem
 from ..item.item import bytes_to_b64_str, lazy_is_instance
-from ..item.skore_estimator_report_item import Metadata, Representations
 
 if TYPE_CHECKING:
     from typing import TypedDict
@@ -39,6 +39,15 @@ if TYPE_CHECKING:
 
 def dumps(report: _BaseReport) -> tuple[bytes, str]:
     """
+    Dump a ``report`` using ``joblib``.
+
+    Returns
+    -------
+    bytes
+        The pickled report.
+    str
+        The checksum of the pickled report.
+
     Notes
     -----
     The report is pickled without its cache, to avoid salting the checksum.
@@ -178,13 +187,12 @@ class Project:
 
         if url:
             # upload pickled report if necessary
-            with io.BytesIO(pickle) as stream:
-                with Client() as client:
-                    client.put(
-                        url=url["upload_url"],
-                        content=stream,
-                        headers={"Content-Type": "application/octet-stream"},
-                    )
+            with io.BytesIO(pickle) as stream, Client() as client:
+                client.put(
+                    url=url["upload_url"],
+                    content=stream,
+                    headers={"Content-Type": "application/octet-stream"},
+                )
 
             # complete
             with AuthenticatedClient(raises=True) as client:
@@ -200,8 +208,11 @@ class Project:
                 url=f"projects/{self.tenant}/{self.name}/items",
                 json=dict(
                     (
-                        *Metadata(report),
-                        ("related_items", list(Representations(report))),
+                        *SkoreEstimatorReportItem.Metadata(report),
+                        (
+                            "related_items",
+                            list(SkoreEstimatorReportItem.Representations(report)),
+                        ),
                         ("parameters", {"checksum": checksum}),
                         ("key", key),
                         ("run_id", self.run_id),
@@ -215,7 +226,6 @@ class Project:
 
         def get(id: str) -> EstimatorReport:
             """Get a persisted report by its id."""
-
             # retrieve report metadata
             with AuthenticatedClient(raises=True) as client:
                 response = client.get(
