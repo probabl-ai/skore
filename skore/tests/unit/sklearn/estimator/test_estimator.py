@@ -1751,3 +1751,23 @@ def test_estimator_report_analyze_subsampling(
         assert display.summary["dataframe"].index.to_list() == list(range(10))
     else:
         assert display.summary["dataframe"].index.to_list() != list(range(10))
+
+
+def test_estimator_data_accessor_help(capsys, binary_classification_data):
+    """Check that the help method writes to the console."""
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    report.data.help()
+    captured = capsys.readouterr()
+    assert "Available data methods" in captured.out
+
+
+def test_estimator_data_accessor_repr(binary_classification_data):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    repr_str = repr(report.data)
+    assert "skore.EstimatorReport.data" in repr_str
+    assert "help()" in repr_str

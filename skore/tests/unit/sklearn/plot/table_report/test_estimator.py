@@ -70,7 +70,6 @@ def test_table_report_display_frame(estimator_report, data_source):
         )
 
     associations = display.frame(kind="top-associations")
-    assert pd.testing.assert_frame_equal(
-        associations,
-        pd.DataFrame(display.summary["top_associations"]),
+    pd.testing.assert_frame_equal(
+        associations, pd.DataFrame(display.summary["top_associations"])
     )
