@@ -1,8 +1,6 @@
-import itertools
 import json
 from typing import Any, Literal
 
-import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -27,17 +25,6 @@ from skore.sklearn._plot.utils import (
 )
 from skore.skrub._skrub_compat import sbd
 from skore.utils._repr_html import ReprHTMLMixin
-
-
-def _has_no_decimal(df):
-    for col in sbd.to_column_list(df):
-        if sbd.any(col != sbd.cast(col, "int")):
-            return False
-    return True
-
-
-def _global_max(df):
-    return max([sbd.max(col) for col in sbd.to_column_list(df)])
 
 
 def _truncate_top_k(col, k, other_label="other"):
@@ -66,83 +53,47 @@ def _truncate_top_k(col, k, other_label="other"):
     return col
 
 
-def _mask_top_k(cols, names, k):
-    """Select the top k most frequent pairs of values in cols.
+def _compute_contingency_table(
+    x: pd.Series, y: pd.Series, hue: pd.Series | None, k: int
+) -> pd.DataFrame:
+    """Compute the contingency table of x and y with filtering only to the top k pairs.
 
-    First select the top k occurrences, then fill the missing pairs.
+    The contingency table is a symmetric matrix where the values are the mean of hue
+    for a given pair of (x, y) entries. If hue is not provided, the values are the
+    frequency of each pair (x, y).
+
+    Parameters
+    ----------
+    x : pd.Series
+        The first column to aggregate.
+
+    y : pd.Series
+        The second column to aggregate.
+    hue : pd.Series | None
+        The column to aggregate by.
+
+    k : int
+        The number of top pairs to select.
+
+    Returns
+    -------
+    pd.DataFrame
+        The contingency table.
     """
-    key = "_skore_count"  # an arbitrary column name that disappear after pivoting.
-    indices = (
-        pd.DataFrame(cols)
-        .T.assign(**{key: 1})
-        .groupby(names)[key]
-        .sum()
-        .sort_values(ascending=False)
-        .head(k)
-        .index
-    )
-    left, right = zip(*list(indices), strict=False)
-    left, right = list(set(left)), list(set(right))
-    return list(itertools.product(left, right))
-
-
-def _pairwise_product_index(x, y):
-    """Create a list of all pairs of unique values in x and y."""
-    return list(itertools.product(x.unique().tolist(), y.unique().tolist()))
-
-
-def _aggregate_pairwise(x, y, hue, k, heatmap_kwargs):
-    """Create a symmetric matrix by a pairwise aggregation of its columns.
-
-    - If the color column hue is provided, the values of the symmetric matrix are
-      the mean of hue for a given pair of (x, y) entries
-    - Otherwise, the values of the symmetric matrix are the frequency of each pair
-      (x, y).
-    """
-    # We use Pandas for pivot and groupby operations to simplify the logic.
-    cols = [sbd.to_pandas(x), sbd.to_pandas(y)]
-    names = [col.name for col in cols]
-    mask_top_k = _mask_top_k(cols, names, k)
-    full_index = _pairwise_product_index(*cols)
     if hue is None:
-        key = "_skore_count"  # an arbitrary column name that disappear after pivoting.
-        df = (
-            pd.DataFrame(cols)
-            .T.assign(**{key: 1})
-            .groupby(names)[key]
-            .sum()
-            .reindex(full_index)
-            .fillna(0)
-            .loc[mask_top_k]
-            .reset_index()
-            .pivot(
-                columns=names[0],
-                index=names[1],
-                values=key,
-            )
-        )
-        cbar_kws = {"label": "total"}
+        contingency_table = pd.crosstab(index=y, columns=x)
     else:
-        hue = sbd.to_pandas(hue)
-        cols.append(hue)
-        key = hue.name
-        df = (
-            pd.DataFrame(cols)
-            .T.groupby(names)[key]
-            .mean()
-            .reindex(full_index)
-            .loc[mask_top_k]
-            .reset_index()
-            .pivot(columns=names[0], index=names[1], values=key)
-        )
-        cbar_kws = {"label": f"average {ellide_string(key)}"}
+        contingency_table = pd.crosstab(index=y, columns=x, values=hue, aggfunc="mean")
 
-    user_heatmap_kwargs = heatmap_kwargs.get("cbar_kws", {})
-    for k, v in cbar_kws.items():
-        user_heatmap_kwargs.setdefault(k, v)
-    heatmap_kwargs["cbar_kws"] = user_heatmap_kwargs
+    cols = sbd.concat(sbd.to_frame(x), sbd.to_frame(y), axis=1)
+    top_pairs = cols.value_counts().nlargest(k).index
 
-    return {"df": df, "heatmap_kwargs": heatmap_kwargs}
+    top_x_values = sorted(set(pair[0] for pair in top_pairs))
+    top_y_values = sorted(set(pair[1] for pair in top_pairs))
+
+    return contingency_table.reindex(
+        index=top_y_values, columns=top_x_values, fill_value=0
+    )
 
 
 def _resize_categorical_axis(
@@ -486,37 +437,16 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         scatterplot_kwargs : dict, default=None
             Keyword arguments to be passed to seaborn's scatterplot.
         """
-        default_scatterplot_kwargs: dict[str, Any] = {"alpha": 0.1}
-        default_stripplot_kwargs: dict[str, Any] = {
-            "dodge": False,
-            "size": 6,
-            "alpha": 0.5,
-            "zorder": 0,
-        }
-        default_boxplot_kwargs: dict[str, Any] = {
-            "fliersize": 0,
-            "width": 0.5,
-            "whis": (0, 100),  # spellchecker:disable-line
-            "color": "black",
-            "fill": False,
-            "zorder": 1,
-            "boxprops": {"alpha": 0.5},
-            "whiskerprops": {"alpha": 0.5},
-            "capprops": {"alpha": 0.5},
-            "medianprops": {"alpha": 0.5},
-        }
-        default_heatmap_kwargs: dict[str, Any] = {}
-
         x = sbd.col(self.summary["dataframe"], x) if x is not None else None
         y = sbd.col(self.summary["dataframe"], y) if y is not None else None
         hue = sbd.col(self.summary["dataframe"], hue) if hue is not None else None
         x, y = hue if x is None else x, y if y is not None else hue
 
-        despine_params = {}
+        despine_params = dict(top=True, right=True, trim=True, offset=10)
         is_x_num, is_y_num = sbd.is_numeric(x), sbd.is_numeric(y)
         if is_x_num and is_y_num:
             scatterplot_kwargs_validated = _validate_style_kwargs(
-                default_scatterplot_kwargs, scatterplot_kwargs or {}
+                {"alpha": 0.1}, scatterplot_kwargs or {}
             )
             sns.scatterplot(
                 x=x,
@@ -527,10 +457,28 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             )
         elif is_x_num or is_y_num:
             stripplot_kwargs_validated = _validate_style_kwargs(
-                default_stripplot_kwargs, stripplot_kwargs or {}
+                {
+                    "dodge": False,
+                    "size": 6,
+                    "alpha": 0.5,
+                    "zorder": 0,
+                },
+                stripplot_kwargs or {},
             )
             boxplot_kwargs_validated = _validate_style_kwargs(
-                default_boxplot_kwargs, boxplot_kwargs or {}
+                {
+                    "fliersize": 0,
+                    "width": 0.5,
+                    "whis": (0, 100),  # spellchecker:disable-line
+                    "color": "black",
+                    "fill": False,
+                    "zorder": 1,
+                    "boxprops": {"alpha": 0.5},
+                    "whiskerprops": {"alpha": 0.5},
+                    "capprops": {"alpha": 0.5},
+                    "medianprops": {"alpha": 0.5},
+                },
+                boxplot_kwargs or {},
             )
 
             sns.stripplot(x=x, y=y, hue=hue, ax=self.ax_, **stripplot_kwargs_validated)
@@ -555,66 +503,55 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 raise ValueError(
                     "If 'x' and 'y' are categories, 'hue' must be continuous."
                 )
-            heatmap_kwargs_validated = _validate_style_kwargs(
-                default_heatmap_kwargs, heatmap_kwargs or {}
-            )
-            self._heatmap(
-                **_aggregate_pairwise(
-                    x, y, hue, k, heatmap_kwargs=heatmap_kwargs_validated
-                ),
+
+            contingency_table = _compute_contingency_table(x, y, hue, k)
+            contingency_table.index = [
+                ellide_string(s) for s in contingency_table.index
+            ]
+            contingency_table.columns = [
+                ellide_string(s) for s in contingency_table.columns
+            ]
+
+            if contingency_table.max(axis=None) < 100_000:  # noqa: SIM108
+                # avoid scientific notation for small numbers
+                annotation_format = (
+                    ".0f"
+                    if all(
+                        pd.api.types.is_integer_dtype(dtype)
+                        for dtype in contingency_table.dtypes
+                    )
+                    else ".2f"
+                )
+            else:
+                # scientific notation for bigger numbers
+                annotation_format = ".2g"
+
+            cbar_kwargs = (
+                {"label": f"Mean {sbd.name(hue)}"}
+                if hue is not None
+                else {"label": "Count"}
             )
 
-        sns.despine(
-            self.figure_,
-            top=True,
-            right=True,
-            trim=True,
-            offset=10,
-            **despine_params,
-        )
+            heatmap_kwargs_validated = _validate_style_kwargs(
+                {
+                    "xticklabels": True,
+                    "yticklabels": True,
+                    "robust": True,
+                    "annot": contingency_table.shape[1] < 10,
+                    "fmt": annotation_format,
+                    "cbar_kws": cbar_kwargs,
+                },
+                heatmap_kwargs or {},
+            )
+            sns.heatmap(contingency_table, ax=self.ax_, **heatmap_kwargs_validated)
+            despine_params.update(left=True, bottom=True)
+            self.ax_.tick_params(axis="both", length=0)
+
+        sns.despine(self.figure_, **despine_params)
 
         self.ax_.set(xlabel=sbd.name(x), ylabel=sbd.name(y))
         if self.ax_.legend_ is not None:
             sns.move_legend(self.ax_, (1.05, 0.0))
-
-    def _heatmap(self, df, *, title=None, heatmap_kwargs):
-        df.index = [ellide_string(s) for s in df.index]
-        df.columns = [ellide_string(s) for s in df.columns]
-
-        n_rows, n_cols = sbd.shape(df)
-        h = min(max(n_rows * 0.9, 4), 8)
-        w = min(max(n_cols * 0.9, 4), 8)
-        _adjust_fig_size(self.figure_, self.ax_, w, h)
-
-        df = df.infer_objects(copy=False).fillna(np.nan)
-
-        if _global_max(df) < 1000:  # noqa: SIM108
-            # avoid scientific notation for small numbers
-            fmt = ".0f" if _has_no_decimal(df) else ".2f"
-        else:
-            # scientific notation for bigger numbers
-            fmt = ".2g"
-
-        annot = n_cols < 10
-
-        heatmap_kwargs_validated = _validate_style_kwargs(
-            {
-                "xticklabels": True,
-                "yticklabels": True,
-                "robust": True,
-                "annot": annot,
-                "fmt": fmt,
-            },
-            heatmap_kwargs,
-        )
-
-        sns.heatmap(
-            df,
-            ax=self.ax_,
-            **heatmap_kwargs_validated,
-        )
-        if title is not None:
-            self.ax_.set_title(title)
 
     def _plot_cramer(self, *, heatmap_kwargs: dict[str, Any] | None):
         """Plot Cramer's V correlation among all columns."""
@@ -626,11 +563,12 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             columns=self.summary["dataframe"].columns,
             index=self.summary["dataframe"].columns,
         )
-        return self._heatmap(
-            cramer_v_table,
-            title="Cramer's V Correlation",
-            heatmap_kwargs=heatmap_kwargs,
-        )
+        # return self._heatmap(
+        #     cramer_v_table,
+        #     title="Cramer's V Correlation",
+        #     heatmap_kwargs=heatmap_kwargs,
+        # )
+        sns.heatmap(cramer_v_table, ax=self.ax_, **heatmap_kwargs)
 
     def frame(self, *, kind: Literal["dataset", "top-associations"] = "dataset"):
         """Get the data related to the table report.

@@ -51,6 +51,9 @@ display = report.data.analyze(data_source="all", with_y=True)
 display
 
 # %%
+display.plot(x="gender", y="department_name", hue="current_annual_salary")
+
+# %%
 # As usual, we can easily glance at the options using ``.help``:
 display.help()
 
