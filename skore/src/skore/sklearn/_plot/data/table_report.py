@@ -634,7 +634,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         elif kind == "top-associations":
             return pd.DataFrame(self.summary["top_associations"])
         else:
-            return ValueError(f"Invalid kind: {kind!r}")
+            raise ValueError(f"Invalid kind: {kind!r}")
 
     def _html_repr(self) -> str:
         """Show the HTML representation of the report."""
