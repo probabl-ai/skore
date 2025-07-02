@@ -199,7 +199,7 @@ class Project:
 
         with AuthenticatedClient(raises=True) as client:
             client.post(
-                f"projects/{self.tenant}/{self.name}/items",
+                url=f"projects/{self.tenant}/{self.name}/items",
                 json={
                     **item.__metadata__,
                     **item.__representation__,
@@ -217,26 +217,24 @@ class Project:
             """Get a persisted report by its id."""
 
             def dto(report):
-                checksum = report["raw"]["checksum"]
-
-                # ask for read
+                # ask for read using artifact checksum
                 with AuthenticatedClient(raises=True) as client:
                     response = client.get(
-                        url="/probabl-ai/test_project/artefacts/read",
-                        params={"artefact_checksum": [checksum]},
+                        url=f"projects/{self.tenant}/{self.name}/artefacts/read",
+                        params={"artefact_checksum": [report["raw"]["checksum"]]},
                     )
 
-                # Download artefact
-                #
+                # Download artifact
+                with Client() as client:
+                    reponse = client.get(url=response.json()[0]["url"])
 
-                pickle_bytes = b64_str_to_bytes(pickle_b64_str)
-
-                with io.BytesIO(pickle_bytes) as stream:
-                    return load(stream)
+                # Depickle artifact
+                with io.BytesIO(reponse.content) as stream:
+                    return joblib.load(stream)
 
             with AuthenticatedClient(raises=True) as client:
                 response = client.get(
-                    f"projects/{self.tenant}/{self.name}/experiments/estimator-reports/{id}"
+                    url=f"projects/{self.tenant}/{self.name}/experiments/estimator-reports/{id}"
                 )
 
             return dto(response.json())
