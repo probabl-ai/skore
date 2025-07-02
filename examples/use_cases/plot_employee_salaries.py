@@ -1,29 +1,30 @@
 """
 .. _example_use_case_employee_salaries:
 
-===============================
-Simplified experiment reporting
-===============================
+==============================================
+Simplified and structured experiment reporting
+==============================================
 
-This example shows how to leverage skore for reporting model evaluation and
-storing the results for further analysis.
+This example shows how to leverage `skore` for structuring useful experiment information
+allowing to get insights from machine learning experiments.
 """
 
 # %%
 #
 # We set some environment variables to avoid some spurious warnings related to
-# parallelism.
+# parallelism when using the `TextEncoder` from `skrub` that uses tokenizers.
 import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 # %%
-# Creating a skore project and loading some data
-# ==============================================
+# Loading a non-trivial dataset
+# =============================
 
 # %%
 #
-# We use a skrub dataset that is non-trivial.
+# We use a skrub dataset that is non-trivial that contains information about employees
+# and their salaries.
 from skrub.datasets import fetch_employee_salaries
 
 datasets = fetch_employee_salaries()
@@ -59,8 +60,6 @@ table_report
 #   ``employee_position_title`` are two features containing a large number of
 #   categories.
 #   It is something that we should consider in our feature engineering.
-
-# %%
 #
 # In terms of target and thus the task that we want to solve, we are interested in
 # predicting the salary of an employee given the previous features. We therefore have
@@ -68,10 +67,14 @@ table_report
 y
 
 # %%
-# Tree-based model
-# ================
+#
+# Later, we will show that `skore` stores similar information when a model is trained on
+# some dataset to allow to get insights on the dataset used to train and test the model.
 
 # %%
+# Tree-based model
+# ================
+#
 # Let's start by creating a tree-based model using some out-of-the-box tools.
 #
 # For feature engineering we use skrub's :class:`~skrub.TableVectorizer`.
@@ -110,13 +113,58 @@ hgbt_model_report.help()
 
 # %%
 #
-# We cache the predictions for later use.
+# A report provides a collection of useful information. For instance, it allows to
+# compute on demand the predictions of the model and some performance metrics.
+#
+# Let's cache once for all the predictions of the cross-validated models.
 hgbt_model_report.cache_predictions(n_jobs=4)
 
 # %%
+# Now, that the predictions are cached, any request to compute a metric will be
+# performed using those cached predictions and will be fast.
 #
-# We can now have a look at the performance of the model with some standard metrics.
+# Let's have a look at the some standard performance metrics that are chosen based on
+# the task at hand which is a regression task.
 hgbt_model_report.metrics.summarize(indicator_favorability=True).frame()
+
+# %%
+#
+# We get the results from some statistical metrics aggregated over the cross-validation
+# splits as well as some performance metrics related to the time it took to train and
+# test the model. The favorability of each metric indicated whether the metric is better
+# when higher or lower.
+#
+# The :class:`skore.CrossValidationReport` also provides a way to inspect similar
+# information at the level of each cross-validation split by accessing an
+# :class:`skore.EstimatorReport` for each split.
+hgbt_split_1 = hgbt_model_report.estimator_reports_[0]
+hgbt_split_1.metrics.summarize(indicator_favorability=True).frame()
+
+# %%
+#
+# We also have access to some additional information regarding the dataset used for
+# training and testing of the model similar to what we have seen in the previous
+# section. For instance, let's check some information about the training dataset.
+train_data_display = hgbt_split_1.data.analyze(data_source="train")
+train_data_display
+
+# %%
+#
+# The display obtained allows to get a quick overview with the same HTML-based view
+# than the :class:`skore.TableReport` we have seen earlier. In addition, you can access
+# a :meth:`skore.TableReportDisplay.plot` method to have a particular focus on one
+# potential analysis. For instance, we can get a figure representing the correlation
+# matrix of the training dataset.
+train_data_display.plot(kind="corr")
+
+# %%
+#
+# This display also provides more information to plot 1-d or 2-d distributions of some
+# columns of the dataset.
+train_data_display.plot(y="gender")
+
+# %%
+train_data_display.plot(y="gender", hue="current_annual_salary")
 
 # %%
 # Linear model
