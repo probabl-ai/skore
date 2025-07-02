@@ -1,6 +1,7 @@
 import json
 from typing import Any, Literal
 
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -593,8 +594,11 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             columns=self.summary["dataframe"].columns,
             index=self.summary["dataframe"].columns,
         )
+        # only show the lower triangle of the heatmap since it is a correlation matrix
+        # and keep the diagonal as well.
+        mask = np.triu(np.ones_like(cramer_v_table, dtype=bool), k=1)
 
-        sns.heatmap(cramer_v_table, ax=self.ax_, **heatmap_kwargs_validated)
+        sns.heatmap(cramer_v_table, mask=mask, ax=self.ax_, **heatmap_kwargs_validated)
         self.ax_.set(title="Cramer's V Correlation")
 
     def frame(self, *, kind: Literal["dataset", "top-associations"] = "dataset"):
