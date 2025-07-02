@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 def cast_to_float(value: Any) -> float | None:
     """Cast value to float."""
     with suppress(TypeError):
-        if (value := float(value)) and isfinite(value):
+        if isfinite(value := float(value)):
             return value
 
     return None
