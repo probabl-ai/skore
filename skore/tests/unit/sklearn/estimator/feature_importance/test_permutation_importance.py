@@ -314,3 +314,51 @@ def test_not_fitted(regression_data):
     error_msg = "This LinearRegression instance is not fitted yet"
     with pytest.raises(NotFittedError, match=error_msg):
         report.feature_importance.permutation()
+
+
+def test_stage_parameter():
+    """Test the stage parameter for permutation importance."""
+    X, y = make_regression(n_features=3, random_state=0)
+
+    pipeline = make_pipeline(StandardScaler(), LinearRegression())
+
+    report = EstimatorReport(
+        pipeline,
+        X_train=X,
+        y_train=y,
+        X_test=X,
+        y_test=y,
+    )
+
+    # Test default (stage="start")
+    result_start = report.feature_importance.permutation(seed=42)
+
+    # Test stage="end"
+    result_end = report.feature_importance.permutation(seed=42, stage="end")
+
+    assert result_start.shape == result_end.shape
+
+    assert isinstance(result_start.index, pd.MultiIndex)
+    assert isinstance(result_end.index, pd.MultiIndex)
+    assert result_start.index.names == result_end.index.names
+    assert result_start.index.nlevels == result_end.index.nlevels
+    assert result_start.index.levels[0].equals(result_end.index.levels[0])
+    assert len(result_start.index.levels[1]) == len(result_end.index.levels[1])
+
+    pd.testing.assert_index_equal(result_start.columns, result_end.columns)
+
+    linear = LinearRegression()
+    linear_report = EstimatorReport(
+        linear,
+        X_train=X,
+        y_train=y,
+        X_test=X,
+        y_test=y,
+    )
+
+    result_start_linear = linear_report.feature_importance.permutation(seed=42)
+    result_end_linear = linear_report.feature_importance.permutation(
+        seed=42, stage="end"
+    )
+
+    pd.testing.assert_frame_equal(result_start_linear, result_end_linear)
