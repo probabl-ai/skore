@@ -1593,3 +1593,138 @@ def test_estimator_report_precision_recall_pos_label_overwrite(
     assert getattr(report.metrics, metric)(pos_label="A") == pytest.approx(
         metric_fn(y, classifier.predict(X), pos_label="A")
     )
+
+
+########################################################################################
+# Check the data accessor methods
+########################################################################################
+
+
+@pytest.mark.parametrize(
+    "params, err_msg",
+    [
+        (dict(data_source="invalid"), "'data_source' options are"),
+        (dict(subsample_strategy="invalid"), "'subsample_strategy' options are"),
+    ],
+)
+def test_estimator_report_analyze_error(binary_classification_data, params, err_msg):
+    """Check that the `analyze` method raises an error when the data source is not
+    valid."""
+    classifier, X_test, y_test = binary_classification_data
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+    with pytest.raises(ValueError, match=err_msg):
+        report.data.analyze(**params)
+
+
+def test_estimator_report_analyze_data_source_not_available(binary_classification_data):
+    """Check that we raise a proper error message when the data source requested is
+    not available."""
+    classifier, X_test, y_test = binary_classification_data
+    report = EstimatorReport(classifier)
+
+    err_msg = "X_train is required when `data_source=train`"
+    with pytest.raises(ValueError, match=err_msg):
+        report.data.analyze(data_source="train")
+
+    err_msg = "X_test is required when `data_source=test`"
+    with pytest.raises(ValueError, match=err_msg):
+        report.data.analyze(data_source="test")
+
+    err_msg = "X_train is required when `data_source=all`"
+    with pytest.raises(ValueError, match=err_msg):
+        report.data.analyze(data_source="all")
+
+    # if not requesting `y`, we should not raise an error
+    report = EstimatorReport(classifier, X_test=X_test)
+    display = report.data.analyze(data_source="test", with_y=False)
+    np.testing.assert_array_equal(display.summary["dataframe"].to_numpy(), X_test)
+
+    err_msg = "y_test is required when `data_source=test`"
+    with pytest.raises(ValueError, match=err_msg):
+        report.data.analyze(data_source="test", with_y=True)
+
+
+def test_estimator_report_analyze_data_source_without_y():
+    """Check the behaviour of `data_source` parameter without including `y`."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X = pd.DataFrame(X, columns=[f"Column {i}" for i in range(X.shape[1])])
+    y = pd.Series(y, name="Classification target")
+    X_train, X_test = X.iloc[:100], X.iloc[100:]
+    y_train, y_test = y.iloc[:100], y.iloc[100:]
+    classifier = LogisticRegression()
+
+    report = EstimatorReport(
+        classifier, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    display = report.data.analyze(data_source="train", with_y=False)
+    pd.testing.assert_frame_equal(display.summary["dataframe"], X_train)
+
+    display = report.data.analyze(data_source="test", with_y=False)
+    pd.testing.assert_frame_equal(display.summary["dataframe"], X_test)
+
+    display = report.data.analyze(data_source="all", with_y=False)
+    pd.testing.assert_frame_equal(display.summary["dataframe"], X)
+
+
+def test_estimator_report_analyze_data_source_with_y():
+    """Check the behaviour of `data_source` parameter with `y`."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X = pd.DataFrame(X, columns=[f"Column {i}" for i in range(X.shape[1])])
+    y = pd.Series(y, name="Classification target")
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, shuffle=False, train_size=50
+    )
+    classifier = LogisticRegression()
+
+    report = EstimatorReport(
+        classifier, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    display = report.data.analyze(data_source="train")
+    pd.testing.assert_frame_equal(
+        display.summary["dataframe"], pd.concat([X_train, y_train], axis=1)
+    )
+
+    display = report.data.analyze(data_source="test")
+    pd.testing.assert_frame_equal(
+        display.summary["dataframe"], pd.concat([X_test, y_test], axis=1)
+    )
+
+    display = report.data.analyze(data_source="all")
+    pd.testing.assert_frame_equal(
+        display.summary["dataframe"], pd.concat([X, y], axis=1)
+    )
+
+
+@pytest.mark.parametrize("data_source", ["train", "test", "all"])
+@pytest.mark.parametrize(
+    "n_targets, target_column_names", [(1, ["Target"]), (2, ["Target 0", "Target 1"])]
+)
+def test_estimator_report_analyze_numpy_array(
+    data_source, n_targets, target_column_names
+):
+    """Check that NumPy arrays are converted to pandas DataFrames when data are
+    retrieved."""
+    X, y = make_regression(
+        n_samples=100, n_features=2, n_targets=n_targets, random_state=42
+    )
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, shuffle=False, train_size=50
+    )
+    classifier = LinearRegression()
+
+    report = EstimatorReport(
+        classifier, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    display = report.data.analyze(data_source=data_source, with_y=False)
+    assert display.summary["dataframe"].columns.to_list() == [
+        f"Feature {i}" for i in range(X_train.shape[1])
+    ]
+
+    display = report.data.analyze(data_source=data_source, with_y=True)
+    assert (
+        display.summary["dataframe"].columns.to_list()
+        == [f"Feature {i}" for i in range(X_train.shape[1])] + target_column_names
+    )
