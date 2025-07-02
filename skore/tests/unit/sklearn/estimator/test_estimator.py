@@ -1728,3 +1728,26 @@ def test_estimator_report_analyze_numpy_array(
         display.summary["dataframe"].columns.to_list()
         == [f"Feature {i}" for i in range(X_train.shape[1])] + target_column_names
     )
+
+
+@pytest.mark.parametrize("subsample_strategy", ["head", "random"])
+def test_estimator_report_analyze_subsampling(
+    binary_classification_data, subsample_strategy
+):
+    """Check that the `subsample` parameter is handled correctly."""
+    classifier, X_test, y_test = binary_classification_data
+    X_test = pd.DataFrame(
+        X_test, columns=[f"Feature {i}" for i in range(X_test.shape[1])]
+    )
+    y_test = pd.Series(y_test, name="Target")
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    display = report.data.analyze(
+        data_source="test", subsample=10, subsample_strategy=subsample_strategy, seed=42
+    )
+    assert display.summary["dataframe"].shape[0] == 10
+
+    if subsample_strategy == "head":
+        assert display.summary["dataframe"].index.to_list() == list(range(10))
+    else:
+        assert display.summary["dataframe"].index.to_list() != list(range(10))
