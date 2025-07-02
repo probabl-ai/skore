@@ -158,15 +158,6 @@ train_data_display
 train_data_display.plot(kind="corr")
 
 # %%
-#
-# This display also provides more information to plot 1-d or 2-d distributions of some
-# columns of the dataset.
-train_data_display.plot(y="gender")
-
-# %%
-train_data_display.plot(y="gender", hue="current_annual_salary")
-
-# %%
 # Linear model
 # ============
 #
