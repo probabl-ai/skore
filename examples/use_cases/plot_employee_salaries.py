@@ -15,7 +15,6 @@ storing the results for further analysis.
 # parallelism.
 import os
 
-os.environ["POLARS_ALLOW_FORKING_THREAD"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 # %%
@@ -117,8 +116,7 @@ hgbt_model_report.cache_predictions(n_jobs=4)
 # %%
 #
 # We can now have a look at the performance of the model with some standard metrics.
-hgbt_model_report.metrics.summarize()
-
+hgbt_model_report.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # Linear model
@@ -226,7 +224,7 @@ with warnings.catch_warnings():
 
 # %%
 # We can now have a look at the performance of the model with some standard metrics.
-linear_model_report.metrics.summarize(indicator_favorability=True)
+linear_model_report.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # Comparing the models
@@ -239,7 +237,7 @@ linear_model_report.metrics.summarize(indicator_favorability=True)
 from skore import ComparisonReport
 
 comparator = ComparisonReport([hgbt_model_report, linear_model_report])
-comparator.metrics.summarize(indicator_favorability=True)
+comparator.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # In addition, if we forgot to compute a specific metric
@@ -249,9 +247,9 @@ comparator.metrics.summarize(indicator_favorability=True)
 # This allows us to save some potentially huge computation time.
 
 # %%
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import get_scorer
 
-scoring = ["r2", "rmse", mean_absolute_error]
+scoring = ["r2", "rmse", get_scorer("neg_mean_absolute_error")]
 scoring_kwargs = {"response_method": "predict"}
 scoring_names = ["R²", "RMSE", "MAE"]
 
@@ -259,7 +257,8 @@ comparator.metrics.summarize(
     scoring=scoring,
     scoring_kwargs=scoring_kwargs,
     scoring_names=scoring_names,
-)
+    indicator_favorability=True,
+).frame()
 
 # %%
 # Finally, we can even get a deeper understanding by analyzing each fold in the
