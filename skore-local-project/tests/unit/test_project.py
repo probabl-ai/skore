@@ -6,7 +6,7 @@ from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
-from skore.sklearn import EstimatorReport
+from skore import EstimatorReport
 from skore_local_project import Project
 from skore_local_project.storage import DiskCacheStorage
 
@@ -49,11 +49,11 @@ class TestProject:
     @fixture(autouse=True)
     def monkeypatch_metrics(self, monkeypatch, Datetime):
         monkeypatch.setattr(
-            "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.rmse",
+            "skore.EstimatorReport.metrics.rmse",
             lambda _, data_source: float(hash(f"<rmse_{data_source}>")),
         )
         monkeypatch.setattr(
-            "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.timings",
+            "skore.EstimatorReport.metrics.timings",
             lambda self: {
                 "fit_time": float(hash("<fit_time>")),
                 "predict_time_test": float(hash("<predict_time_test>")),

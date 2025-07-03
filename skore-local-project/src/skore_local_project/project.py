@@ -18,9 +18,9 @@ import platformdirs
 from .storage import DiskCacheStorage
 
 if TYPE_CHECKING:
-    from typing import Any, TypedDict
+    from typing import TypedDict
 
-    from skore.sklearn import EstimatorReport
+    from skore import EstimatorReport
 
     class PersistedMetadata:  # noqa: D101
         artifact_id: str
@@ -50,13 +50,6 @@ if TYPE_CHECKING:
         roc_auc: float | None
         fit_time: float
         predict_time: float
-
-
-def lazy_is_instance_skore_estimator_report(value: Any) -> bool:
-    """Return True if value is an instance of ``skore.EstimatorReport``."""
-    return "skore.sklearn._estimator.report.EstimatorReport" in {
-        f"{cls.__module__}.{cls.__name__}" for cls in value.__class__.__mro__
-    }
 
 
 class Project:
@@ -214,7 +207,9 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        if not lazy_is_instance_skore_estimator_report(report):
+        from skore import EstimatorReport
+
+        if not isinstance(report, EstimatorReport):
             raise TypeError(
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
