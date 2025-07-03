@@ -713,23 +713,9 @@ print(selectk_features)
 # And here is the feature importance based on our model (sorted by absolute values):
 
 # %%
-selectk_ridge_report_feature_importance = (
-    selectk_ridge_report.feature_importance.coefficients()
-    .sort_values(by="Coefficient", key=abs, ascending=True)
-    .tail(15)
-)
-
-selectk_ridge_report_feature_importance.index = (
-    selectk_ridge_report_feature_importance.index.str.replace("remainder__", "")
-)
-selectk_ridge_report_feature_importance.index = (
-    selectk_ridge_report_feature_importance.index.str.replace(
-        "kmeans__", "geospatial__"
-    )
-)
-
-
-selectk_ridge_report_feature_importance.plot.barh(
+selectk_ridge_report.feature_importance.coefficients().sort_values(
+    by="Coefficient", key=abs, ascending=True
+).tail(15).plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
