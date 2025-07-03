@@ -4,6 +4,7 @@ extend-ignore-re = [
   "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
   # Line block with `# spellchecker:<on|off>`
   "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
+  "ellide_string"
 ]
 
 [default.extend-words]
