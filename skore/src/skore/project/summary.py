@@ -7,12 +7,12 @@ from typing import TYPE_CHECKING
 from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
 
 from skore.project.widget import ModelExplorerWidget
-from skore.sklearn import ComparisonReport
+from skore._sklearn import ComparisonReport
 
 if TYPE_CHECKING:
     from typing import Literal
 
-    from skore.sklearn import EstimatorReport
+    from skore._sklearn import EstimatorReport
 
 
 class Summary(DataFrame):

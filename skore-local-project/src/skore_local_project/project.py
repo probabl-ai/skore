@@ -20,7 +20,7 @@ from .storage import DiskCacheStorage
 if TYPE_CHECKING:
     from typing import Any, TypedDict
 
-    from skore.sklearn import EstimatorReport
+    from skore._sklearn import EstimatorReport
 
     class PersistedMetadata:  # noqa: D101
         artifact_id: str
@@ -54,7 +54,7 @@ if TYPE_CHECKING:
 
 def lazy_is_instance_skore_estimator_report(value: Any) -> bool:
     """Return True if value is an instance of ``skore.EstimatorReport``."""
-    return "skore.sklearn._estimator.report.EstimatorReport" in {
+    return "skore._sklearn._estimator.report.EstimatorReport" in {
         f"{cls.__module__}.{cls.__name__}" for cls in value.__class__.__mro__
     }
 

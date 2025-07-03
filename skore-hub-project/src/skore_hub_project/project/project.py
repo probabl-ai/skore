@@ -14,7 +14,7 @@ from ..item.item import lazy_is_instance
 if TYPE_CHECKING:
     from typing import TypedDict
 
-    from skore.sklearn import EstimatorReport
+    from skore._sklearn import EstimatorReport
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -130,7 +130,7 @@ class Project:
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
         if not lazy_is_instance(
-            report, "skore.sklearn._estimator.report.EstimatorReport"
+            report, "skore._sklearn._estimator.report.EstimatorReport"
         ):
             raise TypeError(
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"

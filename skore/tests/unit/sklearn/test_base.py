@@ -8,7 +8,7 @@ from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from skore.sklearn._base import _BaseAccessor, _BaseReport, _get_cached_response_values
+from skore._sklearn._base import _BaseAccessor, _BaseReport, _get_cached_response_values
 
 
 class MockClassifier(ClassifierMixin, BaseEstimator):
