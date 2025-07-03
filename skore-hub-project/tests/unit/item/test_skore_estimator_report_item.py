@@ -121,15 +121,15 @@ class TestSkoreEstimatorReportItem:
         item2 = SkoreEstimatorReportItem(report_b64_str)
 
         monkeypatch.setattr(
-            "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.r2",
+            "skore._sklearn._estimator.metrics_accessor._MetricsAccessor.r2",
             lambda self, data_source: float(data_source == "train"),
         )
         monkeypatch.setattr(
-            "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.rmse",
+            "skore._sklearn._estimator.metrics_accessor._MetricsAccessor.rmse",
             lambda self, data_source: float("nan"),
         )
         monkeypatch.setattr(
-            "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.timings",
+            "skore._sklearn._estimator.metrics_accessor._MetricsAccessor.timings",
             lambda self: {
                 "fit_time": hash("fit_time"),
                 "predict_time_test": hash("predict_time_test"),

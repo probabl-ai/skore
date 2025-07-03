@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from typing import Any, Literal, TypedDict
 
-    from skore.sklearn import EstimatorReport
+    from skore._sklearn import EstimatorReport
 
     class MetadataFunction:  # noqa: D101
         metadata: Any
@@ -416,7 +416,7 @@ class SkoreEstimatorReportItem(PickleItem):
         ItemTypeError
             If ``value`` is not an instance of ``skore.EstimatorReport``.
         """
-        if lazy_is_instance(value, "skore.sklearn._estimator.report.EstimatorReport"):
+        if lazy_is_instance(value, "skore._sklearn._estimator.report.EstimatorReport"):
             return super().factory(value)
 
         raise ItemTypeError(f"Type '{value.__class__}' is not supported.")

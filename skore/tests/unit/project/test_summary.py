@@ -9,7 +9,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from skore.project.summary import Summary
-from skore.sklearn import ComparisonReport, EstimatorReport
+from skore._sklearn import ComparisonReport, EstimatorReport
 
 
 @fixture

@@ -1,7 +1,7 @@
 import numpy
 import pandas
 import pytest
-from skore.sklearn.train_test_split.warning import (
+from skore._sklearn.train_test_split.warning import (
     HighClassImbalanceWarning,
 )
 
