@@ -1115,7 +1115,7 @@ pipeline_report.feature_importance.permutation(seed=0, stage="start")
 pipeline_report.feature_importance.permutation(seed=0, stage="end")
 
 # %%
-# This capability is particularly useful we want to understand:
+# This capability is particularly useful when we want to understand:
 #
 # 1. Which raw input features are most important overall (stage="start")
 # 2. Which engineered features are most important for the final model (stage="end")

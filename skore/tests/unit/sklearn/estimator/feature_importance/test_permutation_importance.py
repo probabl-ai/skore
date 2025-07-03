@@ -316,8 +316,9 @@ def test_not_fitted(regression_data):
         report.feature_importance.permutation()
 
 
-def test_stage_parameter():
-    """Test the stage parameter for permutation importance."""
+@pytest.mark.parametrize("stage", ["start", "end"])
+def test_stage_parameter_pipeline(stage):
+    """Test the stage parameter for permutation importance with a pipeline."""
     X, y = make_regression(n_features=3, random_state=0)
 
     pipeline = make_pipeline(StandardScaler(), LinearRegression())
@@ -330,25 +331,21 @@ def test_stage_parameter():
         y_test=y,
     )
 
-    # Test default (stage="start")
-    result_start = report.feature_importance.permutation(seed=42)
+    result = report.feature_importance.permutation(seed=42, stage=stage)
 
-    # Test stage="end"
-    result_end = report.feature_importance.permutation(seed=42, stage="end")
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.nlevels == 2
+    assert result.index.names == ["Metric", "Feature"]
+    assert result.shape[0] > 0
 
-    assert result_start.shape == result_end.shape
 
-    assert isinstance(result_start.index, pd.MultiIndex)
-    assert isinstance(result_end.index, pd.MultiIndex)
-    assert result_start.index.names == result_end.index.names
-    assert result_start.index.nlevels == result_end.index.nlevels
-    assert result_start.index.levels[0].equals(result_end.index.levels[0])
-    assert len(result_start.index.levels[1]) == len(result_end.index.levels[1])
-
-    pd.testing.assert_index_equal(result_start.columns, result_end.columns)
+def test_stage_parameter_non_pipeline():
+    """Test the stage parameter for regular estimators."""
+    X, y = make_regression(n_features=3, random_state=0)
 
     linear = LinearRegression()
-    linear_report = EstimatorReport(
+
+    report = EstimatorReport(
         linear,
         X_train=X,
         y_train=y,
@@ -356,9 +353,8 @@ def test_stage_parameter():
         y_test=y,
     )
 
-    result_start_linear = linear_report.feature_importance.permutation(seed=42)
-    result_end_linear = linear_report.feature_importance.permutation(
-        seed=42, stage="end"
-    )
+    result_start = report.feature_importance.permutation(seed=42, stage="start")
+    result_end = report.feature_importance.permutation(seed=42, stage="end")
 
-    pd.testing.assert_frame_equal(result_start_linear, result_end_linear)
+    # For non-pipeline estimators, start and end should give same results
+    pd.testing.assert_frame_equal(result_start, result_end)
