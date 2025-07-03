@@ -217,7 +217,7 @@ ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-ridge_report.metrics.summarize()
+ridge_report.metrics.summarize().frame()
 
 # %%
 # From the report metrics, let us first explain the scores we have access to:
@@ -421,7 +421,7 @@ reports_to_compare = {
     "Ridge w/ feature engineering": engineered_ridge_report,
 }
 comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.summarize()
+comparator.metrics.summarize().frame()
 
 # %%
 # We get a much better score!
@@ -667,7 +667,7 @@ selectk_ridge_report = EstimatorReport(
 )
 reports_to_compare["Ridge w/ feature engineering and selection"] = selectk_ridge_report
 comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.summarize()
+comparator.metrics.summarize().frame()
 
 # %%
 # We get a good score and much less features:
@@ -775,7 +775,7 @@ reports_to_compare["Decision tree"] = tree_report
 
 # %%
 comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.summarize()
+comparator.metrics.summarize().frame()
 
 # %%
 # We note that the performance is quite poor, so the derived feature importance is to
@@ -892,7 +892,7 @@ rf_report = EstimatorReport(
 reports_to_compare["Random forest"] = rf_report
 
 comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.summarize()
+comparator.metrics.summarize().frame()
 
 # %%
 # Without any feature engineering and any grid search,
