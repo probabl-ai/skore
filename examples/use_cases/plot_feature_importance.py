@@ -452,9 +452,22 @@ print("Number of features after feature engineering:", n_features_engineered)
 # Let us display the 15 largest absolute coefficients:
 
 # %%
-engineered_ridge_report.feature_importance.coefficients().sort_values(
-    by="Coefficient", key=abs, ascending=True
-).tail(15).plot.barh(
+engineered_rigde_report_feature_importance = (
+    engineered_ridge_report.feature_importance.coefficients()
+    .sort_values(by="Coefficient", key=abs, ascending=True)
+    .tail(15)
+)
+
+engineered_rigde_report_feature_importance.index = (
+    engineered_rigde_report_feature_importance.index.str.replace("remainder__", "")
+)
+engineered_rigde_report_feature_importance.index = (
+    engineered_rigde_report_feature_importance.index.str.replace(
+        "kmeans__", "geospatial__"
+    )
+)
+
+engineered_rigde_report_feature_importance.plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
@@ -700,9 +713,23 @@ print(selectk_features)
 # And here is the feature importance based on our model (sorted by absolute values):
 
 # %%
-selectk_ridge_report.feature_importance.coefficients().sort_values(
-    by="Coefficient", key=abs, ascending=True
-).tail(15).plot.barh(
+selectk_ridge_report_feature_importance = (
+    selectk_ridge_report.feature_importance.coefficients()
+    .sort_values(by="Coefficient", key=abs, ascending=True)
+    .tail(15)
+)
+
+selectk_ridge_report_feature_importance.index = (
+    selectk_ridge_report_feature_importance.index.str.replace("remainder__", "")
+)
+selectk_ridge_report_feature_importance.index = (
+    selectk_ridge_report_feature_importance.index.str.replace(
+        "kmeans__", "geospatial__"
+    )
+)
+
+
+selectk_ridge_report_feature_importance.plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
