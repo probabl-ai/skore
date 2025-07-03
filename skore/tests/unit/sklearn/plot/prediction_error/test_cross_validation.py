@@ -172,7 +172,7 @@ def test_constructor(regression_data_no_split):
     display = report.metrics.prediction_error()
 
     index_columns = ["estimator_name", "split_index"]
-    for df in [display.prediction_error]:
-        assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique() == report.estimator_name_
-        assert df["split_index"].unique().tolist() == list(range(cv))
+    df = display.prediction_error
+    assert all(col in df.columns for col in index_columns)
+    assert df["estimator_name"].unique() == report.estimator_name_
+    assert df["split_index"].unique().tolist() == list(range(cv))
