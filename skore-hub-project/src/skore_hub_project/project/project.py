@@ -13,13 +13,13 @@ import joblib
 
 from ..client.api import Client
 from ..client.client import AuthenticatedClient, HTTPStatusError
-from ..item import skore_estimator_report_item as SkoreEstimatorReportItem
-from ..item.item import bytes_to_b64_str, lazy_is_instance
+from ..item import skore_estimator_report_item
+from ..item.item import bytes_to_b64_str
 
 if TYPE_CHECKING:
     from typing import TypedDict
 
-    from skore.sklearn import EstimatorReport
+    from skore import EstimatorReport
     from skore.sklearn._base import _BaseReport
 
     class Metadata(TypedDict):  # noqa: D101
@@ -166,9 +166,9 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        if not lazy_is_instance(
-            report, "skore.sklearn._estimator.report.EstimatorReport"
-        ):
+        from skore import EstimatorReport
+
+        if not isinstance(report, EstimatorReport):
             raise TypeError(
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
@@ -208,10 +208,10 @@ class Project:
                 url=f"projects/{self.tenant}/{self.name}/items",
                 json=dict(
                     (
-                        *SkoreEstimatorReportItem.Metadata(report),
+                        *skore_estimator_report_item.Metadata(report),
                         (
                             "related_items",
-                            list(SkoreEstimatorReportItem.Representations(report)),
+                            list(skore_estimator_report_item.Representations(report)),
                         ),
                         ("parameters", {"checksum": checksum}),
                         ("key", key),

@@ -117,7 +117,7 @@ hgbt_model_report.cache_predictions(n_jobs=4)
 # %%
 #
 # We can now have a look at the performance of the model with some standard metrics.
-hgbt_model_report.metrics.summarize()
+hgbt_model_report.metrics.summarize().frame()
 
 
 # %%
@@ -226,7 +226,7 @@ with warnings.catch_warnings():
 
 # %%
 # We can now have a look at the performance of the model with some standard metrics.
-linear_model_report.metrics.summarize(indicator_favorability=True)
+linear_model_report.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # Comparing the models
@@ -239,7 +239,7 @@ linear_model_report.metrics.summarize(indicator_favorability=True)
 from skore import ComparisonReport
 
 comparator = ComparisonReport([hgbt_model_report, linear_model_report])
-comparator.metrics.summarize(indicator_favorability=True)
+comparator.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # In addition, if we forgot to compute a specific metric
@@ -259,7 +259,7 @@ comparator.metrics.summarize(
     scoring=scoring,
     scoring_kwargs=scoring_kwargs,
     scoring_names=scoring_names,
-)
+).frame()
 
 # %%
 # Finally, we can even get a deeper understanding by analyzing each fold in the
