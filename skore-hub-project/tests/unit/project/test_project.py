@@ -22,9 +22,6 @@ class FakeClient(Client):
         return response
 
 
-def test_dumps(): ...
-
-
 class TestProject:
     @fixture(scope="class")
     def regression(self):
@@ -72,7 +69,188 @@ class TestProject:
         with raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
             Project("<tenant>", "<name>").put("<key>", "<value>")
 
-    def test_put_with_upload(self, respx_mock, regression): ...
+    def test_put_with_upload(self, respx_mock, regression):
+        pickle, checksum = dumps(regression)
+        artefacts_response = Response(200, json=[{"upload_url": "http://s3.com"}])
+        runs_response = Response(200, json={"id": "<run_id>"})
+
+        respx_mock.post("projects/<tenant>/<name>/artefacts").mock(artefacts_response)
+        respx_mock.put("http://s3.com")
+        respx_mock.post("projects/<tenant>/<name>/artefacts/complete")
+        respx_mock.post("projects/<tenant>/<name>/runs").mock(runs_response)
+        respx_mock.post("projects/<tenant>/<name>/items")
+
+        Project("<tenant>", "<name>").put("<key>", regression)
+
+        # Ensure what is sent to artefacts route
+        artefacts_request = respx_mock.calls[0].request
+
+        assert artefacts_request.url.path == "/projects/<tenant>/<name>/artefacts"
+        assert loads(artefacts_request.content.decode()) == [
+            {"checksum": checksum, "content_type": "<default>"}
+        ]
+
+        # Ensure what is sent to S3 route
+        S3_request = respx_mock.calls[1].request
+
+        assert S3_request.url == "http://s3.com/"
+        assert S3_request.content == pickle
+
+        # Ensure what is sent to complete route
+        complete_request = respx_mock.calls[2].request
+
+        assert (
+            complete_request.url.path == "/projects/<tenant>/<name>/artefacts/complete"
+        )
+        assert loads(complete_request.content.decode()) == [
+            {"checksum": checksum, "etags": {}}
+        ]
+
+        # Ensure what is sent to items route
+        content = loads(respx_mock.calls.last.request.content.decode())
+
+        ## Prepare the content to be compared
+        content["dataset_fingerprint"] = None
+
+        for item in content["related_items"]:
+            item["representation"]["value"] = None
+
+        for metric in content["metrics"]:
+            metric["value"] = None
+
+        ## Compare content with the desired output
+        assert content == {
+            "dataset_fingerprint": None,
+            "estimator_class_name": "LinearRegression",
+            "estimator_hyper_params": {},
+            "metrics": [
+                {
+                    "name": "r2",
+                    "verbose_name": "R²",
+                    "value": None,
+                    "data_source": "train",
+                    "greater_is_better": True,
+                    "position": None,
+                },
+                {
+                    "name": "r2",
+                    "verbose_name": "R²",
+                    "value": None,
+                    "data_source": "test",
+                    "greater_is_better": True,
+                    "position": None,
+                },
+                {
+                    "name": "rmse",
+                    "verbose_name": "RMSE",
+                    "value": None,
+                    "data_source": "train",
+                    "greater_is_better": False,
+                    "position": 3,
+                },
+                {
+                    "name": "rmse",
+                    "verbose_name": "RMSE",
+                    "value": None,
+                    "data_source": "test",
+                    "greater_is_better": False,
+                    "position": 3,
+                },
+                {
+                    "name": "fit_time",
+                    "verbose_name": "Fit time (s)",
+                    "value": None,
+                    "data_source": None,
+                    "greater_is_better": False,
+                    "position": 1,
+                },
+                {
+                    "name": "predict_time",
+                    "verbose_name": "Predict time (s)",
+                    "value": None,
+                    "data_source": "train",
+                    "greater_is_better": False,
+                    "position": 2,
+                },
+                {
+                    "name": "predict_time",
+                    "verbose_name": "Predict time (s)",
+                    "value": None,
+                    "data_source": "test",
+                    "greater_is_better": False,
+                    "position": 2,
+                },
+            ],
+            "ml_task": "regression",
+            "related_items": [
+                {
+                    "key": "prediction_error",
+                    "verbose_name": "Prediction error",
+                    "category": "performance",
+                    "attributes": {"data_source": "train"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "image/svg+xml;base64",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "prediction_error",
+                    "verbose_name": "Prediction error",
+                    "category": "performance",
+                    "attributes": {"data_source": "test"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "image/svg+xml;base64",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "permutation",
+                    "verbose_name": "Feature importance - Permutation",
+                    "category": "feature_importance",
+                    "attributes": {"data_source": "train", "method": "permutation"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "application/vnd.dataframe",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "permutation",
+                    "verbose_name": "Feature importance - Permutation",
+                    "category": "feature_importance",
+                    "attributes": {"data_source": "test", "method": "permutation"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "application/vnd.dataframe",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "coefficients",
+                    "verbose_name": "Feature importance - Coefficients",
+                    "category": "feature_importance",
+                    "attributes": {"method": "coefficients"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "application/vnd.dataframe",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "estimator_html_repr",
+                    "verbose_name": None,
+                    "category": "model",
+                    "attributes": {},
+                    "parameters": {},
+                    "representation": {"media_type": "text/html", "value": None},
+                },
+            ],
+            "parameters": {"checksum": checksum},
+            "key": "<key>",
+            "run_id": "<run_id>",
+        }
 
     def test_put_without_upload(self, respx_mock, regression):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
