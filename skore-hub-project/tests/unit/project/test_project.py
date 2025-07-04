@@ -1,9 +1,12 @@
+import io
 from json import loads
 from types import SimpleNamespace
 from urllib.parse import urljoin
 
+import joblib
 from httpx import Client, Response
 from pytest import fixture, mark, raises
+from skore import EstimatorReport
 from skore_hub_project import Project
 from skore_hub_project.project.project import dumps
 
@@ -241,19 +244,27 @@ class TestProject:
         assert hasattr(project.reports, "metadata")
 
     def test_reports_get(self, respx_mock, regression):
-        from skore import EstimatorReport
-
+        # Mock hub routes that will be called
         url = "projects/<tenant>/<name>/runs"
-        respx_mock.post(url).mock(Response(200, json={"id": "<run_id>"}))
+        response = Response(200, json={"id": "<run_id>"})
+        respx_mock.post(url).mock(response)
 
         url = "projects/<tenant>/<name>/experiments/estimator-reports/<report_id>"
-        respx_mock.get(url).mock(
-            Response(
-                200,
-                json={"raw": {"checksum": "<checksum>"}},
-            )
-        )
+        response = Response(200, json={"raw": {"checksum": "<checksum>"}})
+        respx_mock.get(url).mock(response)
 
+        url = "projects/<tenant>/<name>/artefacts/read"
+        response = Response(200, json=[{"url": "http://url.com"}])
+        respx_mock.get(url).mock(response)
+
+        with io.BytesIO() as stream:
+            joblib.dump(regression, stream)
+
+            url = "http://url.com"
+            response = Response(200, content=stream.getvalue())
+            respx_mock.get(url).mock(response)
+
+        # Test
         project = Project("<tenant>", "<name>")
         report = project.reports.get("<report_id>")
 
