@@ -46,7 +46,7 @@ def dumps(report: _BaseReport) -> tuple[bytes, str]:
     bytes
         The pickled report.
     str
-        The checksum of the pickled report.
+        The checksum of the pickled report, based on BLAKE3.
 
     Notes
     -----
@@ -186,7 +186,7 @@ class Project:
         url = next(iter(response.json()), None)
 
         if url:
-            # upload pickled report if necessary
+            # upload pickled report
             with io.BytesIO(pickle) as stream, Client() as client:
                 client.put(
                     url=url["upload_url"],
@@ -194,7 +194,7 @@ class Project:
                     headers={"Content-Type": "application/octet-stream"},
                 )
 
-            # complete
+            # acknowledgement of sending
             with AuthenticatedClient(raises=True) as client:
                 client.post(
                     url=f"projects/{self.tenant}/{self.name}/artefacts/complete",
@@ -203,6 +203,7 @@ class Project:
 
         del pickle
 
+        # send metadata
         with AuthenticatedClient(raises=True) as client:
             client.post(
                 url=f"projects/{self.tenant}/{self.name}/items",
