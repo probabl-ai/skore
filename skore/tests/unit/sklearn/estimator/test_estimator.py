@@ -30,7 +30,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 from skore import EstimatorReport
-from skore.sklearn._plot import RocCurveDisplay
+from skore._sklearn._plot import RocCurveDisplay
 
 
 @pytest.fixture

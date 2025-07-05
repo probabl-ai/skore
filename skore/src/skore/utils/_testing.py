@@ -7,10 +7,10 @@ import pandas as pd
 from matplotlib.legend import Legend
 from sklearn.base import BaseEstimator, ClassifierMixin
 
-from skore.sklearn._plot.metrics.precision_recall_curve import (
+from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
-from skore.sklearn._plot.metrics.roc_curve import RocCurveDisplay
+from skore._sklearn._plot.metrics.roc_curve import RocCurveDisplay
 
 
 @contextlib.contextmanager

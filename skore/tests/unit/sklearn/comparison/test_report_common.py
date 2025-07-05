@@ -13,7 +13,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
-from skore.sklearn._plot import MetricsSummaryDisplay
+from skore._sklearn._plot import MetricsSummaryDisplay
 
 
 @pytest.fixture(params=["report_estimator_reports", "report_cv_reports"])
