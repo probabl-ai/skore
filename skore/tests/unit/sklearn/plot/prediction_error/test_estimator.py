@@ -20,24 +20,24 @@ def test_regression(pyplot, regression_data, subsample):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.prediction_error, pd.DataFrame)
-    np.testing.assert_allclose(display.prediction_error["y_true"], y_test)
+    assert isinstance(display._prediction_error, pd.DataFrame)
+    np.testing.assert_allclose(display._prediction_error["y_true"], y_test)
     np.testing.assert_allclose(
-        display.prediction_error["y_pred"], estimator.predict(X_test)
+        display._prediction_error["y_pred"], estimator.predict(X_test)
     )
     np.testing.assert_allclose(
-        display.prediction_error["residuals"], y_test - estimator.predict(X_test)
+        display._prediction_error["residuals"], y_test - estimator.predict(X_test)
     )
     assert display.data_source == "test"
     assert isinstance(display.range_y_true, RangeData)
     assert isinstance(display.range_y_pred, RangeData)
     assert isinstance(display.range_residuals, RangeData)
-    assert display.range_y_true.min == np.min(display.prediction_error["y_true"])
-    assert display.range_y_true.max == np.max(display.prediction_error["y_true"])
-    assert display.range_y_pred.min == np.min(display.prediction_error["y_pred"])
-    assert display.range_y_pred.max == np.max(display.prediction_error["y_pred"])
-    assert display.range_residuals.min == np.min(display.prediction_error["residuals"])
-    assert display.range_residuals.max == np.max(display.prediction_error["residuals"])
+    assert display.range_y_true.min == np.min(display._prediction_error["y_true"])
+    assert display.range_y_true.max == np.max(display._prediction_error["y_true"])
+    assert display.range_y_pred.min == np.min(display._prediction_error["y_pred"])
+    assert display.range_y_pred.max == np.max(display._prediction_error["y_pred"])
+    assert display.range_residuals.min == np.min(display._prediction_error["residuals"])
+    assert display.range_residuals.max == np.max(display._prediction_error["residuals"])
 
     display.plot()
     assert hasattr(display, "ax_")
@@ -285,7 +285,7 @@ def test_constructor(regression_data):
     display = report.metrics.prediction_error()
 
     index_columns = ["estimator_name", "split_index"]
-    df = display.prediction_error
+    df = display._prediction_error
     assert all(col in df.columns for col in index_columns)
     assert df["estimator_name"].unique() == report.estimator_name_
     assert df["split_index"].isnull().all()
