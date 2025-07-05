@@ -8,6 +8,11 @@ from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
+from skore._utils._accessor import _check_estimator_report_has_method
+from skore._utils._fixes import _validate_joblib_parallel_params
+from skore._utils._index import flatten_multi_index
+from skore._utils._parallel import Parallel, delayed
+from skore._utils._progress_bar import progress_decorator
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import (
     _BaseAccessor,
@@ -29,11 +34,6 @@ from skore.sklearn.types import (
     ScoringName,
     YPlotData,
 )
-from skore.utils._accessor import _check_estimator_report_has_method
-from skore.utils._fixes import _validate_joblib_parallel_params
-from skore.utils._index import flatten_multi_index
-from skore.utils._parallel import Parallel, delayed
-from skore.utils._progress_bar import progress_decorator
 
 DataSource = Literal["test", "train", "X_y"]
 

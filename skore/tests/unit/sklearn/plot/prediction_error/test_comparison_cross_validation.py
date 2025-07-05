@@ -5,9 +5,9 @@ import pytest
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from skore import ComparisonReport, CrossValidationReport
+from skore._utils._testing import check_frame_structure, check_legend_position
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.fixture

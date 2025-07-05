@@ -1,5 +1,5 @@
 import pytest
-from skore.utils._progress_bar import progress_decorator
+from skore._utils._progress_bar import progress_decorator
 
 
 def test_standalone_progress():

@@ -2,7 +2,7 @@ import sys
 from unittest.mock import patch
 
 import pytest
-from skore.utils._environment import get_environment_info, is_environment_notebook_like
+from skore._utils._environment import get_environment_info, is_environment_notebook_like
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def test_get_environment_info_vscode():
 @patch.dict(
     "os.environ", {}, clear=True
 )  # to avoid false vscode detection when running tests from vscode test runner
-@patch("skore.utils._environment.get_ipython", create=True)
+@patch("skore._utils._environment.get_ipython", create=True)
 def test_get_environment_info_jupyter(mock_get_ipython):
     """Test environment detection for Jupyter"""
     mock_get_ipython.return_value.__class__.__name__ = "ZMQInteractiveShell"
@@ -63,7 +63,7 @@ def test_is_environment_notebook_like():
         assert is_environment_notebook_like() is False
 
 
-@patch("skore.utils._environment.get_ipython", create=True)
+@patch("skore._utils._environment.get_ipython", create=True)
 def test_is_environment_notebook_like_jupyter(mock_get_ipython):
     """Test notebook-like environment detection for Jupyter"""
     mock_get_ipython.return_value.__class__.__name__ = "ZMQInteractiveShell"
@@ -74,7 +74,7 @@ def test_is_environment_notebook_like_jupyter(mock_get_ipython):
 @patch.dict(
     "os.environ", {}, clear=True
 )  # to avoid false vscode detection when running tests from vscode test runner
-@patch("skore.utils._environment.get_ipython", create=True)
+@patch("skore._utils._environment.get_ipython", create=True)
 def test_get_environment_info_ipython_terminal(mock_get_ipython):
     """Test environment detection for IPython terminal"""
     mock_get_ipython.return_value.__class__.__name__ = "TerminalInteractiveShell"
@@ -86,8 +86,8 @@ def test_get_environment_info_ipython_terminal(mock_get_ipython):
     assert info["details"]["ipython_shell"] == "TerminalInteractiveShell"
 
 
-@patch("skore.utils._environment.os.environ", {"VSCODE_PID": "12345"})
-@patch("skore.utils._environment.sys")
+@patch("skore._utils._environment.os.environ", {"VSCODE_PID": "12345"})
+@patch("skore._utils._environment.sys")
 def test_get_environment_info_vscode_interactive(mock_sys):
     """Test environment detection for VSCode in interactive mode"""
     mock_sys.ps1 = True
