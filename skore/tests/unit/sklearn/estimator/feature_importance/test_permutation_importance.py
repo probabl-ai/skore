@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
-from skore.utils._testing import check_cache_changed, check_cache_unchanged
+from skore._utils._testing import check_cache_changed, check_cache_unchanged
 
 
 def regression_data():

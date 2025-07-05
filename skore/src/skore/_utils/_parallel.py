@@ -22,8 +22,8 @@ def _with_config_and_warning_filters(delayed_func, config, warning_filters):
     else:
         warnings.warn(
             (
-                "`skore.utils._parallel.Parallel` needs to be used in "
-                "conjunction with `skore.utils._parallel.delayed` instead of "
+                "`skore._utils._parallel.Parallel` needs to be used in "
+                "conjunction with `skore._utils._parallel.delayed` instead of "
                 "`joblib.delayed` to correctly propagate the skore configuration to "
                 "the joblib workers."
             ),
@@ -80,7 +80,7 @@ def delayed(function):
     """Capture the arguments of a function to delay its execution.
 
     This alternative to `joblib.delayed` is meant to be used in conjunction
-    with `skore.utils._parallel.Parallel`. The latter captures the skore
+    with `skore._utils._parallel.Parallel`. The latter captures the skore
     configuration by calling `skore.get_config()` in the current thread, prior to
     dispatching the first task. The captured configuration is then propagated and
     enabled for the duration of the execution of the delayed function in the
@@ -123,8 +123,8 @@ class _FuncWrapper:
         if not config or not warning_filters:
             warnings.warn(
                 (
-                    "`skore.utils._parallel.delayed` should be used with"
-                    " `skore.utils._parallel.Parallel` to make it possible to"
+                    "`skore._utils._parallel.delayed` should be used with"
+                    " `skore._utils._parallel.Parallel` to make it possible to"
                     " propagate the skore configuration of the current thread to"
                     " the joblib workers."
                 ),

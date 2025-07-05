@@ -9,12 +9,12 @@ import joblib
 import numpy as np
 from numpy.typing import ArrayLike
 
+from skore._utils._progress_bar import progress_decorator
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.types import _DEFAULT, PositiveLabel
-from skore.utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
     from skore.sklearn._estimator.metrics_accessor import _MetricsAccessor

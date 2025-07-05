@@ -5,10 +5,10 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
+from skore._utils._testing import check_frame_structure, check_legend_position
+from skore._utils._testing import check_roc_curve_display_data as check_display_data
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_frame_structure, check_legend_position
-from skore.utils._testing import check_roc_curve_display_data as check_display_data
 
 
 def test_binary_classification(pyplot, binary_classification_data):

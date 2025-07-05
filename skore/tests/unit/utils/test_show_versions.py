@@ -1,4 +1,4 @@
-from skore.utils._show_versions import _get_deps_info, _get_sys_info, show_versions
+from skore._utils._show_versions import _get_deps_info, _get_sys_info, show_versions
 
 
 def test_get_sys_info():

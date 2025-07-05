@@ -12,6 +12,12 @@ from sklearn import metrics
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
+from skore._utils._accessor import (
+    _check_all_checks,
+    _check_estimator_has_method,
+    _check_supported_ml_task,
+)
+from skore._utils._index import flatten_multi_index
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import (
     _BaseAccessor,
@@ -27,12 +33,6 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.sklearn.types import _DEFAULT, PositiveLabel, Scoring, ScoringName, YPlotData
-from skore.utils._accessor import (
-    _check_all_checks,
-    _check_estimator_has_method,
-    _check_supported_ml_task,
-)
-from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
 

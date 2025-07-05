@@ -4,9 +4,9 @@ import pandas as pd
 import pytest
 from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
+from skore._utils._testing import check_frame_structure, check_legend_position
 from skore.sklearn._plot import PredictionErrorDisplay
 from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_frame_structure, check_legend_position
 
 
 def test_regression(pyplot, regression_data):
