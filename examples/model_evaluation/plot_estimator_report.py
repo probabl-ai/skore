@@ -294,7 +294,7 @@ report.metrics.summarize(
     scoring=["precision", "recall", operational_decision_cost],
     scoring_names=["Precision", "Recall", "Operational Decision Cost"],
     scoring_kwargs={"amount": amount, "response_method": "predict"},
-)
+).frame()
 
 # %%
 #
@@ -311,7 +311,7 @@ operational_decision_cost_scorer = make_scorer(
 report.metrics.summarize(
     scoring=[f1_scorer, operational_decision_cost_scorer],
     scoring_names=["F1 Score", "Operational Decision Cost"],
-)
+).frame()
 
 # %%
 #

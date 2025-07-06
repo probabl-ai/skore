@@ -42,7 +42,7 @@ log_report.help()
 # Display the report metrics that was computed for you:
 
 # %%
-metrics_summary = log_report.metrics.summarize()
+metrics_summary = log_report.metrics.summarize().frame()
 metrics_summary
 
 # %%
@@ -130,7 +130,7 @@ pprint(report_get)
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
-report_get[0].metrics.summarize()
+report_get[0].metrics.summarize().frame()
 
 # %%
 # .. seealso::
