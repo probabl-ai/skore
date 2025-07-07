@@ -21,13 +21,13 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
+from skore._utils._testing import MockEstimator
 from skore.sklearn._cross_validation.report import (
     CrossValidationReport,
     _generate_estimator_report,
 )
 from skore.sklearn._estimator import EstimatorReport
 from skore.sklearn._plot import MetricsSummaryDisplay, RocCurveDisplay
-from skore.utils._testing import MockEstimator
 
 
 @pytest.fixture
