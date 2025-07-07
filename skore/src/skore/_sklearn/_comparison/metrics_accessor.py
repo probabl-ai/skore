@@ -28,11 +28,11 @@ from skore._sklearn.types import (
     ScoringName,
     YPlotData,
 )
+from skore._utils._accessor import _check_supported_ml_task
+from skore._utils._fixes import _validate_joblib_parallel_params
+from skore._utils._index import flatten_multi_index
+from skore._utils._progress_bar import progress_decorator
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.utils._accessor import _check_supported_ml_task
-from skore.utils._fixes import _validate_joblib_parallel_params
-from skore.utils._index import flatten_multi_index
-from skore.utils._progress_bar import progress_decorator
 
 from .utils import _combine_cross_validation_results, _combine_estimator_results
 

@@ -7,8 +7,8 @@ from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 from skore._sklearn._plot import PrecisionRecallCurveDisplay
 from skore._sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_frame_structure, check_legend_position
-from skore.utils._testing import (
+from skore._utils._testing import check_frame_structure, check_legend_position
+from skore._utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
 

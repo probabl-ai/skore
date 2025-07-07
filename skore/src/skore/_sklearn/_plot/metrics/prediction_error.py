@@ -112,7 +112,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
-        self.prediction_error = prediction_error
+        self._prediction_error = prediction_error
         self.range_y_true = range_y_true
         self.range_y_pred = range_y_pred
         self.range_residuals = range_residuals
@@ -147,7 +147,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             n_scatter_groups = 1
         elif self.report_type == "cross-validation":
             allow_single_dict = True
-            n_scatter_groups = len(self.prediction_error["split_index"].cat.categories)
+            n_scatter_groups = len(self._prediction_error["split_index"].cat.categories)
         elif self.report_type in (
             "comparison-estimator",
             "comparison-cross-validation",
@@ -156,7 +156,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             # a single dictionary for all the estimators.
             allow_single_dict = False
             n_scatter_groups = len(
-                self.prediction_error["estimator_name"].cat.categories
+                self._prediction_error["estimator_name"].cat.categories
             )
         else:
             raise ValueError(
@@ -242,8 +242,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         if kind == "actual_vs_predicted":
             scatter.append(
                 self.ax_.scatter(
-                    self.prediction_error["y_pred"],
-                    self.prediction_error["y_true"],
+                    self._prediction_error["y_pred"],
+                    self._prediction_error["y_true"],
                     label=scatter_label,
                     **data_points_kwargs_validated,
                 )
@@ -251,8 +251,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         else:  # kind == "residual_vs_predicted"
             scatter.append(
                 self.ax_.scatter(
-                    self.prediction_error["y_pred"],
-                    self.prediction_error["residuals"],
+                    self._prediction_error["y_pred"],
+                    self._prediction_error["residuals"],
                     label=scatter_label,
                     **data_points_kwargs_validated,
                 )
@@ -295,13 +295,13 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         """
         scatter = []
         data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
-        n_splits = len(self.prediction_error["split_index"].cat.categories)
+        n_splits = len(self._prediction_error["split_index"].cat.categories)
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
             n_splits if n_splits > 10 else 10,
         )
 
-        for split_idx, prediction_error_split in self.prediction_error.groupby(
+        for split_idx, prediction_error_split in self._prediction_error.groupby(
             "split_index", observed=True
         ):
             data_points_kwargs_fold = {
@@ -379,7 +379,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         scatter = []
         data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
 
-        estimator_names = self.prediction_error["estimator_name"].cat.categories
+        estimator_names = self._prediction_error["estimator_name"].cat.categories
         n_estimators = len(estimator_names)
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
@@ -387,7 +387,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         )
 
         for idx, (estimator_name, prediction_error_estimator) in enumerate(
-            self.prediction_error.groupby("estimator_name", observed=True)
+            self._prediction_error.groupby("estimator_name", observed=True)
         ):
             data_points_kwargs_fold = {
                 "color": colors_markers[idx],
@@ -462,7 +462,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         scatter = []
         data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
 
-        estimator_names = self.prediction_error["estimator_name"].cat.categories
+        estimator_names = self._prediction_error["estimator_name"].cat.categories
         n_estimators = len(estimator_names)
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
@@ -470,7 +470,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         )
 
         for idx, (estimator_name, prediction_error_estimator) in enumerate(
-            self.prediction_error.groupby("estimator_name", observed=True)
+            self._prediction_error.groupby("estimator_name", observed=True)
         ):
             data_points_kwargs_fold = {
                 "color": colors_markers[idx],
@@ -656,7 +656,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             self.scatter_ = self._plot_single_estimator(
                 kind=kind,
                 estimator_name=(
-                    self.prediction_error["estimator_name"].cat.categories.item()
+                    self._prediction_error["estimator_name"].cat.categories.item()
                     if estimator_name is None
                     else estimator_name
                 ),
@@ -666,7 +666,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             self.scatter_ = self._plot_cross_validated_estimator(
                 kind=kind,
                 estimator_name=(
-                    self.prediction_error["estimator_name"].cat.categories.item()
+                    self._prediction_error["estimator_name"].cat.categories.item()
                     if estimator_name is None
                     else estimator_name
                 ),
@@ -884,4 +884,4 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         else:  # self.report_type == "comparison-cross-validation"
             columns = ["estimator_name", "split_index"] + statistical_columns
 
-        return self.prediction_error[columns]
+        return self._prediction_error[columns]

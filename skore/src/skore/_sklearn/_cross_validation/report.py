@@ -13,11 +13,11 @@ from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import _DEFAULT, PositiveLabel, SKLearnCrossValidator
+from skore._utils._fixes import _validate_joblib_parallel_params
+from skore._utils._parallel import Parallel, delayed
+from skore._utils._progress_bar import progress_decorator
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import _safe_indexing
-from skore.utils._fixes import _validate_joblib_parallel_params
-from skore.utils._parallel import Parallel, delayed
-from skore.utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor

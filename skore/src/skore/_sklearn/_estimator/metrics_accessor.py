@@ -32,13 +32,13 @@ from skore._sklearn.types import (
     ScoringName,
     YPlotData,
 )
-from skore.externals._pandas_accessors import DirNamesMixin
-from skore.utils._accessor import (
+from skore._utils._accessor import (
     _check_all_checks,
     _check_estimator_has_method,
     _check_supported_ml_task,
 )
-from skore.utils._index import flatten_multi_index
+from skore._utils._index import flatten_multi_index
+from skore.externals._pandas_accessors import DirNamesMixin
 
 DataSource = Literal["test", "train", "X_y"]
 
