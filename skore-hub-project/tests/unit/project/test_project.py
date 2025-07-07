@@ -87,7 +87,10 @@ class TestProject:
 
         assert artefacts_request.url.path == "/projects/<tenant>/<name>/artefacts"
         assert loads(artefacts_request.content.decode()) == [
-            {"checksum": checksum, "content_type": "<default>"}
+            {
+                "checksum": checksum,
+                "content_type": "estimator-report-pickle",
+            }
         ]
 
         # Ensure what is sent to S3 route

@@ -180,7 +180,12 @@ class Project:
         with AuthenticatedClient(raises=True) as client:
             response = client.post(
                 url=f"projects/{self.tenant}/{self.name}/artefacts",
-                json=[{"checksum": checksum, "content_type": "<default>"}],
+                json=[
+                    {
+                        "checksum": checksum,
+                        "content_type": "estimator-report-pickle",
+                    }
+                ],
             )
 
         url = next(iter(response.json()), None)
