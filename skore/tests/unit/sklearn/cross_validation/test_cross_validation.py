@@ -4,7 +4,6 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn._utils.validation import check_is_fitted
 from sklearn.base import clone
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
@@ -21,6 +20,7 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+from sklearn.utils.validation import check_is_fitted
 from skore._sklearn._cross_validation.report import (
     CrossValidationReport,
     _generate_estimator_report,
