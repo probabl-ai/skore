@@ -62,7 +62,7 @@ def dumps(report: _BaseReport) -> tuple[bytes, str]:
             report._cache = cache
 
         pickle = stream.getvalue()
-        hasher = Blake3(max_threads=(1 if len(pickle) < 1**6 else Blake3.AUTO))
+        hasher = Blake3(max_threads=(1 if len(pickle) < 10**6 else Blake3.AUTO))
         checksum = hasher.update(pickle).digest()
 
     return pickle, bytes_to_b64_str(checksum)
