@@ -14,12 +14,12 @@ from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
+from skore._utils._accessor import _check_has_coef, _check_has_feature_importances
+from skore._utils._index import flatten_multi_index
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.types import Aggregate
-from skore.utils._accessor import _check_has_coef, _check_has_feature_importances
-from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
 

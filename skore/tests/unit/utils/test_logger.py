@@ -1,7 +1,7 @@
 import logging
 
 import pytest
-from skore.utils._logger import Handler, logger_context
+from skore._utils._logger import Handler, logger_context
 
 
 def test_logger_context_verbose():

@@ -12,9 +12,9 @@ from rich.tree import Tree
 from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
+from skore._utils._measure_time import MeasureTime
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn.types import PositiveLabel
-from skore.utils._measure_time import MeasureTime
 
 
 class _HelpMixin(ABC):
