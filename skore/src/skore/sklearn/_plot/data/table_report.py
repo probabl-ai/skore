@@ -469,6 +469,10 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
 
         despine_params = dict(top=True, right=True, trim=True, offset=10)
         is_x_num, is_y_num = sbd.is_numeric(x), sbd.is_numeric(y)
+
+        if (hue is not None) and (not sbd.is_numeric(hue)):
+            hue = _truncate_top_k(hue, k)
+
         if is_x_num and is_y_num:
             scatterplot_kwargs_validated = _validate_style_kwargs(
                 {"alpha": 0.1}, scatterplot_kwargs or {}
@@ -476,7 +480,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             sns.scatterplot(
                 x=x,
                 y=y,
-                hue=_truncate_top_k(hue, k),
+                hue=hue,
                 ax=self.ax_,
                 **scatterplot_kwargs_validated,
             )
@@ -505,6 +509,11 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 },
                 boxplot_kwargs or {},
             )
+
+            if is_x_num:
+                y = _truncate_top_k(y, k)
+            else:
+                x = _truncate_top_k(x, k)
 
             sns.stripplot(x=x, y=y, hue=hue, ax=self.ax_, **stripplot_kwargs_validated)
             sns.boxplot(x=x, y=y, ax=self.ax_, **boxplot_kwargs_validated)
@@ -571,6 +580,21 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             sns.heatmap(contingency_table, ax=self.ax_, **heatmap_kwargs_validated)
             despine_params.update(left=True, bottom=True)
             self.ax_.tick_params(axis="both", length=0)
+
+            for is_x_axis, x_or_y in zip(
+                [True, False],
+                [
+                    pd.Series(contingency_table.columns),
+                    pd.Series(contingency_table.index),
+                ],
+                strict=False,
+            ):
+                _resize_categorical_axis(
+                    figure=self.figure_,
+                    ax=self.ax_,
+                    n_categories=sbd.n_unique(x_or_y),
+                    is_x_axis=is_x_axis,
+                )
 
         sns.despine(self.figure_, **despine_params)
 
