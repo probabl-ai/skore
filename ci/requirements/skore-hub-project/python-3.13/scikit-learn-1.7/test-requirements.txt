@@ -10,6 +10,8 @@ attrs==25.3.0
     # via
     #   jsonschema
     #   referencing
+blake3==1.0.5
+    # via skore-hub-project (skore-hub-project/pyproject.toml)
 certifi==2025.6.15
     # via
     #   httpcore
