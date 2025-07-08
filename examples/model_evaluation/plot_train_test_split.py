@@ -142,6 +142,19 @@ X_train_explicit_inverted = X_train.copy()
 print("When expliciting, with the small typo, are the `X_train`'s still the same?")
 print(np.allclose(X_train_explicit, X_train_explicit_inverted))
 
+# %%
+# Returning a dictionnray instead of positional arguments
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+# %%
+
+from sklearn.linear_model import LogisticRegression
+from skore import EstimatorReport
+
+split_data = skore.train_test_split(X=X, y=y, random_state=42, as_dict=True)
+estimator = LogisticRegression(max_iter=10_000, random_state=42)
+estimator_report = EstimatorReport(estimator, **split_data)
+
 
 # %%
 # Automatic diagnostics: raising methodological warnings
@@ -232,3 +245,4 @@ X.head(2)
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X, y, random_state=0, shuffle=False
 )
+
