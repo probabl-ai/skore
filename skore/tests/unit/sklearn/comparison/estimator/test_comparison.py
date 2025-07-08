@@ -12,7 +12,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
-from skore.sklearn._plot.metrics import MetricsSummaryDisplay
+from skore._sklearn._plot.metrics import MetricsSummaryDisplay
 
 
 @pytest.fixture

@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import pytest
 from skore import EstimatorReport
+from skore._sklearn._plot import PredictionErrorDisplay
+from skore._sklearn._plot.metrics.prediction_error import RangeData
 from skore._utils._testing import check_frame_structure, check_legend_position
-from skore.sklearn._plot import PredictionErrorDisplay
-from skore.sklearn._plot.metrics.prediction_error import RangeData
 
 
 @pytest.mark.parametrize("subsample", [None, 1_000])

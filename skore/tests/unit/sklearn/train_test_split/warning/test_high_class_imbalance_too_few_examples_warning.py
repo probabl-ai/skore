@@ -1,4 +1,4 @@
-from skore.sklearn.train_test_split.warning import (
+from skore._sklearn.train_test_split.warning import (
     HighClassImbalanceTooFewExamplesWarning,
 )
 
