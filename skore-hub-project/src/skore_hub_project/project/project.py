@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 from functools import cached_property
 from operator import itemgetter
+from tempfile import TemporaryFile
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
@@ -232,7 +233,7 @@ class Project:
 
         def get(id: str) -> EstimatorReport:
             """Get a persisted report by its id."""
-            # retrieve report metadata
+            # Retrieve report metadata.
             with AuthenticatedClient(raises=True) as client:
                 response = client.get(
                     url=f"projects/{self.tenant}/{self.name}/experiments/estimator-reports/{id}"
@@ -241,7 +242,7 @@ class Project:
             metadata = response.json()
             checksum = metadata["raw"]["checksum"]
 
-            # ask for read url
+            # Ask for read url.
             with AuthenticatedClient(raises=True) as client:
                 response = client.get(
                     url=f"projects/{self.tenant}/{self.name}/artefacts/read",
@@ -250,15 +251,21 @@ class Project:
 
             url = response.json()[0]["url"]
 
-            # download pickled report
-            with Client() as client:
-                response = client.get(url=url)
+            # Download pickled report before unpickling it.
+            #
+            # It uses streaming responses that do not load the entire response body into
+            # memory at once.
+            with (
+                TemporaryFile(mode="w+b") as tmpfile,
+                Client() as client,
+                client.stream(method="GET", url=url) as response,
+            ):
+                for data in response.iter_bytes():
+                    tmpfile.write(data)
 
-            pickle = response.content
+                tmpfile.seek(0)
 
-            # unpickle report
-            with io.BytesIO(pickle) as stream:
-                return joblib.load(stream)
+                return joblib.load(tmpfile)
 
         def metadata() -> list[Metadata]:
             """Obtain metadata for all persisted reports regardless of their run."""
