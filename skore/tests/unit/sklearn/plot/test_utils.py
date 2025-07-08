@@ -1,5 +1,5 @@
 import pytest
-from skore.sklearn._plot.utils import _validate_style_kwargs
+from skore._sklearn._plot.utils import _validate_style_kwargs
 
 
 @pytest.mark.parametrize(
