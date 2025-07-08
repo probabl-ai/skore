@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
-import io
+import asyncio
 from functools import cached_property
+from io import BytesIO
+from math import ceil
 from operator import itemgetter
 from tempfile import TemporaryFile
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import blake3.blake3 as Blake3
+import httpx
 import joblib
 
 from ..client.api import Client
@@ -56,14 +59,14 @@ def dumps(report: _BaseReport) -> tuple[bytes, str]:
     cache = report._cache
     report._cache = {}
 
-    with io.BytesIO() as stream:
+    with BytesIO() as stream:
         try:
             joblib.dump(report, stream)
         finally:
             report._cache = cache
 
         pickle = stream.getvalue()
-        hasher = Blake3(max_threads=(1 if len(pickle) < 10**6 else Blake3.AUTO))
+        hasher = Blake3(max_threads=(1 if len(pickle) < 1e6 else Blake3.AUTO))
         checksum = hasher.update(pickle).digest()
 
     return pickle, f"blake3-{bytes_to_b64_str(checksum)}"
@@ -145,7 +148,7 @@ class Project:
 
             return run["id"]
 
-    def put(self, key: str, report: EstimatorReport):
+    def put(self, key: str, report: EstimatorReport, *, chunksize=int(5e6)):
         """
         Put a key-report pair to the hub project.
 
@@ -158,6 +161,8 @@ class Project:
             The key to associate with ``report`` in the hub project.
         report : skore.EstimatorReport
             The report to associate with ``key`` in the hub project.
+        chunksize : int, optional
+            The maximum size of chunks to upload in bytes, default 5mb.
 
         Raises
         ------
@@ -185,26 +190,48 @@ class Project:
                     {
                         "checksum": checksum,
                         "content_type": "estimator-report-pickle",
+                        "chunk_number": ceil(len(pickle) / chunksize),
                     }
                 ],
             )
 
-        url = next(iter(response.json()), None)
+        urls = response.json()
 
-        if url:
-            # upload pickled report
-            with io.BytesIO(pickle) as stream, Client() as client:
-                client.put(
-                    url=url["upload_url"],
-                    content=stream,
+        if urls:
+
+            async def put(client, url, chunk):
+                response = await client.put(
+                    url=url,
+                    content=chunk,
                     headers={"Content-Type": "application/octet-stream"},
                 )
+
+                response.raise_for_status()
+
+                return response.headers["etag"]
+
+            async def upload(pickle, urls):
+                async with httpx.AsyncClient(follow_redirects=True) as client:
+                    tasks = []
+
+                    for chunknumber, url in enumerate(urls):
+                        url = url["upload_url"]
+                        chunkstart = chunknumber * chunksize
+                        chunkend = chunkstart + chunksize
+                        chunk = pickle[chunkstart:chunkend]
+
+                        tasks.append(asyncio.ensure_future(put(client, url, chunk)))
+
+                    return dict(enumerate(await asyncio.gather(*tasks)))
+
+            # upload pickled report
+            etags = asyncio.run(upload(pickle, urls))
 
             # acknowledgement of sending
             with AuthenticatedClient(raises=True) as client:
                 client.post(
                     url=f"projects/{self.tenant}/{self.name}/artefacts/complete",
-                    json=[{"checksum": checksum, "etags": {}}],
+                    json=[{"checksum": checksum, "etags": etags}],
                 )
 
         del pickle
