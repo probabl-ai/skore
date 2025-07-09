@@ -214,6 +214,7 @@ class Project:
                         url=url,
                         content=chunk,
                         headers={"Content-Type": "application/octet-stream"},
+                        timeout=None,
                     )
 
                 response.raise_for_status()
@@ -306,7 +307,7 @@ class Project:
             with (
                 TemporaryFile(mode="w+b") as tmpfile,
                 Client() as client,
-                client.stream(method="GET", url=url) as response,
+                client.stream(method="GET", url=url, timeout=None) as response,
             ):
                 for data in response.iter_bytes():
                     tmpfile.write(data)
