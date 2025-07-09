@@ -153,7 +153,7 @@ class Project:
         key: str,
         report: EstimatorReport,
         *,
-        chunk_size: int = int(5e6),
+        chunk_size: int = int(1e7),
         chunks_concurrent_number: int = 3,
     ):
         """
@@ -169,7 +169,7 @@ class Project:
         report : skore.EstimatorReport
             The report to associate with ``key`` in the hub project.
         chunk_size : int, optional
-            The maximum size of chunks to upload in bytes, default 5mb.
+            The maximum size of chunks to upload in bytes, default ~10mb.
         chunks_concurrent_number : int, optional
             The maximum number of chunks uploaded in concurrence, default 3.
 
