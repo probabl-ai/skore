@@ -221,7 +221,7 @@ class Project:
                         chunk = pickle[chunk_start:chunk_end]
 
                         tasks.append(
-                            asyncio.ensure_future(
+                            asyncio.create_task(
                                 put(
                                     client,
                                     chunk_id,
