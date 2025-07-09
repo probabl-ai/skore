@@ -19,15 +19,11 @@ estimators, including:
 """
 
 # %%
-# Loading a dataset, performing some analysis, and some preprocessing
-# ==================================================================
+# Binary classification on tabular data
+# =====================================
 #
 # Loading a binary classification dataset
 # ---------------------------------------
-#
-# In this example, we tackle the Breast Cancer Winconsin dataset which is a
-# binary classification task, i.e. predicting whether a tumor is malignant or benign.
-# We choose this dataset to keep this example simple.
 
 # %%
 from sklearn.datasets import make_classification
@@ -40,14 +36,7 @@ X, y = make_classification(
     n_clusters_per_class=1,
     random_state=42,
 )
-
 print(f"{X.shape = }")
-
-# %%
-# Splitting the data
-# ------------------
-#
-# We shall split the data using `skore`'s `train_test_split`.
 
 # %%
 from skore import train_test_split
@@ -55,18 +44,12 @@ from skore import train_test_split
 split_data = train_test_split(X, y, random_state=42, as_dict=True)
 
 # %%
-# We can see how `skore` gives us 2 warnings on split to help us with our modeling approach.
-#
-# - Adhering to the `HighClassImbalanceTooFewExamplesWarning`, we shall employ cross validation in our modeling approach.
-# - The `ShuffleTrueWarning` can be ignored as there are no temporal dependencies in our medical dataset. Each example is IID.
-
-# %%
 # Tree-based models
-# =================
+# -----------------
 
 # %%
 # XGBoost
-# -------
+# ^^^^^^^
 
 # %%
 from skore import EstimatorReport
@@ -79,10 +62,10 @@ xgb_report.metrics.summarize().frame()
 
 # %%
 # Deep learning with neural networks
-# ==================================
+# ----------------------------------
 #
 # PyTorch using skorch
-# --------------------
+# ^^^^^^^^^^^^^^^^^^^^
 #
 # We shall create our neural network model using PyTorch.
 # We consider a neural network with 2 hidden layers and 1 output layer with ReLU
@@ -168,11 +151,11 @@ skorch_report.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # Tabular foundation models
-# =========================
+# -------------------------
 
 # %%
 # TabICL
-# ------
+# ^^^^^^
 
 # %%
 from tabicl import TabICLClassifier
@@ -183,7 +166,7 @@ tabicl_report.metrics.summarize().frame()
 
 # %%
 # TabPFN
-# ------
+# ^^^^^^
 
 # %%
 from tabpfn import TabPFNClassifier
@@ -193,8 +176,8 @@ tabpfn_report = EstimatorReport(tabpfn, pos_label=1, **split_data)
 tabpfn_report.metrics.summarize().frame()
 
 # %%
-# Benchmark
-# =========
+# Benchmark of all of the above models
+# ------------------------------------
 
 # %%
 from skore import ComparisonReport
@@ -305,8 +288,8 @@ from sklearn.model_selection import TimeSeriesSplit
 ts_cv = TimeSeriesSplit(
     n_splits=5,
     gap=48,
-    max_train_size=10000,
-    test_size=1000,
+    max_train_size=10_000,
+    test_size=1_000,
 )
 
 # %%
