@@ -148,7 +148,14 @@ class Project:
 
             return run["id"]
 
-    def put(self, key: str, report: EstimatorReport, *, chunk_size: int = int(5e6)):
+    def put(
+        self,
+        key: str,
+        report: EstimatorReport,
+        *,
+        chunk_size: int = int(5e6),
+        chunks_concurrent_number: int = 3,
+    ):
         """
         Put a key-report pair to the hub project.
 
@@ -163,6 +170,8 @@ class Project:
             The report to associate with ``key`` in the hub project.
         chunk_size : int, optional
             The maximum size of chunks to upload in bytes, default 5mb.
+        chunks_concurrent_number : int, optional
+            The maximum number of chunks uploaded in concurrence, default 3.
 
         Raises
         ------
@@ -199,12 +208,13 @@ class Project:
 
         if urls:
 
-            async def put(client, chunk_id, url, chunk):
-                response = await client.put(
-                    url=url,
-                    content=chunk,
-                    headers={"Content-Type": "application/octet-stream"},
-                )
+            async def put(client, chunk_id, url, chunk, semaphore):
+                async with semaphore:
+                    response = await client.put(
+                        url=url,
+                        content=chunk,
+                        headers={"Content-Type": "application/octet-stream"},
+                    )
 
                 response.raise_for_status()
 
@@ -212,6 +222,7 @@ class Project:
 
             async def upload(pickle, urls):
                 async with httpx.AsyncClient(follow_redirects=True) as client:
+                    semaphore = asyncio.BoundedSemaphore(chunks_concurrent_number)
                     tasks = []
 
                     for url in urls:
@@ -227,6 +238,7 @@ class Project:
                                     chunk_id,
                                     url["upload_url"],
                                     chunk,
+                                    semaphore,
                                 )
                             )
                         )
