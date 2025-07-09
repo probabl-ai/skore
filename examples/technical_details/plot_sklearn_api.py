@@ -30,76 +30,18 @@ estimators, including:
 # We choose this dataset to keep this example simple.
 
 # %%
-from sklearn.datasets import load_breast_cancer
+from sklearn.datasets import make_classification
 
-X, y = load_breast_cancer(return_X_y=True, as_frame=True)
+X, y = make_classification(
+    n_samples=1_000,
+    n_features=5,
+    n_classes=2,
+    class_sep=0.3,
+    n_clusters_per_class=1,
+    random_state=42,
+)
+
 print(f"{X.shape = }")
-X.head(2)
-
-# %%
-# The `documentation <https://sklearn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html>`_
-# shows that there are 2 classes `malignant` (M) and `benign` (B) with a slight
-# imbalance 212 `M` samples and 357 `B` samples.
-# Before we approach the balancing problem, let us explore the dataset.
-#
-# Exploratory data analysis
-# -------------------------
-#
-# We shall explore the dataset using `skrub` library's :class:`~skrub.TableReport`:
-
-# %%
-from skrub import TableReport
-
-TableReport(X)
-
-# %%
-import pandas as pd
-
-pd.DataFrame(y).value_counts(normalize=True).round(2)
-
-# %%
-# Preprocessing
-# -------------
-
-# %%
-# From the table report, we can make a few inferences:
-#
-# - The *Stats* tab shows we only have numerical values and that there are no null
-#   values.
-# - The *Distribution* tab shows us there is moderate level of imbalance: 63% benign
-#   from the mean value and 37% malignant values. While we can balance this or add
-#   class weights in our neural network, it is important to note that we're modeling
-#   the real world and not to achieve an artificial balance!
-# - The *Distribution* tab shows a few features that have some outliers, namely:
-#   ``radius error``, ``texture error``, ``perimeter error``, ``area error``,
-#   ``smoothness error``, ``compactness error``, ``concavity error``,
-#   ``concave points error``, ``symmetry error``, ``fractal dimension error``,
-#   ``worst area``, ``worst symmetry``, ``worst fractal dimensions``.
-#   However, it is important to note that the outliers range from 1-8 in all the
-#   different columns which is not huge to cause problems in our modeling.
-# - The *Association* tab shows that a table with correlation analysis between the different features. We can infer a few things from this as per below:
-#
-#   - We can select features that show a strong association with our target.
-#   - Since we're using a deep learning example, multicollinearity is less of a concern compared to linear models as they can handle correlated features through their hidden layers and non-linear transformations. However, we can remove a few redundant features which can improve efficiency, faster convergence and interpretability.
-#   - Some examples of reasoning can be seen below.
-#   - mean radius and mean perimeter is one example. They convey the same information and can be removed.
-#   - Similarly, we could remove mathematically related features, and keep the one which is most correlated. For e.g., among mean radius, mean perimeter, and mean area, we could pick one instead of keeping all three.
-#   - We can see that there are no direct correlations between error measurements and the target and hence we skip them.
-
-# %%
-import numpy as np
-
-cols_to_keep = [
-    "worst perimeter",
-    "mean radius",
-    "worst concave points",
-    "mean concave points",
-    "worst concavity",
-    "mean concavity",
-]
-
-X = X[cols_to_keep]
-X_numpy = X.values.astype(np.float32)
 
 # %%
 # Splitting the data
@@ -110,7 +52,7 @@ X_numpy = X.values.astype(np.float32)
 # %%
 from skore import train_test_split
 
-split_data = train_test_split(X_numpy, y, random_state=42, as_dict=True)
+split_data = train_test_split(X, y, random_state=42, as_dict=True)
 
 # %%
 # We can see how `skore` gives us 2 warnings on split to help us with our modeling approach.
@@ -151,7 +93,7 @@ from torch import nn
 
 
 class MyNeuralNet(nn.Module):
-    def __init__(self, input_dim=6, h1=64, h2=32, output_dim=2):
+    def __init__(self, input_dim=5, h1=64, h2=32, output_dim=2):
         super(MyNeuralNet, self).__init__()
         self.layers = nn.Sequential(
             nn.Linear(input_dim, h1),
@@ -190,8 +132,21 @@ skorch_model = NeuralNetClassifier(
 # %%
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
+from sklearn.base import BaseEstimator, TransformerMixin
+import numpy as np
 
-skorch_pipeline = make_pipeline(StandardScaler(), skorch_model)
+
+# Create a transformer to convert data to float32 for PyTorch compatibility
+# This is necessary because scikit-learn data is typically float64, but PyTorch defaults to float32
+class Float32Transformer(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        return X.astype(np.float32)
+
+
+skorch_pipeline = make_pipeline(StandardScaler(), Float32Transformer(), skorch_model)
 skorch_pipeline.fit(split_data["X_train"], split_data["y_train"])
 
 # %%
@@ -265,7 +220,6 @@ comparator.metrics.roc().plot()
 # %%
 from tslearn.generators import random_walk_blobs
 from tslearn.preprocessing import TimeSeriesScalerMinMax
-import numpy as np
 
 np.random.seed(0)
 n_ts_per_blob, sz, d, n_blobs = 20, 100, 1, 2
