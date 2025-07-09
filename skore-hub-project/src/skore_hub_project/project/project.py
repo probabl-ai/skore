@@ -148,7 +148,7 @@ class Project:
 
             return run["id"]
 
-    def put(self, key: str, report: EstimatorReport, *, chunksize=int(5e6)):
+    def put(self, key: str, report: EstimatorReport, *, chunk_size: int = int(5e6)):
         """
         Put a key-report pair to the hub project.
 
@@ -161,7 +161,7 @@ class Project:
             The key to associate with ``report`` in the hub project.
         report : skore.EstimatorReport
             The report to associate with ``key`` in the hub project.
-        chunksize : int, optional
+        chunk_size : int, optional
             The maximum size of chunks to upload in bytes, default 5mb.
 
         Raises
@@ -182,7 +182,7 @@ class Project:
         # pickle report
         pickle, checksum = dumps(report)
 
-        # ask for upload url
+        # ask for upload url if not already uploaded
         with AuthenticatedClient(raises=True) as client:
             response = client.post(
                 url=f"projects/{self.tenant}/{self.name}/artefacts",
@@ -190,7 +190,7 @@ class Project:
                     {
                         "checksum": checksum,
                         "content_type": "estimator-report-pickle",
-                        "chunk_number": ceil(len(pickle) / chunksize),
+                        "chunk_number": ceil(len(pickle) / chunk_size),
                     }
                 ],
             )
@@ -199,7 +199,7 @@ class Project:
 
         if urls:
 
-            async def put(client, url, chunk):
+            async def put(client, chunk_id, url, chunk):
                 response = await client.put(
                     url=url,
                     content=chunk,
@@ -208,21 +208,30 @@ class Project:
 
                 response.raise_for_status()
 
-                return response.headers["etag"]
+                return (chunk_id, response.headers["etag"])
 
             async def upload(pickle, urls):
                 async with httpx.AsyncClient(follow_redirects=True) as client:
                     tasks = []
 
-                    for chunknumber, url in enumerate(urls):
-                        url = url["upload_url"]
-                        chunkstart = chunknumber * chunksize
-                        chunkend = chunkstart + chunksize
-                        chunk = pickle[chunkstart:chunkend]
+                    for url in urls:
+                        chunk_id = url["chunk_id"]
+                        chunk_start = (int(chunk_id) - 1) * chunk_size
+                        chunk_end = chunk_start + chunk_size
+                        chunk = pickle[chunk_start:chunk_end]
 
-                        tasks.append(asyncio.ensure_future(put(client, url, chunk)))
+                        tasks.append(
+                            asyncio.ensure_future(
+                                put(
+                                    client,
+                                    chunk_id,
+                                    url["upload_url"],
+                                    chunk,
+                                )
+                            )
+                        )
 
-                    return dict(enumerate(await asyncio.gather(*tasks)))
+                    return dict(await asyncio.gather(*tasks))
 
             # upload pickled report
             etags = asyncio.run(upload(pickle, urls))
