@@ -10,23 +10,30 @@ estimators, including:
 
 - libraries like ``xgboost``, ``catboost``, and ``lightgbm``,
 - deep learning frameworks such as ``skorch`` (a wrapper for PyTorch) and ``keras``,
-- foundation models such as `TabICL <https://github.com/soda-inria/tabicl>`_ and
+- tabular foundation models such as `TabICL <https://github.com/soda-inria/tabicl>`_ and
   `TabPFN <https://github.com/PriorLabs/TabPFN>`_,
-- models specific to time series data such as `tslearn <https://tslearn.readthedocs.io/en/stable/>`_ and `aeon <https://github.com/aeon-toolkit/aeon>`_.
+- models specific to time series data such as
+  `tslearn <https://tslearn.readthedocs.io/en/stable/>`_,
+  `mlforecast <https://github.com/Nixtla/mlforecast>`_,
+  and `aeon <https://github.com/aeon-toolkit/aeon>`_.
 """
 
 # %%
-# Loading a binary classification dataset
-# =======================================
+# Loading a dataset, performing some analysis, and some preprocessing
+# ==================================================================
 #
-# In this example, we tackle the Breast Cancer Winconsin dataset where the goal is a
+# Loading a binary classification dataset
+# ---------------------------------------
+#
+# In this example, we tackle the Breast Cancer Winconsin dataset which is a
 # binary classification task, i.e. predicting whether a tumor is malignant or benign.
-# We use this dataset to keep this example simple.
+# We choose this dataset to keep this example simple.
 
 # %%
 from sklearn.datasets import load_breast_cancer
 
 X, y = load_breast_cancer(return_X_y=True, as_frame=True)
+print(f"{X.shape = }")
 X.head(2)
 
 # %%
@@ -38,7 +45,7 @@ X.head(2)
 # Exploratory data analysis
 # -------------------------
 #
-# We shall explore the dataset using `skrub` library's `TableReport`.
+# We shall explore the dataset using `skrub` library's :class:`~skrub.TableReport`:
 
 # %%
 from skrub import TableReport
@@ -48,9 +55,6 @@ TableReport(X)
 # %%
 import pandas as pd
 
-TableReport(pd.DataFrame(y))
-
-# %%
 pd.DataFrame(y).value_counts(normalize=True).round(2)
 
 # %%
@@ -60,11 +64,19 @@ pd.DataFrame(y).value_counts(normalize=True).round(2)
 # %%
 # From the table report, we can make a few inferences:
 #
-# - The *Stats* tab shows there are no null values.
-# - The *Distribution* tab shows us there is moderate level of imbalance: 63% benign from the mean value and 37% malignant values. While we can balance this or add class weights in our neural network, it is important to note that we're modeling the real world
-#   and not to achieve an artificial balance!
-# - The *Distribution* tab shows a few features that have some outliers, namely: ``radius error``, ``texture error``, ``perimeter error``, ``area error``, ``smoothness error``, ``compactness error``, ``concavity error``, ``concave points error``, ``symmetry error``, ``fractal dimension error``, ``worst area``, ``worst symmetry``, ``worst fractal dimensions``.
-#   However, it is important to note that the outliers range from 1-8 in all the different columns which is not huge to cause problems in our modeling.
+# - The *Stats* tab shows we only have numerical values and that there are no null
+#   values.
+# - The *Distribution* tab shows us there is moderate level of imbalance: 63% benign
+#   from the mean value and 37% malignant values. While we can balance this or add
+#   class weights in our neural network, it is important to note that we're modeling
+#   the real world and not to achieve an artificial balance!
+# - The *Distribution* tab shows a few features that have some outliers, namely:
+#   ``radius error``, ``texture error``, ``perimeter error``, ``area error``,
+#   ``smoothness error``, ``compactness error``, ``concavity error``,
+#   ``concave points error``, ``symmetry error``, ``fractal dimension error``,
+#   ``worst area``, ``worst symmetry``, ``worst fractal dimensions``.
+#   However, it is important to note that the outliers range from 1-8 in all the
+#   different columns which is not huge to cause problems in our modeling.
 # - The *Association* tab shows that a table with correlation analysis between the different features. We can infer a few things from this as per below:
 #
 #   - We can select features that show a strong association with our target.
@@ -155,7 +167,7 @@ class MyNeuralNet(nn.Module):
 
 # %%
 # Since we want to use this with `skorch` that provides a sklearn like API interface
-# that `skore` can utilize, we shall wrap this in `skorch`'s NeuralNetClassifier.
+# that `skore` can utilize, we shall wrap this in `skorch`'s ``NeuralNetClassifier``.
 
 # %%
 import torch
@@ -163,7 +175,7 @@ from skorch import NeuralNetClassifier
 
 torch.manual_seed(42)
 
-nnet = NeuralNetClassifier(
+skorch_model = NeuralNetClassifier(
     MyNeuralNet,
     max_epochs=10,
     lr=1e-2,
@@ -172,21 +184,23 @@ nnet = NeuralNetClassifier(
 )
 
 # %%
-# Next, we create our final model by wrapping this into a sklearn `Pipeline` that adds a StandardScaler.
+# Next, we create our final model by wrapping this into a scikit-learn pipeline that
+# adds a standard scaler.
 
 # %%
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 
-model = make_pipeline(StandardScaler(), nnet)
-model.fit(split_data["X_train"], split_data["y_train"])
+skorch_pipeline = make_pipeline(StandardScaler(), skorch_model)
+skorch_pipeline.fit(split_data["X_train"], split_data["y_train"])
 
 # %%
 from skore import EstimatorReport
 
-report = EstimatorReport(
-    model,
+skorch_report = EstimatorReport(
+    skorch_pipeline,
     fit=True,
+    pos_label=1,
     **split_data,
 )
 
@@ -194,8 +208,8 @@ report = EstimatorReport(
 # Similar to the above, we can observe the report and the ROC curves of our final model.
 
 # %%
-report.metrics.roc().plot()
-report.metrics.summarize(indicator_favorability=True).frame()
+skorch_report.metrics.roc().plot()
+skorch_report.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # Tabular foundation models
@@ -224,8 +238,25 @@ tabpfn_report = EstimatorReport(tabpfn, pos_label=1, **split_data)
 tabpfn_report.metrics.summarize().frame()
 
 # %%
-# Time series models
-# ==================
+# Benchmark
+# =========
+
+# %%
+from skore import ComparisonReport
+
+estimators = [xgb_report, skorch_report, tabicl_report, tabpfn_report]
+
+comparator = ComparisonReport(
+    estimators,
+)
+comparator.metrics.summarize().frame()
+
+# %%
+comparator.metrics.roc().plot()
+
+# %%
+# Time series classification
+# ==========================
 
 # %%
 # Load a time series dataset
@@ -279,3 +310,65 @@ aeon_model_report = EstimatorReport(aeon_model, pos_label=1, **split_data)
 aeon_model_report.metrics.summarize().frame()
 
 # %%
+# Time series forecasting with cross-validation
+# =============================================
+#
+# The goal of this section is to show that a :class:`skore.CrossValidationReport`
+# can be used with a :class:`sklearn.model_selection.TimeSeriesSplit` when performing
+# time series forecasting.
+
+# %%
+# Let us take inspiration from the `Time-related feature engineering <https://scikit-learn.org/stable/auto_examples/applications/plot_cyclical_feature_engineering.html>`_ example of the scikit-learn documentation.
+#
+# We shall use the bike sharing demand dataset:
+
+# %%
+from sklearn.datasets import fetch_openml
+
+bike_sharing = fetch_openml("Bike_Sharing_Demand", version=2, as_frame=True)
+df = bike_sharing.frame
+
+# %%
+# As done in the scikit-learn example, we shall preprocess the data:
+
+# %%
+y = df["count"] / df["count"].max()
+X = df.drop("count", axis="columns")
+
+X["weather"] = (
+    X["weather"]
+    .astype(object)
+    .replace(to_replace="heavy_rain", value="rain")
+    .astype("category")
+)
+
+# %%
+# We will use time-based cross-validation strategy to evaluate our model:
+
+# %%
+from sklearn.model_selection import TimeSeriesSplit
+
+ts_cv = TimeSeriesSplit(
+    n_splits=5,
+    gap=48,
+    max_train_size=10000,
+    test_size=1000,
+)
+
+# %%
+# We define our model:
+
+# %%
+from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.pipeline import make_pipeline
+
+gbrt = HistGradientBoostingRegressor(categorical_features="from_dtype", random_state=42)
+
+# %%
+# We create our skore cross-validation report:
+
+# %%
+from skore import CrossValidationReport
+
+cv_report = CrossValidationReport(gbrt, X, y, cv_splitter=ts_cv)
+cv_report.metrics.summarize().frame()
