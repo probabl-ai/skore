@@ -227,7 +227,7 @@ class Project:
                     tasks = []
 
                     for url in urls:
-                        chunk_id = url["chunk_id"]
+                        chunk_id = url["chunk_id"] or 1
                         chunk_start = (int(chunk_id) - 1) * chunk_size
                         chunk_end = chunk_start + chunk_size
                         chunk = pickle[chunk_start:chunk_end]
