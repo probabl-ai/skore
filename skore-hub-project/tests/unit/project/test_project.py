@@ -1,5 +1,6 @@
 import io
 from json import loads
+from math import ceil
 from types import SimpleNamespace
 from urllib.parse import urljoin
 
@@ -71,42 +72,55 @@ class TestProject:
 
     def test_upload_in_put(self, respx_mock, regression):
         pickle, checksum = dumps(regression)
-        artefacts_response = Response(200, json=[{"upload_url": "http://s3.com"}])
-        runs_response = Response(200, json={"id": "<run_id>"})
+        chunk_size = ceil(len(pickle) / 2)
 
-        respx_mock.post("projects/<tenant>/<name>/artefacts").mock(artefacts_response)
-        respx_mock.put("http://s3.com")
+        respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
+            Response(
+                200,
+                json=[
+                    {"upload_url": "http://chunk2.com/", "chunk_id": 2},
+                    {"upload_url": "http://chunk1.com/", "chunk_id": 1},
+                ],
+            )
+        )
+        respx_mock.put("http://chunk1.com").mock(
+            Response(200, headers={"etag": '"<etag1>"'})
+        )
+        respx_mock.put("http://chunk2.com").mock(
+            Response(200, headers={"etag": '"<etag2>"'})
+        )
         respx_mock.post("projects/<tenant>/<name>/artefacts/complete")
-        respx_mock.post("projects/<tenant>/<name>/runs").mock(runs_response)
+        respx_mock.post("projects/<tenant>/<name>/runs").mock(
+            Response(200, json={"id": "<run_id>"})
+        )
         respx_mock.post("projects/<tenant>/<name>/items")
 
-        Project("<tenant>", "<name>").put("<key>", regression)
+        Project("<tenant>", "<name>").put("<key>", regression, chunk_size=chunk_size)
 
-        # Ensure what is sent to artefacts route
-        artefacts_request = respx_mock.calls[0].request
+        requests = [call.request for call in respx_mock.calls]
 
-        assert artefacts_request.url.path == "/projects/<tenant>/<name>/artefacts"
-        assert loads(artefacts_request.content.decode()) == [
+        assert len(requests) == 6
+        assert requests[0].url.path == "/projects/<tenant>/<name>/artefacts"
+        assert loads(requests[0].content.decode()) == [
             {
                 "checksum": checksum,
+                "chunk_number": 2,
                 "content_type": "estimator-report-pickle",
             }
         ]
-
-        # Ensure what is sent to S3 route
-        S3_request = respx_mock.calls[1].request
-
-        assert S3_request.url == "http://s3.com/"
-        assert S3_request.content == pickle
-
-        # Ensure what is sent to complete route
-        complete_request = respx_mock.calls[2].request
-
-        assert (
-            complete_request.url.path == "/projects/<tenant>/<name>/artefacts/complete"
-        )
-        assert loads(complete_request.content.decode()) == [
-            {"checksum": checksum, "etags": {}}
+        assert requests[1].url == "http://chunk2.com/"
+        assert requests[1].content == pickle[chunk_size:]
+        assert requests[2].url == "http://chunk1.com/"
+        assert requests[2].content == pickle[:chunk_size]
+        assert requests[3].url.path == "/projects/<tenant>/<name>/artefacts/complete"
+        assert loads(requests[3].content.decode()) == [
+            {
+                "checksum": checksum,
+                "etags": {
+                    "1": '"<etag1>"',
+                    "2": '"<etag2>"',
+                },
+            }
         ]
 
     def test_put(self, respx_mock, regression):
