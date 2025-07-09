@@ -176,13 +176,67 @@ tabpfn_report = EstimatorReport(tabpfn, pos_label=1, **split_data)
 tabpfn_report.metrics.summarize().frame()
 
 # %%
+# Custom model
+# ------------
+
+# %%
+# Let us use the `TemplateClassifier` from the
+# `scikit-learn documentation <https://scikit-learn.org/dev/developers/develop.html>`_ which is a nearest neighbor classifier, by adding the `predict_proba` method:
+
+# %%
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.utils.validation import validate_data, check_is_fitted
+from sklearn.utils.multiclass import unique_labels
+from sklearn.metrics import euclidean_distances
+
+
+class TemplateClassifier(ClassifierMixin, BaseEstimator):
+    def __init__(self, demo_param="demo"):
+        self.demo_param = demo_param
+
+    def fit(self, X, y):
+        X, y = validate_data(self, X, y)
+        self.classes_ = unique_labels(y)
+        self.X_ = X
+        self.y_ = y
+        return self
+
+    def predict(self, X):
+        check_is_fitted(self)
+        X = validate_data(self, X, reset=False)
+        closest = np.argmin(euclidean_distances(X, self.X_), axis=1)
+        return self.y_[closest]
+
+    def predict_proba(self, X):
+        check_is_fitted(self)
+        X = validate_data(self, X, reset=False)
+        closest = np.argmin(euclidean_distances(X, self.X_), axis=1)
+        predictions = self.y_[closest]
+
+        # Create probability matrix
+        proba = np.zeros((len(X), len(self.classes_)))
+        for i, pred in enumerate(predictions):
+            class_idx = np.where(self.classes_ == pred)[0][0]
+            proba[i, class_idx] = 1.0
+
+        return proba
+
+
+# %%
+# We can now use this model with skore:
+
+# %%
+template_report = EstimatorReport(TemplateClassifier(), pos_label=1, **split_data)
+template_report.metrics.summarize().frame()
+
+# %%
 # Benchmark of all of the above models
 # ------------------------------------
 
 # %%
 from skore import ComparisonReport
 
-estimators = [xgb_report, skorch_report, tabicl_report, tabpfn_report]
+estimators = [xgb_report, skorch_report, tabicl_report, tabpfn_report, template_report]
 
 comparator = ComparisonReport(
     estimators,
