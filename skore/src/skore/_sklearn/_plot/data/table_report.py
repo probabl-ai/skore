@@ -17,15 +17,15 @@ from skrub._reporting._utils import (
     top_k_value_counts,
 )
 
-from skore.sklearn._plot.style import StyleDisplayMixin
-from skore.sklearn._plot.utils import (
+from skore._sklearn._plot.style import StyleDisplayMixin
+from skore._sklearn._plot.utils import (
     HelpDisplayMixin,
     _adjust_fig_size,
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
+from skore._utils._repr_html import ReprHTMLMixin
 from skore.skrub._skrub_compat import sbd
-from skore.utils._repr_html import ReprHTMLMixin
 
 
 def _truncate_top_k(col: pd.Series, k: int, other_label: str = "other") -> pd.Series:
