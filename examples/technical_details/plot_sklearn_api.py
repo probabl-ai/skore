@@ -1,21 +1,31 @@
 """
 .. _example_sklearn_api:
 
-===========================================================
-Using skore for models compatible with the scikit-learn API
-===========================================================
+=============================================================================
+Using skore for a wide variety of models compatible with the scikit-learn API
+=============================================================================
 
-This example shows how to leverage skore's capabilities with scikit-learn compatible
-estimators, including:
+This example shows how to leverage skore's capabilities with a wide variety of
+scikit-learn compatible estimators.
+Basically, any model that can be used with the scikit-learn API can be used with skore.
+Skore's :class:`~skore.EstimatorReport` can be used to report on any estimator that has
+a ``fit`` and ``predict`` method (and ``predict_proba`` if applicable).
+
+This example covers the following libraries:
 
 - libraries like ``xgboost``, ``catboost``, and ``lightgbm``,
 - deep learning frameworks such as ``skorch`` (a wrapper for PyTorch) and ``keras``,
 - tabular foundation models such as `TabICL <https://github.com/soda-inria/tabicl>`_ and
   `TabPFN <https://github.com/PriorLabs/TabPFN>`_,
-- models specific to time series data such as
-  `tslearn <https://tslearn.readthedocs.io/en/stable/>`_,
-  `mlforecast <https://github.com/Nixtla/mlforecast>`_,
-  and `aeon <https://github.com/aeon-toolkit/aeon>`_.
+- time series classification with
+  `tslearn <https://tslearn.readthedocs.io/en/stable/>`_
+  and `aeon <https://github.com/aeon-toolkit/aeon>`_,
+- time series forecasting with a cross-validation using a time series splitter.
+
+.. note::
+
+  This example is not exhaustive and many more libraries are supported as long as they
+  are compatible with the scikit-learn API.
 """
 
 # %%
@@ -24,6 +34,8 @@ estimators, including:
 #
 # Loading a binary classification dataset
 # ---------------------------------------
+#
+# We generate a synthetic binary classification dataset:
 
 # %%
 from sklearn.datasets import make_classification
@@ -39,6 +51,9 @@ X, y = make_classification(
 print(f"{X.shape = }")
 
 # %%
+# We split our data:
+
+# %%
 from skore import train_test_split
 
 split_data = train_test_split(X, y, random_state=42, as_dict=True)
@@ -46,6 +61,9 @@ split_data = train_test_split(X, y, random_state=42, as_dict=True)
 # %%
 # Tree-based models
 # -----------------
+#
+# For this binary classification task, the first family of models we shall consider
+# are tree-based models from libraries external to scikit-learn.
 
 # %%
 # XGBoost
@@ -59,6 +77,12 @@ xgb = XGBClassifier(n_estimators=100, random_state=42)
 
 xgb_report = EstimatorReport(xgb, pos_label=1, **split_data)
 xgb_report.metrics.summarize().frame()
+
+# %%
+# We can easily get the summary of metrics, and also a ROC curve plot for example:
+
+# %%
+xgb_report.metrics.roc().plot()
 
 # %%
 # Deep learning with neural networks
