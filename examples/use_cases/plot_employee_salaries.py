@@ -123,9 +123,8 @@ hgbt_model_report.cache_predictions(n_jobs=4)
 # Now, that the predictions are cached, any request to compute a metric will be
 # performed using those cached predictions and will be fast.
 #
-# Let's have a look at the some standard performance metrics that are chosen based on
-# the task at hand which is a regression task.
-hgbt_model_report.metrics.summarize(indicator_favorability=True).frame()
+# We can now have a look at the performance of the model with some standard metrics.
+hgbt_model_report.metrics.summarize().frame()
 
 # %%
 #
@@ -296,7 +295,6 @@ comparator.metrics.summarize(
     scoring=scoring,
     scoring_kwargs=scoring_kwargs,
     scoring_names=scoring_names,
-    indicator_favorability=True,
 ).frame()
 
 # %%

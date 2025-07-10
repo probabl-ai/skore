@@ -6,12 +6,12 @@ import pytest
 from matplotlib.lines import Line2D
 from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
-from skore.sklearn._plot.metrics.precision_recall_curve import (
+from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
-from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_frame_structure, check_legend_position
-from skore.utils._testing import (
+from skore._sklearn._plot.utils import sample_mpl_colormap
+from skore._utils._testing import check_frame_structure, check_legend_position
+from skore._utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
 

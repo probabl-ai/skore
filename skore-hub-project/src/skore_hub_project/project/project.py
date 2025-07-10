@@ -2,19 +2,26 @@
 
 from __future__ import annotations
 
+import io
 from functools import cached_property
 from operator import itemgetter
+from tempfile import TemporaryFile
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
-from .. import item as item_module
+import blake3.blake3 as Blake3
+import joblib
+
+from ..client.api import Client
 from ..client.client import AuthenticatedClient, HTTPStatusError
-from ..item.item import lazy_is_instance
+from ..item import skore_estimator_report_item
+from ..item.item import bytes_to_b64_str
 
 if TYPE_CHECKING:
     from typing import TypedDict
 
-    from skore.sklearn import EstimatorReport
+    from skore import EstimatorReport
+    from skore.sklearn._base import _BaseReport
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -29,6 +36,37 @@ if TYPE_CHECKING:
         roc_auc: float | None
         fit_time: float
         predict_time: float
+
+
+def dumps(report: _BaseReport) -> tuple[bytes, str]:
+    """
+    Dump a ``report`` using ``joblib``.
+
+    Returns
+    -------
+    bytes
+        The pickled report.
+    str
+        The checksum of the pickled report, based on BLAKE3.
+
+    Notes
+    -----
+    The report is pickled without its cache, to avoid salting the checksum.
+    """
+    cache = report._cache
+    report._cache = {}
+
+    with io.BytesIO() as stream:
+        try:
+            joblib.dump(report, stream)
+        finally:
+            report._cache = cache
+
+        pickle = stream.getvalue()
+        hasher = Blake3(max_threads=(1 if len(pickle) < 10**6 else Blake3.AUTO))
+        checksum = hasher.update(pickle).digest()
+
+    return pickle, f"blake3-{bytes_to_b64_str(checksum)}"
 
 
 class Project:
@@ -129,25 +167,64 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        if not lazy_is_instance(
-            report, "skore.sklearn._estimator.report.EstimatorReport"
-        ):
+        from skore import EstimatorReport
+
+        if not isinstance(report, EstimatorReport):
             raise TypeError(
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
-        item = item_module.object_to_item(report)
+        # pickle report
+        pickle, checksum = dumps(report)
 
+        # ask for upload url
+        with AuthenticatedClient(raises=True) as client:
+            response = client.post(
+                url=f"projects/{self.tenant}/{self.name}/artefacts",
+                json=[
+                    {
+                        "checksum": checksum,
+                        "content_type": "estimator-report-pickle",
+                    }
+                ],
+            )
+
+        url = next(iter(response.json()), None)
+
+        if url:
+            # upload pickled report
+            with io.BytesIO(pickle) as stream, Client() as client:
+                client.put(
+                    url=url["upload_url"],
+                    content=stream,
+                    headers={"Content-Type": "application/octet-stream"},
+                )
+
+            # acknowledgement of sending
+            with AuthenticatedClient(raises=True) as client:
+                client.post(
+                    url=f"projects/{self.tenant}/{self.name}/artefacts/complete",
+                    json=[{"checksum": checksum, "etags": {}}],
+                )
+
+        del pickle
+
+        # send metadata
         with AuthenticatedClient(raises=True) as client:
             client.post(
-                f"projects/{self.tenant}/{self.name}/items",
-                json={
-                    **item.__metadata__,
-                    **item.__representation__,
-                    **item.__parameters__,
-                    "key": key,
-                    "run_id": self.run_id,
-                },
+                url=f"projects/{self.tenant}/{self.name}/items",
+                json=dict(
+                    (
+                        *skore_estimator_report_item.Metadata(report),
+                        (
+                            "related_items",
+                            list(skore_estimator_report_item.Representations(report)),
+                        ),
+                        ("parameters", {"checksum": checksum}),
+                        ("key", key),
+                        ("run_id", self.run_id),
+                    )
+                ),
             )
 
     @property
@@ -156,20 +233,39 @@ class Project:
 
         def get(id: str) -> EstimatorReport:
             """Get a persisted report by its id."""
-
-            def dto(report):
-                item_class_name = report["raw"]["class"]
-                item_class = getattr(item_module, item_class_name)
-                item_parameters = report["raw"]["parameters"]
-                item = item_class(**item_parameters)
-                return item.__raw__
-
+            # Retrieve report metadata.
             with AuthenticatedClient(raises=True) as client:
                 response = client.get(
-                    f"projects/{self.tenant}/{self.name}/experiments/estimator-reports/{id}"
+                    url=f"projects/{self.tenant}/{self.name}/experiments/estimator-reports/{id}"
                 )
 
-            return dto(response.json())
+            metadata = response.json()
+            checksum = metadata["raw"]["checksum"]
+
+            # Ask for read url.
+            with AuthenticatedClient(raises=True) as client:
+                response = client.get(
+                    url=f"projects/{self.tenant}/{self.name}/artefacts/read",
+                    params={"artefact_checksum": [checksum]},
+                )
+
+            url = response.json()[0]["url"]
+
+            # Download pickled report before unpickling it.
+            #
+            # It uses streaming responses that do not load the entire response body into
+            # memory at once.
+            with (
+                TemporaryFile(mode="w+b") as tmpfile,
+                Client() as client,
+                client.stream(method="GET", url=url) as response,
+            ):
+                for data in response.iter_bytes():
+                    tmpfile.write(data)
+
+                tmpfile.seek(0)
+
+                return joblib.load(tmpfile)
 
         def metadata() -> list[Metadata]:
             """Obtain metadata for all persisted reports regardless of their run."""

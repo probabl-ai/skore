@@ -7,8 +7,8 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.metrics import accuracy_score, get_scorer
 from skore import ComparisonReport, CrossValidationReport
-from skore.sklearn._plot import MetricsSummaryDisplay
-from skore.utils._testing import check_cache_changed, check_cache_unchanged
+from skore._sklearn._plot import MetricsSummaryDisplay
+from skore._utils._testing import check_cache_changed, check_cache_unchanged
 
 
 @pytest.fixture

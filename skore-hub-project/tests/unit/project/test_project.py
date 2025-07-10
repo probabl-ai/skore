@@ -1,13 +1,14 @@
+import io
 from json import loads
 from types import SimpleNamespace
 from urllib.parse import urljoin
 
+import joblib
 from httpx import Client, Response
 from pytest import fixture, mark, raises
+from skore import EstimatorReport
 from skore_hub_project import Project
-from skore_hub_project.item.skore_estimator_report_item import (
-    SkoreEstimatorReportItem,
-)
+from skore_hub_project.project.project import dumps
 
 
 class FakeClient(Client):
@@ -68,20 +69,64 @@ class TestProject:
         with raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
             Project("<tenant>", "<name>").put("<key>", "<value>")
 
+    def test_upload_in_put(self, respx_mock, regression):
+        pickle, checksum = dumps(regression)
+        artefacts_response = Response(200, json=[{"upload_url": "http://s3.com"}])
+        runs_response = Response(200, json={"id": "<run_id>"})
+
+        respx_mock.post("projects/<tenant>/<name>/artefacts").mock(artefacts_response)
+        respx_mock.put("http://s3.com")
+        respx_mock.post("projects/<tenant>/<name>/artefacts/complete")
+        respx_mock.post("projects/<tenant>/<name>/runs").mock(runs_response)
+        respx_mock.post("projects/<tenant>/<name>/items")
+
+        Project("<tenant>", "<name>").put("<key>", regression)
+
+        # Ensure what is sent to artefacts route
+        artefacts_request = respx_mock.calls[0].request
+
+        assert artefacts_request.url.path == "/projects/<tenant>/<name>/artefacts"
+        assert loads(artefacts_request.content.decode()) == [
+            {
+                "checksum": checksum,
+                "content_type": "estimator-report-pickle",
+            }
+        ]
+
+        # Ensure what is sent to S3 route
+        S3_request = respx_mock.calls[1].request
+
+        assert S3_request.url == "http://s3.com/"
+        assert S3_request.content == pickle
+
+        # Ensure what is sent to complete route
+        complete_request = respx_mock.calls[2].request
+
+        assert (
+            complete_request.url.path == "/projects/<tenant>/<name>/artefacts/complete"
+        )
+        assert loads(complete_request.content.decode()) == [
+            {"checksum": checksum, "etags": {}}
+        ]
+
     def test_put(self, respx_mock, regression):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
             Response(200, json={"id": "<run_id>"})
         )
+        respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
+            Response(200, json=[])
+        )
         respx_mock.post("projects/<tenant>/<name>/items").mock(Response(200))
 
         Project("<tenant>", "<name>").put("<key>", regression)
+
+        _, checksum = dumps(regression)
 
         # Retrieve the content of the request
         content = loads(respx_mock.calls.last.request.content.decode())
 
         # Prepare the content to be compared
         content["dataset_fingerprint"] = None
-        content["parameters"]["parameters"]["pickle_b64_str"] = None
 
         for item in content["related_items"]:
             item["representation"]["value"] = None
@@ -218,10 +263,7 @@ class TestProject:
                     "representation": {"media_type": "text/html", "value": None},
                 },
             ],
-            "parameters": {
-                "class": "SkoreEstimatorReportItem",
-                "parameters": {"pickle_b64_str": None},
-            },
+            "parameters": {"checksum": checksum},
             "key": "<key>",
             "run_id": "<run_id>",
         }
@@ -237,30 +279,27 @@ class TestProject:
         assert hasattr(project.reports, "metadata")
 
     def test_reports_get(self, respx_mock, regression):
-        from skore import EstimatorReport
-
+        # Mock hub routes that will be called
         url = "projects/<tenant>/<name>/runs"
-        respx_mock.post(url).mock(Response(200, json={"id": "<run_id>"}))
+        response = Response(200, json={"id": "<run_id>"})
+        respx_mock.post(url).mock(response)
 
         url = "projects/<tenant>/<name>/experiments/estimator-reports/<report_id>"
-        respx_mock.get(url).mock(
-            Response(
-                200,
-                json={
-                    "raw": {
-                        "class": "SkoreEstimatorReportItem",
-                        "parameters": {
-                            "pickle_b64_str": (
-                                SkoreEstimatorReportItem.factory(
-                                    regression
-                                ).pickle_b64_str
-                            )
-                        },
-                    }
-                },
-            )
-        )
+        response = Response(200, json={"raw": {"checksum": "<checksum>"}})
+        respx_mock.get(url).mock(response)
 
+        url = "projects/<tenant>/<name>/artefacts/read"
+        response = Response(200, json=[{"url": "http://url.com"}])
+        respx_mock.get(url).mock(response)
+
+        with io.BytesIO() as stream:
+            joblib.dump(regression, stream)
+
+            url = "http://url.com"
+            response = Response(200, content=stream.getvalue())
+            respx_mock.get(url).mock(response)
+
+        # Test
         project = Project("<tenant>", "<name>")
         report = project.reports.get("<report_id>")
 

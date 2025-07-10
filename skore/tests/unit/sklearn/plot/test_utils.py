@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from skore.sklearn._plot.utils import (
+from skore._sklearn._plot.utils import (
     _adjust_fig_size,
     _get_adjusted_fig_size,
     _rotate_ticklabels,

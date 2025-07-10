@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import pytest
 from skore import CrossValidationReport
-from skore.sklearn._plot import PredictionErrorDisplay
-from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_frame_structure, check_legend_position
+from skore._sklearn._plot import PredictionErrorDisplay
+from skore._sklearn._plot.metrics.prediction_error import RangeData
+from skore._utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -23,15 +23,15 @@ def test_regression(pyplot, regression_data_no_split, data_source):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.prediction_error, pd.DataFrame)
-    assert display.prediction_error["split_index"].nunique() == cv
+    assert isinstance(display._prediction_error, pd.DataFrame)
+    assert display._prediction_error["split_index"].nunique() == cv
     assert display.data_source == data_source
     assert isinstance(display.range_y_true, RangeData)
     assert isinstance(display.range_y_pred, RangeData)
     assert isinstance(display.range_residuals, RangeData)
     for attr in ("y_true", "y_pred", "residuals"):
         global_min, global_max = np.inf, -np.inf
-        for display_attr in display.prediction_error[attr]:
+        for display_attr in display._prediction_error[attr]:
             global_min = min(global_min, np.min(display_attr))
             global_max = max(global_max, np.max(display_attr))
         assert getattr(display, f"range_{attr}").min == global_min
@@ -67,8 +67,8 @@ def test_regression_actual_vs_predicted(pyplot, regression_data_no_split):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.prediction_error, pd.DataFrame)
-    assert display.prediction_error["split_index"].nunique() == cv
+    assert isinstance(display._prediction_error, pd.DataFrame)
+    assert display._prediction_error["split_index"].nunique() == cv
     assert display.data_source == "test"
 
     assert isinstance(display.line_, mpl.lines.Line2D)
@@ -172,7 +172,7 @@ def test_constructor(regression_data_no_split):
     display = report.metrics.prediction_error()
 
     index_columns = ["estimator_name", "split_index"]
-    for df in [display.prediction_error]:
-        assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique() == report.estimator_name_
-        assert df["split_index"].unique().tolist() == list(range(cv))
+    df = display._prediction_error
+    assert all(col in df.columns for col in index_columns)
+    assert df["estimator_name"].unique() == report.estimator_name_
+    assert df["split_index"].unique().tolist() == list(range(cv))

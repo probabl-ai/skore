@@ -6,8 +6,8 @@ import re
 from importlib.metadata import entry_points
 from typing import Any
 
+from skore._sklearn._estimator.report import EstimatorReport
 from skore.project.summary import Summary
-from skore.sklearn._estimator.report import EstimatorReport
 
 
 class Project:
@@ -95,7 +95,7 @@ class Project:
     >>> from sklearn.datasets import make_classification, make_regression
     >>> from sklearn.linear_model import LinearRegression, LogisticRegression
     >>> from sklearn.model_selection import train_test_split
-    >>> from skore.sklearn import EstimatorReport
+    >>> from skore._sklearn import EstimatorReport
     >>>
     >>> X, y = make_classification(random_state=42)
     >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
