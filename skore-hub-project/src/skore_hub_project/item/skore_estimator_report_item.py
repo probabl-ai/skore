@@ -96,11 +96,6 @@ class Metadata:
         return self.report.estimator_name_
 
     @metadata_function
-    def estimator_hyper_params(self) -> dict:
-        """DeprecationWarning: send empty dictionary to not break the hub API."""
-        return {}
-
-    @metadata_function
     def dataset_fingerprint(self) -> str:
         """Return the hash of the targets in the test-set."""
         import joblib
