@@ -245,32 +245,27 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             Only used when ``kind='dist'``.
 
         scatterplot_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's :ref:`scatterplot
-            <https://seaborn.pydata.org/generated/seaborn.scatterplot.html>`_ for
+            Keyword arguments to be passed to seaborn's :func:`seaborn.scatterplot` for
             rendering the distribution 2D plot, when both ``x`` and ``y`` are numeric.
 
         stripplot_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's :ref:`stripplot
-            <https://seaborn.pydata.org/generated/seaborn.stripplot.html>`_ for
+            Keyword arguments to be passed to seaborn's :func:`searborn.stripplot` for
             rendering the distribution 2D plot, when either ``x`` or ``y`` is numeric,
             and the other is categorical. This plot is drawn on top of the boxplot.
 
         boxplot_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's :ref:`boxplot
-            <https://seaborn.pydata.org/generated/seaborn.boxplot.html>`_ for rendering
-            the distribution 2D plot, when either ``x`` or ``y`` is numeric, and the
-            other is categorical. This plot is drawn below the stripplot.
+            Keyword arguments to be passed to seaborn's :func:`seaborn.boxplot` for
+            rendering the distribution 2D plot, when either ``x`` or ``y`` is numeric,
+            and the other is categorical. This plot is drawn below the stripplot.
 
         heatmap_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's :ref:`heatmap
-            <https://seaborn.pydata.org/generated/seaborn.heatmap.html>`_ for rendering
-            Cramer's V correlation matrix, when ``kind='corr'`` or when ``kind='dist'``
-            and both ``x`` and ``y`` are categorical.
+            Keyword arguments to be passed to seaborn's :func:`seaborn.heatmap` for
+            rendering Cramer's V correlation matrix, when ``kind='corr'`` or when
+            ``kind='dist'`` and both ``x`` and ``y`` are categorical.
 
         histplot_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's :ref:`histplot
-            <https://seaborn.pydata.org/generated/seaborn.histplot.html>`_ for rendering
-            the distribution 1D plot, when only ``x`` is provided.
+            Keyword arguments to be passed to seaborn's :func:`seaborn.histplot` for
+            rendering the distribution 1D plot, when only ``x`` is provided.
 
         Examples
         --------
