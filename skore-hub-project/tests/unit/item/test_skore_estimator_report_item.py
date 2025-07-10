@@ -70,7 +70,6 @@ class TestSkoreEstimatorReportItem:
     def test_metadata(self, monkeypatch, report, report_b64_str):
         metadata = {
             "estimator_class_name": "LinearRegression",
-            "estimator_hyper_params": {},
             "dataset_fingerprint": joblib.hash(report.y_test),
             "ml_task": "regression",
             "metrics": [
