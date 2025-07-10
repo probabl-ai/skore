@@ -515,8 +515,8 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             else:
                 x = _truncate_top_k(x, k)
 
-            sns.stripplot(x=x, y=y, hue=hue, ax=self.ax_, **stripplot_kwargs_validated)
             sns.boxplot(x=x, y=y, ax=self.ax_, **boxplot_kwargs_validated)
+            sns.stripplot(x=x, y=y, hue=hue, ax=self.ax_, **stripplot_kwargs_validated)
 
             _resize_categorical_axis(
                 figure=self.figure_,
