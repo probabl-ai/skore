@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from functools import cached_property
 from io import BytesIO
 from math import ceil
@@ -188,10 +189,10 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
-        # pickle report
+        # Pickle report.
         pickle, checksum = dumps(report)
 
-        # ask for upload url if not already uploaded
+        # Ask for upload url if not already uploaded.
         with AuthenticatedClient(raises=True) as client:
             response = client.post(
                 url=f"projects/{self.tenant}/{self.name}/artefacts",
@@ -246,10 +247,16 @@ class Project:
 
                     return dict(await asyncio.gather(*tasks))
 
-            # upload pickled report
-            etags = asyncio.run(upload(pickle, urls))
+            # Upload each chunk of the pickled report.
+            #
+            # notebook /!\
+            # This function cannot be called when another asyncio event loop is running in the same thread.
+            # https://docs.python.org/3.13/library/asyncio-runner.html#asyncio.run
+            with ThreadPoolExecutor() as pool:
+                future = pool.submit(lambda: asyncio.run(upload(pickle, urls)))
+                etags = future.result()
 
-            # acknowledgement of sending
+            # Acknowledgement of sending.
             with AuthenticatedClient(raises=True) as client:
                 client.post(
                     url=f"projects/{self.tenant}/{self.name}/artefacts/complete",
@@ -258,7 +265,7 @@ class Project:
 
         del pickle
 
-        # send metadata
+        # Send metadata.
         with AuthenticatedClient(raises=True) as client:
             client.post(
                 url=f"projects/{self.tenant}/{self.name}/items",
