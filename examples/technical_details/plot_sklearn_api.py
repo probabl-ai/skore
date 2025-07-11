@@ -13,7 +13,7 @@ a ``fit`` and ``predict`` method (and ``predict_proba`` if applicable).
 
 This example covers the following libraries:
 
-- libraries like ``xgboost``, ``catboost``, and ``lightgbm``,
+- libraries like ``xgboost``, ``lightgbm``, and ``catboost``,
 - deep learning frameworks such as ``skorch`` (a wrapper for PyTorch) and ``keras``,
 - tabular foundation models such as `TabICL <https://github.com/soda-inria/tabicl>`_ and
   `TabPFN <https://github.com/PriorLabs/TabPFN>`_,
@@ -35,7 +35,8 @@ This example covers the following libraries:
 # Loading a binary classification dataset
 # ---------------------------------------
 #
-# We generate a synthetic binary classification dataset:
+# We generate a synthetic binary classification dataset with only 1,000 samples to keep
+# the computation time reasonable, especially for the tabular foundation models:
 
 # %%
 from sklearn.datasets import make_classification
@@ -73,7 +74,7 @@ split_data = train_test_split(X, y, random_state=42, as_dict=True)
 from skore import EstimatorReport
 from xgboost import XGBClassifier
 
-xgb = XGBClassifier(n_estimators=100, random_state=42)
+xgb = XGBClassifier(n_estimators=50, max_depth=3, learning_rate=0.1, random_state=42)
 
 xgb_report = EstimatorReport(xgb, pos_label=1, **split_data)
 xgb_report.metrics.summarize().frame()
@@ -83,6 +84,39 @@ xgb_report.metrics.summarize().frame()
 
 # %%
 xgb_report.metrics.roc().plot()
+
+# %%
+# LightGBM
+# ^^^^^^^^
+
+# %%
+from lightgbm import LGBMClassifier
+
+lgbm = LGBMClassifier(
+    n_estimators=50, max_depth=3, learning_rate=0.1, random_state=42, verbose=0
+)
+
+lgbm_report = EstimatorReport(lgbm, pos_label=1, **split_data)
+lgbm_report.metrics.summarize().frame()
+
+# %%
+# CatBoost
+# ^^^^^^^^
+
+# %%
+from catboost import CatBoostClassifier
+
+catboost = CatBoostClassifier(
+    iterations=50,
+    depth=3,
+    learning_rate=0.1,
+    random_state=42,
+    verbose=False,
+    train_dir=None,
+)
+
+catboost_report = EstimatorReport(catboost, pos_label=1, **split_data)
+catboost_report.metrics.summarize().frame()
 
 # %%
 # Deep learning with neural networks
@@ -260,7 +294,15 @@ template_report.metrics.summarize().frame()
 # %%
 from skore import ComparisonReport
 
-estimators = [xgb_report, skorch_report, tabicl_report, tabpfn_report, template_report]
+estimators = [
+    xgb_report,
+    lgbm_report,
+    catboost_report,
+    skorch_report,
+    tabicl_report,
+    tabpfn_report,
+    template_report,
+]
 
 comparator = ComparisonReport(
     estimators,

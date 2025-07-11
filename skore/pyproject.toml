@@ -76,6 +76,8 @@ sphinx-base = [
   "torch",
   "tslearn",
   "xgboost",
+  "lightgbm",
+  "catboost",
 ]
 sphinx = ["skore[sphinx-base]", "polars"]
 sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]
