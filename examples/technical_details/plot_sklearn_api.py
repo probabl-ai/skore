@@ -19,18 +19,24 @@ that has a ``fit`` and ``predict`` method.
 
 This example covers the following libraries:
 
-- gradient boosting libraries like ``xgboost``, ``lightgbm``, and ``catboost``,
-- deep learning frameworks such as ``keras`` and ``skorch`` (a wrapper for PyTorch),
+- gradient boosting libraries like `XGBoost <https://github.com/dmlc/xgboost>`_,
+  `LightGBM <https://github.com/microsoft/LightGBM>`_, and
+  `CatBoost <https://github.com/catboost/catboost>`_.
+- deep learning frameworks such as `Keras <https://github.com/keras-team/keras>`_ and
+  `skorch <https://github.com/skorch-dev/skorch>`_
+  (a wrapper for `PyTorch <https://github.com/pytorch/pytorch>`_),
 - tabular foundation models such as `TabICL <https://github.com/soda-inria/tabicl>`_ and
   `TabPFN <https://github.com/PriorLabs/TabPFN>`_,
 - time series classification with
-  `tslearn <https://tslearn.readthedocs.io/en/stable/>`_
+  `tslearn <https://github.com/tslearn-team/tslearn>`_
   and `aeon <https://github.com/aeon-toolkit/aeon>`_,
-- time series forecasting with a cross-validation using a time series splitter.
+- time series forecasting with a skore cross-validation
+  (:class:`~skore.CrossValidationReport`) using a time series splitter
+  (:class:`~sklearn.model_selection.TimeSeriesSplit`).
 
 .. note::
 
-  This example is not exhaustive and many more libraries are supported!
+  This example is not exhaustive and many more libraries and frameworks are supported!
 """
 
 # %%
@@ -69,7 +75,10 @@ split_data = train_test_split(X, y, random_state=42, as_dict=True)
 # -----------------
 #
 # For this binary classification task, the first family of models we shall consider
-# are tree-based models from libraries external to scikit-learn.
+# are gradient boosting models from libraries external to scikit-learn.
+# The most popular are `XGBoost <https://github.com/dmlc/xgboost>`_,
+# `LightGBM <https://github.com/microsoft/LightGBM>`_, and
+# `CatBoost <https://github.com/catboost/catboost>`_.
 
 # %%
 # XGBoost
@@ -95,14 +104,32 @@ xgb_report.metrics.roc().plot()
 # ^^^^^^^^
 
 # %%
+# We filter out the warning about the feature names, which is not relevant for this example:
+
+# %%
 from lightgbm import LGBMClassifier
+import warnings
 
-lgbm = LGBMClassifier(
-    n_estimators=50, max_depth=3, learning_rate=0.1, random_state=42, verbose=0
-)
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        action="ignore",
+        message="X does not have valid feature names, but LGBMClassifier was fitted with feature names",
+        category=UserWarning,
+        module="sklearn",
+    )
 
-lgbm_report = EstimatorReport(lgbm, pos_label=1, **split_data)
-lgbm_report.metrics.summarize().frame()
+    lgbm = LGBMClassifier(
+        n_estimators=20,
+        max_depth=2,
+        learning_rate=0.05,
+        random_state=42,
+        verbose=-1,
+    )
+
+    lgbm_report = EstimatorReport(lgbm, pos_label=1, **split_data)
+    df_lgbm_metrics = lgbm_report.metrics.summarize().frame()
+
+df_lgbm_metrics
 
 # %%
 # CatBoost
@@ -140,9 +167,9 @@ catboost_report.metrics.summarize().frame()
 #
 # `Keras <https://github.com/keras-team/keras>`_ is a multi-backend deep learning
 # framework that enables us to work with JAX, TensorFlow, and PyTorch.
-# Since the following pull request https://github.com/keras-team/keras/pull/20599
-# merged in December 2024, scikit-learn wrappers are back in Keras, meaning that we can
-# use Keras models directly with skore.
+# Since the https://github.com/keras-team/keras/pull/20599 pull request merged in
+# December 2024, scikit-learn wrappers are back in Keras, meaning that we can use Keras
+# models directly with skore.
 
 # %%
 from keras.src.layers import Dense, Input
@@ -151,7 +178,6 @@ from keras.src.wrappers import SKLearnClassifier
 
 
 def create_mlp_classifier(X, y, loss, layers=[10]):
-    """Creates a basic MLP classifier for binary classification."""
     n_features_in = X.shape[1]
     inp = Input(shape=(n_features_in,))
 
@@ -159,7 +185,6 @@ def create_mlp_classifier(X, y, loss, layers=[10]):
     for layer_size in layers:
         hidden = Dense(layer_size, activation="relu")(hidden)
 
-    # Binary classification with one-hot encoding: 2 outputs with softmax activation
     out = Dense(2, activation="softmax")(hidden)
     model = Model(inp, out)
     model.compile(loss=loss, optimizer="rmsprop")
