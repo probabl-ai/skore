@@ -1,25 +1,26 @@
 """
 .. _example_sklearn_api:
 
-=============================================================================
-Using skore for a wide variety of models compatible with the scikit-learn API
-=============================================================================
+=====================================================================================
+Beyond traditional ML: skore's compatibility with deep learning and foundation models
+=====================================================================================
 
 This example shows how to leverage skore's capabilities with a wide variety of
-scikit-learn compatible estimators.
+scikit-learn compatible estimators: traditional machine learning frameworks as well as
+deep learning frameworks and tabular foundation models.
 Basically, any model that can be used with the scikit-learn API can be used with skore.
-Skore's :class:`~skore.EstimatorReport` can be used to report on any estimator that has
-a ``fit`` and ``predict`` method.
+Indeed, skore's :class:`~skore.EstimatorReport` can be used to report on any estimator
+that has a ``fit`` and ``predict`` method.
 
 .. note::
 
-  The ``predict_proba`` method is required by the estimator report to compute the ROC
-  AUC and ROC curve when doing classification.
+  When using an :class:`~skore.EstimatorReport` to compute the ROC AUC and ROC curve
+  when doing a classification task, the estimator must have a ``predict_proba`` method.
 
 This example covers the following libraries:
 
-- libraries like ``xgboost``, ``lightgbm``, and ``catboost``,
-- deep learning frameworks such as ``skorch`` (a wrapper for PyTorch) and ``keras``,
+- gradient boosting libraries like ``xgboost``, ``lightgbm``, and ``catboost``,
+- deep learning frameworks such as ``keras`` and ``skorch`` (a wrapper for PyTorch),
 - tabular foundation models such as `TabICL <https://github.com/soda-inria/tabicl>`_ and
   `TabPFN <https://github.com/PriorLabs/TabPFN>`_,
 - time series classification with
@@ -29,8 +30,7 @@ This example covers the following libraries:
 
 .. note::
 
-  This example is not exhaustive and many more libraries are supported as long as they
-  are compatible with the scikit-learn API.
+  This example is not exhaustive and many more libraries are supported!
 """
 
 # %%
@@ -127,6 +127,71 @@ catboost_report.metrics.summarize().frame()
 # Deep learning with neural networks
 # ----------------------------------
 #
+# It is often said that scikit-learn is mainly for traditional machine learning.
+# However, if the neural network is an estimator compatible with the scikit-learn API,
+# such as Keras or PyTorch (through skorch), they are compatible with a scikit-learn
+# grid search for example.
+# Moreover, it means that we can use skore to report on it.
+# Hence, skore is not limited to traditional machine learning models.
+
+# %%
+# Keras
+# ^^^^^
+#
+# `Keras <https://github.com/keras-team/keras>`_ is a multi-backend deep learning
+# framework that enables us to work with JAX, TensorFlow, and PyTorch.
+# Since the following pull request https://github.com/keras-team/keras/pull/20599
+# merged in December 2024, scikit-learn wrappers are back in Keras, meaning that we can
+# use Keras models directly with skore.
+
+# %%
+from keras.src.layers import Dense, Input
+from keras.src.models import Model
+from keras.src.wrappers import SKLearnClassifier
+
+
+def create_mlp_classifier(X, y, loss, layers=[10]):
+    """Creates a basic MLP classifier for binary classification."""
+    n_features_in = X.shape[1]
+    inp = Input(shape=(n_features_in,))
+
+    hidden = inp
+    for layer_size in layers:
+        hidden = Dense(layer_size, activation="relu")(hidden)
+
+    # Binary classification with one-hot encoding: 2 outputs with softmax activation
+    out = Dense(2, activation="softmax")(hidden)
+    model = Model(inp, out)
+    model.compile(loss=loss, optimizer="rmsprop")
+
+    return model
+
+
+keras_model = SKLearnClassifier(
+    model=create_mlp_classifier,
+    model_kwargs={
+        "loss": "categorical_crossentropy",
+        "layers": [32],
+    },
+    fit_kwargs={"epochs": 5, "verbose": 0},
+)
+
+# %%
+keras_report = EstimatorReport(keras_model, pos_label=1, **split_data)
+print(keras_report.metrics.precision())
+
+# %%
+# .. note::
+#
+#   The estimator above does not have a `predict_proba` method, so we can not compute
+#   the ROC AUC nor the ROC curve; and thus not the summary of metrics.
+#   Also note that users could implement a `predict_proba` method for this model by
+#   wrapping it.
+
+# %%
+keras_report.metrics.accuracy()
+
+# %%
 # PyTorch using skorch
 # ^^^^^^^^^^^^^^^^^^^^
 #
@@ -212,63 +277,6 @@ skorch_report = EstimatorReport(
 skorch_report.metrics.roc().plot()
 skorch_report.metrics.summarize(indicator_favorability=True).frame()
 
-# %%
-# Keras
-# ^^^^^
-#
-# Since https://github.com/keras-team/keras/pull/20599, we can use Keras models directly
-# with skore.
-# The following code is inspired from the unit test of the mentioned pull request (in
-# ``keras/src/wrappers/sklearn_test.py``).
-
-# %%
-
-from keras.src.layers import Dense, Input
-from keras.src.models import Model
-from keras.src.wrappers import SKLearnClassifier
-
-
-def dynamic_model(X, y, loss, layers=[10]):
-    """Creates a basic MLP classifier dynamically choosing binary/multiclass
-    classification loss and output activations.
-    """
-    n_features_in = X.shape[1]
-    inp = Input(shape=(n_features_in,))
-
-    hidden = inp
-    for layer_size in layers:
-        hidden = Dense(layer_size, activation="relu")(hidden)
-
-    n_outputs = y.shape[1] if len(y.shape) > 1 else 1
-    out = Dense(n_outputs, activation="softmax")(hidden)
-    model = Model(inp, out)
-    model.compile(loss=loss, optimizer="rmsprop")
-
-    return model
-
-
-keras_model = SKLearnClassifier(
-    model=dynamic_model,
-    model_kwargs={
-        "loss": "categorical_crossentropy",
-        "layers": [32],
-    },
-    fit_kwargs={"epochs": 5, "verbose": 0},
-)
-
-# %%
-keras_report = EstimatorReport(keras_model, pos_label=1, **split_data)
-print(keras_report.metrics.precision())
-
-# %%
-# .. note::
-#
-#   The estimator above does not have a `predict_proba` method, so we can not compute
-#   the ROC AUC nor the ROC curve; and thus not the summary of metrics.
-
-# %%
-keras_report.metrics.accuracy()
-
 
 # %%
 # Tabular foundation models
@@ -301,8 +309,9 @@ tabpfn_report.metrics.summarize().frame()
 # ------------
 
 # %%
-# Let us use the `TemplateClassifier` from the
-# `scikit-learn documentation <https://scikit-learn.org/dev/developers/develop.html>`_ which is a nearest neighbor classifier:
+# Let us use a custom estimator inspired from the
+# `scikit-learn documentation <https://scikit-learn.org/dev/developers/develop.html#rolling-your-own-estimator>`_,
+# a nearest neighbor classifier:
 
 # %%
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -311,9 +320,9 @@ from sklearn.utils.multiclass import unique_labels
 from sklearn.metrics import euclidean_distances
 
 
-class TemplateClassifier(ClassifierMixin, BaseEstimator):
-    def __init__(self, demo_param="demo"):
-        self.demo_param = demo_param
+class CustomClassifier(ClassifierMixin, BaseEstimator):
+    def __init__(self):
+        pass
 
     def fit(self, X, y):
         X, y = validate_data(self, X, y)
@@ -338,7 +347,7 @@ class TemplateClassifier(ClassifierMixin, BaseEstimator):
 # We can now use this model with skore:
 
 # %%
-template_report = EstimatorReport(TemplateClassifier(), pos_label=1, **split_data)
+template_report = EstimatorReport(CustomClassifier(), pos_label=1, **split_data)
 template_report.metrics.precision()
 
 # %%
