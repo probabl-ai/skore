@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from functools import cached_property, partial
-from io import BytesIO
 from math import ceil
 from operator import itemgetter
-from tempfile import TemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryFile
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
@@ -22,7 +23,8 @@ from ..item import skore_estimator_report_item
 from ..item.item import bytes_to_b64_str
 
 if TYPE_CHECKING:
-    from typing import TypedDict
+    from collections.abc import Generator
+    from typing import IO, TypedDict
 
     from skore import EstimatorReport
     from skore._sklearn._base import _BaseReport
@@ -42,35 +44,48 @@ if TYPE_CHECKING:
         predict_time: float
 
 
-def dumps(report: _BaseReport) -> tuple[bytes, str]:
+@contextmanager
+def dumps(report: _BaseReport) -> Generator[tuple[IO[bytes], str, int]]:
     """
-    Dump a ``report`` using ``joblib``.
+    Dump a ``report`` using ``joblib`` in a temporary file.
 
     Returns
     -------
-    bytes
-        The pickled report.
+    IO[bytes]
+        The temporary file containing the pickled report.
     str
         The checksum of the pickled report, based on BLAKE3.
+    int
+        The size of the pickled report.
 
     Notes
     -----
     The report is pickled without its cache, to avoid salting the checksum.
+    The report is pickled on disk to reduce RAM footprint.
     """
     cache = report._cache
     report._cache = {}
 
-    with BytesIO() as stream:
+    with NamedTemporaryFile(mode="w+b") as tmpfile:
         try:
-            joblib.dump(report, stream)
+            joblib.dump(report, tmpfile)
+
+            # "First do `f.flush()`, and then do `os.fsync(f.fileno())`, to ensure that
+            # all internal buffers associated with f are written to disk."
+            #
+            # https://docs.python.org/3.13/library/os.html#os.fsync
+            tmpfile.flush()
+            os.fsync(tmpfile.fileno())
         finally:
             report._cache = cache
 
-        pickle = stream.getvalue()
-        hasher = Blake3(max_threads=(1 if len(pickle) < 1e6 else Blake3.AUTO))
-        checksum = hasher.update(pickle).digest()
+        size = tmpfile.tell()
+        hasher = Blake3(max_threads=(1 if size < 1e6 else Blake3.AUTO))
+        checksum = hasher.update_mmap(tmpfile.name).digest()
 
-    return pickle, f"blake3-{bytes_to_b64_str(checksum)}"
+        tmpfile.seek(0)
+
+        yield tmpfile, f"blake3-{bytes_to_b64_str(checksum)}", size
 
 
 class Project:
@@ -189,84 +204,80 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
-        # Pickle report.
-        pickle, checksum = dumps(report)
-
-        # Ask for upload url if not already uploaded.
-        with AuthenticatedClient(raises=True) as client:
-            response = client.post(
-                url=f"projects/{self.tenant}/{self.name}/artefacts",
-                json=[
-                    {
-                        "checksum": checksum,
-                        "content_type": "estimator-report-pickle",
-                        "chunk_number": ceil(len(pickle) / chunk_size),
-                    }
-                ],
-            )
-
-        urls = response.json()
-
-        if urls:
-
-            async def put(client, chunk_id, url, chunk, semaphore):
-                async with semaphore:
-                    response = await client.put(
-                        url=url,
-                        content=chunk,
-                        headers={"Content-Type": "application/octet-stream"},
-                        timeout=None,
-                    )
-
-                response.raise_for_status()
-
-                return (chunk_id, response.headers["etag"])
-
-            async def upload(pickle, urls):
-                async with httpx.AsyncClient(follow_redirects=True) as client:
-                    semaphore = asyncio.BoundedSemaphore(chunks_concurrent_number)
-                    tasks = []
-
-                    for url in urls:
-                        chunk_id = url["chunk_id"] or 1
-                        chunk_start = (int(chunk_id) - 1) * chunk_size
-                        chunk_end = chunk_start + chunk_size
-                        chunk = pickle[chunk_start:chunk_end]
-
-                        tasks.append(
-                            asyncio.create_task(
-                                put(
-                                    client,
-                                    chunk_id,
-                                    url["upload_url"],
-                                    chunk,
-                                    semaphore,
-                                )
-                            )
-                        )
-
-                    return dict(await asyncio.gather(*tasks))
-
-            # Upload each chunk of the pickled report.
-            #
-            # The coroutine is executed in its own thread/event loop to manage the case,
-            # particularly in a notebook, when another asyncio event loop is already
-            # running in the main thread and can't be addressed by ``asyncio.run``.
-            #
-            # https://docs.python.org/3.13/library/asyncio-runner.html#asyncio.run
-            with ThreadPoolExecutor() as pool:
-                coroutine = upload(pickle, urls)
-                future = pool.submit(partial(asyncio.run, coroutine))
-                etags = future.result()
-
-            # Acknowledgement of sending.
+        # Pickle report in a tmpfile to avoid RAM overhead.
+        with dumps(report) as (tmpfile, checksum, size):
+            # Ask for upload url if not already uploaded.
             with AuthenticatedClient(raises=True) as client:
-                client.post(
-                    url=f"projects/{self.tenant}/{self.name}/artefacts/complete",
-                    json=[{"checksum": checksum, "etags": etags}],
+                response = client.post(
+                    url=f"projects/{self.tenant}/{self.name}/artefacts",
+                    json=[
+                        {
+                            "checksum": checksum,
+                            "content_type": "estimator-report-pickle",
+                            "chunk_number": ceil(size / chunk_size),
+                        }
+                    ],
                 )
 
-        del pickle
+            urls = response.json()
+
+            if urls:
+
+                async def put(client, chunk_id, url, chunk, semaphore):
+                    async with semaphore:
+                        response = await client.put(
+                            url=url,
+                            content=chunk,
+                            headers={"Content-Type": "application/octet-stream"},
+                            timeout=None,
+                        )
+
+                    response.raise_for_status()
+
+                    return (chunk_id, response.headers["etag"])
+
+                async def upload(urls, tmpfile, chunk_size):
+                    async with httpx.AsyncClient(follow_redirects=True) as client:
+                        semaphore = asyncio.BoundedSemaphore(chunks_concurrent_number)
+                        tasks = []
+
+                        for url in urls:
+                            chunk_id = url["chunk_id"] or 1
+
+                            tmpfile.seek((int(chunk_id) - 1) * chunk_size)
+                            tasks.append(
+                                asyncio.create_task(
+                                    put(
+                                        client,
+                                        chunk_id,
+                                        url["upload_url"],
+                                        tmpfile.read(chunk_size),
+                                        semaphore,
+                                    )
+                                )
+                            )
+
+                        return dict(await asyncio.gather(*tasks))
+
+                # Upload each chunk of the pickled report.
+                #
+                # The coroutine is executed in its own thread/event loop to manage the
+                # case, particularly in a notebook, when another asyncio event loop is
+                # already running in the main thread and can't be addressed by
+                # ``asyncio.run``.
+                #
+                # https://docs.python.org/3.13/library/asyncio-runner.html#asyncio.run
+                with ThreadPoolExecutor() as pool:
+                    coroutine = upload(urls, tmpfile, chunk_size)
+                    future = pool.submit(partial(asyncio.run, coroutine))
+                    etags = future.result()
+
+                # Acknowledgement of sending.
+                with AuthenticatedClient(raises=True) as client:
+                    client.post(
+                        url=f"projects/{self.tenant}/{self.name}/artefacts/complete",
+                        json=[{"checksum": checksum, "etags": etags}],
+                    )
 
         # Send metadata.
         with AuthenticatedClient(raises=True) as client:

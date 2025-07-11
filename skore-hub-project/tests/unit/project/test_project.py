@@ -1,14 +1,16 @@
-import io
+from io import BytesIO
 from json import loads
 from math import ceil
 from types import SimpleNamespace
 from urllib.parse import urljoin
 
 import joblib
+from blake3 import blake3 as Blake3
 from httpx import Client, Response
 from pytest import fixture, mark, raises
 from skore import EstimatorReport
 from skore_hub_project import Project
+from skore_hub_project.item.item import bytes_to_b64_str
 from skore_hub_project.project.project import dumps
 
 
@@ -23,32 +25,55 @@ class FakeClient(Client):
         return response
 
 
+@fixture(scope="module")
+def regression():
+    from sklearn.datasets import make_regression
+    from sklearn.linear_model import LinearRegression
+    from sklearn.model_selection import train_test_split
+    from skore import EstimatorReport
+
+    X, y = make_regression()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    return EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+
+@fixture(autouse=True)
+def monkeypatch_client(monkeypatch):
+    monkeypatch.setattr(
+        "skore_hub_project.project.project.AuthenticatedClient",
+        FakeClient,
+    )
+
+
+def test_dumps(regression):
+    cache = regression._cache
+    regression._cache = {}
+
+    with BytesIO() as stream:
+        try:
+            joblib.dump(regression, stream)
+        finally:
+            regression._cache = cache
+
+        pickle = stream.getvalue()
+        size = len(pickle)
+        hasher = Blake3(max_threads=(1 if size < 1e6 else Blake3.AUTO))
+        checksum = f"blake3-{bytes_to_b64_str(hasher.update(pickle).digest())}"
+
+    with dumps(regression) as (tmpfile, checksum_to_compare, size_to_compare):
+        assert tmpfile.read() == pickle
+        assert checksum_to_compare == checksum
+        assert size_to_compare == size
+
+
 class TestProject:
-    @fixture(scope="class")
-    def regression(self):
-        from sklearn.datasets import make_regression
-        from sklearn.linear_model import LinearRegression
-        from sklearn.model_selection import train_test_split
-        from skore import EstimatorReport
-
-        X, y = make_regression()
-        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-        return EstimatorReport(
-            LinearRegression(),
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
-        )
-
-    @fixture(autouse=True)
-    def monkeypatch_client(self, monkeypatch):
-        monkeypatch.setattr(
-            "skore_hub_project.project.project.AuthenticatedClient",
-            FakeClient,
-        )
-
     def test_tenant(self):
         assert Project("<tenant>", "<name>").tenant == "<tenant>"
 
@@ -71,8 +96,9 @@ class TestProject:
             Project("<tenant>", "<name>").put("<key>", "<value>")
 
     def test_upload_in_put(self, respx_mock, regression):
-        pickle, checksum = dumps(regression)
-        chunk_size = ceil(len(pickle) / 2)
+        with dumps(regression) as (tmpfile, checksum, _):
+            pickle = tmpfile.read()
+            chunk_size = ceil(len(pickle) / 2)
 
         respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
             Response(
@@ -134,7 +160,8 @@ class TestProject:
 
         Project("<tenant>", "<name>").put("<key>", regression)
 
-        _, checksum = dumps(regression)
+        with dumps(regression) as (_, checksum, _):
+            ...
 
         # Retrieve the content of the request
         content = loads(respx_mock.calls.last.request.content.decode())
@@ -305,7 +332,7 @@ class TestProject:
         response = Response(200, json=[{"url": "http://url.com"}])
         respx_mock.get(url).mock(response)
 
-        with io.BytesIO() as stream:
+        with BytesIO() as stream:
             joblib.dump(regression, stream)
 
             url = "http://url.com"
