@@ -9,7 +9,12 @@ This example shows how to leverage skore's capabilities with a wide variety of
 scikit-learn compatible estimators.
 Basically, any model that can be used with the scikit-learn API can be used with skore.
 Skore's :class:`~skore.EstimatorReport` can be used to report on any estimator that has
-a ``fit`` and ``predict`` method (and ``predict_proba`` if applicable).
+a ``fit`` and ``predict`` method.
+
+.. note::
+
+  The ``predict_proba`` method is required by the estimator report to compute the ROC
+  AUC and ROC curve when doing classification.
 
 This example covers the following libraries:
 
@@ -112,7 +117,7 @@ catboost = CatBoostClassifier(
     learning_rate=0.1,
     random_state=42,
     verbose=False,
-    train_dir=None,
+    allow_writing_files=False,
 )
 
 catboost_report = EstimatorReport(catboost, pos_label=1, **split_data)
@@ -208,6 +213,64 @@ skorch_report.metrics.roc().plot()
 skorch_report.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
+# Keras
+# ^^^^^
+#
+# Since https://github.com/keras-team/keras/pull/20599, we can use Keras models directly
+# with skore.
+# The following code is inspired from the unit test of the mentioned pull request in
+# ``keras/src/wrappers/sklearn_test.py``.
+
+# %%
+
+from keras.src.layers import Dense, Input
+from keras.src.models import Model
+from keras.src.wrappers import SKLearnClassifier
+
+
+def dynamic_model(X, y, loss, layers=[10]):
+    """Creates a basic MLP classifier dynamically choosing binary/multiclass
+    classification loss and output activations.
+    """
+    n_features_in = X.shape[1]
+    inp = Input(shape=(n_features_in,))
+
+    hidden = inp
+    for layer_size in layers:
+        hidden = Dense(layer_size, activation="relu")(hidden)
+
+    n_outputs = y.shape[1] if len(y.shape) > 1 else 1
+    out = Dense(n_outputs, activation="softmax")(hidden)
+    model = Model(inp, out)
+    model.compile(loss=loss, optimizer="rmsprop")
+
+    return model
+
+
+keras_model = SKLearnClassifier(
+    model=dynamic_model,
+    model_kwargs={
+        "loss": "categorical_crossentropy",
+        "layers": [32],
+    },
+    fit_kwargs={"epochs": 5, "verbose": 0},
+)
+
+# %%
+keras_report = EstimatorReport(keras_model, pos_label=1, **split_data)
+print(keras_report.metrics.precision())
+
+# %%
+# .. note::
+#
+#   The estimator above does not have a `predict_proba` method, so we can not compute
+#   the ROC AUC nor the ROC curve; and thus not the summary of metrics.
+
+# %%
+keras_report.metrics.accuracy()
+
+
+# %%
 # Tabular foundation models
 # -------------------------
 
@@ -265,31 +328,28 @@ class TemplateClassifier(ClassifierMixin, BaseEstimator):
         closest = np.argmin(euclidean_distances(X, self.X_), axis=1)
         return self.y_[closest]
 
-    def predict_proba(self, X):
-        check_is_fitted(self)
-        X = validate_data(self, X, reset=False)
-        closest = np.argmin(euclidean_distances(X, self.X_), axis=1)
-        predictions = self.y_[closest]
 
-        # Create probability matrix
-        proba = np.zeros((len(X), len(self.classes_)))
-        for i, pred in enumerate(predictions):
-            class_idx = np.where(self.classes_ == pred)[0][0]
-            proba[i, class_idx] = 1.0
-
-        return proba
-
+# %%
+# .. note::
+#
+#   The estimator above does not have a `predict_proba` method.
 
 # %%
 # We can now use this model with skore:
 
 # %%
 template_report = EstimatorReport(TemplateClassifier(), pos_label=1, **split_data)
-template_report.metrics.summarize().frame()
+template_report.metrics.precision()
 
 # %%
 # Benchmark of all of the above models
 # ------------------------------------
+
+# %%
+# .. note::
+#
+#   `keras_report` and `template_report` do not have a `predict_proba` method, so we
+#   do not include them in the comparison report.
 
 # %%
 from skore import ComparisonReport
@@ -301,7 +361,6 @@ estimators = [
     skorch_report,
     tabicl_report,
     tabpfn_report,
-    template_report,
 ]
 
 comparator = ComparisonReport(
