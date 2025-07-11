@@ -372,8 +372,8 @@ class CustomClassifier(ClassifierMixin, BaseEstimator):
 # We can now use this model with skore:
 
 # %%
-template_report = EstimatorReport(CustomClassifier(), pos_label=1, **split_data)
-template_report.metrics.precision()
+custom_report = EstimatorReport(CustomClassifier(), pos_label=1, **split_data)
+custom_report.metrics.precision()
 
 # %%
 # Benchmark of all of the above models
@@ -382,8 +382,8 @@ template_report.metrics.precision()
 # %%
 # .. note::
 #
-#   `keras_report` and `template_report` do not have a `predict_proba` method, so we
-#   do not include them in the comparison report.
+#   `keras_report` and `custom_report` do not have a `predict_proba` method, so we
+#   do not include them in the following comparison report.
 
 # %%
 from skore import ComparisonReport
@@ -410,8 +410,20 @@ comparator.metrics.roc().plot()
 # ==========================
 
 # %%
-# Load a time series dataset
-# --------------------------
+# Now, we no longer consider the binary classification task with the dataset generated
+# at the beginning of this example, but a time series classification task.
+
+# %%
+# tslearn
+# -------
+#
+# `tslearn <https://github.com/tslearn-team/tslearn>`_ is a Python package that
+# provides machine learning tools for the analysis of time series.
+# This package builds on scikit-learn, numpy and scipy libraries.
+# Note that it does not implement any forecasting methods.
+
+# %%
+# Let us generate a synthetic time series dataset for classification:
 
 # %%
 from tslearn.generators import random_walk_blobs
@@ -420,9 +432,8 @@ from tslearn.preprocessing import TimeSeriesScalerMinMax
 np.random.seed(0)
 n_ts_per_blob, sz, d, n_blobs = 20, 100, 1, 2
 
-# Prepare data
 X, y = random_walk_blobs(n_ts_per_blob=n_ts_per_blob, sz=sz, d=d, n_blobs=n_blobs)
-scaler = TimeSeriesScalerMinMax(value_range=(0.0, 1.0))  # Rescale time series
+scaler = TimeSeriesScalerMinMax(value_range=(0.0, 1.0))
 X_scaled = scaler.fit_transform(X)
 
 # %%
@@ -430,16 +441,30 @@ print(f"X_scaled.shape: {X_scaled.shape}")
 print(f"y.shape: {y.shape}")
 
 # %%
+# We have 40 univariate time series (of dimension 1) each of length 100.
+# More information about the tslearn time series format can be found in the
+# `tslearn documentation <https://tslearn.readthedocs.io/en/stable/gettingstarted.html#time-series-format>`_.
+
+# %%
+# We split our data:
+
+# %%
 split_data = train_test_split(X_scaled, y, random_state=42, as_dict=True)
+
+# %%
+print(f"{split_data['X_train'].shape = }")
+print(f"{split_data['X_test'].shape = }")
 
 # %%
 # .. note::
 #
 #   We have a dataset of several time series, and we want to classify them.
+#   In particular, we do not need a :class:`~sklearn.model_selection.TimeSeriesSplit`.
 
 # %%
-# tslearn
-# -------
+# We use a nearest neighbor classifier from tslearn using the
+# `Dynamic Time Warping (DTW) <https://tslearn.readthedocs.io/en/stable/user_guide/dtw.html>`_
+# distance:
 
 # %%
 from tslearn.neighbors import KNeighborsTimeSeriesClassifier
@@ -449,19 +474,71 @@ ts_model_report = EstimatorReport(ts_model, pos_label=1, **split_data)
 ts_model_report.metrics.summarize().frame()
 
 # %%
-# aeon
-# ----
+# When computing the distance matrix in the nearest neighbor algorithm, the Euclidean
+# distance is often used by default.
+# However, the DTW distance is often better suited for time series data as it is more
+# robust to time shifts.
+# The DTW distance is specific to time series data and is not implemented in
+# scikit-learn but in tslearn.
 
 # %%
-from aeon.classification.distance_based import KNeighborsTimeSeriesClassifier
+# aeon
+# ----
+#
+# `aeon <https://github.com/aeon-toolkit/aeon>`_ is a toolkit for machine learning
+# with time series data which is compatible with scikit-learn.
+# It implements state-of-the-art methods in a wide variety of time series tasks
+# including anomaly detection, classification, and forecasting.
 
-aeon_model = KNeighborsTimeSeriesClassifier(n_neighbors=1)
-aeon_model_report = EstimatorReport(aeon_model, pos_label=1, **split_data)
-aeon_model_report.metrics.summarize().frame()
+# %%
+# Let us load a real-world time series classification dataset from aeon, which comes
+# with a native train-test split:
+
+# %%
+from aeon.datasets import load_arrow_head
+
+arrow, arrow_labels = load_arrow_head(split="train")
+print(f"ArrowHead series of type {type(arrow)} and shape {arrow.shape}")
+
+# %%
+# .. note::
+#
+#   aeon has its own specific time series format, which is not compatible with tslearn.
+#   Its `documentation <https://www.aeon-toolkit.org/en/stable/examples/classification/classification.html#Data-Storage-and-Problem-Types>`_
+#   states that their format is ``(n_cases, n_channels, n_timepoints)``,
+#   where ``n_cases`` is the number of time series, ``n_channels`` is the dimension,
+#   and ``n_timepoints`` is the number of time points.
+
+# %%
+# We load the test set:
+
+# %%
+arrow_test, arrow_test_labels = load_arrow_head(split="test", return_type="numpy2d")
+
+# %%
+# We use a :class:`~aeon.classification.convolution_based.RocketClassifier` from aeon,
+# which is a `convolution based classifier <https://www.aeon-toolkit.org/en/stable/examples/classification/convolution_based.html>`_:
+
+# %%
+from aeon.classification.convolution_based import RocketClassifier
+
+rocket = RocketClassifier(n_kernels=2_000)
+arrow2d = arrow.squeeze()
+rocket_report = EstimatorReport(
+    rocket,
+    X_train=arrow2d,
+    y_train=arrow_labels,
+    X_test=arrow_test,
+    y_test=arrow_test_labels,
+)
+rocket_report.metrics.summarize().frame()
 
 # %%
 # Time series forecasting with cross-validation
 # =============================================
+#
+# Now, we no longer use the time series classification dataset: we will focus on a
+# time series forecasting task.
 #
 # The goal of this section is to show that a :class:`skore.CrossValidationReport`
 # can be used with a :class:`sklearn.model_selection.TimeSeriesSplit` when performing
@@ -522,3 +599,9 @@ from skore import CrossValidationReport
 
 cv_report = CrossValidationReport(gbrt, X, y, cv_splitter=ts_cv)
 cv_report.metrics.summarize().frame()
+
+# %%
+# We can also investigate the metrics for each fold:
+
+# %%
+cv_report.metrics.summarize(aggregate=None).frame()
