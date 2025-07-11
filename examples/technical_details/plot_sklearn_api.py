@@ -218,8 +218,8 @@ skorch_report.metrics.summarize(indicator_favorability=True).frame()
 #
 # Since https://github.com/keras-team/keras/pull/20599, we can use Keras models directly
 # with skore.
-# The following code is inspired from the unit test of the mentioned pull request in
-# ``keras/src/wrappers/sklearn_test.py``.
+# The following code is inspired from the unit test of the mentioned pull request (in
+# ``keras/src/wrappers/sklearn_test.py``).
 
 # %%
 
@@ -302,7 +302,7 @@ tabpfn_report.metrics.summarize().frame()
 
 # %%
 # Let us use the `TemplateClassifier` from the
-# `scikit-learn documentation <https://scikit-learn.org/dev/developers/develop.html>`_ which is a nearest neighbor classifier, by adding the `predict_proba` method:
+# `scikit-learn documentation <https://scikit-learn.org/dev/developers/develop.html>`_ which is a nearest neighbor classifier:
 
 # %%
 from sklearn.base import BaseEstimator, ClassifierMixin
