@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from functools import cached_property
+from functools import cached_property, partial
 from io import BytesIO
 from math import ceil
 from operator import itemgetter
@@ -249,11 +249,14 @@ class Project:
 
             # Upload each chunk of the pickled report.
             #
-            # notebook /!\
-            # This function cannot be called when another asyncio event loop is running in the same thread.
+            # The coroutine is executed in its own thread/event loop to manage the case,
+            # particularly in a notebook, when another asyncio event loop is already
+            # running in the main thread and can't be addressed by ``asyncio.run``.
+            #
             # https://docs.python.org/3.13/library/asyncio-runner.html#asyncio.run
             with ThreadPoolExecutor() as pool:
-                future = pool.submit(lambda: asyncio.run(upload(pickle, urls)))
+                coroutine = upload(pickle, urls)
+                future = pool.submit(partial(asyncio.run, coroutine))
                 etags = future.result()
 
             # Acknowledgement of sending.
