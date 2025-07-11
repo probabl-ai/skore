@@ -75,6 +75,7 @@ sphinx-base = [
   "tabpfn",
   "torch",
   "keras",
+  "tensorflow",
   "tslearn",
   "xgboost",
   "lightgbm",
