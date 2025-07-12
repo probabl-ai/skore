@@ -15,7 +15,6 @@ This example shows how :class:`~skore.EstimatorReport` and
 # parallelism.
 import os
 
-os.environ["POLARS_ALLOW_FORKING_THREAD"] = "1"
 
 # %%
 # Loading some data
