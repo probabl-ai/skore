@@ -15,8 +15,6 @@ storing the results for further analysis.
 # parallelism.
 import os
 
-os.environ["TOKENIZERS_PARALLELISM"] = "true"
-
 # %%
 # Creating a skore project and loading some data
 # ==============================================
