@@ -10,6 +10,7 @@ import pandas as pd
 from numpy.typing import ArrayLike, NDArray
 from sklearn import metrics
 from sklearn.metrics._scorer import _BaseScorer
+from sklearn.utils.multiclass import type_of_target
 from sklearn.utils.metaestimators import available_if
 
 from skore._sklearn._base import (
@@ -1051,8 +1052,15 @@ class _MetricsAccessor(
             pos_label=self._parent._estimator.classes_[-1],
         )
         return cast(float, result)
+    def check_roc_auc_possible(self):
+        if self._parent._y_train is None:
+            raise ValueError("Cannot compute target type: y_train is not set.")
+        target_type = type_of_target(self._parent._y_train)
+        is_binary = target_type == "binary"
+        has_proba = hasattr(self._parent._estimator, "predict_proba")
+        return is_binary or has_proba
 
-    @available_if(attrgetter("_roc_auc"))
+    @available_if(lambda self: self._roc_auc and self.check_roc_auc_possible())
     def roc_auc(
         self,
         *,
