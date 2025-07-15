@@ -1059,7 +1059,7 @@ class _MetricsAccessor(
         is_binary = target_type == "binary"
         has_proba = hasattr(self._parent._estimator, "predict_proba")
         return is_binary or has_proba
-
+    #exposes roc_auc only if _roc_auc is set to True and the target type is binary or the estimator has predict_proba. See issue #1873
     @available_if(lambda self: self._roc_auc and self.check_roc_auc_possible())
     def roc_auc(
         self,
