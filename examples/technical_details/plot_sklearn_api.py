@@ -222,17 +222,28 @@ keras_report.metrics.accuracy()
 # PyTorch using skorch
 # ^^^^^^^^^^^^^^^^^^^^
 #
-# We shall create our neural network model using PyTorch.
-# We consider a neural network with 2 hidden layers and 1 output layer with ReLU
-# activations.
+# `skorch <https://github.com/skorch-dev/skorch>`_ is a library that wraps PyTorch
+# models to make them compatible with the scikit-learn API.
+# For that, we use a `skorch`'s ``NeuralNetClassifier`` wrapper.
+# We also add a standard scaler and a transformer to convert the data to float32.
 
 # %%
 from torch import nn
+from torch import manual_seed
+from skorch import NeuralNetClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+from sklearn.base import BaseEstimator, TransformerMixin
+import numpy as np
+
+manual_seed(42)
 
 
-class MyNeuralNet(nn.Module):
+class SimpleNeuralNet(nn.Module):
+    """A simple PyTorch neural network for binary classification."""
+
     def __init__(self, input_dim=5, h1=64, h2=32, output_dim=2):
-        super(MyNeuralNet, self).__init__()
+        super().__init__()
         self.layers = nn.Sequential(
             nn.Linear(input_dim, h1),
             nn.ReLU(),
@@ -245,38 +256,11 @@ class MyNeuralNet(nn.Module):
         return self.layers(X)
 
 
-# %%
-# Since we want to use this with `skorch` that provides a sklearn like API interface
-# that `skore` can utilize, we shall wrap this in `skorch`'s ``NeuralNetClassifier``.
-
-# %%
-import torch
-from skorch import NeuralNetClassifier
-
-torch.manual_seed(42)
-
-skorch_model = NeuralNetClassifier(
-    MyNeuralNet,
-    max_epochs=10,
-    lr=1e-2,
-    criterion=torch.nn.CrossEntropyLoss,
-    classes=list(range(2)),
-)
-
-# %%
-# Next, we create our final model by wrapping this into a scikit-learn pipeline that
-# adds a standard scaler.
-
-# %%
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import make_pipeline
-from sklearn.base import BaseEstimator, TransformerMixin
-import numpy as np
-
-
-# Create a transformer to convert data to float32 for PyTorch compatibility
-# This is necessary because scikit-learn data is typically float64, but PyTorch defaults to float32
 class Float32Transformer(BaseEstimator, TransformerMixin):
+    """As scikit-learn data is typically float64, but PyTorch defaults to float32,
+    we need to convert the data to float32.
+    """
+
     def fit(self, X, y=None):
         return self
 
@@ -284,24 +268,29 @@ class Float32Transformer(BaseEstimator, TransformerMixin):
         return X.astype(np.float32)
 
 
-skorch_pipeline = make_pipeline(StandardScaler(), Float32Transformer(), skorch_model)
-skorch_pipeline.fit(split_data["X_train"], split_data["y_train"])
+skorch_model = make_pipeline(
+    StandardScaler(),
+    Float32Transformer(),
+    NeuralNetClassifier(
+        SimpleNeuralNet,
+        max_epochs=10,
+        lr=1e-2,
+        criterion=nn.CrossEntropyLoss,
+        classes=list(range(2)),
+        verbose=0,
+    ),
+)
+skorch_model.fit(split_data["X_train"], split_data["y_train"])
 
 # %%
 from skore import EstimatorReport
 
 skorch_report = EstimatorReport(
-    skorch_pipeline,
+    skorch_model,
     fit=True,
     pos_label=1,
     **split_data,
 )
-
-# %%
-# Similar to the above, we can observe the report and the ROC curves of our final model.
-
-# %%
-skorch_report.metrics.roc().plot()
 skorch_report.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
@@ -312,8 +301,8 @@ skorch_report.metrics.summarize(indicator_favorability=True).frame()
 # provides scikit-learn interfaces for modern tabular classification and regression
 # methods that are benchmarked.
 # First, we start with the RealMLP model which is novel neural net model with tuned
-# defaults (TD) introduced in
-# `Better by Default: Strong Pre-Tuned MLPs and Boosted Trees on Tabular Data <https://arxiv.org/pdf/2407.04491>`_.
+# defaults (TD) introduced in the
+# `Better by Default: Strong Pre-Tuned MLPs and Boosted Trees on Tabular Data <https://arxiv.org/pdf/2407.04491>`_ paper.
 # RealMLP is an improved tuned multi-layer perceptron (MLP) that is optimized for
 # tabular data.
 
