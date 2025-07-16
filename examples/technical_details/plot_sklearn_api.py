@@ -204,6 +204,9 @@ keras_model = SKLearnClassifier(
 )
 
 # %%
+# We can now use skore's :class:`~skore.EstimatorReport`:
+
+# %%
 keras_report = EstimatorReport(keras_model, pos_label=1, **split_data)
 print(keras_report.metrics.precision())
 
@@ -283,8 +286,9 @@ skorch_model = make_pipeline(
 skorch_model.fit(split_data["X_train"], split_data["y_train"])
 
 # %%
-from skore import EstimatorReport
+# We can now use skore to report on the model:
 
+# %%
 skorch_report = EstimatorReport(
     skorch_model,
     fit=True,
@@ -584,7 +588,8 @@ rocket_report.metrics.summarize().frame()
 # %%
 # Let us take inspiration from the `Time-related feature engineering <https://scikit-learn.org/stable/auto_examples/applications/plot_cyclical_feature_engineering.html>`_ example of the scikit-learn documentation.
 #
-# We shall use the bike sharing demand dataset:
+# We shall use the bike sharing demand dataset whose goal is to predict the hourly
+# demand:
 
 # %%
 from sklearn.datasets import fetch_openml
@@ -593,7 +598,9 @@ bike_sharing = fetch_openml("Bike_Sharing_Demand", version=2, as_frame=True)
 df = bike_sharing.frame
 
 # %%
-# As done in the scikit-learn example, we shall preprocess the data:
+# As explained in the scikit-learn example, we shall preprocess the data by rescaling
+# the target variable and replace the weather category ``heavy_rain`` by ``rain`` as
+# there are too few instances for ``heavy_rain``:
 
 # %%
 y = df["count"] / df["count"].max()
@@ -607,7 +614,8 @@ X["weather"] = (
 )
 
 # %%
-# We will use time-based cross-validation strategy to evaluate our model:
+# We will use time-based cross-validation strategy to evaluate our model with a gap of
+# 48 hours between train and test and 1,000 test datapoints which should be enough:
 
 # %%
 from sklearn.model_selection import TimeSeriesSplit
@@ -620,16 +628,17 @@ ts_cv = TimeSeriesSplit(
 )
 
 # %%
-# We define our model:
+# We define our model which is a modern scikit-learn
+# :class:`~sklearn.ensemble.HistGradientBoostingRegressor`
+# with native support for categorical features:
 
 # %%
 from sklearn.ensemble import HistGradientBoostingRegressor
-from sklearn.pipeline import make_pipeline
 
 gbrt = HistGradientBoostingRegressor(categorical_features="from_dtype", random_state=42)
 
 # %%
-# We create our skore cross-validation report:
+# We evaluate our model thanks to a :class:`~skore.CrossValidationReport`:
 
 # %%
 from skore import CrossValidationReport
