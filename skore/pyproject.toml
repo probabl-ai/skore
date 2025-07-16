@@ -80,6 +80,7 @@ sphinx-base = [
   "xgboost",
   "lightgbm",
   "catboost",
+  "pytabkit",
 ]
 sphinx = ["skore[sphinx-base]", "polars"]
 sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]

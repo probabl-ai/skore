@@ -25,6 +25,8 @@ This example covers the following libraries:
 - deep learning frameworks such as `Keras <https://github.com/keras-team/keras>`_ and
   `skorch <https://github.com/skorch-dev/skorch>`_
   (a wrapper for `PyTorch <https://github.com/pytorch/pytorch>`_),
+- `pytabkit <https://github.com/dholzmueller/pytabkit>`_ which provides
+  scikit-learn interfaces for modern tabular classification and regression methods,
 - tabular foundation models such as `TabICL <https://github.com/soda-inria/tabicl>`_ and
   `TabPFN <https://github.com/PriorLabs/TabPFN>`_,
 - time series classification with
@@ -71,11 +73,11 @@ from skore import train_test_split
 split_data = train_test_split(X, y, random_state=42, as_dict=True)
 
 # %%
-# Tree-based models
-# -----------------
+# Gradient-boosted decision trees models
+# --------------------------------------
 #
 # For this binary classification task, the first family of models we shall consider
-# are gradient boosting models from libraries external to scikit-learn.
+# are gradient-boosted decision trees models from libraries external to scikit-learn.
 # The most popular are `XGBoost <https://github.com/dmlc/xgboost>`_,
 # `LightGBM <https://github.com/microsoft/LightGBM>`_, and
 # `CatBoost <https://github.com/catboost/catboost>`_.
@@ -302,32 +304,76 @@ skorch_report = EstimatorReport(
 skorch_report.metrics.roc().plot()
 skorch_report.metrics.summarize(indicator_favorability=True).frame()
 
+# %%
+# RealMLP
+# ^^^^^^^
+#
+# Next, we use the `pytabkit <https://github.com/dholzmueller/pytabkit>`_ library that
+# provides scikit-learn interfaces for modern tabular classification and regression
+# methods that are benchmarked.
+# First, we start with the RealMLP model which is novel neural net model with tuned
+# defaults (TD) introduced in
+# `Better by Default: Strong Pre-Tuned MLPs and Boosted Trees on Tabular Data <https://arxiv.org/pdf/2407.04491>`_.
+# RealMLP is an improved tuned multi-layer perceptron (MLP) that is optimized for
+# tabular data.
+
+# %%
+from pytabkit import RealMLP_TD_Classifier
+
+realmlp = RealMLP_TD_Classifier(random_state=42)
+realmlp_report = EstimatorReport(realmlp, pos_label=1, **split_data)
+realmlp_report.metrics.summarize().frame()
+
+# %%
+# TabM
+# ^^^^
+# Next, we use the TabM model from
+# `TabM: Advancing Tabular Deep Learning with Parameter-Efficient Ensembling <https://arxiv.org/abs/2410.24210>`_.
+
+# %%
+from pytabkit import TabM_D_Classifier
+
+tabm = TabM_D_Classifier(random_state=42)
+tabm_report = EstimatorReport(tabm, pos_label=1, **split_data)
+tabm_report.metrics.summarize().frame()
 
 # %%
 # Tabular foundation models
 # -------------------------
 
 # %%
-# TabICL
-# ^^^^^^
-
-# %%
-from tabicl import TabICLClassifier
-
-tabicl = TabICLClassifier()
-tabicl_report = EstimatorReport(tabicl, pos_label=1, **split_data)
-tabicl_report.metrics.summarize().frame()
-
-# %%
 # TabPFN
 # ^^^^^^
+#
+# TabPFN is a foundation model for tabular data that is based on the
+# `Accurate predictions on small data with a tabular foundation model <https://www.nature.com/articles/s41586-024-08328-6>`_ paper.
+# It is said to outperform gradient-boosted decision trees on datasets with up to
+# 10k samples by a wide margin.
+# It works for classification and regression.
 
 # %%
 from tabpfn import TabPFNClassifier
 
-tabpfn = TabPFNClassifier()
+tabpfn = TabPFNClassifier(random_state=42)
 tabpfn_report = EstimatorReport(tabpfn, pos_label=1, **split_data)
 tabpfn_report.metrics.summarize().frame()
+
+# %%
+# TabICL
+# ^^^^^^
+#
+# TabICL is a tabular foundation model that is based on the
+# `TabICL: A Tabular Foundation Model for In-Context Learning on Large Data <https://arxiv.org/pdf/2502.05564>`_ paper.
+# It is made for classification, pre-trained on synthetic datasets with up to 60k
+# samples and capable of handling 500k samples on affordable resources.
+# It is said to be faster than TabPFNv2.
+
+# %%
+from tabicl import TabICLClassifier
+
+tabicl = TabICLClassifier(random_state=42)
+tabicl_report = EstimatorReport(tabicl, pos_label=1, **split_data)
+tabicl_report.metrics.summarize().frame()
 
 # %%
 # Custom model
@@ -393,8 +439,10 @@ estimators = [
     lgbm_report,
     catboost_report,
     skorch_report,
-    tabicl_report,
+    realmlp_report,
+    tabm_report,
     tabpfn_report,
+    tabicl_report,
 ]
 
 comparator = ComparisonReport(
