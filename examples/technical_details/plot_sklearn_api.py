@@ -291,7 +291,7 @@ skorch_report = EstimatorReport(
     pos_label=1,
     **split_data,
 )
-skorch_report.metrics.summarize(indicator_favorability=True).frame()
+skorch_report.metrics.summarize().frame()
 
 # %%
 # RealMLP
