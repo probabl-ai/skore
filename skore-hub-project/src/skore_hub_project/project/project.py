@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import asyncio
 import os
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
-from functools import cached_property, partial
+from functools import cached_property
 from math import ceil
 from operator import itemgetter
 from tempfile import NamedTemporaryFile, TemporaryFile
@@ -14,7 +13,6 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import blake3.blake3 as Blake3
-import httpx
 import joblib
 
 from ..client.api import Client
@@ -170,7 +168,7 @@ class Project:
         report: EstimatorReport,
         *,
         chunk_size: int = int(1e7),
-        chunks_concurrent_number: int = 3,
+        max_workers: int = 3,
     ):
         """
         Put a key-report pair to the hub project.
@@ -186,7 +184,7 @@ class Project:
             The report to associate with ``key`` in the hub project.
         chunk_size : int, optional
             The maximum size of chunks to upload in bytes, default ~10mb.
-        chunks_concurrent_number : int, optional
+        max_workers : int, optional
             The maximum number of chunks uploaded in concurrence, default 3.
 
         Raises
@@ -222,55 +220,38 @@ class Project:
             urls = response.json()
 
             if urls:
+                etags = {}
 
-                async def put(client, chunk_id, url, chunk, semaphore):
-                    async with semaphore:
-                        response = await client.put(
-                            url=url,
-                            content=chunk,
+                # Upload each chunk of the pickled report.
+                with Client() as client, ThreadPoolExecutor(max_workers) as pool:
+                    future_to_chunk_id = {}
+
+                    for url in urls:
+                        chunk_id = url["chunk_id"] or 1
+
+                        tmpfile.seek((int(chunk_id) - 1) * chunk_size)
+                        future = pool.submit(
+                            client.put,
+                            url=url["upload_url"],
+                            content=tmpfile.read(chunk_size),
                             headers={"Content-Type": "application/octet-stream"},
                             timeout=None,
                         )
 
-                    response.raise_for_status()
+                        future_to_chunk_id[future] = chunk_id
 
-                    return (chunk_id, response.headers["etag"])
+                    try:
+                        for future in as_completed(future_to_chunk_id):
+                            response = future.result()
+                            etag = response.headers["etag"]
+                            chunk_id = future_to_chunk_id[future]
 
-                async def upload(urls, tmpfile, chunk_size):
-                    async with httpx.AsyncClient(follow_redirects=True) as client:
-                        semaphore = asyncio.BoundedSemaphore(chunks_concurrent_number)
-                        tasks = []
+                            etags[chunk_id] = etag
+                    except BaseException:
+                        for future in future_to_chunk_id:
+                            future.cancel()
 
-                        for url in urls:
-                            chunk_id = url["chunk_id"] or 1
-
-                            tmpfile.seek((int(chunk_id) - 1) * chunk_size)
-                            tasks.append(
-                                asyncio.create_task(
-                                    put(
-                                        client,
-                                        chunk_id,
-                                        url["upload_url"],
-                                        tmpfile.read(chunk_size),
-                                        semaphore,
-                                    )
-                                )
-                            )
-
-                        return dict(await asyncio.gather(*tasks))
-
-                # Upload each chunk of the pickled report.
-                #
-                # The coroutine is executed in its own thread/event loop to manage the
-                # case, particularly in a notebook, when another asyncio event loop is
-                # already running in the main thread and can't be addressed by
-                # ``asyncio.run``.
-                #
-                # https://docs.python.org/3.13/library/asyncio-runner.html#asyncio.run
-                with ThreadPoolExecutor() as pool:
-                    coroutine = upload(urls, tmpfile, chunk_size)
-                    future = pool.submit(partial(asyncio.run, coroutine))
-                    etags = future.result()
+                        raise
 
                 # Acknowledgement of sending.
                 with AuthenticatedClient(raises=True) as client:
