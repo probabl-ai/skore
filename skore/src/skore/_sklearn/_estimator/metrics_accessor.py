@@ -1054,9 +1054,15 @@ class _MetricsAccessor(
         return cast(float, result)
 
     def check_roc_auc_possible(self):
-        if self._parent._y_train is None:
+        # roc_auc can also be discovered if training or testing data available
+        y = (
+            self._parent._y_train
+            if self._parent._y_train is not None
+            else self._parent.y_test
+        )
+        if y is None:
             raise ValueError("Cannot compute target type: y_train is not set.")
-        target_type = type_of_target(self._parent._y_train)
+        target_type = type_of_target(y)
         is_binary = target_type == "binary"
         has_proba = hasattr(self._parent._estimator, "predict_proba")
         return is_binary or has_proba
