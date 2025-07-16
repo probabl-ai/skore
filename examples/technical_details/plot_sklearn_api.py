@@ -515,12 +515,14 @@ ts_model_report = EstimatorReport(ts_model, pos_label=1, **split_data)
 ts_model_report.metrics.summarize().frame()
 
 # %%
-# When computing the distance matrix in the nearest neighbor algorithm, the Euclidean
-# distance is often used by default.
-# However, the DTW distance is often better suited for time series data as it is more
-# robust to time shifts.
-# The DTW distance is specific to time series data and is not implemented in
-# scikit-learn but in tslearn.
+# .. note::
+#
+#   When computing the distance matrix in the nearest neighbor algorithm, the Euclidean
+#   distance is often used by default.
+#   However, the DTW distance is often better suited for time series data as it is more
+#   robust to time shifts.
+#   The DTW distance is specific to time series data and is not implemented in
+#   scikit-learn but in tslearn.
 
 # %%
 # aeon
