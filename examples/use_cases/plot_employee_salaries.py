@@ -15,7 +15,6 @@ storing the results for further analysis.
 # parallelism.
 import os
 
-os.environ["POLARS_ALLOW_FORKING_THREAD"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 # %%
