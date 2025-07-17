@@ -55,6 +55,7 @@ def _truncate_top_k_categories(
     if col is None or sbd.is_numeric(col):
         return col
 
+    col = col.copy()
     _, counter = top_k_value_counts(col, k=k)
     values, _ = zip(*counter, strict=False)
     # we don't want to replace NaN with 'other'
