@@ -1,6 +1,7 @@
 from io import BytesIO
 from json import loads
 from math import ceil
+from operator import itemgetter
 from types import SimpleNamespace
 from urllib.parse import urljoin
 
@@ -67,8 +68,11 @@ def test_dumps(regression):
         hasher = Blake3(max_threads=(1 if size < 1e6 else Blake3.AUTO))
         checksum = f"blake3-{bytes_to_b64_str(hasher.update(pickle).digest())}"
 
-    with dumps(regression) as (tmpfile, checksum_to_compare, size_to_compare):
-        assert tmpfile.read() == pickle
+    with dumps(regression) as (filename, checksum_to_compare, size_to_compare):
+        with open(filename, "rb") as file:
+            pickle_to_compare = file.read()
+
+        assert pickle_to_compare == pickle
         assert checksum_to_compare == checksum
         assert size_to_compare == size
 
@@ -96,8 +100,8 @@ class TestProject:
             Project("<tenant>", "<name>").put("<key>", "<value>")
 
     def test_upload_in_put(self, respx_mock, regression):
-        with dumps(regression) as (tmpfile, checksum, _):
-            pickle = tmpfile.read()
+        with dumps(regression) as (filename, checksum, _), open(filename, "rb") as file:
+            pickle = file.read()
             chunk_size = ceil(len(pickle) / 2)
 
         respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
@@ -134,10 +138,16 @@ class TestProject:
                 "content_type": "estimator-report-pickle",
             }
         ]
-        assert requests[1].url == "http://chunk2.com/"
-        assert requests[1].content == pickle[chunk_size:]
-        assert requests[2].url == "http://chunk1.com/"
-        assert requests[2].content == pickle[:chunk_size]
+        assert sorted(
+            (
+                (str(requests[1].url), requests[1].content),
+                (str(requests[2].url), requests[2].content),
+            ),
+            key=itemgetter(0),
+        ) == [
+            ("http://chunk1.com/", pickle[:chunk_size]),
+            ("http://chunk2.com/", pickle[chunk_size:]),
+        ]
         assert requests[3].url.path == "/projects/<tenant>/<name>/artefacts/complete"
         assert loads(requests[3].content.decode()) == [
             {
