@@ -1,8 +1,10 @@
+import numpy as np
 import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
 from sklearn.model_selection import train_test_split
 from skore import Display, EstimatorReport
+from skore._sklearn._plot.data.table_report import _truncate_top_k_categories
 from skrub import tabular_learner
 from skrub.datasets import fetch_employee_salaries
 
@@ -24,6 +26,45 @@ def estimator_report():
         y_train=y_train,
         y_test=y_test,
     )
+
+
+@pytest.mark.parametrize("col", [None, pd.Series(range(10))])
+def test_truncate_top_k_categories_return_as_is(col):
+    """Check the behaviour of `_truncate_top_k_categories` when `col` is None or
+    numeric where no changes are made."""
+    assert _truncate_top_k_categories(col, k=3) is col
+
+
+@pytest.mark.parametrize("dtype", ["category", "object"])
+@pytest.mark.parametrize("other_label", ["other", "xxx"])
+def test_truncate_top_k_categories(dtype, other_label):
+    """Check the behaviour of `_truncate_top_k_categories` when `col` is a categorical
+    column."""
+    col = pd.Series(
+        ["a", "a", "b", "b", "b", "c", "c", "c", "c", "c", "d", "e", np.nan, np.nan],
+        dtype=dtype,
+    )
+    expected_col = pd.Series(
+        [
+            "a",
+            "a",
+            "b",
+            "b",
+            "b",
+            "c",
+            "c",
+            "c",
+            "c",
+            "c",
+            other_label,
+            other_label,
+            np.nan,
+            np.nan,
+        ],
+        dtype=dtype,
+    )
+    truncated_col = _truncate_top_k_categories(col, k=3, other_label=other_label)
+    pd.testing.assert_series_equal(truncated_col, expected_col)
 
 
 def test_table_report_display_constructor(estimator_report):

@@ -28,14 +28,17 @@ from skore._utils._repr_html import ReprHTMLMixin
 from skore.skrub._skrub_compat import sbd
 
 
-def _truncate_top_k(col: pd.Series, k: int, other_label: str = "other") -> pd.Series:
+def _truncate_top_k_categories(
+    col: pd.Series | None, k: int, other_label: str = "other"
+) -> pd.Series:
     """Truncate a column to the top k most frequent values.
 
-    Replaces the rest with a label defined by ``other_label``.
+    Replaces the rest with a label defined by ``other_label``. Note that if `col` is not
+    a categorical column, it is returned as is.
 
     Parameters
     ----------
-    col : pd.Series
+    col : pd.Series or None
         The column to truncate.
 
     k : int
@@ -54,15 +57,21 @@ def _truncate_top_k(col: pd.Series, k: int, other_label: str = "other") -> pd.Se
 
     _, counter = top_k_value_counts(col, k=k)
     values, _ = zip(*counter, strict=False)
-    other = sbd.make_column_like(col, [other_label] * sbd.shape(col)[0], name="c")
     # we don't want to replace NaN with 'other'
     keep = sbd.is_in(col, values) | sbd.is_null(col)
-    col = sbd.where(col, keep, other)
-    return sbd.make_column_like(
-        col,
-        [ellide_string(s, max_len=20) for s in sbd.to_list(col)],
-        name=sbd.name(col),
-    )
+    if isinstance(col.dtype, pd.CategoricalDtype):
+        col = col.cat.add_categories(other_label)
+        col[~keep] = other_label
+        col = col.cat.remove_unused_categories()
+        col = col.cat.rename_categories(
+            {v: ellide_string(v, max_len=20) for v in values if isinstance(v, str)}
+        )
+    else:
+        col[~keep] = other_label
+        col = col.apply(
+            lambda x: ellide_string(x, max_len=20) if isinstance(x, str) else x
+        )
+    return col
 
 
 def _compute_contingency_table(
@@ -464,9 +473,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
 
         despine_params = dict(top=True, right=True, trim=True, offset=10)
         is_x_num, is_y_num = sbd.is_numeric(x), sbd.is_numeric(y)
-
-        if (hue is not None) and (not sbd.is_numeric(hue)):
-            hue = _truncate_top_k(hue, k)
+        hue = _truncate_top_k_categories(hue, k)
 
         if is_x_num and is_y_num:
             scatterplot_kwargs_validated = _validate_style_kwargs(
@@ -506,9 +513,9 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             )
 
             if is_x_num:
-                y = _truncate_top_k(y, k)
+                y = _truncate_top_k_categories(y, k)
             else:
-                x = _truncate_top_k(x, k)
+                x = _truncate_top_k_categories(x, k)
 
             sns.boxplot(x=x, y=y, ax=self.ax_, **boxplot_kwargs_validated)
             sns.stripplot(x=x, y=y, hue=hue, ax=self.ax_, **stripplot_kwargs_validated)
