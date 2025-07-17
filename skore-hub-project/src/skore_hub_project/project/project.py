@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 import blake3.blake3 as Blake3
 import joblib
+from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
 from ..client.api import Client
 from ..client.client import AuthenticatedClient, HTTPStatusError
@@ -22,7 +23,7 @@ from ..item.item import bytes_to_b64_str
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from typing import IO, TypedDict
+    from typing import TypedDict
 
     from skore import EstimatorReport
     from skore._sklearn._base import _BaseReport
@@ -43,14 +44,14 @@ if TYPE_CHECKING:
 
 
 @contextmanager
-def dumps(report: _BaseReport) -> Generator[tuple[IO[bytes], str, int]]:
+def dumps(report: _BaseReport) -> Generator[tuple[str, str, int]]:
     """
     Dump a ``report`` using ``joblib`` in a temporary file.
 
     Returns
     -------
-    IO[bytes]
-        The temporary file containing the pickled report.
+    str
+        The temporary filename containing the pickled report.
     str
         The checksum of the pickled report, based on BLAKE3.
     int
@@ -61,29 +62,38 @@ def dumps(report: _BaseReport) -> Generator[tuple[IO[bytes], str, int]]:
     The report is pickled without its cache, to avoid salting the checksum.
     The report is pickled on disk to reduce RAM footprint.
     """
-    cache = report._cache
-    report._cache = {}
+    with NamedTemporaryFile(mode="w+b", delete=False) as file:
+        filename = file.name
 
-    with NamedTemporaryFile(mode="w+b") as tmpfile:
         try:
-            joblib.dump(report, tmpfile)
+            cache = report._cache
+            report._cache = {}
+
+            try:
+                joblib.dump(report, file)
+            finally:
+                report._cache = cache
+
+            size = file.tell()
 
             # "First do `f.flush()`, and then do `os.fsync(f.fileno())`, to ensure that
             # all internal buffers associated with f are written to disk."
             #
             # https://docs.python.org/3.13/library/os.html#os.fsync
-            tmpfile.flush()
-            os.fsync(tmpfile.fileno())
+            file.flush()
+            os.fsync(file.fileno())
+            file.close()
+
+            # Define if hasher must be on one or more threads: "Note that this can be
+            # slower for inputs shorter than ~1 MB"
+            #
+            # https://github.com/oconnor663/blake3-py
+            hasher = Blake3(max_threads=(1 if size < 1e6 else Blake3.AUTO))
+            checksum = hasher.update_mmap(filename).digest()
+
+            yield filename, f"blake3-{bytes_to_b64_str(checksum)}", size
         finally:
-            report._cache = cache
-
-        size = tmpfile.tell()
-        hasher = Blake3(max_threads=(1 if size < 1e6 else Blake3.AUTO))
-        checksum = hasher.update_mmap(tmpfile.name).digest()
-
-        tmpfile.seek(0)
-
-        yield tmpfile, f"blake3-{bytes_to_b64_str(checksum)}", size
+            os.remove(filename)
 
 
 class Project:
@@ -169,6 +179,7 @@ class Project:
         *,
         chunk_size: int = int(1e7),
         max_workers: int = 3,
+        disable_progress_bar: bool = False,
     ):
         """
         Put a key-report pair to the hub project.
@@ -186,6 +197,8 @@ class Project:
             The maximum size of chunks to upload in bytes, default ~10mb.
         max_workers : int, optional
             The maximum number of chunks uploaded in concurrence, default 3.
+        disable_progress_bar : bool, optional
+            Disable the progress bar that is displayed during upload, default False.
 
         Raises
         ------
@@ -203,7 +216,7 @@ class Project:
             )
 
         # Pickle report in a tmpfile to avoid RAM overhead.
-        with dumps(report) as (tmpfile, checksum, size):
+        with dumps(report) as (filename, checksum, size):
             # Ask for upload url if not already uploaded.
             with AuthenticatedClient(raises=True) as client:
                 response = client.post(
@@ -221,35 +234,61 @@ class Project:
 
             if urls:
                 etags = {}
+                progress = Progress(
+                    TextColumn("[bold cyan blink]Uploading..."),
+                    BarColumn(
+                        complete_style="dark_orange",
+                        finished_style="dark_orange",
+                        pulse_style="orange1",
+                    ),
+                    TextColumn("[orange1]{task.percentage:>3.0f}%"),
+                    TimeElapsedColumn(),
+                    transient=True,
+                    disable=disable_progress_bar,
+                )
 
-                # Upload each chunk of the pickled report.
-                with Client() as client, ThreadPoolExecutor(max_workers) as pool:
-                    future_to_chunk_id = {}
+                def put(client, url, filename, offset, size):
+                    with open(filename, "rb") as file:
+                        file.seek(offset)
 
-                    for url in urls:
-                        chunk_id = url["chunk_id"] or 1
-
-                        tmpfile.seek((int(chunk_id) - 1) * chunk_size)
-                        future = pool.submit(
-                            client.put,
-                            url=url["upload_url"],
-                            content=tmpfile.read(chunk_size),
+                        response = client.put(
+                            url=url,
+                            content=file.read(size),
                             headers={"Content-Type": "application/octet-stream"},
                             timeout=None,
                         )
 
-                        future_to_chunk_id[future] = chunk_id
+                        return response.headers["etag"]
+
+                # Upload each chunk of the pickled report.
+                with Client() as client, ThreadPoolExecutor(max_workers) as pool:
+                    tasks = {}
+
+                    for url in urls:
+                        chunk_id = url["chunk_id"] or 1
+                        task = pool.submit(
+                            put,
+                            client=client,
+                            url=url["upload_url"],
+                            filename=filename,
+                            offset=((int(chunk_id) - 1) * chunk_size),
+                            size=chunk_size,
+                        )
+
+                        tasks[task] = chunk_id
 
                     try:
-                        for future in as_completed(future_to_chunk_id):
-                            response = future.result()
-                            etag = response.headers["etag"]
-                            chunk_id = future_to_chunk_id[future]
-
-                            etags[chunk_id] = etag
+                        with progress:
+                            etags = {
+                                tasks[task]: task.result()
+                                for task in progress.track(
+                                    as_completed(tasks),
+                                    total=len(tasks),
+                                )
+                            }
                     except BaseException:
-                        for future in future_to_chunk_id:
-                            future.cancel()
+                        for task in tasks:
+                            task.cancel()
 
                         raise
 
