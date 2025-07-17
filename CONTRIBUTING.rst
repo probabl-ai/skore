@@ -262,6 +262,7 @@ The examples are stored in the `examples` folder:
 Guidelines for creating effective examples:
 
 1. **Types of examples**:
+
    - **Doctests**: Use these in API documentation for demonstrating simple usage patterns.
    - **User guide examples**: Create comprehensive examples that demonstrate functionality in real-world contexts.
 
@@ -270,6 +271,7 @@ Guidelines for creating effective examples:
 3. **Example content**: Focus on demonstrating the core concept rather than exhaustively listing all possible arguments. Show the global idea of how to use the feature effectively.
 
 4. **Dataset selection**:
+
    - Use meaningful, realistic datasets (not synthetic data with artificially high scores)
    - Ensure examples execute efficiently (under a few minutes)
    - Prefer built-in or easily downloadable datasets
