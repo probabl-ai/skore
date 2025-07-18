@@ -141,7 +141,8 @@ class Project:
 
     See Also
     --------
-    Metadata : DataFrame designed to investigate persisted reports' metadata/metrics.
+    :class:`~skore.project.summary.Summary` : DataFrame designed to investigate
+    persisted reports' metadata/metrics.
     """
 
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
