@@ -262,7 +262,7 @@ class Project:
 
                 # Upload each chunk of the pickled report.
                 with Client() as client, ThreadPoolExecutor(max_workers) as pool:
-                    tasks = {}
+                    task_to_chunk_id = {}
 
                     for url in urls:
                         chunk_id = url["chunk_id"] or 1
@@ -271,23 +271,25 @@ class Project:
                             client=client,
                             url=url["upload_url"],
                             filename=filename,
-                            offset=((int(chunk_id) - 1) * chunk_size),
+                            offset=((chunk_id - 1) * chunk_size),
                             size=chunk_size,
                         )
 
-                        tasks[task] = chunk_id
+                        task_to_chunk_id[task] = chunk_id
 
                     try:
                         with progress:
-                            etags = {
-                                tasks[task]: task.result()
-                                for task in progress.track(
-                                    as_completed(tasks),
-                                    total=len(tasks),
+                            etags = dict(
+                                sorted(
+                                    (task_to_chunk_id[task], task.result())
+                                    for task in progress.track(
+                                        as_completed(task_to_chunk_id),
+                                        total=len(task_to_chunk_id),
+                                    )
                                 )
-                            }
+                            )
                     except BaseException:
-                        for task in tasks:
+                        for task in task_to_chunk_id:
                             task.cancel()
 
                         raise
