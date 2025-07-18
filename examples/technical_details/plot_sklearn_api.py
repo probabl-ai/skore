@@ -73,7 +73,7 @@ print(f"{X.shape = }")
 # %%
 from skore import train_test_split
 
-split_data = train_test_split(X, y, random_state=42, as_dict=True)
+split_data = train_test_split(X, y, shuffle=True, random_state=42, as_dict=True)
 
 # %%
 # Gradient-boosted decision trees models
