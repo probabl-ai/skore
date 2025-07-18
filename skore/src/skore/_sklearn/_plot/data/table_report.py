@@ -91,6 +91,7 @@ def _compute_contingency_table(
 
     y : pd.Series
         The second column to aggregate.
+
     hue : pd.Series | None
         The column to aggregate by.
 
@@ -102,6 +103,9 @@ def _compute_contingency_table(
     pd.DataFrame
         The contingency table.
     """
+    if sbd.name(x) is None or sbd.name(y) is None:
+        raise ValueError("The series x and y must have a name.")
+
     if hue is None:
         contingency_table = pd.crosstab(index=y, columns=x)
     else:
@@ -113,9 +117,14 @@ def _compute_contingency_table(
     top_x_values = sorted(set(pair[0] for pair in top_pairs))
     top_y_values = sorted(set(pair[1] for pair in top_pairs))
 
-    return contingency_table.reindex(
-        index=top_y_values, columns=top_x_values, fill_value=0
-    )
+    # As stated by a pandas warning, we call explicitly `infer_objects` to downcast
+    # the contingency table and silence the warning using the context manager.
+    with pd.option_context("future.no_silent_downcasting", True):
+        return (
+            contingency_table.fillna(0)
+            .infer_objects(copy=False)
+            .reindex(index=top_y_values, columns=top_x_values, fill_value=0)
+        )
 
 
 def _resize_categorical_axis(
@@ -124,6 +133,7 @@ def _resize_categorical_axis(
     ax: Axes,
     n_categories: int,
     is_x_axis: bool,
+    size_per_category: float = 0.3,
 ) -> None:
     """Resize the axis along which categories are plotted.
 
@@ -137,14 +147,18 @@ def _resize_categorical_axis(
 
     is_x_axis : bool
         Whether the axis is the x-axis.
+
+    size_per_category : float, default=0.3
+        The size of the category in the axis. When having annotations, the size needs
+        to be tweaked based on the formatting of the annotations.
     """
     if is_x_axis:
         ax.tick_params(axis="x", length=0)
         target_height = figure.get_size_inches()[1]
-        target_width = n_categories * 0.3
+        target_width = n_categories * size_per_category
     else:
         ax.tick_params(axis="y", length=0)
-        target_height = n_categories * 0.3
+        target_height = n_categories * size_per_category
         target_width = figure.get_size_inches()[0]
     _adjust_fig_size(figure, ax, target_width, target_height)
 
@@ -549,7 +563,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 ellide_string(s) for s in contingency_table.columns
             ]
 
-            if contingency_table.max(axis=None) < 100_000:  # noqa: SIM108
+            if max_value := contingency_table.max(axis=None) < 100_000:  # noqa: SIM108
                 # avoid scientific notation for small numbers
                 annotation_format = (
                     ".0f"
@@ -559,9 +573,11 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                     )
                     else ".2f"
                 )
+                size_per_category = len(str(max_value)) * 0.15
             else:
                 # scientific notation for bigger numbers
                 annotation_format = ".2g"
+                size_per_category = 0.6
 
             cbar_kwargs = (
                 {"label": f"Mean {sbd.name(hue)}"}
@@ -574,7 +590,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                     "xticklabels": True,
                     "yticklabels": True,
                     "robust": True,
-                    "annot": contingency_table.shape[1] < 10,
+                    "annot": True,
                     "fmt": annotation_format,
                     "cbar_kws": cbar_kwargs,
                 },
@@ -597,6 +613,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                     ax=self.ax_,
                     n_categories=sbd.n_unique(x_or_y),
                     is_x_axis=is_x_axis,
+                    size_per_category=size_per_category,
                 )
 
         sns.despine(self.figure_, **despine_params)

@@ -4,7 +4,10 @@ import pytest
 from matplotlib.collections import QuadMesh
 from sklearn.model_selection import train_test_split
 from skore import Display, EstimatorReport
-from skore._sklearn._plot.data.table_report import _truncate_top_k_categories
+from skore._sklearn._plot.data.table_report import (
+    _compute_contingency_table,
+    _truncate_top_k_categories,
+)
 from skrub import tabular_learner
 from skrub.datasets import fetch_employee_salaries
 
@@ -65,6 +68,49 @@ def test_truncate_top_k_categories(dtype, other_label):
     )
     truncated_col = _truncate_top_k_categories(col, k=3, other_label=other_label)
     pd.testing.assert_series_equal(truncated_col, expected_col)
+
+
+def test_compute_contingency_table_error():
+    """Check that we raise an error when the series x and y don't have a name."""
+    series = pd.Series(["a", "a", "b", "b", "b", "c", "c", "c", "c", "c", "d", "e"])
+    err_msg = "The series x and y must have a name."
+    with pytest.raises(ValueError, match=err_msg):
+        _compute_contingency_table(x=series, y=series, hue=None, k=1)
+
+
+@pytest.mark.parametrize("dtype", ["category", "object"])
+def test_compute_contingency_table(dtype):
+    """Check the behaviour of the `_compute_contingency_table` function."""
+    x = pd.Series(
+        ["a", "a", "b", "b", "b", "c", "c", "c", "c", "c", "d", "e"],
+        name="x",
+        dtype=dtype,
+    )
+    y = pd.Series(
+        ["a", "a", "b", "b", "b", "c", "c", "c", "c", "c", "d", "e"],
+        name="y",
+        dtype=dtype,
+    )
+    contingency_table = _compute_contingency_table(x, y, hue=None, k=100)
+    assert contingency_table.sum().sum() == len(x)
+    assert sorted(contingency_table.columns.tolist()) == sorted(x.unique().tolist())
+    assert sorted(contingency_table.index.tolist()) == sorted(y.unique().tolist())
+
+    hue = pd.Series(np.ones_like(x) * 2.0)
+    contingency_table = _compute_contingency_table(x, y, hue, k=100)
+    assert contingency_table.sum().sum() == pytest.approx(x.unique().size * 2)
+    assert sorted(contingency_table.columns.tolist()) == sorted(x.unique().tolist())
+    assert sorted(contingency_table.index.tolist()) == sorted(y.unique().tolist())
+
+    contingency_table = _compute_contingency_table(x, y, hue=None, k=2)
+    assert contingency_table.index.tolist() == ["b", "c"]
+    assert contingency_table.columns.tolist() == ["b", "c"]
+    assert contingency_table.sum().sum() == 8
+
+    contingency_table = _compute_contingency_table(x, y, hue=hue, k=2)
+    assert contingency_table.index.tolist() == ["b", "c"]
+    assert contingency_table.columns.tolist() == ["b", "c"]
+    assert contingency_table.sum().sum() == 4
 
 
 def test_table_report_display_constructor(estimator_report):
