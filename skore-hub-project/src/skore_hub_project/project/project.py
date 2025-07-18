@@ -2,31 +2,23 @@
 
 from __future__ import annotations
 
-import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from contextlib import contextmanager
 from functools import cached_property
-from math import ceil
 from operator import itemgetter
-from tempfile import NamedTemporaryFile, TemporaryFile
+from tempfile import TemporaryFile
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
-import blake3.blake3 as Blake3
 import joblib
-from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
 from ..client.api import Client
 from ..client.client import AuthenticatedClient, HTTPStatusError
 from ..item import skore_estimator_report_item
-from ..item.item import bytes_to_b64_str
+from .artefact import Artefact
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
     from typing import TypedDict
 
     from skore import EstimatorReport
-    from skore._sklearn._base import _BaseReport
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -41,59 +33,6 @@ if TYPE_CHECKING:
         roc_auc: float | None
         fit_time: float
         predict_time: float
-
-
-@contextmanager
-def dumps(report: _BaseReport) -> Generator[tuple[str, str, int]]:
-    """
-    Dump a ``report`` using ``joblib`` in a temporary file.
-
-    Returns
-    -------
-    str
-        The temporary filename containing the pickled report.
-    str
-        The checksum of the pickled report, based on BLAKE3.
-    int
-        The size of the pickled report.
-
-    Notes
-    -----
-    The report is pickled without its cache, to avoid salting the checksum.
-    The report is pickled on disk to reduce RAM footprint.
-    """
-    with NamedTemporaryFile(mode="w+b", delete=False) as file:
-        filename = file.name
-
-        try:
-            cache = report._cache
-            report._cache = {}
-
-            try:
-                joblib.dump(report, file)
-            finally:
-                report._cache = cache
-
-            size = file.tell()
-
-            # "First do `f.flush()`, and then do `os.fsync(f.fileno())`, to ensure that
-            # all internal buffers associated with f are written to disk."
-            #
-            # https://docs.python.org/3.13/library/os.html#os.fsync
-            file.flush()
-            os.fsync(file.fileno())
-            file.close()
-
-            # Define if hasher must be on one or more threads: "Note that this can be
-            # slower for inputs shorter than ~1 MB"
-            #
-            # https://github.com/oconnor663/blake3-py
-            hasher = Blake3(max_threads=(1 if size < 1e6 else Blake3.AUTO))
-            checksum = hasher.update_mmap(filename).digest()
-
-            yield filename, f"blake3-{bytes_to_b64_str(checksum)}", size
-        finally:
-            os.remove(filename)
 
 
 class Project:
@@ -215,91 +154,18 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
-        # Pickle report in a tmpfile to avoid RAM overhead.
-        with dumps(report) as (filename, checksum, size):
-            # Ask for upload url if not already uploaded.
-            with AuthenticatedClient(raises=True) as client:
-                response = client.post(
-                    url=f"projects/{self.tenant}/{self.name}/artefacts",
-                    json=[
-                        {
-                            "checksum": checksum,
-                            "content_type": "estimator-report-pickle",
-                            "chunk_number": ceil(size / chunk_size),
-                        }
-                    ],
-                )
+        # Send report to artefacts storage.
+        #
+        # The report is pickled without its cache, to avoid salting the checksum.
+        # The report is pickled on disk to reduce RAM footprint.
+        cache = report._cache
+        report._cache = {}
 
-            urls = response.json()
-
-            if urls:
-                etags = {}
-                progress = Progress(
-                    TextColumn("[bold cyan blink]Uploading..."),
-                    BarColumn(
-                        complete_style="dark_orange",
-                        finished_style="dark_orange",
-                        pulse_style="orange1",
-                    ),
-                    TextColumn("[orange1]{task.percentage:>3.0f}%"),
-                    TimeElapsedColumn(),
-                    transient=True,
-                    disable=disable_progress_bar,
-                )
-
-                def put(client, url, filename, offset, size):
-                    with open(filename, "rb") as file:
-                        file.seek(offset)
-
-                        response = client.put(
-                            url=url,
-                            content=file.read(size),
-                            headers={"Content-Type": "application/octet-stream"},
-                            timeout=None,
-                        )
-
-                        return response.headers["etag"]
-
-                # Upload each chunk of the pickled report.
-                with Client() as client, ThreadPoolExecutor(max_workers) as pool:
-                    task_to_chunk_id = {}
-
-                    for url in urls:
-                        chunk_id = url["chunk_id"] or 1
-                        task = pool.submit(
-                            put,
-                            client=client,
-                            url=url["upload_url"],
-                            filename=filename,
-                            offset=((chunk_id - 1) * chunk_size),
-                            size=chunk_size,
-                        )
-
-                        task_to_chunk_id[task] = chunk_id
-
-                    try:
-                        with progress:
-                            etags = dict(
-                                sorted(
-                                    (task_to_chunk_id[task], task.result())
-                                    for task in progress.track(
-                                        as_completed(task_to_chunk_id),
-                                        total=len(task_to_chunk_id),
-                                    )
-                                )
-                            )
-                    except BaseException:
-                        for task in task_to_chunk_id:
-                            task.cancel()
-
-                        raise
-
-                # Acknowledgement of sending.
-                with AuthenticatedClient(raises=True) as client:
-                    client.post(
-                        url=f"projects/{self.tenant}/{self.name}/artefacts/complete",
-                        json=[{"checksum": checksum, "etags": etags}],
-                    )
+        try:
+            with Artefact(report) as artefact:
+                artefact.upload(self)
+        finally:
+            report._cache = cache
 
         # Send metadata.
         with AuthenticatedClient(raises=True) as client:
@@ -312,7 +178,7 @@ class Project:
                             "related_items",
                             list(skore_estimator_report_item.Representations(report)),
                         ),
-                        ("parameters", {"checksum": checksum}),
+                        ("parameters", {"checksum": artefact.checksum}),
                         ("key", key),
                         ("run_id", self.run_id),
                     )
