@@ -653,3 +653,39 @@ cv_report.metrics.summarize().frame()
 
 # %%
 cv_report.metrics.summarize(aggregate=None).frame()
+
+# %%
+# Conclusion
+# ==========
+#
+# This example demonstrates skore's remarkable flexibility and compatibility with a wide
+# range of machine learning frameworks and models.
+# The key takeaway is that any estimator that follows the scikit-learn API can be
+# seamlessly integrated with skore.
+#
+# We have shown that skore works with:
+#
+# - Traditional ML: Gradient boosting libraries (XGBoost, LightGBM, CatBoost)
+# - Deep learning: Neural networks via Keras and PyTorch (through skorch)
+# - Modern tabular models: RealMLP, TabM, and foundation models like TabPFN and TabICL
+# - Time series: Specialized libraries like tslearn and aeon
+# - Custom models: Any estimator implementing the scikit-learn interface
+#
+# This universality makes skore a powerful tool for model evaluation and comparison
+# across different ML paradigms, enabling practitioners to use consistent reporting
+# and visualization tools.
+#
+# .. seealso::
+#
+#   For a practical example of using language models within scikit-learn pipelines,
+#   see :ref:`example_use_case_employee_salaries` which demonstrates how to use
+#   skrub's :class:`~skrub.TextEncoder` (a language model-based encoder) in a
+#   scikit-learn pipeline for feature engineering.
+#
+# .. seealso::
+#
+#   For an example of wrapping Large Language Models (LLMs) to be compatible with
+#   scikit-learn APIs, see the tutorial on `Quantifying LLMs Uncertainty with Conformal
+#   Predictions <https://medium.com/capgemini-invent-lab/quantifying-llms-uncertainty-with-conformal-predictions-567870e63e00>`_.
+#   The article demonstrates how to wrap models like Mistral-7B-Instruct in a
+#   scikit-learn-compatible interface.
