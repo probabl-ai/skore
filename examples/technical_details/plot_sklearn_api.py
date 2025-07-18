@@ -620,7 +620,7 @@ X["weather"] = (
 
 # %%
 # We will use time-based cross-validation strategy to evaluate our model with a gap of
-# 48 hours between train and test and 1,000 test datapoints which should be enough:
+# 48 hours between train and test and 1,000 test datapoints:
 
 # %%
 from sklearn.model_selection import TimeSeriesSplit
