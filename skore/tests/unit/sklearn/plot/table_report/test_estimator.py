@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from skore import Display, EstimatorReport
 from skore._sklearn._plot.data.table_report import (
     _compute_contingency_table,
+    _resize_categorical_axis,
     _truncate_top_k_categories,
 )
 from skrub import tabular_learner
@@ -111,6 +112,27 @@ def test_compute_contingency_table(dtype):
     assert contingency_table.index.tolist() == ["b", "c"]
     assert contingency_table.columns.tolist() == ["b", "c"]
     assert contingency_table.sum().sum() == 4
+
+
+@pytest.mark.parametrize("is_x_axis", [True, False])
+def test_resize_categorical_axis(pyplot, is_x_axis):
+    """Check the behaviour of the `_resize_categorical_axis` function."""
+    figure, ax = pyplot.subplots(figsize=(10, 10))
+    _resize_categorical_axis(
+        figure=figure,
+        ax=ax,
+        n_categories=1,
+        is_x_axis=is_x_axis,
+        size_per_category=0.5,
+    )
+
+    fig_width, fig_height = figure.get_size_inches()
+    if is_x_axis:
+        assert 0.5 < fig_width < 1.0
+        assert 10.0 < fig_height < 13.0
+    else:
+        assert 0.5 < fig_height < 1.0
+        assert 10.0 < fig_width < 13.0
 
 
 def test_table_report_display_constructor(estimator_report):
