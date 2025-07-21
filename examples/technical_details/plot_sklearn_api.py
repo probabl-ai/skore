@@ -15,30 +15,28 @@ been fitted.
 
 .. note::
 
-  When computing the ROC AUC or ROC curve
-  for a classification task, the estimator must have a ``predict_proba`` method.
+  When computing the ROC AUC or ROC curve for a classification task, the estimator must
+  have a ``predict_proba`` method.
 
 In this example, we showcase a gradient boosting model
 (`XGBoost <https://github.com/dmlc/xgboost>`_) and a custom estimator.
 
-.. note::
+Note that this example is not exhaustive; many other scikit-learn compatible models can
+be used with skore:
 
-    This example is not exhaustive; many other scikit-learn compatible models can be
-    used with skore:
+-   More gradient boosting libraries like
+    `LightGBM <https://github.com/microsoft/LightGBM>`_, and
+    `CatBoost <https://github.com/catboost/catboost>`_,
 
-    -   More gradient boosting libraries like
-        `LightGBM <https://github.com/microsoft/LightGBM>`_, and
-        `CatBoost <https://github.com/catboost/catboost>`_,
+-   Deep learning frameworks such as `Keras <https://github.com/keras-team/keras>`_
+    and `skorch <https://github.com/skorch-dev/skorch>`_ (a wrapper for
+    `PyTorch <https://github.com/pytorch/pytorch>`_).
 
-    -   Deep learning frameworks such as `Keras <https://github.com/keras-team/keras>`_
-        and `skorch <https://github.com/skorch-dev/skorch>`_ (a wrapper for
-        `PyTorch <https://github.com/pytorch/pytorch>`_).
+-   Tabular foundation models such as
+    `TabICL <https://github.com/soda-inria/tabicl>`_ and
+    `TabPFN <https://github.com/PriorLabs/TabPFN>`_,
 
-    -   Tabular foundation models such as
-        `TabICL <https://github.com/soda-inria/tabicl>`_ and
-        `TabPFN <https://github.com/PriorLabs/TabPFN>`_,
-
-    -   etc.
+-   etc.
 
 """
 
@@ -52,14 +50,7 @@ In this example, we showcase a gradient boosting model
 # %%
 from sklearn.datasets import make_classification
 
-X, y = make_classification(
-    n_samples=1_000,
-    n_features=5,
-    n_classes=2,
-    class_sep=0.3,
-    n_clusters_per_class=1,
-    random_state=42,
-)
+X, y = make_classification(n_samples=1_000, random_state=42)
 print(f"{X.shape = }")
 
 # %%
@@ -68,7 +59,7 @@ print(f"{X.shape = }")
 # %%
 from skore import train_test_split
 
-split_data = train_test_split(X, y, shuffle=True, random_state=42, as_dict=True)
+split_data = train_test_split(X, y, random_state=42, as_dict=True)
 
 # %%
 # Gradient-boosted decision trees with XGBoost
@@ -137,7 +128,7 @@ class CustomClassifier(ClassifierMixin, BaseEstimator):
 # %%
 # .. note::
 #
-#   The estimator above does not have a `predict_proba` method, therefore 
+#   The estimator above does not have a `predict_proba` method, therefore
 #   we cannot display the ROC as above.
 
 # %%
