@@ -6,7 +6,7 @@ Using skore with scikit-learn compatible estimators
 =====================================================================================
 
 This example shows how to use skore with scikit-learn compatible estimators.
-For these models, skore provides a unified interface for reporting and evaluation.
+
 Any model that can be used with the scikit-learn API can be used with skore.
 Skore's :class:`~skore.EstimatorReport` can be used to report on any estimator
 that has a ``fit`` and ``predict`` method.
