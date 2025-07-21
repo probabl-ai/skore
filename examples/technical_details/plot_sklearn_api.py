@@ -172,8 +172,7 @@ catboost_report.metrics.summarize().frame()
 #
 # `Keras <https://github.com/keras-team/keras>`_ is a multi-backend deep learning
 # framework that enables us to work with JAX, TensorFlow, and PyTorch.
-# Since the https://github.com/keras-team/keras/pull/20599 pull request merged in
-# December 2024, scikit-learn wrappers are back in Keras, meaning that we can use Keras
+# Since Keras v3.8.0, scikit-learn wrappers are back, meaning that we can use Keras
 # models directly with skore.
 
 # %%
