@@ -590,8 +590,6 @@ rocket_report.metrics.summarize().frame()
 # time series forecasting.
 
 # %%
-# Let us take inspiration from the `Time-related feature engineering <https://scikit-learn.org/stable/auto_examples/applications/plot_cyclical_feature_engineering.html>`_ example of the scikit-learn documentation.
-#
 # We shall use the bike sharing demand dataset whose goal is to predict the hourly
 # demand:
 
@@ -602,9 +600,14 @@ bike_sharing = fetch_openml("Bike_Sharing_Demand", version=2, as_frame=True)
 df = bike_sharing.frame
 
 # %%
-# As explained in the scikit-learn example, we shall preprocess the data by rescaling
-# the target variable and replace the weather category ``heavy_rain`` by ``rain`` as
-# there are too few instances for ``heavy_rain``:
+# .. seealso::
+#
+#   A more advanced modelling of this dataset is performed in the
+#   `Time-related feature engineering <https://scikit-learn.org/stable/auto_examples/applications/plot_cyclical_feature_engineering.html>`_
+#   example of the scikit-learn documentation.
+
+# %%
+# We perform some preprocessing:
 
 # %%
 y = df["count"] / df["count"].max()
