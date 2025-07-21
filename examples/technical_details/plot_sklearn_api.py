@@ -152,7 +152,6 @@ custom_report.metrics.precision()
 # ==========
 #
 # This example demonstrates how skore can be used with scikit-learn compatible estimators.
-# Any estimator that follows the scikit-learn API can be integrated with skore for evaluation and reporting.
 # This allows practitioners to use consistent reporting and visualization tools across different estimators.
 #
 # .. seealso::
