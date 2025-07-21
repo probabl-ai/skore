@@ -10,7 +10,8 @@ scikit-learn compatible estimators: from traditional machine learning frameworks
 such as gradient boosting to cutting-edge deep learning frameworks and tabular
 foundation models.
 
-For all these kinds of models, skore provides a unified interface for consistent reporting, visualization, and comparison.
+For all these kinds of models, skore provides a unified interface for consistent
+reporting, visualization, and comparison.
 Basically, any model that can be used with the scikit-learn API can be used with skore.
 Indeed, skore's :class:`~skore.EstimatorReport` can be used to report on any estimator
 that has a ``fit`` and ``predict`` method.
