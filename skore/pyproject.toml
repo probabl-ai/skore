@@ -69,6 +69,7 @@ sphinx-base = [
   "sphinx-tabs",
   "sphinx_autosummary_accessors",
   "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
+  "tf-keras",  # required by skrub.TextEncoder
   "aeon",
   "skorch",
   "tabicl",
