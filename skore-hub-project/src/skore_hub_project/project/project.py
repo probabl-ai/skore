@@ -13,7 +13,7 @@ import joblib
 from ..client.api import Client
 from ..client.client import AuthenticatedClient, HTTPStatusError
 from ..item import skore_estimator_report_item
-from .artefact import Artefact
+from . import artefact
 
 if TYPE_CHECKING:
     from typing import TypedDict
@@ -162,8 +162,7 @@ class Project:
         report._cache = {}
 
         try:
-            with Artefact(report) as artefact:
-                artefact.upload(self)
+            checksum = artefact.upload(self, report, "estimator-report-pickle")
         finally:
             report._cache = cache
 
@@ -178,7 +177,7 @@ class Project:
                             "related_items",
                             list(skore_estimator_report_item.Representations(report)),
                         ),
-                        ("parameters", {"checksum": artefact.checksum}),
+                        ("parameters", {"checksum": checksum}),
                         ("key", key),
                         ("run_id", self.run_id),
                     )

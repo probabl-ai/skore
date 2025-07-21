@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from functools import cached_property
+from functools import cached_property, partial
 from math import ceil
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING
 
@@ -17,10 +18,22 @@ from ..item.item import bytes_to_b64_str
 if TYPE_CHECKING:
     ...
 
-from pathlib import Path
+
+Progress = partial(
+    Progress,
+    TextColumn("[bold cyan blink]Uploading..."),
+    BarColumn(
+        complete_style="dark_orange",
+        finished_style="dark_orange",
+        pulse_style="orange1",
+    ),
+    TextColumn("[orange1]{task.percentage:>3.0f}%"),
+    TimeElapsedColumn(),
+    transient=True,
+)
 
 
-class Artefact:
+class Serializer:
     def __init__(self, o):
         with self.filepath.open("wb") as file:
             joblib.dump(o, file)
@@ -47,59 +60,54 @@ class Artefact:
     def size(self):
         return self.filepath.stat().st_size
 
-    @cached_property
-    def progress(self):
-        return Progress(
-            TextColumn("[bold cyan blink]Uploading..."),
-            BarColumn(
-                complete_style="dark_orange",
-                finished_style="dark_orange",
-                pulse_style="orange1",
-            ),
-            TextColumn("[orange1]{task.percentage:>3.0f}%"),
-            TimeElapsedColumn(),
-            transient=True,
+
+def upload_chunk(
+    filepath: Path,
+    client: httpx.Client,
+    url: str,
+    offset: int,
+    length: int,
+) -> str:
+    with filepath.open("rb") as file:
+        file.seek(offset)
+
+        response = client.put(
+            url=url,
+            content=file.read(length),
+            headers={"Content-Type": "application/octet-stream"},
+            timeout=None,
         )
 
-    def __upload_chunk(self, client, url, offset, length) -> str:
-        with self.filepath.open("rb") as file:
-            file.seek(offset)
+        return response.headers["etag"]
 
-            response = client.put(
-                url=url,
-                content=file.read(length),
-                headers={"Content-Type": "application/octet-stream"},
-                timeout=None,
-            )
 
-            return response.headers["etag"]
+def upload(project: Project, o: Any, type: str, *, chunk_size: int = int(1e7)) -> str:
+    with (
+        Serializer(o) as serializer,
+        AuthenticatedClient(raises=True) as authenticated_client,
+        Client() as standard_client,
+        ThreadPoolExecutor() as pool,
+    ):
+        response = authenticated_client.post(
+            url=f"projects/{project.tenant}/{project.name}/artefacts",
+            json=[
+                {
+                    "checksum": serializer.checksum,
+                    "content_type": type,
+                    "chunk_number": ceil(serializer.size / chunk_size),
+                }
+            ],
+        )
 
-    def upload(self, project, *, chunk_size: int = int(1e7)):
-        # Ask for upload urls if not already uploaded.
-        with AuthenticatedClient(raises=True) as client:
-            response = client.post(
-                url=f"projects/{project.tenant}/{project.name}/artefacts",
-                json=[
-                    {
-                        "checksum": self.checksum,
-                        "content_type": "estimator-report-pickle",
-                        "chunk_number": ceil(self.size / chunk_size),
-                    }
-                ],
-            )
-
-        if not (urls := response.json()):
-            return
-
-        # Upload each chunk of the pickled report.
-        with Client() as client, ThreadPoolExecutor() as pool:
+        if urls := response.json():
             task_to_chunk_id = {}
 
             for url in urls:
                 chunk_id = url["chunk_id"] or 1
                 task = pool.submit(
-                    self.__upload_chunk,
-                    client=client,
+                    upload_chunk,
+                    filepath=serializer.filepath,
+                    client=standard_client,
                     url=url["upload_url"],
                     offset=((chunk_id - 1) * chunk_size),
                     length=chunk_size,
@@ -108,14 +116,16 @@ class Artefact:
                 task_to_chunk_id[task] = chunk_id
 
             try:
-                with self.progress:
+                with Progress() as progress:
+                    tasks = as_completed(task_to_chunk_id)
+                    total = len(task_to_chunk_id)
                     etags = dict(
                         sorted(
-                            (task_to_chunk_id[task], task.result())
-                            for task in self.progress.track(
-                                as_completed(task_to_chunk_id),
-                                total=len(task_to_chunk_id),
+                            (
+                                task_to_chunk_id[task],
+                                task.result(),
                             )
+                            for task in progress.track(tasks, total=total)
                         )
                     )
             except BaseException:
@@ -124,14 +134,14 @@ class Artefact:
 
                 raise
 
-        # Acknowledgement of upload.
-        with AuthenticatedClient(raises=True) as client:
-            client.post(
+            authenticated_client.post(
                 url=f"projects/{project.tenant}/{project.name}/artefacts/complete",
                 json=[
                     {
-                        "checksum": self.checksum,
+                        "checksum": serializer.checksum,
                         "etags": etags,
                     }
                 ],
             )
+
+    return serializer.checksum
