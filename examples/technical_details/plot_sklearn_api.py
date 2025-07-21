@@ -159,12 +159,11 @@ catboost_report.metrics.summarize().frame()
 # Deep learning with neural networks
 # ----------------------------------
 #
-# It is often said that scikit-learn is mainly for traditional machine learning.
-# However, if the neural network is an estimator compatible with the scikit-learn API,
-# such as Keras or PyTorch (through skorch), they are compatible with a scikit-learn
-# grid search for example.
-# Moreover, it means that we can use skore to report on it.
-# Hence, skore is not limited to traditional machine learning models.
+# While scikit-learn is known for traditional machine learning, its API extends far
+# beyond.
+# Neural networks compatible with the scikit-learn API, such as Keras or PyTorch
+# (through skorch), can be used with scikit-learn tools like grid search and,
+# importantly, with skore for evaluation.
 
 # %%
 # Keras
