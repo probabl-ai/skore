@@ -111,15 +111,7 @@ class Project:
 
             return run["id"]
 
-    def put(
-        self,
-        key: str,
-        report: EstimatorReport,
-        *,
-        chunk_size: int = int(1e7),
-        max_workers: int = 3,
-        disable_progress_bar: bool = False,
-    ):
+    def put(self, key: str, report: EstimatorReport, *, chunk_size: int = int(1e7)):
         """
         Put a key-report pair to the hub project.
 
@@ -134,10 +126,6 @@ class Project:
             The report to associate with ``key`` in the hub project.
         chunk_size : int, optional
             The maximum size of chunks to upload in bytes, default ~10mb.
-        max_workers : int, optional
-            The maximum number of chunks uploaded in concurrence, default 3.
-        disable_progress_bar : bool, optional
-            Disable the progress bar that is displayed during upload, default False.
 
         Raises
         ------
@@ -154,7 +142,7 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
-        # Send report to artefacts storage.
+        # Upload report to artefacts storage.
         #
         # The report is pickled without its cache, to avoid salting the checksum.
         # The report is pickled on disk to reduce RAM footprint.
@@ -162,7 +150,9 @@ class Project:
         report._cache = {}
 
         try:
-            checksum = artefact.upload(self, report, "estimator-report-pickle")
+            checksum = artefact.upload(
+                self, report, "estimator-report-pickle", chunk_size
+            )
         finally:
             report._cache = cache
 
