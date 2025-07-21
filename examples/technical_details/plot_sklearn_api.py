@@ -129,7 +129,7 @@ class CustomClassifier(ClassifierMixin, BaseEstimator):
 # .. note::
 #
 #   The estimator above does not have a `predict_proba` method, therefore
-#   we cannot display the ROC as above.
+#   we cannot display its ROC curve as done previously.
 
 # %%
 # We can now use this model with skore:
