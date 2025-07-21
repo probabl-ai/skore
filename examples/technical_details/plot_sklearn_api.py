@@ -15,7 +15,7 @@ been fitted.
 
 .. note::
 
-  When using an :class:`~skore.EstimatorReport` to compute the ROC AUC and ROC curve
+  When computing the ROC AUC or ROC curve
   for a classification task, the estimator must have a ``predict_proba`` method.
 
 In this example, we showcase a gradient boosting model
