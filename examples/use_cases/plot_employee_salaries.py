@@ -265,8 +265,5 @@ comparator.metrics.summarize(
 # Finally, we can even get a deeper understanding by analyzing each fold in the
 # :class:`~skore.CrossValidationReport`.
 # Here, we plot the actual-vs-predicted values for each fold.
-import matplotlib.pyplot as plt
 
 linear_model_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
-
-plt.tight_layout()
