@@ -14,6 +14,8 @@ For all these kinds of models, skore provides a unified interface for consistent
 Basically, any model that can be used with the scikit-learn API can be used with skore.
 Indeed, skore's :class:`~skore.EstimatorReport` can be used to report on any estimator
 that has a ``fit`` and ``predict`` method.
+In fact, skore only requires the ``predict`` method if the estimator has already been
+fitted.
 
 .. note::
 
