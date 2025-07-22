@@ -22,7 +22,10 @@ def skrub_data():
 @pytest.fixture
 def estimator_report():
     data = fetch_employee_salaries()
-    X_train, X_test, y_train, y_test = train_test_split(data.X, data.y, random_state=0)
+    X, y = data.X, data.y
+    X["gender"] = X["gender"].astype("category")
+    X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     return EstimatorReport(
         tabular_learner("regressor"),
         X_train=X_train,
@@ -35,7 +38,10 @@ def estimator_report():
 @pytest.fixture
 def display():
     data = fetch_employee_salaries()
-    X_train, X_test, y_train, y_test = train_test_split(data.X, data.y, random_state=0)
+    X, y = data.X, data.y
+    X["gender"] = X["gender"].astype("category")
+    X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     report = EstimatorReport(
         tabular_learner("regressor"),
         X_train=X_train,
