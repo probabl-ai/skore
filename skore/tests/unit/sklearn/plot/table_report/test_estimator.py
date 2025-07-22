@@ -342,12 +342,25 @@ def test_simple_plots_2d(pyplot, estimator_report):
     assert len(display.ax_.lines) == 147
     assert display.ax_.get_xticklabels()[-1].get_text() == "3.0"
 
+    # with categories on the x-axis, the tick labels are rotated
+    display.plot(x="department_name", y="current_annual_salary")
+    x_tick_labels = display.ax_.get_xticklabels()
+    assert all(label.get_rotation() == 45.0 for label in x_tick_labels)
+
     # heatmap
     display.plot(x="gender", y="division")
     assert len(display.ax_.get_yticklabels()) == 19
     assert display.ax_.get_ylabel() == "division"
     assert display.ax_.get_xlabel() == "gender"
     assert isinstance(display.ax_.collections[0], QuadMesh)
+    # check that with small numbers, we don't use scientific notation
+    annotations = [text.get_text() for text in display.ax_.texts]
+    assert not any("e+" in annotation for annotation in annotations)
+
+    # check that we use scientific notation when numbers are too large
+    display.plot(x="gender", y="department_name", hue="current_annual_salary")
+    annotations = [text.get_text() for text in display.ax_.texts]
+    assert any("e+" in annotation for annotation in annotations)
 
 
 def test_hue_plots_2d(pyplot, estimator_report):
