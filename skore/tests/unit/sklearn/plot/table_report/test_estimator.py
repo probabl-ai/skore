@@ -25,6 +25,9 @@ def estimator_report():
     X, y = data.X, data.y
     X["gender"] = X["gender"].astype("category")
     X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
+    X["timedelta_hired"] = (
+        pd.Timestamp.now() - X["date_first_hired"]
+    ).dt.to_pytimedelta()
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     return EstimatorReport(
         tabular_learner("regressor"),
@@ -258,6 +261,7 @@ def test_simple_categ_plots_1d(pyplot, estimator_report):
 
 def test_simple_num_plots_1d(pyplot, estimator_report):
     display = estimator_report.data.analyze(data_source="train")
+    ## for integers numeric values
     display.plot(x="year_first_hired", histplot_kwargs={"color": "red"})
     assert display.ax_.get_xlabel() == "year_first_hired"
     labels = display.ax_.get_xticklabels()
@@ -273,6 +277,10 @@ def test_simple_num_plots_1d(pyplot, estimator_report):
     display.plot(y="year_first_hired")
     assert display.ax_.get_xlabel() == "Count"
     assert display.ax_.get_ylabel() == "year_first_hired"
+
+    ## for duration numeric values
+    display.plot(x="timedelta_hired")
+    assert display.ax_.get_xlabel() == "Years"
 
 
 def test_top_k_categ_plots_1d(pyplot, estimator_report):
@@ -359,6 +367,6 @@ def test_corr_plot(pyplot, estimator_report):
     display = estimator_report.data.analyze(data_source="train")
     display.plot(kind="corr")
     assert isinstance(display.ax_.collections[0], QuadMesh)
-    assert len(display.ax_.get_xticklabels()) == 9
-    assert len(display.ax_.get_yticklabels()) == 9
+    assert len(display.ax_.get_xticklabels()) == 10
+    assert len(display.ax_.get_yticklabels()) == 10
     assert display.ax_.title.get_text() == "Cramer's V Correlation"
