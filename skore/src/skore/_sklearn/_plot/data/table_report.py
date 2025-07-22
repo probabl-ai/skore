@@ -343,7 +343,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
             ):
                 if param_value is not None:
                     raise ValueError(
-                        f"When {kind=!r}, {param_name!r} argument should be None."
+                        f"When {kind=!r}, {param_name!r} argument must be None."
                     )
             if heatmap_kwargs is None:
                 heatmap_kwargs = self._default_heatmap_kwargs

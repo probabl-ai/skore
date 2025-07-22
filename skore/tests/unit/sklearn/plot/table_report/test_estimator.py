@@ -32,6 +32,20 @@ def estimator_report():
     )
 
 
+@pytest.fixture
+def display():
+    data = fetch_employee_salaries()
+    X_train, X_test, y_train, y_test = train_test_split(data.X, data.y, random_state=0)
+    report = EstimatorReport(
+        tabular_learner("regressor"),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    return report.data.analyze()
+
+
 @pytest.mark.parametrize("col", [None, pd.Series(range(10))])
 def test_truncate_top_k_categories_return_as_is(col):
     """Check the behaviour of `_truncate_top_k_categories` when `col` is None or
@@ -135,9 +149,31 @@ def test_resize_categorical_axis(pyplot, is_x_axis):
         assert 10.0 < fig_width < 13.0
 
 
-def test_table_report_display_constructor(estimator_report):
+@pytest.mark.parametrize(
+    "params, err_msg",
+    [
+        (
+            dict(kind="dist"),
+            "When kind='dist', at least one of x, y must be provided and",
+        ),
+        (
+            dict(kind="dist", hue="current_annual_salary"),
+            "When kind='dist', at least one of x, y must be provided and",
+        ),
+        (
+            dict(kind="corr", x="current_annual_salary"),
+            "When kind='corr', 'x' argument must be None.",
+        ),
+    ],
+)
+def test_table_report_display_plot_error(display, params, err_msg):
     """Check the value that are stored in the display constructor."""
-    display = estimator_report.data.analyze()
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(**params)
+
+
+def test_table_report_display_constructor(display):
+    """Check the value that are stored in the display constructor."""
     assert isinstance(display, Display)
 
     assert hasattr(display, "summary")
@@ -156,9 +192,8 @@ def test_table_report_display_constructor(estimator_report):
     ]
 
 
-def test_table_report_display_frame_error(estimator_report):
+def test_table_report_display_frame_error(display):
     """Check the error message when passing an unknown kind in the `frame` method."""
-    display = estimator_report.data.analyze()
     with pytest.raises(ValueError, match="Invalid kind: 'xxx'"):
         display.frame(kind="xxx")
 
