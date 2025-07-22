@@ -88,12 +88,12 @@ y
 # Modelling
 # ^^^^^^^^^
 
-from skrub import TableVectorizer
+from skrub import TableVectorizer, TextEncoder
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 
 model = make_pipeline(
-    TableVectorizer(),  # (high_cardinality=TextEncoder()),
+    TableVectorizer(high_cardinality=TextEncoder()),
     HistGradientBoostingRegressor(),
 )
 model

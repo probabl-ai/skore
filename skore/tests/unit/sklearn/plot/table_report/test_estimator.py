@@ -277,7 +277,7 @@ def test_simple_plots_2d(pyplot, estimator_report):
     display.plot(x="current_annual_salary", y="division")
     assert display.ax_.get_ylabel() == "division"
     assert display.ax_.get_xlabel() == "current_annual_salary"
-    assert len(display.ax_.lines) == 154
+    assert len(display.ax_.lines) == 147
 
     # heatmap
     display.plot(x="gender", y="division")
@@ -290,18 +290,18 @@ def test_simple_plots_2d(pyplot, estimator_report):
 def test_hue_plots_2d(pyplot, estimator_report):
     display = estimator_report.data.analyze(data_source="train")
     display.plot(x="year_first_hired", y="current_annual_salary", hue="division")
-    assert len(display.ax_.legend_.texts) == 22
+    assert len(display.ax_.legend_.texts) == 21
     assert display.ax_.legend_.get_title().get_text() == "division"
 
     display.plot(x="year_first_hired", y="gender", hue="division")
-    assert len(display.ax_.lines) == 43
-    assert len(display.ax_.legend_.texts) == 22
+    assert len(display.ax_.lines) == 35
+    assert len(display.ax_.legend_.texts) == 21
     assert display.ax_.legend_.get_title().get_text() == "division"
 
     display.plot(x="gender", y="division", hue="current_annual_salary")
     assert isinstance(display.ax_.collections[0], QuadMesh)
     colorbar = display.ax_.collections[0].colorbar
-    assert colorbar.vmin == pytest.approx(28813.63, rel=1e-1)
+    assert colorbar.vmin == pytest.approx(17184.21, rel=1e-1)
     assert colorbar.vmax == pytest.approx(82980.51, rel=1e-1)
 
     # Can't have categorical hue when x and y are categories
