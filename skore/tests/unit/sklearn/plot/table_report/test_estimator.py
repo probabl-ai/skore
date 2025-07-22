@@ -164,6 +164,10 @@ def test_resize_categorical_axis(pyplot, is_x_axis):
             dict(kind="corr", x="current_annual_salary"),
             "When kind='corr', 'x' argument must be None.",
         ),
+        (
+            dict(kind="unknown"),
+            "'kind' options are 'dist', 'corr', got 'unknown'.",
+        ),
     ],
 )
 def test_table_report_display_plot_error(display, params, err_msg):
