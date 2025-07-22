@@ -6,13 +6,11 @@ from types import SimpleNamespace
 from urllib.parse import urljoin
 
 import joblib
-from blake3 import blake3 as Blake3
 from httpx import Client, Response
 from pytest import fixture, mark, raises
 from skore import EstimatorReport
 from skore_hub_project import Project
-from skore_hub_project.item.item import bytes_to_b64_str
-from skore_hub_project.project.project import dumps
+from skore_hub_project.project.artefact import Serializer
 
 
 class FakeClient(Client):
@@ -24,6 +22,18 @@ class FakeClient(Client):
         response.raise_for_status()
 
         return response
+
+
+@fixture(autouse=True)
+def monkeypatch_client(monkeypatch):
+    monkeypatch.setattr(
+        "skore_hub_project.project.project.AuthenticatedClient",
+        FakeClient,
+    )
+    monkeypatch.setattr(
+        "skore_hub_project.project.artefact.AuthenticatedClient",
+        FakeClient,
+    )
 
 
 @fixture(scope="module")
@@ -43,38 +53,6 @@ def regression():
         X_test=X_test,
         y_test=y_test,
     )
-
-
-@fixture(autouse=True)
-def monkeypatch_client(monkeypatch):
-    monkeypatch.setattr(
-        "skore_hub_project.project.project.AuthenticatedClient",
-        FakeClient,
-    )
-
-
-def test_dumps(regression):
-    cache = regression._cache
-    regression._cache = {}
-
-    with BytesIO() as stream:
-        try:
-            joblib.dump(regression, stream)
-        finally:
-            regression._cache = cache
-
-        pickle = stream.getvalue()
-        size = len(pickle)
-        hasher = Blake3(max_threads=(1 if size < 1e6 else Blake3.AUTO))
-        checksum = f"blake3-{bytes_to_b64_str(hasher.update(pickle).digest())}"
-
-    with dumps(regression) as (filename, checksum_to_compare, size_to_compare):
-        with open(filename, "rb") as file:
-            pickle_to_compare = file.read()
-
-        assert pickle_to_compare == pickle
-        assert checksum_to_compare == checksum
-        assert size_to_compare == size
 
 
 class TestProject:
@@ -100,9 +78,16 @@ class TestProject:
             Project("<tenant>", "<name>").put("<key>", "<value>")
 
     def test_upload_in_put(self, respx_mock, regression):
-        with dumps(regression) as (filename, checksum, _), open(filename, "rb") as file:
-            pickle = file.read()
-            chunk_size = ceil(len(pickle) / 2)
+        cache = regression._cache
+        regression._cache = {}
+
+        try:
+            with Serializer(regression) as serializer:
+                pickle = serializer.filepath.read_bytes()
+                checksum = serializer.checksum
+                chunk_size = ceil(len(pickle) / 2)
+        finally:
+            regression._cache = cache
 
         respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
             Response(
@@ -170,8 +155,14 @@ class TestProject:
 
         Project("<tenant>", "<name>").put("<key>", regression)
 
-        with dumps(regression) as (_, checksum, _):
-            ...
+        cache = regression._cache
+        regression._cache = {}
+
+        try:
+            with Serializer(regression) as serializer:
+                checksum = serializer.checksum
+        finally:
+            regression._cache = cache
 
         # Retrieve the content of the request
         content = loads(respx_mock.calls.last.request.content.decode())
