@@ -394,3 +394,8 @@ def test_json_dump(display):
         "n_constant_columns",
         "top_associations",
     ]
+
+
+def test_repr(display):
+    repr = display.__repr__()
+    assert repr == "<TableReportDisplay(...)>"
