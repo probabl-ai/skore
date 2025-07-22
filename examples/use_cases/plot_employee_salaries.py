@@ -150,7 +150,7 @@ train_data_display
 # %%
 #
 # The display obtained allows to get a quick overview with the same HTML-based view
-# than the :class:`skore.TableReport` we have seen earlier. In addition, you can access
+# than the :class:`skrub.TableReport` we have seen earlier. In addition, you can access
 # a :meth:`skore.TableReportDisplay.plot` method to have a particular focus on one
 # potential analysis. For instance, we can get a figure representing the correlation
 # matrix of the training dataset.
