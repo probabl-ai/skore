@@ -310,7 +310,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
                 case (True, True, True) | (True, True, False):
                     raise ValueError(
                         "When kind='dist', at least one of x, y must be provided and "
-                        "optionally hue. Got x=None, y=None, hue=None."
+                        "optionally hue. Got x=None, y=None."
                     )
                 case (False, True, True) | (True, False, True):
                     if histplot_kwargs is None:
