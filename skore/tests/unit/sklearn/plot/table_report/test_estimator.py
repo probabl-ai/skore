@@ -25,6 +25,7 @@ def estimator_report():
     X, y = data.X, data.y
     X["gender"] = X["gender"].astype("category")
     X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
+    X["cents"] = 100 * y
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     return EstimatorReport(
         tabular_learner("regressor"),
@@ -333,10 +334,11 @@ def test_simple_plots_2d(pyplot, estimator_report):
     assert labels[-1].get_text() == "300000"
 
     # box plot
-    display.plot(x="current_annual_salary", y="division")
+    display.plot(x="cents", y="division")
     assert display.ax_.get_ylabel() == "division"
-    assert display.ax_.get_xlabel() == "current_annual_salary"
+    assert display.ax_.get_xlabel() == "cents"
     assert len(display.ax_.lines) == 147
+    assert display.ax_.get_xticklabels()[-1].get_text() == "3.0"
 
     # heatmap
     display.plot(x="gender", y="division")
@@ -373,6 +375,6 @@ def test_corr_plot(pyplot, estimator_report):
     display = estimator_report.data.analyze(data_source="train")
     display.plot(kind="corr")
     assert isinstance(display.ax_.collections[0], QuadMesh)
-    assert len(display.ax_.get_xticklabels()) == 9
-    assert len(display.ax_.get_yticklabels()) == 9
+    assert len(display.ax_.get_xticklabels()) == 10
+    assert len(display.ax_.get_yticklabels()) == 10
     assert display.ax_.title.get_text() == "Cramer's V Correlation"
