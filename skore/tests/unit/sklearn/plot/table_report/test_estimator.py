@@ -412,3 +412,12 @@ def test_json_dump(display):
 def test_repr(display):
     repr = display.__repr__()
     assert repr == "<TableReportDisplay(...)>"
+
+
+def test_html_repr(estimator_report):
+    display = estimator_report.data.analyze(data_source="train")
+    str_html = display._repr_html_()
+    for col in estimator_report.X_train.columns:
+        assert col in str_html
+
+    assert "<skrub-table-report" in str_html
