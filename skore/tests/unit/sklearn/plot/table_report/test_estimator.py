@@ -396,7 +396,7 @@ def test_corr_plot(pyplot, estimator_report):
 
 
 def test_json_dump(display):
-    json_dict = json.loads(display._json())
+    json_dict = json.loads(display._to_json())
     assert list(json_dict.keys()) == [
         "dataframe_module",
         "n_rows",

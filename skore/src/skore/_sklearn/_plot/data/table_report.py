@@ -687,11 +687,11 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}(...)>"
 
-    def _json(self) -> str:
+    def _to_json(self) -> str:
         """Serialize the data of this report in JSON format.
 
         It is the serialization chosen to be sent to skore-hub.
         """
-        to_remove = ["dataframe"]
+        to_remove = ["dataframe", "sample_table"]
         data = {k: v for k, v in self.summary.items() if k not in to_remove}
         return json.dumps(data, cls=JSONEncoder)
