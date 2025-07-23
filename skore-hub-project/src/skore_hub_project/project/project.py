@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from typing import TypedDict
 
     from skore import EstimatorReport
-    from skore.sklearn._base import _BaseReport
+    from skore._sklearn._base import _BaseReport
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
