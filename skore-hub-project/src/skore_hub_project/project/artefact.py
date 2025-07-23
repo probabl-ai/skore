@@ -129,7 +129,12 @@ def upload_chunk(
         return response.headers["etag"]
 
 
-def upload(project: Project, o: Any, type: str, chunk_size: int) -> str:
+# This is both the threshold at which an object is split into several small parts for
+# upload, and the size of these small parts.
+CHUNK_SIZE: int = int(1e7)  # ~10mb
+
+
+def upload(project: Project, o: Any, type: str) -> str:
     """
     Upload an object to the artefacts storage.
 
@@ -141,9 +146,6 @@ def upload(project: Project, o: Any, type: str, chunk_size: int) -> str:
         The object to upload.
     type : str
         The type to associate to object in the artefacts storage.
-    chunk_size : int
-        The size of the object not to be exceeded before to be uploaded in chunks.
-        The size of the chunks to upload.
 
     Returns
     -------
@@ -168,7 +170,7 @@ def upload(project: Project, o: Any, type: str, chunk_size: int) -> str:
                 {
                     "checksum": serializer.checksum,
                     "content_type": type,
-                    "chunk_number": ceil(serializer.size / chunk_size),
+                    "chunk_number": ceil(serializer.size / CHUNK_SIZE),
                 }
             ],
         )
@@ -192,8 +194,8 @@ def upload(project: Project, o: Any, type: str, chunk_size: int) -> str:
                     filepath=serializer.filepath,
                     client=standard_client,
                     url=url["upload_url"],
-                    offset=((chunk_id - 1) * chunk_size),
-                    length=chunk_size,
+                    offset=((chunk_id - 1) * CHUNK_SIZE),
+                    length=CHUNK_SIZE,
                 )
 
                 task_to_chunk_id[task] = chunk_id

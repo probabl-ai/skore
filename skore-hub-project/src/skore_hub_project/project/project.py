@@ -111,7 +111,7 @@ class Project:
 
             return run["id"]
 
-    def put(self, key: str, report: EstimatorReport, *, chunk_size: int = int(1e7)):
+    def put(self, key: str, report: EstimatorReport):
         """
         Put a key-report pair to the hub project.
 
@@ -124,8 +124,6 @@ class Project:
             The key to associate with ``report`` in the hub project.
         report : skore.EstimatorReport
             The report to associate with ``key`` in the hub project.
-        chunk_size : int, optional
-            The maximum size of chunks to upload in bytes, default ~10mb.
 
         Raises
         ------
@@ -150,9 +148,7 @@ class Project:
         report._cache = {}
 
         try:
-            checksum = artefact.upload(
-                self, report, "estimator-report-pickle", chunk_size
-            )
+            checksum = artefact.upload(self, report, "estimator-report-pickle")
         finally:
             report._cache = cache
 

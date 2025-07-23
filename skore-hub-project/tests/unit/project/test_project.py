@@ -77,7 +77,7 @@ class TestProject:
         with raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
             Project("<tenant>", "<name>").put("<key>", "<value>")
 
-    def test_upload_in_put(self, respx_mock, regression):
+    def test_upload_in_put(self, monkeypatch, respx_mock, regression):
         cache = regression._cache
         regression._cache = {}
 
@@ -89,6 +89,7 @@ class TestProject:
         finally:
             regression._cache = cache
 
+        monkeypatch.setattr("skore_hub_project.project.artefact.CHUNK_SIZE", chunk_size)
         respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
             Response(
                 200,
@@ -110,7 +111,7 @@ class TestProject:
         )
         respx_mock.post("projects/<tenant>/<name>/items")
 
-        Project("<tenant>", "<name>").put("<key>", regression, chunk_size=chunk_size)
+        Project("<tenant>", "<name>").put("<key>", regression)
 
         requests = [call.request for call in respx_mock.calls]
 
