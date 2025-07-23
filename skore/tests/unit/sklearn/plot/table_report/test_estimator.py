@@ -312,7 +312,7 @@ def test_hue_plots_1d(pyplot, estimator_report):
     assert display.ax_.legend_.get_title().get_text() == "current_annual_salary"
 
 
-def test_1D_plot_with_duration_data(display):
+def test_1D_plot_with_duration_data(pyplot, display):
     ## 1D - timedelta as x
     display.plot(x="timedelta_hired")
     assert display.ax_.get_xlabel() == "Years"
