@@ -25,7 +25,7 @@ from skore._sklearn._plot.utils import (
     _validate_style_kwargs,
 )
 from skore._utils._repr_html import ReprHTMLMixin
-from skore.skrub._skrub_compat import sbd
+from skore.externals._skrub_compat import sbd
 
 
 def _truncate_top_k_categories(
