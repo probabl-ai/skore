@@ -205,7 +205,7 @@ class Project:
             with (
                 TemporaryFile(mode="w+b") as tmpfile,
                 Client() as client,
-                client.stream(method="GET", url=url, timeout=None) as response,
+                client.stream(method="GET", url=url, timeout=30) as response,
             ):
                 for data in response.iter_bytes():
                     tmpfile.write(data)

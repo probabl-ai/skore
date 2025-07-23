@@ -123,7 +123,7 @@ def upload_chunk(
             url=url,
             content=file.read(length),
             headers={"Content-Type": "application/octet-stream"},
-            timeout=None,
+            timeout=30,
         )
 
         return response.headers["etag"]
