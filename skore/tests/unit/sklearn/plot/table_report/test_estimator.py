@@ -16,12 +16,6 @@ from skrub.datasets import fetch_employee_salaries
 
 
 @pytest.fixture
-def skrub_data():
-    data = fetch_employee_salaries()
-    return train_test_split(data.X, data.y, random_state=0)
-
-
-@pytest.fixture
 def estimator_report():
     data = fetch_employee_salaries()
     X, y = data.X, data.y
