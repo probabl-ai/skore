@@ -3,34 +3,120 @@
 from __future__ import annotations
 
 from contextlib import suppress
+from http import HTTPStatus
 from os import environ
+from time import sleep
+from typing import Final
 from urllib.parse import urljoin
 
-from httpx import URL, Client, Headers, HTTPStatusError, Response
+from httpx import (
+    URL,
+    Headers,
+    HTTPError,
+    HTTPStatusError,
+    NetworkError,
+    RemoteProtocolError,
+    Response,
+    TimeoutException,
+)
+from httpx import (
+    Client as HTTPXClient,
+)
 from httpx._types import HeaderTypes
 
 from ..authentication import token as Token
 from .api import URI
 
 
-class AuthenticationError(Exception):
-    """An exception dedicated to authentication."""
+class Client(HTTPXClient):
+    RETRYABLE_STATUS_CODES: Final[frozenset[HTTPStatus]] = frozenset(
+        (
+            HTTPStatus.REQUEST_TIMEOUT,
+            HTTPStatus.TOO_EARLY,
+            HTTPStatus.TOO_MANY_REQUESTS,
+            HTTPStatus.BAD_GATEWAY,
+            HTTPStatus.SERVICE_UNAVAILABLE,
+            HTTPStatus.GATEWAY_TIMEOUT,
+        )
+    )
 
+    RETRYABLE_EXCEPTIONS: Final[tuple[HTTPError, ...]] = (
+        TimeoutException,
+        NetworkError,
+        RemoteProtocolError,
+    )
 
-class AuthenticatedClient(Client):
-    """Client exchanging with ``skore hub``."""
-
-    ERROR_TYPES = {
+    STATUS_CLASS_TO_ERROR_TYPE: Final[dict[int, str]] = {
         1: "Informational response",
         3: "Redirect response",
         4: "Client error",
         5: "Server error",
     }
 
-    def __init__(self, *, raises=False):
-        super().__init__(follow_redirects=True, timeout=300)
+    def __init__(
+        self,
+        *,
+        raises=True,
+        retry=True,
+        retry_total: int | None = 10,
+        retry_backoff_factor: float = 0.25,
+        retry_backoff_max: float = 120,
+    ):
+        super().__init__(follow_redirects=True, timeout=30)
 
         self.raises = raises
+        self.retry = retry
+        self.retry_total = retry_total
+        self.retry_backoff_factor = retry_backoff_factor
+        self.retry_backoff_max = retry_backoff_max
+
+    def request(self, *args, **kwargs) -> Response:
+        """Execute request with retry strategy."""
+        retries = 0
+
+        while True:
+            try:
+                response = super().request(*args, **kwargs)
+            except self.RETRYABLE_EXCEPTIONS:
+                ...
+            else:
+                if (
+                    response.is_success
+                    or (not self.retry)
+                    or (
+                        (self.retry_total is not None) and (retries >= self.retry_total)
+                    )
+                    or (response.status_code not in self.RETRYABLE_STATUS_CODES)
+                ):
+                    break
+
+            timeout = self.retry_backoff_factor * (2**retries)
+            retries += 1
+
+            sleep(min(timeout, self.retry_backoff_max))
+
+        if self.raises and not response.is_success:
+            status_class = response.status_code // 100
+            error_type = self.ERROR_TYPES.get(status_class, "Invalid status code")
+            message = (
+                f"{error_type} '{response.status_code} {response.reason_phrase}' "
+                f"for url '{response.url}'"
+            )
+
+            with suppress(Exception):
+                message += f": {response.json()['message']}"
+
+            raise HTTPStatusError(message, request=response.request, response=response)
+
+        return response
+
+
+class AuthenticationError(Exception):
+    """An exception dedicated to authentication."""
+
+
+class HUBClient(Client):
+    """Client exchanging with ``skore hub``."""
 
     def request(
         self,
@@ -53,25 +139,9 @@ class AuthenticatedClient(Client):
 
             headers.update({"Authorization": f"Bearer {Token.access()}"})
 
-        # Send request
-        response = super().request(
+        return super().request(
             method=method,
             url=urljoin(URI, str(url)),
             headers=headers,
             **kwargs,
         )
-
-        if self.raises and not response.is_success:
-            status_class = response.status_code // 100
-            error_type = self.ERROR_TYPES.get(status_class, "Invalid status code")
-            message = (
-                f"{error_type} '{response.status_code} {response.reason_phrase}' "
-                f"for url '{response.url}'"
-            )
-
-            with suppress(Exception):
-                message += f": {response.json()['message']}"
-
-            raise HTTPStatusError(message, request=response.request, response=response)
-
-        return response

@@ -18,7 +18,7 @@ from ..client.client import AuthenticatedClient
 from ..item.item import bytes_to_b64_str
 
 if TYPE_CHECKING:
-    from typing import Any
+    from typing import Any, Final
 
     import httpx
 
@@ -131,7 +131,7 @@ def upload_chunk(
 
 # This is both the threshold at which an object is split into several small parts for
 # upload, and the size of these small parts.
-CHUNK_SIZE: int = int(1e7)  # ~10mb
+CHUNK_SIZE: Final[int] = int(1e7)  # ~10mb
 
 
 def upload(project: Project, o: Any, type: str) -> str:
