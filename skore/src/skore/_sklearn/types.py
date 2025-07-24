@@ -39,7 +39,7 @@ class YPlotData:
     """
 
     estimator_name: str
-    split_index: int | None
+    split: int | None
     y: ArrayLike
 
 

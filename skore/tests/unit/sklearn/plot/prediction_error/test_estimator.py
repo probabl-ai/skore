@@ -284,11 +284,11 @@ def test_constructor(regression_data):
     )
     display = report.metrics.prediction_error()
 
-    index_columns = ["estimator_name", "split_index"]
+    index_columns = ["estimator_name", "split"]
     df = display._prediction_error
     assert all(col in df.columns for col in index_columns)
     assert df["estimator_name"].unique() == report.estimator_name_
-    assert df["split_index"].isnull().all()
+    assert df["split"].isnull().all()
     np.testing.assert_allclose(df["y_true"], y_test)
     np.testing.assert_allclose(df["y_pred"], estimator.predict(X_test))
     np.testing.assert_allclose(df["residuals"], y_test - estimator.predict(X_test))
