@@ -33,8 +33,6 @@ class Client(HTTPXClient):
 
     Parameters
     ----------
-    raises : bool, optional
-        Raise exception when a request fails, default True.
     retry : bool, optional
         Retry request on fails, default True.
     retry_total: int | None, optional
@@ -73,7 +71,6 @@ class Client(HTTPXClient):
     def __init__(
         self,
         *,
-        raises: bool = True,
         retry: bool = True,
         retry_total: int | None = 10,
         retry_backoff_factor: float = 0.25,
@@ -81,9 +78,8 @@ class Client(HTTPXClient):
     ):
         super().__init__(follow_redirects=True, timeout=30)
 
-        self.raises = raises
         self.retry = retry
-        self.retry_total = retry_total
+        self.retry_total = retry_total if retry_total is not None else float("inf")
         self.retry_backoff_factor = retry_backoff_factor
         self.retry_backoff_max = retry_backoff_max
 
@@ -98,14 +94,13 @@ class Client(HTTPXClient):
                 if not self.retry:
                     raise
             else:
-                if (
-                    response.is_success
-                    or (not self.retry)
-                    or (
-                        (self.retry_total is not None) and (retries >= self.retry_total)
-                    )
-                    or (response.status_code not in self.RETRYABLE_STATUS_CODES)
-                ):
+                if response.is_success:
+                    return response
+
+                overlimit = retries >= self.retry_total
+                unretryable = response.status_code not in self.RETRYABLE_STATUS_CODES
+
+                if (not self.retry) or overlimit or unretryable:
                     break
 
             timeout = self.retry_backoff_factor * (2**retries)
@@ -113,23 +108,21 @@ class Client(HTTPXClient):
 
             sleep(min(timeout, self.retry_backoff_max))
 
-        if self.raises and not response.is_success:
-            status_class = response.status_code // 100
-            error_type = self.STATUS_CLASS_TO_ERROR_TYPE.get(
-                status_class, "Invalid status code"
-            )
+        # Raise extended exception with body message when available.
+        status_class = response.status_code // 100
+        error_type = self.STATUS_CLASS_TO_ERROR_TYPE.get(
+            status_class, "Invalid status code"
+        )
 
-            message = (
-                f"{error_type} '{response.status_code} {response.reason_phrase}' "
-                f"for url '{response.url}'"
-            )
+        message = (
+            f"{error_type} '{response.status_code} {response.reason_phrase}' "
+            f"for url '{response.url}'"
+        )
 
-            with suppress(Exception):
-                message += f": {response.json()['message']}"
+        with suppress(Exception):
+            message += f": {response.json()['message']}"
 
-            raise HTTPStatusError(message, request=response.request, response=response)
-
-        return response
+        raise HTTPStatusError(message, request=response.request, response=response)
 
 
 class AuthenticationError(Exception):
