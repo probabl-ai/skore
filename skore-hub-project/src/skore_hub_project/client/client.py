@@ -77,7 +77,8 @@ class Client(HTTPXClient):
             try:
                 response = super().request(*args, **kwargs)
             except self.RETRYABLE_EXCEPTIONS:
-                ...
+                if not self.retry:
+                    raise
             else:
                 if (
                     response.is_success
