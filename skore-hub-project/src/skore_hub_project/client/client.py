@@ -28,6 +28,24 @@ from ..authentication import token as Token
 
 
 class Client(HTTPXClient):
+    """
+    Client with a retry strategy based on exponential backoff algorithm.
+
+    Parameters
+    ----------
+    raises : bool, optional
+        Raise exception when a request fails, default True.
+    retry : bool, optional
+        Retry request on fails, default True.
+    retry_total: int | None, optional
+        Total number of retries to allow, default 10.
+        Set to None to remove this constraint.
+    retry_backoff_factor : float, optional
+        A backoff factor to apply between retries, default 0.25.
+    retry_backoff_max : float, optional
+        Maximum backoff time, default 120.
+    """
+
     RETRYABLE_STATUS_CODES: Final[frozenset[HTTPStatus]] = frozenset(
         (
             HTTPStatus.REQUEST_TIMEOUT,
@@ -55,8 +73,8 @@ class Client(HTTPXClient):
     def __init__(
         self,
         *,
-        raises=True,
-        retry=True,
+        raises: bool = True,
+        retry: bool = True,
         retry_total: int | None = 10,
         retry_backoff_factor: float = 0.25,
         retry_backoff_max: float = 120,
@@ -119,7 +137,14 @@ class AuthenticationError(Exception):
 
 
 class HUBClient(Client):
-    """Client exchanging with ``skore hub``."""
+    """
+    Client exchanging with ``skore hub``.
+
+    Parameters
+    ----------
+    authenticated : bool, optional
+        Use headers with API key or token, default True.
+    """
 
     URI: Final[str] = environ.get("SKORE_HUB_URI", "https://api.skore.probabl.ai")
 
