@@ -196,6 +196,7 @@ def test_table_report_display_constructor(display):
         "columns",
         "dataframe_is_empty",
         "plots_skipped",
+        "associations_skipped",
         "sample_table",
         "n_constant_columns",
         "top_associations",
@@ -398,6 +399,7 @@ def test_json_dump(display):
         "columns",
         "dataframe_is_empty",
         "plots_skipped",
+        "associations_skipped",
         "n_constant_columns",
         "top_associations",
     ]
