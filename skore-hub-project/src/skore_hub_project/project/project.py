@@ -10,8 +10,7 @@ from typing import TYPE_CHECKING
 
 import joblib
 
-from ..client.api import Client
-from ..client.client import AuthenticatedClient, HTTPStatusError
+from ..client.client import Client, HTTPStatusError, HUBClient
 from ..item import skore_estimator_report_item
 from . import artefact
 
@@ -105,7 +104,7 @@ class Project:
     @cached_property
     def run_id(self) -> str:
         """The current run identifier of the project."""
-        with AuthenticatedClient(raises=True) as client:
+        with HUBClient() as client:
             request = client.post(f"projects/{self.tenant}/{self.name}/runs")
             run = request.json()
 
@@ -153,7 +152,7 @@ class Project:
             report._cache = cache
 
         # Send metadata.
-        with AuthenticatedClient(raises=True) as client:
+        with HUBClient() as client:
             client.post(
                 url=f"projects/{self.tenant}/{self.name}/items",
                 json=dict(
@@ -177,7 +176,7 @@ class Project:
         def get(id: str) -> EstimatorReport:
             """Get a persisted report by its id."""
             # Retrieve report metadata.
-            with AuthenticatedClient(raises=True) as client:
+            with HUBClient() as client:
                 response = client.get(
                     url=f"projects/{self.tenant}/{self.name}/experiments/estimator-reports/{id}"
                 )
@@ -186,7 +185,7 @@ class Project:
             checksum = metadata["raw"]["checksum"]
 
             # Ask for read url.
-            with AuthenticatedClient(raises=True) as client:
+            with HUBClient() as client:
                 response = client.get(
                     url=f"projects/{self.tenant}/{self.name}/artefacts/read",
                     params={"artefact_checksum": [checksum]},
@@ -235,7 +234,7 @@ class Project:
                     "predict_time": metrics.get("predict_time"),
                 }
 
-            with AuthenticatedClient(raises=True) as client:
+            with HUBClient() as client:
                 response = client.get(
                     f"projects/{self.tenant}/{self.name}/experiments/estimator-reports"
                 )
@@ -265,7 +264,7 @@ class Project:
         name : str
             The name of the project.
         """
-        with AuthenticatedClient(raises=True) as client:
+        with HUBClient() as client:
             try:
                 client.delete(f"projects/{tenant}/{name}")
             except HTTPStatusError as e:
