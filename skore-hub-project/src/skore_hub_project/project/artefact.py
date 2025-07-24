@@ -13,8 +13,7 @@ from blake3 import blake3 as Blake3
 from joblib import dump
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from ..client.api import Client
-from ..client.client import AuthenticatedClient
+from ..client.client import Client, HUBClient
 from ..item.item import bytes_to_b64_str
 
 if TYPE_CHECKING:
@@ -159,12 +158,12 @@ def upload(project: Project, o: Any, type: str) -> str:
     """
     with (
         Serializer(o) as serializer,
-        AuthenticatedClient(raises=True) as authenticated_client,
+        HUBClient() as hub_client,
         Client() as standard_client,
         ThreadPoolExecutor() as pool,
     ):
         # Ask for upload urls.
-        response = authenticated_client.post(
+        response = hub_client.post(
             url=f"projects/{project.tenant}/{project.name}/artefacts",
             json=[
                 {
@@ -221,7 +220,7 @@ def upload(project: Project, o: Any, type: str) -> str:
                 raise
 
             # Acknowledge the upload, to let the hub/storage rebuild the whole.
-            authenticated_client.post(
+            hub_client.post(
                 url=f"projects/{project.tenant}/{project.name}/artefacts/complete",
                 json=[
                     {

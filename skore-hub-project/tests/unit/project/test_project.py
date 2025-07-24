@@ -27,11 +27,11 @@ class FakeClient(Client):
 @fixture(autouse=True)
 def monkeypatch_client(monkeypatch):
     monkeypatch.setattr(
-        "skore_hub_project.project.project.AuthenticatedClient",
+        "skore_hub_project.project.project.HUBClient",
         FakeClient,
     )
     monkeypatch.setattr(
-        "skore_hub_project.project.artefact.AuthenticatedClient",
+        "skore_hub_project.project.artefact.HUBClient",
         FakeClient,
     )
 

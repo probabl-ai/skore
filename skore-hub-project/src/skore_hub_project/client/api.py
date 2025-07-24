@@ -1,19 +1,9 @@
 """API used to exchange with ``skore hub``."""
 
 from datetime import datetime
-from functools import partial
-from os import environ
 from time import sleep
-from urllib.parse import urljoin
 
-import httpx
-
-URI = environ.get("SKORE_HUB_URI", "https://api.skore.probabl.ai")
-Client = partial(
-    httpx.Client,
-    follow_redirects=True,
-    event_hooks={"response": [httpx.Response.raise_for_status]},
-)
+from httpx import HTTPError, TimeoutException
 
 
 def get_oauth_device_login(success_uri: str | None = None):
@@ -39,10 +29,12 @@ def get_oauth_device_login(success_uri: str | None = None):
         - user_code: str
             The user code that needs to be entered on the authorization page
     """
-    url = urljoin(URI, "identity/oauth/device/login")
+    from skore_hub_project.client.client import HUBClient
+
+    url = "identity/oauth/device/login"
     params = {"success_uri": success_uri} if success_uri is not None else {}
 
-    with Client() as client:
+    with HUBClient(authenticated=False) as client:
         response = client.get(url, params=params).json()
 
         return (
@@ -64,10 +56,13 @@ def post_oauth_device_callback(state: str, user_code: str):
     user_code: str
         The code entered by the user.
     """
-    url = urljoin(URI, "identity/oauth/device/callback")
+    from skore_hub_project.client.client import HUBClient
 
-    with Client() as client:
-        client.post(url, data={"state": state, "user_code": user_code})
+    url = "identity/oauth/device/callback"
+    data = {"state": state, "user_code": user_code}
+
+    with HUBClient(authenticated=False) as client:
+        client.post(url, data=data)
 
 
 def get_oauth_device_token(device_code: str):
@@ -92,10 +87,13 @@ def get_oauth_device_token(device_code: str):
         - expires_at : str
             The expiration datetime as ISO 8601 str of the access token
     """
-    url = urljoin(URI, "identity/oauth/device/token")
+    from skore_hub_project.client.client import HUBClient
 
-    with Client() as client:
-        response = client.get(url, params={"device_code": device_code}).json()
+    url = "identity/oauth/device/token"
+    params = {"device_code": device_code}
+
+    with HUBClient(authenticated=False) as client:
+        response = client.get(url, params=params).json()
         tokens = response["token"]
 
         return (
@@ -116,19 +114,23 @@ def get_oauth_device_code_probe(device_code: str, *, timeout=600):
     device_code : str
         The device code to exchange for tokens.
     """
-    url = urljoin(URI, "identity/oauth/device/code-probe")
-    start = datetime.now()
+    from skore_hub_project.client.client import HUBClient
 
-    with Client() as client:
+    url = "identity/oauth/device/code-probe"
+    params = {"device_code": device_code}
+
+    with HUBClient(authenticated=False) as client:
+        start = datetime.now()
+
         while True:
             try:
-                client.get(url, params={"device_code": device_code})
-            except httpx.HTTPError as exc:
+                client.get(url, params=params)
+            except HTTPError as exc:
                 if exc.response.status_code != 400:
                     raise
 
                 if (datetime.now() - start).total_seconds() >= timeout:
-                    raise httpx.TimeoutException("Authentication timeout") from exc
+                    raise TimeoutException("Authentication timeout") from exc
 
                 sleep(0.5)
             else:
@@ -157,10 +159,13 @@ def post_oauth_refresh_token(refresh_token: str):
         - expires_at : str
             The expiration datetime as ISO 8601 str of the access token
     """
-    url = urljoin(URI, "identity/oauth/token/refresh")
+    from skore_hub_project.client.client import HUBClient
 
-    with Client() as client:
-        response = client.post(url, json={"refresh_token": refresh_token}).json()
+    url = "identity/oauth/token/refresh"
+    json = {"refresh_token": refresh_token}
+
+    with HUBClient(authenticated=False) as client:
+        response = client.post(url, json=json).json()
 
         return (
             response["access_token"],

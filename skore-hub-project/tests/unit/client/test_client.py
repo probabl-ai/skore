@@ -4,21 +4,21 @@ from urllib.parse import urljoin
 from httpx import HTTPStatusError, Response
 from pytest import mark, raises
 from skore_hub_project.authentication import token as Token
-from skore_hub_project.client.api import URI
-from skore_hub_project.client.client import AuthenticatedClient, AuthenticationError
+from skore_hub_project.client.client import AuthenticationError, HUBClient
 
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
 
-REFRESH_URL = urljoin(URI, "identity/oauth/token/refresh")
+URI = HUBClient.URI
+REFRESH_URL = "identity/oauth/token/refresh"
 
 
-class TestAuthenticatedClient:
+class TestHUBClient:
     def test_request_with_api_key(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
         respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
 
-        with AuthenticatedClient() as client:
+        with HUBClient() as client:
             client.get("foo")
 
         assert "authorization" not in respx_mock.calls.last.request.headers
@@ -34,7 +34,7 @@ class TestAuthenticatedClient:
         assert Token.exists()
         assert Token.access() == "A"
 
-        with AuthenticatedClient() as client:
+        with HUBClient() as client:
             client.get("foo")
 
         assert Token.exists()
@@ -46,7 +46,7 @@ class TestAuthenticatedClient:
     def test_request_with_invalid_token_raises(self, respx_mock):
         with (
             raises(AuthenticationError, match="not logged in"),
-            AuthenticatedClient() as client,
+            HUBClient() as client,
         ):
             client.get("foo")
 
@@ -72,7 +72,7 @@ class TestAuthenticatedClient:
         assert Token.exists()
         assert Token.access(refresh=False) == "A"
 
-        with AuthenticatedClient() as client:
+        with HUBClient() as client:
             client.get("foo")
 
         assert Token.exists()
@@ -90,7 +90,7 @@ class TestAuthenticatedClient:
         assert Token.exists()
         assert Token.access() == "A"
 
-        with raises(HTTPStatusError), AuthenticatedClient(raises=True) as client:
+        with raises(HTTPStatusError), HUBClient() as client:
             client.get("foo")
 
         assert Token.exists()

@@ -25,7 +25,6 @@ from httpx import (
 from httpx._types import HeaderTypes
 
 from ..authentication import token as Token
-from .api import URI
 
 
 class Client(HTTPXClient):
@@ -97,7 +96,10 @@ class Client(HTTPXClient):
 
         if self.raises and not response.is_success:
             status_class = response.status_code // 100
-            error_type = self.ERROR_TYPES.get(status_class, "Invalid status code")
+            error_type = self.STATUS_CLASS_TO_ERROR_TYPE.get(
+                status_class, "Invalid status code"
+            )
+
             message = (
                 f"{error_type} '{response.status_code} {response.reason_phrase}' "
                 f"for url '{response.url}'"
@@ -118,6 +120,18 @@ class AuthenticationError(Exception):
 class HUBClient(Client):
     """Client exchanging with ``skore hub``."""
 
+    URI: Final[str] = environ.get("SKORE_HUB_URI", "https://api.skore.probabl.ai")
+
+    def __init__(
+        self,
+        *,
+        authenticated=True,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        self.authenticated = authenticated
+
     def request(
         self,
         method: str,
@@ -129,19 +143,18 @@ class HUBClient(Client):
         headers = Headers(headers)
 
         # Overload headers with our custom headers (API key or token)
-        if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
-            headers.update({"X-API-Key": f"{apikey}"})
-        else:
-            if not Token.exists():
-                raise AuthenticationError(
-                    "You are not logged in. Please run `skore-hub-login`"
-                )
+        if self.authenticated:
+            if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
+                headers.update({"X-API-Key": f"{apikey}"})
+            else:
+                if not Token.exists():
+                    raise AuthenticationError(
+                        "You are not logged in. Please run `skore-hub-login`"
+                    )
 
-            headers.update({"Authorization": f"Bearer {Token.access()}"})
+                headers.update({"Authorization": f"Bearer {Token.access()}"})
 
-        return super().request(
-            method=method,
-            url=urljoin(URI, str(url)),
-            headers=headers,
-            **kwargs,
-        )
+        # Prefix ``url`` by the hub URI when it's possible
+        url = urljoin(self.URI, str(url))
+
+        return super().request(method=method, url=url, headers=headers, **kwargs)
