@@ -174,12 +174,13 @@ def upload(project: Project, o: Any, type: str) -> str:
             ],
         )
 
-        # If no url, it has been already uploaded.
+        # An empty response means that an artefact with the same checksum already
+        # exists. The object doesn't have to be re-uploaded.
         if urls := response.json():
             task_to_chunk_id = {}
 
             # Upload each chunk of the serialized object to the artefacts storage, using
-            # disk temporary file.
+            # a disk temporary file.
             #
             # Each task is in charge of reading its own file chunk at runtime, to reduce
             # RAM footprint.
