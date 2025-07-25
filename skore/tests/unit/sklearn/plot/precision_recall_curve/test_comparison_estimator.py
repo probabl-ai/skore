@@ -318,11 +318,11 @@ def test_binary_classification_constructor(binary_classification_data):
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split_index", "label"]
+    index_columns = ["estimator_name", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
         assert df["estimator_name"].unique().tolist() == report.report_names_
-        assert df["split_index"].isnull().all()
+        assert df["split"].isnull().all()
         assert df["label"].unique() == 1
 
     assert len(display.average_precision) == 2
@@ -342,11 +342,11 @@ def test_multiclass_classification_constructor(multiclass_classification_data):
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split_index", "label"]
+    index_columns = ["estimator_name", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
         assert df["estimator_name"].unique().tolist() == report.report_names_
-        assert df["split_index"].isnull().all()
+        assert df["split"].isnull().all()
         np.testing.assert_array_equal(df["label"].unique(), np.unique(y_train))
 
     assert len(display.average_precision) == len(np.unique(y_train)) * 2

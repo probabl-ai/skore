@@ -231,14 +231,14 @@ def test_binary_classification_constructor(binary_classification_data_no_split):
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split_index", "label"]
+    index_columns = ["estimator_name", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
         assert df.query("estimator_name == 'estimator_1'")[
-            "split_index"
+            "split"
         ].unique().tolist() == list(range(cv))
         assert df.query("estimator_name == 'estimator_2'")[
-            "split_index"
+            "split"
         ].unique().tolist() == list(range(cv + 1))
         assert df["estimator_name"].unique().tolist() == report.report_names_
         assert df["label"].unique() == 1
@@ -256,15 +256,15 @@ def test_multiclass_classification_constructor(multiclass_classification_data_no
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split_index", "label"]
+    index_columns = ["estimator_name", "split", "label"]
     classes = np.unique(y)
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
         assert df.query("estimator_name == 'estimator_1'")[
-            "split_index"
+            "split"
         ].unique().tolist() == list(range(cv))
         assert df.query("estimator_name == 'estimator_2'")[
-            "split_index"
+            "split"
         ].unique().tolist() == list(range(cv + 1))
         assert df["estimator_name"].unique().tolist() == report.report_names_
         np.testing.assert_array_equal(df["label"].unique(), classes)
@@ -282,7 +282,7 @@ def test_frame_binary_classification(
     display = report.metrics.precision_recall()
 
     df = display.frame(with_average_precision=with_average_precision)
-    expected_index = ["estimator_name", "split_index"]
+    expected_index = ["estimator_name", "split"]
     expected_columns = ["threshold", "precision", "recall"]
     if with_average_precision:
         expected_columns.append("average_precision")
@@ -291,9 +291,7 @@ def test_frame_binary_classification(
     assert df["estimator_name"].nunique() == len(report.reports_)
 
     if with_average_precision:
-        for (_, _), group in df.groupby(
-            ["estimator_name", "split_index"], observed=True
-        ):
+        for (_, _), group in df.groupby(["estimator_name", "split"], observed=True):
             assert group["average_precision"].nunique() == 1
 
 
@@ -307,7 +305,7 @@ def test_frame_multiclass_classification(
     display = report.metrics.precision_recall()
 
     df = display.frame(with_average_precision=with_average_precision)
-    expected_index = ["estimator_name", "split_index", "label"]
+    expected_index = ["estimator_name", "split", "label"]
     expected_columns = ["threshold", "precision", "recall"]
     if with_average_precision:
         expected_columns.append("average_precision")
@@ -317,6 +315,6 @@ def test_frame_multiclass_classification(
 
     if with_average_precision:
         for (_, _, _), group in df.groupby(
-            ["estimator_name", "split_index", "label"], observed=True
+            ["estimator_name", "split", "label"], observed=True
         ):
             assert group["average_precision"].nunique() == 1

@@ -1146,7 +1146,7 @@ class _MetricsAccessor(
                 y_true.append(
                     YPlotData(
                         estimator_name=self._parent.estimator_name_,
-                        split_index=report_idx,
+                        split=report_idx,
                         y=y,
                     )
                 )
@@ -1167,7 +1167,7 @@ class _MetricsAccessor(
                         y_pred.append(
                             YPlotData(
                                 estimator_name=self._parent.estimator_name_,
-                                split_index=report_idx,
+                                split=report_idx,
                                 y=value,
                             )
                         )
