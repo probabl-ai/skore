@@ -6,6 +6,8 @@ from typing import Any, Literal, Protocol
 
 from numpy.typing import ArrayLike
 
+PlotBackend = Literal["matplotlib", "plotly"]
+
 MLTask = Literal[
     "binary-classification",
     "classification",
