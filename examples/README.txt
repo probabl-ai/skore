@@ -11,5 +11,3 @@ Below is a gallery of narrated notebook examples on how and why to use skore.
     .. code-block:: bash
 
         pip install -U skore[sphinx]
-
-    
