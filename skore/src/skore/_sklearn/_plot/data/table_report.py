@@ -17,6 +17,7 @@ from skrub._reporting._utils import (
     top_k_value_counts,
 )
 
+from skore._externals._skrub_compat import sbd
 from skore._sklearn._plot.style import StyleDisplayMixin
 from skore._sklearn._plot.utils import (
     HelpDisplayMixin,
@@ -26,7 +27,6 @@ from skore._sklearn._plot.utils import (
     _validate_style_kwargs,
 )
 from skore._utils._repr_html import ReprHTMLMixin
-from skore.externals._skrub_compat import sbd
 
 
 def _truncate_top_k_categories(
