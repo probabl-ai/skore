@@ -9,8 +9,10 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
     This class should not be instantiated directly.
     """
 
-    def __init__(self, summarize_data):
+    def __init__(self, summarize_data, report_type, data_source):
         self.summarize_data = summarize_data
+        self.report_type = report_type
+        self.data_source = data_source
 
     def frame(self):
         """Return the summarize as a dataframe.

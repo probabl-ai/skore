@@ -7,6 +7,7 @@ import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
+
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import (
     _BaseAccessor,
@@ -60,7 +61,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-        aggregate: Optional[Aggregate] = ("mean", "std"),
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for the estimators.
 
