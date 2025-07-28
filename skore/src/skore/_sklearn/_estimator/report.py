@@ -11,6 +11,8 @@ from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
+from skore._externals._pandas_accessors import DirNamesMixin
+from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import _DEFAULT, PositiveLabel
@@ -18,8 +20,6 @@ from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import Parallel, delayed
 from skore._utils._progress_bar import progress_decorator
-from skore.externals._pandas_accessors import DirNamesMixin
-from skore.externals._sklearn_compat import is_clusterer
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor

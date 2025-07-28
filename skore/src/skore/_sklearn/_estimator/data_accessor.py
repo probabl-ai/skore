@@ -3,10 +3,10 @@ from typing import Literal
 import pandas as pd
 from skrub import _dataframe as sbd
 
+from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import TableReportDisplay
-from skore.externals._pandas_accessors import DirNamesMixin
 
 
 class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):

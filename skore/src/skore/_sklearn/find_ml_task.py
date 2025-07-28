@@ -5,8 +5,8 @@ from sklearn.base import is_classifier, is_regressor
 from sklearn.utils import check_array
 from sklearn.utils.multiclass import type_of_target
 
+from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn.types import MLTask
-from skore.externals._sklearn_compat import is_clusterer
 
 
 def _column_is_classification(y) -> bool:
