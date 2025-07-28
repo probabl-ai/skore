@@ -120,7 +120,7 @@ concurrency = ["thread", "multiprocessing"]
 parallel = true
 
 [tool.coverage.report]
-omit = ["*/externals/*", "src/*", "tests/*"]
+omit = ["*/_externals/*", "src/*", "tests/*"]
 show_missing = true
 exclude_also = [
     "raise NotImplementedError",
@@ -159,7 +159,7 @@ convention = "numpy"
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["src/skore/externals/.*", "hatch/*", "tests/*"]
+exclude = ["src/skore/_externals/.*", "hatch/*", "tests/*"]
 
 [[tool.mypy.overrides]]
 module = ["sklearn.*"]

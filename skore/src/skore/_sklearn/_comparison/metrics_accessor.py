@@ -7,7 +7,7 @@ import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
-from skore.externals._pandas_accessors import DirNamesMixin
+from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import (
     _BaseAccessor,
     _BaseMetricsAccessor,
@@ -33,7 +33,6 @@ from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
 from skore._utils._progress_bar import progress_decorator
-from skore.externals._pandas_accessors import DirNamesMixin
 
 from .utils import _combine_cross_validation_results, _combine_estimator_results
 
@@ -61,11 +60,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-<<<<<<< HEAD:skore/src/skore/_sklearn/_comparison/metrics_accessor.py
-        aggregate: Aggregate | None = ("mean", "std"),
-=======
         aggregate: Optional[Aggregate] = ("mean", "std"),
->>>>>>> 1a751cbb (chore: Change to more explicit class name and add docs):skore/src/skore/sklearn/_comparison/metrics_accessor.py
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for the estimators.
 

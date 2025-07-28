@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.theme import Theme
 
 from skore._config import config_context, get_config, set_config
+from skore._externals._sklearn_compat import parse_version
 from skore._sklearn import (
     ComparisonReport,
     CrossValidationReport,
@@ -23,7 +24,6 @@ from skore._sklearn import (
 from skore._sklearn._plot.base import Display
 from skore._utils._patch import setup_jupyter_display
 from skore._utils._show_versions import show_versions
-from skore.externals._sklearn_compat import parse_version
 from skore.project import Project
 
 __all__ = [

@@ -3,7 +3,9 @@ from urllib.parse import urljoin
 from httpx import HTTPError, Response, TimeoutException
 from pytest import mark, raises
 from skore_hub_project.client import api
-from skore_hub_project.client.api import URI
+from skore_hub_project.client.client import HUBClient
+
+URI = HUBClient.URI
 
 
 @mark.parametrize("success_uri", [None, "toto"])

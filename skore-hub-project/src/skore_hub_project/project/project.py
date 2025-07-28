@@ -2,26 +2,22 @@
 
 from __future__ import annotations
 
-import io
 from functools import cached_property
 from operator import itemgetter
 from tempfile import TemporaryFile
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
-import blake3.blake3 as Blake3
 import joblib
 
-from ..client.api import Client
-from ..client.client import AuthenticatedClient, HTTPStatusError
+from ..client.client import Client, HTTPStatusError, HUBClient
 from ..item import skore_estimator_report_item
-from ..item.item import bytes_to_b64_str
+from . import artefact
 
 if TYPE_CHECKING:
     from typing import TypedDict
 
     from skore import EstimatorReport
-    from skore._sklearn._base import _BaseReport
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -36,37 +32,6 @@ if TYPE_CHECKING:
         roc_auc: float | None
         fit_time: float
         predict_time: float
-
-
-def dumps(report: _BaseReport) -> tuple[bytes, str]:
-    """
-    Dump a ``report`` using ``joblib``.
-
-    Returns
-    -------
-    bytes
-        The pickled report.
-    str
-        The checksum of the pickled report, based on BLAKE3.
-
-    Notes
-    -----
-    The report is pickled without its cache, to avoid salting the checksum.
-    """
-    cache = report._cache
-    report._cache = {}
-
-    with io.BytesIO() as stream:
-        try:
-            joblib.dump(report, stream)
-        finally:
-            report._cache = cache
-
-        pickle = stream.getvalue()
-        hasher = Blake3(max_threads=(1 if len(pickle) < 10**6 else Blake3.AUTO))
-        checksum = hasher.update(pickle).digest()
-
-    return pickle, f"blake3-{bytes_to_b64_str(checksum)}"
 
 
 class Project:
@@ -139,7 +104,7 @@ class Project:
     @cached_property
     def run_id(self) -> str:
         """The current run identifier of the project."""
-        with AuthenticatedClient(raises=True) as client:
+        with HUBClient() as client:
             request = client.post(f"projects/{self.tenant}/{self.name}/runs")
             run = request.json()
 
@@ -174,43 +139,20 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
-        # pickle report
-        pickle, checksum = dumps(report)
+        # Upload report to artefacts storage.
+        #
+        # The report is pickled without its cache, to avoid salting the checksum.
+        # The report is pickled on disk to reduce RAM footprint.
+        cache = report._cache
+        report._cache = {}
 
-        # ask for upload url
-        with AuthenticatedClient(raises=True) as client:
-            response = client.post(
-                url=f"projects/{self.tenant}/{self.name}/artefacts",
-                json=[
-                    {
-                        "checksum": checksum,
-                        "content_type": "estimator-report-pickle",
-                    }
-                ],
-            )
+        try:
+            checksum = artefact.upload(self, report, "estimator-report-pickle")
+        finally:
+            report._cache = cache
 
-        url = next(iter(response.json()), None)
-
-        if url:
-            # upload pickled report
-            with io.BytesIO(pickle) as stream, Client() as client:
-                client.put(
-                    url=url["upload_url"],
-                    content=stream,
-                    headers={"Content-Type": "application/octet-stream"},
-                )
-
-            # acknowledgement of sending
-            with AuthenticatedClient(raises=True) as client:
-                client.post(
-                    url=f"projects/{self.tenant}/{self.name}/artefacts/complete",
-                    json=[{"checksum": checksum, "etags": {}}],
-                )
-
-        del pickle
-
-        # send metadata
-        with AuthenticatedClient(raises=True) as client:
+        # Send metadata.
+        with HUBClient() as client:
             client.post(
                 url=f"projects/{self.tenant}/{self.name}/items",
                 json=dict(
@@ -234,7 +176,7 @@ class Project:
         def get(id: str) -> EstimatorReport:
             """Get a persisted report by its id."""
             # Retrieve report metadata.
-            with AuthenticatedClient(raises=True) as client:
+            with HUBClient() as client:
                 response = client.get(
                     url=f"projects/{self.tenant}/{self.name}/experiments/estimator-reports/{id}"
                 )
@@ -243,7 +185,7 @@ class Project:
             checksum = metadata["raw"]["checksum"]
 
             # Ask for read url.
-            with AuthenticatedClient(raises=True) as client:
+            with HUBClient() as client:
                 response = client.get(
                     url=f"projects/{self.tenant}/{self.name}/artefacts/read",
                     params={"artefact_checksum": [checksum]},
@@ -258,7 +200,7 @@ class Project:
             with (
                 TemporaryFile(mode="w+b") as tmpfile,
                 Client() as client,
-                client.stream(method="GET", url=url) as response,
+                client.stream(method="GET", url=url, timeout=30) as response,
             ):
                 for data in response.iter_bytes():
                     tmpfile.write(data)
@@ -292,7 +234,7 @@ class Project:
                     "predict_time": metrics.get("predict_time"),
                 }
 
-            with AuthenticatedClient(raises=True) as client:
+            with HUBClient() as client:
                 response = client.get(
                     f"projects/{self.tenant}/{self.name}/experiments/estimator-reports"
                 )
@@ -322,7 +264,7 @@ class Project:
         name : str
             The name of the project.
         """
-        with AuthenticatedClient(raises=True) as client:
+        with HUBClient() as client:
             try:
                 client.delete(f"projects/{tenant}/{name}")
             except HTTPStatusError as e:
