@@ -307,6 +307,26 @@ class Representations:
             "representation": item.__representation__["representation"],
         }
 
+    def table_report(self, **kwargs) -> Representation:
+        function = self.report.data.analyze
+        function_parameters = signature(function).parameters
+        function_kwargs = {k: v for k, v in kwargs.items() if k in function_parameters}
+
+        display = function(**function_kwargs)
+        json = display._to_json()
+
+        return {
+            "key": "TableReport",
+            "verbose_name": "Table report",
+            "category": "data",
+            "attributes": kwargs,
+            "parameters": {},
+            "representation": {
+                "media_type": "application/vnd.skrub.table-report.v1+json",
+                "value": json,
+            },
+        }
+
     def __iter__(self) -> Generator[Representation]:
         """
         Dynamically generate representation, with report's parameters combinations.
@@ -371,6 +391,8 @@ class Representations:
                     method="coefficients",
                 ),
                 self.estimator_html_repr(),
+                self.table_report(data_source="train"),
+                self.table_report(data_source="test"),
             ),
         )
 
