@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import InitVar, dataclass, field
 from functools import cached_property, partial
 from math import ceil
 from pathlib import Path
@@ -234,10 +235,6 @@ def upload(project: Project, o: Any, type: str) -> str:
     return serializer.checksum
 
 
-from dataclasses import dataclass, KW_ONLY, field, InitVar
-from typing import Any
-
-
 @dataclass(kw_only=True)
 class Artefact:
     project: InitVar[Project]
@@ -247,7 +244,7 @@ class Artefact:
     checksum: str = field(init=False)
 
     def __post_init__(self, project: Project, o: Any, type: str):
-        self.checksum = upload(project, report, type)
+        self.checksum = upload(project, o, type)
 
 
 @dataclass(kw_only=True)
