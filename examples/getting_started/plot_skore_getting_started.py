@@ -40,28 +40,34 @@ Skore: getting started
 # In order to assist its users when programming, skore has implemented a
 # :class:`skore.EstimatorReport` class.
 #
-# Let us load a binary classification dataset and get the estimator report for a
+# Let us create a challenging synthetic binary classification dataset and get the estimator report for a
 # :class:`~sklearn.ensemble.RandomForestClassifier`:
 
 # %%
-from sklearn.datasets import load_breast_cancer
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 
 from skore import EstimatorReport
 
-X, y = load_breast_cancer(return_X_y=True, as_frame=True)
+X, y = make_classification(
+    n_samples=10_000,
+    n_classes=3,
+    class_sep=0.3,
+    n_clusters_per_class=1,
+    random_state=42,
+)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-rf = RandomForestClassifier(random_state=0)
+rf = LogisticRegression(random_state=0)
 
 rf_report = EstimatorReport(
-    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, pos_label=1
+    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
 )
 
 # %%
 # Now, we can display the helper to see all the insights that are available to us
-# (skore detected that we are doing binary classification):
+# (skore detected that we are doing multiclass classification):
 
 # %%
 rf_report.help()
@@ -396,7 +402,6 @@ pprint(report_search_clf)
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
-
 # %%
 # .. admonition:: Stay tuned!
 #
