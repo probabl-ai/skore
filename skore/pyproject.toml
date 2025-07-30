@@ -38,6 +38,8 @@ dependencies = [
   "rich",
   "scikit-learn",
   "skore-local-project",
+  "skrub",
+  "seaborn",
 ]
 
 [project.optional-dependencies]
@@ -51,7 +53,7 @@ test-base = [
   "skrub",
   "xdoctest",
 ]
-test = ["skore[test-base]", "polars"]
+test = ["skore[test-base]", "polars", "pyarrow"]
 test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
 sphinx-base = [
   "altair",
@@ -69,6 +71,7 @@ sphinx-base = [
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
   "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
+  "xgboost",
 ]
 sphinx = ["skore[sphinx-base]", "polars"]
 sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]
@@ -117,7 +120,7 @@ concurrency = ["thread", "multiprocessing"]
 parallel = true
 
 [tool.coverage.report]
-omit = ["*/externals/*", "src/*", "tests/*"]
+omit = ["*/_externals/*", "src/*", "tests/*"]
 show_missing = true
 exclude_also = [
     "raise NotImplementedError",
@@ -156,7 +159,7 @@ convention = "numpy"
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["src/skore/externals/.*", "hatch/*", "tests/*"]
+exclude = ["src/skore/_externals/.*", "hatch/*", "tests/*"]
 
 [[tool.mypy.overrides]]
 module = ["sklearn.*"]

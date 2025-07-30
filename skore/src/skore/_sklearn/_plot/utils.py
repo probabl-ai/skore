@@ -4,8 +4,10 @@ from io import StringIO
 from typing import Any
 
 import numpy as np
+from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
+from matplotlib.figure import Figure
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -14,7 +16,14 @@ from sklearn.utils.validation import (
     check_consistent_length,
 )
 
-from skore._sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
+from skore._config import get_config
+from skore._sklearn.types import (
+    MLTask,
+    PlotBackend,
+    PositiveLabel,
+    ReportType,
+    YPlotData,
+)
 
 LINESTYLE = [
     ("solid", "solid"),
@@ -242,9 +251,113 @@ class _ClassifierCurveDisplayMixin:
         return pos_label
 
 
+def _rotate_ticklabels(
+    ax: Axes, *, rotation: float = 45, horizontalalignment: str = "right"
+) -> None:
+    """Rotate the tick labels of the axis.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axis to rotate.
+    rotation : float, default=45
+        The rotation of the tick labels.
+    horizontalalignment : {"left", "center", "right"}, default="right"
+        The horizontal alignment of the tick labels.
+    """
+    plt.setp(
+        ax.get_xticklabels(), rotation=rotation, horizontalalignment=horizontalalignment
+    )
+
+
+def _get_adjusted_fig_size(
+    fig: Figure, ax: Axes, direction: str, target_size: float
+) -> float:
+    """Get the adjusted figure size.
+
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        The figure to adjust.
+
+    ax : matplotlib.axes.Axes
+        The axis to adjust.
+
+    direction : {"width", "height"}
+        The direction to adjust.
+
+    target_size : float
+        The target size.
+
+    Returns
+    -------
+    float
+        The adjusted figure size.
+    """
+    size_display = getattr(ax.get_window_extent(), direction)
+    size = fig.dpi_scale_trans.inverted().transform((size_display, 0))[0]
+    dim = 0 if direction == "width" else 1
+    fig_size = fig.get_size_inches()[dim]
+    return target_size * (fig_size / size)
+
+
+def _adjust_fig_size(
+    fig: Figure, ax: Axes, target_width: float, target_height: float
+) -> None:
+    """Rescale a figure to the target width and height.
+
+    This allows us to have all figures of a given type (bar plots, lines or
+    histograms) have the same size, so that the displayed report looks more
+    uniform, without having to do manual adjustments to account for the length
+    of labels, occurrence of titles etc. We let pyplot generate the figure
+    without any size constraints then resize it and thus let matplotlib deal
+    with resizing the appropriate elements (eg shorter bars when the labels
+    take more horizontal space).
+
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        The figure to adjust.
+
+    ax : matplotlib.axes.Axes
+        The axis to adjust.
+
+    target_width : float
+        The target width.
+
+    target_height : float
+        The target height.
+    """
+    width = _get_adjusted_fig_size(fig, ax, "width", target_width)
+    height = _get_adjusted_fig_size(fig, ax, "height", target_height)
+    fig.set_size_inches((width, height))
+
+
+class PlotBackendMixin:
+    """Mixin class for Displays to dispatch plotting to the configured backend."""
+
+    def plot(self, **kwargs):
+        plot_backend = get_config()["plot_backend"]
+        if plot_backend == "matplotlib":
+            return self._plot_matplotlib(**kwargs)
+        elif plot_backend == "plotly":
+            return self._plot_plotly(**kwargs)
+        else:
+            raise NotImplementedError(
+                f"Plotting backend {plot_backend} not available. "
+                f"Available options are {PlotBackend.__args__}."
+            )
+
+    def _plot_plotly(self, **kwargs):
+        raise NotImplementedError(
+            "Plotting with plotly is not supported for this Display."
+        )
+
+
 def _despine_matplotlib_axis(
     ax: Axes,
     *,
+    axis_to_despine: tuple = ("top", "right"),
     x_range: tuple[float, float] = (0, 1),
     y_range: tuple[float, float] = (0, 1),
     offset: float = 10,
@@ -262,12 +375,12 @@ def _despine_matplotlib_axis(
     offset : float, default=10
         The offset to add to the x-axis and y-axis.
     """
-    for s in ["top", "right"]:
-        ax.spines[s].set_visible(False)
     ax.spines["bottom"].set_bounds(x_range[0], x_range[1])
     ax.spines["left"].set_bounds(y_range[0], y_range[1])
     ax.spines["left"].set_position(("outward", offset))
     ax.spines["bottom"].set_position(("outward", offset))
+    for s in axis_to_despine:
+        ax.spines[s].set_visible(False)
 
 
 def _validate_style_kwargs(
