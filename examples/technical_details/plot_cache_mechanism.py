@@ -10,13 +10,6 @@ This example shows how :class:`~skore.EstimatorReport` and
 """
 
 # %%
-#
-# We set some environment variables to avoid some spurious warnings related to
-# parallelism.
-import os
-
-
-# %%
 # Loading some data
 # =================
 #
