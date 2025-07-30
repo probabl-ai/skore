@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Literal
-
 import numpy as np
 import pandas as pd
 from sklearn.base import is_classifier
@@ -13,19 +11,6 @@ from skore._sklearn._plot.metrics.feature_importance_display import (
     FeatureImportanceDisplay,
 )
 from skore.externals._pandas_accessors import DirNamesMixin
-
-DataSource = Literal["test", "train", "X_y"]
-
-Metric = Literal[
-    "accuracy",
-    "precision",
-    "recall",
-    "brier_score",
-    "roc_auc",
-    "log_loss",
-    "r2",
-    "rmse",
-]
 
 
 class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
