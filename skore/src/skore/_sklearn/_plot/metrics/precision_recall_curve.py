@@ -16,6 +16,7 @@ from skore._sklearn._plot.style import StyleDisplayMixin
 from skore._sklearn._plot.utils import (
     LINESTYLE,
     HelpDisplayMixin,
+    PlotBackendMixin,
     _ClassifierCurveDisplayMixin,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
@@ -45,7 +46,7 @@ MAX_N_LABELS = 5
 
 
 class PrecisionRecallCurveDisplay(
-    StyleDisplayMixin, HelpDisplayMixin, _ClassifierCurveDisplayMixin
+    StyleDisplayMixin, HelpDisplayMixin, _ClassifierCurveDisplayMixin, PlotBackendMixin
 ):
     """Precision Recall visualization.
 
@@ -630,7 +631,7 @@ class PrecisionRecallCurveDisplay(
         return self.ax_, lines, info_pos_label
 
     @StyleDisplayMixin.style_plot
-    def plot(
+    def _plot_matplotlib(
         self,
         *,
         estimator_name: str | None = None,

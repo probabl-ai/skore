@@ -9,22 +9,23 @@ from matplotlib.artist import Artist
 from pandas import DataFrame
 from sklearn.utils.validation import _num_samples, check_array
 
+from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._plot.style import StyleDisplayMixin
 from skore._sklearn._plot.utils import (
     HelpDisplayMixin,
+    PlotBackendMixin,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
 from skore._sklearn.types import MLTask, ReportType, YPlotData
-from skore.externals._sklearn_compat import _safe_indexing
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
 MAX_N_LABELS = 6  # 5 + 1 for the perfect model line
 
 
-class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
+class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMixin):
     """Visualization of the prediction error of a regression model.
 
     This tool can display "residuals vs predicted" or "actual vs predicted"
@@ -522,7 +523,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         return scatter
 
     @StyleDisplayMixin.style_plot
-    def plot(
+    def _plot_matplotlib(
         self,
         *,
         estimator_name: str | None = None,

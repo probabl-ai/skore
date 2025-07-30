@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.theme import Theme
 
 from skore._config import config_context, get_config, set_config
+from skore._externals._sklearn_compat import parse_version
 from skore._sklearn import (
     ComparisonReport,
     CrossValidationReport,
@@ -16,13 +17,13 @@ from skore._sklearn import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
+    TableReportDisplay,
     find_estimators,
     train_test_split,
 )
 from skore._sklearn._plot.base import Display
 from skore._utils._patch import setup_jupyter_display
 from skore._utils._show_versions import show_versions
-from skore.externals._sklearn_compat import parse_version
 from skore.project import Project
 
 __all__ = [
@@ -41,6 +42,7 @@ __all__ = [
     "get_config",
     "set_config",
     "find_estimators",
+    "TableReportDisplay",
 ]
 
 logger = logging.getLogger(__name__)

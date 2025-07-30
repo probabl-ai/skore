@@ -2,7 +2,7 @@ anywidget==0.9.18
     # via skore (skore/pyproject.toml)
 asttokens==3.0.0
     # via stack-data
-certifi==2025.6.15
+certifi==2025.7.9
     # via requests
 cfgv==3.4.0
     # via pre-commit
@@ -68,12 +68,13 @@ markupsafe==3.0.2
 matplotlib==3.10.3
     # via
     #   skore (skore/pyproject.toml)
+    #   seaborn
     #   skrub
 matplotlib-inline==0.1.7
     # via ipython
 mdurl==0.1.2
     # via markdown-it-py
-narwhals==1.45.0
+narwhals==1.46.0
     # via plotly
 nodeenv==1.9.1
     # via pre-commit
@@ -85,6 +86,7 @@ numpy==2.2.6
     #   pandas
     #   scikit-learn
     #   scipy
+    #   seaborn
     #   skrub
 packaging==25.0
     # via
@@ -92,9 +94,10 @@ packaging==25.0
     #   plotly
     #   pytest
     #   skrub
-pandas==2.3.0
+pandas==2.3.1
     # via
     #   skore (skore/pyproject.toml)
+    #   seaborn
     #   skrub
 parso==0.8.4
     # via jedi
@@ -124,6 +127,8 @@ ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.3
     # via stack-data
+pyarrow==20.0.0
+    # via skore (skore/pyproject.toml)
 pygments==2.19.2
     # via
     #   ipython
@@ -169,6 +174,8 @@ scipy==1.15.3
     # via
     #   scikit-learn
     #   skrub
+seaborn==0.13.2
+    # via skore (skore/pyproject.toml)
 six==1.17.0
     # via python-dateutil
 skore-local-project==0.0.3

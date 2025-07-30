@@ -9,6 +9,7 @@ from skore._utils._parallel import Parallel, delayed
 def test_config_context():
     assert get_config() == {
         "show_progress": True,
+        "plot_backend": "matplotlib",
     }
 
     # Not using as a context manager affects nothing
@@ -18,6 +19,7 @@ def test_config_context():
     with config_context(show_progress=False):
         assert get_config() == {
             "show_progress": False,
+            "plot_backend": "matplotlib",
         }
     assert get_config()["show_progress"] is True
 
@@ -44,6 +46,7 @@ def test_config_context():
 
     assert get_config() == {
         "show_progress": True,
+        "plot_backend": "matplotlib",
     }
 
     # No positional arguments
