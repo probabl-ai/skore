@@ -34,6 +34,32 @@ if TYPE_CHECKING:
         predict_time: float
 
 
+class EstimatorReportPayload:
+    key: str
+    run_id: int
+    estimator_class_name: str
+    dataset_fingerprint: str
+    ml_task: MLTask
+    metrics: list[CreateMetricParameters]
+    related_items: list[RelatedItemPayload]
+    parameters: dict[Any, Any]
+
+
+class CrossValidationReportPayload(EstimatorReportPayload):
+    splitting_strategy_name: str
+    # for each split and for each sample in the dataset
+    # 1 if the sample is in the split, 0 if not
+    splits: list[list[Literal[0, 1]]]
+    # index of the group for each sample in the dataset
+    groups: list[int] | None = None
+    # all class names of the dataset
+    class_names: list[str] | None = None
+    # class name index for each sample in the dataset
+    classes: list[int] | None = None
+    #
+    estimators: list[EstimatorReportPayload]
+
+
 class Project:
     """
     API to manage a collection of key-report pairs persisted in a hub storage.
