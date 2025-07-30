@@ -10,14 +10,6 @@ This example shows how :class:`~skore.EstimatorReport` and
 """
 
 # %%
-#
-# We set some environment variables to avoid some spurious warnings related to
-# parallelism.
-import os
-
-os.environ["POLARS_ALLOW_FORKING_THREAD"] = "1"
-
-# %%
 # Loading some data
 # =================
 #
