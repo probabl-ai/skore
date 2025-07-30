@@ -1259,7 +1259,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     y_true.append(
                         YPlotData(
                             estimator_name=report_name,
-                            split_index=None,
+                            split=None,
                             y=report_y,
                         )
                     )
@@ -1280,7 +1280,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                             y_pred.append(
                                 YPlotData(
                                     estimator_name=report_name,
-                                    split_index=None,
+                                    split=None,
                                     y=value,
                                 )
                             )
@@ -1301,9 +1301,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 for report, report_name in zip(
                     self._parent.reports_, self._parent.report_names_, strict=False
                 ):
-                    for split_index, estimator_report in enumerate(
-                        report.estimator_reports_
-                    ):
+                    for split, estimator_report in enumerate(report.estimator_reports_):
                         report_X, report_y, _ = (
                             estimator_report.metrics._get_X_y_and_data_source_hash(
                                 data_source=data_source,
@@ -1315,7 +1313,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                         y_true.append(
                             YPlotData(
                                 estimator_name=report_name,
-                                split_index=split_index,
+                                split=split,
                                 y=report_y,
                             )
                         )
@@ -1337,7 +1335,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                                 y_pred.append(
                                     YPlotData(
                                         estimator_name=report_name,
-                                        split_index=split_index,
+                                        split=split,
                                         y=value,
                                     )
                                 )
