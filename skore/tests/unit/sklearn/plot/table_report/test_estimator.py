@@ -379,7 +379,7 @@ def test_corr_plot(pyplot, estimator_report):
 
 def test_json_dump(display):
     json_dict = json.loads(display._to_json())
-    assert isinstance(json_dict, dict)
+    assert set(json_dict.keys()).issubset(display.summary.keys())
 
 
 def test_repr(display):
