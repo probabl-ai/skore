@@ -5,12 +5,12 @@ import pandas as pd
 from sklearn.base import is_classifier
 from sklearn.pipeline import Pipeline
 
+from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot.metrics.feature_importance_display import (
     FeatureImportanceDisplay,
 )
-from skore.externals._pandas_accessors import DirNamesMixin
 
 
 class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
