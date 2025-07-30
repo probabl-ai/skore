@@ -55,9 +55,9 @@ We recommend using a [virtual environment (venv)](https://docs.python.org/3/tuto
 
 Then, you can install skore by using `pip`:
 ```bash
-# If you just use skore locally
+# If you plan to use skore only locally
 pip install -U skore
-# If you wish to also interact with the skore hub
+# If you wish to also interact with skore hub
 pip install -U skore[hub]
 ```
 
