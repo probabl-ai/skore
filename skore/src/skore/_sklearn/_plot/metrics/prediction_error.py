@@ -9,6 +9,7 @@ from matplotlib.artist import Artist
 from pandas import DataFrame
 from sklearn.utils.validation import _num_samples, check_array
 
+from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._plot.style import StyleDisplayMixin
 from skore._sklearn._plot.utils import (
     HelpDisplayMixin,
@@ -18,7 +19,6 @@ from skore._sklearn._plot.utils import (
     sample_mpl_colormap,
 )
 from skore._sklearn.types import MLTask, ReportType, YPlotData
-from skore.externals._sklearn_compat import _safe_indexing
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
