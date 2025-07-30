@@ -114,8 +114,6 @@ Join our mission to promote open-source and make machine learning development mo
 -   Join our [Discord](https://discord.probabl.ai/) to share ideas or get support.
 -   Request a feature or report a bug via [GitHub Issues](https://github.com/probabl-ai/skore/issues).
 
-<br />
-
 
 ## Support
 
