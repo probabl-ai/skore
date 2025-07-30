@@ -238,13 +238,13 @@ def upload(project: Project, o: Any, type: str) -> str:
 @dataclass(kw_only=True)
 class Artefact:
     project: InitVar[Project]
-    o: InitVar[Any]
+    object: InitVar[Any]
     type: InitVar[str]
     kwargs: dict = field(default_factory=dict)
     checksum: str = field(init=False)
 
-    def __post_init__(self, project: Project, o: Any, type: str):
-        self.checksum = upload(project, o, type)
+    def __post_init__(self, project: Project, object: Any, type: str):
+        self.checksum = upload(project, object, type)
 
 
 @dataclass(kw_only=True)
