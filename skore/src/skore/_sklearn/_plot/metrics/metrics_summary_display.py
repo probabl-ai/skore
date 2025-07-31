@@ -4,7 +4,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from skore._sklearn._plot.style import StyleDisplayMixin
-from skore._sklearn._plot.utils import HelpDisplayMixin, PlotBackendMixin
+from skore._sklearn._plot.utils import (
+    HelpDisplayMixin,
+    PlotBackendMixin,
+    _interval_max_min_ratio,
+)
 from skore._sklearn.types import ReportType
 
 
@@ -140,7 +144,23 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixi
             color = next(colors)
             ax.scatter(x_coord, y_coord, marker=marker, color=color, label=label)
 
-        ax.set(title=title, xlabel=x_label_text, ylabel=y_label_text)
+        if _interval_max_min_ratio(x_data) > 5:
+            xscale = "symlog" if x_data.min() <= 0 else "log"
+        else:
+            xscale = "linear"
+
+        if _interval_max_min_ratio(y_data) > 5:
+            yscale = "symlog" if y_data.min() <= 0 else "log"
+        else:
+            yscale = "linear"
+
+        ax.set(
+            title=title,
+            xlabel=x_label_text,
+            ylabel=y_label_text,
+            xscale=xscale,
+            yscale=yscale,
+        )
         ax.legend(title="Models", loc="best")
 
         self.ax_ = ax
