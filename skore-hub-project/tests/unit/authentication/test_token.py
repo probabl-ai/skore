@@ -5,8 +5,9 @@ from urllib.parse import urljoin
 import pytest
 from httpx import Response
 from skore_hub_project.authentication import token as Token
-from skore_hub_project.client.api import URI
+from skore_hub_project.client.client import HUBClient
 
+URI = HUBClient.URI
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
 

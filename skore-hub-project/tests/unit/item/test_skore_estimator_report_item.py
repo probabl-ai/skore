@@ -70,13 +70,12 @@ class TestSkoreEstimatorReportItem:
     def test_metadata(self, monkeypatch, report, report_b64_str):
         metadata = {
             "estimator_class_name": "LinearRegression",
-            "estimator_hyper_params": {},
             "dataset_fingerprint": joblib.hash(report.y_test),
             "ml_task": "regression",
             "metrics": [
                 {
                     "name": "r2",
-                    "value": float(hash("r2-train")),
+                    "value": 1.0,
                     "data_source": "train",
                     "greater_is_better": True,
                     "position": None,
@@ -84,7 +83,7 @@ class TestSkoreEstimatorReportItem:
                 },
                 {
                     "name": "r2",
-                    "value": float(hash("r2-test")),
+                    "value": 0.0,
                     "data_source": "test",
                     "greater_is_better": True,
                     "position": None,
@@ -121,15 +120,15 @@ class TestSkoreEstimatorReportItem:
         item2 = SkoreEstimatorReportItem(report_b64_str)
 
         monkeypatch.setattr(
-            "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.r2",
-            lambda self, data_source: hash(f"r2-{data_source}"),
+            "skore.EstimatorReport.metrics.r2",
+            lambda self, data_source: float(data_source == "train"),
         )
         monkeypatch.setattr(
-            "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.rmse",
+            "skore.EstimatorReport.metrics.rmse",
             lambda self, data_source: float("nan"),
         )
         monkeypatch.setattr(
-            "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.timings",
+            "skore.EstimatorReport.metrics.timings",
             lambda self: {
                 "fit_time": hash("fit_time"),
                 "predict_time_test": hash("predict_time_test"),

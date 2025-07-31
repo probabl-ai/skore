@@ -120,6 +120,7 @@ intersphinx_mapping = {
     "pandas": ("http://pandas.pydata.org/pandas-docs/stable", None),
     "polars": ("https://docs.pola.rs/py-polars/html", None),
     "seaborn": ("http://seaborn.pydata.org", None),
+    "xgboost": ("https://xgboost.readthedocs.io/en/stable/", None),
 }
 
 numpydoc_show_class_members = False

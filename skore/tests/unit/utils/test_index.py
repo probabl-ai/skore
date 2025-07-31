@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from skore.utils._index import flatten_multi_index
+from skore._utils._index import flatten_multi_index
 
 
 @pytest.mark.parametrize(

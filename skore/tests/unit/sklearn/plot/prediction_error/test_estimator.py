@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import pytest
 from skore import EstimatorReport
-from skore.sklearn._plot import PredictionErrorDisplay
-from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position
+from skore._sklearn._plot import PredictionErrorDisplay
+from skore._sklearn._plot.metrics.prediction_error import RangeData
+from skore._utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.mark.parametrize("subsample", [None, 1_000])
@@ -20,24 +20,24 @@ def test_regression(pyplot, regression_data, subsample):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.prediction_error, pd.DataFrame)
-    np.testing.assert_allclose(display.prediction_error["y_true"], y_test)
+    assert isinstance(display._prediction_error, pd.DataFrame)
+    np.testing.assert_allclose(display._prediction_error["y_true"], y_test)
     np.testing.assert_allclose(
-        display.prediction_error["y_pred"], estimator.predict(X_test)
+        display._prediction_error["y_pred"], estimator.predict(X_test)
     )
     np.testing.assert_allclose(
-        display.prediction_error["residuals"], y_test - estimator.predict(X_test)
+        display._prediction_error["residuals"], y_test - estimator.predict(X_test)
     )
     assert display.data_source == "test"
     assert isinstance(display.range_y_true, RangeData)
     assert isinstance(display.range_y_pred, RangeData)
     assert isinstance(display.range_residuals, RangeData)
-    assert display.range_y_true.min == np.min(display.prediction_error["y_true"])
-    assert display.range_y_true.max == np.max(display.prediction_error["y_true"])
-    assert display.range_y_pred.min == np.min(display.prediction_error["y_pred"])
-    assert display.range_y_pred.max == np.max(display.prediction_error["y_pred"])
-    assert display.range_residuals.min == np.min(display.prediction_error["residuals"])
-    assert display.range_residuals.max == np.max(display.prediction_error["residuals"])
+    assert display.range_y_true.min == np.min(display._prediction_error["y_true"])
+    assert display.range_y_true.max == np.max(display._prediction_error["y_true"])
+    assert display.range_y_pred.min == np.min(display._prediction_error["y_pred"])
+    assert display.range_y_pred.max == np.max(display._prediction_error["y_pred"])
+    assert display.range_residuals.min == np.min(display._prediction_error["residuals"])
+    assert display.range_residuals.max == np.max(display._prediction_error["residuals"])
 
     display.plot()
     assert hasattr(display, "ax_")
@@ -246,6 +246,20 @@ def test_wrong_report_type(pyplot, regression_data):
         display.plot()
 
 
+def test_frame(regression_data):
+    """Test the frame method with regression data."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    df = report.metrics.prediction_error().frame()
+
+    expected_index = []
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+
+
 def test_legend(pyplot, regression_data):
     """Check the rendering of the legend for prediction error with an
     `EstimatorReport`."""
@@ -260,3 +274,21 @@ def test_legend(pyplot, regression_data):
 
     display.plot(kind="actual_vs_predicted")
     check_legend_position(display.ax_, loc="lower right", position="inside")
+
+
+def test_constructor(regression_data):
+    """Check that the dataframe has the correct structure at initialization."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.prediction_error()
+
+    index_columns = ["estimator_name", "split_index"]
+    df = display._prediction_error
+    assert all(col in df.columns for col in index_columns)
+    assert df["estimator_name"].unique() == report.estimator_name_
+    assert df["split_index"].isnull().all()
+    np.testing.assert_allclose(df["y_true"], y_test)
+    np.testing.assert_allclose(df["y_pred"], estimator.predict(X_test))
+    np.testing.assert_allclose(df["residuals"], y_test - estimator.predict(X_test))

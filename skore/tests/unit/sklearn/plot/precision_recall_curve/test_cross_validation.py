@@ -4,10 +4,10 @@ import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from skore import CrossValidationReport
-from skore.sklearn._plot import PrecisionRecallCurveDisplay
-from skore.sklearn._plot.utils import sample_mpl_colormap
-from skore.utils._testing import check_legend_position
-from skore.utils._testing import (
+from skore._sklearn._plot import PrecisionRecallCurveDisplay
+from skore._sklearn._plot.utils import sample_mpl_colormap
+from skore._utils._testing import check_frame_structure, check_legend_position
+from skore._utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
 )
 
@@ -145,6 +145,53 @@ def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
         display.plot(pr_curve_kwargs=pr_curve_kwargs)
 
 
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_binary_classification(
+    binary_classification_data_no_split, with_average_precision
+):
+    """Test the frame method with binary classification data."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    df = report.metrics.precision_recall().frame(
+        with_average_precision=with_average_precision
+    )
+    expected_index = ["split_index"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == cv
+
+    if with_average_precision:
+        for (_), group in df.groupby(["split_index"], observed=True):
+            assert group["average_precision"].nunique() == 1
+
+
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_multiclass_classification(
+    multiclass_classification_data_no_split, with_average_precision
+):
+    """Test the frame method with multiclass classification data."""
+    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    df = report.metrics.precision_recall().frame(
+        with_average_precision=with_average_precision
+    )
+    expected_index = ["split_index", "label"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["split_index"].nunique() == cv
+    assert df["label"].nunique() == len(np.unique(y))
+
+    if with_average_precision:
+        for (_, _), group in df.groupby(["split_index", "label"], observed=True):
+            assert group["average_precision"].nunique() == 1
+
+
 def test_legend(
     pyplot, binary_classification_data_no_split, multiclass_classification_data_no_split
 ):
@@ -184,3 +231,35 @@ def test_legend(
     display = report.metrics.precision_recall()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
+
+
+def test_binary_classification_constructor(binary_classification_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.precision_recall()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    for df in [display.precision_recall, display.average_precision]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].nunique() == cv
+        assert df["label"].unique() == 1
+
+    assert len(display.average_precision) == cv
+
+
+def test_multiclass_classification_constructor(multiclass_classification_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.precision_recall()
+
+    index_columns = ["estimator_name", "split_index", "label"]
+    for df in [display.precision_recall, display.average_precision]:
+        assert all(col in df.columns for col in index_columns)
+        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["split_index"].unique().tolist() == list(range(cv))
+        np.testing.assert_array_equal(df["label"].unique(), np.unique(y))
+
+    assert len(display.average_precision) == len(np.unique(y)) * cv

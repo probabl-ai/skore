@@ -10,7 +10,7 @@ When it comes to data science, many libraries are available to help you experime
 `pandas` or `polars` are great tools to explore and transform your data. `skrub` is the
 one tool that brings the necessary *statefullness* to those transformations required by
 the machine learning pipeline
-(`refer to <https://skrub-data.org/stable/documentation.html>`_).
+(refer to `skrub's documentation <https://skrub-data.org/stable/documentation.html>`_).
 `scikit-learn` and other `scikit-learn` compatible libraries (e.g. `xgboost`,
 `lightgbm`) provide a set of algorithms to ingest those transformed data and create
 predictive models. `scikit-learn`

@@ -1,21 +1,19 @@
 from datetime import datetime, timezone
 from itertools import repeat
-from urllib.parse import urljoin
 
 from httpx import Response, TimeoutException
 from pytest import mark, raises
 from skore_hub_project.authentication import token as Token
 from skore_hub_project.authentication.login import login
-from skore_hub_project.client.api import URI
 
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
 
-REFRESH_URL = urljoin(URI, "identity/oauth/token/refresh")
-LOGIN_URL = urljoin(URI, "identity/oauth/device/login")
-PROBE_URL = urljoin(URI, "identity/oauth/device/code-probe")
-CALLBACK_URL = urljoin(URI, "identity/oauth/device/callback")
-TOKEN_URL = urljoin(URI, "identity/oauth/device/token")
+REFRESH_URL = "identity/oauth/token/refresh"
+LOGIN_URL = "identity/oauth/device/login"
+PROBE_URL = "identity/oauth/device/code-probe"
+CALLBACK_URL = "identity/oauth/device/callback"
+TOKEN_URL = "identity/oauth/device/token"
 
 
 @mark.respx(assert_all_mocked=False)

@@ -42,7 +42,7 @@ log_report.help()
 # Display the report metrics that was computed for you:
 
 # %%
-metrics_summary = log_report.metrics.summarize()
+metrics_summary = log_report.metrics.summarize().frame()
 metrics_summary
 
 # %%
@@ -66,7 +66,7 @@ import skore
 import os
 import tempfile
 
-temp_dir = tempfile.TemporaryDirectory()
+temp_dir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 os.environ["SKORE_WORKSPACE"] = temp_dir.name
 # sphinx_gallery_end_ignore
 my_project = skore.Project("my_project")
@@ -130,7 +130,7 @@ pprint(report_get)
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
-report_get[0].metrics.summarize()
+report_get[0].metrics.summarize().frame()
 
 # %%
 # .. seealso::

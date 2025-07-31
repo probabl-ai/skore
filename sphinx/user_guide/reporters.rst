@@ -123,14 +123,19 @@ metrics available in `skore` for cross-validation.
 Comparison report
 -----------------
 
-:class:`CrossValidationReport` is a great tool to compare the performance of the same
-predictive model architecture with a variation of the dataset. However, it is not
-intended to compare different families of predictive models. For this purpose,
-use :class:`ComparisonReport`.
+To compare the performance of different predictive models, `skore` provides the
+:class:`ComparisonReport`.
 
 :class:`ComparisonReport` takes a list (or a dictionary) of :class:`EstimatorReport` or
 :class:`CrossValidationReport` instances. It then provides methods to compare the
 performance of the different models.
+
+In order for the comparison to make sense, the reports must all have the same test target.
+However, they may have different training data or target; this might be the case when comparing a new model with the current production model, for example.
+They may also have different testing data (:math:`X_{test}`), which means the compared model pipelines do not necessarily need to be the same.
+The comparison of test targets is done by computing a hash of the arrays. Therefore, if
+the y_test are functionally equal, but have different data types, they will be
+considered as different.
 
 The caching mechanism is also available and exposes the same methods.
 

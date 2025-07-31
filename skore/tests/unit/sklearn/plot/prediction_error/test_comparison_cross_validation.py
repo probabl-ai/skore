@@ -5,9 +5,9 @@ import pytest
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from skore import ComparisonReport, CrossValidationReport
-from skore.sklearn._plot import PredictionErrorDisplay
-from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position
+from skore._sklearn._plot import PredictionErrorDisplay
+from skore._sklearn._plot.metrics.prediction_error import RangeData
+from skore._utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.fixture
@@ -31,8 +31,8 @@ def test_regression(pyplot, report):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.prediction_error, pd.DataFrame)
-    assert list(display.prediction_error["estimator_name"].unique()) == [
+    assert isinstance(display._prediction_error, pd.DataFrame)
+    assert list(display._prediction_error["estimator_name"].unique()) == [
         "estimator_1",
         "estimator_2",
     ]
@@ -42,7 +42,7 @@ def test_regression(pyplot, report):
     assert isinstance(display.range_residuals, RangeData)
     for attr in ("y_true", "y_pred", "residuals"):
         global_min, global_max = np.inf, -np.inf
-        for display_attr in display.prediction_error[attr]:
+        for display_attr in display._prediction_error[attr]:
             global_min = min(global_min, np.min(display_attr))
             global_max = max(global_max, np.max(display_attr))
         assert getattr(display, f"range_{attr}").min == global_min
@@ -77,7 +77,7 @@ def test_regression_actual_vs_predicted(pyplot, report):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.prediction_error, pd.DataFrame)
+    assert isinstance(display._prediction_error, pd.DataFrame)
     assert display.data_source == "test"
 
     assert isinstance(display.line_, mpl.lines.Line2D)
@@ -128,3 +128,38 @@ def test_wrong_kwargs(pyplot, report, data_points_kwargs):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(data_points_kwargs=data_points_kwargs)
+
+
+def test_constructor(regression_data_no_split):
+    """Check that the dataframe has the correct structure at initialization."""
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    # add a different number of splits for the second report
+    report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.prediction_error()
+
+    index_columns = ["estimator_name", "split_index"]
+    df = display._prediction_error
+    assert all(col in df.columns for col in index_columns)
+    assert df.query("estimator_name == 'estimator_1'")[
+        "split_index"
+    ].unique().tolist() == list(range(cv))
+    assert df.query("estimator_name == 'estimator_2'")[
+        "split_index"
+    ].unique().tolist() == list(range(cv + 1))
+    assert df["estimator_name"].unique().tolist() == report.report_names_
+
+
+def test_frame(report):
+    """Test the frame method with regression comparison cross-validation data."""
+    display = report.metrics.prediction_error()
+    df = display.frame()
+
+    expected_index = ["estimator_name", "split_index"]
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == len(report.reports_)

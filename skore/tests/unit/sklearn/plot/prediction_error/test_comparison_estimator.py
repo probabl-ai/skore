@@ -2,10 +2,11 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
-from skore.sklearn._plot import PredictionErrorDisplay
-from skore.sklearn._plot.metrics.prediction_error import RangeData
-from skore.utils._testing import check_legend_position
+from skore._sklearn._plot import PredictionErrorDisplay
+from skore._sklearn._plot.metrics.prediction_error import RangeData
+from skore._utils._testing import check_frame_structure, check_legend_position
 
 
 def test_regression(pyplot, regression_data):
@@ -34,8 +35,8 @@ def test_regression(pyplot, regression_data):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.prediction_error, pd.DataFrame)
-    assert list(display.prediction_error["estimator_name"].unique()) == [
+    assert isinstance(display._prediction_error, pd.DataFrame)
+    assert list(display._prediction_error["estimator_name"].unique()) == [
         "estimator_1",
         "estimator_2",
     ]
@@ -45,7 +46,7 @@ def test_regression(pyplot, regression_data):
     assert isinstance(display.range_residuals, RangeData)
     for attr in ("y_true", "y_pred", "residuals"):
         global_min, global_max = np.inf, -np.inf
-        for display_attr in display.prediction_error[attr]:
+        for display_attr in display._prediction_error[attr]:
             global_min = min(global_min, np.min(display_attr))
             global_max = max(global_max, np.max(display_attr))
         assert getattr(display, f"range_{attr}").min == global_min
@@ -97,7 +98,7 @@ def test_regression_actual_vs_predicted(pyplot, regression_data):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.prediction_error, pd.DataFrame)
+    assert isinstance(display._prediction_error, pd.DataFrame)
     assert display.data_source == "test"
 
     assert isinstance(display.line_, mpl.lines.Line2D)
@@ -187,6 +188,38 @@ def test_wrong_kwargs(pyplot, regression_data, data_points_kwargs):
         display.plot(data_points_kwargs=data_points_kwargs)
 
 
+def test_frame(regression_data):
+    """Test the frame method with comparison data."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    estimator_2 = clone(estimator).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.prediction_error()
+    df = display.frame()
+
+    expected_index = ["estimator_name"]
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == 2
+
+
 def test_legend(pyplot, regression_data):
     """Check the rendering of the legend for prediction error with a
     `ComparisonReport`."""
@@ -223,3 +256,24 @@ def test_legend(pyplot, regression_data):
 
     display.plot(kind="actual_vs_predicted")
     check_legend_position(display.ax_, loc="upper left", position="outside")
+
+
+def test_constructor(regression_data):
+    """Check that the dataframe has the correct structure at initialization."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.prediction_error()
+
+    index_columns = ["estimator_name", "split_index"]
+    df = display._prediction_error
+    assert all(col in df.columns for col in index_columns)
+    assert df["estimator_name"].unique().tolist() == report.report_names_
+    assert df["split_index"].isnull().all()

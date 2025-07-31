@@ -13,7 +13,7 @@ from math import isfinite
 from operator import attrgetter
 from typing import TYPE_CHECKING
 
-from .item import ItemTypeError, lazy_is_instance, switch_mpl_backend
+from .item import ItemTypeError, switch_mpl_backend
 from .matplotlib_figure_item import MatplotlibFigureItem
 from .media_item import MediaItem
 from .pandas_dataframe_item import PandasDataFrameItem
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from typing import Any, Literal, TypedDict
 
-    from skore.sklearn import EstimatorReport
+    from skore import EstimatorReport
 
     class MetadataFunction:  # noqa: D101
         metadata: Any
@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 def cast_to_float(value: Any) -> float | None:
     """Cast value to float."""
     with suppress(TypeError):
-        if (value := float(value)) and isfinite(value):
+        if isfinite(value := float(value)):
             return value
 
     return None
@@ -94,11 +94,6 @@ class Metadata:
     def estimator_class_name(self) -> str:
         """Return the name of the report's estimator."""
         return self.report.estimator_name_
-
-    @metadata_function
-    def estimator_hyper_params(self) -> dict:
-        """DeprecationWarning: send empty dictionary to not break the hub API."""
-        return {}
 
     @metadata_function
     def dataset_fingerprint(self) -> str:
@@ -416,7 +411,9 @@ class SkoreEstimatorReportItem(PickleItem):
         ItemTypeError
             If ``value`` is not an instance of ``skore.EstimatorReport``.
         """
-        if lazy_is_instance(value, "skore.sklearn._estimator.report.EstimatorReport"):
+        from skore import EstimatorReport
+
+        if isinstance(value, EstimatorReport):
             return super().factory(value)
 
         raise ItemTypeError(f"Type '{value.__class__}' is not supported.")

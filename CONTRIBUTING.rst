@@ -39,8 +39,8 @@ Signing commits
 You have to sign your commits before submitting a pull request.
 For a pull request to be accepted, all the commits inside of it must be signed.
 
-GitHub supports commit signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
-For setup instructions and more details, please refer to `GitHub’s guide on signing commits <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_.
+If you haven't set up commit signing yet, GitHub supports signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
+For setup instructions and more details, please refer to `GitHub's guide on signing commits <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_.
 
 Questions, bugs, and feature requests
 =====================================
@@ -63,7 +63,7 @@ Development
 Quick start
 -----------
 
-You'll need ``python >=3.9, <3.13``.
+You will need ``python >=3.10``.
 
 Setting up your development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -99,12 +99,17 @@ Once your environment is set up, install the development dependencies and setup 
 
         make install-skore-lts-cpu
 
+Consider re-executing this command each time you rebase your branch with main, as dependencies can change.
+
+
 Choosing an issue
 -----------------
 
 If you are new to open-source, you can start by an `issue tagged "good first issue" <https://github.com/probabl-ai/skore/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22>`_.
 
 The implementation of some issues are not very detailed. You can either propose a solution, or choose only the issues with a "Ready" status.
+
+The contributor has to comment existing issue to be assigned by maintainers (this is a GH limitation), to highlight that an issue is ongoing and avoid overlapping work. If someone is already assigned to the issue, unless the PR has been stalled for weeks, maintainers will not assign someone else. Then, the contributor must link the PR to the issue.
 
 Pull requests
 -------------
@@ -257,6 +262,7 @@ The examples are stored in the `examples` folder:
 Guidelines for creating effective examples:
 
 1. **Types of examples**:
+
    - **Doctests**: Use these in API documentation for demonstrating simple usage patterns.
    - **User guide examples**: Create comprehensive examples that demonstrate functionality in real-world contexts.
 
@@ -265,6 +271,7 @@ Guidelines for creating effective examples:
 3. **Example content**: Focus on demonstrating the core concept rather than exhaustively listing all possible arguments. Show the global idea of how to use the feature effectively.
 
 4. **Dataset selection**:
+
    - Use meaningful, realistic datasets (not synthetic data with artificially high scores)
    - Ensure examples execute efficiently (under a few minutes)
    - Prefer built-in or easily downloadable datasets
@@ -276,20 +283,6 @@ Contributing to the README
 The `README.md` file can be modified and is part of the documentation (although it is not included in the online documentation).
 This file is used to be presented on `PyPI <https://pypi.org/project/skore/#description>`_.
 
-Signing Commits
----------------
-
-You must sign your commits before submitting a pull request.
-For a pull request to be accepted, all the commits inside of it must be signed.
-
-To sign your commits:
-
-.. code-block:: bash
-
-    git commit -S -m "Your commit message"
-
-If you haven't set up commit signing yet, GitHub supports signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
-For setup instructions and more details, please refer to `GitHub's guide on signing commits <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_.
 
 Pull Request Checklist
 ======================
