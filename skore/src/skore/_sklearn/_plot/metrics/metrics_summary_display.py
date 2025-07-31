@@ -1,3 +1,5 @@
+from typing import Literal
+
 from skore._sklearn._plot.style import StyleDisplayMixin
 from skore._sklearn._plot.utils import HelpDisplayMixin
 from skore._utils._index import flatten_multi_index
@@ -28,6 +30,7 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
     def frame(
         self,
         *,
+        scoring_names: Literal["verbose"] | dict[str, str] | None = None,
         indicator_favorability: bool = False,
         flat_index: bool = True,
     ):
@@ -35,6 +38,15 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
 
         Parameters
         ----------
+        scoring_names : {"verbose"} or dict, default=None
+            Whether to override the default metric names.
+
+            - if "verbose", the metric names are replaced by their verbose name
+              capitalized and without underscores.
+            - if a dictionary, the keys are the metric names and the values are the new
+              names.
+            - if `None`, the default metric names are used.
+
         indicator_favorability : bool, default=False
             Whether or not to add an indicator of the favorability of the metric as
             an extra column in the returned DataFrame.
@@ -47,7 +59,21 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
         frame : pandas.DataFrame
             The report metrics as a dataframe.
         """
-        df = self.data.dropna(axis="columns", how="all").drop(columns="verbose_name")
+        df = self.data.dropna(axis="columns", how="all")
+
+        if scoring_names == "verbose":
+            df = df.drop(columns="metric").rename(columns={"verbose_name": "metric"})
+            join_str = " "
+        elif scoring_names is None:
+            df = df.drop(columns="verbose_name")
+            join_str = "_"
+        elif isinstance(scoring_names, dict):
+            df = df.drop(columns="verbose_name")
+            df["metric"] = df["metric"].apply(lambda x: scoring_names.get(x, x))
+            join_str = " "
+        else:
+            raise ValueError("`scoring_names` must be one of {'verbose', None, dict}.")
+
         if not indicator_favorability:
             df = df.drop(columns="favorability")
 
@@ -63,7 +89,7 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
             df = df.rename(columns={"score": estimator_name.cat.categories.item()})
 
         if flat_index:
-            df.index = flatten_multi_index(df.index)
+            df.index = flatten_multi_index(df.index, join_str=join_str)
             df.index.name = "metric"
 
         return df

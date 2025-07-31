@@ -31,7 +31,6 @@ from skore._sklearn.types import (
     _DEFAULT,
     PositiveLabel,
     Scoring,
-    ScoringName,
     YPlotData,
 )
 from skore._utils._accessor import (
@@ -67,7 +66,6 @@ class _MetricsAccessor(
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         scoring: Scoring | list[Scoring] | None = None,
-        scoring_names: ScoringName | list[ScoringName] | None = None,
         scoring_kwargs: dict[str, Any] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> MetricsSummaryDisplay:
@@ -106,10 +104,6 @@ class _MetricsAccessor(
               scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
               the metric favorability will only be displayed if it is given explicitly
               via `make_scorer`'s `greater_is_better` parameter.
-
-        scoring_names : str, None or list of such instances, default=None
-            Used to overwrite the default scoring names in the report. It should be of
-            the same length as the `scoring` parameter.
 
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
@@ -157,9 +151,6 @@ class _MetricsAccessor(
         if scoring is not None and not isinstance(scoring, list):
             scoring = [scoring]
 
-        if scoring_names is not None and not isinstance(scoring_names, list):
-            scoring_names = [scoring_names]
-
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
             # FIXME: we are still recomputing the hash for all the metrics that we
@@ -171,7 +162,6 @@ class _MetricsAccessor(
         else:
             data_source_hash = None
 
-        scoring_was_none = scoring is None
         if scoring is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
@@ -186,28 +176,8 @@ class _MetricsAccessor(
                 scoring = ["_r2", "_rmse"]
             scoring += ["_fit_time", "_predict_time"]
 
-        if scoring_names is not None and len(scoring_names) != len(scoring):
-            if scoring_was_none:
-                # we raise a better error message since we decide the default scores
-                raise ValueError(
-                    "The `scoring_names` parameter should be of the same length as "
-                    "the `scoring` parameter. In your case, `scoring` was set to None "
-                    f"and you are using our default scores that are {len(scoring)}. "
-                    f"The list is the following: {scoring}."
-                )
-            else:
-                raise ValueError(
-                    "The `scoring_names` parameter should be of the same length as "
-                    f"the `scoring` parameter. Got {len(scoring_names)} names for "
-                    f"{len(scoring)} scoring functions."
-                )
-        elif scoring_names is None:
-            scoring_names = [None] * len(scoring)
-
         scores = defaultdict(list)
-        # scores = []
-        # favorability_indicator = []
-        for verbose_metric_name, metric in zip(scoring_names, scoring, strict=False):
+        for metric in scoring:
             if isinstance(metric, str) and not (
                 (metric.startswith("_") and metric[1:] in self._score_or_loss_info)
                 or metric in self._score_or_loss_info
@@ -258,8 +228,7 @@ class _MetricsAccessor(
                         metrics_kwargs["pos_label"] = pos_label
 
                 metric_name = metric._score_func.__name__
-                if verbose_metric_name is None:
-                    verbose_metric_name = metric_name.replace("_", " ").title()
+                verbose_metric_name = metric_name.replace("_", " ").title()
 
                 metric_favorability = "(↗︎)" if metric._sign == 1 else "(↘︎)"
             elif isinstance(metric, str) or callable(metric):
@@ -273,11 +242,9 @@ class _MetricsAccessor(
                         metrics_kwargs = {"data_source_hash": data_source_hash}
 
                         metric_name = metric[1:]
-                        if verbose_metric_name is None:
-                            verbose_metric_name = (
-                                f"{self._score_or_loss_info[metric[1:]]['name']}"
-                            )
-
+                        verbose_metric_name = (
+                            f"{self._score_or_loss_info[metric[1:]]['name']}"
+                        )
                         metric_favorability = self._score_or_loss_info[metric[1:]][
                             "icon"
                         ]
@@ -288,11 +255,9 @@ class _MetricsAccessor(
                         metrics_kwargs = {"data_source_hash": data_source_hash}
 
                         metric_name = metric
-                        if verbose_metric_name is None:
-                            verbose_metric_name = (
-                                f"{self._score_or_loss_info[metric]['name']}"
-                            )
-
+                        verbose_metric_name = (
+                            f"{self._score_or_loss_info[metric]['name']}"
+                        )
                         metric_favorability = self._score_or_loss_info[metric]["icon"]
                 else:
                     # Handle callable metrics
@@ -311,9 +276,7 @@ class _MetricsAccessor(
                     metrics_kwargs["data_source_hash"] = data_source_hash
 
                     metric_name = metric.__name__
-                    if verbose_metric_name is None:
-                        verbose_metric_name = metric_name.replace("_", " ").title()
-
+                    verbose_metric_name = metric_name.replace("_", " ").title()
                     metric_favorability = ""
 
                 metrics_params = inspect.signature(metric_fn).parameters
