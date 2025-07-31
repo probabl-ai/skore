@@ -94,6 +94,16 @@ def regression_multioutput_data():
     return LinearRegression().fit(X_train, y_train), X_test, y_test
 
 
+def test_summary_display_frame_error(binary_classification_data):
+    """Check that we raise the expected error when passing wrong parameters to
+    `.frame`."""
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    display = report.metrics.summarize()
+    with pytest.raises(ValueError, match="`scoring_names` must be one of"):
+        display.frame(scoring_names="wrong")
+
+
 def test_summary_display_frame_flat_index(binary_classification_data):
     """Check the behaviour of `flat_index` in `summarize`."""
     estimator, X_test, y_test = binary_classification_data
