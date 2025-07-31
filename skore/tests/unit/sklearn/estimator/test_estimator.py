@@ -1595,6 +1595,26 @@ def test_estimator_report_precision_recall_pos_label_overwrite(
     )
 
 
+def test_estimator_report_roc_multiclass_requires_predict_proba(
+    multiclass_classification_data_svc, binary_classification_data_svc
+):
+    """Check that the ROC AUC metric is not exposed with multiclass data if the
+    estimator does not expose `predict_proba`.
+
+    Non-regression test for:
+    https://github.com/probabl-ai/skore/issues/1873
+    """
+    classifier, X_test, y_test = multiclass_classification_data_svc
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+    with pytest.raises(AttributeError):
+        report.metrics.roc_auc()
+
+    classifier, X_test, y_test = binary_classification_data_svc
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+    assert hasattr(report.metrics, "roc_auc")
+    report.metrics.roc_auc()
+
+
 ########################################################################################
 # Check the data accessor methods
 ########################################################################################

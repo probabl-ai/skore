@@ -243,7 +243,22 @@ class Project:
         return self.__project.put(key=key, report=report)
 
     def get(self, id: str) -> EstimatorReport:
-        """Get a persisted report by its id."""
+        """
+        Get a persisted report by its id.
+
+        Report IDs can be found via :meth:`skore.Project.summarize`, which is
+        also the preferred method of interacting with a ``skore.Project``.
+
+        Parameters
+        ----------
+        id : str
+            The id of a report already put in the ``project``.
+
+        Raises
+        ------
+        KeyError
+            If a non-existent ID is passed.
+        """
         return self.__project.reports.get(id)
 
     def summarize(self) -> Summary:
