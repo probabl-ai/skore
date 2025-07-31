@@ -40,31 +40,37 @@ Skore: getting started
 # In order to assist its users when programming, skore has implemented a
 # :class:`skore.EstimatorReport` class.
 #
-# Let us load a binary classification dataset and get the estimator report for a
-# :class:`~sklearn.ensemble.RandomForestClassifier`:
+# Let us load a multi-class classification dataset and get the estimator report for a
+# :class:`~sklearn.linear_model.LogisticRegression`:
 
 # %%
-from sklearn.datasets import load_breast_cancer
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 
 from skore import EstimatorReport
 
-X, y = load_breast_cancer(return_X_y=True, as_frame=True)
+X, y = make_classification(
+    n_samples=10_000,
+    n_classes=3,
+    class_sep=0.3,
+    n_clusters_per_class=1,
+    random_state=42,
+)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-rf = RandomForestClassifier(random_state=0)
+lr = LogisticRegression(random_state=0)
 
-rf_report = EstimatorReport(
-    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, pos_label=1
+lr_report = EstimatorReport(
+    lr, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
 )
 
 # %%
 # Now, we can display the helper to see all the insights that are available to us
-# (skore detected that we are doing binary classification):
+# (skore detected that we are doing multi-class classification):
 
 # %%
-rf_report.help()
+lr_report.help()
 
 # %%
 # .. note::
@@ -81,20 +87,20 @@ rf_report.help()
 # fit and prediction times):
 
 # %%
-rf_report.metrics.summarize(indicator_favorability=True).frame()
+lr_report.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # For inspection, we can also retrieve the predictions, on the train set for example
 # (here we display only the first 10 predictions for conciseness purposes):
 
 # %%
-rf_report.get_predictions(data_source="train")[0:10]
+lr_report.get_predictions(data_source="train")[0:10]
 
 # %%
 # We can also plot the ROC curve that is generated for us:
 
 # %%
-roc_plot = rf_report.metrics.roc()
+roc_plot = lr_report.metrics.roc()
 roc_plot.plot()
 
 # %%
@@ -105,7 +111,7 @@ roc_plot.plot()
 # %%
 import matplotlib.pyplot as plt
 
-rf_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
+lr_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
 plt.tight_layout()
 
 # %%
@@ -127,7 +133,7 @@ plt.tight_layout()
 # %%
 from skore import CrossValidationReport
 
-cv_report = CrossValidationReport(rf, X, y, cv_splitter=5)
+cv_report = CrossValidationReport(lr, X, y, cv_splitter=5)
 
 # %%
 # We display the cross-validation report helper:
@@ -175,14 +181,14 @@ cv_report.estimator_reports_[0].metrics.summarize().frame()
 # (corresponding to several estimators) on a same test set, as in a benchmark of
 # estimators.
 #
-# Apart from the previous ``rf_report``, let us define another estimator report:
+# Apart from the previous ``lr_report``, let us define another estimator report:
 
 # %%
 from sklearn.ensemble import GradientBoostingClassifier
 
 gb = GradientBoostingClassifier(random_state=0)
 gb_report = EstimatorReport(
-    gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, pos_label=1
+    gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
 )
 
 # %%
@@ -192,7 +198,7 @@ gb_report = EstimatorReport(
 # %%
 from skore import ComparisonReport
 
-comparator = ComparisonReport(reports=[rf_report, gb_report])
+comparator = ComparisonReport(reports=[lr_report, gb_report])
 
 # %%
 # As for the :class:`~skore.EstimatorReport` and the
@@ -293,11 +299,11 @@ my_project = skore.Project("my_project")
 # :func:`~skore.Project.put`, with a key-value convention.
 
 # %%
-# Let us store the estimator reports of the random forest and the gradient boosting
+# Let us store the estimator reports of the logistic regression and the gradient boosting
 # to help us track our experiments:
 
 # %%
-my_project.put("estimator_report", rf_report)
+my_project.put("estimator_report", lr_report)
 my_project.put("estimator_report", gb_report)
 
 # %%
@@ -326,7 +332,7 @@ pprint(reports_get)
 
 # %%
 comparator = ComparisonReport(reports=reports_get)
-comparator.metrics.summarize(pos_label=1, indicator_favorability=True).frame()
+comparator.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # We can retrieve any accessor of our stored estimator reports, for example
@@ -377,13 +383,11 @@ pprint(summary.keys())
 
 # %%
 # For example, we can query all the estimators corresponding to a
-# :class:`~sklearn.ensemble.RandomForestClassifier`:
+# :class:`~sklearn.linear_model.LogisticRegression`:
 
 # %%
-report_search_rf = summary.query(
-    "learner.str.contains('RandomForestClassifier')"
-).reports()
-pprint(report_search_rf)
+report_search_lr = summary.query("learner.str.contains('LogisticRegression')").reports()
+pprint(report_search_lr)
 
 # %%
 # Or, we can query all the estimator reports corresponding to a classification
