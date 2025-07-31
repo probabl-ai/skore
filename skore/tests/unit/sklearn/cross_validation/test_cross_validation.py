@@ -17,6 +17,7 @@ from sklearn.metrics import (
     median_absolute_error,
     r2_score,
 )
+from sklearn.model_selection import KFold, check_cv
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -1133,3 +1134,27 @@ def test_cross_validation_report_precision_recall_pos_label_overwrite(
             (metric.capitalize(), "A"), (report.estimator_name_, "mean")
         ]
     )
+
+
+@pytest.mark.parametrize(
+    "strategy",
+    (
+        2,
+        KFold(n_splits=2, random_state=42, shuffle=True),
+        (
+            ((0,), (1,)),
+            ((2,), (3,)),
+        ),
+    ),
+)
+def test_cross_validation_report_split_indices(strategy, binary_classification_data):
+    from numpy.testing import assert_equal
+
+    classifier, X, y = binary_classification_data
+    X = X[:4]
+    y = y[:4]
+
+    cvr = CrossValidationReport(classifier, X, y, cv_splitter=strategy)
+    splitter = check_cv(strategy, y, classifier=True)
+
+    assert_equal(cvr.split_indices, tuple(splitter.split(X=X, y=y)))
