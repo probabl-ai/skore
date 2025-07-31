@@ -42,9 +42,9 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin):
             Whether to override the default metric names.
 
             - if "verbose", the metric names are replaced by their verbose name
-              capitalized and without underscores.
+              capitalized and without underscores;
             - if a dictionary, the keys are the metric names and the values are the new
-              names.
+              names;
             - if `None`, the default metric names are used.
 
         indicator_favorability : bool, default=False
