@@ -122,7 +122,7 @@ hgbt_model_report.help()
 # A report provides a collection of useful information. For instance, it allows to
 # compute on demand the predictions of the model and some performance metrics.
 #
-# Let's cache once for all the predictions of the cross-validated models.
+# Let's cache the predictions of the cross-validated models once and for all.
 
 # %%
 hgbt_model_report.cache_predictions(n_jobs=4)
@@ -139,8 +139,7 @@ hgbt_model_report.metrics.summarize().frame()
 # %%
 # We get the results from some statistical metrics aggregated over the cross-validation
 # splits as well as some performance metrics related to the time it took to train and
-# test the model. The favorability of each metric indicates whether the metric is better
-# when higher or lower.
+# test the model.
 #
 # The :class:`skore.CrossValidationReport` also provides a way to inspect similar
 # information at the level of each cross-validation split by accessing an
@@ -149,6 +148,10 @@ hgbt_model_report.metrics.summarize().frame()
 # %%
 hgbt_split_1 = hgbt_model_report.estimator_reports_[0]
 hgbt_split_1.metrics.summarize(indicator_favorability=True).frame()
+
+# %%
+# The favorability of each metric indicates whether the metric is better
+# when higher or lower.
 
 # %%
 # We also have access to some additional information regarding the dataset used for
@@ -233,8 +236,8 @@ model
 # %%
 # In the diagram above, we can see what how we performed our feature engineering:
 #
-# * For categorical features, we use two approaches: if the number of categories is
-#   relatively small, we use a `OneHotEncoder`, and if the number of categories is
+# * For categorical features, we use two approaches. If the number of categories is
+#   relatively small, we use a `OneHotEncoder`. If the number of categories is
 #   large, we use a `GapEncoder` that is designed to deal with high cardinality
 #   categorical features.
 #
@@ -260,9 +263,9 @@ linear_model_report = CrossValidationReport(
 linear_model_report.help()
 
 # %%
-# We observe that the cross-validation report detected that we have a regression task
-# and provides us with some metrics and plots that make sense with regards to our
-# specific problem at hand.
+# We observe that the cross-validation report has detected that we have a regression
+# task at hand and thus provides us with some metrics and plots that make sense with
+# regards to our specific problem at hand.
 #
 # To accelerate any future computation (e.g. of a metric), we cache the predictions of
 # our model once and for all.
