@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import time
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, Literal
@@ -20,6 +22,8 @@ from skore._utils._parallel import Parallel, delayed
 from skore._utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
 
 
@@ -130,7 +134,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
     }
-    metrics: "_MetricsAccessor"
+    metrics: _MetricsAccessor
 
     def __init__(
         self,
@@ -154,6 +158,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._cv_splitter = check_cv(
             cv_splitter, y, classifier=is_classifier(estimator)
         )
+        self._split_indices = tuple(self._cv_splitter.split(self._X, self._y))
         self.n_jobs = n_jobs
 
         self.estimator_reports_ = self._fit_estimator_reports()
@@ -189,8 +194,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         progress = self._progress_info["current_progress"]
         task = self._progress_info["current_task"]
 
-        n_splits = self._cv_splitter.get_n_splits(self._X, self._y)
-        progress.update(task, total=n_splits)
+        progress.update(task, total=len(self.split_indices))
 
         parallel = Parallel(
             **_validate_joblib_parallel_params(
@@ -207,7 +211,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 train_indices,
                 test_indices,
             )
-            for train_indices, test_indices in self._cv_splitter.split(self._X, self._y)
+            for (train_indices, test_indices) in self.split_indices
         )
 
         estimator_reports = []
@@ -456,6 +460,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     @property
     def cv_splitter(self) -> SKLearnCrossValidator:
         return self._cv_splitter
+
+    @property
+    def split_indices(self) -> tuple[tuple[Iterable[int], Iterable[int]]]:
+        return self._split_indices
 
     @property
     def pos_label(self) -> PositiveLabel | None:
