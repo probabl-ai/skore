@@ -55,8 +55,6 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixi
         y : str, default=None
             The metric to display on y-axis. By default, the second column.
         """
-        self.figure_, self.ax_ = plt.subplots()
-
         if self.report_type in (
             ["estimator", "cross-validation", "comparison-cross-validation"]
         ):
