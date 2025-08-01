@@ -228,7 +228,6 @@ class _MetricsAccessor(
                         metrics_kwargs["pos_label"] = pos_label
 
                 metric_name = metric._score_func.__name__
-                verbose_metric_name = metric_name.replace("_", " ").title()
 
                 metric_favorability = "(↗︎)" if metric._sign == 1 else "(↘︎)"
             elif isinstance(metric, str) or callable(metric):
@@ -242,9 +241,6 @@ class _MetricsAccessor(
                         metrics_kwargs = {"data_source_hash": data_source_hash}
 
                         metric_name = metric[1:]
-                        verbose_metric_name = (
-                            f"{self._score_or_loss_info[metric[1:]]['name']}"
-                        )
                         metric_favorability = self._score_or_loss_info[metric[1:]][
                             "icon"
                         ]
@@ -255,9 +251,6 @@ class _MetricsAccessor(
                         metrics_kwargs = {"data_source_hash": data_source_hash}
 
                         metric_name = metric
-                        verbose_metric_name = (
-                            f"{self._score_or_loss_info[metric]['name']}"
-                        )
                         metric_favorability = self._score_or_loss_info[metric]["icon"]
                 else:
                     # Handle callable metrics
@@ -276,7 +269,6 @@ class _MetricsAccessor(
                     metrics_kwargs["data_source_hash"] = data_source_hash
 
                     metric_name = metric.__name__
-                    verbose_metric_name = metric_name.replace("_", " ").title()
                     metric_favorability = ""
 
                 metrics_params = inspect.signature(metric_fn).parameters
@@ -298,7 +290,6 @@ class _MetricsAccessor(
                     classes = list(score.keys())
                     for label in classes:
                         scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(verbose_metric_name)
                         scores["estimator_name"].append(self._parent.estimator_name_)
                         scores["label"].append(label)
                         scores["average"].append(None)
@@ -308,21 +299,18 @@ class _MetricsAccessor(
                 elif "average" in metrics_kwargs:
                     if metrics_kwargs["average"] == "binary":
                         scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(verbose_metric_name)
                         scores["estimator_name"].append(self._parent.estimator_name_)
                         scores["average"].append(None)
                         scores["label"].append(pos_label)
                         scores["output"].append(None)
                     elif metrics_kwargs["average"] is not None:
                         scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(verbose_metric_name)
                         scores["estimator_name"].append(self._parent.estimator_name_)
                         scores["label"].append(None)
                         scores["average"].append(metrics_kwargs["average"])
                         scores["output"].append(None)
                     else:
                         scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(verbose_metric_name)
                         scores["estimator_name"].append(self._parent.estimator_name_)
                         scores["label"].append(None)
                         scores["average"].append(None)
@@ -331,7 +319,6 @@ class _MetricsAccessor(
                     scores["favorability"].append(metric_favorability)
                 else:
                     scores["metric"].append(metric_name)
-                    scores["verbose_name"].append(verbose_metric_name)
                     scores["estimator_name"].append(self._parent.estimator_name_)
                     scores["label"].append(None)
                     scores["average"].append(None)
@@ -343,7 +330,6 @@ class _MetricsAccessor(
                     classes = list(score.keys())
                     for label in classes:
                         scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(verbose_metric_name)
                         scores["estimator_name"].append(self._parent.estimator_name_)
                         scores["label"].append(label)
                         scores["average"].append(None)
@@ -355,7 +341,6 @@ class _MetricsAccessor(
                     and metrics_kwargs["average"] is not None
                 ):
                     scores["metric"].append(metric_name)
-                    scores["verbose_name"].append(verbose_metric_name)
                     scores["estimator_name"].append(self._parent.estimator_name_)
                     scores["label"].append(None)
                     scores["average"].append(metrics_kwargs["average"])
@@ -364,7 +349,6 @@ class _MetricsAccessor(
                     scores["favorability"].append(metric_favorability)
                 else:
                     scores["metric"].append(metric_name)
-                    scores["verbose_name"].append(verbose_metric_name)
                     scores["estimator_name"].append(self._parent.estimator_name_)
                     scores["label"].append(None)
                     scores["average"].append(None)
@@ -373,7 +357,6 @@ class _MetricsAccessor(
                     scores["favorability"].append(metric_favorability)
             elif self._parent._ml_task == "regression":
                 scores["metric"].append(metric_name)
-                scores["verbose_name"].append(verbose_metric_name)
                 scores["estimator_name"].append(self._parent.estimator_name_)
                 scores["label"].append(None)
                 scores["average"].append(None)
@@ -384,7 +367,6 @@ class _MetricsAccessor(
                 if isinstance(score, list):
                     for output_idx, output_score in enumerate(score):
                         scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(verbose_metric_name)
                         scores["estimator_name"].append(self._parent.estimator_name_)
                         scores["label"].append(None)
                         scores["average"].append(None)
@@ -393,7 +375,6 @@ class _MetricsAccessor(
                         scores["favorability"].append(metric_favorability)
                 else:
                     scores["metric"].append(metric_name)
-                    scores["verbose_name"].append(verbose_metric_name)
                     scores["estimator_name"].append(self._parent.estimator_name_)
                     scores["label"].append(None)
                     scores["average"].append(metrics_kwargs.get("multioutput", None))
@@ -402,7 +383,6 @@ class _MetricsAccessor(
                     scores["favorability"].append(metric_favorability)
             else:  # unknown task - try our best
                 scores["metric"].append(metric_name)
-                scores["verbose_name"].append(verbose_metric_name)
                 scores["estimator_name"].append(self._parent.estimator_name_)
                 scores["label"].append(None)
                 scores["average"].append(None)
@@ -414,7 +394,6 @@ class _MetricsAccessor(
         # constructor of the DataFrame
         constructor_data = {
             "metric": pd.Categorical,
-            "verbose_name": pd.Categorical,
             "estimator_name": pd.Categorical,
             "label": pd.Categorical,
             "average": pd.Categorical,

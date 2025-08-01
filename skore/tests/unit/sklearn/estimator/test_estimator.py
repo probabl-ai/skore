@@ -878,7 +878,7 @@ def test_estimator_report_metric_with_neg_metrics(binary_classification_data):
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
     result = report.metrics.summarize(scoring=["neg_log_loss"]).frame(
-        scoring_names="verbose", flat_index=False
+        scoring_names="pretty", flat_index=False
     )
     assert "Log Loss" in result.index
     assert result.loc["Log Loss", "RandomForestClassifier"] == pytest.approx(
@@ -892,13 +892,13 @@ def test_estimator_report_with_sklearn_scoring_strings(binary_classification_dat
     class_report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
     result = class_report.metrics.summarize(scoring=["neg_log_loss"]).frame(
-        scoring_names="verbose", flat_index=False
+        scoring_names="pretty", flat_index=False
     )
     assert "Log Loss" in result.index.get_level_values(0)
 
     result_multi = class_report.metrics.summarize(
         scoring=["accuracy", "neg_log_loss", "roc_auc"]
-    ).frame(scoring_names="verbose", flat_index=False, indicator_favorability=True)
+    ).frame(scoring_names="pretty", flat_index=False, indicator_favorability=True)
     assert "Accuracy" in result_multi.index.get_level_values(0)
     assert "Log Loss" in result_multi.index.get_level_values(0)
     assert "ROC AUC" in result_multi.index.get_level_values(0)
@@ -1030,7 +1030,7 @@ def test_estimator_report_with_sklearn_scoring_strings_regression(regression_dat
         scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"]
     )
     reg_result = display.frame(
-        scoring_names="verbose", flat_index=False, indicator_favorability=True
+        scoring_names="pretty", flat_index=False, indicator_favorability=True
     )
 
     assert "Mean Squared Error" in reg_result.index.get_level_values(0)
@@ -1048,7 +1048,7 @@ def test_estimator_report_with_scoring_strings_regression(regression_data):
 
     reg_result = reg_report.metrics.summarize(
         scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
-    ).frame(scoring_names="verbose", flat_index=False, indicator_favorability=True)
+    ).frame(scoring_names="pretty", flat_index=False, indicator_favorability=True)
 
     assert "Mean Squared Error" in reg_result.index.get_level_values(0)
     assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
@@ -1064,7 +1064,7 @@ def test_estimator_report_sklearn_scorer_names_pos_label(binary_classification_d
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
     result = report.metrics.summarize(scoring=["f1"], pos_label=0).frame(
-        scoring_names="verbose", flat_index=False
+        scoring_names="pretty", flat_index=False
     )
     assert "F1 Score" in result.index.get_level_values(0)
     assert 0 in result.index.get_level_values(1)
@@ -1108,7 +1108,7 @@ def test_estimator_report_summarize_pos_label_overwrite(metric, metric_fn):
     report = EstimatorReport(classifier, X_test=X, y_test=y)
     result = (
         report.metrics.summarize(scoring=metric)
-        .frame(scoring_names="verbose", flat_index=False)
+        .frame(scoring_names="pretty", flat_index=False)
         .reset_index()
     )
     assert result["label"].to_list() == ["A", "B"]
@@ -1116,7 +1116,7 @@ def test_estimator_report_summarize_pos_label_overwrite(metric, metric_fn):
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="B")
     result = (
         report.metrics.summarize(scoring=metric)
-        .frame(scoring_names="verbose", flat_index=False)
+        .frame(scoring_names="pretty", flat_index=False)
         .reset_index()
     )
     assert "label" not in result.columns
@@ -1126,7 +1126,7 @@ def test_estimator_report_summarize_pos_label_overwrite(metric, metric_fn):
 
     result = (
         report.metrics.summarize(scoring=metric, pos_label="A")
-        .frame(scoring_names="verbose", flat_index=False)
+        .frame(scoring_names="pretty", flat_index=False)
         .reset_index()
     )
     assert "label" not in result.columns

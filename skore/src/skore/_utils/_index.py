@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pandas as pd
 
 
@@ -50,3 +52,66 @@ def flatten_multi_index(
             for values in index
         ]
     )
+
+
+def transform_case(
+    string: str | None, case_type: Literal["pretty", "snake"]
+) -> str | None:
+    """Transform the case of a string.
+
+    Parameters
+    ----------
+    string : str or None
+        The string to transform.
+
+    case_type : {"pretty", "snake"}
+        The type of case to transform the string to.
+
+    Returns
+    -------
+    str or None
+        The transformed string.
+    """
+    if string is None:
+        return string
+    if case_type == "pretty":
+        return string.replace("_", " ").capitalize()
+    else:  # case_type == "snake"
+        return string.replace(" ", "_").lower()
+
+
+def transform_index(
+    index: pd.MultiIndex | pd.Index, case_type: Literal["pretty", "snake"]
+) -> pd.MultiIndex | pd.Index:
+    """Transform the case of an Index or a MultiIndex.
+
+    Parameters
+    ----------
+    index : pandas.MultiIndex or pandas.Index
+        The index to transform.
+
+    case_type : {"pretty", "snake"}
+        The type of case to transform the index to.
+
+    Returns
+    -------
+    pandas.MultiIndex or pandas.Index
+        The transformed index.
+    """
+    if isinstance(index, pd.MultiIndex):
+        new_levels = []
+        for level in index.levels:
+            new_level = pd.Index(
+                [transform_case(str(name), case_type) for name in level]
+            )
+            new_levels.append(new_level)
+        return pd.MultiIndex(
+            levels=new_levels,
+            codes=index.codes,
+            names=[transform_case(name, case_type) for name in index.names],
+        )
+    else:  # index is a regular Index
+        return pd.Index(
+            [transform_case(str(name), case_type) for name in index],
+            name=transform_case(index.name, case_type),
+        )

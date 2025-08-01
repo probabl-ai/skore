@@ -351,7 +351,7 @@ def test_summary_display_frame_scoring_names(binary_classification_data):
         "predict_time",
     ]
 
-    result = display.frame(scoring_names="verbose")
+    result = display.frame(scoring_names="pretty")
     assert result.index.tolist() == [
         "Precision 0",
         "Precision 1",
@@ -362,7 +362,7 @@ def test_summary_display_frame_scoring_names(binary_classification_data):
         "Fit time (s)",
         "Predict time (s)",
     ]
-    result = display.frame(scoring_names="verbose", flat_index=False)
+    result = display.frame(scoring_names="pretty", flat_index=False)
     assert result.index.tolist() == [
         ("Precision", 0),
         ("Precision", 1),
@@ -397,7 +397,7 @@ def test_summary_display_frame_indicator_favorability(
     display = report.metrics.summarize()
     assert isinstance(display, Display)
     result = display.frame(
-        scoring_names="verbose", flat_index=False, indicator_favorability=True
+        scoring_names="pretty", flat_index=False, indicator_favorability=True
     )
     assert "favorability" in result.columns
     indicator = result["favorability"]

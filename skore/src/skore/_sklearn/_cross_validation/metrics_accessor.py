@@ -26,12 +26,11 @@ from skore._sklearn.types import (
     Aggregate,
     PositiveLabel,
     Scoring,
-    ScoringName,
     YPlotData,
 )
 from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
-from skore._utils._index import flatten_multi_index
+from skore._utils._index import transform_index
 from skore._utils._parallel import Parallel, delayed
 from skore._utils._progress_bar import progress_decorator
 
@@ -56,12 +55,8 @@ class _MetricsAccessor(
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         scoring: Scoring | list[Scoring] | None = None,
-        scoring_names: ScoringName | list[ScoringName] | None = None,
         scoring_kwargs: dict[str, Any] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
-        indicator_favorability: bool = False,
-        flat_index: bool = False,
-        aggregate: Aggregate | None = ("mean", "std"),
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -142,7 +137,7 @@ class _MetricsAccessor(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
         ...     indicator_favorability=True,
-        ... ).frame()
+        ... ).frame(flat_index=False, scoring_names="verbose")
                   LogisticRegression           Favorability
                                 mean       std
         Metric
@@ -157,23 +152,11 @@ class _MetricsAccessor(
             data_source=data_source,
             X=X,
             y=y,
-            aggregate=aggregate,
             scoring=scoring,
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
-            scoring_names=scoring_names,
-            indicator_favorability=indicator_favorability,
         )
-        if flat_index:
-            if isinstance(results.columns, pd.MultiIndex):
-                results.columns = flatten_multi_index(results.columns)
-            if isinstance(results.index, pd.MultiIndex):
-                results.index = flatten_multi_index(results.index)
-            if isinstance(results.index, pd.Index):
-                results.index = results.index.str.replace(
-                    r"\((.*)\)$", r"\1", regex=True
-                )
-        return MetricsSummaryDisplay(summarize_data=results)
+        return MetricsSummaryDisplay(data=results, report_type="cross-validation")
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
@@ -183,7 +166,6 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        aggregate: Aggregate | None = None,
         **metric_kwargs: Any,
     ) -> pd.DataFrame:
         if data_source == "X_y":
@@ -202,10 +184,6 @@ class _MetricsAccessor(
         if data_source_hash is not None:
             cache_key_parts.append(data_source_hash)
 
-        if aggregate is None:
-            cache_key_parts.append(aggregate)
-        else:
-            cache_key_parts.extend(tuple(aggregate))
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
         for key in ordered_metric_kwargs:
             if isinstance(metric_kwargs[key], np.ndarray | list | dict):
@@ -239,44 +217,25 @@ class _MetricsAccessor(
             for result in generator:
                 if report_metric_name == "summarize":
                     # for summarize, the output is a display
-                    results.append(result.frame())
+                    results.append(result.data)
                 else:
                     results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
             results = pd.concat(
                 results,
-                axis=1,
-                keys=[f"Split #{i}" for i in range(len(results))],
-            )
-            results = results.swaplevel(0, 1, axis=1)
-
-            # Pop the favorability column if it exists, to:
-            # - not use it in the aggregate operation
-            # - later to only report a single column and not by split columns
-            if metric_kwargs.get("indicator_favorability", False):
-                favorability = results.pop("Favorability").iloc[:, 0]
-            else:
-                favorability = None
-
-            if aggregate:
-                if isinstance(aggregate, str):
-                    aggregate = [aggregate]
-
-                results = results.aggregate(func=aggregate, axis=1)
-                results = pd.concat(
-                    [results], keys=[self._parent.estimator_name_], axis=1
-                )
-
-            if favorability is not None:
-                results["Favorability"] = favorability
-
+                keys=[f"split {i}" for i in range(len(results))],
+                names=["split_index"],
+            ).reset_index(level=0)
             self._parent._cache[cache_key] = results
+
         return results
 
     def timings(
         self,
+        *,
         aggregate: Aggregate | None = ("mean", "std"),
+        case: Literal["pretty", "snake"] = "snake",
     ) -> pd.DataFrame:
         """Get all measured processing times related to the estimator.
 
@@ -288,6 +247,11 @@ class _MetricsAccessor(
         ----------
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the timings across the cross-validation splits.
+
+        case : {"pretty", "snake"}, default="snake"
+            Whether to use the pretty (i.e. capitalize and white space separated) or
+            snake case (i.e. lower case and underscore separated) format for the metric
+            and column names.
 
         Returns
         -------
@@ -318,18 +282,15 @@ class _MetricsAccessor(
                 for report in self._parent.estimator_reports_
             ],
             axis=1,
-            keys=[f"Split #{i}" for i in range(len(self._parent.estimator_reports_))],
+            keys=[f"split_{i}" for i in range(len(self._parent.estimator_reports_))],
         )
         if aggregate:
             if isinstance(aggregate, str):
                 aggregate = [aggregate]
             timings = timings.aggregate(func=aggregate, axis=1)
-        timings.index = timings.index.str.replace("_", " ").str.capitalize()
 
-        # Add (s) to time measurements
-        new_index = [f"{idx} (s)" for idx in timings.index]
-
-        timings.index = pd.Index(new_index)
+        timings.index = transform_index(timings.index, case_type=case)
+        timings.columns = transform_index(timings.columns, case_type=case)
 
         return timings
 
@@ -341,6 +302,8 @@ class _MetricsAccessor(
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = True,
+        case: Literal["pretty", "snake"] = "snake",
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -365,6 +328,14 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        case : {"pretty", "snake"}, default="snake"
+            Whether to use the pretty (i.e. capitalize and white space separated) or
+            snake case (i.e. lower case and underscore separated) format for the metric
+            and column names.
+
         Returns
         -------
         pd.DataFrame
@@ -378,7 +349,7 @@ class _MetricsAccessor(
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        >>> report.metrics.accuracy()
+        >>> report.metrics.accuracy(flat_index=False)
                 LogisticRegression
                             mean      std
         Metric
@@ -387,10 +358,9 @@ class _MetricsAccessor(
         return self.summarize(
             scoring=["accuracy"],
             data_source=data_source,
-            aggregate=aggregate,
             X=X,
             y=y,
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index, case=case)
 
     @available_if(_check_estimator_report_has_method("metrics", "precision"))
     def precision(
@@ -404,6 +374,8 @@ class _MetricsAccessor(
         ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = True,
+        case: Literal["pretty", "snake"] = "snake",
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -459,6 +431,14 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        case : {"pretty", "snake"}, default="snake"
+            Whether to use the pretty (i.e. capitalize and white space separated) or
+            snake case (i.e. lower case and underscore separated) format for the metric
+            and column names.
+
         Returns
         -------
         pd.DataFrame
@@ -482,12 +462,11 @@ class _MetricsAccessor(
         return self.summarize(
             scoring=["precision"],
             data_source=data_source,
-            aggregate=aggregate,
             X=X,
             y=y,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index, case=case)
 
     @available_if(_check_estimator_report_has_method("metrics", "recall"))
     def recall(
@@ -501,6 +480,8 @@ class _MetricsAccessor(
         ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = True,
+        case: Literal["pretty", "snake"] = "snake",
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -557,6 +538,14 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        case : {"pretty", "snake"}, default="snake"
+            Whether to use the pretty (i.e. capitalize and white space separated) or
+            snake case (i.e. lower case and underscore separated) format for the metric
+            and column names.
+
         Returns
         -------
         pd.DataFrame
@@ -582,10 +571,9 @@ class _MetricsAccessor(
             data_source=data_source,
             X=X,
             y=y,
-            aggregate=aggregate,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index, case=case)
 
     @available_if(_check_estimator_report_has_method("metrics", "brier_score"))
     def brier_score(
@@ -595,6 +583,8 @@ class _MetricsAccessor(
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = True,
+        case: Literal["pretty", "snake"] = "snake",
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
@@ -618,6 +608,19 @@ class _MetricsAccessor(
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        case : {"pretty", "snake"}, default="snake"
+            Whether to use the pretty (i.e. capitalize and white space separated) or
+            snake case (i.e. lower case and underscore separated) format for the metric
+            and column names.
+
+        case : {"pretty", "snake"}, default="snake"
+            Whether to use the pretty (i.e. capitalize and white space separated) or
+            snake case (i.e. lower case and underscore separated) format for the metric
+            and column names.
 
         Returns
         -------
@@ -643,8 +646,7 @@ class _MetricsAccessor(
             data_source=data_source,
             X=X,
             y=y,
-            aggregate=aggregate,
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index, case=case)
 
     @available_if(_check_estimator_report_has_method("metrics", "roc_auc"))
     def roc_auc(
@@ -656,6 +658,8 @@ class _MetricsAccessor(
         average: Literal["macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = True,
+        case: Literal["pretty", "snake"] = "snake",
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
@@ -713,6 +717,14 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        case : {"pretty", "snake"}, default="snake"
+            Whether to use the pretty (i.e. capitalize and white space separated) or
+            snake case (i.e. lower case and underscore separated) format for the metric
+            and column names.
+
         Returns
         -------
         pd.DataFrame
@@ -737,9 +749,8 @@ class _MetricsAccessor(
             data_source=data_source,
             X=X,
             y=y,
-            aggregate=aggregate,
             scoring_kwargs={"average": average, "multi_class": multi_class},
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index, case=case)
 
     @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
     def log_loss(
@@ -749,6 +760,8 @@ class _MetricsAccessor(
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = True,
+        case: Literal["pretty", "snake"] = "snake",
     ) -> pd.DataFrame:
         """Compute the log loss.
 
@@ -772,6 +785,14 @@ class _MetricsAccessor(
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        case : {"pretty", "snake"}, default="snake"
+            Whether to use the pretty (i.e. capitalize and white space separated) or
+            snake case (i.e. lower case and underscore separated) format for the metric
+            and column names.
 
         Returns
         -------
@@ -797,8 +818,7 @@ class _MetricsAccessor(
             data_source=data_source,
             X=X,
             y=y,
-            aggregate=aggregate,
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index, case=case)
 
     @available_if(_check_estimator_report_has_method("metrics", "r2"))
     def r2(
@@ -809,6 +829,8 @@ class _MetricsAccessor(
         y: ArrayLike | None = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = True,
+        case: Literal["pretty", "snake"] = "snake",
     ) -> pd.DataFrame:
         """Compute the R² score.
 
@@ -843,6 +865,14 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        case : {"pretty", "snake"}, default="snake"
+            Whether to use the pretty (i.e. capitalize and white space separated) or
+            snake case (i.e. lower case and underscore separated) format for the metric
+            and column names.
+
         Returns
         -------
         pd.DataFrame
@@ -867,9 +897,8 @@ class _MetricsAccessor(
             data_source=data_source,
             X=X,
             y=y,
-            aggregate=aggregate,
             scoring_kwargs={"multioutput": multioutput},
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index, case=case)
 
     @available_if(_check_estimator_report_has_method("metrics", "rmse"))
     def rmse(
@@ -880,6 +909,8 @@ class _MetricsAccessor(
         y: ArrayLike | None = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = True,
+        case: Literal["pretty", "snake"] = "snake",
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
@@ -914,6 +945,14 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        case : {"pretty", "snake"}, default="snake"
+            Whether to use the pretty (i.e. capitalize and white space separated) or
+            snake case (i.e. lower case and underscore separated) format for the metric
+            and column names.
+
         Returns
         -------
         pd.DataFrame
@@ -938,9 +977,8 @@ class _MetricsAccessor(
             data_source=data_source,
             X=X,
             y=y,
-            aggregate=aggregate,
             scoring_kwargs={"multioutput": multioutput},
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index, case=case)
 
     def custom_metric(
         self,
@@ -952,6 +990,8 @@ class _MetricsAccessor(
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = True,
+        case: Literal["pretty", "snake"] = "snake",
         **kwargs,
     ) -> pd.DataFrame:
         """Compute a custom metric.
@@ -999,6 +1039,14 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        case : {"pretty", "snake"}, default="snake"
+            Whether to use the pretty (i.e. capitalize and white space separated) or
+            snake case (i.e. lower case and underscore separated) format for the metric
+            and column names.
+
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
 
@@ -1040,10 +1088,9 @@ class _MetricsAccessor(
             data_source=data_source,
             X=X,
             y=y,
-            aggregate=aggregate,
             scoring_names=[metric_name] if metric_name is not None else None,
             pos_label=pos_label,
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index, case=case)
 
     ####################################################################################
     # Methods related to the help tree
