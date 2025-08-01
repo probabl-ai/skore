@@ -65,7 +65,7 @@ def test_cross_validation_report_cleaned_up(report):
     report.metrics.summarize()
 
     with BytesIO() as stream:
-        joblib.dump(report.reports_[0], stream)
+        joblib.dump(report.reports_list_[0], stream)
 
 
 def test_metrics_help(capsys, report):
@@ -200,7 +200,7 @@ def test_comparison_report_summarize_pos_label_overwrite(metric):
     result = report.metrics.summarize(scoring=metric).frame().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in list(report.reports_.keys()):
         assert (
             result.loc[metric.capitalize(), ("mean", report_name)]
             == result_both_labels.loc[(metric.capitalize(), "B"), ("mean", report_name)]
@@ -211,7 +211,7 @@ def test_comparison_report_summarize_pos_label_overwrite(metric):
     )
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in list(report.reports_.keys()):
         assert (
             result.loc[metric.capitalize(), ("mean", report_name)]
             == result_both_labels.loc[(metric.capitalize(), "A"), ("mean", report_name)]
@@ -250,7 +250,7 @@ def test_comparison_report_precision_recall_pos_label_overwrite(metric):
     result = getattr(report.metrics, metric)(pos_label="B").reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in list(report.reports_.keys()):
         assert (
             result.loc[metric.capitalize(), ("mean", report_name)]
             == result_both_labels.loc[(metric.capitalize(), "B"), ("mean", report_name)]
@@ -259,7 +259,7 @@ def test_comparison_report_precision_recall_pos_label_overwrite(metric):
     result = getattr(report.metrics, metric)(pos_label="A").reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in list(report.reports_.keys()):
         assert (
             result.loc[metric.capitalize(), ("mean", report_name)]
             == result_both_labels.loc[(metric.capitalize(), "A"), ("mean", report_name)]
