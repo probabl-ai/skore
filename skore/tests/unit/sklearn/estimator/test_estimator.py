@@ -8,7 +8,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.base import clone
+from sklearn.base import BaseEstimator
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
@@ -334,31 +334,6 @@ def test_estimator_report_pickle(binary_classification_data):
         joblib.dump(report, stream)
 
 
-def test_estimator_report_flat_index(binary_classification_data):
-    """Check that the index is flattened when `flat_index` is True.
-
-    Since `pos_label` is None, then by default a MultiIndex would be returned.
-    Here, we force to have a single-index by passing `flat_index=True`.
-    """
-    estimator, X_test, y_test = binary_classification_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(flat_index=True).frame()
-    assert result.shape == (8, 1)
-    assert isinstance(result.index, pd.Index)
-    assert result.index.tolist() == [
-        "precision_0",
-        "precision_1",
-        "recall_0",
-        "recall_1",
-        "roc_auc",
-        "brier_score",
-        "fit_time_s",
-        "predict_time_s",
-    ]
-
-    assert result.columns.tolist() == ["RandomForestClassifier"]
-
-
 def test_estimator_report_get_predictions():
     """Check the behaviour of the `get_predictions` method.
 
@@ -594,7 +569,7 @@ def test_estimator_report_display_regression_switching_data_source(
 ########################################################################################
 
 
-def test_estimator_summarize_help(capsys, binary_classification_data):
+def test_estimator_metrics_help(capsys, binary_classification_data):
     """Check that the help method writes to the console."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -604,7 +579,7 @@ def test_estimator_summarize_help(capsys, binary_classification_data):
     assert "Available metrics methods" in captured.out
 
 
-def test_estimator_summarize_repr(binary_classification_data):
+def test_estimator_metrics_repr(binary_classification_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -615,7 +590,7 @@ def test_estimator_summarize_repr(binary_classification_data):
 
 
 @pytest.mark.parametrize("metric", ["accuracy", "brier_score", "roc_auc", "log_loss"])
-def test_estimator_summarize_binary_classification(binary_classification_data, metric):
+def test_estimator_binary_classification(binary_classification_data, metric):
     """Check the behaviour of the metrics methods available for binary
     classification.
     """
@@ -643,9 +618,7 @@ def test_estimator_summarize_binary_classification(binary_classification_data, m
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_estimator_summarize_binary_classification_pr(
-    binary_classification_data, metric
-):
+def test_estimator_binary_classification_pr(binary_classification_data, metric):
     """Check the behaviour of the precision and recall metrics available for binary
     classification.
     """
@@ -673,7 +646,7 @@ def test_estimator_summarize_binary_classification_pr(
 
 
 @pytest.mark.parametrize("metric", ["r2", "rmse"])
-def test_estimator_summarize_regression(regression_data, metric):
+def test_estimator_regression(regression_data, metric):
     """Check the behaviour of the metrics methods available for regression."""
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -696,267 +669,6 @@ def test_estimator_summarize_regression(regression_data, metric):
     assert isinstance(result_external_data, float)
     assert result == pytest.approx(result_external_data)
     assert report._cache != {}
-
-
-def _normalize_metric_name(column):
-    """Helper to normalize the metric name present in a pandas index that could be
-    a multi-index or single-index."""
-    # if we have a multi-index, then the metric name is on level 0
-    s = column[0] if isinstance(column, tuple) else column
-    # Remove spaces and underscores and (s) suffix
-    s = s.lower().replace(" (s)", "")
-    return re.sub(r"[^a-zA-Z]", "", s)
-
-
-def _check_results_summarize(result, expected_metrics, expected_nb_stats):
-    assert isinstance(result, pd.DataFrame)
-    assert len(result.index) == expected_nb_stats
-
-    normalized_expected = {
-        _normalize_metric_name(metric) for metric in expected_metrics
-    }
-    for column in result.index:
-        normalized_column = _normalize_metric_name(column)
-        matches = [
-            metric for metric in normalized_expected if metric == normalized_column
-        ]
-        assert len(matches) == 1, (
-            f"No match found for column '{column}' in expected metrics: "
-            f" {expected_metrics}"
-        )
-
-
-@pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
-def test_estimator_report_summarize_binary(
-    binary_classification_data,
-    binary_classification_data_svc,
-    pos_label,
-    nb_stats,
-    data_source,
-):
-    """Check the behaviour of the `summarize` method with binary
-    classification. We test both with an SVC that does not support `predict_proba` and a
-    RandomForestClassifier that does.
-    """
-    estimator, X_test, y_test = binary_classification_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(
-        pos_label=pos_label, data_source=data_source, **kwargs
-    ).frame()
-    assert "Favorability" not in result.columns
-    expected_metrics = (
-        "precision",
-        "recall",
-        "roc_auc",
-        "brier_score",
-        "fit_time",
-        "predict_time",
-    )
-    # depending on `pos_label`, we report a stats for each class or not for
-    # precision and recall
-    expected_nb_stats = 2 * nb_stats + 4
-    _check_results_summarize(result, expected_metrics, expected_nb_stats)
-
-    # Repeat the same experiment where we the target labels are not [0, 1] but
-    # ["neg", "pos"]. We check that we don't get any error.
-    target_names = np.array(["neg", "pos"], dtype=object)
-    pos_label_name = target_names[pos_label] if pos_label is not None else pos_label
-    y_test = target_names[y_test]
-    estimator = clone(estimator).fit(X_test, y_test)
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(
-        pos_label=pos_label_name, data_source=data_source, **kwargs
-    ).frame()
-    expected_metrics = (
-        "precision",
-        "recall",
-        "roc_auc",
-        "brier_score",
-        "fit_time",
-        "predict_time",
-    )
-    # depending on `pos_label`, we report a stats for each class or not for
-    # precision and recall
-    expected_nb_stats = 2 * nb_stats + 4
-    _check_results_summarize(result, expected_metrics, expected_nb_stats)
-
-    estimator, X_test, y_test = binary_classification_data_svc
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(
-        pos_label=pos_label, data_source=data_source, **kwargs
-    ).frame()
-    expected_metrics = ("precision", "recall", "roc_auc", "fit_time", "predict_time")
-    # depending on `pos_label`, we report a stats for each class or not for
-    # precision and recall
-    expected_nb_stats = 2 * nb_stats + 3
-    _check_results_summarize(result, expected_metrics, expected_nb_stats)
-
-
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
-def test_estimator_report_summarize_multiclass(
-    multiclass_classification_data, multiclass_classification_data_svc, data_source
-):
-    """Check the behaviour of the `summarize` method with multiclass
-    classification.
-    """
-    estimator, X_test, y_test = multiclass_classification_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(data_source=data_source, **kwargs).frame()
-    assert "Favorability" not in result.columns
-    expected_metrics = (
-        "precision",
-        "recall",
-        "roc_auc",
-        "log_loss",
-        "fit_time",
-        "predict_time",
-    )
-    # since we are not averaging by default, we report 3 statistics for
-    # precision, recall and roc_auc
-    expected_nb_stats = 3 * 3 + 3
-    _check_results_summarize(result, expected_metrics, expected_nb_stats)
-
-    estimator, X_test, y_test = multiclass_classification_data_svc
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(data_source=data_source, **kwargs).frame()
-    expected_metrics = ("precision", "recall", "fit_time", "predict_time")
-    # since we are not averaging by default, we report 3 statistics for
-    # precision and recall
-    expected_nb_stats = 3 * 2 + 2
-    _check_results_summarize(result, expected_metrics, expected_nb_stats)
-
-
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
-def test_estimator_report_summarize_regression(regression_data, data_source):
-    """Check the behaviour of the `summarize` method with regression."""
-    estimator, X_test, y_test = regression_data
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(data_source=data_source, **kwargs).frame()
-    assert "Favorability" not in result.columns
-    expected_metrics = ("r2", "rmse", "fit_time", "predict_time")
-    _check_results_summarize(result, expected_metrics, len(expected_metrics))
-
-
-def test_estimator_report_summarize_scoring_kwargs(
-    regression_multioutput_data, multiclass_classification_data
-):
-    """Check the behaviour of the `summarize` method with scoring kwargs."""
-    estimator, X_test, y_test = regression_multioutput_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.metrics, "summarize")
-    result = report.metrics.summarize(
-        scoring_kwargs={"multioutput": "raw_values"}
-    ).frame()
-    assert result.shape == (6, 1)
-    assert isinstance(result.index, pd.MultiIndex)
-    assert result.index.names == ["Metric", "Output"]
-
-    estimator, X_test, y_test = multiclass_classification_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.metrics, "summarize")
-    result = report.metrics.summarize(scoring_kwargs={"average": None}).frame()
-    assert result.shape == (12, 1)
-    assert isinstance(result.index, pd.MultiIndex)
-    assert result.index.names == ["Metric", "Label / Average"]
-
-
-@pytest.mark.parametrize(
-    "fixture_name, scoring_names, expected_columns",
-    [
-        (
-            "regression_data",
-            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
-            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
-        ),
-        (
-            "regression_data",
-            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
-            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
-        ),
-        (
-            "multiclass_classification_data",
-            ["Precision", "Recall", "ROC AUC", "Log Loss", "Fit Time", "Predict Time"],
-            [
-                "Precision",
-                "Precision",
-                "Precision",
-                "Recall",
-                "Recall",
-                "Recall",
-                "ROC AUC",
-                "ROC AUC",
-                "ROC AUC",
-                "Log Loss",
-                "Fit Time",
-                "Predict Time",
-            ],
-        ),
-    ],
-)
-def test_estimator_report_summarize_overwrite_scoring_names(
-    request, fixture_name, scoring_names, expected_columns
-):
-    """Test that we can overwrite the scoring names in summarize."""
-    estimator, X_test, y_test = request.getfixturevalue(fixture_name)
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(scoring_names=scoring_names).frame()
-    assert result.shape == (len(expected_columns), 1)
-
-    # Get level 0 names if MultiIndex, otherwise get column names
-    result_index = (
-        result.index.get_level_values(0).tolist()
-        if isinstance(result.index, pd.MultiIndex)
-        else result.index.tolist()
-    )
-    assert result_index == expected_columns
-
-
-def test_estimator_report_summarize_indicator_favorability(
-    binary_classification_data,
-):
-    """Check that the behaviour of `indicator_favorability` is correct."""
-    estimator, X_test, y_test = binary_classification_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(indicator_favorability=True).frame()
-    assert "Favorability" in result.columns
-    indicator = result["Favorability"]
-    assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
-    assert indicator["Brier score"].tolist() == ["(↘︎)"]
-
-
-@pytest.mark.parametrize(
-    "scoring, scoring_names, scoring_kwargs",
-    [
-        ("accuracy", "this_is_a_test", None),
-        ("neg_log_loss", "this_is_a_test", None),
-        (accuracy_score, "this_is_a_test", {"response_method": "predict"}),
-        (get_scorer("accuracy"), "this_is_a_test", None),
-    ],
-)
-def test_estimator_report_summarize_scoring_single_list_equivalence(
-    binary_classification_data, scoring, scoring_names, scoring_kwargs
-):
-    """Check that passing a single string, callable, scorer is equivalent to passing a
-    list with a single element, and it's possible to overwrite col name."""
-    estimator, X_test, y_test = binary_classification_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result_single = report.metrics.summarize(
-        scoring=scoring, scoring_names=scoring_names, scoring_kwargs=scoring_kwargs
-    ).frame()
-    result_list = report.metrics.summarize(
-        scoring=[scoring], scoring_names=scoring_names, scoring_kwargs=scoring_kwargs
-    ).frame()
-    assert result_single.index[0] == "this_is_a_test"
-    assert result_single.equals(result_list)
 
 
 def test_estimator_report_interaction_cache_metrics(regression_multioutput_data):
@@ -992,54 +704,34 @@ def test_estimator_report_interaction_cache_metrics(regression_multioutput_data)
     assert isinstance(result_r2_uniform_average, float)
 
 
-def test_estimator_report_custom_metric(regression_data):
-    """Check the behaviour of the `custom_metric` computation in the report."""
-    estimator, X_test, y_test = regression_data
+@pytest.mark.parametrize(
+    "scoring, scoring_names, scoring_kwargs",
+    [
+        ("accuracy", {"accuracy": "this_is_a_test"}, None),
+        ("neg_log_loss", {"log_loss": "this_is_a_test"}, None),
+        (
+            accuracy_score,
+            {"accuracy_score": "this_is_a_test"},
+            {"response_method": "predict"},
+        ),
+        (get_scorer("accuracy"), {"accuracy_score": "this_is_a_test"}, None),
+    ],
+)
+def test_estimator_report_summarize_scoring_single_list_equivalence(
+    binary_classification_data, scoring, scoring_names, scoring_kwargs
+):
+    """Check that passing a single string, callable, scorer is equivalent to passing a
+    list with a single element, and it's possible to overwrite col name."""
+    estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    def custom_metric(y_true, y_pred, threshold=0.5):
-        residuals = y_true - y_pred
-        return np.mean(np.where(residuals < threshold, residuals, 1))
-
-    threshold = 1
-    result = report.metrics.custom_metric(
-        metric_function=custom_metric,
-        response_method="predict",
-        threshold=threshold,
-    )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == threshold for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
-        f"The value {threshold} should be stored in one of the cache keys"
-    )
-
-    assert isinstance(result, float)
-    assert result == pytest.approx(
-        custom_metric(y_test, estimator.predict(X_test), threshold)
-    )
-
-    threshold = 100
-    result = report.metrics.custom_metric(
-        metric_function=custom_metric,
-        response_method="predict",
-        threshold=threshold,
-    )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == threshold for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
-        f"The value {threshold} should be stored in one of the cache keys"
-    )
-
-    assert isinstance(result, float)
-    assert result == pytest.approx(
-        custom_metric(y_test, estimator.predict(X_test), threshold)
-    )
+    result_single = report.metrics.summarize(
+        scoring=scoring, scoring_kwargs=scoring_kwargs
+    ).frame(scoring_names=scoring_names)
+    result_list = report.metrics.summarize(
+        scoring=[scoring], scoring_kwargs=scoring_kwargs
+    ).frame(scoring_names=scoring_names)
+    assert result_single.index[0] == "this_is_a_test"
+    assert result_single.equals(result_list)
 
 
 @pytest.mark.parametrize("scoring", ["public_metric", "_private_metric"])
@@ -1050,38 +742,6 @@ def test_estimator_report_summarize_error_scoring_strings(regression_data, scori
     err_msg = re.escape(f"Invalid metric: {scoring!r}.")
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.summarize(scoring=[scoring])
-
-
-def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
-    """Check that we are able to store a hash of a numpy array in the cache when they
-    are passed as kwargs.
-    """
-    estimator, X_test, y_test = regression_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    weights = np.ones_like(y_test) * 2
-    hash_weights = joblib.hash(weights)
-
-    def custom_metric(y_true, y_pred, some_weights):
-        return np.mean((y_true - y_pred) * some_weights)
-
-    result = report.metrics.custom_metric(
-        metric_function=custom_metric,
-        response_method="predict",
-        some_weights=weights,
-    )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == hash_weights for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
-        "The hash of the weights should be stored in one of the cache keys"
-    )
-
-    assert isinstance(result, float)
-    assert result == pytest.approx(
-        custom_metric(y_test, estimator.predict(X_test), weights)
-    )
 
 
 def test_estimator_report_summarize_with_custom_metric(regression_data):
@@ -1137,36 +797,6 @@ def test_estimator_report_summarize_with_scorer(regression_data):
             [custom_metric(y_test, estimator.predict(X_test), weights)],
         ],
     )
-
-
-def test_estimator_report_custom_metric_compatible_estimator(
-    binary_classification_data,
-):
-    """Check that the estimator report still works if an estimator has a compatible
-    scikit-learn API.
-    """
-    _, X_test, y_test = binary_classification_data
-
-    class CompatibleEstimator:
-        """Estimator exposing only a predict method but it should be enough for the
-        reports.
-        """
-
-        def fit(self, X, y):
-            self.fitted_ = True
-            return self
-
-        def predict(self, X):
-            return np.ones(X.shape[0])
-
-    estimator = CompatibleEstimator()
-    report = EstimatorReport(estimator, fit=False, X_test=X_test, y_test=y_test)
-    result = report.metrics.custom_metric(
-        metric_function=lambda y_true, y_pred: 1,
-        response_method="predict",
-    )
-    assert isinstance(result, Real)
-    assert result == pytest.approx(1)
 
 
 @pytest.mark.parametrize(
@@ -1240,6 +870,269 @@ def test_estimator_report_summarize_invalid_metric_type(regression_data):
     err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.summarize(scoring=[1]).frame()
+
+
+def test_estimator_report_metric_with_neg_metrics(binary_classification_data):
+    """Check that scikit-learn metrics with 'neg_' prefix are handled correctly."""
+    classifier, X_test, y_test = binary_classification_data
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    result = report.metrics.summarize(scoring=["neg_log_loss"]).frame(
+        scoring_names="pretty", flat_index=False
+    )
+    assert "Log Loss" in result.index
+    assert result.loc["Log Loss", "RandomForestClassifier"] == pytest.approx(
+        report.metrics.log_loss()
+    )
+
+
+def test_estimator_report_with_sklearn_scoring_strings(binary_classification_data):
+    """Test that scikit-learn metric strings can be passed to summarize."""
+    classifier, X_test, y_test = binary_classification_data
+    class_report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    result = class_report.metrics.summarize(scoring=["neg_log_loss"]).frame(
+        scoring_names="pretty", flat_index=False
+    )
+    assert "Log Loss" in result.index.get_level_values(0)
+
+    result_multi = class_report.metrics.summarize(
+        scoring=["accuracy", "neg_log_loss", "roc_auc"]
+    ).frame(scoring_names="pretty", flat_index=False, indicator_favorability=True)
+    assert "Accuracy" in result_multi.index.get_level_values(0)
+    assert "Log Loss" in result_multi.index.get_level_values(0)
+    assert "ROC AUC" in result_multi.index.get_level_values(0)
+
+    favorability = result_multi.loc["Accuracy"]["favorability"]
+    assert favorability == "(↗︎)"
+    favorability = result_multi.loc["Log Loss"]["favorability"]
+    assert favorability == "(↘︎)"
+
+
+def test_estimator_report_custom_metric(regression_data):
+    """Check the behaviour of the `custom_metric` computation in the report."""
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def custom_metric(y_true, y_pred, threshold=0.5):
+        residuals = y_true - y_pred
+        return np.mean(np.where(residuals < threshold, residuals, 1))
+
+    threshold = 1
+    result = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict",
+        threshold=threshold,
+    )
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == threshold for item in cached_key):
+            should_raise = False
+            break
+    assert not should_raise, (
+        f"The value {threshold} should be stored in one of the cache keys"
+    )
+
+    assert isinstance(result, float)
+    assert result == pytest.approx(
+        custom_metric(y_test, estimator.predict(X_test), threshold)
+    )
+
+    threshold = 100
+    result = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict",
+        threshold=threshold,
+    )
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == threshold for item in cached_key):
+            should_raise = False
+            break
+    assert not should_raise, (
+        f"The value {threshold} should be stored in one of the cache keys"
+    )
+
+    assert isinstance(result, float)
+    assert result == pytest.approx(
+        custom_metric(y_test, estimator.predict(X_test), threshold)
+    )
+
+
+def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
+    """Check that we are able to store a hash of a numpy array in the cache when they
+    are passed as kwargs.
+    """
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    weights = np.ones_like(y_test) * 2
+    hash_weights = joblib.hash(weights)
+
+    def custom_metric(y_true, y_pred, some_weights):
+        return np.mean((y_true - y_pred) * some_weights)
+
+    result = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict",
+        some_weights=weights,
+    )
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == hash_weights for item in cached_key):
+            should_raise = False
+            break
+    assert not should_raise, (
+        "The hash of the weights should be stored in one of the cache keys"
+    )
+
+    assert isinstance(result, float)
+    assert result == pytest.approx(
+        custom_metric(y_test, estimator.predict(X_test), weights)
+    )
+
+
+def test_estimator_report_custom_metric_compatible_estimator(
+    binary_classification_data,
+):
+    """Check that the estimator report still works if an estimator has a compatible
+    scikit-learn API.
+    """
+    _, X_test, y_test = binary_classification_data
+
+    class CompatibleEstimator(BaseEstimator):
+        """Estimator exposing only a predict method but it should be enough for the
+        reports.
+        """
+
+        def fit(self, X, y):
+            self.fitted_ = True
+            return self
+
+        def predict(self, X):
+            return np.ones(X.shape[0])
+
+    estimator = CompatibleEstimator()
+    report = EstimatorReport(estimator, fit=False, X_test=X_test, y_test=y_test)
+    result = report.metrics.custom_metric(
+        metric_function=lambda y_true, y_pred: 1,
+        response_method="predict",
+    )
+    assert isinstance(result, Real)
+    assert result == pytest.approx(1)
+
+
+def test_estimator_report_with_sklearn_scoring_strings_regression(regression_data):
+    """Test scikit-learn regression metric strings in summarize."""
+    regressor, X_test, y_test = regression_data
+    reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
+
+    display = reg_report.metrics.summarize(
+        scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"]
+    )
+    reg_result = display.frame(
+        scoring_names="pretty", flat_index=False, indicator_favorability=True
+    )
+
+    assert "Mean Squared Error" in reg_result.index.get_level_values(0)
+    assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
+    assert "R²" in reg_result.index.get_level_values(0)
+
+    assert reg_result.loc["Mean Squared Error"]["favorability"] == "(↘︎)"
+    assert reg_result.loc["R²"]["favorability"] == "(↗︎)"
+
+
+def test_estimator_report_with_scoring_strings_regression(regression_data):
+    """Test scikit-learn regression metric strings in summarize."""
+    regressor, X_test, y_test = regression_data
+    reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
+
+    reg_result = reg_report.metrics.summarize(
+        scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
+    ).frame(scoring_names="pretty", flat_index=False, indicator_favorability=True)
+
+    assert "Mean Squared Error" in reg_result.index.get_level_values(0)
+    assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
+    assert "R²" in reg_result.index.get_level_values(0)
+
+    assert reg_result.loc["Mean Squared Error"]["favorability"] == "(↘︎)"
+    assert reg_result.loc["R²"]["favorability"] == "(↗︎)"
+
+
+def test_estimator_report_sklearn_scorer_names_pos_label(binary_classification_data):
+    """Check that `pos_label` is dispatched with scikit-learn scorer names."""
+    classifier, X_test, y_test = binary_classification_data
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    result = report.metrics.summarize(scoring=["f1"], pos_label=0).frame(
+        scoring_names="pretty", flat_index=False
+    )
+    assert "F1 Score" in result.index.get_level_values(0)
+    assert 0 in result.index.get_level_values(1)
+    f1_scorer = make_scorer(
+        f1_score, response_method="predict", average="binary", pos_label=0
+    )
+    assert result.loc[("F1 Score", 0), "RandomForestClassifier"] == pytest.approx(
+        f1_scorer(classifier, X_test, y_test)
+    )
+
+
+def test_estimator_report_sklearn_scorer_names_scoring_kwargs(
+    binary_classification_data,
+):
+    """Check that `scoring_kwargs` is not supported when `scoring` is a scikit-learn
+    scorer name.
+    """
+    classifier, X_test, y_test = binary_classification_data
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    err_msg = (
+        "The `scoring_kwargs` parameter is not supported when `scoring` is a "
+        "scikit-learn scorer name."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.summarize(scoring=["f1"], scoring_kwargs={"average": "macro"})
+
+
+@pytest.mark.parametrize(
+    "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
+)
+def test_estimator_report_summarize_pos_label_overwrite(metric, metric_fn):
+    """Check that `pos_label` can be overwritten in `summarize`"""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    labels = np.array(["A", "B"], dtype=object)
+    y = labels[y]
+    classifier = LogisticRegression().fit(X, y)
+
+    report = EstimatorReport(classifier, X_test=X, y_test=y)
+    result = (
+        report.metrics.summarize(scoring=metric)
+        .frame(scoring_names="pretty", flat_index=False)
+        .reset_index()
+    )
+    assert result["label"].to_list() == ["A", "B"]
+
+    report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="B")
+    result = (
+        report.metrics.summarize(scoring=metric)
+        .frame(scoring_names="pretty", flat_index=False)
+        .reset_index()
+    )
+    assert "label" not in result.columns
+    assert result[report.estimator_name_].item() == pytest.approx(
+        metric_fn(y, classifier.predict(X), pos_label="B")
+    )
+
+    result = (
+        report.metrics.summarize(scoring=metric, pos_label="A")
+        .frame(scoring_names="pretty", flat_index=False)
+        .reset_index()
+    )
+    assert "label" not in result.columns
+    assert result[report.estimator_name_].item() == pytest.approx(
+        metric_fn(y, classifier.predict(X), pos_label="A")
+    )
 
 
 def test_estimator_report_get_X_y_and_data_source_hash_error():
@@ -1428,144 +1321,6 @@ def test_estimator_report_average_return_float(binary_classification_data):
     for metric_name in ("precision", "recall", "roc_auc"):
         result = getattr(report.metrics, metric_name)(average="macro")
         assert isinstance(result, float)
-
-
-def test_estimator_report_metric_with_neg_metrics(binary_classification_data):
-    """Check that scikit-learn metrics with 'neg_' prefix are handled correctly."""
-    classifier, X_test, y_test = binary_classification_data
-    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
-
-    result = report.metrics.summarize(scoring=["neg_log_loss"]).frame()
-    assert "Log Loss" in result.index
-    assert result.loc["Log Loss", "RandomForestClassifier"] == pytest.approx(
-        report.metrics.log_loss()
-    )
-
-
-def test_estimator_report_with_sklearn_scoring_strings(binary_classification_data):
-    """Test that scikit-learn metric strings can be passed to summarize."""
-    classifier, X_test, y_test = binary_classification_data
-    class_report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
-
-    result = class_report.metrics.summarize(scoring=["neg_log_loss"]).frame()
-    assert "Log Loss" in result.index.get_level_values(0)
-
-    result_multi = class_report.metrics.summarize(
-        scoring=["accuracy", "neg_log_loss", "roc_auc"], indicator_favorability=True
-    ).frame()
-    assert "Accuracy" in result_multi.index.get_level_values(0)
-    assert "Log Loss" in result_multi.index.get_level_values(0)
-    assert "ROC AUC" in result_multi.index.get_level_values(0)
-
-    favorability = result_multi.loc["Accuracy"]["Favorability"]
-    assert favorability == "(↗︎)"
-    favorability = result_multi.loc["Log Loss"]["Favorability"]
-    assert favorability == "(↘︎)"
-
-
-def test_estimator_report_with_sklearn_scoring_strings_regression(regression_data):
-    """Test scikit-learn regression metric strings in summarize."""
-    regressor, X_test, y_test = regression_data
-    reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
-
-    reg_result = reg_report.metrics.summarize(
-        scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
-        indicator_favorability=True,
-    ).frame()
-
-    assert "Mean Squared Error" in reg_result.index.get_level_values(0)
-    assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
-    assert "R²" in reg_result.index.get_level_values(0)
-
-    assert reg_result.loc["Mean Squared Error"]["Favorability"] == "(↘︎)"
-    assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
-
-
-def test_estimator_report_with_scoring_strings_regression(regression_data):
-    """Test scikit-learn regression metric strings in summarize."""
-    regressor, X_test, y_test = regression_data
-    reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
-
-    reg_result = reg_report.metrics.summarize(
-        scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
-        indicator_favorability=True,
-    ).frame()
-
-    assert "Mean Squared Error" in reg_result.index.get_level_values(0)
-    assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
-    assert "R²" in reg_result.index.get_level_values(0)
-
-    assert reg_result.loc["Mean Squared Error"]["Favorability"] == "(↘︎)"
-    assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
-
-
-def test_estimator_report_sklearn_scorer_names_pos_label(binary_classification_data):
-    """Check that `pos_label` is dispatched with scikit-learn scorer names."""
-    classifier, X_test, y_test = binary_classification_data
-    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
-
-    result = report.metrics.summarize(scoring=["f1"], pos_label=0).frame()
-    assert "F1 Score" in result.index.get_level_values(0)
-    assert 0 in result.index.get_level_values(1)
-    f1_scorer = make_scorer(
-        f1_score, response_method="predict", average="binary", pos_label=0
-    )
-    assert result.loc[("F1 Score", 0), "RandomForestClassifier"] == pytest.approx(
-        f1_scorer(classifier, X_test, y_test)
-    )
-
-
-def test_estimator_report_sklearn_scorer_names_scoring_kwargs(
-    binary_classification_data,
-):
-    """Check that `scoring_kwargs` is not supported when `scoring` is a scikit-learn
-    scorer name.
-    """
-    classifier, X_test, y_test = binary_classification_data
-    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
-
-    err_msg = (
-        "The `scoring_kwargs` parameter is not supported when `scoring` is a "
-        "scikit-learn scorer name."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(
-            scoring=["f1"], scoring_kwargs={"average": "macro"}
-        ).frame()
-
-
-@pytest.mark.parametrize(
-    "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
-)
-def test_estimator_report_summarize_pos_label_overwrite(
-    binary_classification_data, metric, metric_fn
-):
-    """Check that `pos_label` can be overwritten in `summarize`"""
-    X, y = make_classification(
-        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
-    )
-    labels = np.array(["A", "B"], dtype=object)
-    y = labels[y]
-    classifier = LogisticRegression().fit(X, y)
-
-    report = EstimatorReport(classifier, X_test=X, y_test=y)
-    result = report.metrics.summarize(scoring=metric).frame().reset_index()
-    assert result["Label / Average"].to_list() == ["A", "B"]
-
-    report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="B")
-    result = report.metrics.summarize(scoring=metric).frame().reset_index()
-    assert "Label / Average" not in result.columns
-    assert result[report.estimator_name_].item() == pytest.approx(
-        metric_fn(y, classifier.predict(X), pos_label="B")
-    )
-
-    result = (
-        report.metrics.summarize(scoring=metric, pos_label="A").frame().reset_index()
-    )
-    assert "Label / Average" not in result.columns
-    assert result[report.estimator_name_].item() == pytest.approx(
-        metric_fn(y, classifier.predict(X), pos_label="A")
-    )
 
 
 @pytest.mark.parametrize(
