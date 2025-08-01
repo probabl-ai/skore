@@ -48,7 +48,8 @@ class EstimatorReportPayload:
 class CrossValidationReportPayload(EstimatorReportPayload):
     splitting_strategy_name: str
     # for each split and for each sample in the dataset
-    # 1 if the sample is in the split, 0 if not
+    # - 0 if the sample is in the train-set,
+    # - 1 if the sample is in the test-set.
     splits: list[list[Literal[0, 1]]]
     # index of the group for each sample in the dataset
     groups: list[int] | None = None
@@ -58,6 +59,43 @@ class CrossValidationReportPayload(EstimatorReportPayload):
     classes: list[int] | None = None
     #
     estimators: list[EstimatorReportPayload]
+
+
+from sklearn.model_selection import BaseCrossValidator
+from sklearn.model_selection._split import _CVIterableWrapper
+
+
+# splitting_strategy_name: str
+is_sklearn_splitter = isinstance(report.splitter, BaseCrossValidator)
+is_iterable_splitter = isinstance(report.splitter, _CVIterableWrapper)
+is_standard_strategy = is_sklearn_splitter and (not is_iterable_splitter)
+strategy = (is_standard_strategy and report.splitter.__class__.__name__) or "custom"
+# splits: list[list[Literal[0, 1]]]
+splits = [[0] * len(report.X)] * len(report.split_indices)
+
+for i, (_, test_indices) in enumerate(report.split_indices):
+    for test_indice in test_indices:
+        splits[i][test_indice] = 1
+
+# groups: list[int] | None = None
+groups = None
+# class_names: list[str] | None = None
+# classes: list[int] | None = None
+if report.ml_task.includes("classification"):
+    class_to_class_indice = defaultdict(lambda: len(class_to_class_indice))
+    sample_to_class_indice = list(map(class_to_class_indice, report.y))
+    classes = list(map(str, class_to_class_indice))
+else:
+    sample_to_class_indice = None
+    classes = None
+
+class_names = classes
+classes = sample_to_class_indice
+
+assert len(classes) == len(report.X)
+assert max(classes) == len(class_names)
+# estimators: list[EstimatorReportPayload]
+estimators = list(map(EstimatorReportPayload, report.estimator_reports_))
 
 
 class Project:
@@ -158,11 +196,12 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        from skore import EstimatorReport
+        from skore import EstimatorReport, CrossValidationReport
 
-        if not isinstance(report, EstimatorReport):
+        if not isinstance(report, EstimatorReport | CrossValidationReport):
             raise TypeError(
-                f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
+                f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationReport`"
+                f"(found '{type(report)}')"
             )
 
         # Upload report to artefacts storage.
@@ -173,24 +212,42 @@ class Project:
         report._cache = {}
 
         try:
-            checksum = artefact.upload(self, report, "estimator-report-pickle")
+            checksum = artefact.upload(self, report, "report-pickle")
         finally:
             report._cache = cache
 
-        # Send metadata.
+        # Send metadata for `EstimatorReport`.
         with HUBClient() as client:
             client.post(
                 url=f"projects/{self.tenant}/{self.name}/items",
                 json=dict(
                     (
-                        *skore_estimator_report_item.Metadata(report),
-                        (
-                            "related_items",
-                            list(skore_estimator_report_item.Representations(report)),
-                        ),
-                        ("parameters", {"checksum": checksum}),
                         ("key", key),
                         ("run_id", self.run_id),
+                        ("estimator_class_name", report.estimator_name_),
+                        ("dataset_fingerprint", joblib.hash(report.y_test)),
+                        ("ml_task", report._ml_task),
+                        ("metrics", metrics(report)),
+                        ("related_items", artefacts(report)),
+                        ("parameters", {"checksum": checksum}),
+                    )
+                ),
+            )
+
+        # Send metadata for `CrossValidationReport`.
+        with HUBClient() as client:
+            client.post(
+                url=f"projects/{self.tenant}/{self.name}/items",
+                json=dict(
+                    (
+                        ("key", key),
+                        ("run_id", self.run_id),
+                        ("estimator_class_name", report.estimator_name_),
+                        ("dataset_fingerprint", joblib.hash(report.y_test)),
+                        ("ml_task", report._ml_task),
+                        ("metrics", metrics(report)),
+                        ("related_items", artefacts(report)),
+                        ("parameters", {"checksum": checksum}),
                     )
                 ),
             )
