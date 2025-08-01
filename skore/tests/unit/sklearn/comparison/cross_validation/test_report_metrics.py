@@ -32,7 +32,7 @@ def report(classification_data):
     report = ComparisonReport(
         [
             CrossValidationReport(make_classifier(), X, y),
-            CrossValidationReport(make_classifier(), X, y, cv_splitter=3),
+            CrossValidationReport(make_classifier(), X, y, splitter=3),
         ]
     )
 
@@ -47,7 +47,7 @@ def report_regression():
     report = ComparisonReport(
         [
             CrossValidationReport(DummyRegressor(), X, y),
-            CrossValidationReport(DummyRegressor(), X, y, cv_splitter=3),
+            CrossValidationReport(DummyRegressor(), X, y, splitter=3),
         ]
     )
 

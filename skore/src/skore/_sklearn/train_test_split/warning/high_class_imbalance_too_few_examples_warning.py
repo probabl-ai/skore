@@ -25,7 +25,7 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
         "may not be a good idea because of high variability in the scores obtained on "
         "the test set. We suggest three options to tackle this challenge: you can "
         "increase test_size, collect more data, or use skore's CrossValidationReport "
-        "with the `cv_splitter` parameter of your choice. "
+        "with the `splitter` parameter of your choice. "
     )
 
     @staticmethod
