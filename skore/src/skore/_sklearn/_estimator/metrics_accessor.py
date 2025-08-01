@@ -429,7 +429,10 @@ class _MetricsAccessor(
                 )
 
         return MetricsSummaryDisplay(
-            summarize_data=results, report_type="estimator", data_source=data_source
+            summarize_data=results,
+            report_type="estimator",
+            data_source=data_source,
+            default_verbose_metric_names=self._score_or_loss_info,
         )
 
     def _compute_metric_scores(

@@ -9,7 +9,7 @@ from skore._sklearn._plot.utils import (
     PlotBackendMixin,
     _interval_max_min_ratio,
 )
-from skore._sklearn.types import ReportType
+from skore._sklearn.types import ReportType, ScoringName
 
 
 class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixin):
@@ -19,28 +19,20 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixi
     This class should not be instantiated directly.
     """
 
-    # should be removed once transformed into a utils
-    _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
-        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
-        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
-        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
-        "precision": {"name": "Precision", "icon": "(↗︎)"},
-        "recall": {"name": "Recall", "icon": "(↗︎)"},
-        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
-        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
-        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
-        "r2": {"name": "R²", "icon": "(↗︎)"},
-        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
-        "custom_metric": {"name": "Custom metric", "icon": ""},
-        "report_metrics": {"name": "Report metrics", "icon": ""},
-    }
-
     def __init__(
-        self, *, summarize_data, report_type: ReportType, data_source: str = "test"
+        self,
+        *,
+        summarize_data,
+        report_type: ReportType,
+        data_source: str = "test",
+        default_verbose_metric_names: dict[str, dict[str, str]],
+        scoring_names: ScoringName | list[ScoringName] | None = None,
     ):
         self.summarize_data = summarize_data
         self.report_type = report_type
         self.data_source = data_source
+        self.scoring_names = scoring_names
+        self.default_verbose_metric_names = default_verbose_metric_names
 
     def frame(self):
         """Return the summarize as a dataframe.
@@ -70,41 +62,49 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixi
         ):
             raise NotImplementedError("To come soon!")
         elif self.report_type == "comparison-estimator":
-            self._plot_comparison_estimator(x, y)
+            self._plot_matplotlib_comparison_estimator(x, y)
 
-    def _plot_comparison_estimator(self, x, y):
+    def _plot_matplotlib_comparison_estimator(self, x, y):
         _, ax = plt.subplots()
 
-        x_label = self._SCORE_OR_LOSS_INFO.get(x, {}).get("name", x)
-        y_label = self._SCORE_OR_LOSS_INFO.get(y, {}).get("name", y)
+        # Get verbose name from x and y
+        # if they are not verbose already
+        x_verbose = self.default_verbose_metric_names.get(x, {}).get("name", x)
+        y_verbose = self.default_verbose_metric_names.get(y, {}).get("name", y)
 
         # Check that the metrics are in the report
         # If the metric is not in the report, help the user by suggesting
         # supported metrics
         reverse_score_info = {
-            value["name"]: key for key, value in self._SCORE_OR_LOSS_INFO.items()
+            value["name"]: key
+            for key, value in self.default_verbose_metric_names.items()
         }
-        # available_columns = self.summarize_data.columns.get_level_values(0).to_list()
-        # available_columns.remove("Estimator")
-        available_columns = self.summarize_data.index
-        if isinstance(available_columns, pd.MultiIndex):
-            available_columns = available_columns.get_level_values(0).to_list()
-        supported_metrics = [
-            reverse_score_info.get(col, col) for col in available_columns
-        ]
+        available_metrics = self.summarize_data.index
+        if isinstance(available_metrics, pd.MultiIndex):
+            available_metrics = available_metrics.get_level_values(0).to_list()
+
+        # if scoring_names is provided, they are the supported metrics
+        # otherwise, the default verbose names apply.
+        if self.scoring_names is not None:
+            supported_metrics = self.scoring_names
+        else:
+            supported_metrics = [
+                reverse_score_info.get(col, col) for col in available_metrics
+            ]
+
         if x not in supported_metrics:
             raise ValueError(
-                f"Performance metric {x} not found in the report. "
+                f"Performance metric '{x}' not found in the report. "
                 f"Supported metrics are: {supported_metrics}."
             )
         if y not in supported_metrics:
             raise ValueError(
-                f"Performance metric {y} not found in the report. "
+                f"Performance metric '{y}' not found in the report. "
                 f"Supported metrics are: {supported_metrics}."
             )
 
-        x_data = self.summarize_data.loc[x_label]
-        y_data = self.summarize_data.loc[y_label]
+        x_data = self.summarize_data.loc[x_verbose]
+        y_data = self.summarize_data.loc[y_verbose]
         if len(x_data.shape) > 1:
             if x_data.shape[0] == 1:
                 x_data = x_data.reset_index(drop=True).values
@@ -122,15 +122,15 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixi
 
         # Make it clear in the axis labels that we are using the train set
         if x == "fit_time" and self.data_source != "train":
-            x_label_text = x_label + " on train set"
+            x_label_text = x_verbose + " on train set"
         else:
-            x_label_text = x_label
+            x_label_text = x_verbose
         if y == "fit_time" and self.data_source != "train":
-            y_label_text = y_label + " on train set"
+            y_label_text = y_verbose + " on train set"
         else:
-            y_label_text = y_label
+            y_label_text = y_verbose
 
-        title = f"{x_label} vs {y_label}"
+        title = f"{x_verbose} vs {y_verbose}"
         if self.data_source is not None:
             title += f" on {self.data_source} set"
 

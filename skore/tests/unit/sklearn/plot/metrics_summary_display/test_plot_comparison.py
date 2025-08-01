@@ -120,3 +120,19 @@ def test_no_positive_label_unrequired(binary_classification_comparator):
     assert display_summary.ax_.get_xlabel() == "Fit time (s) on train set"
     assert display_summary.ax_.get_ylabel() == "Brier score"
     assert len(display_summary.ax_.get_title()) > 4
+
+
+def test_custom_metrics(binary_classification_comparator):
+    """
+    Test that custom metric names are used in the plot.
+    """
+    comp = binary_classification_comparator
+    display_summary = comp.metrics.summarize(
+        scoring=["precision", "recall"],
+        scoring_names=["My Precision", "My Recall"],
+        pos_label=1,
+    )
+    display_summary.plot(x="My Precision", y="My Recall")
+    assert display_summary.ax_.get_xlabel() == "My Precision"
+    assert display_summary.ax_.get_ylabel() == "My Recall"
+    assert len(display_summary.ax_.get_title()) > 4

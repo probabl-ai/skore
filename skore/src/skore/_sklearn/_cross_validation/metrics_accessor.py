@@ -177,6 +177,7 @@ class _MetricsAccessor(
             summarize_data=results,
             report_type="cross-validation",
             data_source=data_source,
+            default_verbose_metric_names=self._score_or_loss_info,
         )
 
     @progress_decorator(description="Compute metric for each split")
