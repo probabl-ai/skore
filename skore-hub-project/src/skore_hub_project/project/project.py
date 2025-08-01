@@ -34,15 +34,67 @@ if TYPE_CHECKING:
         predict_time: float
 
 
+from dataclasses import InitVar, dataclass, field
+
+dataclass = partial(dataclass, kw_only=True)
+
+
+@dataclass
 class EstimatorReportPayload:
+    project: Project = field(repr=False)
+    report: EstimatorReport = field(repr=False)
+    upload: bool = field(default=True, repr=False)
     key: str
     run_id: int
-    estimator_class_name: str
-    dataset_fingerprint: str
-    ml_task: MLTask
-    metrics: list[CreateMetricParameters]
-    related_items: list[RelatedItemPayload]
-    parameters: dict[Any, Any]
+
+    estimator_class_name: str = field(init=False)
+    dataset_fingerprint: str = field(init=False)
+    ml_task: str = field(init=False)
+    metrics: list[Metric] = field(init=False)
+    medias: list[Media] = field(init=False)
+    parameters: Artefact | None = field(init=False)
+
+    @cached_property
+    def parameters(self):
+        if not self.upload:
+            return None
+
+        return Artefact(
+            project=self.project,
+            report=self.report,
+            type="estimator-report-pickle",
+        )
+
+    @cached_property
+    def medias(self): ...
+
+
+#     from __future__ import annotations
+
+# from dataclasses import dataclass, KW_ONLY, field, InitVar
+# from typing import Any, Optional, Callable, Literal
+# from functools import partial
+
+
+# @dataclass
+# class EstimatorReportPayload:
+#     project: Project = field(repr=False)
+#     report: EstimatorReport = field(repr=False)
+#     upload: bool = field(default=True, repr=False)
+
+#     parameters: Artefact | None = field(init=False)
+
+#     @property
+#     def parameters(self):
+#         return self.__parameters
+
+#     @parameters.setter
+#     def parameters(self, value):
+#         self.__parameters = "test"
+
+
+# EstimatorReportPayload("<project>", "<report>", "<upload>")
+# EstimatorReportPayload(parameters='test')
 
 
 class CrossValidationReportPayload(EstimatorReportPayload):
