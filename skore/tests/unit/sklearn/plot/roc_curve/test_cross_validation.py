@@ -22,7 +22,7 @@ def test_binary_classification(
     else:
         roc_kwargs = {"data_source": data_source}
 
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.roc(**roc_kwargs)
     assert isinstance(display, RocCurveDisplay)
 
@@ -84,7 +84,7 @@ def test_multiclass_classification(
     else:
         roc_kwargs = {"data_source": data_source}
 
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.roc(**roc_kwargs)
     assert isinstance(display, RocCurveDisplay)
 
@@ -153,7 +153,7 @@ def test_binary_classification_kwargs(
     cross-validation."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
 
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.roc()
     display.plot(roc_curve_kwargs=roc_curve_kwargs)
     if isinstance(roc_curve_kwargs, list):
@@ -177,7 +177,7 @@ def test_multiple_roc_curve_kwargs_error(
     value for the `roc_curve_kwargs` argument."""
     (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
 
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.roc()
     err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
@@ -188,7 +188,7 @@ def test_multiple_roc_curve_kwargs_error(
 def test_frame_binary_classification(binary_classification_data_no_split, with_roc_auc):
     """Test the frame method with binary classification data."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
     expected_index = ["split_index"]
     expected_columns = ["threshold", "fpr", "tpr"]
@@ -209,7 +209,7 @@ def test_frame_multiclass_classification(
 ):
     """Test the frame method with multiclass classification data."""
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
     expected_index = ["split_index", "label"]
     expected_columns = ["threshold", "fpr", "tpr"]
@@ -233,21 +233,21 @@ def test_legend(
 
     # binary classification <= 5 folds
     estimator, X, y = binary_classification_data_no_split
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     display = report.metrics.roc()
     display.plot()
     check_legend_position(display.ax_, loc="lower right", position="inside")
 
     # binary classification > 5 folds
     estimator, X, y = binary_classification_data_no_split
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=10)
     display = report.metrics.roc()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
     # multiclass classification <= 5 classes
     estimator, X, y = multiclass_classification_data_no_split
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     display = report.metrics.roc()
     display.plot()
     check_legend_position(display.ax_, loc="lower right", position="inside")
@@ -261,7 +261,7 @@ def test_legend(
         n_informative=10,
         random_state=42,
     )
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=10)
     display = report.metrics.roc()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
@@ -270,7 +270,7 @@ def test_legend(
 def test_binary_classification_constructor(binary_classification_data_no_split):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.roc()
 
     index_columns = ["estimator_name", "split_index", "label"]
@@ -286,7 +286,7 @@ def test_binary_classification_constructor(binary_classification_data_no_split):
 def test_multiclass_classification_constructor(multiclass_classification_data_no_split):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.roc()
 
     index_columns = ["estimator_name", "split_index", "label"]
