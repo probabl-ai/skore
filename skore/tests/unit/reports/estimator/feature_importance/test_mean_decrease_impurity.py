@@ -135,27 +135,21 @@ def _make_estimator_param(estimator):
     ],
 )
 def test_all_sklearn_estimators(
-    request, estimator, regression_data, classification_data
+    request, estimator, regression_data, binary_classification_data
 ):
     """Check that `mean_decrease_impurity` is supported for every sklearn estimator."""
     if is_regressor(estimator):
         X, y = regression_data
     else:
-        X, y = classification_data
+        X, y = binary_classification_data
 
     estimator.fit(X, y)
 
     report = EstimatorReport(estimator)
     result = report.feature_importance.mean_decrease_impurity()
 
-    assert result.shape == (5, 1)
-    assert result.index.tolist() == [
-        "Feature #0",
-        "Feature #1",
-        "Feature #2",
-        "Feature #3",
-        "Feature #4",
-    ]
+    assert result.shape == (X.shape[1], 1)
+    assert result.index.tolist() == [f"Feature #{i}" for i in range(X.shape[1])]
     assert result.columns.tolist() == ["Mean decrease impurity"]
 
 
@@ -179,7 +173,7 @@ def test_pipeline_with_transformer(regression_data):
     )
 
     result = report.feature_importance.mean_decrease_impurity()
-    assert result.shape == (16, 1)
+    assert result.shape == (report.estimator_[-1].n_features_in_, 1)
     assert result.index.tolist() == [
         "1",
         "my_feature_0",

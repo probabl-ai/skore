@@ -287,10 +287,10 @@ def test_cache_scoring_is_callable(regression_data, scoring):
     pd.testing.assert_frame_equal(cached_result, result)
 
 
-def test_classification(classification_data):
+def test_classification(binary_classification_data):
     """If `scoring` is a callable then the result is cached properly."""
 
-    X, y = classification_data
+    X, y = binary_classification_data
     report = EstimatorReport(LogisticRegression(), X_train=X, y_train=y)
 
     result = report.feature_importance.permutation(data_source="train", seed=42)
@@ -298,7 +298,7 @@ def test_classification(classification_data):
     pd.testing.assert_index_equal(
         result.index,
         pd.MultiIndex.from_product(
-            [["accuracy"], (f"Feature #{i}" for i in range(5))],
+            [["accuracy"], (f"Feature #{i}" for i in range(X.shape[1]))],
             names=("Metric", "Feature"),
         ),
     )

@@ -3,19 +3,14 @@ import math
 import joblib
 import pandas as pd
 import pytest
-from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 
 
 @pytest.fixture
-def binary_classification_data():
+def estimator_data(binary_classification_train_test_split):
     """Create a binary classification dataset and return fitted estimator and data."""
-    X, y = make_classification(random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
+    X_train, X_test, y_train, y_test = binary_classification_train_test_split
     return RandomForestClassifier(), {
         "X_train": X_train,
         "y_train": y_train,
@@ -24,8 +19,8 @@ def binary_classification_data():
     }
 
 
-def test_only_fit(binary_classification_data):
-    estimator, data = binary_classification_data
+def test_only_fit(estimator_data):
+    estimator, data = estimator_data
     report = EstimatorReport(estimator, **data)
 
     result = report.metrics.timings()
@@ -34,10 +29,10 @@ def test_only_fit(binary_classification_data):
     assert isinstance(result.get("fit_time"), float)
 
 
-def test_only_fit_unfitted(binary_classification_data):
+def test_only_fit_unfitted(estimator_data):
     """If the wrapped estimator is unfitted and fit=False,
     then the fit time is not included in timings."""
-    estimator, data = binary_classification_data
+    estimator, data = estimator_data
     report = EstimatorReport(estimator, fit=False, **data)
 
     result = report.metrics.timings()
@@ -45,10 +40,10 @@ def test_only_fit_unfitted(binary_classification_data):
 
 
 @pytest.mark.parametrize("data_source", ["test", "train", "X_y"])
-def test_predict_prefitted(data_source, binary_classification_data):
+def test_predict_prefitted(data_source, estimator_data):
     """If the wrapped estimator is prefitted, and some predictions are computed,
     then `timings` has one key per prediction data source."""
-    estimator, data = binary_classification_data
+    estimator, data = estimator_data
     report = EstimatorReport(estimator.fit(data["X_train"], data["y_train"]), **data)
 
     if data_source == "X_y":
@@ -68,8 +63,8 @@ def test_predict_prefitted(data_source, binary_classification_data):
     assert isinstance(result.get(f"predict_time_{data_source_check}"), float)
 
 
-def test_everything(binary_classification_data):
-    estimator, data = binary_classification_data
+def test_everything(estimator_data):
+    estimator, data = estimator_data
     report = EstimatorReport(estimator, **data)
 
     # Compute predictions on each data source
@@ -88,19 +83,19 @@ def test_everything(binary_classification_data):
     assert isinstance(result.get(data_source_check), float)
 
 
-def test_fit_time(binary_classification_data):
+def test_fit_time(estimator_data):
     """If the wrapped estimator is fitted inside of the EstimatorReport,
     then the fit time is a float."""
-    estimator, data = binary_classification_data
+    estimator, data = estimator_data
     report = EstimatorReport(estimator, **data)
 
     assert isinstance(report.metrics._fit_time(cast=False), float)
 
 
-def test_fit_time_estimator_already_fitted(binary_classification_data):
+def test_fit_time_estimator_already_fitted(estimator_data):
     """If the wrapped estimator was fitted outside of the EstimatorReport,
     then the fit time is None."""
-    estimator, data = binary_classification_data
+    estimator, data = estimator_data
     estimator.fit(data["X_train"], data["y_train"])
     report = EstimatorReport(estimator, X_test=data["X_test"], y_test=data["y_test"])
 
@@ -108,9 +103,9 @@ def test_fit_time_estimator_already_fitted(binary_classification_data):
     assert math.isnan(report.metrics._fit_time(cast=True))
 
 
-def test_fit_time_estimator_unfitted(binary_classification_data):
+def test_fit_time_estimator_unfitted(estimator_data):
     """If the wrapped estimator is unfitted and fit=False, then the fit time is None."""
-    estimator, data = binary_classification_data
+    estimator, data = estimator_data
     report = EstimatorReport(estimator, fit=False, **data)
 
     assert report.metrics._fit_time(cast=False) is None
@@ -118,8 +113,8 @@ def test_fit_time_estimator_unfitted(binary_classification_data):
 
 
 @pytest.mark.parametrize("data_source", ["test", "train", "X_y"])
-def test_predict_time(data_source, binary_classification_data):
-    estimator, data = binary_classification_data
+def test_predict_time(data_source, estimator_data):
+    estimator, data = estimator_data
     report = EstimatorReport(estimator, **data)
 
     X_, y_ = (data["X_test"], data["y_test"]) if data_source == "X_y" else (None, None)
@@ -132,8 +127,8 @@ def test_predict_time(data_source, binary_classification_data):
     )
 
 
-def test_summarize_fit_time(binary_classification_data):
-    estimator, data = binary_classification_data
+def test_summarize_fit_time(estimator_data):
+    estimator, data = estimator_data
     report = EstimatorReport(estimator, **data)
 
     assert isinstance(
@@ -142,8 +137,8 @@ def test_summarize_fit_time(binary_classification_data):
 
 
 @pytest.mark.parametrize("data_source", ["test", "train", "X_y"])
-def test_summarize_predict_time(data_source, binary_classification_data):
-    estimator, data = binary_classification_data
+def test_summarize_predict_time(data_source, estimator_data):
+    estimator, data = estimator_data
     report = EstimatorReport(estimator, **data)
 
     X_, y_ = (data["X_test"], data["y_test"]) if data_source == "X_y" else (None, None)

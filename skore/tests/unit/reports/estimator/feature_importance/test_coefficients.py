@@ -208,11 +208,11 @@ def test_all_sklearn_estimators(
     estimator,
     regression_data,
     positive_regression_data,
-    classification_data,
+    binary_classification_data,
 ):
     """Check that `coefficients` is supported for every sklearn estimator."""
     if is_classifier(estimator):
-        X, y = classification_data
+        X, y = binary_classification_data
     elif is_regressor(estimator):
         if get_tags(estimator).target_tags.positive_only:
             X, y = positive_regression_data
@@ -226,16 +226,11 @@ def test_all_sklearn_estimators(
     report = EstimatorReport(estimator)
     result = report.feature_importance.coefficients()
 
-    assert result.shape == (6, 1)
+    assert result.shape == (X.shape[1] + 1, 1)
     assert result.index.tolist() == [
         "Intercept",
-        "Feature #0",
-        "Feature #1",
-        "Feature #2",
-        "Feature #3",
-        "Feature #4",
+        *[f"Feature #{i}" for i in range(X.shape[1])],
     ]
-
     assert result.columns.tolist() == ["Coefficient"]
 
 
