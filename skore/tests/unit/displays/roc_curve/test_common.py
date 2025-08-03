@@ -2,10 +2,12 @@ import pytest
 from skore import EstimatorReport
 
 
-def test_wrong_report_type(pyplot, binary_classification_data):
+def test_wrong_report_type(pyplot, logistic_binary_classification_with_train_test):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `report_type` argument."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     estimator_report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )

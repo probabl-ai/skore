@@ -15,8 +15,8 @@ from skore._utils._testing import check_roc_curve_display_data as check_display_
 
 
 @pytest.fixture
-def binary_classification_report(binary_classification_data_no_split):
-    _, X, y = binary_classification_data_no_split
+def binary_classification_report(binary_classification_data):
+    X, y = binary_classification_data
     estimator_1 = LogisticRegression()
     estimator_2 = LogisticRegression(C=10)
     report = ComparisonReport(
@@ -29,8 +29,8 @@ def binary_classification_report(binary_classification_data_no_split):
 
 
 @pytest.fixture
-def multiclass_classification_report(multiclass_classification_data_no_split):
-    _, X, y = multiclass_classification_data_no_split
+def multiclass_classification_report(multiclass_classification_data):
+    X, y = multiclass_classification_data
     estimator_1 = LogisticRegression()
     estimator_2 = LogisticRegression(C=10)
     report = ComparisonReport(
@@ -234,9 +234,9 @@ def test_multiclass_classification_kwargs(pyplot, multiclass_classification_repo
     assert display.ax_[0].spines["right"].get_visible()
 
 
-def test_binary_classification_constructor(binary_classification_data_no_split):
+def test_binary_classification_constructor(logistic_binary_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
-    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_binary_classification_data, 3
     report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     # add a different number of splits for the second report
     report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
@@ -260,9 +260,9 @@ def test_binary_classification_constructor(binary_classification_data_no_split):
     assert len(display.roc_auc) == cv + (cv + 1)
 
 
-def test_multiclass_classification_constructor(multiclass_classification_data_no_split):
+def test_multiclass_classification_constructor(logistic_multiclass_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
-    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_multiclass_classification_data, 3
     report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
     report = ComparisonReport(

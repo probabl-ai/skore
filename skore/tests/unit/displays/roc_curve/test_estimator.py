@@ -11,10 +11,12 @@ from skore._utils._testing import check_frame_structure, check_legend_position
 from skore._utils._testing import check_roc_curve_display_data as check_display_data
 
 
-def test_binary_classification(pyplot, binary_classification_data):
+def test_binary_classification(pyplot, logistic_binary_classification_with_train_test):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     binary data."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -59,10 +61,14 @@ def test_binary_classification(pyplot, binary_classification_data):
     assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
 
 
-def test_multiclass_classification(pyplot, multiclass_classification_data):
+def test_multiclass_classification(
+    pyplot, logistic_multiclass_classification_with_train_test
+):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     multiclass data."""
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -112,9 +118,13 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
     assert display.ax_.get_title() == "ROC Curve for LogisticRegression"
 
 
-def test_data_source_binary_classification(pyplot, binary_classification_data):
+def test_data_source_binary_classification(
+    pyplot, logistic_binary_classification_with_train_test
+):
     """Check that we can pass the `data_source` argument to the ROC curve plot."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -133,9 +143,13 @@ def test_data_source_binary_classification(pyplot, binary_classification_data):
     )
 
 
-def test_data_source_multiclass_classification(pyplot, multiclass_classification_data):
+def test_data_source_multiclass_classification(
+    pyplot, logistic_multiclass_classification_with_train_test
+):
     """Check that we can pass the `data_source` argument to the ROC curve plot."""
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -161,11 +175,15 @@ def test_data_source_multiclass_classification(pyplot, multiclass_classification
 
 
 def test_plot_error_wrong_roc_curve_kwargs(
-    pyplot, binary_classification_data, multiclass_classification_data
+    pyplot,
+    logistic_binary_classification_with_train_test,
+    logistic_multiclass_classification_with_train_test,
 ):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `roc_curve_kwargs` argument."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -177,7 +195,9 @@ def test_plot_error_wrong_roc_curve_kwargs(
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=[{}, {}])
 
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -192,10 +212,12 @@ def test_plot_error_wrong_roc_curve_kwargs(
 
 @pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}], {"color": "red"}])
 def test_roc_curve_kwargs_binary_classification(
-    pyplot, binary_classification_data, roc_curve_kwargs
+    pyplot, logistic_binary_classification_with_train_test, roc_curve_kwargs
 ):
     """Check that we can pass keyword arguments to the ROC curve plot."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -226,11 +248,13 @@ def test_roc_curve_kwargs_binary_classification(
 
 
 def test_roc_curve_kwargs_multiclass_classification(
-    pyplot, multiclass_classification_data
+    pyplot, logistic_multiclass_classification_with_train_test
 ):
     """Check that we can pass keyword arguments to the ROC curve plot for
     multiclass classification."""
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -253,9 +277,13 @@ def test_roc_curve_kwargs_multiclass_classification(
 
 
 @pytest.mark.parametrize("with_roc_auc", [False, True])
-def test_frame_binary_classification(binary_classification_data, with_roc_auc):
+def test_frame_binary_classification(
+    logistic_binary_classification_with_train_test, with_roc_auc
+):
     """Test the frame method with binary classification data."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -272,9 +300,13 @@ def test_frame_binary_classification(binary_classification_data, with_roc_auc):
 
 
 @pytest.mark.parametrize("with_roc_auc", [False, True])
-def test_frame_multiclass_classification(multiclass_classification_data, with_roc_auc):
+def test_frame_multiclass_classification(
+    logistic_multiclass_classification_with_train_test, with_roc_auc
+):
     """Test the frame method with multiclass classification data."""
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -292,11 +324,17 @@ def test_frame_multiclass_classification(multiclass_classification_data, with_ro
             assert group["roc_auc"].nunique() == 1
 
 
-def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
+def test_legend(
+    pyplot,
+    logistic_binary_classification_with_train_test,
+    logistic_multiclass_classification_with_train_test,
+):
     """Check the rendering of the legend for ROC curves with an `EstimatorReport`."""
 
     # binary classification
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -305,7 +343,9 @@ def test_legend(pyplot, binary_classification_data, multiclass_classification_da
     check_legend_position(display.ax_, loc="lower right", position="inside")
 
     # multiclass classification <= 5 classes
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -331,9 +371,13 @@ def test_legend(pyplot, binary_classification_data, multiclass_classification_da
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
 
-def test_binary_classification_constructor(binary_classification_data):
+def test_binary_classification_constructor(
+    logistic_binary_classification_with_train_test,
+):
     """Check that the dataframe has the correct structure at initialization."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -349,9 +393,13 @@ def test_binary_classification_constructor(binary_classification_data):
     assert len(display.roc_auc) == 1
 
 
-def test_multiclass_classification_constructor(multiclass_classification_data):
+def test_multiclass_classification_constructor(
+    logistic_multiclass_classification_with_train_test,
+):
     """Check that the dataframe has the correct structure at initialization."""
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )

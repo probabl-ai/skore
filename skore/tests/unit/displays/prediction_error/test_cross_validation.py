@@ -9,10 +9,10 @@ from skore._utils._testing import check_frame_structure, check_legend_position
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
-def test_regression(pyplot, regression_data_no_split, data_source):
+def test_regression(pyplot, linear_regression_data, data_source):
     """Check the attributes and default plotting behaviour of the prediction error plot
     with cross-validation data."""
-    (estimator, X, y), cv = regression_data_no_split, 3
+    (estimator, X, y), cv = linear_regression_data, 3
     if data_source == "X_y":
         prediction_error_kwargs = {"data_source": data_source, "X": X, "y": y}
     else:
@@ -58,9 +58,9 @@ def test_regression(pyplot, regression_data_no_split, data_source):
     assert display.ax_.get_aspect() not in ("equal", 1.0)
 
 
-def test_regression_actual_vs_predicted(pyplot, regression_data_no_split):
+def test_regression_actual_vs_predicted(pyplot, linear_regression_data):
     """Check the attributes when switching to the "actual_vs_predicted" kind."""
-    (estimator, X, y), cv = regression_data_no_split, 3
+    (estimator, X, y), cv = linear_regression_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
@@ -90,10 +90,10 @@ def test_regression_actual_vs_predicted(pyplot, regression_data_no_split):
     assert display.ax_.get_aspect() in ("equal", 1.0)
 
 
-def test_kwargs(pyplot, regression_data_no_split):
+def test_kwargs(pyplot, linear_regression_data):
     """Check that we can pass keyword arguments to the prediction error plot when
     there is a cross-validation report."""
-    (estimator, X, y), cv = regression_data_no_split, 3
+    (estimator, X, y), cv = linear_regression_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.prediction_error()
     display.plot(
@@ -111,10 +111,10 @@ def test_kwargs(pyplot, regression_data_no_split):
 
 
 @pytest.mark.parametrize("data_points_kwargs", ["not a list", [{"color": "red"}]])
-def test_wrong_kwargs(pyplot, regression_data_no_split, data_points_kwargs):
+def test_wrong_kwargs(pyplot, linear_regression_data, data_points_kwargs):
     """Check that we raise an error when we pass keyword arguments to the prediction
     error plot if there is a cross-validation report."""
-    (estimator, X, y), cv = regression_data_no_split, 3
+    (estimator, X, y), cv = linear_regression_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.prediction_error()
 
@@ -128,9 +128,9 @@ def test_wrong_kwargs(pyplot, regression_data_no_split, data_points_kwargs):
         display.plot(data_points_kwargs=data_points_kwargs)
 
 
-def test_frame(regression_data_no_split):
+def test_frame(linear_regression_data):
     """Test the frame method with cross-validation data."""
-    (estimator, X, y), cv = regression_data_no_split, 3
+    (estimator, X, y), cv = linear_regression_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.prediction_error()
     df = display.frame()
@@ -142,11 +142,11 @@ def test_frame(regression_data_no_split):
     assert df["split_index"].nunique() == cv
 
 
-def test_legend(pyplot, regression_data_no_split):
+def test_legend(pyplot, linear_regression_data):
     """Check the rendering of the legend for prediction error with an
     `CrossValidationReport`."""
 
-    (estimator, X, y), cv = regression_data_no_split, 3
+    (estimator, X, y), cv = linear_regression_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.prediction_error()
     display.plot()
@@ -165,9 +165,9 @@ def test_legend(pyplot, regression_data_no_split):
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
 
-def test_constructor(regression_data_no_split):
+def test_constructor(linear_regression_data):
     """Check that the dataframe has the correct structure at initialization."""
-    (estimator, X, y), cv = regression_data_no_split, 3
+    (estimator, X, y), cv = linear_regression_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.prediction_error()
 

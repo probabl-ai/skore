@@ -9,10 +9,10 @@ from skore._sklearn._plot.metrics.prediction_error import RangeData
 from skore._utils._testing import check_frame_structure, check_legend_position
 
 
-def test_regression(pyplot, regression_data):
+def test_regression(pyplot, linear_regression_with_train_test):
     """Check the attributes and default plotting behaviour of the prediction error plot
     with a comparison report."""
-    estimator, X_train, X_test, y_train, y_test = regression_data
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     report = ComparisonReport(
         reports={
             "estimator_1": EstimatorReport(
@@ -72,9 +72,9 @@ def test_regression(pyplot, regression_data):
     assert display.ax_.get_aspect() not in ("equal", 1.0)
 
 
-def test_regression_actual_vs_predicted(pyplot, regression_data):
+def test_regression_actual_vs_predicted(pyplot, linear_regression_with_train_test):
     """Check the attributes when switching to the "actual_vs_predicted" kind."""
-    estimator, X_train, X_test, y_train, y_test = regression_data
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     report = ComparisonReport(
         reports={
             "estimator_1": EstimatorReport(
@@ -120,10 +120,10 @@ def test_regression_actual_vs_predicted(pyplot, regression_data):
     assert display.ax_.get_aspect() in ("equal", 1.0)
 
 
-def test_kwargs(pyplot, regression_data):
+def test_kwargs(pyplot, linear_regression_with_train_test):
     """Check that we can pass keyword arguments to the prediction error plot when
     there is a comparison report."""
-    estimator, X_train, X_test, y_train, y_test = regression_data
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     report = ComparisonReport(
         reports={
             "estimator_1": EstimatorReport(
@@ -154,10 +154,10 @@ def test_kwargs(pyplot, regression_data):
 
 
 @pytest.mark.parametrize("data_points_kwargs", ["not a list", [{"color": "red"}]])
-def test_wrong_kwargs(pyplot, regression_data, data_points_kwargs):
+def test_wrong_kwargs(pyplot, linear_regression_with_train_test, data_points_kwargs):
     """Check that we raise an error when we pass keyword arguments to the prediction
     error plot if there is a comparison report."""
-    estimator, X_train, X_test, y_train, y_test = regression_data
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     report = ComparisonReport(
         reports={
             "estimator_1": EstimatorReport(
@@ -188,9 +188,9 @@ def test_wrong_kwargs(pyplot, regression_data, data_points_kwargs):
         display.plot(data_points_kwargs=data_points_kwargs)
 
 
-def test_frame(regression_data):
+def test_frame(linear_regression_with_train_test):
     """Test the frame method with comparison data."""
-    estimator, X_train, X_test, y_train, y_test = regression_data
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     estimator_2 = clone(estimator).fit(X_train, y_train)
     report = ComparisonReport(
         reports={
@@ -220,11 +220,11 @@ def test_frame(regression_data):
     assert df["estimator_name"].nunique() == 2
 
 
-def test_legend(pyplot, regression_data):
+def test_legend(pyplot, linear_regression_with_train_test):
     """Check the rendering of the legend for prediction error with a
     `ComparisonReport`."""
 
-    estimator, X_train, X_test, y_train, y_test = regression_data
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     report_1 = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -258,9 +258,9 @@ def test_legend(pyplot, regression_data):
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
 
-def test_constructor(regression_data):
+def test_constructor(linear_regression_with_train_test):
     """Check that the dataframe has the correct structure at initialization."""
-    estimator, X_train, X_test, y_train, y_test = regression_data
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     report_1 = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )

@@ -13,11 +13,13 @@ from skore._utils._testing import (
 )
 
 
-def test_binary_classification(pyplot, binary_classification_data):
+def test_binary_classification(pyplot, logistic_binary_classification_with_train_test):
     """Check the attributes and default plotting behaviour of the
     precision-recall curve plot with binary data.
     """
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -57,11 +59,15 @@ def test_binary_classification(pyplot, binary_classification_data):
     )
 
 
-def test_multiclass_classification(pyplot, multiclass_classification_data):
+def test_multiclass_classification(
+    pyplot, logistic_multiclass_classification_with_train_test
+):
     """Check the attributes and default plotting behaviour of the precision-recall
     curve plot with multiclass data.
     """
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -102,28 +108,34 @@ def test_multiclass_classification(pyplot, multiclass_classification_data):
     )
 
 
-def test_data_source(pyplot, binary_classification_data):
+def test_data_source(pyplot, logistic_binary_classification_with_train_test):
     """Check that we can pass the `data_source` argument to the precision-recall
     curve plot.
     """
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.precision_recall(data_source="train")
     display.plot()
-    assert display.lines_[0].get_label() == "Train set (AP = 0.93)"
+    assert display.lines_[0].get_label() == "Train set (AP = 1.00)"
 
     display = report.metrics.precision_recall(data_source="X_y", X=X_train, y=y_train)
     display.plot()
-    assert display.lines_[0].get_label() == "AP = 0.93"
+    assert display.lines_[0].get_label() == "AP = 1.00"
 
 
 def test_pr_curve_kwargs(
-    pyplot, binary_classification_data, multiclass_classification_data
+    pyplot,
+    logistic_binary_classification_with_train_test,
+    logistic_multiclass_classification_with_train_test,
 ):
     """Check that we can pass keyword arguments to the precision-recall curve plot."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -145,7 +157,9 @@ def test_pr_curve_kwargs(
         # cache
         display.set_style(pr_curve_kwargs={"color": "#1f77b4"})
 
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -163,12 +177,16 @@ def test_pr_curve_kwargs(
 
 
 def test_wrong_kwargs(
-    pyplot, binary_classification_data, multiclass_classification_data
+    pyplot,
+    logistic_binary_classification_with_train_test,
+    logistic_multiclass_classification_with_train_test,
 ):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `roc_curve_kwargs` argument.
     """
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -180,7 +198,9 @@ def test_wrong_kwargs(
     with pytest.raises(ValueError, match=err_msg):
         display.plot(pr_curve_kwargs=[{}, {}])
 
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -196,26 +216,34 @@ def test_wrong_kwargs(
         display.plot(pr_curve_kwargs={})
 
 
-def test_binary_classification_data_source(pyplot, binary_classification_data):
+def test_binary_classification_data_source(
+    pyplot, logistic_binary_classification_with_train_test
+):
     """Check that we can pass the `data_source` argument to the precision-recall curve
     plot."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.precision_recall(data_source="train")
     display.plot()
-    assert display.lines_[0].get_label() == "Train set (AP = 0.93)"
+    assert display.lines_[0].get_label() == "Train set (AP = 1.00)"
 
     display = report.metrics.precision_recall(data_source="X_y", X=X_train, y=y_train)
     display.plot()
-    assert display.lines_[0].get_label() == "AP = 0.93"
+    assert display.lines_[0].get_label() == "AP = 1.00"
 
 
-def test_multiclass_classification_data_source(pyplot, multiclass_classification_data):
+def test_multiclass_classification_data_source(
+    pyplot, logistic_multiclass_classification_with_train_test
+):
     """Check that we can pass the `data_source` argument to the precision-recall curve
     plot."""
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -242,10 +270,12 @@ def test_multiclass_classification_data_source(pyplot, multiclass_classification
 
 @pytest.mark.parametrize("with_average_precision", [False, True])
 def test_frame_binary_classification(
-    binary_classification_data, with_average_precision
+    logistic_binary_classification_with_train_test, with_average_precision
 ):
     """Test the frame method with binary classification data."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -265,10 +295,12 @@ def test_frame_binary_classification(
 
 @pytest.mark.parametrize("with_average_precision", [False, True])
 def test_frame_multiclass_classification(
-    multiclass_classification_data, with_average_precision
+    logistic_multiclass_classification_with_train_test, with_average_precision
 ):
     """Test the frame method with multiclass classification data."""
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -288,11 +320,17 @@ def test_frame_multiclass_classification(
             assert group["average_precision"].nunique() == 1
 
 
-def test_legend(pyplot, binary_classification_data, multiclass_classification_data):
+def test_legend(
+    pyplot,
+    logistic_binary_classification_with_train_test,
+    logistic_multiclass_classification_with_train_test,
+):
     """Check the rendering of the legend for with an `EstimatorReport`."""
 
     # binary classification
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -301,7 +339,9 @@ def test_legend(pyplot, binary_classification_data, multiclass_classification_da
     check_legend_position(display.ax_, loc="lower left", position="inside")
 
     # multiclass classification <= 5 classes
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -327,9 +367,13 @@ def test_legend(pyplot, binary_classification_data, multiclass_classification_da
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
 
-def test_binary_classification_constructor(binary_classification_data):
+def test_binary_classification_constructor(
+    logistic_binary_classification_with_train_test,
+):
     """Check that the dataframe has the correct structure at initialization."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -345,9 +389,13 @@ def test_binary_classification_constructor(binary_classification_data):
     assert len(display.average_precision) == 1
 
 
-def test_multiclass_classification_constructor(multiclass_classification_data):
+def test_multiclass_classification_constructor(
+    logistic_multiclass_classification_with_train_test,
+):
     """Check that the dataframe has the correct structure at initialization."""
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )

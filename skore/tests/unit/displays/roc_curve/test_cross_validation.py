@@ -12,11 +12,11 @@ from skore._utils._testing import check_roc_curve_display_data as check_display_
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_binary_classification(
-    pyplot, binary_classification_data_no_split, data_source
+    pyplot, logistic_binary_classification_data, data_source
 ):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     binary data."""
-    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_binary_classification_data, 3
     if data_source == "X_y":
         roc_kwargs = {"data_source": data_source, "X": X, "y": y}
     else:
@@ -74,11 +74,11 @@ def test_binary_classification(
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_multiclass_classification(
-    pyplot, multiclass_classification_data_no_split, data_source
+    pyplot, logistic_multiclass_classification_data, data_source
 ):
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     multiclass data."""
-    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_multiclass_classification_data, 3
     if data_source == "X_y":
         roc_kwargs = {"data_source": data_source, "X": X, "y": y}
     else:
@@ -116,8 +116,8 @@ def test_multiclass_classification(
                 ]
                 assert roc_curve_mpl.get_label() == (
                     f"{str(class_label).title()} "
-                    f"(AUC = {np.mean(roc_auc_class):0.2f}"
-                    f" +/- {np.std(roc_auc_class):0.2f})"
+                    f"(AUC = {roc_auc_class.mean():0.2f}"
+                    f" +/- {roc_auc_class.std():0.2f})"
                 )
             assert roc_curve_mpl.get_color() == expected_color
 
@@ -147,11 +147,11 @@ def test_multiclass_classification(
     ],
 )
 def test_binary_classification_kwargs(
-    pyplot, binary_classification_data_no_split, roc_curve_kwargs
+    pyplot, logistic_binary_classification_data, roc_curve_kwargs
 ):
     """Check that we can pass keyword arguments to the ROC curve plot for
     cross-validation."""
-    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_binary_classification_data, 3
 
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.roc()
@@ -167,7 +167,7 @@ def test_binary_classification_kwargs(
 
 @pytest.mark.parametrize(
     "fixture_name",
-    ["binary_classification_data_no_split", "multiclass_classification_data_no_split"],
+    ["logistic_binary_classification_data", "logistic_multiclass_classification_data"],
 )
 @pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}], "unknown"])
 def test_multiple_roc_curve_kwargs_error(
@@ -185,9 +185,9 @@ def test_multiple_roc_curve_kwargs_error(
 
 
 @pytest.mark.parametrize("with_roc_auc", [False, True])
-def test_frame_binary_classification(binary_classification_data_no_split, with_roc_auc):
+def test_frame_binary_classification(logistic_binary_classification_data, with_roc_auc):
     """Test the frame method with binary classification data."""
-    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_binary_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
     expected_index = ["split_index"]
@@ -205,10 +205,10 @@ def test_frame_binary_classification(binary_classification_data_no_split, with_r
 
 @pytest.mark.parametrize("with_roc_auc", [False, True])
 def test_frame_multiclass_classification(
-    multiclass_classification_data_no_split, with_roc_auc
+    logistic_multiclass_classification_data, with_roc_auc
 ):
     """Test the frame method with multiclass classification data."""
-    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_multiclass_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
     expected_index = ["split_index", "label"]
@@ -226,27 +226,27 @@ def test_frame_multiclass_classification(
 
 
 def test_legend(
-    pyplot, binary_classification_data_no_split, multiclass_classification_data_no_split
+    pyplot, logistic_binary_classification_data, logistic_multiclass_classification_data
 ):
     """Check the rendering of the legend for ROC curves with a
     `CrossValidationReport`."""
 
     # binary classification <= 5 folds
-    estimator, X, y = binary_classification_data_no_split
+    estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
     display = report.metrics.roc()
     display.plot()
     check_legend_position(display.ax_, loc="lower right", position="inside")
 
     # binary classification > 5 folds
-    estimator, X, y = binary_classification_data_no_split
+    estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
     display = report.metrics.roc()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
     # multiclass classification <= 5 classes
-    estimator, X, y = multiclass_classification_data_no_split
+    estimator, X, y = logistic_multiclass_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
     display = report.metrics.roc()
     display.plot()
@@ -267,9 +267,9 @@ def test_legend(
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
 
-def test_binary_classification_constructor(binary_classification_data_no_split):
+def test_binary_classification_constructor(logistic_binary_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
-    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_binary_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.roc()
 
@@ -283,9 +283,9 @@ def test_binary_classification_constructor(binary_classification_data_no_split):
     assert len(display.roc_auc) == cv
 
 
-def test_multiclass_classification_constructor(multiclass_classification_data_no_split):
+def test_multiclass_classification_constructor(logistic_multiclass_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
-    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_multiclass_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.roc()
 

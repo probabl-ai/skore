@@ -1,49 +1,17 @@
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 from skore._sklearn._plot import ConfusionMatrixDisplay
 
 
-@pytest.fixture
-def binary_classification_data():
-    X, y = make_classification(class_sep=0.1, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    return (
-        LogisticRegression().fit(X_train, y_train),
-        X_train,
-        X_test,
-        y_train,
-        y_test,
-    )
-
-
-@pytest.fixture
-def multiclass_classification_data():
-    X, y = make_classification(
-        class_sep=0.1,
-        n_classes=3,
-        n_clusters_per_class=1,
-        random_state=42,
-    )
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    return (
-        LogisticRegression().fit(X_train, y_train),
-        X_train,
-        X_test,
-        y_train,
-        y_test,
-    )
-
-
 def test_confusion_matrix_display_binary_classification(
     pyplot,
-    binary_classification_data,
+    forest_binary_classification_with_train_test,
 ):
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -72,9 +40,11 @@ def test_confusion_matrix_display_binary_classification(
 
 def test_confusion_matrix_display_multiclass_classification(
     pyplot,
-    multiclass_classification_data,
+    forest_multiclass_classification_with_train_test,
 ):
-    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_multiclass_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -96,9 +66,11 @@ def test_confusion_matrix_display_multiclass_classification(
 
 def test_confusion_matrix_display_normalization(
     pyplot,
-    binary_classification_data,
+    forest_binary_classification_with_train_test,
 ):
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -122,9 +94,11 @@ def test_confusion_matrix_display_normalization(
 
 def test_confusion_matrix_display_custom_labels(
     pyplot,
-    binary_classification_data,
+    forest_binary_classification_with_train_test,
 ):
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -143,9 +117,11 @@ def test_confusion_matrix_display_custom_labels(
 
 def test_confusion_matrix_display_data_source(
     pyplot,
-    binary_classification_data,
+    forest_binary_classification_with_train_test,
 ):
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -175,9 +151,11 @@ def test_confusion_matrix_display_data_source(
 
 def test_confusion_matrix_values_format(
     pyplot,
-    binary_classification_data,
+    forest_binary_classification_with_train_test,
 ):
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -196,9 +174,11 @@ def test_confusion_matrix_values_format(
 
 def test_confusion_matrix_display_single_label(
     pyplot,
-    binary_classification_data,
+    forest_binary_classification_with_train_test,
 ):
-    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator,
         X_train=X_train,

@@ -14,12 +14,12 @@ from skore._utils._testing import (
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_binary_classification(
-    pyplot, binary_classification_data_no_split, data_source
+    pyplot, logistic_binary_classification_data, data_source
 ):
     """Check the attributes and default plotting behaviour of the
     precision-recall curve plot with binary data.
     """
-    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_binary_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     if data_source == "X_y":
         precision_recall_kwargs = {"data_source": data_source, "X": X, "y": y}
@@ -70,12 +70,12 @@ def test_binary_classification(
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_multiclass_classification(
-    pyplot, multiclass_classification_data_no_split, data_source
+    pyplot, logistic_multiclass_classification_data, data_source
 ):
     """Check the attributes and default plotting behaviour of the precision-recall
     curve plot with multiclass data.
     """
-    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_multiclass_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     if data_source == "X_y":
         precision_recall_kwargs = {"data_source": data_source, "X": X, "y": y}
@@ -104,7 +104,7 @@ def test_multiclass_classification(
                 assert precision_recall_curve_mpl.get_label() == (
                     f"{str(class_label).title()} "
                     f"(AP = {np.mean(average_precision):0.2f}"
-                    f" +/- {np.std(average_precision):0.2f})"
+                    f" +/- {np.std(average_precision, ddof=1):0.2f})"
                 )
             assert precision_recall_curve_mpl.get_color() == expected_color
 
@@ -127,7 +127,7 @@ def test_multiclass_classification(
 
 @pytest.mark.parametrize(
     "fixture_name",
-    ["binary_classification_data_no_split", "multiclass_classification_data_no_split"],
+    ["logistic_binary_classification_data", "logistic_multiclass_classification_data"],
 )
 @pytest.mark.parametrize("pr_curve_kwargs", [[{"color": "red"}], "unknown"])
 def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
@@ -147,10 +147,10 @@ def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
 
 @pytest.mark.parametrize("with_average_precision", [False, True])
 def test_frame_binary_classification(
-    binary_classification_data_no_split, with_average_precision
+    logistic_binary_classification_data, with_average_precision
 ):
     """Test the frame method with binary classification data."""
-    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_binary_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     df = report.metrics.precision_recall().frame(
         with_average_precision=with_average_precision
@@ -170,10 +170,10 @@ def test_frame_binary_classification(
 
 @pytest.mark.parametrize("with_average_precision", [False, True])
 def test_frame_multiclass_classification(
-    multiclass_classification_data_no_split, with_average_precision
+    logistic_multiclass_classification_data, with_average_precision
 ):
     """Test the frame method with multiclass classification data."""
-    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_multiclass_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     df = report.metrics.precision_recall().frame(
         with_average_precision=with_average_precision
@@ -193,26 +193,26 @@ def test_frame_multiclass_classification(
 
 
 def test_legend(
-    pyplot, binary_classification_data_no_split, multiclass_classification_data_no_split
+    pyplot, logistic_binary_classification_data, logistic_multiclass_classification_data
 ):
     """Check the rendering of the legend for with an `CrossValidationReport`."""
 
     # binary classification <= 5 folds
-    estimator, X, y = binary_classification_data_no_split
+    estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
     display = report.metrics.precision_recall()
     display.plot()
     check_legend_position(display.ax_, loc="lower left", position="inside")
 
     # binary classification > 5 folds
-    estimator, X, y = binary_classification_data_no_split
+    estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
     display = report.metrics.precision_recall()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
     # multiclass classification <= 5 classes
-    estimator, X, y = multiclass_classification_data_no_split
+    estimator, X, y = logistic_multiclass_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
     display = report.metrics.precision_recall()
     display.plot()
@@ -233,9 +233,9 @@ def test_legend(
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
 
-def test_binary_classification_constructor(binary_classification_data_no_split):
+def test_binary_classification_constructor(logistic_binary_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
-    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_binary_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.precision_recall()
 
@@ -249,9 +249,9 @@ def test_binary_classification_constructor(binary_classification_data_no_split):
     assert len(display.average_precision) == cv
 
 
-def test_multiclass_classification_constructor(multiclass_classification_data_no_split):
+def test_multiclass_classification_constructor(logistic_multiclass_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
-    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    (estimator, X, y), cv = logistic_multiclass_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.precision_recall()
 
