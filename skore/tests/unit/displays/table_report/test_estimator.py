@@ -38,13 +38,6 @@ def display():
     return report.data.analyze()
 
 
-@pytest.mark.parametrize("col", [None, pd.Series(range(10))])
-def test_truncate_top_k_categories_return_as_is(col):
-    """Check the behaviour of `_truncate_top_k_categories` when `col` is None or
-    numeric where no changes are made."""
-    assert _truncate_top_k_categories(col, k=3) is col
-
-
 @pytest.mark.parametrize("dtype", ["category", "object"])
 @pytest.mark.parametrize("other_label", ["other", "xxx"])
 def test_truncate_top_k_categories(dtype, other_label):
@@ -381,6 +374,7 @@ def test_hue_plots_2d(pyplot, estimator_report):
         display.plot(x="gender", y="division", hue="department_name")
 
 
+<<<<<<< HEAD:skore/tests/unit/displays/table_report/test_estimator.py
 def test_corr_plot(pyplot, estimator_report):
     """Check the correlation plot."""
     display = estimator_report.data.analyze(data_source="train")
@@ -395,6 +389,20 @@ def test_repr(display):
     """Check the string representation of the `TableReportDisplay`."""
     repr = display.__repr__()
     assert repr == "<TableReportDisplay(...)>"
+=======
+def test_json_dump(display):
+    json_dict = json.loads(display._to_json())
+    assert list(json_dict.keys()) == [
+        "dataframe_module",
+        "n_rows",
+        "n_columns",
+        "columns",
+        "dataframe_is_empty",
+        "plots_skipped",
+        "n_constant_columns",
+        "top_associations",
+    ]
+>>>>>>> cdeeb75 (start cross-val data accessor):skore/tests/unit/sklearn/plot/table_report/test_estimator.py
 
 
 def test_html_repr(estimator_report):
