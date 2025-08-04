@@ -51,25 +51,36 @@ def _check_estimator_has_method(method_name: str) -> Callable:
 
 def _check_has_coef() -> Callable:
     def check(accessor: Any) -> bool:
-        """Check if the estimator has a `coef_` attribute."""
-        parent_estimator = accessor._parent.estimator_
-        estimator = (
-            parent_estimator.steps[-1][1]
-            if isinstance(parent_estimator, Pipeline)
-            else parent_estimator
-        )
-        if hasattr(estimator, "coef_"):
-            return True
-        try:  # e.g. TransformedTargetRegressor()
-            if hasattr(estimator.regressor_, "coef_"):
-                return True
-        except AttributeError as msg:
-            if "object has no attribute 'regressor_'" not in str(msg):
-                raise
-        raise AttributeError(
-            f"Estimator {parent_estimator} is not a supported estimator by "
-            "the function called."
-        )
+        """Check if all the estimators have a `coef_` attribute."""
+        if hasattr(accessor._parent, "estimator_reports_"):  # CrossValidationReport
+            parent_estimators = [
+                report.estimator for report in accessor._parent.estimator_reports_
+            ]
+        elif hasattr(accessor._parent, "reports_"):  # ComparisonReport
+            parent_estimators = [
+                report.estimator for report in accessor._parent.reports_
+            ]
+        else:  # EstimatorReport
+            parent_estimators = [accessor._parent.estimator_]
+        for parent_estimator in parent_estimators:
+            estimator = (
+                parent_estimator.steps[-1][1]
+                if isinstance(parent_estimator, Pipeline)
+                else parent_estimator
+            )
+            if hasattr(estimator, "coef_"):
+                continue
+            try:  # e.g. TransformedTargetRegressor()
+                if hasattr(estimator.regressor_, "coef_"):
+                    return True
+            except AttributeError as msg:
+                if "object has no attribute 'regressor_'" not in str(msg):
+                    raise
+            raise AttributeError(
+                f"Estimator {parent_estimator} is not a supported estimator by "
+                "the function called."
+            )
+        return True
 
     return check
 
