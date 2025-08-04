@@ -105,14 +105,14 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixi
         y_data = self.summarize_data.loc[y_verbose]
         if len(x_data.shape) > 1:
             if x_data.shape[0] == 1:
-                x_data = x_data.reset_index(drop=True).values
+                x_data = x_data.reset_index(drop=True).values[0]
             else:
                 raise ValueError(
                     "The perf metric x requires to add a positive label parameter."
                 )
         if len(y_data.shape) > 1:
             if y_data.shape[0] == 1:
-                y_data = y_data.reset_index(drop=True).values
+                y_data = y_data.reset_index(drop=True).values[0]
             else:
                 raise ValueError(
                     "The perf metric y requires to add a positive label parameter."
