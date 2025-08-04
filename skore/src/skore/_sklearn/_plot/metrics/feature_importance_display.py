@@ -11,6 +11,7 @@ class FeatureImportanceDisplay(StyleDisplayMixin, PlotBackendMixin, Display):
         self._parent = _parent
 
     def frame(self):
+        """Get the coefficients as a dataframe."""
         if isinstance(self.coefficient_data, list):
             return pd.concat(self.coefficient_data, axis=1)
         return self.coefficient_data
@@ -27,14 +28,14 @@ class FeatureImportanceDisplay(StyleDisplayMixin, PlotBackendMixin, Display):
         if isinstance(self._parent, EstimatorReport):
             self.coefficient_data.plot.bar()
         elif isinstance(self._parent, CrossValidationReport):
-            import seaborn as sns
-
             reshaped = self.coefficient_data.stack().reset_index()
             reshaped.columns = ["Feature", "Run", "Coefficient"]
             reshaped["Run"] = reshaped.groupby("Feature").cumcount()
 
+            grouped = reshaped.groupby("Feature")["Coefficient"]
+            data = [group.tolist() for _, group in grouped]
             plt.figure(figsize=(12, 6))
-            sns.boxplot(data=reshaped, x="Feature", y="Coefficient")
+            plt.boxplot(data, labels=grouped.groups.keys())
             plt.xticks(rotation=45)
             plt.title("Coefficient variance across CV splits")
             plt.tight_layout()
