@@ -475,5 +475,5 @@ def _interval_max_min_ratio(data):
     better be displayed with a log scale while a linear scale would be more
     suitable otherwise.
     """
-    diff = np.diff(np.sort(data))
+    diff = np.diff(np.sort(data), axis=0)
     return diff.max() / diff.min()

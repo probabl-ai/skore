@@ -1,5 +1,7 @@
+import numpy as np
 import pytest
 from sklearn.datasets import make_classification, make_regression
+from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import (
     HistGradientBoostingClassifier,
     HistGradientBoostingRegressor,
@@ -56,6 +58,40 @@ def regression_comparator():
         y_test=y_test,
     )
     comp = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    return comp
+
+
+@pytest.fixture
+def high_error_regression():
+    X_train = np.random.rand(100, 5)
+    y_train = np.random.normal(0.1, 0.1, 100)
+    X_test = np.random.rand(100, 5)
+    y_test = np.random.normal(100, 1, 100)
+
+    report_1 = EstimatorReport(
+        estimator=DummyRegressor(strategy="mean"),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report_2 = EstimatorReport(
+        estimator=DummyRegressor(strategy="constant", constant=0.99),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report_3 = EstimatorReport(
+        estimator=DummyRegressor(strategy="constant", constant=100),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    comp = ComparisonReport(
+        {"report_1": report_1, "report_2": report_2, "report_3": report_3}
+    )
     return comp
 
 
@@ -136,3 +172,16 @@ def test_custom_metrics(binary_classification_comparator):
     assert display_summary.ax_.get_xlabel() == "My Precision"
     assert display_summary.ax_.get_ylabel() == "My Recall"
     assert len(display_summary.ax_.get_title()) > 4
+
+
+def test_various_scales(high_error_regression):
+    """
+    Test that the plot can handle metrics with different scales.
+    """
+    comp = high_error_regression
+    display_summary = comp.metrics.summarize(scoring=["fit_time", "rmse"])
+    display_summary.plot(x="rmse", y="fit_time")
+    assert display_summary.ax_.get_xscale() == "log"
+
+    display_summary.plot(x="fit_time", y="rmse")
+    assert display_summary.ax_.get_yscale() == "log"
