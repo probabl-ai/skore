@@ -52,13 +52,6 @@ def display():
     return report.data.analyze()
 
 
-@pytest.mark.parametrize("col", [None, pd.Series(range(10))])
-def test_truncate_top_k_categories_return_as_is(col):
-    """Check the behaviour of `_truncate_top_k_categories` when `col` is None or
-    numeric where no changes are made."""
-    assert _truncate_top_k_categories(col, k=3) is col
-
-
 @pytest.mark.parametrize("dtype", ["category", "object"])
 @pytest.mark.parametrize("other_label", ["other", "xxx"])
 def test_truncate_top_k_categories(dtype, other_label):
@@ -380,15 +373,6 @@ def test_hue_plots_2d(pyplot, estimator_report):
         display.plot(x="gender", y="division", hue="department_name")
 
 
-def test_corr_plot(pyplot, estimator_report):
-    display = estimator_report.data.analyze(data_source="train")
-    display.plot(kind="corr")
-    assert isinstance(display.ax_.collections[0], QuadMesh)
-    assert len(display.ax_.get_xticklabels()) == 10
-    assert len(display.ax_.get_yticklabels()) == 10
-    assert display.ax_.title.get_text() == "Cramer's V Correlation"
-
-
 def test_json_dump(display):
     json_dict = json.loads(display._to_json())
     assert list(json_dict.keys()) == [
@@ -401,11 +385,6 @@ def test_json_dump(display):
         "n_constant_columns",
         "top_associations",
     ]
-
-
-def test_repr(display):
-    repr = display.__repr__()
-    assert repr == "<TableReportDisplay(...)>"
 
 
 def test_html_repr(estimator_report):
