@@ -182,7 +182,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Feature #8    250.5...
         Feature #9     99.5...
         >>> report.feature_importance.coefficients().plot()
-        >>> # TODO: shows plot
+        >>> # shows plot
         """
         parent_estimator = self._parent.estimator_
 
