@@ -69,32 +69,41 @@ class EstimatorReportPayload:
     def medias(self): ...
 
 
-#     from __future__ import annotations
+# from pydantic import BaseModel, Field
+# from pydantic.dataclasses import dataclass
+# from pydantic import computed_field
+# from typing import Any
 
-# from dataclasses import dataclass, KW_ONLY, field, InitVar
-# from typing import Any, Optional, Callable, Literal
-# from functools import partial
+# Project = Any
+# EstimatorReport = Any
+# Artefact = Any
+# Metric = Any
 
+# class Payload(BaseModel):
+#     class Config:
+#         frozen = True
 
-# @dataclass
-# class EstimatorReportPayload:
-#     project: Project = field(repr=False)
-#     report: EstimatorReport = field(repr=False)
-#     upload: bool = field(default=True, repr=False)
+#     def todict(self):
+#         return model.model_dump(exclude_none=True)
 
-#     parameters: Artefact | None = field(init=False)
+# class EstimatorReportPayload(Payload):
+#     project: Project = Field(repr=False, exclude=True)
+#     report: EstimatorReport = Field(repr=False, exclude=True)
+#     upload: bool = Field(default=True, repr=False, exclude=True)
 
+#     @computed_field
 #     @property
-#     def parameters(self):
-#         return self.__parameters
+#     def parameters(self) -> list[Artefact] | None:
+#         return ["<parameters>"]
 
-#     @parameters.setter
-#     def parameters(self, value):
-#         self.__parameters = "test"
+#     @computed_field
+#     @property
+#     def metrics(self) -> list[Metric] | None:
+#         return None
 
 
-# EstimatorReportPayload("<project>", "<report>", "<upload>")
-# EstimatorReportPayload(parameters='test')
+# model = EstimatorReportPayload(project="<project>", report="<report>")
+# model.todict()
 
 
 class CrossValidationReportPayload(EstimatorReportPayload):
