@@ -3,10 +3,8 @@
 import pandas as pd
 import pytest
 from pandas.testing import assert_index_equal
-from sklearn.datasets import make_classification, make_regression
-from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.datasets import make_classification
 from sklearn.metrics import accuracy_score
-from skore import ComparisonReport, CrossValidationReport
 
 expected_columns = pd.MultiIndex.from_tuples(
     [
@@ -19,53 +17,29 @@ expected_columns = pd.MultiIndex.from_tuples(
 )
 
 
-def comparison_report_classification():
-    X, y = make_classification(class_sep=0.1, random_state=42)
-
-    report = ComparisonReport(
-        [
-            CrossValidationReport(
-                DummyClassifier(strategy="uniform", random_state=0), X, y
-            ),
-            CrossValidationReport(
-                DummyClassifier(strategy="uniform", random_state=0), X, y, cv_splitter=3
-            ),
-        ]
-    )
-
-    return report
-
-
-def comparison_report_regression():
-    X, y = make_regression(random_state=42)
-
-    report = ComparisonReport(
-        [
-            CrossValidationReport(DummyRegressor(), X, y),
-            CrossValidationReport(DummyRegressor(), X, y, cv_splitter=3),
-        ]
-    )
-
-    return report
-
-
-def case_timings_no_predictions():
+@pytest.fixture
+def case_timings_no_predictions(
+    comparison_cross_validation_reports_binary_classification,
+):
     expected_index = pd.Index(["Fit time (s)"], name="Metric")
     return (
-        comparison_report_classification(),
+        comparison_cross_validation_reports_binary_classification,
         "timings",
         expected_index,
         expected_columns,
     )
 
 
-def case_timings_with_predictions():
+@pytest.fixture
+def case_timings_with_predictions(
+    comparison_cross_validation_reports_binary_classification,
+):
     expected_index = pd.Index(
         ["Fit time (s)", "Predict time test (s)", "Predict time train (s)"],
         name="Metric",
     )
 
-    report = comparison_report_classification()
+    report = comparison_cross_validation_reports_binary_classification
     report.cache_predictions()
     return (
         report,
@@ -75,71 +49,78 @@ def case_timings_with_predictions():
     )
 
 
-def case_accuracy():
+@pytest.fixture
+def case_accuracy(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.Index(["Accuracy"], name="Metric")
     return (
-        comparison_report_classification(),
+        comparison_cross_validation_reports_binary_classification,
         "accuracy",
         expected_index,
         expected_columns,
     )
 
 
-def case_precision():
+@pytest.fixture
+def case_precision(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.MultiIndex.from_tuples(
         [("Precision", 0), ("Precision", 1)], names=["Metric", "Label / Average"]
     )
     return (
-        comparison_report_classification(),
+        comparison_cross_validation_reports_binary_classification,
         "precision",
         expected_index,
         expected_columns,
     )
 
 
-def case_recall():
+@pytest.fixture
+def case_recall(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.MultiIndex.from_tuples(
         [("Recall", 0), ("Recall", 1)], names=["Metric", "Label / Average"]
     )
     return (
-        comparison_report_classification(),
+        comparison_cross_validation_reports_binary_classification,
         "recall",
         expected_index,
         expected_columns,
     )
 
 
-def case_brier_score():
+@pytest.fixture
+def case_brier_score(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.Index(["Brier score"], name="Metric")
     return (
-        comparison_report_classification(),
+        comparison_cross_validation_reports_binary_classification,
         "brier_score",
         expected_index,
         expected_columns,
     )
 
 
-def case_roc_auc():
+@pytest.fixture
+def case_roc_auc(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.Index(["ROC AUC"], name="Metric")
     return (
-        comparison_report_classification(),
+        comparison_cross_validation_reports_binary_classification,
         "roc_auc",
         expected_index,
         expected_columns,
     )
 
 
-def case_log_loss():
+@pytest.fixture
+def case_log_loss(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.Index(["Log loss"], name="Metric")
     return (
-        comparison_report_classification(),
+        comparison_cross_validation_reports_binary_classification,
         "log_loss",
         expected_index,
         expected_columns,
     )
 
 
-def case_r2():
+@pytest.fixture
+def case_r2(comparison_cross_validation_reports_regression):
     expected_index = pd.Index(["R²"], name="Metric")
     expected_columns = pd.MultiIndex.from_tuples(
         [
@@ -151,14 +132,15 @@ def case_r2():
         names=[None, "Estimator"],
     )
     return (
-        comparison_report_regression(),
+        comparison_cross_validation_reports_regression,
         "r2",
         expected_index,
         expected_columns,
     )
 
 
-def case_rmse():
+@pytest.fixture
+def case_rmse(comparison_cross_validation_reports_regression):
     expected_index = pd.Index(["RMSE"], name="Metric")
     expected_columns = pd.MultiIndex.from_tuples(
         [
@@ -170,38 +152,45 @@ def case_rmse():
         names=[None, "Estimator"],
     )
     return (
-        comparison_report_regression(),
+        comparison_cross_validation_reports_regression,
         "rmse",
         expected_index,
         expected_columns,
     )
 
 
+@pytest.fixture
+def case(request):
+    """Fixture to handle indirect parametrization of case fixtures."""
+    return request.getfixturevalue(request.param)
+
+
 @pytest.mark.parametrize(
     "case",
     [
-        case_timings_no_predictions,
-        case_timings_with_predictions,
-        case_accuracy,
-        case_precision,
-        case_recall,
-        case_brier_score,
-        case_roc_auc,
-        case_log_loss,
-        case_r2,
-        case_rmse,
+        "case_timings_no_predictions",
+        "case_timings_with_predictions",
+        "case_accuracy",
+        "case_precision",
+        "case_recall",
+        "case_brier_score",
+        "case_roc_auc",
+        "case_log_loss",
+        "case_r2",
+        "case_rmse",
     ],
+    indirect=True,
 )
 def test_metrics(case):
-    report, scoring, expected_index, expected_columns = case()
+    report, scoring, expected_index, expected_columns = case
 
     result = getattr(report.metrics, scoring)()
     assert_index_equal(result.index, expected_index)
     assert_index_equal(result.columns, expected_columns)
 
 
-def test_custom_metric():
-    report, scoring, expected_index, expected_columns = case_accuracy()
+def test_custom_metric(case_accuracy):
+    report, scoring, expected_index, expected_columns = case_accuracy
 
     result = report.metrics.custom_metric(
         metric_function=accuracy_score,
@@ -215,21 +204,22 @@ def test_custom_metric():
 @pytest.mark.parametrize(
     "case",
     [
-        case_timings_no_predictions,
-        case_timings_with_predictions,
-        case_accuracy,
-        case_precision,
-        case_recall,
-        case_brier_score,
-        case_roc_auc,
-        case_log_loss,
-        case_r2,
-        case_rmse,
+        "case_timings_no_predictions",
+        "case_timings_with_predictions",
+        "case_accuracy",
+        "case_precision",
+        "case_recall",
+        "case_brier_score",
+        "case_roc_auc",
+        "case_log_loss",
+        "case_r2",
+        "case_rmse",
     ],
+    indirect=True,
 )
 def test_metrics_aggregate(case):
     """`aggregate` argument should be taken into account."""
-    report, scoring, expected_index, _ = case()
+    report, scoring, expected_index, _ = case
 
     model = "DummyRegressor" if scoring in ("r2", "rmse") else "DummyClassifier"
     expected_columns = pd.MultiIndex.from_tuples(
@@ -241,8 +231,8 @@ def test_metrics_aggregate(case):
     assert_index_equal(result.columns, expected_columns)
 
 
-def test_metrics_X_y():
-    report, _, expected_index, expected_columns = case_accuracy()
+def test_metrics_X_y(case_accuracy):
+    report, _, expected_index, expected_columns = case_accuracy
     X, y = make_classification(class_sep=0.1, random_state=42)
     result = report.metrics.accuracy(data_source="X_y", X=X, y=y)
     assert_index_equal(result.index, expected_index)
