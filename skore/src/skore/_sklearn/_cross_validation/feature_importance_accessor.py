@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import is_classifier
 from sklearn.pipeline import Pipeline
+from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
@@ -11,6 +12,7 @@ from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot.metrics.feature_importance_display import (
     FeatureImportanceDisplay,
 )
+from skore._utils._accessor import _check_has_coef
 
 
 class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
@@ -22,6 +24,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
+    @available_if(_check_has_coef())
     def coefficients(self) -> FeatureImportanceDisplay:
         coefficient_tables = []
         for split, report in enumerate(self._parent.estimator_reports_):

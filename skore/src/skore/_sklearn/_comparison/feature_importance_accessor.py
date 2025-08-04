@@ -5,12 +5,14 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 from sklearn.pipeline import Pipeline
+from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._plot.metrics.feature_importance_display import (
     FeatureImportanceDisplay,
 )
+from skore._utils._accessor import _check_has_coef
 
 if TYPE_CHECKING:
     from skore._sklearn._comparison import ComparisonReport
@@ -25,6 +27,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
 
+    @available_if(_check_has_coef())
     def coefficients(self) -> FeatureImportanceDisplay:
         similar_reports = defaultdict(list)
         for report, name in zip(
