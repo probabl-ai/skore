@@ -7,6 +7,11 @@ from operator import itemgetter
 from tempfile import TemporaryFile
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
+from pydantic import BaseModel, Field
+from pydantic.dataclasses import dataclass
+from pydantic import computed_field
+from typing import Any
+from abc import abstractmethod
 
 import joblib
 
@@ -34,76 +39,93 @@ if TYPE_CHECKING:
         predict_time: float
 
 
-from dataclasses import InitVar, dataclass, field
+Project = Any
+EstimatorReport = Any
+Artefact = Any
+Metric = Any
 
-dataclass = partial(dataclass, kw_only=True)
+
+class Payload(BaseModel):
+    class Config:
+        frozen = True
+
+    def todict(self):
+        return model.model_dump(exclude_none=True)
 
 
-@dataclass
-class EstimatorReportPayload:
-    project: Project = field(repr=False)
-    report: EstimatorReport = field(repr=False)
-    upload: bool = field(default=True, repr=False)
+class ReportPayload(Payload):
+    project: Project = Field(repr=False, exclude=True)
+    report: EstimatorReport = Field(repr=False, exclude=True)
+    upload: bool = Field(default=True, repr=False, exclude=True)
     key: str
     run_id: int
 
-    estimator_class_name: str = field(init=False)
-    dataset_fingerprint: str = field(init=False)
-    ml_task: str = field(init=False)
-    metrics: list[Metric] = field(init=False)
-    medias: list[Media] = field(init=False)
-    parameters: Artefact | None = field(init=False)
-
+    @computed_field
     @cached_property
-    def parameters(self):
-        if not self.upload:
-            return None
+    def estimator_class_name(self) -> str:
+        """Return the name of the report's estimator."""
+        return self.report.estimator_name_
 
-        return Artefact(
-            project=self.project,
-            report=self.report,
-            type="estimator-report-pickle",
-        )
-
+    @computed_field
     @cached_property
-    def medias(self): ...
+    def dataset_fingerprint(self) -> str:
+        """Return the hash of the targets in the test-set."""
+        import joblib
+
+        return joblib.hash(self.report.y_test)
+
+    @computed_field
+    @cached_property
+    def ml_task(self) -> str:
+        """Return the type of ML task covered by the report."""
+        return self.report._ml_task
+
+    @computed_field
+    @cached_property
+    def parameters(self) -> list[Artefact] | None:
+        if self.upload:
+            return ["<parameters>"]
+        return None
+
+    @computed_field
+    @cached_property
+    @abstractmethod
+    def metrics(self) -> list[Metric] | None:
+        return None
+
+    @computed_field
+    @cached_property
+    @abstractmethod
+    def medias(self) -> list[Metric] | None:
+        return None
 
 
-# from pydantic import BaseModel, Field
-# from pydantic.dataclasses import dataclass
-# from pydantic import computed_field
-# from typing import Any
+class EstimatorReportPayload(ReportPayload):
+    @computed_field
+    @cached_property
+    def metrics(self) -> list[Metric] | None:
+        return None
 
-# Project = Any
-# EstimatorReport = Any
-# Artefact = Any
-# Metric = Any
-
-# class Payload(BaseModel):
-#     class Config:
-#         frozen = True
-
-#     def todict(self):
-#         return model.model_dump(exclude_none=True)
-
-# class EstimatorReportPayload(Payload):
-#     project: Project = Field(repr=False, exclude=True)
-#     report: EstimatorReport = Field(repr=False, exclude=True)
-#     upload: bool = Field(default=True, repr=False, exclude=True)
-
-#     @computed_field
-#     @property
-#     def parameters(self) -> list[Artefact] | None:
-#         return ["<parameters>"]
-
-#     @computed_field
-#     @property
-#     def metrics(self) -> list[Metric] | None:
-#         return None
+    @computed_field
+    @cached_property
+    def medias(self) -> list[Metric] | None:
+        return None
 
 
-# model = EstimatorReportPayload(project="<project>", report="<report>")
-# model.todict()
+class CrossValidationReportPayload(ReportPayload):
+    @computed_field
+    @cached_property
+    def metrics(self) -> list[Metric] | None:
+        return None
+
+    @computed_field
+    @cached_property
+    def medias(self) -> list[Metric] | None:
+        return None
+
+
+model = EstimatorReportPayload(project="<project>", report="<report>")
+model.todict()
 
 
 class CrossValidationReportPayload(EstimatorReportPayload):
