@@ -108,10 +108,5 @@ class CrossValidationReportPayload(ReportPayload):
 
     @computed_field
     @cached_property
-    def metrics(self) -> list[Metric] | None:
-        return [metric(report=self.report) for metric in self.METRICS]
-
-    @computed_field
-    @cached_property
     def medias(self) -> list[Metric] | None:
         return None

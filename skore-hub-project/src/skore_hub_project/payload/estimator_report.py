@@ -1,8 +1,9 @@
 from functools import cached_property
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import Field, computed_field
 
+from ..metric.accuracy import AccuracyTest, AccuracyTrain
 from .report import ReportPayload
 
 EstimatorReport = Any
@@ -10,12 +11,12 @@ Metric = Any
 
 
 class EstimatorReportPayload(ReportPayload):
-    report: EstimatorReport = Field(repr=False, exclude=True)
+    METRICS: ClassVar[list[Metric]] = (
+        AccuracyTest,
+        AccuracyTrain,
+    )
 
-    @computed_field
-    @cached_property
-    def metrics(self) -> list[Metric] | None:
-        return None
+    report: EstimatorReport = Field(repr=False, exclude=True)
 
     @computed_field
     @cached_property

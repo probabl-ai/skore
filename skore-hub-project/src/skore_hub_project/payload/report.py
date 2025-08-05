@@ -51,9 +51,9 @@ class ReportPayload(BasePayload):
         return None
 
     @computed_field
-    @property
-    @abstractmethod
-    def metrics(self) -> list[Metric] | None: ...
+    @cached_property
+    def metrics(self) -> list[Metric] | None:
+        return [metric(report=self.report) for metric in self.METRICS]
 
     @computed_field
     @property
