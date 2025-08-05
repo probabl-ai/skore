@@ -89,3 +89,41 @@ def test_without_y(cross_validation_report):
     df = display.frame(kind="dataset")
     assert "gender" in df.columns
     assert "current_annual_salary" not in df.columns
+
+
+@pytest.mark.parametrize(
+    "sumbsample, subsample_strategy, seed",
+    [
+        (10, "head", None),
+        (10, "random", 42),
+    ],
+)
+def test_analyze_with_subsample(
+    cross_validation_report, sumbsample, subsample_strategy, seed
+):
+    """Check that the analyze method works with subsampling."""
+    display = cross_validation_report.data.analyze(
+        subsample=sumbsample,
+        subsample_strategy=subsample_strategy,
+        seed=seed,
+    )
+    assert isinstance(display, TableReportDisplay)
+    assert len(display.frame(kind="dataset")) == sumbsample
+
+
+def test_analyze_with_invalid_subsample_strategy(cross_validation_report):
+    """Check that an error is raised with an invalid subsample strategy."""
+    with pytest.raises(ValueError):
+        cross_validation_report.data.analyze(
+            subsample=10,
+            subsample_strategy="invalid_strategy",
+        )
+
+
+def test_html_repr(cross_validation_report):
+    display = cross_validation_report.data.analyze()
+    str_html = display._repr_html_()
+    for col in cross_validation_report.X.columns:
+        assert col in str_html
+
+    assert "<skrub-table-report" in str_html
