@@ -1,10 +1,9 @@
-from typing import Any
 from functools import cached_property
+from typing import Any
 
 from pydantic import Field, computed_field
 
 from .report import ReportPayload
-
 
 EstimatorReport = Any
 Metric = Any

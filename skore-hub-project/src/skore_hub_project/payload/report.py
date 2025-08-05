@@ -51,13 +51,11 @@ class ReportPayload(BasePayload):
         return None
 
     @computed_field
-    @cached_property
+    @property
     @abstractmethod
-    def metrics(self) -> list[Metric] | None:
-        return None
+    def metrics(self) -> list[Metric] | None: ...
 
     @computed_field
-    @cached_property
+    @property
     @abstractmethod
-    def medias(self) -> list[Metric] | None:
-        return None
+    def medias(self) -> list[Metric] | None: ...

@@ -1,19 +1,32 @@
 from collections import defaultdict
 from functools import cached_property
-from typing import Any, TYPE_CHECKING, Literal
+from typing import Any, ClassVar, Literal
 
 from pydantic import Field, computed_field
 from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
 
-from .report import ReportPayload
+from ..metric.accuracy import (
+    AccuracyTestMean,
+    AccuracyTestSTD,
+    AccuracyTrainMean,
+    AccuracyTrainSTD,
+)
+from ..metric.metric import Metric
 from .estimator_report import EstimatorReportPayload
+from .report import ReportPayload
 
-Metric = Any
 CrossValidationReport = Any
 
 
 class CrossValidationReportPayload(ReportPayload):
+    METRICS: ClassVar[list[Metric]] = (
+        AccuracyTestMean,
+        AccuracyTrainMean,
+        AccuracyTestSTD,
+        AccuracyTrainSTD,
+    )
+
     report: CrossValidationReport = Field(repr=False, exclude=True)
 
     def model_post_init(self, context):
@@ -96,7 +109,7 @@ class CrossValidationReportPayload(ReportPayload):
     @computed_field
     @cached_property
     def metrics(self) -> list[Metric] | None:
-        return None
+        return [metric(report=self.report) for metric in self.METRICS]
 
     @computed_field
     @cached_property

@@ -9,9 +9,6 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import joblib
-from pydantic import computed_field
-from sklearn.model_selection import BaseCrossValidator
-from sklearn.model_selection._split import _CVIterableWrapper
 
 from ..client.client import Client, HTTPStatusError, HUBClient
 from . import artefact
