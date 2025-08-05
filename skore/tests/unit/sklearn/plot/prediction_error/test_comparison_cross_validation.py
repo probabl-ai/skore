@@ -133,9 +133,9 @@ def test_wrong_kwargs(pyplot, report, data_points_kwargs):
 def test_constructor(regression_data_no_split):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = regression_data_no_split, 3
-    report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report_1 = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     # add a different number of splits for the second report
-    report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
+    report_2 = CrossValidationReport(estimator, X=X, y=y, splitter=cv + 1)
     report = ComparisonReport(
         reports={"estimator_1": report_1, "estimator_2": report_2}
     )

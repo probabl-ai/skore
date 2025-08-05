@@ -28,7 +28,7 @@ def comparison_report_classification():
                 DummyClassifier(strategy="uniform", random_state=0), X, y
             ),
             CrossValidationReport(
-                DummyClassifier(strategy="uniform", random_state=0), X, y, cv_splitter=3
+                DummyClassifier(strategy="uniform", random_state=0), X, y, splitter=3
             ),
         ]
     )
@@ -42,7 +42,7 @@ def comparison_report_regression():
     report = ComparisonReport(
         [
             CrossValidationReport(DummyRegressor(), X, y),
-            CrossValidationReport(DummyRegressor(), X, y, cv_splitter=3),
+            CrossValidationReport(DummyRegressor(), X, y, splitter=3),
         ]
     )
 

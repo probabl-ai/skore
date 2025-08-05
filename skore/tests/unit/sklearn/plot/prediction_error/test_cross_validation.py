@@ -18,7 +18,7 @@ def test_regression(pyplot, regression_data_no_split, data_source):
     else:
         prediction_error_kwargs = {"data_source": data_source}
 
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error(**prediction_error_kwargs)
     assert isinstance(display, PredictionErrorDisplay)
 
@@ -61,7 +61,7 @@ def test_regression(pyplot, regression_data_no_split, data_source):
 def test_regression_actual_vs_predicted(pyplot, regression_data_no_split):
     """Check the attributes when switching to the "actual_vs_predicted" kind."""
     (estimator, X, y), cv = regression_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
     assert isinstance(display, PredictionErrorDisplay)
@@ -94,7 +94,7 @@ def test_kwargs(pyplot, regression_data_no_split):
     """Check that we can pass keyword arguments to the prediction error plot when
     there is a cross-validation report."""
     (estimator, X, y), cv = regression_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
     display.plot(
         data_points_kwargs=[{"color": "red"}, {"color": "green"}, {"color": "blue"}],
@@ -115,7 +115,7 @@ def test_wrong_kwargs(pyplot, regression_data_no_split, data_points_kwargs):
     """Check that we raise an error when we pass keyword arguments to the prediction
     error plot if there is a cross-validation report."""
     (estimator, X, y), cv = regression_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
 
     err_msg = (
@@ -131,7 +131,7 @@ def test_wrong_kwargs(pyplot, regression_data_no_split, data_points_kwargs):
 def test_frame(regression_data_no_split):
     """Test the frame method with cross-validation data."""
     (estimator, X, y), cv = regression_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
     df = display.frame()
 
@@ -147,7 +147,7 @@ def test_legend(pyplot, regression_data_no_split):
     `CrossValidationReport`."""
 
     (estimator, X, y), cv = regression_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
@@ -156,7 +156,7 @@ def test_legend(pyplot, regression_data_no_split):
     check_legend_position(display.ax_, loc="lower right", position="inside")
 
     cv = 10
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
@@ -168,7 +168,7 @@ def test_legend(pyplot, regression_data_no_split):
 def test_constructor(regression_data_no_split):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = regression_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
 
     index_columns = ["estimator_name", "split_index"]

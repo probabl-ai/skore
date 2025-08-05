@@ -114,7 +114,7 @@ model
 from skore import CrossValidationReport
 
 hgbt_model_report = CrossValidationReport(
-    estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4
+    estimator=model, X=df, y=y, splitter=5, n_jobs=4
 )
 hgbt_model_report.help()
 
@@ -258,7 +258,7 @@ model
 
 # %%
 linear_model_report = CrossValidationReport(
-    estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4
+    estimator=model, X=df, y=y, splitter=5, n_jobs=4
 )
 linear_model_report.help()
 

@@ -51,7 +51,7 @@ def test_binary_classification(pyplot, binary_classification_report):
 
     pos_label = 1
     n_reports = len(report.reports_)
-    n_splits = report.reports_[0]._cv_splitter.n_splits
+    n_splits = report.reports_[0]._splitter.n_splits
 
     display.plot()
     assert isinstance(display.lines_, list)
@@ -97,7 +97,7 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
 
     labels = display.roc_curve["label"].unique()
     n_reports = len(report.reports_)
-    n_splits = report.reports_[0]._cv_splitter.n_splits
+    n_splits = report.reports_[0]._splitter.n_splits
 
     display.plot()
     assert isinstance(display.lines_, list)
@@ -237,9 +237,9 @@ def test_multiclass_classification_kwargs(pyplot, multiclass_classification_repo
 def test_binary_classification_constructor(binary_classification_data_no_split):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
-    report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report_1 = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     # add a different number of splits for the second report
-    report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
+    report_2 = CrossValidationReport(estimator, X=X, y=y, splitter=cv + 1)
     report = ComparisonReport(
         reports={"estimator_1": report_1, "estimator_2": report_2}
     )
@@ -263,8 +263,8 @@ def test_binary_classification_constructor(binary_classification_data_no_split):
 def test_multiclass_classification_constructor(multiclass_classification_data_no_split):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
-    report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
+    report_1 = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
+    report_2 = CrossValidationReport(estimator, X=X, y=y, splitter=cv + 1)
     report = ComparisonReport(
         reports={"estimator_1": report_1, "estimator_2": report_2}
     )

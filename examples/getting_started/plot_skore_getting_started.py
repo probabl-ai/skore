@@ -127,7 +127,7 @@ plt.tight_layout()
 # %%
 from skore import CrossValidationReport
 
-cv_report = CrossValidationReport(rf, X, y, cv_splitter=5)
+cv_report = CrossValidationReport(rf, X, y, splitter=5)
 
 # %%
 # We display the cross-validation report helper:
