@@ -156,7 +156,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
         self.n_jobs = n_jobs
 
-        self.estimator_reports_ = self._fit_estimator_reports()
+        self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
 
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(

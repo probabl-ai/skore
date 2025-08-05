@@ -15,17 +15,17 @@ from skore._externals._sklearn_compat import get_tags
         (
             make_regression(n_features=5, random_state=42),
             LinearRegression(),
-            (6, 5),
+            (5, 6),
         ),
         (
             make_classification(n_features=10, random_state=42),
             LogisticRegression(),
-            (11, 5),
+            (5, 11),
         ),
         (
             make_regression(n_features=5, random_state=42),
             make_pipeline(StandardScaler(), LinearRegression()),
-            (6, 5),
+            (5, 6),
         ),
     ],
 )
@@ -39,14 +39,14 @@ def test_cross_validation_report_coefficient_frame(
     cv_report_coefs = cv_report.feature_importance.coefficients().frame()
     assert cv_report_coefs.shape == expected_shape
 
-    expected_index = (
+    expected_index = [str(i) for i in range(expected_shape[0])]
+    assert cv_report_coefs.index.tolist() == expected_index
+
+    expected_columns = (
         ["Intercept"] + [f"x{i}" for i in range(X.shape[1])]
         if isinstance(estimator, Pipeline)
         else ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
     )
-    assert cv_report_coefs.index.tolist() == expected_index
-
-    expected_columns = [f"Coefficient_split_{i}" for i in range(expected_shape[1])]
     assert cv_report_coefs.columns.tolist() == expected_columns
 
 
@@ -154,13 +154,12 @@ def test_all_sklearn_estimators(
     else:
         raise Exception("Estimator not in ['classifier', 'regressor']")
 
-    expected_shape = (6, 5)
+    expected_shape = (5, 6)
     cv_report = CrossValidationReport(estimator, X=X, y=y)
     cv_report_coefs = cv_report.feature_importance.coefficients().frame()
 
-    expected_index = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
-
+    expected_index = [str(i) for i in range(expected_shape[0])]
     assert cv_report_coefs.index.tolist() == expected_index
 
-    expected_columns = [f"Coefficient_split_{i}" for i in range(expected_shape[1])]
+    expected_columns = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
     assert cv_report_coefs.columns.tolist() == expected_columns

@@ -11,11 +11,16 @@ def test_help(capsys, regression_data):
 
     assert "Available feature importance methods" in captured.out
     assert "coefficients" in captured.out
+
+    report.feature_importance.coefficients().help()
+    captured = capsys.readouterr()
+
     assert "frame" in captured.out
     assert "plot" in captured.out
+    assert "set_style" in captured.out
 
 
-def test_cross_validation_report_feature_importance_repo(regression_data):
+def test_repr(regression_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
     X, y = regression_data
     report = CrossValidationReport(LinearRegression(), X=X, y=y)

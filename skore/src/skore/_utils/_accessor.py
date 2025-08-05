@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from sklearn.pipeline import Pipeline
 
@@ -9,6 +11,26 @@ def _check_all_checks(checks: list[Callable]) -> Callable:
         return all(check(accessor) for check in checks)
 
     return check
+
+
+def _check_parent_estimator_has_coef(parent_estimator) -> bool:
+    """Check if estimator or its regressor_ has a specific attribute."""
+    estimator = (
+        parent_estimator.steps[-1][1]
+        if isinstance(parent_estimator, Pipeline)
+        else parent_estimator
+    )
+    if hasattr(estimator, "coef_"):
+        return True
+    try:  # e.g. TransformedTargetRegressor()
+        if hasattr(estimator.regressor_, "coef_"):
+            return True
+    except AttributeError as msg:
+        if "object has no attribute 'regressor_'" not in str(msg):
+            raise
+    raise AttributeError(
+        f"Estimator {estimator} is not a supported estimator by the function called."
+    )
 
 
 ########################################################################################
@@ -51,36 +73,8 @@ def _check_estimator_has_method(method_name: str) -> Callable:
 
 def _check_has_coef() -> Callable:
     def check(accessor: Any) -> bool:
-        """Check if all the estimators have a `coef_` attribute."""
-        if hasattr(accessor._parent, "estimator_reports_"):  # CrossValidationReport
-            parent_estimators = [
-                report.estimator for report in accessor._parent.estimator_reports_
-            ]
-        elif hasattr(accessor._parent, "reports_"):  # ComparisonReport
-            parent_estimators = [
-                report.estimator for report in accessor._parent.reports_
-            ]
-        else:  # EstimatorReport
-            parent_estimators = [accessor._parent.estimator_]
-        for parent_estimator in parent_estimators:
-            estimator = (
-                parent_estimator.steps[-1][1]
-                if isinstance(parent_estimator, Pipeline)
-                else parent_estimator
-            )
-            if hasattr(estimator, "coef_"):
-                continue
-            try:  # e.g. TransformedTargetRegressor()
-                if hasattr(estimator.regressor_, "coef_"):
-                    return True
-            except AttributeError as msg:
-                if "object has no attribute 'regressor_'" not in str(msg):
-                    raise
-            raise AttributeError(
-                f"Estimator {parent_estimator} is not a supported estimator by "
-                "the function called."
-            )
-        return True
+        """Check if the estimator has a `coef_` attribute."""
+        return _check_parent_estimator_has_coef(accessor._parent.estimator_)
 
     return check
 
@@ -130,5 +124,40 @@ def _check_estimator_report_has_method(
             "by the function called. The estimator report should have a "
             f"`{method_name}` method."
         )
+
+    return check
+
+
+def _check_estimator_report_has_coef() -> Callable:
+    def check(accessor: Any) -> bool:
+        """Check if the underlying estimator has a `coef_` attribute."""
+        return _check_parent_estimator_has_coef(
+            accessor._parent.estimator_reports_[0].estimator
+        )
+
+    return check
+
+
+########################################################################################
+# Accessor related to `ComparisonReport`
+########################################################################################
+
+
+def _check_report_estimators_have_coef() -> Callable:
+    def check(accessor: Any) -> bool:
+        """Check if all the estimators have a `coef_` attribute."""
+        from skore import CrossValidationReport, EstimatorReport
+
+        parent = accessor._parent
+        parent_estimators = []
+        for parent_report in parent.reports_:
+            if isinstance(parent_report, CrossValidationReport):
+                parent_report = cast(CrossValidationReport, parent_report)
+                parent_estimators.append(parent_report.estimator_reports_[0].estimator_)
+            elif isinstance(parent.reports_[0], EstimatorReport):
+                parent_estimators.append(parent_report.estimator_)
+            else:
+                raise TypeError(f"Unexpected report type: {type(parent.reports_[0])}")
+        return all(_check_parent_estimator_has_coef(e) for e in parent_estimators)
 
     return check

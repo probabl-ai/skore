@@ -12,7 +12,7 @@ from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot.metrics.feature_importance_display import (
     FeatureImportanceDisplay,
 )
-from skore._utils._accessor import _check_has_coef
+from skore._utils._accessor import _check_estimator_report_has_coef
 
 
 class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
@@ -24,8 +24,29 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
-    @available_if(_check_has_coef())
+    @available_if(_check_estimator_report_has_coef())
     def coefficients(self) -> FeatureImportanceDisplay:
+        """Retrieve the coefficients across splits, including the intercept.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_regression
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import CrossValidationReport
+        >>> X, y = make_regression(n_features=3, random_state=42)
+        >>> report = (
+        >>>     estimator=Ridge(), X=X, y=y, cv_splitter=5, n_jobs=4
+        >>> )
+        >>> report.feature_importance.coefficients().frame()
+                    Intercept	Feature #0	Feature #1	Feature #2
+        Split index
+        0       	-0.006675	63.354134	97.383292	56.331976
+        1       	0.119352	63.356481	97.243977	56.258765
+        2       	0.102091	63.119282	97.286351	56.124499
+        3       	0.185287	63.032516	97.343662	56.398138
+        4       	0.300477	62.997455	96.729395	56.075696
+        >>> report.feature_importance.coefficients().plot() # shows plot
+        """
         coefficient_tables = []
         for split, report in enumerate(self._parent.estimator_reports_):
             report_estimator = report.estimator_
@@ -44,38 +65,40 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
                 if isinstance(report_estimator, Pipeline)
                 else report_estimator
             )
-            try:
+            if hasattr(estimator, "intercept_"):
                 intercept = np.atleast_2d(estimator.intercept_)
-            except AttributeError:
+            else:
                 intercept = np.atleast_2d(estimator.regressor_.intercept_)
 
-            try:
+            if hasattr(estimator, "coef_"):
                 coef = np.atleast_2d(estimator.coef_)
-            except AttributeError:
+            else:
                 coef = np.atleast_2d(estimator.regressor_.coef_)
 
             if intercept is None:
                 data = coef.T
-                index = list(feature_names)
+                columns = list(feature_names)
             else:
                 data = np.concatenate([intercept, coef.T])
-                index = ["Intercept"] + list(feature_names)
+                columns = ["Intercept"] + list(feature_names)
 
             if data.shape[1] == 1:
-                columns = [f"Coefficient_split_{split}"]
+                index = [f"{split}"]
             elif is_classifier(report_estimator):
-                columns = [f"Class #{i}" for i in range(data.shape[1])]
+                index = [f"Class #{i}" for i in range(data.shape[1])]
             else:
-                columns = [f"Target #{i}" for i in range(data.shape[1])]
+                index = [f"Target #{i}" for i in range(data.shape[1])]
 
-            df = pd.DataFrame(
-                data=data,
-                index=index,
-                columns=columns,
+            coefficient_tables.append(
+                pd.DataFrame(
+                    data=data.T,
+                    index=index,
+                    columns=columns,
+                )
             )
-            coefficient_tables.append(df)
 
-        combined = pd.concat(coefficient_tables, axis=1)
+        combined = pd.concat(coefficient_tables)
+        combined.index.name = "Split index"
 
         return FeatureImportanceDisplay(combined, self._parent)
 
