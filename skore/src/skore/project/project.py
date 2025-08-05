@@ -6,7 +6,7 @@ import re
 from importlib.metadata import entry_points
 from typing import Any, Literal
 
-from skore._sklearn._estimator.report import EstimatorReport
+from skore import EstimatorReport
 from skore.project.summary import Summary
 
 
