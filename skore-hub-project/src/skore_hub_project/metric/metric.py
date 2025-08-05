@@ -3,9 +3,9 @@ from __future__ import annotations
 from abc import abstractmethod
 from contextlib import suppress
 from math import isfinite
-from typing import Literal, Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, computed_field, field_validator
+from pydantic import BaseModel, computed_field
 
 
 def cast_to_float(value: Any) -> float | None:

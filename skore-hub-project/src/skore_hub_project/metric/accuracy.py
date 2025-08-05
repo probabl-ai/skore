@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Literal, Any
 from functools import cached_property
+from typing import Any, Literal
 
 from pydantic import Field, computed_field
 
 from .metric import Metric, cast_to_float
-
 
 CrossValidationReport = Any
 EstimatorReport = Any
