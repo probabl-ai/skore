@@ -20,7 +20,7 @@ def test_binary_classification(
     precision-recall curve plot with binary data.
     """
     (estimator, X, y), cv = logistic_binary_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     if data_source == "X_y":
         precision_recall_kwargs = {"data_source": data_source, "X": X, "y": y}
     else:
@@ -76,7 +76,7 @@ def test_multiclass_classification(
     curve plot with multiclass data.
     """
     (estimator, X, y), cv = logistic_multiclass_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     if data_source == "X_y":
         precision_recall_kwargs = {"data_source": data_source, "X": X, "y": y}
     else:
@@ -135,7 +135,7 @@ def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
     value for the `pr_curve_kwargs` argument."""
     (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
 
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.precision_recall()
     err_msg = (
         "You intend to plot multiple curves. We expect `pr_curve_kwargs` to be a list "
@@ -151,7 +151,7 @@ def test_frame_binary_classification(
 ):
     """Test the frame method with binary classification data."""
     (estimator, X, y), cv = logistic_binary_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     df = report.metrics.precision_recall().frame(
         with_average_precision=with_average_precision
     )
@@ -174,7 +174,7 @@ def test_frame_multiclass_classification(
 ):
     """Test the frame method with multiclass classification data."""
     (estimator, X, y), cv = logistic_multiclass_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     df = report.metrics.precision_recall().frame(
         with_average_precision=with_average_precision
     )
@@ -199,21 +199,21 @@ def test_legend(
 
     # binary classification <= 5 folds
     estimator, X, y = logistic_binary_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     display = report.metrics.precision_recall()
     display.plot()
     check_legend_position(display.ax_, loc="lower left", position="inside")
 
     # binary classification > 5 folds
     estimator, X, y = logistic_binary_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=10)
     display = report.metrics.precision_recall()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
 
     # multiclass classification <= 5 classes
     estimator, X, y = logistic_multiclass_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     display = report.metrics.precision_recall()
     display.plot()
     check_legend_position(display.ax_, loc="lower left", position="inside")
@@ -227,7 +227,7 @@ def test_legend(
         n_informative=10,
         random_state=42,
     )
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=10)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=10)
     display = report.metrics.precision_recall()
     display.plot()
     check_legend_position(display.ax_, loc="upper left", position="outside")
@@ -236,7 +236,7 @@ def test_legend(
 def test_binary_classification_constructor(logistic_binary_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = logistic_binary_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.precision_recall()
 
     index_columns = ["estimator_name", "split_index", "label"]
@@ -252,7 +252,7 @@ def test_binary_classification_constructor(logistic_binary_classification_data):
 def test_multiclass_classification_constructor(logistic_multiclass_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = logistic_multiclass_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.precision_recall()
 
     index_columns = ["estimator_name", "split_index", "label"]

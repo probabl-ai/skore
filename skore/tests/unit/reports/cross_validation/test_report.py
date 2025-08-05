@@ -71,7 +71,7 @@ def test_generate_estimator_report(forest_binary_classification_data):
 def test_attributes(fixture_name, request, cv, n_jobs):
     """Test the attributes of the cross-validation report."""
     estimator, X, y = request.getfixturevalue(fixture_name)
-    report = CrossValidationReport(estimator, X, y, cv_splitter=cv, n_jobs=n_jobs)
+    report = CrossValidationReport(estimator, X, y, splitter=cv, n_jobs=n_jobs)
     assert isinstance(report, CrossValidationReport)
     assert isinstance(report.estimator_reports_, list)
     for estimator_report in report.estimator_reports_:
@@ -130,7 +130,7 @@ def test_repr(forest_binary_classification_data):
 def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
     """Check that calling cache_predictions fills the cache."""
     estimator, X, y = request.getfixturevalue(fixture_name)
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2, n_jobs=n_jobs)
+    report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
     report.cache_predictions(n_jobs=n_jobs)
     # no effect on the actual cache of the cross-validation report but only on the
     # underlying estimator reports
@@ -155,7 +155,7 @@ def test_get_predictions(
 ):
     """Check the behaviour of the `get_predictions` method."""
     estimator, X, y = logistic_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
 
     if data_source == "X_y":
         predictions = report.get_predictions(
@@ -186,7 +186,7 @@ def test_get_predictions_error(
 ):
     """Check that we raise an error when the data source is invalid."""
     estimator, X, y = logistic_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
 
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid")
@@ -202,7 +202,7 @@ def test_pickle(tmp_path, logistic_binary_classification_data):
     the progress bar to be able to test that the progress bar is pickable.
     """
     estimator, X, y = logistic_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     report.cache_predictions()
     joblib.dump(report, tmp_path / "report.joblib")
 
@@ -221,7 +221,7 @@ def test_interrupted(binary_classification_data, capsys, error, error_message, n
     X, y = binary_classification_data
 
     estimator = MockEstimator(error=error, n_call=0, fail_after_n_clone=8)
-    report = CrossValidationReport(estimator, X, y, cv_splitter=10, n_jobs=n_jobs)
+    report = CrossValidationReport(estimator, X, y, splitter=10, n_jobs=n_jobs)
 
     captured = capsys.readouterr()
     assert all(word in captured.out for word in error_message.split(" "))

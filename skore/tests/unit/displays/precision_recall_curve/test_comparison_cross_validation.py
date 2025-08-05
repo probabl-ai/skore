@@ -202,9 +202,9 @@ def test_multiclass_classification_kwargs(
 def test_binary_classification_constructor(forest_binary_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = forest_binary_classification_data, 3
-    report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report_1 = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     # add a different number of splits for the second report
-    report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
+    report_2 = CrossValidationReport(estimator, X=X, y=y, splitter=cv + 1)
     report = ComparisonReport(
         reports={"estimator_1": report_1, "estimator_2": report_2}
     )
@@ -228,8 +228,8 @@ def test_binary_classification_constructor(forest_binary_classification_data):
 def test_multiclass_classification_constructor(forest_multiclass_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = forest_multiclass_classification_data, 3
-    report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
+    report_1 = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
+    report_2 = CrossValidationReport(estimator, X=X, y=y, splitter=cv + 1)
     report = ComparisonReport(
         reports={"estimator_1": report_1, "estimator_2": report_2}
     )

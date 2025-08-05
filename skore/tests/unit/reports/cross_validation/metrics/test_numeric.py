@@ -85,7 +85,7 @@ def test_binary_classification(forest_binary_classification_data, metric, nb_sta
     classification.
     """
     (estimator, X, y), cv = forest_binary_classification_data, 2
-    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X, y, splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
@@ -106,7 +106,7 @@ def test_multiclass_classification(
     classification.
     """
     (estimator, X, y), cv = forest_multiclass_classification_data, 2
-    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X, y, splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
@@ -114,7 +114,7 @@ def test_multiclass_classification(
 def test_regression(linear_regression_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
     (estimator, X, y), cv = linear_regression_data, 2
-    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X, y, splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
@@ -122,7 +122,7 @@ def test_regression(linear_regression_data, metric, nb_stats):
 def test_regression_multioutput(linear_regression_multioutput_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
     (estimator, X, y), cv = linear_regression_multioutput_data, 2
-    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X, y, splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
@@ -136,14 +136,14 @@ def test_brier_score_requires_probabilities():
     estimator = SVC()  # SVC does not implement `predict_proba` with default parameters
     X, y = make_classification(n_classes=2, random_state=42)
 
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     assert not hasattr(report.metrics, "brier_score")
 
 
 def test_custom_metric(forest_binary_classification_data):
     """Check that we can compute a custom metric."""
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
 
     result = report.metrics.custom_metric(
         metric_function=accuracy_score,

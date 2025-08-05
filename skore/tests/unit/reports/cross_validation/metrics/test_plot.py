@@ -6,7 +6,7 @@ from skore import CrossValidationReport, RocCurveDisplay
 def test_plot_roc(forest_binary_classification_data):
     """Check that the ROC plot method works."""
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     assert isinstance(report.metrics.roc(), RocCurveDisplay)
 
 
@@ -16,7 +16,7 @@ def test_display_binary_classification(
 ):
     """General behaviour of the function creating display on binary classification."""
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)()
     assert report._cache != {}
@@ -28,7 +28,7 @@ def test_display_binary_classification(
 def test_display_regression(pyplot, linear_regression_data, display):
     """General behaviour of the function creating display on regression."""
     estimator, X, y = linear_regression_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)(seed=0)
     assert report._cache != {}
@@ -61,7 +61,7 @@ def test_display_binary_classification_pos_label(
 def test_seed_none(linear_regression_data):
     """If `seed` is None (the default) the call should not be cached."""
     estimator, X, y = linear_regression_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
 
     report.metrics.prediction_error(seed=None)
     # skore should store the y_pred of the internal estimators, but not the plot

@@ -21,7 +21,7 @@ def test_flat_index(forest_binary_classification_data):
     Here, we force to have a single-index by passing `flat_index=True`.
     """
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     result = report.metrics.summarize(flat_index=True)
     assert isinstance(result, MetricsSummaryDisplay)
     result_df = result.frame()
@@ -48,12 +48,12 @@ def test_data_source_external(
 ):
     """Check that the `data_source` parameter works when using external data."""
     estimator, X, y = forest_binary_classification_data
-    cv_splitter = 2
-    report = CrossValidationReport(estimator, X, y, cv_splitter=cv_splitter)
+    splitter = 2
+    report = CrossValidationReport(estimator, X, y, splitter=splitter)
     result = report.metrics.summarize(
         data_source="X_y", X=X, y=y, aggregate=None
     ).frame()
-    for split_idx in range(cv_splitter):
+    for split_idx in range(splitter):
         # check that it is equivalent to call the individual estimator report
         report_result = (
             report.estimator_reports_[split_idx]
@@ -139,7 +139,7 @@ def test_scoring_single_list_equivalence(
     """Check that passing a single string, callable, scorer is equivalent to passing a
     list with a single element."""
     (estimator, X, y), cv = forest_binary_classification_data, 2
-    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
+    report = CrossValidationReport(estimator, X, y, splitter=cv)
     result_single = report.metrics.summarize(
         scoring=scoring, scoring_kwargs=scoring_kwargs
     ).frame()
@@ -161,7 +161,7 @@ def test_binary_classification(
     RandomForestClassifier that does.
     """
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_metrics = (
         "precision",
         "recall",
@@ -186,7 +186,7 @@ def test_binary_classification(
     target_names = np.array(["neg", "pos"], dtype=object)
     pos_label_name = target_names[pos_label] if pos_label is not None else pos_label
     y = target_names[y]
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_metrics = (
         "precision",
         "recall",
@@ -207,7 +207,7 @@ def test_binary_classification(
     )
 
     estimator, X, y = svc_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_metrics = (
         "precision",
         "recall",
@@ -234,7 +234,7 @@ def test_multiclass_classification(
     classification.
     """
     estimator, X, y = forest_multiclass_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_metrics = (
         "precision",
         "recall",
@@ -255,7 +255,7 @@ def test_multiclass_classification(
     )
 
     estimator, X, y = svc_multiclass_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_metrics = ("precision", "recall", "fit_time_s", "predict_time_s")
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
@@ -272,7 +272,7 @@ def test_multiclass_classification(
 def test_regression(linear_regression_data):
     """Check the behaviour of the `MetricsSummaryDisplay` method with regression."""
     estimator, X, y = linear_regression_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_metrics = ("r2", "rmse", "fit_time_s", "predict_time_s")
     _check_results_summarize(
         report,
@@ -288,7 +288,7 @@ def test_scoring_kwargs_regression(
 ):
     """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
     estimator, X, y = linear_regression_multioutput_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, "summarize")
     result = report.metrics.summarize(
         scoring_kwargs={"multioutput": "raw_values"}
@@ -303,7 +303,7 @@ def test_scoring_kwargs_multi_class(
 ):
     """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
     estimator, X, y = forest_multiclass_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, "summarize")
     result = report.metrics.summarize(scoring_kwargs={"average": None}).frame()
     assert result.shape == (12, 2)
@@ -342,7 +342,7 @@ def test_scoring_kwargs_multi_class(
 def test_overwrite_scoring_names(request, fixture_name, scoring_names, expected_index):
     """Test that we can overwrite the scoring names in `MetricsSummaryDisplay`."""
     estimator, X, y = request.getfixturevalue(fixture_name)
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     result = report.metrics.summarize(scoring_names=scoring_names).frame()
     assert result.shape == (len(expected_index), 2)
 
@@ -359,7 +359,7 @@ def test_overwrite_scoring_names(request, fixture_name, scoring_names, expected_
 def test_error_scoring_strings(linear_regression_data, scoring):
     """Check that we raise an error if a scoring string is not a valid metric."""
     estimator, X, y = linear_regression_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     err_msg = re.escape(f"Invalid metric: {scoring!r}.")
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.summarize(scoring=[scoring])
@@ -369,7 +369,7 @@ def test_scorer(linear_regression_data):
     """Check that we can pass scikit-learn scorer with different parameters to
     the `MetricsSummaryDisplay` method."""
     estimator, X, y = linear_regression_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
 
     median_absolute_error_scorer = make_scorer(
         median_absolute_error, response_method="predict"
@@ -425,7 +425,7 @@ def test_scorer_binary_classification(
     `MetricsSummaryDisplay` method or consistently to both.
     """
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
 
     result = report.metrics.summarize(
         scoring=["accuracy", accuracy_score, scorer],
@@ -440,7 +440,7 @@ def test_scorer_pos_label_error(
     """Check that we raise an error when pos_label is passed both in the scorer and
     globally conducting to a mismatch."""
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
 
     f1_scorer = make_scorer(
         f1_score, response_method="predict", average="macro", pos_label=1
@@ -455,7 +455,7 @@ def test_scorer_pos_label_error(
 def test_invalid_metric_type(linear_regression_data):
     """Check that we raise the expected error message if an invalid metric is passed."""
     estimator, X, y = linear_regression_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
 
     err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
     with pytest.raises(ValueError, match=err_msg):
@@ -466,7 +466,7 @@ def test_invalid_metric_type(linear_regression_data):
 def test_indicator_favorability(forest_binary_classification_data, aggregate):
     """Check that the behaviour of `indicator_favorability` is correct."""
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     result = report.metrics.summarize(
         indicator_favorability=True, aggregate=aggregate
     ).frame()

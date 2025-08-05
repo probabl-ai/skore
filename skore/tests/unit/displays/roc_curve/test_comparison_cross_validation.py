@@ -24,7 +24,7 @@ def test_binary_classification(
 
     pos_label = 1
     n_reports = len(report.reports_)
-    n_splits = report.reports_[0]._cv_splitter.n_splits
+    n_splits = report.reports_[0]._splitter.n_splits
 
     display.plot()
     assert isinstance(display.lines_, list)
@@ -72,7 +72,7 @@ def test_multiclass_classification(
 
     labels = display.roc_curve["label"].unique()
     n_reports = len(report.reports_)
-    n_splits = report.reports_[0]._cv_splitter.n_splits
+    n_splits = report.reports_[0]._splitter.n_splits
 
     display.plot()
     assert isinstance(display.lines_, list)
@@ -216,9 +216,9 @@ def test_multiclass_classification_kwargs(
 def test_binary_classification_constructor(logistic_binary_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = logistic_binary_classification_data, 3
-    report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    report_1 = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     # add a different number of splits for the second report
-    report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
+    report_2 = CrossValidationReport(estimator, X=X, y=y, splitter=cv + 1)
     report = ComparisonReport(
         reports={"estimator_1": report_1, "estimator_2": report_2}
     )
@@ -242,8 +242,8 @@ def test_binary_classification_constructor(logistic_binary_classification_data):
 def test_multiclass_classification_constructor(logistic_multiclass_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = logistic_multiclass_classification_data, 3
-    report_1 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    report_2 = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv + 1)
+    report_1 = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
+    report_2 = CrossValidationReport(estimator, X=X, y=y, splitter=cv + 1)
     report = ComparisonReport(
         reports={"estimator_1": report_1, "estimator_2": report_2}
     )

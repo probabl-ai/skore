@@ -15,7 +15,7 @@ from skore import CrossValidationReport
 def test_timings(forest_binary_classification_data, aggregate, expected_columns):
     """Check the general behaviour of the `timings` method."""
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == ["Fit time (s)"]
@@ -41,7 +41,7 @@ def test_timings(forest_binary_classification_data, aggregate, expected_columns)
 def test_timings_flat_index(forest_binary_classification_data):
     """Check the behaviour of the `timings` method display formatting."""
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
 
     report.get_predictions(data_source="train")
     report.get_predictions(data_source="test")
