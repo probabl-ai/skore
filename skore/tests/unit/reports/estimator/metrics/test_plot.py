@@ -5,7 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from skore import EstimatorReport, RocCurveDisplay
 
 
-def test_estimator_report_plot_roc(forest_binary_classification_with_test):
+def test_plot_roc(forest_binary_classification_with_test):
     """Check that the ROC plot method works."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -13,7 +13,7 @@ def test_estimator_report_plot_roc(forest_binary_classification_with_test):
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
-def test_estimator_report_display_binary_classification(
+def test_display_binary_classification(
     pyplot, forest_binary_classification_with_test, display
 ):
     """The call to display functions should be cached."""
@@ -27,7 +27,7 @@ def test_estimator_report_display_binary_classification(
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_estimator_report_display_binary_classification_pos_label(pyplot, metric):
+def test_display_binary_classification_pos_label(pyplot, metric):
     """Check the behaviour of the display methods when `pos_label` needs to be set."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
@@ -50,9 +50,7 @@ def test_estimator_report_display_binary_classification_pos_label(pyplot, metric
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
-def test_estimator_report_display_regression(
-    pyplot, linear_regression_with_test, display
-):
+def test_display_regression(pyplot, linear_regression_with_test, display):
     """The call to display functions should be cached, as long as the arguments make it
     reproducible."""
     estimator, X_test, y_test = linear_regression_with_test
@@ -65,7 +63,7 @@ def test_estimator_report_display_regression(
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
-def test_estimator_report_display_binary_classification_external_data(
+def test_display_binary_classification_external_data(
     pyplot, forest_binary_classification_with_test, display
 ):
     """The call to display functions should be cached when passing external data."""
@@ -83,9 +81,7 @@ def test_estimator_report_display_binary_classification_external_data(
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
-def test_estimator_report_display_regression_external_data(
-    pyplot, linear_regression_with_test, display
-):
+def test_display_regression_external_data(pyplot, linear_regression_with_test, display):
     """The call to display functions should be cached when passing external data,
     as long as the arguments make it reproducible."""
     estimator, X_test, y_test = linear_regression_with_test
@@ -102,7 +98,7 @@ def test_estimator_report_display_regression_external_data(
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
-def test_estimator_report_display_binary_classification_switching_data_source(
+def test_display_binary_classification_switching_data_source(
     pyplot, forest_binary_classification_with_test, display
 ):
     """Check that we don't hit the cache when switching the data source."""
@@ -123,7 +119,7 @@ def test_estimator_report_display_binary_classification_switching_data_source(
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
-def test_estimator_report_display_regression_switching_data_source(
+def test_display_regression_switching_data_source(
     pyplot, linear_regression_with_test, display
 ):
     """Check that we don't hit the cache when switching the data source."""

@@ -18,7 +18,7 @@ from sklearn.svm import SVC
 from skore import EstimatorReport
 
 
-def test_estimator_summarize_help(capsys, forest_binary_classification_with_test):
+def test_summarize_help(capsys, forest_binary_classification_with_test):
     """Check that the help method writes to the console."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -28,7 +28,7 @@ def test_estimator_summarize_help(capsys, forest_binary_classification_with_test
     assert "Available metrics methods" in captured.out
 
 
-def test_estimator_summarize_repr(forest_binary_classification_with_test):
+def test_summarize_repr(forest_binary_classification_with_test):
     """Check that __repr__ returns a string starting with the expected prefix."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -39,7 +39,7 @@ def test_estimator_summarize_repr(forest_binary_classification_with_test):
 
 
 @pytest.mark.parametrize("metric", ["accuracy", "brier_score", "roc_auc", "log_loss"])
-def test_estimator_summarize_binary_classification(
+def test_summarize_binary_classification(
     forest_binary_classification_with_test, metric
 ):
     """Check the behaviour of the metrics methods available for binary
@@ -69,7 +69,7 @@ def test_estimator_summarize_binary_classification(
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_estimator_summarize_binary_classification_pr(
+def test_summarize_binary_classification_pr(
     forest_binary_classification_with_test, metric
 ):
     """Check the behaviour of the precision and recall metrics available for binary
@@ -99,7 +99,7 @@ def test_estimator_summarize_binary_classification_pr(
 
 
 @pytest.mark.parametrize("metric", ["r2", "rmse"])
-def test_estimator_summarize_regression(linear_regression_with_test, metric):
+def test_summarize_regression(linear_regression_with_test, metric):
     """Check the behaviour of the metrics methods available for regression."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -124,7 +124,7 @@ def test_estimator_summarize_regression(linear_regression_with_test, metric):
     assert report._cache != {}
 
 
-def test_estimator_report_interaction_cache_metrics(
+def test_interaction_cache_metrics(
     linear_regression_multioutput_with_test,
 ):
     """Check that the cache take into account the 'kwargs' of a metric."""
@@ -159,7 +159,7 @@ def test_estimator_report_interaction_cache_metrics(
     assert isinstance(result_r2_uniform_average, float)
 
 
-def test_estimator_report_custom_metric(linear_regression_with_test):
+def test_custom_metric(linear_regression_with_test):
     """Check the behaviour of the `custom_metric` computation in the report."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -210,9 +210,7 @@ def test_estimator_report_custom_metric(linear_regression_with_test):
 
 
 @pytest.mark.parametrize("scoring", ["public_metric", "_private_metric"])
-def test_estimator_report_summarize_error_scoring_strings(
-    linear_regression_with_test, scoring
-):
+def test_summarize_error_scoring_strings(linear_regression_with_test, scoring):
     """Check that we raise an error if a scoring string is not a valid metric."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -221,7 +219,7 @@ def test_estimator_report_summarize_error_scoring_strings(
         report.metrics.summarize(scoring=[scoring])
 
 
-def test_estimator_report_custom_function_kwargs_numpy_array(
+def test_custom_function_kwargs_numpy_array(
     linear_regression_with_test,
 ):
     """Check that we are able to store a hash of a numpy array in the cache when they
@@ -255,7 +253,7 @@ def test_estimator_report_custom_function_kwargs_numpy_array(
     )
 
 
-def test_estimator_report_custom_metric_compatible_estimator(
+def test_custom_metric_compatible_estimator(
     forest_binary_classification_with_test,
 ):
     """Check that the estimator report still works if an estimator has a compatible
@@ -285,7 +283,7 @@ def test_estimator_report_custom_metric_compatible_estimator(
     assert result == pytest.approx(1)
 
 
-def test_estimator_report_get_X_y_and_data_source_hash_error():
+def test_get_X_y_and_data_source_hash_error():
     """Check that we raise the proper error in `get_X_y_and_use_cache`."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
@@ -347,7 +345,7 @@ def test_estimator_report_get_X_y_and_data_source_hash_error():
 
 
 @pytest.mark.parametrize("data_source", ("train", "test", "X_y"))
-def test_estimator_report_get_X_y_and_data_source_hash(data_source):
+def test_get_X_y_and_data_source_hash(data_source):
     """Check the general behaviour of `get_X_y_and_use_cache`."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
@@ -377,7 +375,7 @@ def test_estimator_report_get_X_y_and_data_source_hash(data_source):
 
 
 @pytest.mark.parametrize("prefit_estimator", [True, False])
-def test_estimator_has_side_effects(prefit_estimator):
+def test_has_side_effects(prefit_estimator):
     """Re-fitting the estimator outside the EstimatorReport
     should not have an effect on the EstimatorReport's internal estimator."""
     X, y = make_classification(n_classes=2, random_state=42)
@@ -401,7 +399,7 @@ def test_estimator_has_side_effects(prefit_estimator):
     np.testing.assert_array_equal(predictions_before, predictions_after)
 
 
-def test_estimator_has_no_deep_copy():
+def test_has_no_deep_copy():
     """Check that we raise a warning if the deep copy failed with a fitted
     estimator."""
     X, y = make_classification(n_classes=2, random_state=42)
@@ -424,7 +422,7 @@ def test_estimator_has_no_deep_copy():
 
 
 @pytest.mark.parametrize("metric", ["brier_score", "log_loss"])
-def test_estimator_report_brier_log_loss_requires_probabilities(metric):
+def test_brier_log_loss_requires_probabilities(metric):
     """Check that the Brier score and the Log loss is not defined for estimator
     that do not implement `predict_proba`.
 
@@ -442,7 +440,7 @@ def test_estimator_report_brier_log_loss_requires_probabilities(metric):
     assert not hasattr(report.metrics, metric)
 
 
-def test_estimator_report_brier_score_requires_binary_classification():
+def test_brier_score_requires_binary_classification():
     """Check that the Brier score is not defined for estimator that do not
     implement `predict_proba` and that are not binary-classification.
 
@@ -459,7 +457,7 @@ def test_estimator_report_brier_score_requires_binary_classification():
     assert not hasattr(report.metrics, "brier_score")
 
 
-def test_estimator_report_average_return_float(forest_binary_classification_with_test):
+def test_average_return_float(forest_binary_classification_with_test):
     """Check that we expect a float value when computing a metric with averaging.
 
     Non-regression test for:
@@ -476,7 +474,7 @@ def test_estimator_report_average_return_float(forest_binary_classification_with
 @pytest.mark.parametrize(
     "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
 )
-def test_estimator_report_precision_recall_pos_label_overwrite(metric, metric_fn):
+def test_precision_recall_pos_label_overwrite(metric, metric_fn):
     """Check that `pos_label` can be overwritten in `summarize`"""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
@@ -498,7 +496,7 @@ def test_estimator_report_precision_recall_pos_label_overwrite(metric, metric_fn
     )
 
 
-def test_estimator_report_roc_multiclass_requires_predict_proba(
+def test_roc_multiclass_requires_predict_proba(
     svc_multiclass_classification_with_test, svc_binary_classification_with_test
 ):
     """Check that the ROC AUC metric is not exposed with multiclass data if the

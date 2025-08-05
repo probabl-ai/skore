@@ -7,6 +7,7 @@ class TestDisplay(StyleDisplayMixin):
 
 
 def test_style_mixin():
+    """Check that the style mixin works as intended."""
     display = TestDisplay()
     display.set_style(some_kwargs=1)
     assert display._default_some_kwargs == 1

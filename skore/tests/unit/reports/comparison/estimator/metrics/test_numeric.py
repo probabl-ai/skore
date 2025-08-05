@@ -90,7 +90,7 @@ from skore import ComparisonReport, EstimatorReport
         ),
     ],
 )
-def test_comparison_metrics_binary_classification(
+def test_binary_classification(
     metric_name,
     expected,
     data_source,
@@ -147,7 +147,7 @@ def test_comparison_metrics_binary_classification(
         ),
     ],
 )
-def test_comparison_metrics_regression(
+def test_regression(
     metric_name, expected, data_source, comparison_estimator_reports_regression
 ):
     """Check the metrics work."""
@@ -173,7 +173,7 @@ def test_comparison_metrics_regression(
     pd.testing.assert_frame_equal(result, expected)
 
 
-def test_comparison_report_custom_metric_X_y(
+def test_custom_metric_data_source_external(
     binary_classification_data, comparison_estimator_reports_binary_classification
 ):
     """Check that `custom_metric` works with an "X_y" data source."""
@@ -209,7 +209,7 @@ def test_comparison_report_custom_metric_X_y(
     pd.testing.assert_frame_equal(result, expected)
 
 
-def test_comparison_report_timings(comparison_estimator_reports_binary_classification):
+def test_timings(comparison_estimator_reports_binary_classification):
     """Check the general behaviour of the `timings` method."""
     report = comparison_estimator_reports_binary_classification
     timings = report.metrics.timings()
@@ -234,7 +234,7 @@ def test_comparison_report_timings(comparison_estimator_reports_binary_classific
     assert timings.columns.tolist() == report.report_names_
 
 
-def test_comparison_report_timings_flat_index(
+def test_timings_flat_index(
     comparison_estimator_reports_binary_classification,
 ):
     """Check that time measurements have _s suffix with flat_index=True."""
@@ -251,7 +251,7 @@ def test_comparison_report_timings_flat_index(
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_comparison_report_display_binary_classification_pos_label(
+def test_display_binary_classification_pos_label(
     pyplot, metric, logistic_binary_classification_with_train_test
 ):
     """Check the behaviour of the display methods when `pos_label` needs to be set."""
@@ -306,7 +306,7 @@ def test_comparison_report_display_binary_classification_pos_label(
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_comparison_report_summarize_pos_label_default(
+def test_summarize_pos_label_default(
     metric, logistic_binary_classification_with_train_test
 ):
     """Check the default behaviour of `pos_label` in `summarize`."""
@@ -337,7 +337,7 @@ def test_comparison_report_summarize_pos_label_default(
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_comparison_report_summarize_pos_label_overwrite(
+def test_summarize_pos_label_overwrite(
     metric, logistic_binary_classification_with_train_test
 ):
     """Check that `pos_label` can be overwritten in `summarize`."""
@@ -389,7 +389,7 @@ def test_comparison_report_summarize_pos_label_overwrite(
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_comparison_report_precision_recall_pos_label_default(
+def test_precision_recall_pos_label_default(
     metric, logistic_binary_classification_with_train_test
 ):
     """Check the default behaviour of `pos_label` in `summarize`."""
@@ -420,7 +420,7 @@ def test_comparison_report_precision_recall_pos_label_default(
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_comparison_report_precision_recall_pos_label_overwrite(
+def test_precision_recall_pos_label_overwrite(
     metric, logistic_binary_classification_with_train_test
 ):
     """Check that `pos_label` can be overwritten in `summarize`"""

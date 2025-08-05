@@ -3,7 +3,7 @@ import pytest
 from skore import ComparisonReport, EstimatorReport
 
 
-def test_comparison_report_init_wrong_parameters(
+def test_init_wrong_parameters(
     estimator_reports_binary_classification,
 ):
     """If the input is not valid, raise."""
@@ -20,7 +20,7 @@ def test_comparison_report_init_wrong_parameters(
         ComparisonReport([None, report])
 
 
-def test_comparison_report_different_test_data(
+def test_different_test_data(
     logistic_binary_classification_with_train_test,
 ):
     """Raise an error if the passed estimators do not have the same testing targets."""
@@ -55,7 +55,7 @@ def test_comparison_report_different_test_data(
     )
 
 
-def test_comparison_report_init_different_ml_usecases(
+def test_init_different_ml_usecases(
     estimator_reports_binary_classification, estimator_reports_regression
 ):
     """Raise an error if the passed estimators do not have the same ML usecase."""
@@ -71,7 +71,7 @@ def test_comparison_report_init_different_ml_usecases(
         ComparisonReport([classification_report, regression_report])
 
 
-def test_comparison_report_init_with_report_names(
+def test_init_with_report_names(
     estimator_reports_binary_classification,
 ):
     """If the estimators are passed as a dict then the estimator names are the dict
@@ -86,7 +86,7 @@ def test_comparison_report_init_with_report_names(
     )
 
 
-def test_comparison_report_init_without_report_names(
+def test_init_without_report_names(
     estimator_reports_binary_classification,
 ):
     """If the estimators are passed as a list, then the estimator names are the
@@ -101,7 +101,7 @@ def test_comparison_report_init_without_report_names(
     )
 
 
-def test_comparison_report_non_string_report_names(
+def test_non_string_report_names(
     estimator_reports_binary_classification,
 ):
     """If the reports are passed as a dict, then keys must be strings."""
@@ -113,7 +113,7 @@ def test_comparison_report_non_string_report_names(
 @pytest.mark.parametrize("data_source", ["train", "test"])
 @pytest.mark.parametrize("response_method", ["predict", "predict_proba"])
 @pytest.mark.parametrize("pos_label", [None, 0, 1])
-def test_comparison_report_get_predictions(
+def test_get_predictions(
     comparison_estimator_reports_binary_classification,
     data_source,
     response_method,
@@ -133,7 +133,7 @@ def test_comparison_report_get_predictions(
         assert split_predictions.shape == expected_shape
 
 
-def test_comparison_report_get_predictions_error(
+def test_get_predictions_error(
     comparison_estimator_reports_binary_classification,
 ):
     """Check that we raise an error when the data source is invalid."""

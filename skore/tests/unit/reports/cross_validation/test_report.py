@@ -68,7 +68,7 @@ def test_generate_estimator_report(forest_binary_classification_data):
     "fixture_name",
     ["forest_binary_classification_data", "pipeline_binary_classification_data"],
 )
-def test_cross_validation_report_attributes(fixture_name, request, cv, n_jobs):
+def test_attributes(fixture_name, request, cv, n_jobs):
     """Test the attributes of the cross-validation report."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, cv_splitter=cv, n_jobs=n_jobs)
@@ -93,7 +93,7 @@ def test_cross_validation_report_attributes(fixture_name, request, cv, n_jobs):
         report.y = y
 
 
-def test_cross_validation_report_help(capsys, forest_binary_classification_data):
+def test_help(capsys, forest_binary_classification_data):
     """Check that the help method writes to the console."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y)
@@ -108,7 +108,7 @@ def test_cross_validation_report_help(capsys, forest_binary_classification_data)
     )
 
 
-def test_cross_validation_report_repr(forest_binary_classification_data):
+def test_repr(forest_binary_classification_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y)
@@ -127,9 +127,7 @@ def test_cross_validation_report_repr(forest_binary_classification_data):
     ],
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
-def test_cross_validation_report_cache_predictions(
-    request, fixture_name, expected_n_keys, n_jobs
-):
+def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
     """Check that calling cache_predictions fills the cache."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, cv_splitter=2, n_jobs=n_jobs)
@@ -152,7 +150,7 @@ def test_cross_validation_report_cache_predictions(
     "response_method", ["predict", "predict_proba", "decision_function"]
 )
 @pytest.mark.parametrize("pos_label", [None, 0, 1])
-def test_cross_validation_report_get_predictions(
+def test_get_predictions(
     data_source, response_method, pos_label, logistic_binary_classification_data
 ):
     """Check the behaviour of the `get_predictions` method."""
@@ -183,7 +181,7 @@ def test_cross_validation_report_get_predictions(
         assert split_predictions.shape == expected_shape
 
 
-def test_cross_validation_report_get_predictions_error(
+def test_get_predictions_error(
     logistic_binary_classification_data,
 ):
     """Check that we raise an error when the data source is invalid."""
@@ -197,7 +195,7 @@ def test_cross_validation_report_get_predictions_error(
         report.get_predictions(data_source="X_y")
 
 
-def test_cross_validation_report_pickle(tmp_path, logistic_binary_classification_data):
+def test_pickle(tmp_path, logistic_binary_classification_data):
     """Check that we can pickle an cross-validation report.
 
     In particular, the progress bar from rich are pickable, therefore we trigger
@@ -217,9 +215,7 @@ def test_cross_validation_report_pickle(tmp_path, logistic_binary_classification
     ],
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
-def test_cross_validation_report_interrupted(
-    binary_classification_data, capsys, error, error_message, n_jobs
-):
+def test_interrupted(binary_classification_data, capsys, error, error_message, n_jobs):
     """Check that we can interrupt cross-validation without losing all
     data."""
     X, y = binary_classification_data
@@ -239,7 +235,7 @@ def test_cross_validation_report_interrupted(
 
 
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
-def test_cross_validation_report_failure_all_splits(n_jobs, binary_classification_data):
+def test_failure_all_splits(n_jobs, binary_classification_data):
     """Check that we raise an error when no estimators were successfully fitted.
     during the cross-validation process."""
     X, y = binary_classification_data

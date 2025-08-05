@@ -12,6 +12,8 @@ from skore._sklearn._base import _BaseAccessor, _BaseReport, _get_cached_respons
 
 
 class MockClassifier(ClassifierMixin, BaseEstimator):
+    """Minimal scikit-learn compatible classifier."""
+
     def __init__(
         self, n_call_predict=0, n_call_predict_proba=0, n_call_decision_function=0
     ):
@@ -38,6 +40,8 @@ class MockClassifier(ClassifierMixin, BaseEstimator):
 
 
 class MockRegressor(RegressorMixin, BaseEstimator):
+    """Minimal scikit-learn compatible regressor."""
+
     def __init__(self, n_call_predict=0):
         self.n_call_predict = n_call_predict
 

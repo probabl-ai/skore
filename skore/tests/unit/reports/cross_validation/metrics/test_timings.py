@@ -12,9 +12,7 @@ from skore import CrossValidationReport
         (["mean", "std"], ["mean", "std"]),
     ],
 )
-def test_cross_validation_timings(
-    forest_binary_classification_data, aggregate, expected_columns
-):
+def test_timings(forest_binary_classification_data, aggregate, expected_columns):
     """Check the general behaviour of the `timings` method."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -40,7 +38,7 @@ def test_cross_validation_timings(
     assert timings.columns.tolist() == expected_columns
 
 
-def test_cross_validation_timings_flat_index(forest_binary_classification_data):
+def test_timings_flat_index(forest_binary_classification_data):
     """Check the behaviour of the `timings` method display formatting."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)

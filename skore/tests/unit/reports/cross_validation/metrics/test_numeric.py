@@ -80,9 +80,7 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
         ("log_loss", 1),
     ],
 )
-def test_cross_validation_report_metrics_binary_classification(
-    forest_binary_classification_data, metric, nb_stats
-):
+def test_binary_classification(forest_binary_classification_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for binary
     classification.
     """
@@ -101,7 +99,7 @@ def test_cross_validation_report_metrics_binary_classification(
         ("log_loss", 1),
     ],
 )
-def test_cross_validation_report_metrics_multiclass_classification(
+def test_multiclass_classification(
     forest_multiclass_classification_data, metric, nb_stats
 ):
     """Check the behaviour of the metrics methods available for multiclass
@@ -113,9 +111,7 @@ def test_cross_validation_report_metrics_multiclass_classification(
 
 
 @pytest.mark.parametrize("metric, nb_stats", [("r2", 1), ("rmse", 1)])
-def test_cross_validation_report_metrics_regression(
-    linear_regression_data, metric, nb_stats
-):
+def test_regression(linear_regression_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
     (estimator, X, y), cv = linear_regression_data, 2
     report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
@@ -123,16 +119,14 @@ def test_cross_validation_report_metrics_regression(
 
 
 @pytest.mark.parametrize("metric, nb_stats", [("r2", 2), ("rmse", 2)])
-def test_cross_validation_report_metrics_regression_multioutput(
-    linear_regression_multioutput_data, metric, nb_stats
-):
+def test_regression_multioutput(linear_regression_multioutput_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
     (estimator, X, y), cv = linear_regression_multioutput_data, 2
     report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
-def test_cross_validation_report_brier_score_requires_probabilities():
+def test_brier_score_requires_probabilities():
     """Check that the Brier score is not defined for estimator that do not
     implement `predict_proba`.
 
@@ -146,7 +140,7 @@ def test_cross_validation_report_brier_score_requires_probabilities():
     assert not hasattr(report.metrics, "brier_score")
 
 
-def test_cross_validation_report_custom_metric(forest_binary_classification_data):
+def test_custom_metric(forest_binary_classification_data):
     """Check that we can compute a custom metric."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -160,9 +154,7 @@ def test_cross_validation_report_custom_metric(forest_binary_classification_data
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_cross_validation_report_summarize_pos_label_overwrite(
-    metric, logistic_binary_classification_data
-):
+def test_summarize_pos_label_overwrite(metric, logistic_binary_classification_data):
     """Check that `pos_label` can be overwritten in `summarize`"""
     classifier, X, y = logistic_binary_classification_data
     labels = np.array(["A", "B"], dtype=object)
@@ -198,7 +190,7 @@ def test_cross_validation_report_summarize_pos_label_overwrite(
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_cross_validation_report_precision_recall_pos_label_overwrite(
+def test_precision_recall_pos_label_overwrite(
     metric, logistic_binary_classification_data
 ):
     """Check that `pos_label` can be overwritten in `summarize`."""

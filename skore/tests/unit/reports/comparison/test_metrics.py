@@ -11,7 +11,7 @@ from skore._sklearn._plot import MetricsSummaryDisplay
 
 
 @pytest.mark.parametrize("report", [EstimatorReport, CrossValidationReport])
-def test_comparison_report_favorability_undefined_metrics(report):
+def test_favorability_undefined_metrics(report):
     """Check that we don't introduce NaN when favorability is computed when
     for some estimators, the metric is undefined.
 

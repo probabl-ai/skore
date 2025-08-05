@@ -41,7 +41,7 @@ def test_estimator_not_fitted(fit):
 
 
 @pytest.mark.parametrize("fit", [True, "auto"])
-def test_estimator_report_from_unfitted_estimator(fit):
+def test_from_unfitted_estimator(fit):
     """Check the general behaviour of passing an unfitted estimator and training
     data."""
     X, y = make_regression(random_state=42)
@@ -73,9 +73,7 @@ def test_estimator_report_from_unfitted_estimator(fit):
 
 
 @pytest.mark.parametrize("fit", [False, "auto"])
-def test_estimator_report_from_fitted_estimator(
-    forest_binary_classification_with_test, fit
-):
+def test_from_fitted_estimator(forest_binary_classification_with_test, fit):
     """Check the general behaviour of passing an already fitted estimator without
     refitting it."""
     estimator, X, y = forest_binary_classification_with_test
@@ -96,7 +94,7 @@ def test_estimator_report_from_fitted_estimator(
         report.y_train = y
 
 
-def test_estimator_report_from_fitted_pipeline(
+def test_from_fitted_pipeline(
     pipeline_binary_classification_with_test,
 ):
     """Check the general behaviour of passing an already fitted pipeline without
@@ -114,7 +112,7 @@ def test_estimator_report_from_fitted_pipeline(
     assert report.y_test is y
 
 
-def test_estimator_report_invalidate_cache_data(forest_binary_classification_with_test):
+def test_invalidate_cache_data(forest_binary_classification_with_test):
     """Check that we invalidate the cache when the data is changed."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -148,7 +146,7 @@ def test_estimator_report_invalidate_cache_data(forest_binary_classification_wit
         ),
     ],
 )
-def test_estimator_report_check_support_plot(
+def test_check_support_plot(
     Estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods
 ):
     """Check that the available plot methods are correctly registered."""
@@ -162,7 +160,7 @@ def test_estimator_report_check_support_plot(
         assert not hasattr(report.metrics, not_supported_plot_method)
 
 
-def test_estimator_report_help(capsys, forest_binary_classification_with_test):
+def test_help(capsys, forest_binary_classification_with_test):
     """Check that the help method writes to the console."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -177,7 +175,7 @@ def test_estimator_report_help(capsys, forest_binary_classification_with_test):
     )
 
 
-def test_estimator_report_repr(forest_binary_classification_with_test):
+def test_repr(forest_binary_classification_with_test):
     """Check that __repr__ returns a string starting with the expected prefix."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -200,7 +198,7 @@ def test_estimator_report_repr(forest_binary_classification_with_test):
     ],
 )
 @pytest.mark.parametrize("n_jobs", [1, 2])
-def test_estimator_report_cache_predictions(
+def test_cache_predictions(
     request, fixture_name, pass_train_data, expected_n_keys, n_jobs
 ):
     """Check that calling cache_predictions fills the cache."""
@@ -222,7 +220,7 @@ def test_estimator_report_cache_predictions(
     assert report._cache.keys() == stored_cache.keys()
 
 
-def test_estimator_report_pickle(forest_binary_classification_with_test):
+def test_pickle(forest_binary_classification_with_test):
     """Check that we can pickle an estimator report.
 
     In particular, the progress bar from rich are pickable, therefore we trigger
@@ -236,7 +234,7 @@ def test_estimator_report_pickle(forest_binary_classification_with_test):
         joblib.dump(report, stream)
 
 
-def test_estimator_report_flat_index(forest_binary_classification_with_test):
+def test_flat_index(forest_binary_classification_with_test):
     """Check that the index is flattened when `flat_index` is True.
 
     Since `pos_label` is None, then by default a MultiIndex would be returned.
@@ -261,7 +259,7 @@ def test_estimator_report_flat_index(forest_binary_classification_with_test):
     assert result.columns.tolist() == ["RandomForestClassifier"]
 
 
-def test_estimator_report_get_predictions():
+def test_get_predictions():
     """Check the behaviour of the `get_predictions` method.
 
     We use the binary classification because it uses all the parameters of the
@@ -335,7 +333,7 @@ def test_estimator_report_get_predictions():
     )
 
 
-def test_estimator_report_get_predictions_error():
+def test_get_predictions_error():
     """Check that we raise an error when the data source is invalid."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)

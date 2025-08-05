@@ -1,9 +1,9 @@
-import pytest
 import numpy as np
+import pytest
 from skore import CrossValidationReport, RocCurveDisplay
 
 
-def test_cross_validation_report_plot_roc(forest_binary_classification_data):
+def test_plot_roc(forest_binary_classification_data):
     """Check that the ROC plot method works."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -11,7 +11,7 @@ def test_cross_validation_report_plot_roc(forest_binary_classification_data):
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
-def test_cross_validation_report_display_binary_classification(
+def test_display_binary_classification(
     pyplot, forest_binary_classification_data, display
 ):
     """General behaviour of the function creating display on binary classification."""
@@ -25,9 +25,7 @@ def test_cross_validation_report_display_binary_classification(
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
-def test_cross_validation_report_display_regression(
-    pyplot, linear_regression_data, display
-):
+def test_display_regression(pyplot, linear_regression_data, display):
     """General behaviour of the function creating display on regression."""
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -39,7 +37,7 @@ def test_cross_validation_report_display_regression(
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_cross_validation_report_display_binary_classification_pos_label(
+def test_display_binary_classification_pos_label(
     pyplot, metric, forest_binary_classification_data
 ):
     """Check the behaviour of the display methods when `pos_label` needs to be set."""

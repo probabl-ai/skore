@@ -14,9 +14,7 @@ from skore import EstimatorReport
         (dict(subsample_strategy="invalid"), "'subsample_strategy' options are"),
     ],
 )
-def test_estimator_report_analyze_error(
-    forest_binary_classification_with_test, params, err_msg
-):
+def test_analyze_error(forest_binary_classification_with_test, params, err_msg):
     """Check that the `analyze` method raises an error when the data source is not
     valid."""
     classifier, X_test, y_test = forest_binary_classification_with_test
@@ -25,7 +23,7 @@ def test_estimator_report_analyze_error(
         report.data.analyze(**params)
 
 
-def test_estimator_report_analyze_data_source_not_available(
+def test_analyze_data_source_not_available(
     forest_binary_classification_with_test,
 ):
     """Check that we raise a proper error message when the data source requested is
@@ -55,7 +53,7 @@ def test_estimator_report_analyze_data_source_not_available(
         report.data.analyze(data_source="test", with_y=True)
 
 
-def test_estimator_report_analyze_data_source_without_y():
+def test_analyze_data_source_without_y():
     """Check the behaviour of `data_source` parameter without including `y`."""
     X, y = make_classification(n_classes=2, random_state=42)
     X = pd.DataFrame(X, columns=[f"Column {i}" for i in range(X.shape[1])])
@@ -78,7 +76,7 @@ def test_estimator_report_analyze_data_source_without_y():
     pd.testing.assert_frame_equal(display.summary["dataframe"], X)
 
 
-def test_estimator_report_analyze_data_source_with_y():
+def test_analyze_data_source_with_y():
     """Check the behaviour of `data_source` parameter with `y`."""
     X, y = make_classification(n_classes=2, random_state=42)
     X = pd.DataFrame(X, columns=[f"Column {i}" for i in range(X.shape[1])])
@@ -112,9 +110,7 @@ def test_estimator_report_analyze_data_source_with_y():
 @pytest.mark.parametrize(
     "n_targets, target_column_names", [(1, ["Target"]), (2, ["Target 0", "Target 1"])]
 )
-def test_estimator_report_analyze_numpy_array(
-    data_source, n_targets, target_column_names
-):
+def test_analyze_numpy_array(data_source, n_targets, target_column_names):
     """Check that NumPy arrays are converted to pandas DataFrames when data are
     retrieved."""
     X, y = make_regression(
@@ -142,7 +138,7 @@ def test_estimator_report_analyze_numpy_array(
 
 
 @pytest.mark.parametrize("subsample_strategy", ["head", "random"])
-def test_estimator_report_analyze_subsampling(
+def test_analyze_subsampling(
     forest_binary_classification_with_test, subsample_strategy
 ):
     """Check that the `subsample` parameter is handled correctly."""
@@ -164,7 +160,7 @@ def test_estimator_report_analyze_subsampling(
         assert display.summary["dataframe"].index.to_list() != list(range(10))
 
 
-def test_estimator_data_accessor_help(capsys, forest_binary_classification_with_test):
+def test_data_accessor_help(capsys, forest_binary_classification_with_test):
     """Check that the help method writes to the console."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -174,7 +170,7 @@ def test_estimator_data_accessor_help(capsys, forest_binary_classification_with_
     assert "Available data methods" in captured.out
 
 
-def test_estimator_data_accessor_repr(forest_binary_classification_with_test):
+def test_data_accessor_repr(forest_binary_classification_with_test):
     """Check that __repr__ returns a string starting with the expected prefix."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)

@@ -65,9 +65,7 @@ from skore._externals._sklearn_compat import get_tags
         ),
     ],
 )
-def test_estimator_report_coefficients_numpy_arrays(
-    data, estimator, column_base_name, expected_shape
-):
+def test_coefficients_numpy_arrays(data, estimator, column_base_name, expected_shape):
     X, y = data
     estimator.fit(X, y)
     report = EstimatorReport(estimator)
@@ -96,7 +94,7 @@ def test_estimator_report_coefficients_numpy_arrays(
         make_pipeline(StandardScaler(), LinearRegression()),
     ],
 )
-def test_estimator_report_coefficients_pandas_dataframe(estimator):
+def test_coefficients_pandas_dataframe(estimator):
     """If provided, the coefficients dataframe uses the feature names."""
     X, y = make_regression(n_features=5, random_state=42)
     X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(X.shape[1])])

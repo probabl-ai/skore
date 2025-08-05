@@ -3,7 +3,7 @@ from sklearn.dummy import DummyClassifier
 from skore import ComparisonReport, EstimatorReport
 
 
-def test_comparison_report_without_testing_data(binary_classification_data):
+def test_report_without_testing_data(binary_classification_data):
     """If there is no test data (`None`) for some estimator report,
     initialization works, but computing metrics can fail.
     """
