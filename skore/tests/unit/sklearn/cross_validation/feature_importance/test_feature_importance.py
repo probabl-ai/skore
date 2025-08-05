@@ -2,7 +2,7 @@ from sklearn.linear_model import LinearRegression
 from skore import CrossValidationReport
 
 
-def test_cross_validation_report_feature_importance_help(capsys, regression_data):
+def test_help(capsys, regression_data):
     """Check that the help method writes to the console"""
     X, y = regression_data
     report = CrossValidationReport(LinearRegression(), X=X, y=y)
