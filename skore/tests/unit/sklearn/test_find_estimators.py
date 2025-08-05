@@ -19,7 +19,7 @@ def test_find_estimators():
 
 
 def test_find_estimators_with_skrub():
-    pip = skrub.tabular_learner("classification")
+    pip = skrub.tabular_pipeline("classification")
     extracted = find_estimators(pip)
     assert len(extracted) == 5
     assert extracted.get("_datetime_encoder") == ["DatetimeEncoder"]

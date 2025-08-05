@@ -11,7 +11,7 @@ from skore._sklearn._plot.data.table_report import (
     _resize_categorical_axis,
     _truncate_top_k_categories,
 )
-from skrub import tabular_learner
+from skrub import tabular_pipeline
 from skrub.datasets import fetch_employee_salaries
 
 
@@ -24,7 +24,7 @@ def estimator_report():
     X["cents"] = 100 * y
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     return EstimatorReport(
-        tabular_learner("regressor"),
+        tabular_pipeline("regressor"),
         X_train=X_train,
         X_test=X_test,
         y_train=y_train,
@@ -43,7 +43,7 @@ def display():
     ).dt.to_pytimedelta()
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     report = EstimatorReport(
-        tabular_learner("regressor"),
+        tabular_pipeline("regressor"),
         X_train=X_train,
         X_test=X_test,
         y_train=y_train,
