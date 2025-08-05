@@ -1,9 +1,9 @@
-import numpy as np
-import pytest
 from skore import CrossValidationReport
 
 
-def test_cross_validation_report_metrics_help(capsys, forest_binary_classification_data):
+def test_cross_validation_report_metrics_help(
+    capsys, forest_binary_classification_data
+):
     """Check that the help method writes to the console."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -13,3 +13,11 @@ def test_cross_validation_report_metrics_help(capsys, forest_binary_classificati
     assert "Available metrics methods" in captured.out
 
 
+def test_cross_validation_report_metrics_repr(forest_binary_classification_data):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+
+    repr_str = repr(report.metrics)
+    assert "skore.CrossValidationReport.metrics" in repr_str
+    assert "help()" in repr_str

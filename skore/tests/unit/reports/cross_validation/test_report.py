@@ -6,12 +6,14 @@ import numpy as np
 import pytest
 from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import accuracy_score
 from sklearn.pipeline import Pipeline
+from sklearn.utils.validation import check_is_fitted
 from skore import CrossValidationReport, EstimatorReport
 from skore._sklearn._cross_validation.report import _generate_estimator_report
+from skore._utils._testing import MockEstimator
 
 
 def test_report_can_be_rebuilt_using_parameters(
@@ -195,13 +197,56 @@ def test_cross_validation_report_get_predictions_error(
         report.get_predictions(data_source="X_y")
 
 
-def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
+def test_cross_validation_report_pickle(tmp_path, logistic_binary_classification_data):
     """Check that we can pickle an cross-validation report.
 
     In particular, the progress bar from rich are pickable, therefore we trigger
     the progress bar to be able to test that the progress bar is pickable.
     """
-    estimator, X, y = binary_classification_data
+    estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     report.cache_predictions()
     joblib.dump(report, tmp_path / "report.joblib")
+
+
+@pytest.mark.parametrize(
+    "error,error_message",
+    [
+        (ValueError("No more fitting"), "Cross-validation interrupted by an error"),
+        (KeyboardInterrupt(), "Cross-validation interrupted manually"),
+    ],
+)
+@pytest.mark.parametrize("n_jobs", [None, 1, 2])
+def test_cross_validation_report_interrupted(
+    binary_classification_data, capsys, error, error_message, n_jobs
+):
+    """Check that we can interrupt cross-validation without losing all
+    data."""
+    X, y = binary_classification_data
+
+    estimator = MockEstimator(error=error, n_call=0, fail_after_n_clone=8)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=10, n_jobs=n_jobs)
+
+    captured = capsys.readouterr()
+    assert all(word in captured.out for word in error_message.split(" "))
+
+    result = report.metrics.custom_metric(
+        metric_function=accuracy_score,
+        response_method="predict",
+    )
+    assert result.shape == (1, 2)
+    assert result.index == ["Accuracy Score"]
+
+
+@pytest.mark.parametrize("n_jobs", [None, 1, 2])
+def test_cross_validation_report_failure_all_splits(n_jobs, binary_classification_data):
+    """Check that we raise an error when no estimators were successfully fitted.
+    during the cross-validation process."""
+    X, y = binary_classification_data
+    estimator = MockEstimator(
+        error=ValueError("Intentional failure for testing"), fail_after_n_clone=0
+    )
+
+    err_msg = "Cross-validation failed: no estimators were successfully fitted"
+    with pytest.raises(RuntimeError, match=err_msg):
+        CrossValidationReport(estimator, X, y, n_jobs=n_jobs)
