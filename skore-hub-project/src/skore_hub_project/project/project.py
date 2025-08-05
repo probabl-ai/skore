@@ -36,10 +36,6 @@ if TYPE_CHECKING:
         predict_time: float
 
 
-model = EstimatorReportPayload(project="<project>", report="<report>")
-model.todict()
-
-
 class Project:
     """
     API to manage a collection of key-report pairs persisted in a hub storage.

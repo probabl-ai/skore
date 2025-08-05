@@ -1,12 +1,15 @@
+from abc import abstractmethod
+from functools import cached_property
 from typing import Any
 
+from pydantic import Field, computed_field
+
 from .base import BasePayload
-from .. import Project
 
 Artefact = Any
 Metric = Any
 Report = Any
-
+Project = Any
 
 # Create protocols for CrossValidationReport and EstimatorReport
 
@@ -16,10 +19,10 @@ class ReportPayload(BasePayload):
     report: Report = Field(repr=False, exclude=True)
     upload: bool = Field(default=True, repr=False, exclude=True)
     key: str
-    run_id: int
+    run_id: str
 
     @computed_field
-    @cached_property
+    @property
     def estimator_class_name(self) -> str:
         """Return the name of the report's estimator."""
         return self.report.estimator_name_
@@ -30,10 +33,12 @@ class ReportPayload(BasePayload):
         """Return the hash of the targets in the test-set."""
         import joblib
 
-        return joblib.hash(self.report.y_test)
+        return joblib.hash(
+            self.report.y_test if hasattr(self.report, "y_test") else self.report.y
+        )
 
     @computed_field
-    @cached_property
+    @property
     def ml_task(self) -> str:
         """Return the type of ML task covered by the report."""
         return self.report._ml_task

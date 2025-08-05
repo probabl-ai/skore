@@ -6,4 +6,4 @@ class BasePayload(BaseModel):
         frozen = True
 
     def todict(self):
-        return model.model_dump(exclude_none=True)
+        return self.model_dump(exclude_none=True)

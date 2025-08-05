@@ -1,11 +1,13 @@
 from collections import defaultdict
-from typing import Any
+from functools import cached_property
+from typing import Any, TYPE_CHECKING, Literal
 
+from pydantic import Field, computed_field
 from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
 
-from .report import EstimatorReportPayload
-
+from .report import ReportPayload
+from .estimator_report import EstimatorReportPayload
 
 Metric = Any
 CrossValidationReport = Any
@@ -14,18 +16,24 @@ CrossValidationReport = Any
 class CrossValidationReportPayload(ReportPayload):
     report: CrossValidationReport = Field(repr=False, exclude=True)
 
-    def model_post_init(self, _):
-        if self.report.ml_task.includes("classification"):
+    def model_post_init(self, context):
+        self.report.ml_task = self.report._ml_task  # to revert after rebase main
+
+        if "classification" in self.report.ml_task:
             class_to_class_indice = defaultdict(lambda: len(class_to_class_indice))
 
-            self.__classes = list(map(str, class_to_class_indice))
-            self.__sample_to_class_indice = list(map(class_to_class_indice, report.y))
+            self.__sample_to_class_indice = [
+                class_to_class_indice[sample] for sample in self.report.y
+            ]
 
             assert len(self.__sample_to_class_indice) == len(self.report.X)
-            assert max(self.__sample_to_class_indice) == len(self.__classes)
+
+            self.__classes = [str(class_) for class_ in class_to_class_indice]
+
+            assert max(self.__sample_to_class_indice) == (len(self.__classes) - 1)
         else:
-            self.__classes = None
             self.__sample_to_class_indice = None
+            self.__classes = None
 
     @computed_field
     @cached_property
@@ -51,9 +59,9 @@ class CrossValidationReportPayload(ReportPayload):
         - 0 if the sample is in the train-set,
         - 1 if the sample is in the test-set.
         """
-        splits = [[0] * len(report.X)] * len(report.split_indices)
+        splits = [[0] * len(self.report.X)] * len(self.report.split_indices)
 
-        for i, (_, test_indices) in enumerate(report.split_indices):
+        for i, (_, test_indices) in enumerate(self.report.split_indices):
             for test_indice in test_indices:
                 splits[i][test_indice] = 1
 
@@ -69,14 +77,20 @@ class CrossValidationReportPayload(ReportPayload):
     @computed_field
     @property
     def classes(self) -> list[int] | None:
-        return self.__sample_to_class_indices
+        return self.__sample_to_class_indice
 
     @computed_field
     @cached_property
     def estimators(self) -> list[EstimatorReportPayload]:
         return [
-            EstimatorReportPayload(report=report, upload=False)
-            for report in report.estimator_reports_
+            EstimatorReportPayload(
+                project=self.project,
+                report=report,
+                upload=False,
+                key=f"{self.key}:estimator-report",
+                run_id=self.run_id,
+            )
+            for report in self.report.estimator_reports_
         ]
 
     @computed_field
