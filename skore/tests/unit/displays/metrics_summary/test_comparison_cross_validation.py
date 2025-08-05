@@ -11,7 +11,7 @@ from skore._utils._testing import check_cache_changed, check_cache_unchanged
 
 
 def test_aggregate_none(comparison_cross_validation_reports_binary_classification):
-    """`summarize` works as intended with `aggregate=None`."""
+    """`MetricsSummaryDisplay` works as intended with `aggregate=None`."""
     report = comparison_cross_validation_reports_binary_classification
     result = report.metrics.summarize(aggregate=None)
     assert isinstance(result, MetricsSummaryDisplay)
@@ -25,8 +25,8 @@ def test_aggregate_none(comparison_cross_validation_reports_binary_classificatio
 def test_aggregate_none_flat_index(
     comparison_cross_validation_reports_binary_classification,
 ):
-    """
-    `summarize` works as intended with `aggregate=None` and `flat_index=True`.
+    """`MetricsSummaryDisplay` works as intended with `aggregate=None` and
+    `flat_index=True`.
     """
     report = comparison_cross_validation_reports_binary_classification
     result = report.metrics.summarize(aggregate=None, flat_index=True).frame()
@@ -36,7 +36,7 @@ def test_aggregate_none_flat_index(
 
 
 def test_default(comparison_cross_validation_reports_binary_classification):
-    """`summarize` works as intended with its default attributes."""
+    """`MetricsSummaryDisplay` works as intended with its default attributes."""
     report = comparison_cross_validation_reports_binary_classification
     result = report.metrics.summarize().frame()
 
@@ -57,7 +57,7 @@ def test_default(comparison_cross_validation_reports_binary_classification):
 
 def test_default_regression(comparison_cross_validation_reports_regression):
     """
-    `summarize` works as intended with its default attributes for regression
+    `MetricsSummaryDisplay` works as intended with its default attributes for regression
     models.
     """
     report = comparison_cross_validation_reports_regression
@@ -97,7 +97,7 @@ def test_aggregate_is_used_in_cache(
 ):
     """`aggregate` should be used when computing the cache key.
 
-    In other words, if you call `summarize` twice with different values of
+    In other words, if you call `MetricsSummaryDisplay` twice with different values of
     `aggregate`, you should get a different result.
     """
     report = comparison_cross_validation_reports_binary_classification
@@ -107,7 +107,7 @@ def test_aggregate_is_used_in_cache(
 
 
 def test_scoring(comparison_cross_validation_reports_binary_classification):
-    """`summarize` works as intended with the `scoring` parameter."""
+    """`MetricsSummaryDisplay` works as intended with the `scoring` parameter."""
     report = comparison_cross_validation_reports_binary_classification
     result = report.metrics.summarize(scoring=["accuracy"], aggregate=None).frame()
 
@@ -133,7 +133,7 @@ def test_scoring(comparison_cross_validation_reports_binary_classification):
 
 
 def test_favorability(comparison_cross_validation_reports_binary_classification):
-    """`summarize` works as intended with `indicator_favorability=True`."""
+    """`MetricsSummaryDisplay` works as intended with `indicator_favorability=True`."""
     report = comparison_cross_validation_reports_binary_classification
     result = report.metrics.summarize(indicator_favorability=True).frame()
 
@@ -154,7 +154,7 @@ def test_favorability(comparison_cross_validation_reports_binary_classification)
 
 
 def test_cache(comparison_cross_validation_reports_binary_classification):
-    """`summarize` results are cached."""
+    """`MetricsSummaryDisplay` results are cached."""
     report = comparison_cross_validation_reports_binary_classification
     with check_cache_changed(report._cache):
         result = report.metrics.summarize().frame()
@@ -188,11 +188,11 @@ def test_init_with_report_names(forest_binary_classification_data):
     )
 
 
-def test_X_y(
+def test_data_source_external(
     comparison_cross_validation_reports_binary_classification,
     binary_classification_data,
 ):
-    """`summarize` works as intended with `data_source="X_y"`."""
+    """`MetricsSummaryDisplay` works as intended with `data_source="X_y"`."""
     report = comparison_cross_validation_reports_binary_classification
     X, y = binary_classification_data
     result = report.metrics.summarize(data_source="X_y", X=X, y=y).frame()
@@ -244,7 +244,7 @@ def test_cache_poisoning(binary_classification_data):
         (get_scorer("accuracy"), None),
     ],
 )
-def test_comparison_report_cv_report_summarize_scoring_single_list_equivalence(
+def test_scoring_single_list_equivalence(
     comparison_cross_validation_reports_binary_classification, scoring, scoring_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a

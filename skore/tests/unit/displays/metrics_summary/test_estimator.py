@@ -49,14 +49,14 @@ def _check_results_summarize(result, expected_metrics, expected_nb_stats):
 
 @pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])
 @pytest.mark.parametrize("data_source", ["test", "X_y"])
-def test_estimator_report_summarize_binary(
+def test_binary_classification(
     forest_binary_classification_with_test,
     svc_binary_classification_with_test,
     pos_label,
     nb_stats,
     data_source,
 ):
-    """Check the behaviour of the `summarize` method with binary
+    """Check the behaviour of the `MetricsSummaryDisplay` method with binary
     classification. We test both with an SVC that does not support `predict_proba` and a
     RandomForestClassifier that does.
     """
@@ -118,12 +118,12 @@ def test_estimator_report_summarize_binary(
 
 
 @pytest.mark.parametrize("data_source", ["test", "X_y"])
-def test_estimator_report_summarize_multiclass(
+def test_multiclass_classification(
     forest_multiclass_classification_with_test,
     svc_multiclass_classification_with_test,
     data_source,
 ):
-    """Check the behaviour of the `summarize` method with multiclass
+    """Check the behaviour of the `MetricsSummaryDisplay` method with multiclass
     classification.
     """
     estimator, X_test, y_test = forest_multiclass_classification_with_test
@@ -156,10 +156,8 @@ def test_estimator_report_summarize_multiclass(
 
 
 @pytest.mark.parametrize("data_source", ["test", "X_y"])
-def test_estimator_report_summarize_regression(
-    linear_regression_with_test, data_source
-):
-    """Check the behaviour of the `summarize` method with regression."""
+def test_regression(linear_regression_with_test, data_source):
+    """Check the behaviour of the `MetricsSummaryDisplay` method with regression."""
     estimator, X_test, y_test = linear_regression_with_test
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -169,10 +167,10 @@ def test_estimator_report_summarize_regression(
     _check_results_summarize(result, expected_metrics, len(expected_metrics))
 
 
-def test_estimator_report_summarize_scoring_kwargs(
+def test_scoring_kwargs(
     linear_regression_multioutput_with_test, forest_multiclass_classification_with_test
 ):
-    """Check the behaviour of the `summarize` method with scoring kwargs."""
+    """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "summarize")
@@ -225,10 +223,10 @@ def test_estimator_report_summarize_scoring_kwargs(
         ),
     ],
 )
-def test_estimator_report_summarize_overwrite_scoring_names(
+def test_overwrite_scoring_names(
     request, fixture_name, scoring_names, expected_columns
 ):
-    """Test that we can overwrite the scoring names in summarize."""
+    """Test that we can overwrite the scoring names."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.summarize(scoring_names=scoring_names).frame()
@@ -243,7 +241,7 @@ def test_estimator_report_summarize_overwrite_scoring_names(
     assert result_index == expected_columns
 
 
-def test_estimator_report_summarize_indicator_favorability(
+def test_indicator_favorability(
     forest_binary_classification_with_test,
 ):
     """Check that the behaviour of `indicator_favorability` is correct."""
@@ -267,7 +265,7 @@ def test_estimator_report_summarize_indicator_favorability(
         (get_scorer("accuracy"), "this_is_a_test", None),
     ],
 )
-def test_estimator_report_summarize_scoring_single_list_equivalence(
+def test_scoring_single_list_equivalence(
     forest_binary_classification_with_test, scoring, scoring_names, scoring_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
@@ -284,9 +282,9 @@ def test_estimator_report_summarize_scoring_single_list_equivalence(
     assert result_single.equals(result_list)
 
 
-def test_estimator_report_summarize_with_custom_metric(linear_regression_with_test):
+def test_scoring_custom_metric(linear_regression_with_test):
     """Check that we can pass a custom metric with specific kwargs into
-    `summarize`."""
+    `MetricsSummaryDisplay`."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     weights = np.ones_like(y_test) * 2
@@ -308,9 +306,9 @@ def test_estimator_report_summarize_with_custom_metric(linear_regression_with_te
     )
 
 
-def test_estimator_report_summarize_with_scorer(linear_regression_with_test):
+def test_scorer(linear_regression_with_test):
     """Check that we can pass scikit-learn scorer with different parameters to
-    the `summarize` method."""
+    the `MetricsSummaryDisplay` method."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     weights = np.ones_like(y_test) * 2
@@ -357,14 +355,14 @@ def test_estimator_report_summarize_with_scorer(linear_regression_with_test):
         (make_scorer(f1_score, response_method="predict", average="macro"), 1),
     ],
 )
-def test_estimator_report_summarize_with_scorer_binary_classification(
+def test_scorer_binary_classification(
     forest_binary_classification_with_test, scorer, pos_label
 ):
     """Check that we can pass scikit-learn scorer with different parameters to
-    the `summarize` method.
+    the `MetricsSummaryDisplay` method.
 
     We also check that we can pass `pos_label` whether to the scorer or to the
-    `summarize` method or consistently to both.
+    `MetricsSummaryDisplay` method or consistently to both.
     """
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -391,7 +389,7 @@ def test_estimator_report_summarize_with_scorer_binary_classification(
     )
 
 
-def test_estimator_report_summarize_with_scorer_pos_label_error(
+def test_scorer_pos_label_error(
     forest_binary_classification_with_test,
 ):
     """Check that we raise an error when pos_label is passed both in the scorer and
@@ -409,7 +407,7 @@ def test_estimator_report_summarize_with_scorer_pos_label_error(
         report.metrics.summarize(scoring=[f1_scorer], pos_label=0).frame()
 
 
-def test_estimator_report_summarize_invalid_metric_type(linear_regression_with_test):
+def test_invalid_metric_type(linear_regression_with_test):
     """Check that we raise the expected error message if an invalid metric is passed."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -419,7 +417,7 @@ def test_estimator_report_summarize_invalid_metric_type(linear_regression_with_t
         report.metrics.summarize(scoring=[1]).frame()
 
 
-def test_estimator_report_metric_with_neg_metrics(
+def test_neg_metric_strings(
     forest_binary_classification_with_test,
 ):
     """Check that scikit-learn metrics with 'neg_' prefix are handled correctly."""
@@ -433,7 +431,7 @@ def test_estimator_report_metric_with_neg_metrics(
     )
 
 
-def test_estimator_report_with_sklearn_scoring_strings(
+def test_sklearn_scoring_strings(
     forest_binary_classification_with_test,
 ):
     """Test that scikit-learn metric strings can be passed to summarize."""
@@ -456,10 +454,10 @@ def test_estimator_report_with_sklearn_scoring_strings(
     assert favorability == "(↘︎)"
 
 
-def test_estimator_report_with_sklearn_scoring_strings_regression(
+def test_sklearn_scoring_strings_regression(
     linear_regression_with_test,
 ):
-    """Test scikit-learn regression metric strings in summarize."""
+    """Test scikit-learn regression metric strings in `MetricsSummaryDisplay`."""
     regressor, X_test, y_test = linear_regression_with_test
     reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
 
@@ -476,25 +474,23 @@ def test_estimator_report_with_sklearn_scoring_strings_regression(
     assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
 
 
-def test_estimator_report_with_scoring_strings_regression(linear_regression_with_test):
-    """Test scikit-learn regression metric strings in summarize."""
+def test_scoring_strings_regression(linear_regression_with_test):
+    """Test skore regression metric strings in `MetricsSummaryDisplay`."""
     regressor, X_test, y_test = linear_regression_with_test
     reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
 
     reg_result = reg_report.metrics.summarize(
-        scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
-        indicator_favorability=True,
+        scoring=["rmse", "r2"], indicator_favorability=True
     ).frame()
 
-    assert "Mean Squared Error" in reg_result.index.get_level_values(0)
-    assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
+    assert "RMSE" in reg_result.index.get_level_values(0)
     assert "R²" in reg_result.index.get_level_values(0)
 
-    assert reg_result.loc["Mean Squared Error"]["Favorability"] == "(↘︎)"
+    assert reg_result.loc["RMSE"]["Favorability"] == "(↘︎)"
     assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
 
 
-def test_estimator_report_sklearn_scorer_names_pos_label(
+def test_scorer_names_pos_label(
     forest_binary_classification_with_test,
 ):
     """Check that `pos_label` is dispatched with scikit-learn scorer names."""
@@ -512,7 +508,7 @@ def test_estimator_report_sklearn_scorer_names_pos_label(
     )
 
 
-def test_estimator_report_sklearn_scorer_names_scoring_kwargs(
+def test_sklearn_scorer_names_scoring_kwargs(
     forest_binary_classification_with_test,
 ):
     """Check that `scoring_kwargs` is not supported when `scoring` is a scikit-learn
@@ -534,7 +530,7 @@ def test_estimator_report_sklearn_scorer_names_scoring_kwargs(
 @pytest.mark.parametrize(
     "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
 )
-def test_estimator_report_summarize_pos_label_overwrite(metric, metric_fn):
+def test_pos_label_overwrite(metric, metric_fn):
     """Check that `pos_label` can be overwritten in `summarize`"""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0

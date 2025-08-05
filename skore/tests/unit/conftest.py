@@ -318,10 +318,30 @@ def cross_validation_reports_binary_classification(binary_classification_data):
 
 
 @pytest.fixture
+def cross_validation_reports_multiclass_classification(multiclass_classification_data):
+    X, y = multiclass_classification_data
+    cv_report_1 = CrossValidationReport(
+        DummyClassifier(strategy="uniform", random_state=0), X, y
+    )
+    cv_report_2 = CrossValidationReport(
+        DummyClassifier(strategy="uniform", random_state=1), X, y
+    )
+    return cv_report_1, cv_report_2
+
+
+@pytest.fixture
 def comparison_cross_validation_reports_binary_classification(
     cross_validation_reports_binary_classification,
 ):
     cv_report_1, cv_report_2 = cross_validation_reports_binary_classification
+    return ComparisonReport([cv_report_1, cv_report_2])
+
+
+@pytest.fixture
+def comparison_cross_validation_reports_multiclass_classification(
+    cross_validation_reports_multiclass_classification,
+):
+    cv_report_1, cv_report_2 = cross_validation_reports_multiclass_classification
     return ComparisonReport([cv_report_1, cv_report_2])
 
 

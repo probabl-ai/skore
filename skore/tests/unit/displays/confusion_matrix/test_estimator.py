@@ -5,13 +5,11 @@ from skore import EstimatorReport
 from skore._sklearn._plot import ConfusionMatrixDisplay
 
 
-def test_confusion_matrix_display_binary_classification(
-    pyplot,
-    forest_binary_classification_with_train_test,
-):
+def test_binary_classification(pyplot, forest_binary_classification_with_train_test):
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
+    """Check that the confusion matrix display is correct for binary classification."""
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -38,10 +36,12 @@ def test_confusion_matrix_display_binary_classification(
     assert frame.shape == (2, 2)
 
 
-def test_confusion_matrix_display_multiclass_classification(
-    pyplot,
-    forest_multiclass_classification_with_train_test,
+def test_multiclass_classification(
+    pyplot, forest_multiclass_classification_with_train_test
 ):
+    """Check that the confusion matrix display is correct for multiclass
+    classification.
+    """
     estimator, X_train, X_test, y_train, y_test = (
         forest_multiclass_classification_with_train_test
     )
@@ -64,10 +64,8 @@ def test_confusion_matrix_display_multiclass_classification(
     assert frame.shape == (n_classes, n_classes)
 
 
-def test_confusion_matrix_display_normalization(
-    pyplot,
-    forest_binary_classification_with_train_test,
-):
+def test_normalization(pyplot, forest_binary_classification_with_train_test):
+    """Check the behaviour of the `normalize` parameter."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
@@ -92,13 +90,12 @@ def test_confusion_matrix_display_normalization(
     assert np.isclose(display_all.confusion_matrix.sum(), 1.0)
 
 
-def test_confusion_matrix_display_custom_labels(
-    pyplot,
-    forest_binary_classification_with_train_test,
-):
+def test_custom_labels(pyplot, forest_binary_classification_with_train_test):
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
+    """Check the behaviour when passing custom labels to the confusion matrix display.
+    """
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -115,10 +112,10 @@ def test_confusion_matrix_display_custom_labels(
     assert list(frame.columns) == custom_labels
 
 
-def test_confusion_matrix_display_data_source(
-    pyplot,
-    forest_binary_classification_with_train_test,
-):
+def test_data_source(pyplot, forest_binary_classification_with_train_test):
+    """Check that we can request the confusion matrix display with different data
+    sources.
+    """
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
@@ -149,13 +146,11 @@ def test_confusion_matrix_display_data_source(
     )
 
 
-def test_confusion_matrix_values_format(
-    pyplot,
-    forest_binary_classification_with_train_test,
-):
+def test_values_format(pyplot, forest_binary_classification_with_train_test):
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
+    """Check that we can customize the format of the confusion matrix values."""
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -172,13 +167,11 @@ def test_confusion_matrix_values_format(
     )
 
 
-def test_confusion_matrix_display_single_label(
-    pyplot,
-    forest_binary_classification_with_train_test,
-):
+def test_single_label(pyplot, forest_binary_classification_with_train_test):
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
+    """Check that we can pass a single label to the confusion matrix display."""
     report = EstimatorReport(
         estimator,
         X_train=X_train,

@@ -14,7 +14,7 @@ from sklearn.metrics import (
 from skore import CrossValidationReport, MetricsSummaryDisplay
 
 
-def test_cross_validation_report_flat_index(forest_binary_classification_data):
+def test_flat_index(forest_binary_classification_data):
     """Check that the index is flattened when `flat_index` is True.
 
     Since `pos_label` is None, then by default a MultiIndex would be returned.
@@ -43,7 +43,7 @@ def test_cross_validation_report_flat_index(forest_binary_classification_data):
     ]
 
 
-def test_cross_validation_summarize_data_source_external(
+def test_data_source_external(
     forest_binary_classification_data,
 ):
     """Check that the `data_source` parameter works when using external data."""
@@ -133,7 +133,7 @@ def _check_results_summarize(
         (get_scorer("accuracy"), None),
     ],
 )
-def test_cross_validation_report_summarize_scoring_single_list_equivalence(
+def test_scoring_single_list_equivalence(
     forest_binary_classification_data, scoring, scoring_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
@@ -150,13 +150,13 @@ def test_cross_validation_report_summarize_scoring_single_list_equivalence(
 
 
 @pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])
-def test_cross_validation_report_summarize_binary(
+def test_binary_classification(
     forest_binary_classification_data,
     svc_binary_classification_data,
     pos_label,
     nb_stats,
 ):
-    """Check the behaviour of the `summarize` method with binary
+    """Check the behaviour of the `MetricsSummaryDisplay` method with binary
     classification. We test both with an SVC that does not support `predict_proba` and a
     RandomForestClassifier that does.
     """
@@ -227,10 +227,10 @@ def test_cross_validation_report_summarize_binary(
     )
 
 
-def test_cross_validation_report_summarize_multiclass(
+def test_multiclass_classification(
     forest_multiclass_classification_data, svc_multiclass_classification_data
 ):
-    """Check the behaviour of the `summarize` method with multiclass
+    """Check the behaviour of the `MetricsSummaryDisplay` method with multiclass
     classification.
     """
     estimator, X, y = forest_multiclass_classification_data
@@ -269,8 +269,8 @@ def test_cross_validation_report_summarize_multiclass(
     )
 
 
-def test_cross_validation_report_summarize_regression(linear_regression_data):
-    """Check the behaviour of the `summarize` method with regression."""
+def test_regression(linear_regression_data):
+    """Check the behaviour of the `MetricsSummaryDisplay` method with regression."""
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     expected_metrics = ("r2", "rmse", "fit_time_s", "predict_time_s")
@@ -283,10 +283,10 @@ def test_cross_validation_report_summarize_regression(linear_regression_data):
     )
 
 
-def test_cross_validation_report_summarize_scoring_kwargs_regression(
+def test_scoring_kwargs_regression(
     linear_regression_multioutput_data,
 ):
-    """Check the behaviour of the `summarize` method with scoring kwargs."""
+    """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
     estimator, X, y = linear_regression_multioutput_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics, "summarize")
@@ -298,10 +298,10 @@ def test_cross_validation_report_summarize_scoring_kwargs_regression(
     assert result.index.names == ["Metric", "Output"]
 
 
-def test_cross_validation_report_summarize_scoring_kwargs_multi_class(
+def test_scoring_kwargs_multi_class(
     forest_multiclass_classification_data,
 ):
-    """Check the behaviour of the `summarize` method with scoring kwargs."""
+    """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
     estimator, X, y = forest_multiclass_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics, "summarize")
@@ -339,10 +339,8 @@ def test_cross_validation_report_summarize_scoring_kwargs_multi_class(
         ),
     ],
 )
-def test_cross_validation_report_summarize_overwrite_scoring_names(
-    request, fixture_name, scoring_names, expected_index
-):
-    """Test that we can overwrite the scoring names in summarize."""
+def test_overwrite_scoring_names(request, fixture_name, scoring_names, expected_index):
+    """Test that we can overwrite the scoring names in `MetricsSummaryDisplay`."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     result = report.metrics.summarize(scoring_names=scoring_names).frame()
@@ -358,9 +356,7 @@ def test_cross_validation_report_summarize_overwrite_scoring_names(
 
 
 @pytest.mark.parametrize("scoring", ["public_metric", "_private_metric"])
-def test_cross_validation_report_summarize_error_scoring_strings(
-    linear_regression_data, scoring
-):
+def test_error_scoring_strings(linear_regression_data, scoring):
     """Check that we raise an error if a scoring string is not a valid metric."""
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -369,9 +365,9 @@ def test_cross_validation_report_summarize_error_scoring_strings(
         report.metrics.summarize(scoring=[scoring])
 
 
-def test_cross_validation_report_summarize_with_scorer(linear_regression_data):
+def test_scorer(linear_regression_data):
     """Check that we can pass scikit-learn scorer with different parameters to
-    the `summarize` method."""
+    the `MetricsSummaryDisplay` method."""
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
@@ -419,14 +415,14 @@ def test_cross_validation_report_summarize_with_scorer(linear_regression_data):
         (make_scorer(f1_score, response_method="predict", average="macro"), 1),
     ],
 )
-def test_cross_validation_report_summarize_with_scorer_binary_classification(
+def test_scorer_binary_classification(
     forest_binary_classification_data, scorer, pos_label
 ):
     """Check that we can pass scikit-learn scorer with different parameters to
-    the `summarize` method.
+    the `MetricsSummaryDisplay` method.
 
     We also check that we can pass `pos_label` whether to the scorer or to the
-    `summarize` method or consistently to both.
+    `MetricsSummaryDisplay` method or consistently to both.
     """
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -438,7 +434,7 @@ def test_cross_validation_report_summarize_with_scorer_binary_classification(
     assert result.shape == (3, 2)
 
 
-def test_cross_validation_report_summarize_with_scorer_pos_label_error(
+def test_scorer_pos_label_error(
     forest_binary_classification_data,
 ):
     """Check that we raise an error when pos_label is passed both in the scorer and
@@ -456,7 +452,7 @@ def test_cross_validation_report_summarize_with_scorer_pos_label_error(
         report.metrics.summarize(scoring=[f1_scorer], pos_label=0)
 
 
-def test_cross_validation_report_summarize_invalid_metric_type(linear_regression_data):
+def test_invalid_metric_type(linear_regression_data):
     """Check that we raise the expected error message if an invalid metric is passed."""
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -467,9 +463,7 @@ def test_cross_validation_report_summarize_invalid_metric_type(linear_regression
 
 
 @pytest.mark.parametrize("aggregate", [None, "mean", ["mean", "std"]])
-def test_cross_validation_report_summarize_indicator_favorability(
-    forest_binary_classification_data, aggregate
-):
+def test_indicator_favorability(forest_binary_classification_data, aggregate):
     """Check that the behaviour of `indicator_favorability` is correct."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)

@@ -5,10 +5,10 @@ from sklearn.metrics import accuracy_score, get_scorer
 from skore import ComparisonReport, MetricsSummaryDisplay
 
 
-def test_comparison_summarize_X_y(
+def test_data_source_external(
     binary_classification_data, comparison_estimator_reports_binary_classification
 ):
-    """Check that `summarize` works with an "X_y" data source."""
+    """Check that `MetricsSummaryDisplay` works with an "X_y" data source."""
     X, y = binary_classification_data
 
     report = comparison_estimator_reports_binary_classification
@@ -42,7 +42,7 @@ def test_comparison_summarize_X_y(
     pd.testing.assert_index_equal(cached_result.columns, expected_columns)
 
 
-def test_cross_validation_report_flat_index(estimator_reports_binary_classification):
+def test_flat_index(estimator_reports_binary_classification):
     """Check that the index is flattened when `flat_index` is True.
 
     Since `pos_label` is None, then by default a MultiIndex would be returned.
@@ -68,7 +68,7 @@ def test_cross_validation_report_flat_index(estimator_reports_binary_classificat
     assert result_df.columns.tolist() == ["report_1", "report_2"]
 
 
-def test_estimator_report_summarize_indicator_favorability(
+def test_indicator_favorability(
     comparison_cross_validation_reports_binary_classification,
 ):
     """Check that the behaviour of `indicator_favorability` is correct."""
@@ -84,7 +84,7 @@ def test_estimator_report_summarize_indicator_favorability(
     assert indicator["Brier score"].tolist() == ["(↘︎)"]
 
 
-def test_comparison_report_aggregate(
+def test_aggregate(
     comparison_estimator_reports_binary_classification,
 ):
     """Passing `aggregate` should have no effect, as this argument is only relevant
@@ -105,7 +105,7 @@ def test_comparison_report_aggregate(
         (get_scorer("accuracy"), None),
     ],
 )
-def test_comparison_report_estimator_summarize_scoring_single_list_equivalence(
+def test_scoring_single_list_equivalence(
     comparison_estimator_reports_binary_classification, scoring, scoring_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a

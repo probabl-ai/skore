@@ -2,39 +2,24 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.datasets import make_regression
-from sklearn.linear_model import LinearRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore._sklearn._plot import PredictionErrorDisplay
 from skore._sklearn._plot.metrics.prediction_error import RangeData
 from skore._utils._testing import check_frame_structure, check_legend_position
 
 
-@pytest.fixture
-def report():
-    X, y = make_regression(random_state=42)
-    estimator_1 = LinearRegression()
-    estimator_2 = LinearRegression(fit_intercept=False)
-    report = ComparisonReport(
-        reports={
-            "estimator_1": CrossValidationReport(estimator_1, X, y),
-            "estimator_2": CrossValidationReport(estimator_2, X, y),
-        }
-    )
-    return report
-
-
-def test_regression(pyplot, report):
+def test_regression(pyplot, comparison_cross_validation_reports_regression):
     """Check the attributes and default plotting behaviour of the prediction error plot
     with a comparison report."""
+    report = comparison_cross_validation_reports_regression
     display = report.metrics.prediction_error()
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
     assert isinstance(display._prediction_error, pd.DataFrame)
     assert list(display._prediction_error["estimator_name"].unique()) == [
-        "estimator_1",
-        "estimator_2",
+        "DummyRegressor_1",
+        "DummyRegressor_2",
     ]
     assert display.data_source == "test"
     assert isinstance(display.range_y_true, RangeData)
@@ -70,8 +55,11 @@ def test_regression(pyplot, report):
     assert display.ax_.get_aspect() not in ("equal", 1.0)
 
 
-def test_regression_actual_vs_predicted(pyplot, report):
+def test_regression_actual_vs_predicted(
+    pyplot, comparison_cross_validation_reports_regression
+):
     """Check the attributes when switching to the "actual_vs_predicted" kind."""
+    report = comparison_cross_validation_reports_regression
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
     assert isinstance(display, PredictionErrorDisplay)
@@ -100,9 +88,10 @@ def test_regression_actual_vs_predicted(pyplot, report):
     assert display.ax_.get_aspect() in ("equal", 1.0)
 
 
-def test_kwargs(pyplot, report):
+def test_kwargs(pyplot, comparison_cross_validation_reports_regression):
     """Check that we can pass keyword arguments to the prediction error plot when
     there is a comparison report."""
+    report = comparison_cross_validation_reports_regression
     display = report.metrics.prediction_error()
     display.plot(
         data_points_kwargs=[{"color": "red"}, {"color": "blue"}],
@@ -115,9 +104,12 @@ def test_kwargs(pyplot, report):
 
 
 @pytest.mark.parametrize("data_points_kwargs", ["not a list", [{"color": "red"}]])
-def test_wrong_kwargs(pyplot, report, data_points_kwargs):
+def test_wrong_kwargs(
+    pyplot, comparison_cross_validation_reports_regression, data_points_kwargs
+):
     """Check that we raise an error when we pass keyword arguments to the prediction
     error plot if there is a comparison report."""
+    report = comparison_cross_validation_reports_regression
     display = report.metrics.prediction_error()
 
     err_msg = (
@@ -153,8 +145,9 @@ def test_constructor(linear_regression_data):
     assert df["estimator_name"].unique().tolist() == report.report_names_
 
 
-def test_frame(report):
+def test_frame(comparison_cross_validation_reports_regression):
     """Test the frame method with regression comparison cross-validation data."""
+    report = comparison_cross_validation_reports_regression
     display = report.metrics.prediction_error()
     df = display.frame()
 

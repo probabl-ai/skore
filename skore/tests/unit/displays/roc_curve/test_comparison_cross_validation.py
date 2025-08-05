@@ -6,7 +6,6 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from matplotlib.lines import Line2D
-from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore._sklearn._plot.metrics.roc_curve import RocCurveDisplay
 from skore._sklearn._plot.utils import sample_mpl_colormap
@@ -14,37 +13,11 @@ from skore._utils._testing import check_frame_structure, check_legend_position
 from skore._utils._testing import check_roc_curve_display_data as check_display_data
 
 
-@pytest.fixture
-def binary_classification_report(binary_classification_data):
-    X, y = binary_classification_data
-    estimator_1 = LogisticRegression()
-    estimator_2 = LogisticRegression(C=10)
-    report = ComparisonReport(
-        reports={
-            "estimator_1": CrossValidationReport(estimator_1, X, y),
-            "estimator_2": CrossValidationReport(estimator_2, X, y),
-        }
-    )
-    return report
-
-
-@pytest.fixture
-def multiclass_classification_report(multiclass_classification_data):
-    X, y = multiclass_classification_data
-    estimator_1 = LogisticRegression()
-    estimator_2 = LogisticRegression(C=10)
-    report = ComparisonReport(
-        reports={
-            "estimator_1": CrossValidationReport(estimator_1, X, y),
-            "estimator_2": CrossValidationReport(estimator_2, X, y),
-        }
-    )
-    return report
-
-
-def test_binary_classification(pyplot, binary_classification_report):
+def test_binary_classification(
+    pyplot, comparison_cross_validation_reports_binary_classification
+):
     """Check the behaviour of `roc_curve` when ML task is "binary-classification"."""
-    report = binary_classification_report
+    report = comparison_cross_validation_reports_binary_classification
     display = report.metrics.roc()
     assert isinstance(display, RocCurveDisplay)
     check_display_data(display)
@@ -87,10 +60,12 @@ def test_binary_classification(pyplot, binary_classification_report):
     assert display.ax_.get_title() == "ROC Curve"
 
 
-def test_multiclass_classification(pyplot, multiclass_classification_report):
+def test_multiclass_classification(
+    pyplot, comparison_cross_validation_reports_multiclass_classification
+):
     """Check the behaviour of `roc_curve` when ML task is "multiclass-classification"
     and `pos_label` is None."""
-    report = multiclass_classification_report
+    report = comparison_cross_validation_reports_multiclass_classification
     display = report.metrics.roc()
     assert isinstance(display, RocCurveDisplay)
     check_display_data(display)
@@ -140,10 +115,12 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
     assert display.figure_.get_suptitle() == "ROC Curve"
 
 
-def test_binary_classification_wrong_kwargs(pyplot, binary_classification_report):
+def test_binary_classification_wrong_kwargs(
+    pyplot, comparison_cross_validation_reports_binary_classification
+):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `roc_curve_kwargs` argument."""
-    report = binary_classification_report
+    report = comparison_cross_validation_reports_binary_classification
     display = report.metrics.roc()
     err_msg = (
         "You intend to plot multiple curves. We expect `roc_curve_kwargs` to be a "
@@ -156,10 +133,10 @@ def test_binary_classification_wrong_kwargs(pyplot, binary_classification_report
 
 @pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}] * 10])
 def test_binary_classification_kwargs(
-    pyplot, binary_classification_report, roc_curve_kwargs
+    pyplot, comparison_cross_validation_reports_binary_classification, roc_curve_kwargs
 ):
     """Check that we can pass keyword arguments to the ROC curve plot."""
-    report = binary_classification_report
+    report = comparison_cross_validation_reports_binary_classification
     display = report.metrics.roc()
     display.plot(
         roc_curve_kwargs=roc_curve_kwargs, chance_level_kwargs={"color": "blue"}
@@ -194,11 +171,11 @@ def test_binary_classification_kwargs(
 
 
 def test_multiclass_classification_wrong_kwargs(
-    pyplot, multiclass_classification_report
+    pyplot, comparison_cross_validation_reports_multiclass_classification
 ):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `roc_curve_kwargs` argument."""
-    report = multiclass_classification_report
+    report = comparison_cross_validation_reports_multiclass_classification
     display = report.metrics.roc()
     err_msg = "You intend to plot multiple curves."
     with pytest.raises(ValueError, match=err_msg):
@@ -208,10 +185,12 @@ def test_multiclass_classification_wrong_kwargs(
         display.plot(roc_curve_kwargs={})
 
 
-def test_multiclass_classification_kwargs(pyplot, multiclass_classification_report):
+def test_multiclass_classification_kwargs(
+    pyplot, comparison_cross_validation_reports_multiclass_classification
+):
     """Check that we can pass keyword arguments to the ROC curve plot for
     multiclass classification."""
-    report = multiclass_classification_report
+    report = comparison_cross_validation_reports_multiclass_classification
     display = report.metrics.roc()
     display.plot(
         roc_curve_kwargs=(
@@ -287,11 +266,13 @@ def test_multiclass_classification_constructor(logistic_multiclass_classificatio
 
 
 @pytest.mark.parametrize("with_roc_auc", [False, True])
-def test_frame_binary_classification(binary_classification_report, with_roc_auc):
+def test_frame_binary_classification(
+    comparison_cross_validation_reports_binary_classification, with_roc_auc
+):
     """Test the frame method with binary classification comparison
     cross-validation data.
     """
-    report = binary_classification_report
+    report = comparison_cross_validation_reports_binary_classification
     display = report.metrics.roc()
     df = display.frame(with_roc_auc=with_roc_auc)
 
@@ -312,12 +293,12 @@ def test_frame_binary_classification(binary_classification_report, with_roc_auc)
 
 @pytest.mark.parametrize("with_roc_auc", [False, True])
 def test_frame_multiclass_classification(
-    multiclass_classification_report, with_roc_auc
+    comparison_cross_validation_reports_multiclass_classification, with_roc_auc
 ):
     """Test the frame method with multiclass classification comparison
     cross-validation data.
     """
-    report = multiclass_classification_report
+    report = comparison_cross_validation_reports_multiclass_classification
     display = report.metrics.roc()
     df = display.frame(with_roc_auc=with_roc_auc)
 

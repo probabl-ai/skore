@@ -4,7 +4,6 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from matplotlib.lines import Line2D
-from sklearn.linear_model import LogisticRegression
 from skore import ComparisonReport, CrossValidationReport
 from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
@@ -16,39 +15,13 @@ from skore._utils._testing import (
 )
 
 
-@pytest.fixture
-def binary_classification_report(binary_classification_data):
-    X, y = binary_classification_data
-    estimator_1 = LogisticRegression()
-    estimator_2 = LogisticRegression(C=10)
-    report = ComparisonReport(
-        reports={
-            "estimator_1": CrossValidationReport(estimator_1, X, y),
-            "estimator_2": CrossValidationReport(estimator_2, X, y),
-        }
-    )
-    return report
-
-
-@pytest.fixture
-def multiclass_classification_report(multiclass_classification_data):
-    X, y = multiclass_classification_data
-    estimator_1 = LogisticRegression()
-    estimator_2 = LogisticRegression(C=10)
-    report = ComparisonReport(
-        reports={
-            "estimator_1": CrossValidationReport(estimator_1, X, y),
-            "estimator_2": CrossValidationReport(estimator_2, X, y),
-        }
-    )
-    return report
-
-
-def test_binary_classification(pyplot, binary_classification_report):
+def test_binary_classification(
+    pyplot, comparison_cross_validation_reports_binary_classification
+):
     """
     Check the behaviour of `precision_recall` when ML task is "binary-classification".
     """
-    report = binary_classification_report
+    report = comparison_cross_validation_reports_binary_classification
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
     check_display_data(display)
@@ -89,12 +62,14 @@ def test_binary_classification(pyplot, binary_classification_report):
     assert display.ax_.get_title() == "Precision-Recall Curve"
 
 
-def test_multiclass_classification(pyplot, multiclass_classification_report):
+def test_multiclass_classification(
+    pyplot, comparison_cross_validation_reports_multiclass_classification
+):
     """
     Check the behaviour of `precision_recall` when ML task is
     "multiclass-classification" and `pos_label` is None.
     """
-    report = multiclass_classification_report
+    report = comparison_cross_validation_reports_multiclass_classification
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
     check_display_data(display)
@@ -141,10 +116,12 @@ def test_multiclass_classification(pyplot, multiclass_classification_report):
     assert display.figure_.get_suptitle() == "Precision-Recall Curve"
 
 
-def test_binary_classification_wrong_kwargs(pyplot, binary_classification_report):
+def test_binary_classification_wrong_kwargs(
+    pyplot, comparison_cross_validation_reports_binary_classification
+):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `pr_curve_kwargs` argument."""
-    report = binary_classification_report
+    report = comparison_cross_validation_reports_binary_classification
     display = report.metrics.precision_recall()
     err_msg = (
         "You intend to plot multiple curves. We expect `pr_curve_kwargs` to be a "
@@ -157,10 +134,10 @@ def test_binary_classification_wrong_kwargs(pyplot, binary_classification_report
 
 @pytest.mark.parametrize("pr_curve_kwargs", [[{"color": "red"}] * 10])
 def test_binary_classification_kwargs(
-    pyplot, binary_classification_report, pr_curve_kwargs
+    pyplot, comparison_cross_validation_reports_binary_classification, pr_curve_kwargs
 ):
     """Check that we can pass keyword arguments to the PR curve plot."""
-    report = binary_classification_report
+    report = comparison_cross_validation_reports_binary_classification
     display = report.metrics.precision_recall()
     display.plot(pr_curve_kwargs=pr_curve_kwargs)
     assert display.lines_[0].get_color() == "red"
@@ -184,11 +161,11 @@ def test_binary_classification_kwargs(
 
 
 def test_multiclass_classification_wrong_kwargs(
-    pyplot, multiclass_classification_report
+    pyplot, comparison_cross_validation_reports_multiclass_classification
 ):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `pr_curve_kwargs` argument."""
-    report = multiclass_classification_report
+    report = comparison_cross_validation_reports_multiclass_classification
     display = report.metrics.precision_recall()
     err_msg = "You intend to plot multiple curves."
     with pytest.raises(ValueError, match=err_msg):
@@ -198,10 +175,12 @@ def test_multiclass_classification_wrong_kwargs(
         display.plot(pr_curve_kwargs={})
 
 
-def test_multiclass_classification_kwargs(pyplot, multiclass_classification_report):
+def test_multiclass_classification_kwargs(
+    pyplot, comparison_cross_validation_reports_multiclass_classification
+):
     """Check that we can pass keyword arguments to the PR curve plot for
     multiclass classification."""
-    report = multiclass_classification_report
+    report = comparison_cross_validation_reports_multiclass_classification
     display = report.metrics.precision_recall()
     display.plot(
         pr_curve_kwargs=(
@@ -274,11 +253,11 @@ def test_multiclass_classification_constructor(forest_multiclass_classification_
 
 @pytest.mark.parametrize("with_average_precision", [False, True])
 def test_frame_binary_classification(
-    binary_classification_report, with_average_precision
+    comparison_cross_validation_reports_binary_classification, with_average_precision
 ):
     """Test the frame method with binary classification comparison cross-validation
     data."""
-    report = binary_classification_report
+    report = comparison_cross_validation_reports_binary_classification
     display = report.metrics.precision_recall()
 
     df = display.frame(with_average_precision=with_average_precision)
@@ -299,11 +278,12 @@ def test_frame_binary_classification(
 
 @pytest.mark.parametrize("with_average_precision", [False, True])
 def test_frame_multiclass_classification(
-    multiclass_classification_report, with_average_precision
+    comparison_cross_validation_reports_multiclass_classification,
+    with_average_precision,
 ):
     """Test the frame method with multiclass classification comparison cross-validation
     data."""
-    report = multiclass_classification_report
+    report = comparison_cross_validation_reports_multiclass_classification
     display = report.metrics.precision_recall()
 
     df = display.frame(with_average_precision=with_average_precision)
