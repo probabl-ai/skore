@@ -7,16 +7,13 @@ from operator import itemgetter
 from tempfile import TemporaryFile
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
-from pydantic import BaseModel, Field
-from pydantic.dataclasses import dataclass
-from pydantic import computed_field
-from typing import Any
-from abc import abstractmethod
 
 import joblib
+from pydantic import computed_field
+from sklearn.model_selection import BaseCrossValidator
+from sklearn.model_selection._split import _CVIterableWrapper
 
 from ..client.client import Client, HTTPStatusError, HUBClient
-from ..item import skore_estimator_report_item
 from . import artefact
 
 if TYPE_CHECKING:
@@ -39,146 +36,8 @@ if TYPE_CHECKING:
         predict_time: float
 
 
-Project = Any
-EstimatorReport = Any
-Artefact = Any
-Metric = Any
-
-
-class Payload(BaseModel):
-    class Config:
-        frozen = True
-
-    def todict(self):
-        return model.model_dump(exclude_none=True)
-
-
-class ReportPayload(Payload):
-    project: Project = Field(repr=False, exclude=True)
-    report: EstimatorReport = Field(repr=False, exclude=True)
-    upload: bool = Field(default=True, repr=False, exclude=True)
-    key: str
-    run_id: int
-
-    @computed_field
-    @cached_property
-    def estimator_class_name(self) -> str:
-        """Return the name of the report's estimator."""
-        return self.report.estimator_name_
-
-    @computed_field
-    @cached_property
-    def dataset_fingerprint(self) -> str:
-        """Return the hash of the targets in the test-set."""
-        import joblib
-
-        return joblib.hash(self.report.y_test)
-
-    @computed_field
-    @cached_property
-    def ml_task(self) -> str:
-        """Return the type of ML task covered by the report."""
-        return self.report._ml_task
-
-    @computed_field
-    @cached_property
-    def parameters(self) -> list[Artefact] | None:
-        if self.upload:
-            return ["<parameters>"]
-        return None
-
-    @computed_field
-    @cached_property
-    @abstractmethod
-    def metrics(self) -> list[Metric] | None:
-        return None
-
-    @computed_field
-    @cached_property
-    @abstractmethod
-    def medias(self) -> list[Metric] | None:
-        return None
-
-
-class EstimatorReportPayload(ReportPayload):
-    @computed_field
-    @cached_property
-    def metrics(self) -> list[Metric] | None:
-        return None
-
-    @computed_field
-    @cached_property
-    def medias(self) -> list[Metric] | None:
-        return None
-
-
-class CrossValidationReportPayload(ReportPayload):
-    @computed_field
-    @cached_property
-    def metrics(self) -> list[Metric] | None:
-        return None
-
-    @computed_field
-    @cached_property
-    def medias(self) -> list[Metric] | None:
-        return None
-
-
 model = EstimatorReportPayload(project="<project>", report="<report>")
 model.todict()
-
-
-class CrossValidationReportPayload(EstimatorReportPayload):
-    splitting_strategy_name: str
-    # for each split and for each sample in the dataset
-    # - 0 if the sample is in the train-set,
-    # - 1 if the sample is in the test-set.
-    splits: list[list[Literal[0, 1]]]
-    # index of the group for each sample in the dataset
-    groups: list[int] | None = None
-    # all class names of the dataset
-    class_names: list[str] | None = None
-    # class name index for each sample in the dataset
-    classes: list[int] | None = None
-    #
-    estimators: list[EstimatorReportPayload]
-
-
-from sklearn.model_selection import BaseCrossValidator
-from sklearn.model_selection._split import _CVIterableWrapper
-
-
-# splitting_strategy_name: str
-is_sklearn_splitter = isinstance(report.splitter, BaseCrossValidator)
-is_iterable_splitter = isinstance(report.splitter, _CVIterableWrapper)
-is_standard_strategy = is_sklearn_splitter and (not is_iterable_splitter)
-strategy = (is_standard_strategy and report.splitter.__class__.__name__) or "custom"
-# splits: list[list[Literal[0, 1]]]
-splits = [[0] * len(report.X)] * len(report.split_indices)
-
-for i, (_, test_indices) in enumerate(report.split_indices):
-    for test_indice in test_indices:
-        splits[i][test_indice] = 1
-
-# groups: list[int] | None = None
-groups = None
-# class_names: list[str] | None = None
-# classes: list[int] | None = None
-if report.ml_task.includes("classification"):
-    class_to_class_indice = defaultdict(lambda: len(class_to_class_indice))
-    sample_to_class_indice = list(map(class_to_class_indice, report.y))
-    classes = list(map(str, class_to_class_indice))
-else:
-    sample_to_class_indice = None
-    classes = None
-
-class_names = classes
-classes = sample_to_class_indice
-
-assert len(classes) == len(report.X)
-assert max(classes) == len(class_names)
-# estimators: list[EstimatorReportPayload]
-estimators = list(map(EstimatorReportPayload, report.estimator_reports_))
 
 
 class Project:
@@ -279,7 +138,7 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        from skore import EstimatorReport, CrossValidationReport
+        from skore import CrossValidationReport, EstimatorReport
 
         if not isinstance(report, EstimatorReport | CrossValidationReport):
             raise TypeError(
