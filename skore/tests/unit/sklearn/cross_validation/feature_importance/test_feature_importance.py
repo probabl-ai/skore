@@ -9,7 +9,6 @@ def test_cross_validation_report_feature_importance_help(capsys, regression_data
     report.feature_importance.help()
     captured = capsys.readouterr()
 
-    # TODO: needs implementation (if needed)
     assert "Available feature importance methods" in captured.out
     assert "coefficients" in captured.out
     assert "frame" in captured.out
