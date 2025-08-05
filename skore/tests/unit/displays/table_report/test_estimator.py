@@ -9,7 +9,7 @@ from skore._sklearn._plot.data.table_report import (
     _resize_categorical_axis,
     _truncate_top_k_categories,
 )
-from skrub import tabular_learner
+from skrub import tabular_pipeline
 from skrub.datasets import fetch_employee_salaries
 
 
@@ -33,8 +33,19 @@ def display():
     X["timedelta_hired"] = (
         pd.Timestamp.now() - X["date_first_hired"]
     ).dt.to_pytimedelta()
+<<<<<<< HEAD:skore/tests/unit/displays/table_report/test_estimator.py
     split_data = train_test_split(X, y, random_state=0, as_dict=True)
     report = EstimatorReport(tabular_learner("regressor"), **split_data)
+=======
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    report = EstimatorReport(
+        tabular_pipeline("regressor"),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+>>>>>>> c9bce48 (update tabular learner to pipeline, new in skrub 0.6):skore/tests/unit/sklearn/plot/table_report/test_estimator.py
     return report.data.analyze()
 
 
