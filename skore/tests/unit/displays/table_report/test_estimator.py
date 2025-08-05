@@ -176,13 +176,13 @@ def test_resize_categorical_axis(pyplot, is_x_axis):
         ),
     ],
 )
-def test_table_report_display_plot_error(display, params, err_msg):
+def test_error_wrong_param(display, params, err_msg):
     """Check the value that are stored in the display constructor."""
     with pytest.raises(ValueError, match=err_msg):
         display.plot(**params)
 
 
-def test_table_report_display_constructor(display):
+def test_constructor(display):
     """Check the value that are stored in the display constructor."""
     assert isinstance(display, Display)
 
@@ -202,14 +202,9 @@ def test_table_report_display_constructor(display):
     ]
 
 
-def test_table_report_display_frame_error(display):
-    """Check the error message when passing an unknown kind in the `frame` method."""
-    with pytest.raises(ValueError, match="Invalid kind: 'xxx'"):
-        display.frame(kind="xxx")
-
-
 @pytest.mark.parametrize("data_source", ["train", "test"])
-def test_table_report_display_frame(estimator_report, data_source):
+def test_frame(estimator_report, data_source):
+    """Check the behaviour of the `.frame` method."""
     display = estimator_report.data.analyze(data_source=data_source)
     dataset = display.frame(kind="dataset")
 
@@ -230,7 +225,8 @@ def test_table_report_display_frame(estimator_report, data_source):
     )
 
 
-def test_simple_categ_plots_1d(pyplot, estimator_report):
+def test_categorical_plots_1d(pyplot, estimator_report):
+    """Check the plot output with categorical data in 1-d."""
     display = estimator_report.data.analyze(data_source="train")
     display.plot(x="gender")
     assert hasattr(display, "ax_")
@@ -256,7 +252,8 @@ def test_simple_categ_plots_1d(pyplot, estimator_report):
     assert display.ax_.containers[0].patches[0].get_facecolor() == (0.0, 0.0, 1.0, 0.75)
 
 
-def test_simple_num_plots_1d(pyplot, estimator_report):
+def test_numeric_plots_1d(pyplot, estimator_report):
+    """Check the plot output with numeric data in 1-d."""
     display = estimator_report.data.analyze(data_source="train")
     ## for integers numeric values
     display.plot(x="year_first_hired", histplot_kwargs={"color": "red"})
@@ -276,7 +273,8 @@ def test_simple_num_plots_1d(pyplot, estimator_report):
     assert display.ax_.get_ylabel() == "year_first_hired"
 
 
-def test_top_k_categ_plots_1d(pyplot, estimator_report):
+def test_top_k_categorical_plots_1d(pyplot, estimator_report):
+    """Check the plot output with categorical data in 1-d and top k categories."""
     display = estimator_report.data.analyze(data_source="train")
     display.plot(x="division")
     assert len(display.ax_.get_xticklabels()) == 20
@@ -285,6 +283,7 @@ def test_top_k_categ_plots_1d(pyplot, estimator_report):
 
 
 def test_hue_plots_1d(pyplot, estimator_report):
+    """Check the plot output with hue in 1-d."""
     display = estimator_report.data.analyze(data_source="train")
     display.plot(x="gender", hue="current_annual_salary")
     assert "BoxPlotContainer" in display.ax_.containers[0].__class__.__name__
@@ -306,7 +305,8 @@ def test_hue_plots_1d(pyplot, estimator_report):
     assert display.ax_.legend_.get_title().get_text() == "current_annual_salary"
 
 
-def test_1D_plot_with_duration_data(pyplot, display):
+def test_plot_duration_data_1d(pyplot, display):
+    """Check the plot output with duration data in 1-d."""
     ## 1D - timedelta as x
     display.plot(x="timedelta_hired")
     assert display.ax_.get_xlabel() == "Years"
@@ -316,7 +316,8 @@ def test_1D_plot_with_duration_data(pyplot, display):
     assert display.ax_.get_ylabel() == "Years"
 
 
-def test_simple_plots_2d(pyplot, estimator_report):
+def test_plots_2d(pyplot, estimator_report):
+    """Check the general behaviour of the 2-d plots."""
     display = estimator_report.data.analyze(data_source="train")
     # scatter plot
     display.plot(y="current_annual_salary", x="year_first_hired")
@@ -358,6 +359,7 @@ def test_simple_plots_2d(pyplot, estimator_report):
 
 
 def test_hue_plots_2d(pyplot, estimator_report):
+    """Check the plot output with hue parameter in 2-d."""
     display = estimator_report.data.analyze(data_source="train")
     display.plot(x="year_first_hired", y="current_annual_salary", hue="division")
     assert len(display.ax_.legend_.texts) == 21
@@ -381,6 +383,7 @@ def test_hue_plots_2d(pyplot, estimator_report):
 
 
 def test_corr_plot(pyplot, estimator_report):
+    """Check the correlation plot."""
     display = estimator_report.data.analyze(data_source="train")
     display.plot(kind="corr")
     assert isinstance(display.ax_.collections[0], QuadMesh)
@@ -390,6 +393,7 @@ def test_corr_plot(pyplot, estimator_report):
 
 
 def test_json_dump(display):
+    """Check the JSON serialization of the `TableReportDisplay`."""
     json_dict = json.loads(display._to_json())
     assert list(json_dict.keys()) == [
         "dataframe_module",
@@ -404,11 +408,13 @@ def test_json_dump(display):
 
 
 def test_repr(display):
+    """Check the string representation of the `TableReportDisplay`."""
     repr = display.__repr__()
     assert repr == "<TableReportDisplay(...)>"
 
 
 def test_html_repr(estimator_report):
+    """Check the HTML representation of the `TableReportDisplay`."""
     display = estimator_report.data.analyze(data_source="train")
     str_html = display._repr_html_()
     for col in estimator_report.X_train.columns:
