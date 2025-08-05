@@ -1148,8 +1148,6 @@ def test_cross_validation_report_precision_recall_pos_label_overwrite(
     ),
 )
 def test_cross_validation_report_split_indices(strategy, binary_classification_data):
-    from numpy.testing import assert_equal
-
     classifier, X, y = binary_classification_data
     X = X[:4]
     y = y[:4]
@@ -1157,4 +1155,4 @@ def test_cross_validation_report_split_indices(strategy, binary_classification_d
     cvr = CrossValidationReport(classifier, X, y, splitter=strategy)
     splitter = check_cv(strategy, y, classifier=True)
 
-    assert_equal(cvr.split_indices, tuple(splitter.split(X=X, y=y)))
+    np.testing.assert_array_equal(cvr.split_indices, tuple(splitter.split(X=X, y=y)))

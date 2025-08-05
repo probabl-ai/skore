@@ -464,6 +464,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return self._split_indices
 
     @property
+    def split_indices(self) -> tuple[tuple[Iterable[int], Iterable[int]]]:
+        return self._split_indices
+
+    @property
     def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
 
