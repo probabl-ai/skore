@@ -172,8 +172,3 @@ class CrossValidationReportPayload(ReportPayload):
             )
             for report in self.report.estimator_reports_
         ]
-
-    @computed_field
-    @cached_property
-    def medias(self) -> list[Metric] | None:
-        return None

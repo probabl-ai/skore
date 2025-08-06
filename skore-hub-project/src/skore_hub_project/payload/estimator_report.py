@@ -55,8 +55,3 @@ class EstimatorReportPayload(ReportPayload):
     )
 
     report: EstimatorReport = Field(repr=False, exclude=True)
-
-    @computed_field
-    @cached_property
-    def medias(self) -> list[Metric] | None:
-        return None

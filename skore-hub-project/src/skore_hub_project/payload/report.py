@@ -1,13 +1,15 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from functools import cached_property
 from typing import Any, ClassVar
 
 from pydantic import Field, computed_field
 
+from ..media.media import Media
+from ..metric.metric import Metric
 from .base import BasePayload
 
+
 Artefact = Any
-Metric = Any
 Report = Any
 Project = Any
 
@@ -16,7 +18,7 @@ Project = Any
 
 class ReportPayload(ABC, BasePayload):
     METRICS: ClassVar[tuple[Metric]]
-
+    MEDIAS: ClassVar[tuple[Media]]
     project: Project = Field(repr=False, exclude=True)
     report: Report = Field(repr=False, exclude=True)
     upload: bool = Field(default=True, repr=False, exclude=True)
@@ -59,5 +61,5 @@ class ReportPayload(ABC, BasePayload):
 
     @computed_field
     @property
-    @abstractmethod
-    def medias(self) -> list[Metric] | None: ...
+    def related_items(self) -> list[Media] | None:
+        return [media(report=self.report) for media in self.MEDIAS]
