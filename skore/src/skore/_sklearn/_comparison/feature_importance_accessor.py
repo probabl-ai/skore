@@ -80,8 +80,9 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
                         .frame()
                         .iloc[:, 0]
                     )
-                coef_frame = pd.DataFrame(coef_dict, index=report_data["feature_names"])
-                coef_frames.append(coef_frame)
+                coef_frames.append(
+                    pd.DataFrame(coef_dict, index=report_data["feature_names"])
+                )
 
         elif isinstance(self._parent.reports_[0], CrossValidationReport):
             for reports_with_same_features in similar_reports.values():
