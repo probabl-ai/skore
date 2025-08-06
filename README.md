@@ -56,9 +56,9 @@ We recommend using a [virtual environment (venv)](https://docs.python.org/3/tuto
 
 Then, you can install skore by using `pip`:
 ```bash
-# If you plan to use skore only locally
+# If you plan to use Skore locally
 pip install -U skore
-# If you wish to also interact with skore hub
+# If you wish to interact with Skore Hub as well
 pip install -U skore[hub]
 ```
 
@@ -90,10 +90,10 @@ cv_report = CrossValidationReport(clf, X, y)
 # See what insights are available
 cv_report.help()
 
-# Access the metrics summary
+# Example: Access the metrics summary
 metrics_summary = cv_report.metrics.summarize().frame()
 
-# Get the ROC curve
+# Example: Get the ROC curve
 roc_plot = cv_report.metrics.roc()
 roc_plot.plot()
 ```
