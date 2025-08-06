@@ -65,7 +65,7 @@ class AccuracyTestMean(AccuracyMean):
     data_source: Literal["test"] = "test"
 
 
-class AccuracySTD(ABC, Metric):
+class AccuracyStd(ABC, Metric):
     report: CrossValidationReport = Field(repr=False, exclude=True)
     name: Literal["accuracy_std"] = "accuracy_std"
     verbose_name: Literal["Accuracy - STD"] = "Accuracy - STD"
@@ -85,9 +85,9 @@ class AccuracySTD(ABC, Metric):
             return cast_to_float(series.iloc[0])
 
 
-class AccuracyTrainSTD(AccuracySTD):
+class AccuracyTrainStd(AccuracyStd):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTestSTD(AccuracySTD):
+class AccuracyTestStd(AccuracyStd):
     data_source: Literal["test"] = "test"
