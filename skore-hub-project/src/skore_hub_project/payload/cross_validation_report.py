@@ -30,9 +30,7 @@ class CrossValidationReportPayload(ReportPayload):
     report: CrossValidationReport = Field(repr=False, exclude=True)
 
     def model_post_init(self, context):
-        self.report.ml_task = self.report._ml_task  # to revert after rebase main
-
-        if "classification" in self.report.ml_task:
+        if "classification" in self.ml_task:
             class_to_class_indice = defaultdict(lambda: len(class_to_class_indice))
 
             self.__sample_to_class_indice = [

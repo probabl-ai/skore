@@ -41,7 +41,7 @@ class ReportPayload(BasePayload):
     @property
     def ml_task(self) -> str:
         """Return the type of ML task covered by the report."""
-        return self.report._ml_task
+        return self.report._ml_task  # change to `self.report.ml_task` after rebase main
 
     @computed_field
     @cached_property
