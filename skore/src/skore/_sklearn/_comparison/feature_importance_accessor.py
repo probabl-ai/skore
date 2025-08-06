@@ -37,6 +37,11 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         If the input is a list of `CrossValidationReport` objects, the coefficients
         across all cross-validation splits are retained and the columns are prefixed
         with the corresponding estimator name to distinguish them.
+
+        Comparison reports with the same features are put under one key and are plotted
+        together.
+        In case of reports some of which use the same features, and some with different,
+        the reports with the same features get plotted together.
         """
         similar_reports = defaultdict(list)
         from skore import CrossValidationReport, EstimatorReport

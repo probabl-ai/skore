@@ -30,6 +30,9 @@ class FeatureImportanceDisplay(
 
         if isinstance(self._parent, EstimatorReport):
             self.coefficient_data.plot.bar()
+            plt.title(f"{self._parent.estimator_name_} Coefficients")
+            plt.tight_layout()
+            plt.show()
         elif isinstance(self._parent, CrossValidationReport):
             plt.figure(figsize=(12, 6))
             self.coefficient_data.boxplot()
@@ -40,17 +43,29 @@ class FeatureImportanceDisplay(
             if isinstance(self._parent.reports_[0], EstimatorReport):
                 for coef_frame in self.coefficient_data:
                     _, ax = plt.subplots()
-                    coef_frame.plot(
-                        kind="bar",
-                        ax=ax,
-                        title=f"{coef_frame.columns[0]} Coefficients",
-                    )
+                    coef_frame.plot.bar(ax=ax)
+                    if len(self.coefficient_data) == 1 or len(coef_frame.columns) > 1:
+                        # If there's only one DataFrame, or if the plot includes
+                        # multiple models with the same features, use a combined title
+                        # like "Model 1 vs Model 2 Coefficients".
+                        #
+                        # For example, if 3 reports are passed and 2 share the same
+                        # features, those two are plotted together with a combined
+                        # title, while the third goes to the else clause and gets its
+                        # title.
+                        plt.title(f"{' vs '.join(coef_frame.columns)} Coefficients")
+                    else:
+                        plt.title(f"{coef_frame.columns[0]} Coefficients")
                     plt.tight_layout()
                     plt.show()
             elif isinstance(self._parent.reports_[0], CrossValidationReport):
                 for coef_frame in self.coefficient_data:
                     _, ax = plt.subplots()
                     coef_frame.boxplot(ax=ax)
+                    plt.title(
+                        f"{coef_frame.columns[0].split('__')[0]}"
+                        "Coefficients across splits"
+                    )
                     plt.xticks(rotation=90)
                     plt.tight_layout()
                     plt.show()
