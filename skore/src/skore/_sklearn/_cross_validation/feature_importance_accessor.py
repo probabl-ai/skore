@@ -35,7 +35,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         >>> from skore import CrossValidationReport
         >>> X, y = make_regression(n_features=3, random_state=42)
         >>> report = (
-        >>>     estimator=Ridge(), X=X, y=y, cv_splitter=5, n_jobs=4
+        >>>     estimator=Ridge(), X=X, y=y, splitter=5, n_jobs=4
         >>> )
         >>> report.feature_importance.coefficients().frame()
                     Intercept	Feature #0	Feature #1	Feature #2

@@ -35,7 +35,7 @@ def test_cross_validation_report_coefficient_frame(
     expected_shape,
 ):
     X, y = data
-    cv_report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+    cv_report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     cv_report_coefs = cv_report.feature_importance.coefficients().frame()
     assert cv_report_coefs.shape == expected_shape
 
