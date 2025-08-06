@@ -141,11 +141,11 @@ def test_all_sklearn_estimators(
     estimator,
     regression_data,
     positive_regression_data,
-    classification_data,
+    binary_classification_data,
 ):
     """Check that `coefficients` is supported for every sklearn estimator."""
     if is_classifier(estimator):
-        X, y = classification_data
+        X, y = binary_classification_data
     elif is_regressor(estimator):
         if get_tags(estimator).target_tags.positive_only:
             X, y = positive_regression_data
