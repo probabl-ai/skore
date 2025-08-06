@@ -1,32 +1,15 @@
 from __future__ import annotations
 
-from functools import cached_property
-from typing import Any, Literal
+from typing import Any, Literal, ClassVar
 
-from pandas import DataFrame
-from pydantic import Field, computed_field
-
-from .metric import Metric, cast_to_float
-
-CrossValidationReport = Any
-EstimatorReport = Any
+from .metric import EstimatorReportMetric, CrossValidationReportMetric
 
 
-class Accuracy(Metric):
-    report: EstimatorReport = Field(repr=False, exclude=True)
+class Accuracy(EstimatorReportMetric):
+    accessor: ClassVar[Literal["metrics.accuracy"]] = "metrics.accuracy"
     name: Literal["accuracy"] = "accuracy"
     verbose_name: Literal["Accuracy"] = "Accuracy"
     greater_is_better: Literal[True] = True
-
-    @computed_field
-    @cached_property
-    def value(self) -> float | None:
-        try:
-            function = self.report.metrics.accuracy
-        except AttributeError:
-            return None
-        else:
-            return cast_to_float(function(data_source=self.data_source))
 
 
 class AccuracyTrain(Accuracy):
@@ -37,27 +20,8 @@ class AccuracyTest(Accuracy):
     data_source: Literal["test"] = "test"
 
 
-class AccuracyAggregate(Metric):
-    report: CrossValidationReport = Field(repr=False, exclude=True)
-    aggregate: ClassVar[Literal["mean", "std"]]
-
-    @computed_field
-    @cached_property
-    def value(self) -> float | None:
-        try:
-            function = self.report.metrics.accuracy
-        except AttributeError:
-            return None
-        else:
-            accuracies: DataFrame = function(
-                data_source=self.data_source,
-                aggregate=self.aggregate,
-            )
-
-            return cast_to_float(accuracies.iloc[0, 0])
-
-
-class AccuracyMean(AccuracyAggregate):
+class AccuracyMean(CrossValidationReportMetric):
+    accessor: ClassVar[Literal["metrics.accuracy"]] = "metrics.accuracy"
     aggregate: ClassVar[Literal["mean"]] = "mean"
     name: Literal["accuracy_mean"] = "accuracy_mean"
     verbose_name: Literal["Accuracy - MEAN"] = "Accuracy - MEAN"
@@ -72,7 +36,8 @@ class AccuracyTestMean(AccuracyMean):
     data_source: Literal["test"] = "test"
 
 
-class AccuracyStd(AccuracyAggregate):
+class AccuracyStd(CrossValidationReportMetric):
+    accessor: ClassVar[Literal["metrics.accuracy"]] = "metrics.accuracy"
     aggregate: ClassVar[Literal["std"]] = "std"
     name: Literal["accuracy_std"] = "accuracy_std"
     verbose_name: Literal["Accuracy - STD"] = "Accuracy - STD"

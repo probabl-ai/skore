@@ -3,10 +3,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from math import isfinite
-from typing import Any, Literal
-from functools import reduce
+from typing import Any, Literal, ClassVar
+from functools import reduce, cached_property
 
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, computed_field, Field
+
+
+CrossValidationReport = Any
+EstimatorReport = Any
 
 
 def cast_to_float(value: Any) -> float | None:
@@ -59,6 +63,6 @@ class CrossValidationReportMetric(Metric):
         except AttributeError:
             return None
 
-        dataFrame = function(data_source=self.data_source, aggregate=self.aggregate)
+        dataframe = function(data_source=self.data_source, aggregate=self.aggregate)
 
         return cast_to_float(dataframe.iloc[0, 0])
