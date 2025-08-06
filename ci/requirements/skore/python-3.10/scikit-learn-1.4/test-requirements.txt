@@ -93,7 +93,6 @@ packaging==25.0
     #   matplotlib
     #   plotly
     #   pytest
-    #   skrub
 pandas==2.3.1
     # via
     #   skore (skore/pyproject.toml)
@@ -129,13 +128,17 @@ pure-eval==0.2.3
     # via stack-data
 pyarrow==20.0.0
     # via skore (skore/pyproject.toml)
+pydot==4.0.1
+    # via skrub
 pygments==2.19.2
     # via
     #   ipython
     #   pytest
     #   rich
 pyparsing==3.2.3
-    # via matplotlib
+    # via
+    #   matplotlib
+    #   pydot
 pytest==8.4.1
     # via
     #   skore (skore/pyproject.toml)
@@ -180,7 +183,7 @@ six==1.17.0
     # via python-dateutil
 skore-local-project==0.0.3
     # via skore (skore/pyproject.toml)
-skrub==0.5.4
+skrub==0.6.0
     # via skore (skore/pyproject.toml)
 stack-data==0.6.3
     # via ipython

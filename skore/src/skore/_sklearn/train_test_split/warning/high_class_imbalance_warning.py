@@ -25,7 +25,7 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
         "case, using train_test_split may not be a good idea because of high "
         "variability in the scores obtained on the test set. "
         "To tackle this challenge we suggest to use skore's "
-        "CrossValidationReport with the `cv_splitter` parameter "
+        "CrossValidationReport with the `splitter` parameter "
         "of your choice. "
     )
 
