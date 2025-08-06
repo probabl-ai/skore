@@ -1,6 +1,6 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import Field, computed_field
 
@@ -14,7 +14,9 @@ Project = Any
 # Create protocols for CrossValidationReport and EstimatorReport
 
 
-class ReportPayload(BasePayload):
+class ReportPayload(ABC, BasePayload):
+    METRICS: ClassVar[tuple[Metric]]
+
     project: Project = Field(repr=False, exclude=True)
     report: Report = Field(repr=False, exclude=True)
     upload: bool = Field(default=True, repr=False, exclude=True)

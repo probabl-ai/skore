@@ -6,11 +6,45 @@ from pydantic import Field, computed_field
 from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
 
-from ..metric.accuracy import (
+from ..metric import (
     AccuracyTestMean,
-    AccuracyTestSTD,
+    AccuracyTestStd,
     AccuracyTrainMean,
-    AccuracyTrainSTD,
+    AccuracyTrainStd,
+    BrierScoreTestMean,
+    BrierScoreTestSTD,
+    BrierScoreTrainMean,
+    BrierScoreTrainSTD,
+    FitTimeMean,
+    FitTimeStd,
+    LogLossTestMean,
+    LogLossTestSTD,
+    LogLossTrainMean,
+    LogLossTrainSTD,
+    PrecisionTestMean,
+    PrecisionTestSTD,
+    PrecisionTrainMean,
+    PrecisionTrainSTD,
+    PredictTimeTestMean,
+    PredictTimeTestStd,
+    PredictTimeTrainMean,
+    PredictTimeTrainStd,
+    R2TestMean,
+    R2TestSTD,
+    R2TrainMean,
+    R2TrainSTD,
+    RecallTestMean,
+    RecallTestSTD,
+    RecallTrainMean,
+    RecallTrainSTD,
+    RmseTestMean,
+    RmseTestSTD,
+    RmseTrainMean,
+    RmseTrainSTD,
+    RocAucTestMean,
+    RocAucTestSTD,
+    RocAucTrainMean,
+    RocAucTrainSTD,
 )
 from ..metric.metric import Metric
 from .estimator_report import EstimatorReportPayload
@@ -20,11 +54,46 @@ CrossValidationReport = Any
 
 
 class CrossValidationReportPayload(ReportPayload):
-    METRICS: ClassVar[list[Metric]] = (
+    METRICS: ClassVar[tuple[Metric]] = (
         AccuracyTestMean,
+        AccuracyTestStd,
         AccuracyTrainMean,
-        AccuracyTestSTD,
-        AccuracyTrainSTD,
+        AccuracyTrainStd,
+        BrierScoreTestMean,
+        BrierScoreTestSTD,
+        BrierScoreTrainMean,
+        BrierScoreTrainSTD,
+        LogLossTestMean,
+        LogLossTestSTD,
+        LogLossTrainMean,
+        LogLossTrainSTD,
+        PrecisionTestMean,
+        PrecisionTestSTD,
+        PrecisionTrainMean,
+        PrecisionTrainSTD,
+        R2TestMean,
+        R2TestSTD,
+        R2TrainMean,
+        R2TrainSTD,
+        RecallTestMean,
+        RecallTestSTD,
+        RecallTrainMean,
+        RecallTrainSTD,
+        RmseTestMean,
+        RmseTestSTD,
+        RmseTrainMean,
+        RmseTrainSTD,
+        RocAucTestMean,
+        RocAucTestSTD,
+        RocAucTrainMean,
+        RocAucTrainSTD,
+        # timings must be calculated last
+        FitTimeMean,
+        FitTimeStd,
+        PredictTimeTestMean,
+        PredictTimeTestStd,
+        PredictTimeTrainMean,
+        PredictTimeTrainStd,
     )
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
