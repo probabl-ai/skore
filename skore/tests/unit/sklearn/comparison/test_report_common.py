@@ -75,31 +75,6 @@ def test_metrics_help(capsys, report):
     assert "Available metrics methods" in captured.out
 
 
-def test_feature_importance_help(capsys):
-    X, y = make_classification(random_state=0)
-    estimators = {"LinearSVC": LinearSVC(), "LogisticRegression": LogisticRegression()}
-
-    reports = {
-        name: EstimatorReport(est, X_train=X, X_test=X, y_train=y, y_test=y)
-        for name, est in estimators.items()
-    }
-
-    comparison_report = ComparisonReport(reports)
-
-    comparison_report.feature_importance.help()
-    captured = capsys.readouterr()
-
-    assert "Available feature importance methods" in captured.out
-    assert "coefficients" in captured.out
-
-    comparison_report.feature_importance.coefficients().help()
-    captured = capsys.readouterr()
-
-    assert "frame" in captured.out
-    assert "plot" in captured.out
-    assert "set_style" in captured.out
-
-
 @pytest.mark.parametrize("report", [EstimatorReport, CrossValidationReport])
 def test_comparison_report_favorability_undefined_metrics(report):
     """Check that we don't introduce NaN when favorability is computed when

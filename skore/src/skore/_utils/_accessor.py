@@ -33,6 +33,34 @@ def _check_parent_estimator_has_coef(parent_estimator) -> bool:
     )
 
 
+def _check_roc_auc(ml_task_and_methods: list[tuple[str, list[str]]]):
+    def check(accessor: Any) -> bool:
+        are_supported_cases = []
+        for ml_task, methods in ml_task_and_methods:
+            is_supported_ml_task = ml_task in accessor._parent._ml_task
+            has_methods = any(
+                hasattr(accessor._parent._estimator, method) for method in methods
+            )
+            are_supported_cases.append(is_supported_ml_task and has_methods)
+
+        if not any(are_supported_cases):
+            err_msg = (
+                f"For the task {accessor._parent._ml_task}, the estimator does not "
+                "provide the right prediction methods. The called function requires "
+                "the following combinations:\n\n"
+            )
+            err_msg += "\n".join(
+                f"- {ml_task} with {methods}"
+                for ml_task, methods in ml_task_and_methods
+            )
+
+            raise AttributeError(err_msg)
+
+        return True
+
+    return check
+
+
 ########################################################################################
 # Accessor related to `EstimatorReport`
 ########################################################################################
