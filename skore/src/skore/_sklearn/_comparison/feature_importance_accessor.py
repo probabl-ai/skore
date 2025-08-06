@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import TYPE_CHECKING, cast
 
+import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
@@ -64,6 +65,14 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
                     feature_names = [
                         f"Feature #{i}" for i in range(report_estimator.n_features_in_)
                     ]
+
+            if hasattr(report_estimator, "intercept_"):
+                intercept = np.atleast_2d(report_estimator.intercept_)
+            else:
+                intercept = np.atleast_2d(report_estimator.regressor_.intercept_)
+
+            if intercept is not None:
+                feature_names = ["Intercept"] + feature_names
 
             report_key = tuple(sorted(feature_names))
             similar_reports[report_key].append(
