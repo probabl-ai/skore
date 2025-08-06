@@ -14,7 +14,9 @@ class FeatureImportanceDisplay(
 
     def frame(self):
         """Return the coefficients as a dataframe."""
-        if isinstance(self.coefficient_data, list):
+        from skore._sklearn._comparison import ComparisonReport
+
+        if isinstance(self._parent, ComparisonReport):
             return pd.concat(self.coefficient_data, axis=1)
         return self.coefficient_data
 
@@ -22,10 +24,9 @@ class FeatureImportanceDisplay(
     def _plot_matplotlib(self, **kwargs):
         import matplotlib.pyplot as plt
 
-        # avoid circular imports
-        from skore._sklearn._comparison.report import ComparisonReport
-        from skore._sklearn._cross_validation.report import CrossValidationReport
-        from skore._sklearn._estimator.report import EstimatorReport
+        from skore._sklearn._comparison import ComparisonReport
+        from skore._sklearn._cross_validation import CrossValidationReport
+        from skore._sklearn._estimator import EstimatorReport
 
         if isinstance(self._parent, EstimatorReport):
             self.coefficient_data.plot.bar()
