@@ -1,22 +1,22 @@
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.datasets import make_regression
 from skore import CrossValidationReport, Display, TableReportDisplay
 from skrub import tabular_pipeline
-from skrub.datasets import fetch_employee_salaries
 
 
 @pytest.fixture
 def cross_validation_report():
-    data = fetch_employee_salaries()
-    X, y = data.X, data.y
+    X, y = make_regression(n_samples=100, n_features=5, random_state=42)
+    X = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(5)])
+    y = pd.Series(y, name="Target_")
     return CrossValidationReport(tabular_pipeline("regressor"), X=X, y=y)
 
 
 @pytest.fixture
 def display():
-    data = fetch_employee_salaries()
-    X, y = data.X, data.y
+    X, y = make_regression(n_samples=100, n_features=5, random_state=42)
     report = CrossValidationReport(tabular_pipeline("regressor"), X=X, y=y)
     return report.data.analyze()
 
@@ -87,8 +87,8 @@ def test_without_y(cross_validation_report):
     assert isinstance(display, TableReportDisplay)
 
     df = display.frame(kind="dataset")
-    assert "gender" in df.columns
-    assert "current_annual_salary" not in df.columns
+    assert "Feature_0" in df.columns
+    assert "Target_" not in df.columns
 
 
 @pytest.mark.parametrize(
