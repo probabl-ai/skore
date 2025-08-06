@@ -321,7 +321,7 @@ class PrecisionRecallCurveDisplay(
                         "average_precision"
                     ]
                     average_precision_mean = np.mean(average_precision)
-                    average_precision_std = np.std(average_precision)
+                    average_precision_std = np.std(average_precision, ddof=1)
 
                     line_kwargs["color"] = class_colors[class_idx]
                     line_kwargs["alpha"] = 0.3
