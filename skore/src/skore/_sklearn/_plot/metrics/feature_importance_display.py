@@ -36,31 +36,27 @@ class FeatureImportanceDisplay(
             plt.tight_layout()
             plt.show()
         elif isinstance(self._parent, ComparisonReport):
-            if len(self.coefficient_data) == 1:
-                self.coefficient_data[0].plot.bar()
-                plt.show()
-            else:
-                if isinstance(self._parent.reports_[0], EstimatorReport):
-                    for coef_frame in self.coefficient_data:
-                        _, ax = plt.subplots()
-                        coef_frame.plot(
-                            kind="bar",
-                            ax=ax,
-                            title=f"{coef_frame.columns[0]} Coefficients",
-                        )
-                        plt.tight_layout()
-                        plt.show()
-                elif isinstance(self._parent.reports_[0], CrossValidationReport):
-                    for coef_frame in self.coefficient_data:
-                        _, ax = plt.subplots()
-                        coef_frame.boxplot(ax=ax)
-                        plt.xticks(rotation=90)
-                        plt.tight_layout()
-                        plt.show()
-                else:
-                    raise TypeError(
-                        f"Unexpected report type: {type(self._parent.reports_[0])}"
+            if isinstance(self._parent.reports_[0], EstimatorReport):
+                for coef_frame in self.coefficient_data:
+                    _, ax = plt.subplots()
+                    coef_frame.plot(
+                        kind="bar",
+                        ax=ax,
+                        title=f"{coef_frame.columns[0]} Coefficients",
                     )
+                    plt.tight_layout()
+                    plt.show()
+            elif isinstance(self._parent.reports_[0], CrossValidationReport):
+                for coef_frame in self.coefficient_data:
+                    _, ax = plt.subplots()
+                    coef_frame.boxplot(ax=ax)
+                    plt.xticks(rotation=90)
+                    plt.tight_layout()
+                    plt.show()
+            else:
+                raise TypeError(
+                    f"Unexpected report type: {type(self._parent.reports_[0])}"
+                )
         else:
             raise NotImplementedError(
                 f"Cannot use plot() method on {type(self._parent)}"
