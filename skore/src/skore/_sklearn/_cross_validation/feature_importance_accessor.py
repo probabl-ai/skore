@@ -38,13 +38,13 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         >>>     estimator=Ridge(), X=X, y=y, splitter=5, n_jobs=4
         >>> )
         >>> report.feature_importance.coefficients().frame()
-                    Intercept	Feature #0	Feature #1	Feature #2
+            Intercept	Feature #0	Feature #1	Feature #2
         Split index
-        0       	-0.006675	63.354134	97.383292	56.331976
-        1       	0.119352	63.356481	97.243977	56.258765
-        2       	0.102091	63.119282	97.286351	56.124499
-        3       	0.185287	63.032516	97.343662	56.398138
-        4       	0.300477	62.997455	96.729395	56.075696
+        0	0.064837	74.100966	27.309656	17.367865
+        1	0.030257	74.276481	27.571421	17.392395
+        2	0.000084	74.107126	27.614821	17.277730
+        3	0.145613	74.207645	27.523667	17.391055
+        4	0.033695	74.259575	27.599610	17.390481
         >>> report.feature_importance.coefficients().plot() # shows plot
         """
         coefficient_tables = []
