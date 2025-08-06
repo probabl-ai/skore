@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC
 from functools import cached_property
 from typing import Any, Literal
 
@@ -13,7 +12,7 @@ CrossValidationReport = Any
 EstimatorReport = Any
 
 
-class Accuracy(ABC, Metric):
+class Accuracy(Metric):
     report: EstimatorReport = Field(repr=False, exclude=True)
     name: Literal["accuracy"] = "accuracy"
     verbose_name: Literal["Accuracy"] = "Accuracy"
@@ -38,7 +37,7 @@ class AccuracyTest(Accuracy):
     data_source: Literal["test"] = "test"
 
 
-class AccuracyAggregate(ABC, Metric):
+class AccuracyAggregate(Metric):
     report: CrossValidationReport = Field(repr=False, exclude=True)
     aggregate: ClassVar[Literal["mean", "std"]]
 
@@ -58,7 +57,7 @@ class AccuracyAggregate(ABC, Metric):
             return cast_to_float(accuracies.iloc[0, 0])
 
 
-class AccuracyMean(ABC, AccuracyAggregate):
+class AccuracyMean(AccuracyAggregate):
     aggregate: ClassVar[Literal["mean"]] = "mean"
     name: Literal["accuracy_mean"] = "accuracy_mean"
     verbose_name: Literal["Accuracy - MEAN"] = "Accuracy - MEAN"

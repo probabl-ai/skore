@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC
 from functools import cached_property
 from typing import Any, Literal, ClassVar
 
@@ -29,7 +28,7 @@ class FitTime(Metric):
         return cast_to_float(fit_time)
 
 
-class FitTimeAggregate(ABC, Metric):
+class FitTimeAggregate(Metric):
     """
     Notes
     -----
@@ -69,7 +68,7 @@ class FitTimeStd(FitTimeAggregate):
     verbose_name: Literal["Fit time (s) - STD"] = "Fit time (s) - STD"
 
 
-class PredictTime(ABC, Metric):
+class PredictTime(Metric):
     report: EstimatorReport = Field(repr=False, exclude=True)
     name: Literal["predict_time"] = "predict_time"
     verbose_name: Literal["Predict time (s)"] = "Predict time (s)"
@@ -93,7 +92,7 @@ class PredictTimeTest(PredictTime):
     data_source: Literal["test"] = "test"
 
 
-class PredictTimeAggregate(ABC, Metric):
+class PredictTimeAggregate(Metric):
     """
     Notes
     -----
@@ -135,7 +134,7 @@ class PredictTimeTestMean(PredictTimeMean):
     data_source: Literal["test"] = "test"
 
 
-class PredictTimeTrainStd(PredictTimeAggregate):
+class PredictTimeStd(PredictTimeAggregate):
     aggregate: ClassVar[Literal["std"]] = "std"
     name: Literal["predict_time_std"] = "predict_time_std"
     verbose_name: Literal["Predict time (s) - STD"] = "Predict time (s) - STD"
