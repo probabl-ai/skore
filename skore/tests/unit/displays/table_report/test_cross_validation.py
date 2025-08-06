@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.cluster import KMeans
 from sklearn.datasets import make_regression
 from skore import CrossValidationReport, Display, TableReportDisplay
 from skrub import tabular_pipeline
@@ -127,3 +128,10 @@ def test_html_repr(cross_validation_report):
         assert col in str_html
 
     assert "<skrub-table-report" in str_html
+
+
+def test_check_y_required():
+    """Check that we raise an error when y is not provided."""
+    X = np.random.rand(100, 5)
+    with pytest.raises(ValueError):
+        CrossValidationReport(KMeans(), X=X).data.analyze()
