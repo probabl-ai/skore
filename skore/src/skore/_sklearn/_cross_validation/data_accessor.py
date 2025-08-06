@@ -134,4 +134,4 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.EstimatorReport.data")
+        return self._rich_repr(class_name="skore.CrossValidationReport.data")
