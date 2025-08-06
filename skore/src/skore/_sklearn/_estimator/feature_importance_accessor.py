@@ -236,7 +236,19 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             columns=columns,
         )
 
-        return FeatureImportanceDisplay(df, self._parent)
+        self.coefficient_data = df
+        return FeatureImportanceDisplay(self)
+
+    def _dispatch_coefficient_frame(self):
+        return self.coefficient_data
+
+    def _dispatch_coefficient_plot(self, **kwargs):
+        import matplotlib.pyplot as plt
+
+        self.coefficient_data.plot.bar()
+        plt.title(f"{self._parent.estimator_name_} Coefficients")
+        plt.tight_layout()
+        plt.show()
 
     @available_if(_check_has_feature_importances())
     def mean_decrease_impurity(self):

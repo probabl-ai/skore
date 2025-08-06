@@ -99,8 +99,21 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
 
         combined = pd.concat(coefficient_tables)
         combined.index.name = "Split index"
+        self.coefficient_data = combined
 
-        return FeatureImportanceDisplay(combined, self._parent)
+        return FeatureImportanceDisplay(self)
+
+    def _dispatch_coefficient_frame(self):
+        return self.coefficient_data
+
+    def _dispatch_coefficient_plot(self, **kwargs):
+        import matplotlib.pyplot as plt
+
+        plt.figure(figsize=(12, 6))
+        self.coefficient_data.boxplot()
+        plt.title("Coefficient variance across CV splits")
+        plt.tight_layout()
+        plt.show()
 
     ####################################################################################
     # Methods related to the help tree

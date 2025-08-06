@@ -101,7 +101,49 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         else:
             raise TypeError(f"Unexpected report type: {type(self._parent.reports_[0])}")
 
-        return FeatureImportanceDisplay(coef_frames, self._parent)
+        self.coefficient_data = coef_frames
+
+        return FeatureImportanceDisplay(self)
+
+    def _dispatch_coefficient_frame(self):
+        return pd.concat(self.coefficient_data, axis=1)
+
+    def _dispatch_coefficient_plot(self, **kwargs):
+        import matplotlib.pyplot as plt
+
+        from skore._sklearn._cross_validation import CrossValidationReport
+        from skore._sklearn._estimator import EstimatorReport
+
+        if isinstance(self._parent.reports_[0], EstimatorReport):
+            for coef_frame in self.coefficient_data:
+                _, ax = plt.subplots()
+                coef_frame.plot.bar(ax=ax)
+                if len(self.coefficient_data) == 1 or len(coef_frame.columns) > 1:
+                    # If there's only one DataFrame, or if the plot includes
+                    # multiple models with the same features, use a combined title
+                    # like "Model 1 vs Model 2 Coefficients".
+                    #
+                    # For example, if 3 reports are passed and 2 share the same
+                    # features, those two are plotted together with a combined
+                    # title, while the third goes to the else clause and gets its
+                    # title.
+                    plt.title(f"{' vs '.join(coef_frame.columns)} Coefficients")
+                else:
+                    plt.title(f"{coef_frame.columns[0]} Coefficients")
+                plt.tight_layout()
+                plt.show()
+        elif isinstance(self._parent.reports_[0], CrossValidationReport):
+            for coef_frame in self.coefficient_data:
+                _, ax = plt.subplots()
+                coef_frame.boxplot(ax=ax)
+                plt.title(
+                    f"{coef_frame.columns[0].split('__')[0]} Coefficients across splits"
+                )
+                plt.xticks(rotation=90)
+                plt.tight_layout()
+                plt.show()
+        else:
+            raise TypeError(f"Unexpected report type: {type(self._parent.reports_[0])}")
 
     ####################################################################################
     # Methods related to the help tree
