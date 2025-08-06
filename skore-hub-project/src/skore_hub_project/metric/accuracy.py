@@ -58,33 +58,31 @@ class AccuracyAggregate(ABC, Metric):
             return cast_to_float(accuracies.iloc[0, 0])
 
 
-class AccuracyTrainMean(AccuracyAggregate):
+class AccuracyMean(ABC, AccuracyAggregate):
     aggregate: ClassVar[Literal["mean"]] = "mean"
     name: Literal["accuracy_mean"] = "accuracy_mean"
     verbose_name: Literal["Accuracy - MEAN"] = "Accuracy - MEAN"
     greater_is_better: Literal[True] = True
+
+
+class AccuracyTrainMean(AccuracyMean):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTestMean(AccuracyAggregate):
-    aggregate: ClassVar[Literal["mean"]] = "mean"
-    name: Literal["accuracy_mean"] = "accuracy_mean"
-    verbose_name: Literal["Accuracy - MEAN"] = "Accuracy - MEAN"
-    greater_is_better: Literal[True] = True
+class AccuracyTestMean(AccuracyMean):
     data_source: Literal["test"] = "test"
 
 
-class AccuracyTrainStd(AccuracyAggregate):
+class AccuracyStd(AccuracyAggregate):
     aggregate: ClassVar[Literal["std"]] = "std"
     name: Literal["accuracy_std"] = "accuracy_std"
     verbose_name: Literal["Accuracy - STD"] = "Accuracy - STD"
     greater_is_better: Literal[True] = False
+
+
+class AccuracyTrainStd(AccuracyStd):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTestStd(AccuracyAggregate):
-    aggregate: ClassVar[Literal["std"]] = "std"
-    name: Literal["accuracy_std"] = "accuracy_std"
-    verbose_name: Literal["Accuracy - STD"] = "Accuracy - STD"
-    greater_is_better: Literal[True] = False
+class AccuracyTestStd(AccuracyStd):
     data_source: Literal["test"] = "test"

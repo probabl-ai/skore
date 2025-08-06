@@ -121,17 +121,17 @@ class PredictTimeAggregate(ABC, Metric):
         return cast_to_float(predict_times.iloc[0])
 
 
-class PredictTimeTrainMean(PredictTimeAggregate):
+class PredictTimeMean(PredictTimeAggregate):
     aggregate: ClassVar[Literal["mean"]] = "mean"
     name: Literal["predict_time_mean"] = "predict_time_mean"
     verbose_name: Literal["Predict time (s) - MEAN"] = "Predict time (s) - MEAN"
+
+
+class PredictTimeTrainMean(PredictTimeMean):
     data_source: Literal["train"] = "train"
 
 
-class PredictTimeTestMean(PredictTimeAggregate):
-    aggregate: ClassVar[Literal["mean"]] = "mean"
-    name: Literal["predict_time_mean"] = "predict_time_mean"
-    verbose_name: Literal["Predict time (s) - MEAN"] = "Predict time (s) - MEAN"
+class PredictTimeTestMean(PredictTimeMean):
     data_source: Literal["test"] = "test"
 
 
@@ -139,11 +139,11 @@ class PredictTimeTrainStd(PredictTimeAggregate):
     aggregate: ClassVar[Literal["std"]] = "std"
     name: Literal["predict_time_std"] = "predict_time_std"
     verbose_name: Literal["Predict time (s) - STD"] = "Predict time (s) - STD"
+
+
+class PredictTimeTrainStd(PredictTimeStd):
     data_source: Literal["train"] = "train"
 
 
-class PredictTimeTestStd(PredictTimeAggregate):
-    aggregate: ClassVar[Literal["std"]] = "std"
-    name: Literal["predict_time_std"] = "predict_time_std"
-    verbose_name: Literal["Predict time (s) - STD"] = "Predict time (s) - STD"
+class PredictTimeTestStd(PredictTimeStd):
     data_source: Literal["test"] = "test"
