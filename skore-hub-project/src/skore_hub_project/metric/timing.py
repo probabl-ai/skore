@@ -47,7 +47,7 @@ class FitTimeAggregate(ABC, Metric):
     @computed_field
     @cached_property
     def value(self) -> float | None:
-        timings: DataFrame = self.report.metrics.timings(self.aggregate)
+        timings: DataFrame = self.report.metrics.timings(aggregate=self.aggregate)
 
         try:
             fit_times: Series = timings.loc[f"Fit time (s)"]
@@ -111,7 +111,7 @@ class PredictTimeAggregate(ABC, Metric):
     @computed_field
     @cached_property
     def value(self) -> float | None:
-        timings: DataFrame = self.report.metrics.timings(self.aggregate)
+        timings: DataFrame = self.report.metrics.timings(aggregate=self.aggregate)
 
         try:
             predict_times: Series = timings.loc[f"Predict time {self.data_source} (s)"]
