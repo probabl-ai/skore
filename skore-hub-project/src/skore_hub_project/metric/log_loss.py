@@ -12,42 +12,43 @@ CrossValidationReport = Any
 EstimatorReport = Any
 
 
-class Accuracy(ABC, Metric):
+class LogLoss(ABC, Metric):
     report: EstimatorReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy"] = "accuracy"
-    verbose_name: Literal["Accuracy"] = "Accuracy"
-    greater_is_better: Literal[True] = True
+    name: Literal["log_loss"] = "log_loss"
+    verbose_name: Literal["Log loss"] = "Log loss"
+    greater_is_better: Literal[True] = False
+    position: Literal[4] = 4
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.log_loss
         except AttributeError:
             return None
         else:
             return cast_to_float(function(data_source=self.data_source))
 
 
-class AccuracyTrain(Accuracy):
+class LogLossTrain(LogLoss):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTest(Accuracy):
+class LogLossTest(LogLoss):
     data_source: Literal["test"] = "test"
 
 
-class AccuracyMean(ABC, Metric):
+class LogLossMean(ABC, Metric):
     report: CrossValidationReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy_mean"] = "accuracy_mean"
-    verbose_name: Literal["Accuracy - MEAN"] = "Accuracy - MEAN"
-    greater_is_better: Literal[True] = True
+    name: Literal["log_loss"] = "log_loss_mean"
+    verbose_name: Literal["Log loss - MEAN"] = "Log loss - MEAN"
+    greater_is_better: Literal[True] = False
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.log_loss
         except AttributeError:
             return None
         else:
@@ -57,25 +58,25 @@ class AccuracyMean(ABC, Metric):
             return cast_to_float(series.iloc[0])
 
 
-class AccuracyTrainMean(AccuracyMean):
+class LogLossTrainMean(LogLossMean):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTestMean(AccuracyMean):
+class LogLossTestMean(LogLossMean):
     data_source: Literal["test"] = "test"
 
 
-class AccuracySTD(ABC, Metric):
+class LogLossSTD(ABC, Metric):
     report: CrossValidationReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy_std"] = "accuracy_std"
-    verbose_name: Literal["Accuracy - STD"] = "Accuracy - STD"
+    name: Literal["log_loss_std"] = "log_loss_std"
+    verbose_name: Literal["Log loss - STD"] = "Log loss - STD"
     greater_is_better: Literal[False] = False
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.log_loss
         except AttributeError:
             return None
         else:
@@ -85,9 +86,9 @@ class AccuracySTD(ABC, Metric):
             return cast_to_float(series.iloc[0])
 
 
-class AccuracyTrainSTD(AccuracySTD):
+class LogLossTrainSTD(LogLossSTD):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTestSTD(AccuracySTD):
+class LogLossTestSTD(LogLossSTD):
     data_source: Literal["test"] = "test"

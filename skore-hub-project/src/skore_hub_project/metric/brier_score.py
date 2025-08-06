@@ -12,42 +12,42 @@ CrossValidationReport = Any
 EstimatorReport = Any
 
 
-class Accuracy(ABC, Metric):
+class BrierScore(ABC, Metric):
     report: EstimatorReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy"] = "accuracy"
-    verbose_name: Literal["Accuracy"] = "Accuracy"
-    greater_is_better: Literal[True] = True
+    name: Literal["brier_score"] = "brier_score"
+    verbose_name: Literal["Brier score"] = "Brier score"
+    greater_is_better: Literal[True] = False
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.brier_score
         except AttributeError:
             return None
         else:
             return cast_to_float(function(data_source=self.data_source))
 
 
-class AccuracyTrain(Accuracy):
+class BrierScoreTrain(BrierScore):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTest(Accuracy):
+class BrierScoreTest(BrierScore):
     data_source: Literal["test"] = "test"
 
 
-class AccuracyMean(ABC, Metric):
+class BrierScoreMean(ABC, Metric):
     report: CrossValidationReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy_mean"] = "accuracy_mean"
-    verbose_name: Literal["Accuracy - MEAN"] = "Accuracy - MEAN"
-    greater_is_better: Literal[True] = True
+    name: Literal["brier_score_mean"] = "brier_score_mean"
+    verbose_name: Literal["Brier score - MEAN"] = "Brier score - MEAN"
+    greater_is_better: Literal[True] = False
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.brier_score
         except AttributeError:
             return None
         else:
@@ -57,25 +57,25 @@ class AccuracyMean(ABC, Metric):
             return cast_to_float(series.iloc[0])
 
 
-class AccuracyTrainMean(AccuracyMean):
+class BrierScoreTrainMean(BrierScoreMean):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTestMean(AccuracyMean):
+class BrierScoreTestMean(BrierScoreMean):
     data_source: Literal["test"] = "test"
 
 
-class AccuracySTD(ABC, Metric):
+class BrierScoreSTD(ABC, Metric):
     report: CrossValidationReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy_std"] = "accuracy_std"
-    verbose_name: Literal["Accuracy - STD"] = "Accuracy - STD"
+    name: Literal["brier_score_std"] = "brier_score_std"
+    verbose_name: Literal["Brier score - STD"] = "Brier score - STD"
     greater_is_better: Literal[False] = False
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.brier_score
         except AttributeError:
             return None
         else:
@@ -85,9 +85,9 @@ class AccuracySTD(ABC, Metric):
             return cast_to_float(series.iloc[0])
 
 
-class AccuracyTrainSTD(AccuracySTD):
+class BrierScoreTrainSTD(BrierScoreSTD):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTestSTD(AccuracySTD):
+class BrierScoreTestSTD(BrierScoreSTD):
     data_source: Literal["test"] = "test"

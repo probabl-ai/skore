@@ -12,42 +12,42 @@ CrossValidationReport = Any
 EstimatorReport = Any
 
 
-class Accuracy(ABC, Metric):
+class Recall(ABC, Metric):
     report: EstimatorReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy"] = "accuracy"
-    verbose_name: Literal["Accuracy"] = "Accuracy"
+    name: Literal["recall"] = "recall"
+    verbose_name: Literal["Recall"] = "Recall"
     greater_is_better: Literal[True] = True
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.recall
         except AttributeError:
             return None
         else:
             return cast_to_float(function(data_source=self.data_source))
 
 
-class AccuracyTrain(Accuracy):
+class RecallTrain(Recall):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTest(Accuracy):
+class RecallTest(Recall):
     data_source: Literal["test"] = "test"
 
 
-class AccuracyMean(ABC, Metric):
+class RecallMean(ABC, Metric):
     report: CrossValidationReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy_mean"] = "accuracy_mean"
-    verbose_name: Literal["Accuracy - MEAN"] = "Accuracy - MEAN"
+    name: Literal["recall_mean"] = "recall_mean"
+    verbose_name: Literal["Recall - MEAN"] = "Recall - MEAN"
     greater_is_better: Literal[True] = True
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.recall
         except AttributeError:
             return None
         else:
@@ -57,25 +57,25 @@ class AccuracyMean(ABC, Metric):
             return cast_to_float(series.iloc[0])
 
 
-class AccuracyTrainMean(AccuracyMean):
+class RecallTrainMean(RecallMean):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTestMean(AccuracyMean):
+class RecallTestMean(RecallMean):
     data_source: Literal["test"] = "test"
 
 
-class AccuracySTD(ABC, Metric):
+class RecallSTD(ABC, Metric):
     report: CrossValidationReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy_std"] = "accuracy_std"
-    verbose_name: Literal["Accuracy - STD"] = "Accuracy - STD"
+    name: Literal["recall_std"] = "recall_std"
+    verbose_name: Literal["Recall - STD"] = "Recall - STD"
     greater_is_better: Literal[False] = False
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.recall
         except AttributeError:
             return None
         else:
@@ -85,9 +85,9 @@ class AccuracySTD(ABC, Metric):
             return cast_to_float(series.iloc[0])
 
 
-class AccuracyTrainSTD(AccuracySTD):
+class RecallTrainSTD(RecallSTD):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTestSTD(AccuracySTD):
+class RecallTestSTD(RecallSTD):
     data_source: Literal["test"] = "test"

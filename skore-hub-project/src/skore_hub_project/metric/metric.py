@@ -21,7 +21,7 @@ class Metric(BaseModel):
     name: str
     verbose_name: str
     data_source: Literal["train", "test"] | None = None
-    greater_is_better: bool
+    greater_is_better: bool | None = None
     position: int | None = None
 
     @computed_field

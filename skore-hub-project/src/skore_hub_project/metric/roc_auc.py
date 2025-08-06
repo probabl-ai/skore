@@ -12,42 +12,43 @@ CrossValidationReport = Any
 EstimatorReport = Any
 
 
-class Accuracy(ABC, Metric):
+class RocAuc(ABC, Metric):
     report: EstimatorReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy"] = "accuracy"
-    verbose_name: Literal["Accuracy"] = "Accuracy"
+    name: Literal["roc_auc"] = "roc_auc"
+    verbose_name: Literal["ROC AUC"] = "ROC AUC"
     greater_is_better: Literal[True] = True
+    position: Literal[3] = 3
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.roc_auc
         except AttributeError:
             return None
         else:
             return cast_to_float(function(data_source=self.data_source))
 
 
-class AccuracyTrain(Accuracy):
+class RocAucTrain(RocAuc):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTest(Accuracy):
+class RocAucTest(RocAuc):
     data_source: Literal["test"] = "test"
 
 
-class AccuracyMean(ABC, Metric):
+class RocAucMean(ABC, Metric):
     report: CrossValidationReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy_mean"] = "accuracy_mean"
-    verbose_name: Literal["Accuracy - MEAN"] = "Accuracy - MEAN"
+    name: Literal["roc_auc_mean"] = "roc_auc_mean"
+    verbose_name: Literal["ROC AUC - MEAN"] = "ROC AUC - MEAN"
     greater_is_better: Literal[True] = True
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.roc_auc
         except AttributeError:
             return None
         else:
@@ -57,25 +58,25 @@ class AccuracyMean(ABC, Metric):
             return cast_to_float(series.iloc[0])
 
 
-class AccuracyTrainMean(AccuracyMean):
+class RocAucTrainMean(RocAucMean):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTestMean(AccuracyMean):
+class RocAucTestMean(RocAucMean):
     data_source: Literal["test"] = "test"
 
 
-class AccuracySTD(ABC, Metric):
+class RocAucSTD(ABC, Metric):
     report: CrossValidationReport = Field(repr=False, exclude=True)
-    name: Literal["accuracy_std"] = "accuracy_std"
-    verbose_name: Literal["Accuracy - STD"] = "Accuracy - STD"
+    name: Literal["roc_auc_std"] = "roc_auc_std"
+    verbose_name: Literal["ROC AUC - STD"] = "ROC AUC - STD"
     greater_is_better: Literal[False] = False
 
     @computed_field
     @cached_property
     def value(self) -> float | None:
         try:
-            function = self.report.metrics.accuracy
+            function = self.report.metrics.roc_auc
         except AttributeError:
             return None
         else:
@@ -85,9 +86,9 @@ class AccuracySTD(ABC, Metric):
             return cast_to_float(series.iloc[0])
 
 
-class AccuracyTrainSTD(AccuracySTD):
+class RocAucTrainSTD(RocAucSTD):
     data_source: Literal["train"] = "train"
 
 
-class AccuracyTestSTD(AccuracySTD):
+class RocAucTestSTD(RocAucSTD):
     data_source: Literal["test"] = "test"
