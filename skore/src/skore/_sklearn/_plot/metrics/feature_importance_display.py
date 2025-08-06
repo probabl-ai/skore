@@ -63,7 +63,7 @@ class FeatureImportanceDisplay(
                     _, ax = plt.subplots()
                     coef_frame.boxplot(ax=ax)
                     plt.title(
-                        f"{coef_frame.columns[0].split('__')[0]}"
+                        f"{coef_frame.columns[0].split('__')[0]} "
                         "Coefficients across splits"
                     )
                     plt.xticks(rotation=90)

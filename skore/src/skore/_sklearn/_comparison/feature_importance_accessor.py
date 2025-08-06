@@ -40,8 +40,8 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
 
         Comparison reports with the same features are put under one key and are plotted
         together.
-        In case of reports some of which use the same features, and some with different,
-        the reports with the same features get plotted together.
+        When some reports share the same features and others do not, those with the same
+        features are plotted together.
         """
         similar_reports = defaultdict(list)
         from skore import CrossValidationReport, EstimatorReport
