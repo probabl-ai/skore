@@ -29,7 +29,7 @@ When it comes to data science, you have excellent tools at your disposal: `panda
 
 **But here's the challenge**: Your experience is key to choosing the right building blocks and methodologies. You often spend significant time navigating documentation, writing boilerplate code for common evaluations, and struggling to maintain clear project structure.
 
-**Skore is the cherry on top** that transforms your data science pipeline into structured, meaningful artifacts. It reduces the time you spend on documentation navigation, eliminates boilerplate code, and guides you toward the right methodological information to answer your questions.
+**Skore is the conductor** that transforms your data science pipeline into structured, meaningful artifacts. It reduces the time you spend on documentation navigation, eliminates boilerplate code, and guides you toward the right methodological information to answer your questions.
 
 ### What Skore does for you:
 
