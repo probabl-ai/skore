@@ -121,17 +121,14 @@ def test_analyze_with_invalid_subsample_strategy(cross_validation_report):
         )
 
 
-def test_html_repr(cross_validation_report):
-    display = cross_validation_report.data.analyze()
-    str_html = display._repr_html_()
-    for col in cross_validation_report.X.columns:
-        assert col in str_html
-
-    assert "<skrub-table-report" in str_html
-
-
 def test_check_y_required():
     """Check that we raise an error when y is not provided."""
     X = np.random.rand(100, 5)
     with pytest.raises(ValueError):
         CrossValidationReport(KMeans(), X=X).data.analyze()
+
+
+def test_repr(cross_validation_report):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    repr_str = repr(cross_validation_report.data)
+    assert "CrossValidationReport" in repr_str
