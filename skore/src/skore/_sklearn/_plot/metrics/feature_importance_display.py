@@ -8,9 +8,51 @@ from skore._sklearn._plot.utils import HelpDisplayMixin, PlotBackendMixin
 class FeatureImportanceDisplay(
     HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixin, Display
 ):
-    def __init__(self, _parent, coefficient_data):
+    """Feature importance display.
+
+    Each report type produces its own output frame and plot.
+
+    Parameters
+    ----------
+    _parent : EstimatorReport | CrossValidationReport | ComparisonReport
+        Report type from which the display is created.
+
+    _coefficient_data : DataFrame | list[DataFrame]
+        The ROC AUC data to display. The columns are
+
+    Methods
+    -------
+    frame() -> DataFrame
+        The coefficients as a dataframe.
+
+    plot() -> NoneType
+        A plot of the coefficients.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_breast_cancer
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import train_test_split
+    >>> from skore import EstimatorReport
+    >>> X, y = load_breast_cancer(return_X_y=True)
+    >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+    >>> classifier = LogisticRegression(max_iter=10_000)
+    >>> report = EstimatorReport(classifier, **split_data)
+    >>> display = report.feature_importance.coefficients()
+    >>> display.plot()
+    >>> display.frame()
+              Coefficient
+    Intercept	30.398367
+    Feature #0	0.608450
+    Feature #1	0.168479
+    Feature #2	-0.164257
+    Feature #3	0.023228
+    ...         ...
+    """
+
+    def __init__(self, _parent, _coefficient_data):
         self._parent = _parent
-        self.coefficient_data = coefficient_data
+        self._coefficient_data = _coefficient_data
 
     def frame(self):
         """Return the coefficients as a dataframe."""
@@ -26,15 +68,15 @@ class FeatureImportanceDisplay(
             raise TypeError(f"Unrecognised report type: {self._parent}")
 
     def _frame_estimator_report(self):
-        return self.coefficient_data
+        return self._coefficient_data
 
     def _frame_cross_validation_report(self):
-        return self.coefficient_data
+        return self._coefficient_data
 
     def _frame_comparison_report(self):
         import pandas as pd
 
-        return pd.concat(self.coefficient_data, axis=1)
+        return pd.concat(self._coefficient_data, axis=1)
 
     @StyleDisplayMixin.style_plot
     def _plot_matplotlib(self, **kwargs):
@@ -52,14 +94,14 @@ class FeatureImportanceDisplay(
             raise TypeError(f"Unrecognised report type: {self._parent}")
 
     def _plot_estimator_report(self):
-        self.coefficient_data.plot.bar()
+        self._coefficient_data.plot.bar()
         plt.title(f"{self._parent.estimator_name_} Coefficients")
         plt.tight_layout()
         plt.show()
 
     def _plot_cross_validation_report(self):
         plt.figure(figsize=(12, 6))
-        self.coefficient_data.boxplot()
+        self._coefficient_data.boxplot()
         plt.title("Coefficient variance across CV splits")
         plt.tight_layout()
         plt.show()
@@ -68,10 +110,10 @@ class FeatureImportanceDisplay(
         from skore import CrossValidationReport, EstimatorReport
 
         if isinstance(self._parent.reports_[0], EstimatorReport):
-            for coef_frame in self.coefficient_data:
+            for coef_frame in self._coefficient_data:
                 _, ax = plt.subplots()
                 coef_frame.plot.bar(ax=ax)
-                if len(self.coefficient_data) == 1 or len(coef_frame.columns) > 1:
+                if len(self._coefficient_data) == 1 or len(coef_frame.columns) > 1:
                     # If there's only one DataFrame, or if the plot includes
                     # multiple models with the same features, use a combined title
                     # like "Model 1 vs Model 2 Coefficients".
@@ -86,7 +128,7 @@ class FeatureImportanceDisplay(
                 plt.tight_layout()
                 plt.show()
         elif isinstance(self._parent.reports_[0], CrossValidationReport):
-            for coef_frame in self.coefficient_data:
+            for coef_frame in self._coefficient_data:
                 _, ax = plt.subplots()
                 coef_frame.boxplot(ax=ax)
                 plt.title(
