@@ -23,7 +23,12 @@ X, y = make_classification(n_classes=2, n_samples=20_000, n_informative=4)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 log_report = EstimatorReport(
-    LogisticRegression(), X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+    LogisticRegression(),
+    X_train=X_train,
+    X_test=X_test,
+    y_train=y_train,
+    y_test=y_test,
+    pos_label=1,
 )
 
 # %%
@@ -37,8 +42,8 @@ log_report.help()
 # Display the report metrics that was computed for you:
 
 # %%
-df_report_metrics = log_report.metrics.report_metrics(pos_label=1)
-df_report_metrics
+metrics_summary = log_report.metrics.summarize().frame()
+metrics_summary
 
 # %%
 # Display the ROC curve that was generated for you:
@@ -61,7 +66,7 @@ import skore
 import os
 import tempfile
 
-temp_dir = tempfile.TemporaryDirectory()
+temp_dir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 os.environ["SKORE_WORKSPACE"] = temp_dir.name
 # sphinx_gallery_end_ignore
 my_project = skore.Project("my_project")
@@ -95,12 +100,12 @@ my_project.put("rf_report", rf_report)
 # Now, let us retrieve the data that we previously stored:
 
 # %%
-metadata = my_project.reports.metadata()
-print(type(metadata))
+summary = my_project.summarize()
+print(type(summary))
 
 # %%
 # .. note::
-#   If rendered in a Jupyter notebook, ``metadata`` would render an interactive
+#   If rendered in a Jupyter notebook, ``summary`` would render an interactive
 #   parallel coordinate plot to search for your preferred model based on some metrics.
 #   Here is a screenshot:
 #
@@ -113,7 +118,7 @@ print(type(metadata))
 # %%
 from pprint import pprint
 
-report_get = metadata.query("ml_task.str.contains('classification')").reports()
+report_get = summary.query("ml_task.str.contains('classification')").reports()
 pprint(report_get)
 
 # %%
@@ -125,7 +130,7 @@ pprint(report_get)
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
-report_get[0].metrics.report_metrics(pos_label=1)
+report_get[0].metrics.summarize().frame()
 
 # %%
 # .. seealso::

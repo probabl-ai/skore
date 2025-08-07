@@ -87,7 +87,7 @@ jobs:
     needs: [tag-decomposition, build]
     steps:
       - name: Download package distributions
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: ${{ env.UUID }}
           path: dist/
@@ -104,7 +104,7 @@ jobs:
     continue-on-error: true
     steps:
       - name: Post to slack
-        uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}

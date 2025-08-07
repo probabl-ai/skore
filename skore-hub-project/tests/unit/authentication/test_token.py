@@ -1,56 +1,66 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urljoin
 
 import pytest
 from httpx import Response
-from skore_hub_project.authentication.token import Token
-from skore_hub_project.client.api import URI
+from skore_hub_project.authentication import token as Token
+from skore_hub_project.client.client import HUBClient
+
+URI = HUBClient.URI
+DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
+DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
 
 
 class TestToken:
-    def test_init_with_parameters(self, tmp_path, now, nowstr):
-        token = Token("A", "B", nowstr)
+    @pytest.fixture
+    def filepath(self, tmp_path):
+        return tmp_path / "skore.token"
 
-        assert token.valid
-        assert token.access_token == "A"
-        assert token.refresh_token == "B"
-        assert token.expires_at == now
-        assert json.loads((tmp_path / "skore.token").read_text()) == ["A", "B", nowstr]
+    def test_filepath(self, filepath):
+        assert Token.filepath() == filepath
 
-    def test_init_without_parameters_with_file(self, tmp_path, now, nowstr):
-        (tmp_path / "skore.token").write_text(f'["A", "B", "{nowstr}"]')
-        token = Token()
+    def test_save(self, filepath):
+        assert not filepath.exists()
 
-        assert token.valid
-        assert token.access_token == "A"
-        assert token.refresh_token == "B"
-        assert token.expires_at == now
+        Token.save("A", "B", DATETIME_MAX)
 
-    def test_init_without_parameters_without_file(self):
-        token = Token()
+        assert filepath.exists()
+        assert json.loads(filepath.read_text()) == ["A", "B", DATETIME_MAX]
 
-        assert not token.valid
-        assert not hasattr(token, "access_token")
-        assert not hasattr(token, "refresh_token")
-        assert not hasattr(token, "expires_at")
+    def test_exists(self):
+        assert not Token.exists()
 
-    @pytest.mark.respx
-    def test_refresh(self, tmp_path, respx_mock, now, nowstr):
+        Token.save("A", "B", DATETIME_MAX)
+
+        assert Token.exists()
+
+    @pytest.mark.respx(assert_all_mocked=False)
+    def test_access(self, respx_mock):
+        assert not Token.exists()
+
+        Token.save("A", "B", DATETIME_MAX)
+
+        assert not respx_mock.calls
+        assert Token.exists()
+        assert Token.access() == "A"
+
+    def test_access_expired(self, filepath, respx_mock, nowstr):
         respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
             Response(
                 200,
-                json={"access_token": "D", "refresh_token": "E", "expires_at": nowstr},
+                json={
+                    "access_token": "D",
+                    "refresh_token": "E",
+                    "expires_at": DATETIME_MAX,
+                },
             )
         )
 
-        token = Token("A", "B", datetime(2000, 1, 1).isoformat())
-        token.refresh()
+        assert not Token.exists()
 
-        assert token.access_token == "D"
-        assert token.refresh_token == "E"
-        assert token.expires_at == now
-        assert json.loads((tmp_path / "skore.token").read_text()) == ["D", "E", nowstr]
+        Token.save("A", "B", DATETIME_MIN)
 
-    def test_repr(self, nowstr):
-        assert repr(Token("A" * 100, "B" * 100, nowstr)) == f"Token('{'A' * 10}[...]')"
+        assert Token.exists()
+        assert Token.access() == "D"
+        assert json.loads(filepath.read_text()) == ["D", "E", DATETIME_MAX]

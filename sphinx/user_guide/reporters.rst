@@ -47,23 +47,28 @@ metrics. Set it to `train` or `test` to rely on the data provided to the constru
 addition, set `data_source` to `X_y` to pass a new dataset using the parameters `X` and
 `y`. This is useful when you want to compare different models on a new left-out dataset.
 
-While there are individual methods to compute each metric specific to the problem at
-hand, we provide the :class:`EstimatorReport.metrics.report_metrics` method that
-aggregates metrics in a single dataframe. By default, a set of metrics is computed based
-on the type of target variable (e.g. classification or regression). Nevertheless, you
-can specify the metrics you want to compute thanks to the `scoring` parameter. We accept
-different types: (i) some strings that correspond to scikit-learn scorer names or a
-built-in `skore` metric name, (ii) a callable or a (iii) scikit-learn scorer constructed
-with :func:`sklearn.metrics.make_scorer`.
+There are individual methods to compute each metric specific to the problem at hand.
+They return usual python objects such as floats, integers, or dictionaries.
 
 The second type of methods provided by :obj:`EstimatorReport.metrics` are methods that
-return a `skore` display object. They have a common API as well. They expose two
-methods: (i) `plot` that plots graphically the information contained in the display and
+return a :class:`~skore.Display` object. They have a common API as well. They expose
+three methods:
+(i) `plot` that plots graphically the information contained in the display,
 (ii) `set_style` that sets some graphical settings instead of passing them to the `plot`
 method at each call.
+(iii) `frame` that returns a `pandas.DataFrame` with the information contained in the
+display.
+
+We provide the :class:`EstimatorReport.metrics.summarize` method that aggregates metrics
+in a single dataframe, available through a :class:`~skore.Display`. By default, a set of
+metrics is computed based on the type of target variable (e.g. classification or
+regression). Nevertheless, you can specify the metrics you want to compute thanks to the
+`scoring` parameter. We accept different types: (i) some strings that correspond to
+scikit-learn scorer names or a built-in `skore` metric name, (ii) a callable or a (iii)
+scikit-learn scorer constructed with :func:`sklearn.metrics.make_scorer`.
 
 Refer to the :ref:`displays` section for more details regarding the `skore` display
-API. Refer to the :ref:`estimator_report_metrics` section for more details on all the
+API. Refer to the :ref:`estimator_metrics` section for more details on all the
 available metrics in `skore`.
 
 Caching mechanism
@@ -110,7 +115,7 @@ parameter, `aggregate`, to aggregate the metrics across the splits.
 The :class:`CrossValidationReport` also comes with a caching mechanism by leveraging
 the :class:`EstimatorReport` caching mechanism and exposes the same methods.
 
-Refer to the :ref:`cross_validation_report_metrics` section for more details on the
+Refer to the :ref:`cross_validation_metrics` section for more details on the
 metrics available in `skore` for cross-validation.
 
 .. _comparison_report:
@@ -118,16 +123,21 @@ metrics available in `skore` for cross-validation.
 Comparison report
 -----------------
 
-:class:`CrossValidationReport` is a great tool to compare the performance of the same
-predictive model architecture with a variation of the dataset. However, it is not
-intended to compare different families of predictive models. For this purpose,
-use :class:`ComparisonReport`.
+To compare the performance of different predictive models, `skore` provides the
+:class:`ComparisonReport`.
 
 :class:`ComparisonReport` takes a list (or a dictionary) of :class:`EstimatorReport` or
 :class:`CrossValidationReport` instances. It then provides methods to compare the
 performance of the different models.
 
+In order for the comparison to make sense, the reports must all have the same test target.
+However, they may have different training data or target; this might be the case when comparing a new model with the current production model, for example.
+They may also have different testing data (:math:`X_{test}`), which means the compared model pipelines do not necessarily need to be the same.
+The comparison of test targets is done by computing a hash of the arrays. Therefore, if
+the y_test are functionally equal, but have different data types, they will be
+considered as different.
+
 The caching mechanism is also available and exposes the same methods.
 
-Refer to the :ref:`cross_validation_report_metrics` section for more details on the
+Refer to the :ref:`cross_validation_metrics` section for more details on the
 metrics available in `skore` for comparison.

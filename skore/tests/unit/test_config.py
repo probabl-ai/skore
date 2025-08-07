@@ -3,12 +3,13 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 from skore import config_context, get_config, set_config
 from skore._config import _set_show_progress_for_testing
-from skore.utils._parallel import Parallel, delayed
+from skore._utils._parallel import Parallel, delayed
 
 
 def test_config_context():
     assert get_config() == {
         "show_progress": True,
+        "plot_backend": "matplotlib",
     }
 
     # Not using as a context manager affects nothing
@@ -18,6 +19,7 @@ def test_config_context():
     with config_context(show_progress=False):
         assert get_config() == {
             "show_progress": False,
+            "plot_backend": "matplotlib",
         }
     assert get_config()["show_progress"] is True
 
@@ -44,6 +46,7 @@ def test_config_context():
 
     assert get_config() == {
         "show_progress": True,
+        "plot_backend": "matplotlib",
     }
 
     # No positional arguments
@@ -99,7 +102,9 @@ def test_config_threadsafe_joblib(backend):
 
     items = Parallel(backend=backend, n_jobs=2)(
         delayed(_set_show_progress_for_testing)(show_progress, sleep_duration)
-        for show_progress, sleep_duration in zip(show_progresses, sleep_durations)
+        for show_progress, sleep_duration in zip(
+            show_progresses, sleep_durations, strict=False
+        )
     )
 
     assert items == [False, True, False, True]

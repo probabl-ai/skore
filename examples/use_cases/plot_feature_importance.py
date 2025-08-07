@@ -217,7 +217,7 @@ ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-ridge_report.metrics.report_metrics()
+ridge_report.metrics.summarize().frame()
 
 # %%
 # From the report metrics, let us first explain the scores we have access to:
@@ -421,7 +421,7 @@ reports_to_compare = {
     "Ridge w/ feature engineering": engineered_ridge_report,
 }
 comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.report_metrics()
+comparator.metrics.summarize().frame()
 
 # %%
 # We get a much better score!
@@ -452,9 +452,22 @@ print("Number of features after feature engineering:", n_features_engineered)
 # Let us display the 15 largest absolute coefficients:
 
 # %%
-engineered_ridge_report.feature_importance.coefficients().sort_values(
-    by="Coefficient", key=abs, ascending=True
-).tail(15).plot.barh(
+engineered_rigde_report_feature_importance = (
+    engineered_ridge_report.feature_importance.coefficients()
+    .sort_values(by="Coefficient", key=abs, ascending=True)
+    .tail(15)
+)
+
+engineered_rigde_report_feature_importance.index = (
+    engineered_rigde_report_feature_importance.index.str.replace("remainder__", "")
+)
+engineered_rigde_report_feature_importance.index = (
+    engineered_rigde_report_feature_importance.index.str.replace(
+        "kmeans__", "geospatial__"
+    )
+)
+
+engineered_rigde_report_feature_importance.plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
@@ -667,7 +680,7 @@ selectk_ridge_report = EstimatorReport(
 )
 reports_to_compare["Ridge w/ feature engineering and selection"] = selectk_ridge_report
 comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.report_metrics()
+comparator.metrics.summarize().frame()
 
 # %%
 # We get a good score and much less features:
@@ -775,7 +788,7 @@ reports_to_compare["Decision tree"] = tree_report
 
 # %%
 comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.report_metrics()
+comparator.metrics.summarize().frame()
 
 # %%
 # We note that the performance is quite poor, so the derived feature importance is to
@@ -892,7 +905,7 @@ rf_report = EstimatorReport(
 reports_to_compare["Random forest"] = rf_report
 
 comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.report_metrics()
+comparator.metrics.summarize().frame()
 
 # %%
 # Without any feature engineering and any grid search,

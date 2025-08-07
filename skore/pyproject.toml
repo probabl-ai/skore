@@ -1,8 +1,12 @@
 [project]
 name = "skore"
-description = "the scikit-learn sidekick"
+description = """\
+𝗢𝘄𝗻 𝗬𝗼𝘂𝗿 𝗗𝗮𝘁𝗮 𝗦𝗰𝗶𝗲𝗻𝗰𝗲. \
+Skore's open-source Python library accelerates ML model development with automated evaluation reports, \
+smart methodological guidance, and comprehensive cross-validation analysis.\
+"""
 dynamic = ["license", "readme", "version"]
-requires-python = ">=3.9, <3.13"
+requires-python = ">=3.10"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 classifiers = [
   "Intended Audience :: Science/Research",
@@ -17,10 +21,10 @@ classifiers = [
   "Operating System :: Unix",
   "Operating System :: MacOS",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
   "IPython",
@@ -34,6 +38,8 @@ dependencies = [
   "rich",
   "scikit-learn",
   "skore-local-project",
+  "skrub",
+  "seaborn",
 ]
 
 [project.optional-dependencies]
@@ -44,10 +50,10 @@ test-base = [
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "scikit-learn<1.7",
+  "skrub",
   "xdoctest",
 ]
-test = ["skore[test-base]", "polars"]
+test = ["skore[test-base]", "polars", "pyarrow"]
 test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
 sphinx-base = [
   "altair",
@@ -55,7 +61,6 @@ sphinx-base = [
   "numpydoc",
   "plotly>=5,<6",
   "pydata-sphinx-theme",
-  "scikit-learn<1.7",
   "seaborn",
   "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
   "skrub",
@@ -66,6 +71,7 @@ sphinx-base = [
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
   "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
+  "xgboost",
 ]
 sphinx = ["skore[sphinx-base]", "polars"]
 sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]
@@ -114,7 +120,7 @@ concurrency = ["thread", "multiprocessing"]
 parallel = true
 
 [tool.coverage.report]
-omit = ["*/externals/*", "src/*", "tests/*"]
+omit = ["*/_externals/*", "src/*", "tests/*"]
 show_missing = true
 exclude_also = [
     "raise NotImplementedError",
@@ -149,12 +155,11 @@ select = [
 convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
-"src/*" = ["UP007"]
 "tests/*" = ["D"]
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["src/skore/externals/.*", "hatch/*", "tests/*"]
+exclude = ["src/skore/_externals/.*", "hatch/*", "tests/*"]
 
 [[tool.mypy.overrides]]
 module = ["sklearn.*"]

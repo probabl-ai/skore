@@ -13,7 +13,7 @@ from math import isfinite
 from operator import attrgetter
 from typing import TYPE_CHECKING
 
-from .item import ItemTypeError, lazy_is_instance, switch_mpl_backend
+from .item import ItemTypeError, switch_mpl_backend
 from .matplotlib_figure_item import MatplotlibFigureItem
 from .media_item import MediaItem
 from .pandas_dataframe_item import PandasDataFrameItem
@@ -21,34 +21,34 @@ from .pickle_item import PickleItem
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from typing import Any, Literal, TypedDict, Union
+    from typing import Any, Literal, TypedDict
 
-    from skore.sklearn import EstimatorReport
+    from skore import EstimatorReport
 
     class MetadataFunction:  # noqa: D101
         metadata: Any
 
     class Metric(TypedDict):  # noqa: D101
         name: str
-        verbose_name: Union[str, None]
+        verbose_name: str | None
         value: float
-        data_source: Union[str, None]
-        greater_is_better: Union[bool, None]
-        position: Union[int, None]
+        data_source: str | None
+        greater_is_better: bool | None
+        position: int | None
 
     class Representation(TypedDict):  # noqa: D101
         key: str
-        verbose_name: Union[str, None]
+        verbose_name: str | None
         category: Literal["performance", "feature_importance", "model"]
         attributes: dict
         representation: dict
         parameters: dict
 
 
-def cast_to_float(value: Any) -> Union[float, None]:
+def cast_to_float(value: Any) -> float | None:
     """Cast value to float."""
     with suppress(TypeError):
-        if (value := float(value)) and isfinite(value):
+        if isfinite(value := float(value)):
             return value
 
     return None
@@ -96,11 +96,6 @@ class Metadata:
         return self.report.estimator_name_
 
     @metadata_function
-    def estimator_hyper_params(self) -> dict:
-        """DeprecationWarning: send empty dictionary to not break the hub API."""
-        return {}
-
-    @metadata_function
     def dataset_fingerprint(self) -> str:
         """Return the hash of the targets in the test-set."""
         import joblib
@@ -135,9 +130,9 @@ class Metadata:
             verbose_name: str,
             data_source: str,
             greater_is_better: bool,
-            position: Union[int, None],
+            position: int | None,
             /,
-        ) -> Union[Metric, None]:
+        ) -> Metric | None:
             if hasattr(self.report.metrics, name):
                 value = getattr(self.report.metrics, name)(data_source=data_source)
 
@@ -156,11 +151,11 @@ class Metadata:
         def timing(
             name: str,
             verbose_name: str,
-            data_source: Union[str, None],
+            data_source: str | None,
             greater_is_better: bool,
-            position: Union[int, None],
+            position: int | None,
             /,
-        ) -> Union[Metric, None]:
+        ) -> Metric | None:
             timings = self.report.metrics.timings()
             value = timings.get(
                 name if name != "predict_time" else f"{name}_{data_source}"
@@ -243,7 +238,7 @@ class Representations:
         verbose_name,
         category,
         **kwargs,
-    ) -> Union[Representation, None]:
+    ) -> Representation | None:
         """Return sub-representation made of ``matplotlib`` figures."""
         try:
             function = attrgetter(name)(self.report)
@@ -271,7 +266,7 @@ class Representations:
                 "representation": item.__representation__["representation"],
             }
 
-    def pd(self, name, verbose_name, category, **kwargs) -> Union[Representation, None]:
+    def pd(self, name, verbose_name, category, **kwargs) -> Representation | None:
         """Return sub-representation made of ``pandas`` dataframes."""
         try:
             function = attrgetter(name)(self.report)
@@ -416,7 +411,9 @@ class SkoreEstimatorReportItem(PickleItem):
         ItemTypeError
             If ``value`` is not an instance of ``skore.EstimatorReport``.
         """
-        if lazy_is_instance(value, "skore.sklearn._estimator.report.EstimatorReport"):
+        from skore import EstimatorReport
+
+        if isinstance(value, EstimatorReport):
             return super().factory(value)
 
         raise ItemTypeError(f"Type '{value.__class__}' is not supported.")

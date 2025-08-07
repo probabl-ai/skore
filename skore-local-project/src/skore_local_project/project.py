@@ -18,7 +18,7 @@ import platformdirs
 from .storage import DiskCacheStorage
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, TypedDict, Union
+    from typing import TypedDict
 
     from skore import EstimatorReport
 
@@ -31,9 +31,9 @@ if TYPE_CHECKING:
         learner: str
         dataset: str
         ml_task: str
-        rmse: Union[float, None]
-        log_loss: Union[float, None]
-        roc_auc: Union[float, None]
+        rmse: float | None
+        log_loss: float | None
+        roc_auc: float | None
         fit_time: float
         predict_time: float
 
@@ -45,18 +45,11 @@ if TYPE_CHECKING:
         learner: str
         dataset: str
         ml_task: str
-        rmse: Union[float, None]
-        log_loss: Union[float, None]
-        roc_auc: Union[float, None]
+        rmse: float | None
+        log_loss: float | None
+        roc_auc: float | None
         fit_time: float
         predict_time: float
-
-
-def lazy_is_instance_skore_estimator_report(value: Any) -> bool:
-    """Return True if value is an instance of ``skore.EstimatorReport``."""
-    return "skore.sklearn._estimator.report.EstimatorReport" in {
-        f"{cls.__module__}.{cls.__name__}" for cls in value.__class__.__mro__
-    }
 
 
 class Project:
@@ -80,18 +73,44 @@ class Project:
         The directory where the project (metadata and artifacts) are persisted.
 
         | The workspace can be shared between all the projects.
-        | The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+        | The workspace can be set using kwargs or the environment variable
+          ``SKORE_WORKSPACE``.
         | If not, it will be by default set to a ``skore/`` directory in the USER
-        cache directory:
+          cache directory:
 
-        - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-        - in Linux, usually ``${HOME}/.cache/skore``,
-        - in macOS, usually ``${HOME}/Library/Caches/skore``.
+        - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+        - on Linux, usually ``${HOME}/.cache/skore``,
+        - on macOS, usually ``${HOME}/Library/Caches/skore``.
     run_id : str
         The current run identifier of the project.
     """
 
-    def __init__(self, name: str, *, workspace: Optional[Path] = None):
+    @staticmethod
+    def __setup_diskcache(
+        workspace: Path | None,
+    ) -> tuple[
+        Path,
+        DiskCacheStorage,
+        DiskCacheStorage,
+        DiskCacheStorage,
+    ]:
+        if workspace is None:
+            if "SKORE_WORKSPACE" in os.environ:
+                workspace = Path(os.environ["SKORE_WORKSPACE"])
+            else:
+                workspace = Path(platformdirs.user_cache_dir()) / "skore"
+
+        for directory in ("projects", "metadata", "artifacts"):
+            (workspace / directory).mkdir(parents=True, exist_ok=True)
+
+        return (
+            workspace,
+            DiskCacheStorage(workspace / "projects"),
+            DiskCacheStorage(workspace / "metadata"),
+            DiskCacheStorage(workspace / "artifacts"),
+        )
+
+    def __init__(self, name: str, *, workspace: Path | None = None):
         r"""
         Initialize a local project.
 
@@ -106,28 +125,41 @@ class Project:
             The directory where the project (metadata and artifacts) are persisted.
 
             | The workspace can be shared between all the projects.
-            | The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
+            | The workspace can be set using kwargs or the environment variable
+              ``SKORE_WORKSPACE``.
             | If not, it will be by default set to a ``skore/`` directory in the USER
-            cache directory:
+              cache directory:
 
-            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-            - in Linux, usually ``${HOME}/.cache/skore``,
-            - in macOS, usually ``${HOME}/Library/Caches/skore``.
+            - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - on Linux, usually ``${HOME}/.cache/skore``,
+            - on macOS, usually ``${HOME}/Library/Caches/skore``.
         """
-        if workspace is None:
-            if "SKORE_WORKSPACE" in os.environ:
-                workspace = Path(os.environ["SKORE_WORKSPACE"])
-            else:
-                workspace = Path(platformdirs.user_cache_dir()) / "skore"
+        workspace, projects, metadata, artifacts = Project.__setup_diskcache(workspace)
 
-        (workspace / "metadata").mkdir(parents=True, exist_ok=True)
-        (workspace / "artifacts").mkdir(parents=True, exist_ok=True)
+        self.__name = name
+        self.__run_id = uuid4().hex
+        self.__workspace = workspace
+        self.__projects_storage = projects
+        self.__metadata_storage = metadata
+        self.__artifacts_storage = artifacts
 
-        self.workspace = str(workspace)
-        self.name = name
-        self.run_id = uuid4().hex
-        self.__metadata_storage = DiskCacheStorage(workspace / "metadata")
-        self.__artifacts_storage = DiskCacheStorage(workspace / "artifacts")
+        # Create the project
+        self.__projects_storage[name] = None
+
+    @property
+    def name(self) -> str:
+        """The name of the project."""
+        return self.__name
+
+    @property
+    def run_id(self) -> str:
+        """The run identifier of the project."""
+        return self.__run_id
+
+    @property
+    def workspace(self) -> Path:
+        """The workspace of the project."""
+        return self.__workspace
 
     @staticmethod
     def pickle(report: EstimatorReport) -> tuple[str, bytes]:
@@ -175,12 +207,20 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        if not lazy_is_instance_skore_estimator_report(report):
+        from skore import EstimatorReport
+
+        if not isinstance(report, EstimatorReport):
             raise TypeError(
                 f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
             )
 
-        pickle_hash, pickle_bytes = self.pickle(report)
+        if self.name not in self.__projects_storage:
+            raise RuntimeError(
+                f"Bad condition: {repr(self)} does not exist anymore, "
+                f"it had to be removed."
+            )
+
+        pickle_hash, pickle_bytes = Project.pickle(report)
 
         if pickle_hash not in self.__artifacts_storage:
             self.__artifacts_storage[pickle_hash] = pickle_bytes
@@ -222,6 +262,11 @@ class Project:
     @property
     def reports(self):
         """Accessor for interaction with the persisted reports."""
+        if self.name not in self.__projects_storage:
+            raise RuntimeError(
+                f"Bad condition: {repr(self)} does not exist anymore, "
+                f"it had to be removed."
+            )
 
         def get(id: str) -> EstimatorReport:
             """Get a persisted report by its id."""
@@ -258,4 +303,53 @@ class Project:
         return SimpleNamespace(get=get, metadata=metadata)
 
     def __repr__(self) -> str:  # noqa: D105
-        return f"Project(local:{self.workspace}@{self.name})"
+        return (
+            f"Project(mode='local', name='{self.name}', workspace='{self.workspace}')"
+        )
+
+    @staticmethod
+    def delete(name: str, *, workspace: Path | None = None):
+        r"""
+        Delete a local project.
+
+        Parameters
+        ----------
+        name : str
+            The name of the project.
+        workspace : Path, optional
+            The directory where the project (metadata and artifacts) are persisted.
+
+            | The workspace can be shared between all the projects.
+            | The workspace can be set using kwargs or the environment variable
+              ``SKORE_WORKSPACE``.
+            | If not, it will be by default set to a ``skore/`` directory in the USER
+              cache directory:
+
+            - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - on Linux, usually ``${HOME}/.cache/skore``,
+            - on macOS, usually ``${HOME}/Library/Caches/skore``.
+        """
+        workspace, projects, metadata, artifacts = Project.__setup_diskcache(workspace)
+
+        if name not in projects:
+            raise LookupError(
+                f"Project(mode='local', name='{name}', workspace='{workspace}') "
+                f"does not exist."
+            )
+
+        # Delete all metadata related to the project
+        remaining_artifacts = set()
+
+        for key, value in metadata.items():
+            if value["project_name"] == name:
+                del metadata[key]
+            else:
+                remaining_artifacts.add(value["artifact_id"])
+
+        # Prune artifacts not related to a project
+        for artifact in artifacts:
+            if artifact not in remaining_artifacts:
+                del artifacts[artifact]
+
+        # Delete the project
+        del projects[name]

@@ -4,10 +4,10 @@ from datetime import datetime
 import pandas
 import polars
 import pytest
-from skore.sklearn.train_test_split.train_test_split import (
+from skore._sklearn.train_test_split.train_test_split import (
     train_test_split,
 )
-from skore.sklearn.train_test_split.warning import (
+from skore._sklearn.train_test_split.warning import (
     HighClassImbalanceTooFewExamplesWarning,
     HighClassImbalanceWarning,
     RandomStateUnsetWarning,
@@ -182,30 +182,89 @@ def test_train_test_split_kwargs():
     assert output1 == output2
 
 
+def test_train_test_split_single_posargs():
+    """Passing single positional argument with as_dict=True should return as dict."""
+
+    X = [[1]] * 20
+
+    output = train_test_split(X, as_dict=True)
+    assert isinstance(output, dict)
+    assert set(output.keys()) == {"X_train", "X_test"}
+
+
+def test_train_test_split_two_posargs():
+    """Passing two positional argument with as_dict=True should return as dict."""
+
+    X = [[1]] * 20
+    y = [0] * 10 + [1] * 10
+
+    output = train_test_split(X, y, as_dict=True)
+    assert isinstance(output, dict)
+    assert set(output.keys()) == {"X_train", "X_test", "y_train", "y_test"}
+
+
+def test_train_test_split_dict_pos_kwargs_conflict():
+    """Passing X or y by both position and keyword with as_dict=True
+    should throw an error."""
+
+    X = [[1]] * 20
+    y = [0] * 10 + [1] * 10
+
+    err_msg = (
+        "With as_dict=True, expected {} to be passed either "
+        "by position or keyword, not both."
+    )
+
+    import re
+
+    with pytest.raises(ValueError, match=re.escape(err_msg.format("X"))):
+        train_test_split(X, X=X, as_dict=True)
+    with pytest.raises(ValueError, match=re.escape(err_msg.format("y"))):
+        train_test_split(y, y=y, as_dict=True)
+
+
+def test_train_test_split_mix_args():
+    """Passing mixed positional and keyword argument with as_dict=True
+    should return as dict."""
+
+    X = [[1]] * 20
+    y = [0] * 10 + [1] * 10
+    z = [0] * 10 + [1] * 10
+
+    output = train_test_split(X, y, z=z, as_dict=True)
+    assert isinstance(output, dict)
+    assert set(output.keys()) == {
+        "X_train",
+        "X_test",
+        "y_train",
+        "y_test",
+        "z_train",
+        "z_test",
+    }
+
+
 def test_train_test_split_dict_kwargs():
-    """Passing data without keyword arguments with return_dict=True
+    """Passing three or more keyword arguments with as_dict=True
     should raise ValueError."""
 
     X = [[1]] * 20
     y = [0] * 10 + [1] * 10
+    z = [0] * 10 + [1] * 10
 
-    with pytest.raises(
-        ValueError,
-        match="When as_dict=True, arrays must be passed as keyword arguments",
-    ):
-        train_test_split(X, y, random_state=0, as_dict=True)
+    err_msg = (
+        "With as_dict=True, expected no more than two positional arguments "
+        "(which will be interpreted as X and y). "
+        "The remaining arrays must be passed by keyword, "
+        "e.g. train_test_split(X, y, z=z, sw=sample_weights, as_dict=True)."
+    )
+    import re
 
-
-def test_train_test_split_check_dict():
-    """If `return_dict` is True then the result is a dict."""
-    X = [[1]] * 20
-    y = [0] * 10 + [1] * 10
-    output = train_test_split(X=X, y=y, random_state=0, as_dict=True)
-    assert type(output) is dict
+    with pytest.raises(ValueError, match=re.escape(err_msg)):
+        train_test_split(X, y, z, as_dict=True)
 
 
 def test_train_test_split_check_dict_unsupervised_case():
-    """If `return_dict` is True and only `X` is passed,
+    """If `as_dict` is True and only `X` is passed,
     the result is a dict with 2 keys."""
 
     X = [[1]] * 20

@@ -3,20 +3,14 @@
 from __future__ import annotations
 
 import re
-import sys
+from importlib.metadata import entry_points
 from typing import Any
 
-if sys.version_info < (3, 10):  # pragma: no cover
-    from importlib_metadata import entry_points
-else:
-    from importlib.metadata import entry_points
-
-from skore.externals._pandas_accessors import DirNamesMixin, _register_accessor
-from skore.project.reports import _ReportsAccessor
-from skore.sklearn._estimator.report import EstimatorReport
+from skore._sklearn._estimator.report import EstimatorReport
+from skore.project.summary import Summary
 
 
-class Project(DirNamesMixin):
+class Project:
     r"""
     API to manage a collection of key-report pairs.
 
@@ -24,9 +18,9 @@ class Project(DirNamesMixin):
     existing one.
 
     The class main methods are :func:`~skore.Project.put`,
-    :func:`~skore.Project.reports.metadata` and :func:`~skore.Project.reports.get`,
-    respectively to insert a key-report pair into the project, to obtain the metadata of
-    the inserted reports and to get a specific report by its id.
+    :func:`~skore.Project.summarize` and :func:`~skore.Project.get`, respectively to
+    insert a key-report pair into the project, to obtain the metadata/metrics of the
+    inserted reports and to get a specific report by its id.
 
     Two mutually exclusive modes are available and can be configured using the ``name``
     parameter of the constructor:
@@ -50,14 +44,15 @@ class Project(DirNamesMixin):
     Otherwise, the project is configured to the ``local`` mode to be persisted on
     the user machine in a directory called ``workspace``.
 
-    The workspace can be shared between all the projects.
-    The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-    If not, it will be by default set to a ``skore/`` directory in the USER
-    cache directory:
+    | The workspace can be shared between all the projects.
+    | The workspace can be set using kwargs or the environment variable
+      ``SKORE_WORKSPACE``.
+    | If not, it will be by default set to a ``skore/`` directory in the USER
+      cache directory:
 
-    - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-    - in Linux, usually ``${HOME}/.cache/skore``,
-    - in macOS, usually ``${HOME}/Library/Caches/skore``.
+    - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+    - on Linux, usually ``${HOME}/.cache/skore``,
+    - on macOS, usually ``${HOME}/Library/Caches/skore``.
 
     Refer to the :ref:`project` section of the user guide for more details.
 
@@ -76,14 +71,15 @@ class Project(DirNamesMixin):
         workspace : Path, mode:local only.
             The directory where the local project is persisted.
 
-            The workspace can be shared between all the projects.
-            The workspace can be set using kwargs or the envar ``SKORE_WORKSPACE``.
-            If not, it will be by default set to a ``skore/`` directory in the USER
-            cache directory:
+            | The workspace can be shared between all the projects.
+            | The workspace can be set using kwargs or the environment variable
+              ``SKORE_WORKSPACE``.
+            | If not, it will be by default set to a ``skore/`` directory in the USER
+              cache directory:
 
-            - in Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-            - in Linux, usually ``${HOME}/.cache/skore``,
-            - in macOS, usually ``${HOME}/Library/Caches/skore``.
+            - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+            - on Linux, usually ``${HOME}/.cache/skore``,
+            - on macOS, usually ``${HOME}/Library/Caches/skore``.
 
     Attributes
     ----------
@@ -99,7 +95,7 @@ class Project(DirNamesMixin):
     >>> from sklearn.datasets import make_classification, make_regression
     >>> from sklearn.linear_model import LinearRegression, LogisticRegression
     >>> from sklearn.model_selection import train_test_split
-    >>> from skore.sklearn import EstimatorReport
+    >>> from skore._sklearn import EstimatorReport
     >>>
     >>> X, y = make_classification(random_state=42)
     >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
@@ -139,32 +135,30 @@ class Project(DirNamesMixin):
 
     Investigate metadata/metrics to filter the best reports.
 
-    >>> metadata = local_project.reports.metadata()
-    >>> metadata = metadata.query("ml_task.str.contains('regression') and (rmse < 67)")
-    >>> reports = metadata.reports()
+    >>> summary = local_project.summarize()
+    >>> summary = summary.query("ml_task.str.contains('regression') and (rmse < 67)")
+    >>> reports = summary.reports()
 
     See Also
     --------
-    Metadata : DataFrame designed to investigate persisted reports' metadata/metrics.
+    :class:`~skore.project.summary.Summary` :
+        DataFrame designed to investigate persisted reports' metadata/metrics.
     """
 
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
-    reports: _ReportsAccessor
-    _Project__project: Any
-    _Project__mode: str
-    _Project__name: str
 
-    def __init__(self, name: str, **kwargs):
+    @staticmethod
+    def __setup_plugin(name: str) -> tuple[str, str, Any, dict]:
         if not (PLUGINS := entry_points(group="skore.plugins.project")):
             raise SystemError("No project plugin found, please install at least one.")
 
-        if match := re.match(self.__HUB_NAME_PATTERN, name):
+        if match := re.match(Project.__HUB_NAME_PATTERN, name):
             mode = "hub"
             name = match["name"]
-            kwargs |= {"tenant": match["tenant"], "name": name}
+            parameters = {"tenant": match["tenant"], "name": name}
         else:
             mode = "local"
-            kwargs |= {"name": name}
+            parameters = {"name": name}
 
         if mode not in PLUGINS.names:
             raise ValueError(
@@ -172,9 +166,42 @@ class Project(DirNamesMixin):
                 f"Please install the `skore-{mode}-project` python package."
             )
 
+        return mode, name, PLUGINS[mode].load(), parameters
+
+    def __init__(self, name: str, **kwargs):
+        r"""
+        Initialize a project.
+
+        Parameters
+        ----------
+        name : str
+            The name of the project:
+
+            - if the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the
+              project is configured to communicate with the ``skore hub``,
+            - otherwise, the project is configured to communicate with a local storage,
+              on the user machine.
+        **kwargs : dict
+            Extra keyword arguments passed to the project, depending on its mode.
+
+            workspace : Path, mode:local only.
+                The directory where the local project is persisted.
+
+                | The workspace can be shared between all the projects.
+                | The workspace can be set using kwargs or the environment variable
+                  ``SKORE_WORKSPACE``.
+                | If not, it will be by default set to a ``skore/`` directory in the
+                  USER cache directory:
+
+                - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+                - on Linux, usually ``${HOME}/.cache/skore``,
+                - on macOS, usually ``${HOME}/Library/Caches/skore``.
+        """
+        mode, name, plugin, parameters = Project.__setup_plugin(name)
+
         self.__mode = mode
         self.__name = name
-        self.__project = PLUGINS[mode].load()(**kwargs)
+        self.__project = plugin(**(kwargs | parameters))
 
     @property
     def mode(self):
@@ -215,8 +242,62 @@ class Project(DirNamesMixin):
 
         return self.__project.put(key=key, report=report)
 
+    def get(self, id: str) -> EstimatorReport:
+        """
+        Get a persisted report by its id.
+
+        Report IDs can be found via :meth:`skore.Project.summarize`, which is
+        also the preferred method of interacting with a ``skore.Project``.
+
+        Parameters
+        ----------
+        id : str
+            The id of a report already put in the ``project``.
+
+        Raises
+        ------
+        KeyError
+            If a non-existent ID is passed.
+        """
+        return self.__project.reports.get(id)
+
+    def summarize(self) -> Summary:
+        """Obtain metadata/metrics for all persisted reports."""
+        return Summary.factory(self.__project)
+
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()
 
+    @staticmethod
+    def delete(name: str, **kwargs):
+        r"""
+        Delete a project.
 
-_register_accessor("reports", Project)(_ReportsAccessor)
+        Parameters
+        ----------
+        name : str
+            The name of the project:
+
+            - if the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the
+              project is configured to communicate with the ``skore hub``,
+            - otherwise, the project is configured to communicate with a local storage,
+              on the user machine.
+        **kwargs : dict
+            Extra keyword arguments passed to the project, depending on its mode.
+
+            workspace : Path, mode:local only.
+                The directory where the local project is persisted.
+
+                | The workspace can be shared between all the projects.
+                | The workspace can be set using kwargs or the environment variable
+                  ``SKORE_WORKSPACE``.
+                | If not, it will be by default set to a ``skore/`` directory in the
+                  USER cache directory:
+
+                - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
+                - on Linux, usually ``${HOME}/.cache/skore``,
+                - on macOS, usually ``${HOME}/Library/Caches/skore``.
+        """
+        _, _, plugin, parameters = Project.__setup_plugin(name)
+
+        return plugin.delete(**(kwargs | parameters))
