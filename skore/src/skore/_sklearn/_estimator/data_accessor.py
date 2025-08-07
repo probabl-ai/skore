@@ -51,7 +51,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         elif not sbd.is_dataframe(X):
             X = pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])])
 
-        if with_y:
+        if with_y and self._parent.ml_task != "clustering":
             if y is None:
                 raise ValueError(err_msg.format(f"y_{dataset}", data_source))
 
@@ -143,10 +143,13 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
             X_test, y_test = self._retrieve_data_as_frame("test", with_y, data_source)
             X = sbd.concat(X_train, X_test, axis=0)
-            if with_y:
+            if with_y and self._parent.ml_task != "clustering":
                 y = sbd.concat(y_train, y_test, axis=0)
 
-        df = sbd.concat(X, y, axis=1) if with_y else X
+        if with_y and self._parent.ml_task != "clustering":
+            df = sbd.concat(X, y, axis=1)
+        else:
+            df = X
 
         if subsample:
             if subsample_strategy == "head":
