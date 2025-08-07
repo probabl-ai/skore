@@ -4,9 +4,9 @@ from typing import Any, ClassVar
 
 from pydantic import Field, computed_field
 
-from ..media.media import Media
-from ..metric.metric import Metric
-from .base import BasePayload
+from skore_hub_project import Payload
+from skore_hub_project.media.media import Media
+from skore_hub_project.metric.metric import Metric
 
 
 Artefact = Any
@@ -16,7 +16,7 @@ Project = Any
 # Create protocols for CrossValidationReport and EstimatorReport
 
 
-class ReportPayload(ABC, BasePayload):
+class ReportPayload(ABC, Payload):
     METRICS: ClassVar[tuple[Metric]]
     MEDIAS: ClassVar[tuple[Media]]
     project: Project = Field(repr=False, exclude=True)
@@ -57,9 +57,9 @@ class ReportPayload(ABC, BasePayload):
     @computed_field
     @cached_property
     def metrics(self) -> list[Metric] | None:
-        return [metric(report=self.report) for metric in self.METRICS]
+        return [metric(report=self.report) for metric in self.METRICS]  # filter None
 
     @computed_field
     @property
     def related_items(self) -> list[Media] | None:
-        return [media(report=self.report) for media in self.MEDIAS]
+        return [media(report=self.report) for media in self.MEDIAS]  # filter None

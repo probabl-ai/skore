@@ -8,6 +8,8 @@ from functools import reduce, cached_property
 
 from pydantic import BaseModel, computed_field, Field
 
+from skore_hub_project import Payload
+
 
 CrossValidationReport = Any
 EstimatorReport = Any
@@ -22,7 +24,7 @@ def cast_to_float(value: Any) -> float | None:
     return None
 
 
-class Metric(ABC, BaseModel):
+class Metric(ABC, Payload):
     name: str
     verbose_name: str
     data_source: Literal["train", "test"] | None = None
