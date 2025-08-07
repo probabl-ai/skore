@@ -20,7 +20,7 @@ def test_coefficients_frame():
     result = est_comparison_report.feature_importance.coefficients().frame()
     assert result.shape == (5, 22)
 
-    expected_index = [str(i) for i in range(splitter)]
+    expected_index = [i for i in range(splitter)]
     assert result.index.tolist() == expected_index
 
     base_columns = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
