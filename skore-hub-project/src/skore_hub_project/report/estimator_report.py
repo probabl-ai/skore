@@ -1,9 +1,18 @@
-from functools import cached_property
 from typing import Any, ClassVar
 
-from pydantic import Field, computed_field
+from pydantic import Field
 
-from ..metric import (
+from skore_hub_project.media import (
+    Coefficients,
+    EstimatorHtmlRepr,
+    MeanDecreaseImpurity,
+    PermutationTest,
+    PermutationTrain,
+    # TableReportTest,
+    # TableReportTrain,
+)
+from skore_hub_project.media.media import Media
+from skore_hub_project.metric import (
     AccuracyTest,
     AccuracyTrain,
     BrierScoreTest,
@@ -24,8 +33,8 @@ from ..metric import (
     RocAucTest,
     RocAucTrain,
 )
-from ..metric.metric import Metric
-from .report import ReportPayload
+from skore_hub_project.metric.metric import Metric
+from skore_hub_project.report.report import ReportPayload
 
 EstimatorReport = Any
 
@@ -52,6 +61,15 @@ class EstimatorReportPayload(ReportPayload):
         FitTime,
         PredictTimeTrain,
         PredictTimeTest,
+    )
+    MEDIAS: ClassVar[tuple[Media]] = (
+        Coefficients,
+        EstimatorHtmlRepr,
+        MeanDecreaseImpurity,
+        PermutationTest,
+        PermutationTrain,
+        # TableReportTest,
+        # TableReportTrain,
     )
 
     report: EstimatorReport = Field(repr=False, exclude=True)

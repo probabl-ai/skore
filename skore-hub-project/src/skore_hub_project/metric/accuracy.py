@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Literal, ClassVar
+from typing import ClassVar, Literal
 
-from .metric import EstimatorReportMetric, CrossValidationReportMetric
+from .metric import CrossValidationReportMetric, EstimatorReportMetric
 
 
 class Accuracy(EstimatorReportMetric):

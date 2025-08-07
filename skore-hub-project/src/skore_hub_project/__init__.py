@@ -25,5 +25,5 @@ class Payload(BaseModel):
     class Config:
         frozen = True
 
-    def model_dump(self, *args, **kwargs):
-        return super().model_dump(*args, **kwargs, exclude_none=True)
+    # def model_dump(self, *args, **kwargs):
+    #     return super().model_dump(*args, **kwargs, exclude_none=True)

@@ -6,7 +6,11 @@ from pydantic import Field, computed_field
 from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
 
-from ..metric import (
+from skore_hub_project.media import (
+    EstimatorHtmlRepr,
+)
+from skore_hub_project.media.media import Media
+from skore_hub_project.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
     AccuracyTrainMean,
@@ -46,9 +50,9 @@ from ..metric import (
     RocAucTrainMean,
     RocAucTrainStd,
 )
-from ..metric.metric import Metric
-from .estimator_report import EstimatorReportPayload
-from .report import ReportPayload
+from skore_hub_project.metric.metric import Metric
+from skore_hub_project.report.estimator_report import EstimatorReportPayload
+from skore_hub_project.report.report import ReportPayload
 
 CrossValidationReport = Any
 
@@ -95,6 +99,7 @@ class CrossValidationReportPayload(ReportPayload):
         PredictTimeTrainMean,
         PredictTimeTrainStd,
     )
+    MEDIAS: ClassVar[tuple[Media]] = (EstimatorHtmlRepr,)
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
 

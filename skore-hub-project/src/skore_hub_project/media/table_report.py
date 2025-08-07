@@ -1,5 +1,10 @@
-from .media import Media, Representation
+from functools import cached_property
+from inspect import signature
+from typing import Any, Literal
 
+from pydantic import Field, computed_field
+
+from .media import Media, Representation
 
 EstimatorReport = Any
 
@@ -13,7 +18,13 @@ class TableReport(Media):
     @computed_field
     @cached_property
     def representation(self) -> Representation:
-        table_report_display = self.report.data.analyze(data_source=self.data_source)
+        function = self.report.data.analyze
+        function_parameters = signature(function).parameters
+        function_kwargs = {
+            k: v for k, v in self.attributes.items() if k in function_parameters
+        }
+
+        table_report_display = function(**function_kwargs)
 
         return Representation(
             media_type="application/vnd.skrub.table-report.v1+html",
@@ -21,12 +32,9 @@ class TableReport(Media):
         )
 
 
-class TableReportTrain(Media):
-    data_source: ClassVar[Literal["train"]]: "train"
+class TableReportTrain(TableReport):
     attributes: Literal[{"data_source": "train"}] = {"data_source": "train"}
 
 
-class TableReportTest(Media):
-    data_source: ClassVar[Literal["test"]]: "test"
+class TableReportTest(TableReport):
     attributes: Literal[{"data_source": "test"}] = {"data_source": "test"}
-

@@ -1,15 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import Any, Literal, ClassVar
-from functools import cached_property
+from typing import Literal, Any
+from typing_extensions import Self
 
-from pydantic import BaseModel, computed_field, Field
+from pydantic import computed_field, model_validator
 
 from skore_hub_project import Payload
 
 
 class Representation(Payload):
     media_type: str
-    value: str
+    value: Any
 
 
 class Media(ABC, Payload):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import Any, Literal, ClassVar
+from typing import Any, ClassVar, Literal
 
 from pandas import DataFrame, Series
 from pydantic import Field, computed_field
@@ -49,7 +49,7 @@ class FitTimeAggregate(Metric):
         timings: DataFrame = self.report.metrics.timings(aggregate=self.aggregate)
 
         try:
-            fit_times: Series = timings.loc[f"Fit time (s)"]
+            fit_times: Series = timings.loc["Fit time (s)"]
         except KeyError:
             return None
 

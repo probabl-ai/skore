@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from contextlib import suppress
+from functools import cached_property, reduce
 from math import isfinite
-from typing import Any, Literal, ClassVar
-from functools import reduce, cached_property
+from typing import Any, ClassVar, Literal
 
-from pydantic import BaseModel, computed_field, Field
+from pydantic import Field, computed_field
 
 from skore_hub_project import Payload
-
 
 CrossValidationReport = Any
 EstimatorReport = Any
@@ -35,6 +34,12 @@ class Metric(ABC, Payload):
     @property
     @abstractmethod
     def value(self) -> float | None: ...
+
+    def model_dump(self, *args, **kwargs):
+        if self.value is None:
+            return None
+
+        return super().model_dump(*args, **kwargs)
 
 
 class EstimatorReportMetric(Metric):

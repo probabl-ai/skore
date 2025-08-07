@@ -8,7 +8,6 @@ from skore_hub_project import Payload
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric.metric import Metric
 
-
 Artefact = Any
 Report = Any
 Project = Any
@@ -57,9 +56,21 @@ class ReportPayload(ABC, Payload):
     @computed_field
     @cached_property
     def metrics(self) -> list[Metric] | None:
-        return [metric(report=self.report) for metric in self.METRICS]  # filter None
+        payloads = [
+            payload
+            for metric in self.METRICS
+            if (payload := metric(report=self.report)).value is not None
+        ]
+
+        return payloads or None
 
     @computed_field
     @property
     def related_items(self) -> list[Media] | None:
-        return [media(report=self.report) for media in self.MEDIAS]  # filter None
+        payloads = [
+            payload
+            for media in self.MEDIAS
+            if (payload := media(report=self.report)).representation is not None
+        ]
+
+        return payloads or None
