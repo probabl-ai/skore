@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
-from sklearn.base import is_classifier
-from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -38,66 +35,24 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         >>>     estimator=Ridge(), X=X, y=y, splitter=5, n_jobs=4
         >>> )
         >>> report.feature_importance.coefficients().frame()
-            Intercept	Feature #0	Feature #1	Feature #2
+                    Intercept	Feature #0	Feature #1	Feature #2
         Split index
-        0	0.064837	74.100966	27.309656	17.367865
-        1	0.030257	74.276481	27.571421	17.392395
-        2	0.000084	74.107126	27.614821	17.277730
-        3	0.145613	74.207645	27.523667	17.391055
-        4	0.033695	74.259575	27.599610	17.390481
+        0       	0.064837	74.100966	27.309656	17.367865
+        1       	0.030257	74.276481	27.571421	17.392395
+        2       	0.000084	74.107126	27.614821	17.277730
+        3       	0.145613	74.207645	27.523667	17.391055
+        4       	0.033695	74.259575	27.599610	17.390481
         >>> report.feature_importance.coefficients().plot() # shows plot
         """
         coefficient_tables = []
         for split, report in enumerate(self._parent.estimator_reports_):
-            report_estimator = report.estimator_
-            if isinstance(report_estimator, Pipeline):
-                feature_names = report_estimator[:-1].get_feature_names_out()
-            else:
-                if hasattr(report_estimator, "feature_names_in_"):
-                    feature_names = report_estimator.feature_names_in_
-                else:
-                    feature_names = [
-                        f"Feature #{i}" for i in range(report_estimator.n_features_in_)
-                    ]
-
-            estimator = (
-                report_estimator[-1]
-                if isinstance(report_estimator, Pipeline)
-                else report_estimator
-            )
-            if hasattr(estimator, "intercept_"):
-                intercept = np.atleast_2d(estimator.intercept_)
-            else:
-                intercept = np.atleast_2d(estimator.regressor_.intercept_)
-
-            if hasattr(estimator, "coef_"):
-                coef = np.atleast_2d(estimator.coef_)
-            else:
-                coef = np.atleast_2d(estimator.regressor_.coef_)
-
-            if intercept is None:
-                data = coef.T
-                columns = list(feature_names)
-            else:
-                data = np.concatenate([intercept, coef.T])
-                columns = ["Intercept"] + list(feature_names)
-
-            if data.shape[1] == 1:
-                index = [f"{split}"]
-            elif is_classifier(report_estimator):
-                index = [f"Class #{i}" for i in range(data.shape[1])]
-            else:
-                index = [f"Target #{i}" for i in range(data.shape[1])]
-
             coefficient_tables.append(
-                pd.DataFrame(
-                    data=data.T,
-                    index=index,
-                    columns=columns,
-                )
+                (split, report.feature_importance.coefficients().frame())
             )
 
-        combined = pd.concat(coefficient_tables)
+        combined = pd.concat(
+            {i: df["Coefficient"] for i, df in coefficient_tables}, axis=1
+        ).T
         combined.index.name = "Split index"
 
         return FeatureImportanceDisplay(self._parent, combined)
