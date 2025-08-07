@@ -74,6 +74,12 @@ class EstimatorReportPayload(ReportPayload):
         MeanDecreaseImpurity,
         PermutationTest,
         PermutationTrain,
+        PrecisionRecallTest,
+        PrecisionRecallTrain,
+        PredictionErrorTest,
+        PredictionErrorTrain,
+        RocTest,
+        RocTrain,
         # TableReportTest,
         # TableReportTrain,
     )

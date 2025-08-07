@@ -105,7 +105,15 @@ class CrossValidationReportPayload(ReportPayload):
         PredictTimeTrainMean,
         PredictTimeTrainStd,
     )
-    MEDIAS: ClassVar[tuple[Media]] = (EstimatorHtmlRepr,)
+    MEDIAS: ClassVar[tuple[Media]] = (
+        EstimatorHtmlRepr,
+        PrecisionRecallTest,
+        PrecisionRecallTrain,
+        PredictionErrorTest,
+        PredictionErrorTrain,
+        RocTest,
+        RocTrain,
+    )
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
 

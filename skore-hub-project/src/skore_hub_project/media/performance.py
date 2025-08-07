@@ -1,8 +1,9 @@
 from functools import cached_property, reduce
 from inspect import signature
+from io import BytesIO
 from typing import Any, ClassVar, Literal
 
-
+from matplotlib import pyplot as plt
 from pydantic import Field, computed_field
 
 from .media import Media, Representation
@@ -41,6 +42,8 @@ class Performance(Media):
 
             figure_bytes = stream.getvalue()
             figure_b64_str = bytes_to_b64_str(figure_bytes)
+
+            plt.close(display.figure_)
 
         return Representation(
             media_type="image/svg+xml;base64",
