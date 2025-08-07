@@ -152,7 +152,7 @@ from sklearn.linear_model import LogisticRegression
 from skore import EstimatorReport
 
 split_data = skore.train_test_split(X=X, y=y, random_state=42, as_dict=True)
-estimator = LogisticRegression(max_iter=10_000, random_state=42)
+estimator = LogisticRegression(random_state=42)
 estimator_report = EstimatorReport(estimator, **split_data)
 
 
