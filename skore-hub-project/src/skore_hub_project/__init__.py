@@ -1,6 +1,5 @@
 """Package that provides APIs to communicate between ``skore`` and ``skore hub``."""
 
-from pydantic import BaseModel
 from rich.console import Console
 from rich.theme import Theme
 
@@ -19,11 +18,3 @@ console = Console(
         }
     ),
 )
-
-
-class Payload(BaseModel):
-    class Config:
-        frozen = True
-
-    # def model_dump(self, *args, **kwargs):
-    #     return super().model_dump(*args, **kwargs, exclude_none=True)

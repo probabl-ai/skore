@@ -6,9 +6,8 @@ from functools import cached_property, reduce
 from math import isfinite
 from typing import Any, ClassVar, Literal
 
-from pydantic import Field, computed_field
+from pydantic import Field, computed_field, BaseModel
 
-from skore_hub_project import Payload
 
 CrossValidationReport = Any
 EstimatorReport = Any
@@ -23,23 +22,20 @@ def cast_to_float(value: Any) -> float | None:
     return None
 
 
-class Metric(ABC, Payload):
+class Metric(ABC, BaseModel):
     name: str
     verbose_name: str
     data_source: Literal["train", "test"] | None = None
     greater_is_better: bool | None = None
     position: int | None = None
 
+    class Config:
+        frozen = True
+
     @computed_field
     @property
     @abstractmethod
     def value(self) -> float | None: ...
-
-    def model_dump(self, *args, **kwargs):
-        if self.value is None:
-            return None
-
-        return super().model_dump(*args, **kwargs)
 
 
 class EstimatorReportMetric(Metric):

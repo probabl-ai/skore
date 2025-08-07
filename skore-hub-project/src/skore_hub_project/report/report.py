@@ -2,9 +2,8 @@ from abc import ABC
 from functools import cached_property
 from typing import Any, ClassVar
 
-from pydantic import Field, computed_field
+from pydantic import Field, computed_field, BaseModel
 
-from skore_hub_project import Payload
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric.metric import Metric
 
@@ -15,7 +14,7 @@ Project = Any
 # Create protocols for CrossValidationReport and EstimatorReport
 
 
-class ReportPayload(ABC, Payload):
+class ReportPayload(ABC, BaseModel):
     METRICS: ClassVar[tuple[Metric]]
     MEDIAS: ClassVar[tuple[Media]]
     project: Project = Field(repr=False, exclude=True)
@@ -23,6 +22,9 @@ class ReportPayload(ABC, Payload):
     upload: bool = Field(default=True, repr=False, exclude=True)
     key: str
     run_id: str
+
+    class Config:
+        frozen = True
 
     @computed_field
     @property
