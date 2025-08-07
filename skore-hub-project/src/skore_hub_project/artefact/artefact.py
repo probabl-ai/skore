@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import InitVar, dataclass, field
+
+# from dataclasses import InitVar, dataclass, field
 from functools import cached_property, partial
 from math import ceil
 from pathlib import Path
@@ -235,22 +236,13 @@ def upload(project: Project, o: Any, type: str) -> str:
     return serializer.checksum
 
 
-@dataclass(kw_only=True)
-class Artefact:
-    project: InitVar[Project]
-    object: InitVar[Any]
-    type: InitVar[str]
-    kwargs: dict = field(default_factory=dict)
-    checksum: str = field(init=False)
+# @dataclass(kw_only=True)
+# class Artefact:
+#     project: InitVar[Project]
+#     object: InitVar[Any]
+#     type: InitVar[str]
+#     kwargs: dict = field(default_factory=dict)
+#     checksum: str = field(init=False)
 
-    def __post_init__(self, project: Project, object: Any, type: str):
-        self.checksum = upload(project, object, type)
-
-
-@dataclass(kw_only=True)
-class Media(Artefact):
-    name: str
-    verbose_name: str
-    category: str
-    method: str
-    media_type: str
+#     def __post_init__(self, project: Project, object: Any, type: str):
+#         self.checksum = upload(project, object, type)
