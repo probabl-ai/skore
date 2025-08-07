@@ -1,12 +1,11 @@
 from functools import cached_property
 from inspect import signature
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import Field, computed_field
+from skore import EstimatorReport
 
 from .media import Media, Representation
-
-EstimatorReport = Any
 
 
 class TableReport(Media):

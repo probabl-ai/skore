@@ -1,17 +1,14 @@
 from functools import cached_property
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import Field, computed_field
+from skore import CrossValidationReport, EstimatorReport
 
 from .media import Media, Representation
 
-EstimatorReport = Any
-CrossValidationReport = Any
-Report = EstimatorReport | CrossValidationReport
-
 
 class EstimatorHtmlRepr(Media):
-    report: Report = Field(repr=False, exclude=True)
+    report: EstimatorReport | CrossValidationReport = Field(repr=False, exclude=True)
     key: Literal["estimator_html_repr"] = "estimator_html_repr"
     category: Literal["model"] = "model"
 

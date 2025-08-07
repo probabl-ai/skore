@@ -5,14 +5,15 @@ from base64 import b64decode, b64encode
 from contextlib import contextmanager
 from inspect import signature as inspect_signature
 from typing import Any
-from .model import EstimatorHtmlRepr
+
+from .data import TableReportTest, TableReportTrain
 from .feature_importance import (
     Coefficients,
     MeanDecreaseImpurity,
     PermutationTest,
     PermutationTrain,
 )
-from .data import TableReportTest, TableReportTrain
+from .model import EstimatorHtmlRepr
 from .performance import (
     PrecisionRecallTest,
     PrecisionRecallTrain,

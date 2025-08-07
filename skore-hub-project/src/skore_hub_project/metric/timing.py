@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import Any, ClassVar, Literal
+from typing import ClassVar, Literal
 
 from pandas import DataFrame, Series
 from pydantic import Field, computed_field
+from skore import CrossValidationReport, EstimatorReport
 
 from .metric import Metric, cast_to_float
-
-CrossValidationReport = Any
-EstimatorReport = Any
 
 
 class FitTime(Metric):

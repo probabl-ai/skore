@@ -7,9 +7,7 @@ from math import isfinite
 from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field, computed_field
-
-CrossValidationReport = Any
-EstimatorReport = Any
+from skore import CrossValidationReport, EstimatorReport
 
 
 def cast_to_float(value: Any) -> float | None:

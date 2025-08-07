@@ -1,21 +1,17 @@
 from functools import cached_property, reduce
 from inspect import signature
 from io import BytesIO
-from typing import Any, ClassVar, Literal
+from typing import ClassVar, Literal
 
 from matplotlib import pyplot as plt
 from pydantic import Field, computed_field
+from skore import CrossValidationReport, EstimatorReport
 
 from .media import Media, Representation
 
 
-CrossValidationReport = Any
-EstimatorReport = Any
-Report = EstimatorReport | CrossValidationReport
-
-
 class Performance(Media):
-    report: Report = Field(repr=False, exclude=True)
+    report: EstimatorReport | CrossValidationReport = Field(repr=False, exclude=True)
     accessor: ClassVar[str]
     category: Literal["performance"] = "performance"
 

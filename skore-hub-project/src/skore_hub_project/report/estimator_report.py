@@ -1,6 +1,7 @@
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from pydantic import Field
+from skore import EstimatorReport
 
 from skore_hub_project.media import (
     Coefficients,
@@ -41,8 +42,6 @@ from skore_hub_project.metric import (
 )
 from skore_hub_project.metric.metric import Metric
 from skore_hub_project.report.report import ReportPayload
-
-EstimatorReport = Any
 
 
 class EstimatorReportPayload(ReportPayload):

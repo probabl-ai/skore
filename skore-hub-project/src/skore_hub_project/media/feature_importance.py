@@ -1,12 +1,11 @@
 from functools import cached_property, reduce
 from inspect import signature
-from typing import Any, ClassVar, Literal
+from typing import ClassVar, Literal
 
 from pydantic import Field, computed_field
+from skore import EstimatorReport
 
 from .media import Media, Representation
-
-EstimatorReport = Any
 
 
 class FeatureImportance(Media):
