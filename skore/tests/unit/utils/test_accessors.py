@@ -105,7 +105,7 @@ def test_check_has_coef():
     parent = MockParent(estimator="hello")
     accessor = MockAccessor(parent)
 
-    err_msg = "Estimator hello is not a supported estimator by the function called."
+    err_msg = "Estimator 'hello' is not a supported estimator by the function called."
     with pytest.raises(AttributeError, match=err_msg):
         assert _check_has_coef()(accessor)
 
@@ -146,7 +146,7 @@ def test_check_estimator_report_has_coef():
     assert _check_estimator_report_has_coef()(accessor)
 
     accessor = MockAccessor(MockParent("hello"))
-    err_msg = "Estimator hello is not a supported estimator by the function called."
+    err_msg = "Estimator 'hello' is not a supported estimator by the function called."
     with pytest.raises(AttributeError, match=err_msg):
         _check_estimator_report_has_coef()(accessor)
 
@@ -181,6 +181,6 @@ def test_check_has_feature_importance():
     parent = MockParent(estimator="hello")
     accessor = MockAccessor(parent)
 
-    err_msg = "Estimator hello is not a supported estimator by the function called."
+    err_msg = "Estimator 'hello' is not a supported estimator by the function called."
     with pytest.raises(AttributeError, match=err_msg):
         assert _check_has_feature_importances()(accessor)
