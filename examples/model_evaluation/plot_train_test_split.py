@@ -143,7 +143,7 @@ print("When expliciting, with the small typo, are the `X_train`'s still the same
 print(np.allclose(X_train_explicit, X_train_explicit_inverted))
 
 # %%
-# Returning a dictionnray instead of positional arguments
+# Returning a dictionary instead of positional arguments
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
