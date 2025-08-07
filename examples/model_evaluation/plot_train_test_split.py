@@ -145,6 +145,8 @@ print(np.allclose(X_train_explicit, X_train_explicit_inverted))
 # %%
 # Returning a dictionary instead of positional arguments
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Sending the 4 arrays to skore's EstimatorReport can be done easily this an additional
+# parameter `as_dict`:
 
 # %%
 
