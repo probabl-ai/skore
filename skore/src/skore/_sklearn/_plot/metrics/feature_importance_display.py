@@ -20,6 +20,14 @@ class FeatureImportanceDisplay(
     _coefficient_data : DataFrame | list[DataFrame]
         The ROC AUC data to display. The columns are
 
+    Attributes
+    ----------
+    ax_ : matplotlib Axes
+        Axes with the different matplotlib axis.
+
+    figure_ : matplotlib Figure
+        Figure containing the plot.
+
     Methods
     -------
     frame() -> DataFrame
@@ -55,7 +63,22 @@ class FeatureImportanceDisplay(
         self._coefficient_data = _coefficient_data
 
     def frame(self):
-        """Return the coefficients as a dataframe."""
+        """Return coefficients as a DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame
+            The structure of the returned DataFrame depends on the type of report:
+
+            - If the underlying report is an ``EstimatorReport``, a single column
+            "Coefficient", with the index being the feature names.
+
+            - If the underlying report is a ``CrossValidationReport``, the columns are
+            the feature names, and the index is the respective split number.
+
+            - If the underlying report is a ``ComparisonReport``, the columns are the
+            models passed in the report, with the index being the feature names.
+        """
         from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 
         if isinstance(self._parent, EstimatorReport):
@@ -94,16 +117,18 @@ class FeatureImportanceDisplay(
             raise TypeError(f"Unrecognised report type: {self._parent}")
 
     def _plot_estimator_report(self):
-        self._coefficient_data.plot.bar()
-        plt.title(f"{self._parent.estimator_name_} Coefficients")
-        plt.tight_layout()
+        self.figure_, self.ax_ = plt.subplots()
+        self._coefficient_data.plot.bar(ax=self.ax_)
+        self.ax_.set_title(f"{self._parent.estimator_name_} Coefficients")
+        self.ax_.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
+        self.figure_.tight_layout()
         plt.show()
 
     def _plot_cross_validation_report(self):
-        plt.figure(figsize=(12, 6))
-        self._coefficient_data.boxplot()
-        plt.title("Coefficient variance across CV splits")
-        plt.tight_layout()
+        self.figure_, self.ax_ = plt.subplots()
+        self._coefficient_data.boxplot(ax=self.ax_)
+        self.ax_.set_title("Coefficient variance across CV splits")
+        self.figure_.tight_layout()
         plt.show()
 
     def _plot_comparison_report(self):
@@ -111,8 +136,10 @@ class FeatureImportanceDisplay(
 
         if isinstance(self._parent.reports_[0], EstimatorReport):
             for coef_frame in self._coefficient_data:
-                _, ax = plt.subplots()
-                coef_frame.plot.bar(ax=ax)
+                self.figure_, self.ax_ = plt.subplots()
+                coef_frame.plot.bar(ax=self.ax_)
+                self.ax_.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
+
                 if len(self._coefficient_data) == 1 or len(coef_frame.columns) > 1:
                     # If there's only one DataFrame, or if the plot includes
                     # multiple models with the same features, use a combined title
@@ -122,16 +149,18 @@ class FeatureImportanceDisplay(
                     # features, those two are plotted together with a combined
                     # title, while the third goes to the else clause and gets its
                     # title.
-                    plt.title(f"{' vs '.join(coef_frame.columns)} Coefficients")
+                    self.ax_.set_title(
+                        f"{' vs '.join(coef_frame.columns)} Coefficients"
+                    )
                 else:
-                    plt.title(f"{coef_frame.columns[0]} Coefficients")
-                plt.tight_layout()
+                    self.ax_.set_title(f"{coef_frame.columns[0]} Coefficients")
+                self.figure_.tight_layout()
                 plt.show()
         elif isinstance(self._parent.reports_[0], CrossValidationReport):
             for coef_frame in self._coefficient_data:
-                _, ax = plt.subplots()
-                coef_frame.boxplot(ax=ax)
-                plt.title(
+                self.figure_, self.ax_ = plt.subplots()
+                coef_frame.boxplot(ax=self.ax_)
+                self.ax_.set_title(
                     f"{coef_frame.columns[0].split('__')[0]} Coefficients across splits"
                 )
                 plt.xticks(rotation=90)
