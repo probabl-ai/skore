@@ -43,7 +43,7 @@ class Performance(Media):
             figure_bytes = stream.getvalue()
             figure_b64_str = bytes_to_b64_str(figure_bytes)
 
-            plt.close(display.figure_)
+            plt.close(display.figure_)  # conflict with UX?
 
         return Representation(
             media_type="image/svg+xml;base64",

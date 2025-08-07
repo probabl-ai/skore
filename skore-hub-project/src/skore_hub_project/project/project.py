@@ -153,39 +153,10 @@ class Project:
 
         # Send metadata for `EstimatorReport`.
         with HUBClient() as client:
-            client.post(
-                url=f"projects/{self.tenant}/{self.name}/items",
-                json=dict(
-                    (
-                        ("key", key),
-                        ("run_id", self.run_id),
-                        ("estimator_class_name", report.estimator_name_),
-                        ("dataset_fingerprint", joblib.hash(report.y_test)),
-                        ("ml_task", report._ml_task),
-                        ("metrics", metrics(report)),
-                        ("related_items", artefacts(report)),
-                        ("parameters", {"checksum": checksum}),
-                    )
-                ),
-            )
+            payload = EstimatorReportPayload(key=key, run_id=self.run_id, report=report)
+            json = payload.model_dump()
 
-        # Send metadata for `CrossValidationReport`.
-        with HUBClient() as client:
-            client.post(
-                url=f"projects/{self.tenant}/{self.name}/items",
-                json=dict(
-                    (
-                        ("key", key),
-                        ("run_id", self.run_id),
-                        ("estimator_class_name", report.estimator_name_),
-                        ("dataset_fingerprint", joblib.hash(report.y_test)),
-                        ("ml_task", report._ml_task),
-                        ("metrics", metrics(report)),
-                        ("related_items", artefacts(report)),
-                        ("parameters", {"checksum": checksum}),
-                    )
-                ),
-            )
+            client.post(url=f"projects/{self.tenant}/{self.name}/items", json=json)
 
     @property
     def reports(self):
