@@ -17,6 +17,9 @@ from skore._sklearn.types import _DEFAULT, PositiveLabel
 from skore._utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
+    from skore._sklearn._comparison.feature_importance_accessor import (
+        _FeatureImportanceAccessor,
+    )
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 
     ReportType = Literal["EstimatorReport", "CrossValidationReport"]
@@ -108,6 +111,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         "metrics": {"name": "metrics"},
     }
     metrics: _MetricsAccessor
+    feature_importance: _FeatureImportanceAccessor
 
     _reports_type: ReportType
 

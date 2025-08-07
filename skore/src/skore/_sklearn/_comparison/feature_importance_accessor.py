@@ -3,13 +3,13 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import TYPE_CHECKING, cast
 
-import numpy as np
 import pandas as pd
-from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
+from skore._sklearn._cross_validation import CrossValidationReport
+from skore._sklearn._estimator import EstimatorReport
 from skore._sklearn._plot.metrics.feature_importance_display import (
     FeatureImportanceDisplay,
 )
@@ -32,10 +32,10 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
     def coefficients(self) -> FeatureImportanceDisplay:
         """Retrieve the coefficients for each report, including the intercepts.
 
-        If the input is a list of `EstimatorReport` objects, each estimator's
-        coefficients are returned as a single-column DataFrame.
+        If the compared reports are `EstimatorReport`s, the coefficients from each
+        report's estimator are returned as a single-column DataFrame.
 
-        If the input is a list of `CrossValidationReport` objects, the coefficients
+        If the compared reports are `CrossValidationReport`s, the coefficients
         across all cross-validation splits are retained and the columns are prefixed
         with the corresponding estimator name to distinguish them.
 
@@ -45,37 +45,15 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         features are plotted together.
         """
         similar_reports = defaultdict(list)
-        from skore import CrossValidationReport, EstimatorReport
 
         for report, name in zip(
             self._parent.reports_, self._parent.report_names_, strict=False
         ):
-            if isinstance(self._parent.reports_[0], CrossValidationReport):
-                report = cast(CrossValidationReport, report)
-                report_estimator = report.estimator_reports_[0].estimator_
-            elif isinstance(self._parent.reports_[0], EstimatorReport):
-                report_estimator = report.estimator_
-
-            if isinstance(report_estimator, Pipeline):
-                feature_names = report_estimator[:-1].get_feature_names_out()
-            else:
-                if hasattr(report_estimator, "feature_names_in_"):
-                    feature_names = report_estimator.feature_names_in_
-                else:
-                    feature_names = [
-                        f"Feature #{i}" for i in range(report_estimator.n_features_in_)
-                    ]
-
-            if hasattr(report_estimator, "intercept_"):
-                intercept = np.atleast_2d(report_estimator.intercept_)
-            else:
-                intercept = np.atleast_2d(report_estimator.regressor_.intercept_)
-
-            if intercept is not None:
-                feature_names = ["Intercept"] + feature_names
-
-            report_key = tuple(sorted(feature_names))
-            similar_reports[report_key].append(
+            report = cast(CrossValidationReport | EstimatorReport, report)
+            feature_names = (
+                report.feature_importance.coefficients().frame().index.tolist()
+            )
+            similar_reports[tuple(sorted(feature_names))].append(
                 {
                     "report_obj": report,
                     "estimator_name": name,
@@ -84,7 +62,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
             )
 
         coef_frames = []
-        if isinstance(self._parent.reports_[0], EstimatorReport):
+        if self._parent._reports_type == "EstimatorReport":
             for reports_with_same_features in similar_reports.values():
                 coef_dict = {}
                 for report_data in reports_with_same_features:
@@ -98,7 +76,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
                     pd.DataFrame(coef_dict, index=report_data["feature_names"])
                 )
 
-        elif isinstance(self._parent.reports_[0], CrossValidationReport):
+        elif self._parent._reports_type == "CrossValidationReport":
             for reports_with_same_features in similar_reports.values():
                 for report_data in reports_with_same_features:
                     coef_frames.append(
