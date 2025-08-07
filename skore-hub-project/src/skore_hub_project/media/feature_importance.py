@@ -6,7 +6,6 @@ from pydantic import Field, computed_field
 
 from .media import Media, Representation
 
-
 EstimatorReport = Any
 
 

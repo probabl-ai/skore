@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Literal, Any
-from typing_extensions import Self
+from typing import Any, Literal
 
-from pydantic import computed_field, model_validator, BaseModel
+from pydantic import BaseModel, computed_field
 
 
-class Representation(bmetrBaseModel):
+class Representation(BaseModel):
     media_type: str
     value: Any
 

@@ -2,7 +2,7 @@ from abc import ABC
 from functools import cached_property
 from typing import Any, ClassVar
 
-from pydantic import Field, computed_field, BaseModel
+from pydantic import BaseModel, Field, computed_field
 
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric.metric import Metric

@@ -6,8 +6,7 @@ from functools import cached_property, reduce
 from math import isfinite
 from typing import Any, ClassVar, Literal
 
-from pydantic import Field, computed_field, BaseModel
-
+from pydantic import BaseModel, Field, computed_field
 
 CrossValidationReport = Any
 EstimatorReport = Any

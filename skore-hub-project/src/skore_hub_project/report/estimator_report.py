@@ -8,6 +8,12 @@ from skore_hub_project.media import (
     MeanDecreaseImpurity,
     PermutationTest,
     PermutationTrain,
+    PrecisionRecallTest,
+    PrecisionRecallTrain,
+    PredictionErrorTest,
+    PredictionErrorTrain,
+    RocTest,
+    RocTrain,
     # TableReportTest,
     # TableReportTrain,
 )

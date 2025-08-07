@@ -8,6 +8,12 @@ from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.media import (
     EstimatorHtmlRepr,
+    PrecisionRecallTest,
+    PrecisionRecallTrain,
+    PredictionErrorTest,
+    PredictionErrorTrain,
+    RocTest,
+    RocTrain,
 )
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric import (
