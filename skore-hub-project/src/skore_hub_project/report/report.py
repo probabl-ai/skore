@@ -1,15 +1,14 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from pydantic import BaseModel, Field, computed_field
 from skore import CrossValidationReport, EstimatorReport
 
+from skore_hub_project import Project
+from skore_hub_project.artefact.artefact import Artefact
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric.metric import Metric
-
-Artefact = Any
-Project = Any
 
 
 class ReportPayload(ABC, BaseModel):
