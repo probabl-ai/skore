@@ -1,6 +1,6 @@
 """Widget for interactive parallel coordinate plots of ML experiment metadata."""
 
-from typing import Any, cast
+from typing import Any, Literal, TypedDict
 
 import numpy as np
 import pandas as pd
@@ -8,6 +8,22 @@ import plotly.graph_objects as go
 from IPython.display import clear_output, display
 from ipywidgets import widgets
 from rich.panel import Panel
+
+
+class Axis(TypedDict):
+    """An axis in the parallel coordinate plot."""
+
+    # TODO: Rename to "verbose_name"
+    name: str
+
+
+class MetricAxis(Axis):
+    """An axis in the parallel coordinate plot that represents a performance metric."""
+
+    greater_is_better: bool
+    type: Literal["time", "regression", "classification"]
+    # Whether to show that axis by default
+    show: bool
 
 
 class ModelExplorerWidget:
@@ -35,7 +51,7 @@ class ModelExplorerWidget:
     """
 
     _plot_width: int = 800
-    _metrics: dict[str, dict[str, str | bool]] = {
+    _metrics: dict[str, MetricAxis] = {
         "fit_time": {
             "name": "Fit Time",
             "greater_is_better": False,
@@ -67,11 +83,11 @@ class ModelExplorerWidget:
             "show": True,
         },
     }
-    _estimators: dict[str, dict[str, Any]] = {
+    _estimators: dict[str, Axis] = {
         "learner": {"name": "Learner"},
     }
     _dimension_to_column: dict[str, str] = {
-        cast(str, v["name"]): k for k, v in {**_metrics, **_estimators}.items()
+        v["name"]: k for k, v in (_metrics | _estimators).items()
     }
 
     _required_columns: list[str] = (
@@ -142,7 +158,7 @@ class ModelExplorerWidget:
         }
         for metric in self._metrics:
             default_value = self._metrics[metric]["show"]
-            metric_type = cast(str, self._metrics[metric]["type"])
+            metric_type = self._metrics[metric]["type"]
             if metric_type == "time":
                 # the "time" metrics should be added to all the different types
                 # (i.e. classification and regression)
@@ -150,7 +166,7 @@ class ModelExplorerWidget:
                     self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
                         indent=False,
                         value=default_value,
-                        description=cast(str, self._metrics[metric]["name"]),
+                        description=self._metrics[metric]["name"],
                         disabled=False,
                         layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
                     )
@@ -158,7 +174,7 @@ class ModelExplorerWidget:
                 self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
                     indent=False,
                     value=default_value,
-                    description=cast(str, self._metrics[metric]["name"]),
+                    description=self._metrics[metric]["name"],
                     disabled=False,
                     layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
                 )
@@ -176,7 +192,7 @@ class ModelExplorerWidget:
         self._color_metric_dropdown: dict[str, widgets.Dropdown] = {
             "classification": widgets.Dropdown(
                 options=[
-                    cast(str, self._metrics[metric]["name"])
+                    self._metrics[metric]["name"]
                     for metric in metrics_for_classification
                 ],
                 value="Log Loss",
@@ -186,7 +202,7 @@ class ModelExplorerWidget:
             ),
             "regression": widgets.Dropdown(
                 options=[
-                    cast(str, self._metrics[metric]["name"])
+                    self._metrics[metric]["name"]
                     for metric in metrics_for_regression
                 ],
                 value="RMSE",
@@ -477,14 +493,14 @@ class ModelExplorerWidget:
             for col in selected_metrics:  # use the order defined in the constructor
                 dimensions.append(
                     dict(
-                        label=cast(str, self._metrics[col]["name"]),
+                        label=self._metrics[col]["name"],
                         values=df_dataset[col].fillna(0),
                     )
                 )
 
             colorscale = (
                 "Viridis"
-                if cast(bool, self._metrics[color_metric]["greater_is_better"])
+                if self._metrics[color_metric]["greater_is_better"]
                 else "Viridis_r"
             )
             fig = go.FigureWidget(
@@ -494,7 +510,7 @@ class ModelExplorerWidget:
                         colorscale=colorscale,
                         showscale=True,
                         colorbar=dict(
-                            title=cast(str, self._metrics[color_metric]["name"])
+                            title=self._metrics[color_metric]["name"]
                         ),
                     ),
                     dimensions=dimensions,
