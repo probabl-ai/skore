@@ -1,6 +1,7 @@
 import pytest
 import sklearn
 import sklearn.cross_decomposition
+import sklearn.discriminant_analysis
 from sklearn.base import is_classifier, is_regressor
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
