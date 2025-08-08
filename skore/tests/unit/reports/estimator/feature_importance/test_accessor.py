@@ -11,6 +11,12 @@ def test_feature_importance_help(capsys, linear_regression_with_test):
     assert "Available feature importance methods" in captured.out
     assert "coefficients" in captured.out
 
+    report.feature_importance.coefficients().help()
+    captured = capsys.readouterr()
+    assert "frame" in captured.out
+    assert "plot" in captured.out
+    assert "set_style" in captured.out
+
 
 def test_feature_importance_repr(linear_regression_with_test):
     """Check that __repr__ returns a string starting with the expected prefix."""

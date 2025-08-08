@@ -24,6 +24,9 @@ from skore._utils._progress_bar import progress_decorator
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from skore._sklearn._cross_validation.feature_importance_accessor import (
+        _FeatureImportanceAccessor,
+    )
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
 
 
@@ -142,6 +145,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         "metrics": {"name": "metrics"},
     }
     metrics: _MetricsAccessor
+    feature_importance: _FeatureImportanceAccessor
 
     def __init__(
         self,
@@ -166,7 +170,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._split_indices = tuple(self._splitter.split(self._X, self._y))
         self.n_jobs = n_jobs
 
-        self.estimator_reports_ = self._fit_estimator_reports()
+        self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
 
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
