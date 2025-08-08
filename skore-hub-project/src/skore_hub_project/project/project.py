@@ -10,13 +10,13 @@ from typing import TYPE_CHECKING
 
 import joblib
 
-from ..client.client import Client, HTTPStatusError, HUBClient
-from . import artefact
+from skore import CrossValidationReport, EstimatorReport
+
+
+from skore_hub_project.client.client import Client, HTTPStatusError, HUBClient
 
 if TYPE_CHECKING:
     from typing import TypedDict
-
-    from skore import EstimatorReport
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -131,32 +131,22 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        from skore import CrossValidationReport, EstimatorReport
-
-        if not isinstance(report, EstimatorReport | CrossValidationReport):
+        if isinstance(report, EstimatorReport):
+            Payload = EstimatorReportPayload
+            url = f"projects/{self.tenant}/{self.name}/estimator-reports"
+        elif isinstance(report, CrossValidationReport):
+            Payload = CrossValidationReportPayload
+            url = f"projects/{self.tenant}/{self.name}/cross-validation-reports"
+        else:
             raise TypeError(
                 f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationReport`"
                 f"(found '{type(report)}')"
             )
 
-        # Upload report to artefacts storage.
-        #
-        # The report is pickled without its cache, to avoid salting the checksum.
-        # The report is pickled on disk to reduce RAM footprint.
-        cache = report._cache
-        report._cache = {}
+        payload = Payload(key=key, run_id=self.run_id, report=report).model_dump()
 
-        try:
-            checksum = artefact.upload(self, report, "report-pickle")
-        finally:
-            report._cache = cache
-
-        # Send metadata for `EstimatorReport`.
         with HUBClient() as client:
-            payload = EstimatorReportPayload(key=key, run_id=self.run_id, report=report)
-            json = payload.model_dump()
-
-            client.post(url=f"projects/{self.tenant}/{self.name}/items", json=json)
+            client.post(url=url, json=payload)
 
     @property
     def reports(self):

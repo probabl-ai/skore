@@ -1,8 +1,9 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field, computed_field
+
 from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.media.media import Media
@@ -47,11 +48,9 @@ class ReportPayload(ABC, BaseModel):
         return self.report._ml_task  # change to `self.report.ml_task` after rebase main
 
     @computed_field
-    @cached_property
-    def parameters(self) -> list[Artefact] | None:
-        if self.upload:
-            return ["<parameters>"]
-        return None
+    @property
+    @abstractmethod
+    def parameters(self) -> Artefact | None: ...
 
     @computed_field
     @cached_property

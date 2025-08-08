@@ -16,6 +16,7 @@ from skore_hub_project.media import (
     RocTest,
     RocTrain,
 )
+from skore_hub_project.artefact import CrossValidationReportArtefact
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric import (
     AccuracyTestMean,
@@ -190,3 +191,13 @@ class CrossValidationReportPayload(ReportPayload):
             )
             for report in self.report.estimator_reports_
         ]
+
+    @computed_field
+    @cached_property
+    def parameters(self) -> CrossValidationReportArtefact | None:
+        if self.upload:
+            return CrossValidationReportArtefact(
+                project=self.project,
+                report=self.report,
+            )
+        return None

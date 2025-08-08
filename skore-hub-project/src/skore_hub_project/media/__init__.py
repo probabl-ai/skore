@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from inspect import signature as inspect_signature
 from typing import Any
 
-from .data import TableReportTest, TableReportTrain
+# from .data import TableReportTest, TableReportTrain
 from .feature_importance import (
     Coefficients,
     MeanDecreaseImpurity,
@@ -35,8 +35,8 @@ __all__ = [
     "PredictionErrorTrain",
     "RocTest",
     "RocTrain",
-    "TableReportTest",
-    "TableReportTrain",
+    # "TableReportTest",
+    # "TableReportTrain",
     "b64_str_to_bytes",
     "bytes_to_b64_str",
     "switch_mpl_backend",
