@@ -7,6 +7,7 @@ from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
 from skore import CrossValidationReport
 
+from skore_hub_project.artefact import CrossValidationReportArtefact
 from skore_hub_project.media import (
     EstimatorHtmlRepr,
     PrecisionRecallTest,
@@ -16,7 +17,6 @@ from skore_hub_project.media import (
     RocTest,
     RocTrain,
 )
-from skore_hub_project.artefact import CrossValidationReportArtefact
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric import (
     AccuracyTestMean,

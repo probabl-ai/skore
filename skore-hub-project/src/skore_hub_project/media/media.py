@@ -10,6 +10,7 @@ class Representation(BaseModel):
 
     class Config:
         frozen = True
+        arbitrary_types_allowed = True
 
 
 class Media(ABC, BaseModel):
@@ -21,6 +22,7 @@ class Media(ABC, BaseModel):
 
     class Config:
         frozen = True
+        arbitrary_types_allowed = True
 
     @computed_field
     @property

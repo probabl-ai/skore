@@ -1,13 +1,10 @@
-from collections import defaultdict
 from functools import cached_property
-from typing import ClassVar, Literal
-
-from pydantic import Field, computed_field
 from typing import ClassVar
 
-from pydantic import Field
+from pydantic import Field, computed_field
 from skore import EstimatorReport
 
+from skore_hub_project.artefact import EstimatorReportArtefact
 from skore_hub_project.media import (
     Coefficients,
     EstimatorHtmlRepr,
@@ -47,8 +44,6 @@ from skore_hub_project.metric import (
 )
 from skore_hub_project.metric.metric import Metric
 from skore_hub_project.report.report import ReportPayload
-
-from skore_hub_project.artefact import EstimatorReportArtefact
 
 
 class EstimatorReportPayload(ReportPayload):

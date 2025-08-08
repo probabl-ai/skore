@@ -28,6 +28,7 @@ class Metric(ABC, BaseModel):
 
     class Config:
         frozen = True
+        arbitrary_types_allowed = True
 
     @computed_field
     @property

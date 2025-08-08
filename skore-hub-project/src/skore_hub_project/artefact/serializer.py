@@ -2,18 +2,14 @@
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from functools import cached_property, partial
-from math import ceil
+from functools import cached_property
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING
 
 from blake3 import blake3 as Blake3
 from joblib import dump
-from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from ..client.client import Client, HUBClient
 from ..item.item import bytes_to_b64_str
 
 if TYPE_CHECKING:

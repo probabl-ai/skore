@@ -1,22 +1,23 @@
 from __future__ import annotations
 
-from functools import cached_property
 from abc import ABC
-from typing import Any, ClassVar, Literal
+from functools import cached_property
+from typing import Any
 
-from skore import EstimatorReport, CrossValidationReport
 from pydantic import BaseModel, Field, computed_field
+from skore import CrossValidationReport, EstimatorReport
 
-
-from .upload import upload
-
-
-Project = Any
+from skore_hub_project import Project
+from skore_hub_project.artefact.upload import upload
 
 
 class Artefact(ABC, BaseModel):
     project: Project = Field(repr=False, exclude=True)
     object: Any = Field(repr=False, exclude=True)
+
+    class Config:
+        frozen = True
+        arbitrary_types_allowed = True
 
 
 class EstimatorReportArtefact(Artefact):
@@ -37,14 +38,13 @@ class EstimatorReportArtefact(Artefact):
         """
         Artefact checksum, useful for retrieving the artefact from artefact storage.
         """
-
-        cache = report._cache
-        report._cache = {}
+        cache = self.object._cache
+        self.object._cache = {}
 
         try:
-            return upload(self.project, self.report, "estimator-report")
+            return upload(self.project, self.object, "estimator-report")
         finally:
-            report._cache = cache
+            self.object._cache = cache
 
 
 class CrossValidationReportArtefact(Artefact):
@@ -65,8 +65,7 @@ class CrossValidationReportArtefact(Artefact):
         """
         Artefact checksum, useful for retrieving the artefact from artefact storage.
         """
-
-        reports = [self.report] + self.report.estimator_reports_
+        reports = [self.object] + self.object.estimator_reports_
         caches = []
 
         for report in reports:
@@ -74,7 +73,7 @@ class CrossValidationReportArtefact(Artefact):
             report._cache = {}
 
         try:
-            return upload(self.project, self.report, "cross-validation-report")
+            return upload(self.project, self.object, "cross-validation-report")
         finally:
             for i, report in enumerate(reports):
                 report._cache = cache[i]
