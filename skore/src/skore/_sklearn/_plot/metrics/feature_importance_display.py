@@ -38,23 +38,24 @@ class FeatureImportanceDisplay(
 
     Examples
     --------
-    >>> from sklearn.datasets import load_breast_cancer
-    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.datasets import load_diabetes
+    >>> from sklearn.linear_model import LinearRegression
     >>> from skore import train_test_split
     >>> from skore import EstimatorReport
-    >>> X, y = load_breast_cancer(return_X_y=True)
-    >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
-    >>> classifier = LogisticRegression(max_iter=10_000)
-    >>> report = EstimatorReport(classifier, **split_data)
+    >>> X, y = load_diabetes(return_X_y=True)
+    >>> split_data = train_test_split(
+    >>>     X=X, y=y, random_state=0, as_dict=True, shuffle=False
+    >>> )
+    >>> report = EstimatorReport(LinearRegression(), **split_data)
     >>> display = report.feature_importance.coefficients()
     >>> display.plot()
     >>> display.frame()
-              Coefficient
-    Intercept	30.398367
-    Feature #0	0.608450
-    Feature #1	0.168479
-    Feature #2	-0.164257
-    Feature #3	0.023228
+                Coefficient
+    Intercept	151.487952
+    Feature #0	-11.861904
+    Feature #1	-238.445509
+    Feature #2	505.395493
+    Feature #3	298.977119
     ...         ...
     """
 
