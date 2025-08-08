@@ -1,4 +1,5 @@
 from copy import deepcopy
+from pathlib import Path
 from types import SimpleNamespace
 
 from joblib import hash as joblib_hash
@@ -8,12 +9,12 @@ from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
-from skore._sklearn import ComparisonReport, EstimatorReport
+from skore._sklearn import ComparisonReport, CrossValidationReport, EstimatorReport
 from skore.project.summary import Summary
 
 
 @fixture
-def regression():
+def estimator_report_regression():
     X, y = make_regression(random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
@@ -29,7 +30,7 @@ def regression():
 
 
 @fixture
-def binary_classification():
+def estimator_report_binary_classification():
     X, y = make_classification(random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
@@ -42,9 +43,56 @@ def binary_classification():
     )
 
 
+@fixture
+def cross_validation_report_regression():
+    X, y = make_regression(random_state=42)
+    return CrossValidationReport(LinearRegression(), X, y)
+
+
+@fixture
+def cross_validation_report_binary_classification():
+    X, y = make_classification(random_state=42)
+    return CrossValidationReport(LogisticRegression(), X, y)
+
+
 class FakeProject:
     def __init__(self, *reports):
         self.__reports = reports
+
+    def _make_report_metadata(self, index, report):
+        return {
+            "id": index,
+            "run_id": None,
+            "key": None,
+            "date": None,
+            "learner": None,
+            "dataset": (
+                joblib_hash(report.y_test)
+                if isinstance(report, EstimatorReport)
+                else joblib_hash(report.y)
+            ),
+            "ml_task": report._ml_task,
+            "report_type": (
+                "estimator"
+                if isinstance(report, EstimatorReport)
+                else "cross-validation"
+            ),
+            "rmse": None,
+            "log_loss": None,
+            "roc_auc": None,
+            "fit_time": None,
+            "predict_time": None,
+            "rmse_mean": None,
+            "log_loss_mean": None,
+            "roc_auc_mean": None,
+            "fit_time_mean": None,
+            "predict_time_mean": None,
+            "rmse_std": None,
+            "log_loss_std": None,
+            "roc_auc_std": None,
+            "fit_time_std": None,
+            "predict_time_std": None,
+        }
 
     @property
     def reports(self):
@@ -53,20 +101,7 @@ class FakeProject:
 
         def metadata():
             return [
-                {
-                    "id": index,
-                    "run_id": None,
-                    "key": None,
-                    "date": None,
-                    "learner": None,
-                    "dataset": joblib_hash(report.y_test),
-                    "ml_task": report._ml_task,
-                    "rmse": None,
-                    "log_loss": None,
-                    "roc_auc": None,
-                    "fit_time": None,
-                    "predict_time": None,
-                }
+                self._make_report_metadata(index, report)
                 for index, report in enumerate(self.__reports)
             ]
 
@@ -74,8 +109,19 @@ class FakeProject:
 
 
 class TestSummary:
-    def test_factory(self, regression, binary_classification):
-        project = FakeProject(regression, binary_classification)
+    def test_factory(
+        self,
+        estimator_report_regression,
+        estimator_report_binary_classification,
+        cross_validation_report_regression,
+        cross_validation_report_binary_classification,
+    ):
+        project = FakeProject(
+            estimator_report_regression,
+            estimator_report_binary_classification,
+            cross_validation_report_regression,
+            cross_validation_report_binary_classification,
+        )
         summary = Summary.factory(project)
 
         assert isinstance(summary, DataFrame)
@@ -85,8 +131,8 @@ class TestSummary:
             summary.index,
             MultiIndex.from_arrays(
                 [
-                    RangeIndex(2),
-                    Index(["0", "1"], name="id", dtype=str),
+                    RangeIndex(4),
+                    Index(["0", "1", "2", "3"], name="id", dtype=str),
                 ]
             ),
         )
@@ -97,11 +143,22 @@ class TestSummary:
             "learner",
             "dataset",
             "ml_task",
+            "report_type",
             "rmse",
             "log_loss",
             "roc_auc",
             "fit_time",
             "predict_time",
+            "rmse_mean",
+            "log_loss_mean",
+            "roc_auc_mean",
+            "fit_time_mean",
+            "predict_time_mean",
+            "rmse_std",
+            "log_loss_std",
+            "roc_auc_std",
+            "fit_time_std",
+            "predict_time_std",
         ]
 
     def test_factory_empty(self):
@@ -113,8 +170,8 @@ class TestSummary:
         assert summary.project == project
         assert len(summary) == 0
 
-    def test_constructor(self, regression):
-        project = FakeProject(regression)
+    def test_constructor(self, estimator_report_regression):
+        project = FakeProject(estimator_report_regression)
         summary = Summary.factory(project)
 
         # Test with a bad query, with empty result
@@ -133,33 +190,73 @@ class TestSummary:
         assert DataFrame.equals(summary3, summary)
         assert summary3.project == project
 
-    def test_reports_filter_true(self, monkeypatch, regression, binary_classification):
-        project = FakeProject(regression, binary_classification)
+    def test_reports_filter_true(
+        self,
+        monkeypatch,
+        estimator_report_regression,
+        estimator_report_binary_classification,
+        cross_validation_report_regression,
+        cross_validation_report_binary_classification,
+    ):
+        project = FakeProject(
+            estimator_report_regression,
+            estimator_report_binary_classification,
+            cross_validation_report_regression,
+            cross_validation_report_binary_classification,
+        )
         summary = Summary.factory(project)
 
-        assert len(summary) == 2
-        assert summary.reports() == [regression, binary_classification]
+        assert summary.reports() == [
+            estimator_report_regression,
+            estimator_report_binary_classification,
+            cross_validation_report_regression,
+            cross_validation_report_binary_classification,
+        ]
 
         monkeypatch.setattr(
             "skore.project.summary.Summary._query_string_selection",
             lambda self: "ml_task == 'regression'",
         )
 
-        assert summary.reports() == [regression]
+        assert summary.reports() == [
+            estimator_report_regression,
+            cross_validation_report_regression,
+        ]
 
-    def test_reports_filter_false(self, monkeypatch, regression, binary_classification):
-        project = FakeProject(regression, binary_classification)
+    def test_reports_filter_false(
+        self,
+        monkeypatch,
+        estimator_report_regression,
+        estimator_report_binary_classification,
+        cross_validation_report_regression,
+        cross_validation_report_binary_classification,
+    ):
+        project = FakeProject(
+            estimator_report_regression,
+            estimator_report_binary_classification,
+            cross_validation_report_regression,
+            cross_validation_report_binary_classification,
+        )
         summary = Summary.factory(project)
 
-        assert len(summary) == 2
-        assert summary.reports(filter=False) == [regression, binary_classification]
+        assert summary.reports(filter=False) == [
+            estimator_report_regression,
+            estimator_report_binary_classification,
+            cross_validation_report_regression,
+            cross_validation_report_binary_classification,
+        ]
 
         monkeypatch.setattr(
             "skore.project.summary.Summary._query_string_selection",
             lambda self: "ml_task == 'regression'",
         )
 
-        assert summary.reports(filter=False) == [regression, binary_classification]
+        assert summary.reports(filter=False) == [
+            estimator_report_regression,
+            estimator_report_binary_classification,
+            cross_validation_report_regression,
+            cross_validation_report_binary_classification,
+        ]
 
     def test_reports_empty(self):
         summary = Summary.factory(FakeProject())
@@ -168,9 +265,9 @@ class TestSummary:
         assert summary.reports() == []
         assert summary.reports(filter=False) == []
 
-    def test_reports_return_as_comparison(self, regression):
-        regression1 = regression
-        regression2 = deepcopy(regression)
+    def test_reports_return_as_comparison(self, estimator_report_regression):
+        regression1 = estimator_report_regression
+        regression2 = deepcopy(estimator_report_regression)
         summary = Summary.factory(FakeProject(regression1, regression2))
         comparison = summary.reports(return_as="comparison")
 
@@ -185,9 +282,11 @@ class TestSummary:
             Summary([{"<column>": "<value>"}]).reports()
 
     def test_reports_exception_different_datasets(
-        self, regression, binary_classification
+        self, estimator_report_regression, estimator_report_binary_classification
     ):
-        project = FakeProject(regression, binary_classification)
+        project = FakeProject(
+            estimator_report_regression, estimator_report_binary_classification
+        )
         summary = Summary.factory(project)
 
         with raises(
