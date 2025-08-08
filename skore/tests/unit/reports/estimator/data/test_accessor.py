@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -178,3 +179,11 @@ def test_data_accessor_repr(forest_binary_classification_with_test):
     repr_str = repr(report.data)
     assert "skore.EstimatorReport.data" in repr_str
     assert "help()" in repr_str
+
+
+def test_data_accessor_clustering():
+    X, y = make_classification(random_state=42)
+    X_train, X_test, _, _ = train_test_split(X, y, random_state=42)
+
+    report = EstimatorReport(KMeans(), X_train=X_train, X_test=X_test)
+    report.data.analyze()  # with_y is True by default
