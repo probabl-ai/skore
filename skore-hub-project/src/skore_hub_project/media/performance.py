@@ -18,7 +18,7 @@ class Performance(Media):
     @computed_field
     @cached_property
     def representation(self) -> Representation:
-        from skore_hub_project.media import bytes_to_b64_str, switch_mpl_backend
+        from skore_hub_project import bytes_to_b64_str, switch_mpl_backend
 
         try:
             function = reduce(getattr, self.accessor.split("."), self.report)

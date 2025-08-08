@@ -10,8 +10,6 @@ from typing import TYPE_CHECKING
 from blake3 import blake3 as Blake3
 from joblib import dump
 
-from ..item.item import bytes_to_b64_str
-
 if TYPE_CHECKING:
     from typing import Any
 
@@ -49,6 +47,8 @@ class Serializer:
 
         https://github.com/oconnor663/blake3-py
         """
+        from skore_hub_project import bytes_to_b64_str
+
         hasher = Blake3(max_threads=(1 if self.size < 1e6 else Blake3.AUTO))
         checksum = hasher.update_mmap(self.filepath).digest()
 
