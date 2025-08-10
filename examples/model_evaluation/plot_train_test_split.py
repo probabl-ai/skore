@@ -142,6 +142,21 @@ X_train_explicit_inverted = X_train.copy()
 print("When expliciting, with the small typo, are the `X_train`'s still the same?")
 print(np.allclose(X_train_explicit, X_train_explicit_inverted))
 
+# %%
+# Returning a dictionary instead of positional arguments
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Sending the 4 arrays to skore's EstimatorReport can be done easily this an additional
+# parameter `as_dict`:
+
+# %%
+
+from sklearn.linear_model import LogisticRegression
+from skore import EstimatorReport
+
+split_data = skore.train_test_split(X=X, y=y, random_state=42, as_dict=True)
+estimator = LogisticRegression(random_state=42)
+estimator_report = EstimatorReport(estimator, **split_data)
+
 
 # %%
 # Automatic diagnostics: raising methodological warnings
