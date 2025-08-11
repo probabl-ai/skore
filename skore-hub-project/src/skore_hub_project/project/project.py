@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from functools import cached_property
+from functools import cached_property, wraps
 from operator import itemgetter
 from tempfile import TemporaryFile
 from types import SimpleNamespace
@@ -29,6 +29,23 @@ if TYPE_CHECKING:
         roc_auc: float | None
         fit_time: float
         predict_time: float
+
+
+def ensure_project_is_created(method):
+    """
+    Ensure project is created before executing any other operation.
+
+    Notes
+    -----
+    This is based on the fact that requesting a ``run`` ID of a missing hub's project
+    will trigger its creation on demand.
+    """
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        return self.run_id and method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class Project:
@@ -107,6 +124,7 @@ class Project:
 
         return run["id"]
 
+    @ensure_project_is_created
     def put(self, key: str, report: EstimatorReport):
         """
         Put a key-report pair to the hub project.
@@ -150,6 +168,7 @@ class Project:
             client.post(url=url, json=payload_dict)
 
     @property
+    @ensure_project_is_created
     def reports(self):
         """Accessor for interaction with the persisted reports."""
 
@@ -221,8 +240,7 @@ class Project:
 
             return sorted(map(dto, response.json()), key=itemgetter("date"))
 
-        # Ensure project is created by calling `self.run_id`
-        return self.run_id and SimpleNamespace(get=get, metadata=metadata)
+        return SimpleNamespace(get=get, metadata=metadata)
 
     def __repr__(self) -> str:  # noqa: D105
         return f"Project(mode='hub', name='{self.name}', tenant='{self.tenant}')"
