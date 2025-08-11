@@ -10,7 +10,7 @@ from httpx import Client, Response
 from pytest import fixture, mark, raises
 from skore import EstimatorReport
 from skore_hub_project import Project
-from skore_hub_project.project.artefact import Serializer
+from skore_hub_project.artefact.serializer import Serializer
 
 
 class FakeClient(Client):
@@ -31,7 +31,7 @@ def monkeypatch_client(monkeypatch):
         FakeClient,
     )
     monkeypatch.setattr(
-        "skore_hub_project.project.artefact.HUBClient",
+        "skore_hub_project.artefact.upload.HUBClient",
         FakeClient,
     )
 
@@ -89,7 +89,7 @@ class TestProject:
         finally:
             regression._cache = cache
 
-        monkeypatch.setattr("skore_hub_project.project.artefact.CHUNK_SIZE", chunk_size)
+        monkeypatch.setattr("skore_hub_project.artefact.upload.CHUNK_SIZE", chunk_size)
         respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
             Response(
                 200,
@@ -109,7 +109,7 @@ class TestProject:
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
             Response(200, json={"id": "<run_id>"})
         )
-        respx_mock.post("projects/<tenant>/<name>/items")
+        respx_mock.post("projects/<tenant>/<name>/estimator-reports")
 
         Project("<tenant>", "<name>").put("<key>", regression)
 
@@ -152,7 +152,9 @@ class TestProject:
         respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
             Response(200, json=[])
         )
-        respx_mock.post("projects/<tenant>/<name>/items").mock(Response(200))
+        respx_mock.post("projects/<tenant>/<name>/estimator-reports").mock(
+            Response(200)
+        )
 
         Project("<tenant>", "<name>").put("<key>", regression)
 

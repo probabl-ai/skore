@@ -6,7 +6,7 @@ from functools import cached_property, reduce
 from math import isfinite
 from typing import Any, ClassVar, Literal
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 from skore import CrossValidationReport, EstimatorReport
 
 
@@ -20,15 +20,13 @@ def cast_to_float(value: Any) -> float | None:
 
 
 class Metric(ABC, BaseModel):
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
     name: str
     verbose_name: str
     data_source: Literal["train", "test"] | None = None
     greater_is_better: bool | None = None
     position: int | None = None
-
-    class Config:
-        frozen = True
-        arbitrary_types_allowed = True
 
     @computed_field
     @property

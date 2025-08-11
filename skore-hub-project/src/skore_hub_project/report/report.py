@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import ClassVar, NoReturn
+from typing import ClassVar
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project import Project
@@ -12,16 +12,15 @@ from skore_hub_project.metric.metric import Metric
 
 
 class ReportPayload(ABC, BaseModel):
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
     METRICS: ClassVar[tuple[Metric]]
     MEDIAS: ClassVar[tuple[Media]]
+
     project: Project = Field(repr=False, exclude=True)
     report: EstimatorReport | CrossValidationReport = Field(repr=False, exclude=True)
     upload: bool = Field(default=True, repr=False, exclude=True)
     key: str
-
-    class Config:
-        frozen = True
-        arbitrary_types_allowed = True
 
     @computed_field
     @property

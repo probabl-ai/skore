@@ -6,7 +6,7 @@ import re
 from importlib.metadata import entry_points
 from typing import Any
 
-from skore import EstimatorReport, CrossValidationReport
+from skore import CrossValidationReport, EstimatorReport
 from skore.project.summary import Summary
 
 

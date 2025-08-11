@@ -1,33 +1,11 @@
 from pathlib import Path
-from urllib.parse import urljoin
 
 from blake3 import blake3 as Blake3
-from httpx import Client
-from pytest import fixture
-from skore_hub_project.item.item import bytes_to_b64_str
-from skore_hub_project.project.artefact import Serializer
+from skore_hub_project import bytes_to_b64_str
+from skore_hub_project.artefact.serializer import Serializer
 
 
-class FakeClient(Client):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-
-    def request(self, method, url, **kwargs):
-        response = super().request(method, urljoin("http://localhost", url), **kwargs)
-        response.raise_for_status()
-
-        return response
-
-
-@fixture(autouse=True)
-def monkeypatch_client(monkeypatch):
-    monkeypatch.setattr(
-        "skore_hub_project.project.artefact.HUBClient",
-        FakeClient,
-    )
-
-
-class TestSerialize:
+class TestSerializer:
     def test_init(self, tmp_path):
         with Serializer(1) as serializer:
             assert serializer.filepath.read_bytes() == b"\x80\x04K\x01."
