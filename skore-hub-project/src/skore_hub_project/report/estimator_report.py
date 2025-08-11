@@ -17,8 +17,8 @@ from skore_hub_project.media import (
     PredictionErrorTrain,
     RocTest,
     RocTrain,
-    # TableReportTest,
-    # TableReportTrain,
+    TableReportTest,
+    TableReportTrain,
 )
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric import (
@@ -81,8 +81,8 @@ class EstimatorReportPayload(ReportPayload):
         PredictionErrorTrain,
         RocTest,
         RocTrain,
-        # TableReportTest,
-        # TableReportTrain,
+        TableReportTest,
+        TableReportTrain,
     )
 
     report: EstimatorReport = Field(repr=False, exclude=True)

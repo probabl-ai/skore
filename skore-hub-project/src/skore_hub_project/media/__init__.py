@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# from .data import TableReportTest, TableReportTrain
+from .data import TableReportTest, TableReportTrain
 from .feature_importance import (
     Coefficients,
     MeanDecreaseImpurity,
@@ -29,6 +29,6 @@ __all__ = [
     "PredictionErrorTrain",
     "RocTest",
     "RocTrain",
-    # "TableReportTest",
-    # "TableReportTrain",
+    "TableReportTest",
+    "TableReportTrain",
 ]
