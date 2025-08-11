@@ -70,7 +70,11 @@ class TestProject:
 
         assert Project("<tenant>", "<name>").run_id == "<run_id>"
 
-    def test_put_exception(self):
+    def test_put_exception(self, respx_mock):
+        respx_mock.post("projects/<tenant>/<name>/runs").mock(
+            Response(200, json={"id": "<run_id>"})
+        )
+
         with raises(TypeError, match="Key must be a string"):
             Project("<tenant>", "<name>").put(None, "<value>")
 
@@ -90,6 +94,9 @@ class TestProject:
             regression._cache = cache
 
         monkeypatch.setattr("skore_hub_project.project.artefact.CHUNK_SIZE", chunk_size)
+        respx_mock.post("projects/<tenant>/<name>/runs").mock(
+            Response(200, json={"id": "<run_id>"})
+        )
         respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
             Response(
                 200,
@@ -106,9 +113,6 @@ class TestProject:
             Response(200, headers={"etag": '"<etag2>"'})
         )
         respx_mock.post("projects/<tenant>/<name>/artefacts/complete")
-        respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": "<run_id>"})
-        )
         respx_mock.post("projects/<tenant>/<name>/items")
 
         Project("<tenant>", "<name>").put("<key>", regression)
@@ -116,8 +120,9 @@ class TestProject:
         requests = [call.request for call in respx_mock.calls]
 
         assert len(requests) == 6
-        assert requests[0].url.path == "/projects/<tenant>/<name>/artefacts"
-        assert loads(requests[0].content.decode()) == [
+        assert requests[0].url.path == "/projects/<tenant>/<name>/runs"
+        assert requests[1].url.path == "/projects/<tenant>/<name>/artefacts"
+        assert loads(requests[1].content.decode()) == [
             {
                 "checksum": checksum,
                 "chunk_number": 2,
@@ -126,16 +131,16 @@ class TestProject:
         ]
         assert sorted(
             (
-                (str(requests[1].url), requests[1].content),
                 (str(requests[2].url), requests[2].content),
+                (str(requests[3].url), requests[3].content),
             ),
             key=itemgetter(0),
         ) == [
             ("http://chunk1.com/", pickle[:chunk_size]),
             ("http://chunk2.com/", pickle[chunk_size:]),
         ]
-        assert requests[3].url.path == "/projects/<tenant>/<name>/artefacts/complete"
-        assert loads(requests[3].content.decode()) == [
+        assert requests[4].url.path == "/projects/<tenant>/<name>/artefacts/complete"
+        assert loads(requests[4].content.decode()) == [
             {
                 "checksum": checksum,
                 "etags": {
