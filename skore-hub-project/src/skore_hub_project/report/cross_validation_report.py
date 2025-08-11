@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import cached_property
-from typing import ClassVar, Literal
+from typing import ClassVar, Literal, cast
 
 from pydantic import Field, computed_field
 from sklearn.model_selection import BaseCrossValidator
@@ -64,55 +64,61 @@ from skore_hub_project.report.report import ReportPayload
 
 
 class CrossValidationReportPayload(ReportPayload):
-    METRICS: ClassVar[tuple[Metric]] = (
-        AccuracyTestMean,
-        AccuracyTestStd,
-        AccuracyTrainMean,
-        AccuracyTrainStd,
-        BrierScoreTestMean,
-        BrierScoreTestStd,
-        BrierScoreTrainMean,
-        BrierScoreTrainStd,
-        LogLossTestMean,
-        LogLossTestStd,
-        LogLossTrainMean,
-        LogLossTrainStd,
-        PrecisionTestMean,
-        PrecisionTestStd,
-        PrecisionTrainMean,
-        PrecisionTrainStd,
-        R2TestMean,
-        R2TestStd,
-        R2TrainMean,
-        R2TrainStd,
-        RecallTestMean,
-        RecallTestStd,
-        RecallTrainMean,
-        RecallTrainStd,
-        RmseTestMean,
-        RmseTestStd,
-        RmseTrainMean,
-        RmseTrainStd,
-        RocAucTestMean,
-        RocAucTestStd,
-        RocAucTrainMean,
-        RocAucTrainStd,
-        # timings must be calculated last
-        FitTimeMean,
-        FitTimeStd,
-        PredictTimeTestMean,
-        PredictTimeTestStd,
-        PredictTimeTrainMean,
-        PredictTimeTrainStd,
+    METRICS: ClassVar[tuple[Metric, ...]] = cast(
+        tuple[Metric, ...],
+        (
+            AccuracyTestMean,
+            AccuracyTestStd,
+            AccuracyTrainMean,
+            AccuracyTrainStd,
+            BrierScoreTestMean,
+            BrierScoreTestStd,
+            BrierScoreTrainMean,
+            BrierScoreTrainStd,
+            LogLossTestMean,
+            LogLossTestStd,
+            LogLossTrainMean,
+            LogLossTrainStd,
+            PrecisionTestMean,
+            PrecisionTestStd,
+            PrecisionTrainMean,
+            PrecisionTrainStd,
+            R2TestMean,
+            R2TestStd,
+            R2TrainMean,
+            R2TrainStd,
+            RecallTestMean,
+            RecallTestStd,
+            RecallTrainMean,
+            RecallTrainStd,
+            RmseTestMean,
+            RmseTestStd,
+            RmseTrainMean,
+            RmseTrainStd,
+            RocAucTestMean,
+            RocAucTestStd,
+            RocAucTrainMean,
+            RocAucTrainStd,
+            # timings must be calculated last
+            FitTimeMean,
+            FitTimeStd,
+            PredictTimeTestMean,
+            PredictTimeTestStd,
+            PredictTimeTrainMean,
+            PredictTimeTrainStd,
+        ),
     )
-    MEDIAS: ClassVar[tuple[Media]] = (
-        EstimatorHtmlRepr,
-        PrecisionRecallTest,
-        PrecisionRecallTrain,
-        PredictionErrorTest,
-        PredictionErrorTrain,
-        RocTest,
-        RocTrain,
+    MEDIAS: ClassVar[tuple[Media, ...]] = cast(
+        tuple[Media, ...],
+        (
+            EstimatorHtmlRepr,
+            PrecisionRecallTest,
+            PrecisionRecallTrain,
+            PredictionErrorTest,
+            PredictionErrorTrain,
+            RocTest,
+            RocTrain,
+        ),
     )
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
@@ -134,7 +140,7 @@ class CrossValidationReportPayload(ReportPayload):
             self.__sample_to_class_indice = None
             self.__classes = None
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def splitting_strategy_name(self) -> str:
         is_sklearn_splitter = isinstance(self.report.splitter, BaseCrossValidator)
@@ -145,7 +151,7 @@ class CrossValidationReportPayload(ReportPayload):
             is_standard_strategy and self.report.splitter.__class__.__name__ or "custom"
         )
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def splits(self) -> list[list[Literal[0, 1]]]:
         """
@@ -161,21 +167,21 @@ class CrossValidationReportPayload(ReportPayload):
             for test_indice in test_indices:
                 splits[i][test_indice] = 1
 
-        return splits
+        return cast(list[list[Literal[0, 1]]], splits)
 
     groups: list[int] | None = None
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def class_names(self) -> list[str] | None:
         return self.__classes
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def classes(self) -> list[int] | None:
         return self.__sample_to_class_indice
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def estimators(self) -> list[EstimatorReportPayload]:
         return [
@@ -189,7 +195,7 @@ class CrossValidationReportPayload(ReportPayload):
             for report in self.report.estimator_reports_
         ]
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def parameters(self) -> CrossValidationReportArtefact | dict[()]:
         if self.upload:

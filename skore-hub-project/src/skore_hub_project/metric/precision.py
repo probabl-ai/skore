@@ -6,10 +6,10 @@ from .metric import CrossValidationReportMetric, EstimatorReportMetric
 
 
 class Precision(EstimatorReportMetric):
-    accessor: ClassVar[Literal["metrics.precision"]] = "metrics.precision"
-    name: Literal["precision"] = "precision"
-    verbose_name: Literal["Precision"] = "Precision"
-    greater_is_better: Literal[True] = True
+    accessor: ClassVar[str] = "metrics.precision"
+    name: str = "precision"
+    verbose_name: str = "Precision"
+    greater_is_better: bool = True
 
 
 class PrecisionTrain(Precision):
@@ -21,11 +21,11 @@ class PrecisionTest(Precision):
 
 
 class PrecisionMean(CrossValidationReportMetric):
-    accessor: ClassVar[Literal["metrics.precision"]] = "metrics.precision"
+    accessor: ClassVar[str] = "metrics.precision"
     aggregate: ClassVar[Literal["mean"]] = "mean"
-    name: Literal["precision_mean"] = "precision_mean"
-    verbose_name: Literal["Precision - MEAN"] = "Precision - MEAN"
-    greater_is_better: Literal[True] = True
+    name: str = "precision_mean"
+    verbose_name: str = "Precision - MEAN"
+    greater_is_better: bool = True
 
 
 class PrecisionTrainMean(PrecisionMean):
@@ -37,11 +37,11 @@ class PrecisionTestMean(PrecisionMean):
 
 
 class PrecisionStd(CrossValidationReportMetric):
-    accessor: ClassVar[Literal["metrics.precision"]] = "metrics.precision"
+    accessor: ClassVar[str] = "metrics.precision"
     aggregate: ClassVar[Literal["std"]] = "std"
-    name: Literal["precision_std"] = "precision_std"
-    verbose_name: Literal["Precision - STD"] = "Precision - STD"
-    greater_is_better: Literal[False] = False
+    name: str = "precision_std"
+    verbose_name: str = "Precision - STD"
+    greater_is_better: bool = False
 
 
 class PrecisionTrainStd(PrecisionStd):

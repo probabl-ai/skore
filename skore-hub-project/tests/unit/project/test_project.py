@@ -261,7 +261,7 @@ class TestProject:
                 },
                 {
                     "key": "estimator_html_repr",
-                    "verbose_name": None,
+                    "verbose_name": "Estimator HTML representation",
                     "category": "model",
                     "attributes": {},
                     "parameters": {},

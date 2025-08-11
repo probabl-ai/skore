@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import ClassVar
+from typing import ClassVar, cast
 
 from pydantic import Field, computed_field
 from skore import EstimatorReport
@@ -47,49 +47,55 @@ from skore_hub_project.report.report import ReportPayload
 
 
 class EstimatorReportPayload(ReportPayload):
-    METRICS: ClassVar[tuple[Metric]] = (
-        AccuracyTest,
-        AccuracyTrain,
-        BrierScoreTest,
-        BrierScoreTrain,
-        LogLossTest,
-        LogLossTrain,
-        PrecisionTest,
-        PrecisionTrain,
-        R2Test,
-        R2Train,
-        RecallTest,
-        RecallTrain,
-        RmseTest,
-        RmseTrain,
-        RocAucTest,
-        RocAucTrain,
-        # timings must be calculated last
-        FitTime,
-        PredictTimeTest,
-        PredictTimeTrain,
+    METRICS: ClassVar[tuple[Metric, ...]] = cast(
+        tuple[Metric, ...],
+        (
+            AccuracyTest,
+            AccuracyTrain,
+            BrierScoreTest,
+            BrierScoreTrain,
+            LogLossTest,
+            LogLossTrain,
+            PrecisionTest,
+            PrecisionTrain,
+            R2Test,
+            R2Train,
+            RecallTest,
+            RecallTrain,
+            RmseTest,
+            RmseTrain,
+            RocAucTest,
+            RocAucTrain,
+            # timings must be calculated last
+            FitTime,
+            PredictTimeTest,
+            PredictTimeTrain,
+        ),
     )
-    MEDIAS: ClassVar[tuple[Media]] = (
-        Coefficients,
-        EstimatorHtmlRepr,
-        MeanDecreaseImpurity,
-        PermutationTest,
-        PermutationTrain,
-        PrecisionRecallTest,
-        PrecisionRecallTrain,
-        PredictionErrorTest,
-        PredictionErrorTrain,
-        RocTest,
-        RocTrain,
-        TableReportTest,
-        TableReportTrain,
+    MEDIAS: ClassVar[tuple[Media, ...]] = cast(
+        tuple[Media, ...],
+        (
+            Coefficients,
+            EstimatorHtmlRepr,
+            MeanDecreaseImpurity,
+            PermutationTest,
+            PermutationTrain,
+            PrecisionRecallTest,
+            PrecisionRecallTrain,
+            PredictionErrorTest,
+            PredictionErrorTrain,
+            RocTest,
+            RocTrain,
+            TableReportTest,
+            TableReportTrain,
+        ),
     )
 
     report: EstimatorReport = Field(repr=False, exclude=True)
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def parameters(self) -> EstimatorReportArtefact | dict[()]:
+    def parameters(self) -> EstimatorReportArtefact | dict:
         if self.upload:
             return EstimatorReportArtefact(project=self.project, report=self.report)
         return {}

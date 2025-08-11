@@ -12,12 +12,12 @@ from .metric import Metric, cast_to_float
 
 class FitTime(Metric):
     report: EstimatorReport = Field(repr=False, exclude=True)
-    name: Literal["fit_time"] = "fit_time"
-    verbose_name: Literal["Fit time (s)"] = "Fit time (s)"
-    greater_is_better: Literal[False] = False
-    position: Literal[1] = 1
+    name: str = "fit_time"
+    verbose_name: str = "Fit time (s)"
+    greater_is_better: bool = False
+    position: int = 1
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:
         timings: dict = self.report.metrics.timings()
@@ -39,9 +39,9 @@ class FitTimeAggregate(Metric):
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
     aggregate: ClassVar[Literal["mean", "std"]]
-    greater_is_better: Literal[False] = False
+    greater_is_better: bool = False
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:
         timings: DataFrame = self.report.metrics.timings(aggregate=self.aggregate)
@@ -56,24 +56,24 @@ class FitTimeAggregate(Metric):
 
 class FitTimeMean(FitTimeAggregate):
     aggregate: ClassVar[Literal["mean"]] = "mean"
-    name: Literal["fit_time_mean"] = "fit_time_mean"
-    verbose_name: Literal["Fit time (s) - MEAN"] = "Fit time (s) - MEAN"
+    name: str = "fit_time_mean"
+    verbose_name: str = "Fit time (s) - MEAN"
 
 
 class FitTimeStd(FitTimeAggregate):
     aggregate: ClassVar[Literal["std"]] = "std"
-    name: Literal["fit_time_std"] = "fit_time_std"
-    verbose_name: Literal["Fit time (s) - STD"] = "Fit time (s) - STD"
+    name: str = "fit_time_std"
+    verbose_name: str = "Fit time (s) - STD"
 
 
 class PredictTime(Metric):
     report: EstimatorReport = Field(repr=False, exclude=True)
-    name: Literal["predict_time"] = "predict_time"
-    verbose_name: Literal["Predict time (s)"] = "Predict time (s)"
-    greater_is_better: Literal[False] = False
-    position: Literal[2] = 2
+    name: str = "predict_time"
+    verbose_name: str = "Predict time (s)"
+    greater_is_better: bool = False
+    position: int = 2
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:
         timings: dict = self.report.metrics.timings()
@@ -103,9 +103,9 @@ class PredictTimeAggregate(Metric):
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
     aggregate: ClassVar[Literal["mean", "std"]]
-    greater_is_better: Literal[False] = False
+    greater_is_better: bool = False
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:
         timings: DataFrame = self.report.metrics.timings(aggregate=self.aggregate)
@@ -120,8 +120,8 @@ class PredictTimeAggregate(Metric):
 
 class PredictTimeMean(PredictTimeAggregate):
     aggregate: ClassVar[Literal["mean"]] = "mean"
-    name: Literal["predict_time_mean"] = "predict_time_mean"
-    verbose_name: Literal["Predict time (s) - MEAN"] = "Predict time (s) - MEAN"
+    name: str = "predict_time_mean"
+    verbose_name: str = "Predict time (s) - MEAN"
 
 
 class PredictTimeTrainMean(PredictTimeMean):
@@ -134,8 +134,8 @@ class PredictTimeTestMean(PredictTimeMean):
 
 class PredictTimeStd(PredictTimeAggregate):
     aggregate: ClassVar[Literal["std"]] = "std"
-    name: Literal["predict_time_std"] = "predict_time_std"
-    verbose_name: Literal["Predict time (s) - STD"] = "Predict time (s) - STD"
+    name: str = "predict_time_std"
+    verbose_name: str = "Predict time (s) - STD"
 
 
 class PredictTimeTrainStd(PredictTimeStd):

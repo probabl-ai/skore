@@ -10,14 +10,14 @@ from .media import Media, Representation
 
 class TableReport(Media):
     report: EstimatorReport = Field(repr=False, exclude=True)
-    key: Literal["table_report"] = "table_report"
-    verbose_name: Literal["Table report"] = "Table report"
+    key: str = "table_report"
+    verbose_name: str = "Table report"
     category: Literal["data"] = "data"
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def representation(self) -> Representation:
-        function = self.report.data.analyze
+        function = self.report.data.analyze  # type: ignore[attr-defined]
         function_parameters = signature(function).parameters
         function_kwargs = {
             k: v for k, v in self.attributes.items() if k in function_parameters
@@ -32,8 +32,8 @@ class TableReport(Media):
 
 
 class TableReportTrain(TableReport):
-    attributes: Literal[{"data_source": "train"}] = {"data_source": "train"}
+    attributes: dict = {"data_source": "train"}
 
 
 class TableReportTest(TableReport):
-    attributes: Literal[{"data_source": "test"}] = {"data_source": "test"}
+    attributes: dict = {"data_source": "test"}

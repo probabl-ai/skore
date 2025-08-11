@@ -1,7 +1,7 @@
 from functools import cached_property, reduce
 from inspect import signature
 from io import BytesIO
-from typing import ClassVar, Literal
+from typing import ClassVar, Literal, Callable, cast, TypedDict
 
 from matplotlib import pyplot as plt
 from pydantic import Field, computed_field
@@ -15,13 +15,16 @@ class Performance(Media):
     accessor: ClassVar[str]
     category: Literal["performance"] = "performance"
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def representation(self) -> Representation | None:
         from skore_hub_project import bytes_to_b64_str, switch_mpl_backend
 
         try:
-            function = reduce(getattr, self.accessor.split("."), self.report)
+            function = cast(
+                Callable,
+                reduce(getattr, self.accessor.split("."), self.report),
+            )
         except AttributeError:
             return None
 
@@ -48,42 +51,42 @@ class Performance(Media):
 
 
 class PrecisionRecall(Performance):
-    accessor: ClassVar[Literal["metrics.precision_recall"]] = "metrics.precision_recall"
-    key: Literal["precision_recall"] = "precision_recall"
-    verbose_name: Literal["Precision Recall"] = "Precision Recall"
+    accessor: ClassVar[str] = "metrics.precision_recall"
+    key: str = "precision_recall"
+    verbose_name: str = "Precision Recall"
 
 
 class PrecisionRecallTrain(PrecisionRecall):
-    attributes: Literal[{"data_source": "train"}] = {"data_source": "train"}
+    attributes: dict = {"data_source": "train"}
 
 
 class PrecisionRecallTest(PrecisionRecall):
-    attributes: Literal[{"data_source": "test"}] = {"data_source": "test"}
+    attributes: dict = {"data_source": "test"}
 
 
 class PredictionError(Performance):
-    accessor: ClassVar[Literal["metrics.prediction_error"]] = "metrics.prediction_error"
-    key: Literal["prediction_error"] = "prediction_error"
-    verbose_name: Literal["Prediction error"] = "Prediction error"
+    accessor: ClassVar[str] = "metrics.prediction_error"
+    key: str = "prediction_error"
+    verbose_name: str = "Prediction error"
 
 
 class PredictionErrorTrain(PredictionError):
-    attributes: Literal[{"data_source": "train"}] = {"data_source": "train"}
+    attributes: dict = {"data_source": "train"}
 
 
 class PredictionErrorTest(PredictionError):
-    attributes: Literal[{"data_source": "test"}] = {"data_source": "test"}
+    attributes: dict = {"data_source": "test"}
 
 
 class Roc(Performance):
-    accessor: ClassVar[Literal["metrics.roc"]] = "metrics.roc"
-    key: Literal["roc"] = "roc"
-    verbose_name: Literal["ROC"] = "ROC"
+    accessor: ClassVar[str] = "metrics.roc"
+    key: str = "roc"
+    verbose_name: str = "ROC"
 
 
 class RocTrain(Roc):
-    attributes: Literal[{"data_source": "train"}] = {"data_source": "train"}
+    attributes: dict = {"data_source": "train"}
 
 
 class RocTest(Roc):
-    attributes: Literal[{"data_source": "test"}] = {"data_source": "test"}
+    attributes: dict = {"data_source": "test"}

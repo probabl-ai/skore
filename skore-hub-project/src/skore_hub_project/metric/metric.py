@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from contextlib import suppress
 from functools import cached_property, reduce
 from math import isfinite
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar, Literal, Callable, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from skore import CrossValidationReport, EstimatorReport
@@ -28,7 +29,7 @@ class Metric(ABC, BaseModel):
     greater_is_better: bool | None = None
     position: int | None = None
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @property
     @abstractmethod
     def value(self) -> float | None: ...
@@ -38,11 +39,14 @@ class EstimatorReportMetric(Metric):
     report: EstimatorReport = Field(repr=False, exclude=True)
     accessor: ClassVar[str]
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:
         try:
-            function = reduce(getattr, self.accessor.split("."), self.report)
+            function = cast(
+                Callable,
+                reduce(getattr, self.accessor.split("."), self.report),
+            )
         except AttributeError:
             return None
 
@@ -54,11 +58,14 @@ class CrossValidationReportMetric(Metric):
     accessor: ClassVar[str]
     aggregate: ClassVar[Literal["mean", "std"]]
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:
         try:
-            function = reduce(getattr, self.accessor.split("."), self.report)
+            function = cast(
+                Callable,
+                reduce(getattr, self.accessor.split("."), self.report),
+            )
         except AttributeError:
             return None
 

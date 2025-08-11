@@ -6,11 +6,11 @@ from .metric import CrossValidationReportMetric, EstimatorReportMetric
 
 
 class LogLoss(EstimatorReportMetric):
-    accessor: ClassVar[Literal["metrics.log_loss"]] = "metrics.log_loss"
-    name: Literal["log_loss"] = "log_loss"
-    verbose_name: Literal["Log loss"] = "Log loss"
-    greater_is_better: Literal[False] = False
-    position: Literal[4] = 4
+    accessor: ClassVar[str] = "metrics.log_loss"
+    name: str = "log_loss"
+    verbose_name: str = "Log loss"
+    greater_is_better: bool = False
+    position: int = 4
 
 
 class LogLossTrain(LogLoss):
@@ -22,11 +22,11 @@ class LogLossTest(LogLoss):
 
 
 class LogLossMean(CrossValidationReportMetric):
-    accessor: ClassVar[Literal["metrics.log_loss"]] = "metrics.log_loss"
+    accessor: ClassVar[str] = "metrics.log_loss"
     aggregate: ClassVar[Literal["mean"]] = "mean"
-    name: Literal["log_loss"] = "log_loss_mean"
-    verbose_name: Literal["Log loss - MEAN"] = "Log loss - MEAN"
-    greater_is_better: Literal[False] = False
+    name: str = "log_loss_mean"
+    verbose_name: str = "Log loss - MEAN"
+    greater_is_better: bool = False
 
 
 class LogLossTrainMean(LogLossMean):
@@ -38,11 +38,11 @@ class LogLossTestMean(LogLossMean):
 
 
 class LogLossStd(CrossValidationReportMetric):
-    accessor: ClassVar[Literal["metrics.log_loss"]] = "metrics.log_loss"
+    accessor: ClassVar[str] = "metrics.log_loss"
     aggregate: ClassVar[Literal["std"]] = "std"
-    name: Literal["log_loss_std"] = "log_loss_std"
-    verbose_name: Literal["Log loss - STD"] = "Log loss - STD"
-    greater_is_better: Literal[False] = False
+    name: str = "log_loss_std"
+    verbose_name: str = "Log loss - STD"
+    greater_is_better: bool = False
 
 
 class LogLossTrainStd(LogLossStd):

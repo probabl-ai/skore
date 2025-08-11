@@ -30,7 +30,7 @@ class EstimatorReportArtefact(Artefact):
 
     object: EstimatorReport = Field(repr=False, exclude=True, alias="report")
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def checksum(self) -> str:
         """
@@ -57,7 +57,7 @@ class CrossValidationReportArtefact(Artefact):
 
     object: CrossValidationReport = Field(repr=False, exclude=True, alias="report")
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def checksum(self) -> str:
         """

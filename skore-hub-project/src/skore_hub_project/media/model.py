@@ -9,10 +9,11 @@ from .media import Media, Representation
 
 class EstimatorHtmlRepr(Media):
     report: EstimatorReport | CrossValidationReport = Field(repr=False, exclude=True)
-    key: Literal["estimator_html_repr"] = "estimator_html_repr"
+    key: str = "estimator_html_repr"
+    verbose_name: str = "Estimator HTML representation"
     category: Literal["model"] = "model"
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def representation(self) -> Representation:
         import sklearn.utils
