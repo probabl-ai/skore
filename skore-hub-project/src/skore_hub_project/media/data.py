@@ -26,8 +26,8 @@ class TableReport(Media):
         table_report_display = function(**function_kwargs)
 
         return Representation(
-            media_type="application/vnd.skrub.table-report.v1+html",
-            value=table_report_display._html_repr(),
+            media_type="application/vnd.skrub.table-report.v1+json",
+            value=table_report_display._to_json(),
         )
 
 
