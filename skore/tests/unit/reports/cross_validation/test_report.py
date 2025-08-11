@@ -11,9 +11,9 @@ from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import accuracy_score
 from sklearn.pipeline import Pipeline
-from sklearn.utils.validation import check_is_fitted
 from skore import CrossValidationReport, EstimatorReport
 from skore._sklearn._cross_validation.report import _generate_estimator_report
+from skore._utils._fixes import skore_check_is_fitted as check_is_fitted
 from skore._utils._testing import MockEstimator
 
 

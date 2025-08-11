@@ -12,8 +12,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.utils.validation import check_is_fitted
 from skore import EstimatorReport
+from skore._utils._fixes import skore_check_is_fitted as check_is_fitted
 
 
 def test_report_can_be_rebuilt_using_parameters(linear_regression_with_test):
