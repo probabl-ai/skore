@@ -17,8 +17,8 @@ class Media(ABC, BaseModel):
     key: str
     verbose_name: str | None = None
     category: Literal["performance", "feature_importance", "model", "data"]
-    attributes: dict | None = None
-    parameters: dict | None = None
+    attributes: dict[()] = {}
+    parameters: dict[()] = {}
 
     class Config:
         frozen = True
@@ -27,4 +27,4 @@ class Media(ABC, BaseModel):
     @computed_field
     @property
     @abstractmethod
-    def representation(self) -> Representation | None: ...
+    def representation(self) -> Representation: ...

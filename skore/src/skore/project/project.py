@@ -6,7 +6,7 @@ import re
 from importlib.metadata import entry_points
 from typing import Any
 
-from skore._sklearn._estimator.report import EstimatorReport
+from skore import EstimatorReport, CrossValidationReport
 from skore.project.summary import Summary
 
 
@@ -235,9 +235,10 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        if not isinstance(report, EstimatorReport):
+        if not isinstance(report, EstimatorReport | CrossValidationReport):
             raise TypeError(
-                f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
+                f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationReport`"
+                f"(found '{type(report)}')"
             )
 
         return self.__project.put(key=key, report=report)

@@ -141,12 +141,9 @@ class CrossValidationReportPayload(ReportPayload):
         is_iterable_splitter = isinstance(self.report.splitter, _CVIterableWrapper)
         is_standard_strategy = is_sklearn_splitter and (not is_iterable_splitter)
 
-        # fmt: off
         return (
-            (is_standard_strategy and self.report.splitter.__class__.__name__)
-            or "custom"
+            is_standard_strategy and self.report.splitter.__class__.__name__ or "custom"
         )
-        # fmt: on
 
     @computed_field
     @cached_property
@@ -194,10 +191,10 @@ class CrossValidationReportPayload(ReportPayload):
 
     @computed_field
     @cached_property
-    def parameters(self) -> CrossValidationReportArtefact | None:
+    def parameters(self) -> CrossValidationReportArtefact | dict[()]:
         if self.upload:
             return CrossValidationReportArtefact(
                 project=self.project,
                 report=self.report,
             )
-        return None
+        return {}

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import ClassVar
+from typing import ClassVar, NoReturn
 
 from pydantic import BaseModel, Field, computed_field
 from skore import CrossValidationReport, EstimatorReport
@@ -18,11 +18,16 @@ class ReportPayload(ABC, BaseModel):
     report: EstimatorReport | CrossValidationReport = Field(repr=False, exclude=True)
     upload: bool = Field(default=True, repr=False, exclude=True)
     key: str
-    run_id: str
 
     class Config:
         frozen = True
         arbitrary_types_allowed = True
+
+    @computed_field
+    @property
+    def run_id(self) -> int:
+        """Return the current run identifier of the project."""
+        return self.project.run_id
 
     @computed_field
     @property
@@ -49,26 +54,26 @@ class ReportPayload(ABC, BaseModel):
     @computed_field
     @property
     @abstractmethod
-    def parameters(self) -> Artefact | None: ...
+    def parameters(self) -> Artefact | dict[()]: ...
 
     @computed_field
     @cached_property
-    def metrics(self) -> list[Metric] | None:
+    def metrics(self) -> list[Metric]:
         payloads = [
             payload
             for metric in self.METRICS
             if (payload := metric(report=self.report)).value is not None
         ]
 
-        return payloads or None
+        return payloads
 
     @computed_field
     @property
-    def related_items(self) -> list[Media] | None:
+    def related_items(self) -> list[Media]:
         payloads = [
             payload
             for media in self.MEDIAS
             if (payload := media(report=self.report)).representation is not None
         ]
 
-        return payloads or None
+        return payloads

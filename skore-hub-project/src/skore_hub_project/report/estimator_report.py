@@ -89,7 +89,7 @@ class EstimatorReportPayload(ReportPayload):
 
     @computed_field
     @cached_property
-    def parameters(self) -> EstimatorReportArtefact | None:
+    def parameters(self) -> EstimatorReportArtefact | dict[()]:
         if self.upload:
             return EstimatorReportArtefact(project=self.project, report=self.report)
-        return None
+        return {}

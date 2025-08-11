@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
-        run_id: str
+        run_id: int
         key: str
         date: str
         learner: str
@@ -62,7 +62,7 @@ class Project:
         The tenant of the project.
     name : str
         The name of the project.
-    run_id : str
+    run_id : int
         The current run identifier of the project.
     """
 
@@ -99,13 +99,13 @@ class Project:
         return self.__name
 
     @cached_property
-    def run_id(self) -> str:
+    def run_id(self) -> int:
         """The current run identifier of the project."""
         with HUBClient() as client:
             request = client.post(f"projects/{self.tenant}/{self.name}/runs")
             run = request.json()
 
-            return run["id"]
+        return run["id"]
 
     def put(self, key: str, report: EstimatorReport):
         """
@@ -143,10 +143,11 @@ class Project:
                 f"(found '{type(report)}')"
             )
 
-        payload = Payload(key=key, run_id=self.run_id, report=report).model_dump()
+        payload = Payload(project=self, key=key, report=report)
+        payload_dict = payload.model_dump()
 
         with HUBClient() as client:
-            client.post(url=url, json=payload)
+            client.post(url=url, json=payload_dict)
 
     @property
     def reports(self):

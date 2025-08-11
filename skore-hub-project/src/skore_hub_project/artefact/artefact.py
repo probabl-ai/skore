@@ -76,4 +76,4 @@ class CrossValidationReportArtefact(Artefact):
             return upload(self.project, self.object, "cross-validation-report")
         finally:
             for i, report in enumerate(reports):
-                report._cache = cache[i]
+                report._cache = caches[i]
