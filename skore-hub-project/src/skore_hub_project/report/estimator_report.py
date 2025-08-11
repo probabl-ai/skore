@@ -66,8 +66,8 @@ class EstimatorReportPayload(ReportPayload):
         RocAucTrain,
         # timings must be calculated last
         FitTime,
-        PredictTimeTrain,
         PredictTimeTest,
+        PredictTimeTrain,
     )
     MEDIAS: ClassVar[tuple[Media]] = (
         Coefficients,

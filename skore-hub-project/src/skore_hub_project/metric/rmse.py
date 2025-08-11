@@ -9,7 +9,7 @@ class Rmse(EstimatorReportMetric):
     accessor: ClassVar[Literal["metrics.rmse"]] = "metrics.rmse"
     name: Literal["rmse"] = "rmse"
     verbose_name: Literal["RMSE"] = "RMSE"
-    greater_is_better: Literal[True] = True
+    greater_is_better: Literal[False] = False
     position: Literal[3] = 3
 
 
@@ -26,7 +26,7 @@ class RmseMean(CrossValidationReportMetric):
     aggregate: ClassVar[Literal["mean"]] = "mean"
     name: Literal["rmse_mean"] = "rmse_mean"
     verbose_name: Literal["RMSE - MEAN"] = "RMSE - MEAN"
-    greater_is_better: Literal[True] = True
+    greater_is_better: Literal[False] = False
 
 
 class RmseTrainMean(RmseMean):

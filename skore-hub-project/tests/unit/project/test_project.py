@@ -65,14 +65,14 @@ class TestProject:
     @mark.respx(assert_all_called=True)
     def test_run_id(self, respx_mock):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": "<run_id>"})
+            Response(200, json={"id": 0})
         )
 
-        assert Project("<tenant>", "<name>").run_id == "<run_id>"
+        assert Project("<tenant>", "<name>").run_id == 0
 
     def test_put_exception(self, respx_mock):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": "<run_id>"})
+            Response(200, json={"id": 0})
         )
 
         with raises(TypeError, match="Key must be a string"):
@@ -95,7 +95,7 @@ class TestProject:
 
         monkeypatch.setattr("skore_hub_project.artefact.upload.CHUNK_SIZE", chunk_size)
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": "<run_id>"})
+            Response(200, json={"id": 0})
         )
         respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
             Response(
@@ -126,7 +126,7 @@ class TestProject:
             {
                 "checksum": checksum,
                 "chunk_number": 2,
-                "content_type": "estimator-report-pickle",
+                "content_type": "estimator-report",
             }
         ]
         assert sorted(
@@ -152,7 +152,7 @@ class TestProject:
 
     def test_put(self, respx_mock, regression):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": "<run_id>"})
+            Response(200, json={"id": 0})
         )
         respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
             Response(200, json=[])
@@ -193,7 +193,7 @@ class TestProject:
                     "name": "r2",
                     "verbose_name": "R²",
                     "value": None,
-                    "data_source": "train",
+                    "data_source": "test",
                     "greater_is_better": True,
                     "position": None,
                 },
@@ -201,7 +201,7 @@ class TestProject:
                     "name": "r2",
                     "verbose_name": "R²",
                     "value": None,
-                    "data_source": "test",
+                    "data_source": "train",
                     "greater_is_better": True,
                     "position": None,
                 },
@@ -209,7 +209,7 @@ class TestProject:
                     "name": "rmse",
                     "verbose_name": "RMSE",
                     "value": None,
-                    "data_source": "train",
+                    "data_source": "test",
                     "greater_is_better": False,
                     "position": 3,
                 },
@@ -217,7 +217,7 @@ class TestProject:
                     "name": "rmse",
                     "verbose_name": "RMSE",
                     "value": None,
-                    "data_source": "test",
+                    "data_source": "train",
                     "greater_is_better": False,
                     "position": 3,
                 },
@@ -233,7 +233,7 @@ class TestProject:
                     "name": "predict_time",
                     "verbose_name": "Predict time (s)",
                     "value": None,
-                    "data_source": "train",
+                    "data_source": "test",
                     "greater_is_better": False,
                     "position": 2,
                 },
@@ -241,57 +241,13 @@ class TestProject:
                     "name": "predict_time",
                     "verbose_name": "Predict time (s)",
                     "value": None,
-                    "data_source": "test",
+                    "data_source": "train",
                     "greater_is_better": False,
                     "position": 2,
                 },
             ],
             "ml_task": "regression",
             "related_items": [
-                {
-                    "key": "prediction_error",
-                    "verbose_name": "Prediction error",
-                    "category": "performance",
-                    "attributes": {"data_source": "train"},
-                    "parameters": {},
-                    "representation": {
-                        "media_type": "image/svg+xml;base64",
-                        "value": None,
-                    },
-                },
-                {
-                    "key": "prediction_error",
-                    "verbose_name": "Prediction error",
-                    "category": "performance",
-                    "attributes": {"data_source": "test"},
-                    "parameters": {},
-                    "representation": {
-                        "media_type": "image/svg+xml;base64",
-                        "value": None,
-                    },
-                },
-                {
-                    "key": "permutation",
-                    "verbose_name": "Feature importance - Permutation",
-                    "category": "feature_importance",
-                    "attributes": {"data_source": "train", "method": "permutation"},
-                    "parameters": {},
-                    "representation": {
-                        "media_type": "application/vnd.dataframe",
-                        "value": None,
-                    },
-                },
-                {
-                    "key": "permutation",
-                    "verbose_name": "Feature importance - Permutation",
-                    "category": "feature_importance",
-                    "attributes": {"data_source": "test", "method": "permutation"},
-                    "parameters": {},
-                    "representation": {
-                        "media_type": "application/vnd.dataframe",
-                        "value": None,
-                    },
-                },
                 {
                     "key": "coefficients",
                     "verbose_name": "Feature importance - Coefficients",
@@ -311,15 +267,81 @@ class TestProject:
                     "parameters": {},
                     "representation": {"media_type": "text/html", "value": None},
                 },
+                {
+                    "key": "permutation",
+                    "verbose_name": "Feature importance - Permutation",
+                    "category": "feature_importance",
+                    "attributes": {"data_source": "test", "method": "permutation"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "application/vnd.dataframe",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "permutation",
+                    "verbose_name": "Feature importance - Permutation",
+                    "category": "feature_importance",
+                    "attributes": {"data_source": "train", "method": "permutation"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "application/vnd.dataframe",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "prediction_error",
+                    "verbose_name": "Prediction error",
+                    "category": "performance",
+                    "attributes": {"data_source": "test"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "image/svg+xml;base64",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "prediction_error",
+                    "verbose_name": "Prediction error",
+                    "category": "performance",
+                    "attributes": {"data_source": "train"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "image/svg+xml;base64",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "table_report",
+                    "verbose_name": "Table report",
+                    "category": "data",
+                    "attributes": {"data_source": "test"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "application/vnd.skrub.table-report.v1+json",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "table_report",
+                    "verbose_name": "Table report",
+                    "category": "data",
+                    "attributes": {"data_source": "train"},
+                    "parameters": {},
+                    "representation": {
+                        "media_type": "application/vnd.skrub.table-report.v1+json",
+                        "value": None,
+                    },
+                },
             ],
             "parameters": {"checksum": checksum},
             "key": "<key>",
-            "run_id": "<run_id>",
+            "run_id": 0,
         }
 
     def test_reports(self, respx_mock):
         url = "projects/<tenant>/<name>/runs"
-        respx_mock.post(url).mock(Response(200, json={"id": "<run_id>"}))
+        respx_mock.post(url).mock(Response(200, json={"id": 0}))
 
         project = Project("<tenant>", "<name>")
 
@@ -330,7 +352,7 @@ class TestProject:
     def test_reports_get(self, respx_mock, regression):
         # Mock hub routes that will be called
         url = "projects/<tenant>/<name>/runs"
-        response = Response(200, json={"id": "<run_id>"})
+        response = Response(200, json={"id": 0})
         respx_mock.post(url).mock(response)
 
         url = "projects/<tenant>/<name>/experiments/estimator-reports/<report_id>"
@@ -358,7 +380,7 @@ class TestProject:
 
     def test_reports_metadata(self, nowstr, respx_mock):
         url = "projects/<tenant>/<name>/runs"
-        respx_mock.post(url).mock(Response(200, json={"id": "<run_id_2>"}))
+        respx_mock.post(url).mock(Response(200, json={"id": 2}))
 
         url = "projects/<tenant>/<name>/experiments/estimator-reports"
         respx_mock.get(url).mock(
@@ -367,7 +389,7 @@ class TestProject:
                 json=[
                     {
                         "id": "<report_id_0>",
-                        "run_id": "<run_id_0>",
+                        "run_id": 0,
                         "key": "<key>",
                         "ml_task": "<ml_task>",
                         "estimator_class_name": "<estimator_class_name>",
@@ -380,7 +402,7 @@ class TestProject:
                     },
                     {
                         "id": "<report_id_1>",
-                        "run_id": "<run_id_1>",
+                        "run_id": 1,
                         "key": "<key>",
                         "ml_task": "<ml_task>",
                         "estimator_class_name": "<estimator_class_name>",
@@ -401,7 +423,7 @@ class TestProject:
         assert metadata == [
             {
                 "id": "<report_id_0>",
-                "run_id": "<run_id_0>",
+                "run_id": 0,
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -415,7 +437,7 @@ class TestProject:
             },
             {
                 "id": "<report_id_1>",
-                "run_id": "<run_id_1>",
+                "run_id": 1,
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",

@@ -9,7 +9,7 @@ class BrierScore(EstimatorReportMetric):
     accessor: ClassVar[Literal["metrics.brier_score"]] = "metrics.brier_score"
     name: Literal["brier_score"] = "brier_score"
     verbose_name: Literal["Brier score"] = "Brier score"
-    greater_is_better: Literal[True] = False
+    greater_is_better: Literal[False] = False
 
 
 class BrierScoreTrain(BrierScore):
@@ -25,7 +25,7 @@ class BrierScoreMean(CrossValidationReportMetric):
     aggregate: ClassVar[Literal["mean"]] = "mean"
     name: Literal["brier_score_mean"] = "brier_score_mean"
     verbose_name: Literal["Brier score - MEAN"] = "Brier score - MEAN"
-    greater_is_better: Literal[True] = False
+    greater_is_better: Literal[False] = False
 
 
 class BrierScoreTrainMean(BrierScoreMean):

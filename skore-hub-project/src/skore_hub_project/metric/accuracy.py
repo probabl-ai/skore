@@ -41,7 +41,7 @@ class AccuracyStd(CrossValidationReportMetric):
     aggregate: ClassVar[Literal["std"]] = "std"
     name: Literal["accuracy_std"] = "accuracy_std"
     verbose_name: Literal["Accuracy - STD"] = "Accuracy - STD"
-    greater_is_better: Literal[True] = False
+    greater_is_better: Literal[False] = False
 
 
 class AccuracyTrainStd(AccuracyStd):

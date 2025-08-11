@@ -43,7 +43,8 @@ def ensure_project_is_created(method):
 
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        return self.run_id and method(self, *args, **kwargs)
+        self.run_id  # noqa: B018
+        return method(self, *args, **kwargs)
 
     return wrapper
 

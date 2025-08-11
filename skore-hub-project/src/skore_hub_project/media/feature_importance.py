@@ -15,7 +15,7 @@ class FeatureImportance(Media):
 
     @computed_field
     @cached_property
-    def representation(self) -> Representation:
+    def representation(self) -> Representation | None:
         try:
             function = reduce(getattr, self.accessor.split("."), self.report)
         except AttributeError:

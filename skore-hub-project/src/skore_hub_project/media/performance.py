@@ -17,7 +17,7 @@ class Performance(Media):
 
     @computed_field
     @cached_property
-    def representation(self) -> Representation:
+    def representation(self) -> Representation | None:
         from skore_hub_project import bytes_to_b64_str, switch_mpl_backend
 
         try:
