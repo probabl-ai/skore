@@ -21,7 +21,10 @@ from skore._sklearn._plot.metrics.feature_importance_display import (
     FeatureImportanceDisplay,
 )
 from skore._sklearn.types import Aggregate
-from skore._utils._accessor import _check_has_coef, _check_has_feature_importances
+from skore._utils._accessor import (
+    _check_estimator_has_coef,
+    _check_has_feature_importances,
+)
 from skore._utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
@@ -154,7 +157,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    @available_if(_check_has_coef())
+    @available_if(_check_estimator_has_coef())
     def coefficients(self) -> FeatureImportanceDisplay:
         """Retrieve the coefficients of a linear model, including the intercept.
 

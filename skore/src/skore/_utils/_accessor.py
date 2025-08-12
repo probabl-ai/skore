@@ -13,8 +13,12 @@ def _check_all_checks(checks: list[Callable]) -> Callable:
     return check
 
 
-def _check_parent_estimator_has_coef(parent_estimator) -> bool:
-    """Check if estimator or its regressor_ has a specific attribute."""
+def _check_has_coef(parent_estimator) -> bool:
+    """Check if the estimator or its regressor_ has a specific attribute.
+
+    This is a generic helper function. Please use the appropriate check for your report
+    type.
+    """
     estimator = (
         parent_estimator.steps[-1][1]
         if isinstance(parent_estimator, Pipeline)
@@ -99,10 +103,10 @@ def _check_estimator_has_method(method_name: str) -> Callable:
     return check
 
 
-def _check_has_coef() -> Callable:
+def _check_estimator_has_coef() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the estimator has a `coef_` attribute."""
-        return _check_parent_estimator_has_coef(accessor._parent.estimator_)
+        return _check_has_coef(accessor._parent.estimator_)
 
     return check
 
@@ -156,12 +160,10 @@ def _check_estimator_report_has_method(
     return check
 
 
-def _check_estimator_report_has_coef() -> Callable:
+def _check_cross_validation_sub_estimator_has_coef() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the underlying estimator has a `coef_` attribute."""
-        return _check_parent_estimator_has_coef(
-            accessor._parent.estimator_reports_[0].estimator
-        )
+        return _check_has_coef(accessor._parent.estimator_reports_[0].estimator)
 
     return check
 
@@ -171,7 +173,7 @@ def _check_estimator_report_has_coef() -> Callable:
 ########################################################################################
 
 
-def _check_report_estimators_have_coef() -> Callable:
+def _check_comparison_report_sub_estimators_have_coef() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if all the estimators have a `coef_` attribute."""
         from skore import CrossValidationReport
@@ -186,6 +188,6 @@ def _check_report_estimators_have_coef() -> Callable:
                 parent_estimators.append(parent_report.estimator_)
             else:
                 raise TypeError(f"Unexpected report type: {type(parent.reports_[0])}")
-        return all(_check_parent_estimator_has_coef(e) for e in parent_estimators)
+        return all(_check_has_coef(e) for e in parent_estimators)
 
     return check

@@ -9,7 +9,7 @@ from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot.metrics.feature_importance_display import (
     FeatureImportanceDisplay,
 )
-from skore._utils._accessor import _check_estimator_report_has_coef
+from skore._utils._accessor import _check_cross_validation_sub_estimator_has_coef
 
 
 class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
@@ -21,7 +21,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
-    @available_if(_check_estimator_report_has_coef())
+    @available_if(_check_cross_validation_sub_estimator_has_coef())
     def coefficients(self) -> FeatureImportanceDisplay:
         """Retrieve the coefficients across splits, including the intercept.
 
@@ -50,7 +50,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         ]
 
         combined = pd.concat(
-            {split: df["Coefficient"] for split, df in enumerate(coefficient_tables)}, axis=1
+            {split: df["Coefficient"] for split, df in enumerate(coefficient_tables)},
+            axis=1,
         ).T
         combined.index.name = "Split index"
 

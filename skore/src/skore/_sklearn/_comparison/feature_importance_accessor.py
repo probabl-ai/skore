@@ -13,7 +13,7 @@ from skore._sklearn._estimator import EstimatorReport
 from skore._sklearn._plot.metrics.feature_importance_display import (
     FeatureImportanceDisplay,
 )
-from skore._utils._accessor import _check_report_estimators_have_coef
+from skore._utils._accessor import _check_comparison_report_sub_estimators_have_coef
 
 if TYPE_CHECKING:
     from skore import ComparisonReport
@@ -28,7 +28,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
 
-    @available_if(_check_report_estimators_have_coef())
+    @available_if(_check_comparison_report_sub_estimators_have_coef())
     def coefficients(self) -> FeatureImportanceDisplay:
         """Retrieve the coefficients for each report, including the intercepts.
 
@@ -75,7 +75,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
                             )
                             for report_data in reports_with_same_features
                         },
-                        index=report_data["feature_names"]
+                        index=reports_with_same_features[-1]["feature_names"],
                     )
                 )
 
@@ -89,7 +89,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
                         .add_prefix(f"{report_data['estimator_name']}__")
                     )
         else:
-            raise TypeError(f"Unexpected report type: {self._parent._reports_type)}")
+            raise TypeError(f"Unexpected report type: {self._parent._reports_type}")
 
         return FeatureImportanceDisplay(self._parent, coef_frames)
 

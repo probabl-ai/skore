@@ -14,10 +14,10 @@ class FeatureImportanceDisplay(
 
     Parameters
     ----------
-    _parent : EstimatorReport | CrossValidationReport | ComparisonReport
+    parent : EstimatorReport | CrossValidationReport | ComparisonReport
         Report type from which the display is created.
 
-    _coefficient_data : DataFrame | list[DataFrame]
+    coefficient_data : DataFrame | list[DataFrame]
         The ROC AUC data to display. The columns are
 
     Attributes
@@ -59,9 +59,9 @@ class FeatureImportanceDisplay(
     ...         ...
     """
 
-    def __init__(self, _parent, _coefficient_data):
-        self._parent = _parent
-        self._coefficient_data = _coefficient_data
+    def __init__(self, parent, coefficient_data):
+        self._parent = parent
+        self._coefficient_data = coefficient_data
 
     def frame(self):
         """Return coefficients as a DataFrame.
@@ -69,7 +69,7 @@ class FeatureImportanceDisplay(
         Returns
         -------
         pd.DataFrame
-            The structure of the returned DataFrame depends on the type of the underlying report:
+            The structure of the returned frame depends on the underlying report type:
 
             - If an ``EstimatorReport``, a single column
             "Coefficient", with the index being the feature names.
@@ -133,8 +133,6 @@ class FeatureImportanceDisplay(
         plt.show()
 
     def _plot_comparison_report(self):
-        from skore import CrossValidationReport, EstimatorReport
-
         if self._parent._reports_type == "EstimatorReport":
             for coef_frame in self._coefficient_data:
                 self.figure_, self.ax_ = plt.subplots()
@@ -157,7 +155,7 @@ class FeatureImportanceDisplay(
                     self.ax_.set_title(f"{coef_frame.columns[0]} Coefficients")
                 self.figure_.tight_layout()
                 plt.show()
-        elif isinstance(self._parent.reports_[0], CrossValidationReport):
+        elif self._parent._reports_type == "CrossValidationReport":
             for coef_frame in self._coefficient_data:
                 self.figure_, self.ax_ = plt.subplots()
                 coef_frame.boxplot(ax=self.ax_)
