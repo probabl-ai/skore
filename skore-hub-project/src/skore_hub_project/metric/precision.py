@@ -49,9 +49,7 @@ class PrecisionMean(CrossValidationReportMetric):
             return None
 
         dataframe = function(
-            data_source=self.data_source,
-            aggregate=self.aggregate,
-            average="macro",
+            data_source=self.data_source, aggregate=self.aggregate, average="macro"
         )
 
         return cast_to_float(dataframe.iloc[0, 0])
@@ -81,9 +79,7 @@ class PrecisionStd(CrossValidationReportMetric):
             return None
 
         dataframe = function(
-            data_source=self.data_source,
-            aggregate=self.aggregate,
-            average="macro",
+            data_source=self.data_source, aggregate=self.aggregate, average="macro"
         )
 
         return cast_to_float(dataframe.iloc[0, 0])
