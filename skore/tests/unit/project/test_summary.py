@@ -320,6 +320,7 @@ class TestSummary:
                     "dataset3",
                     "dataset4",
                 ],
+                "report_type": ["estimator"] * 8,
                 "learner": [
                     "learner1",
                     "learner2",
@@ -335,6 +336,11 @@ class TestSummary:
                 "rmse": [None, None, None, None, 0.1, 0.2, 0.3, 0.4],
                 "log_loss": [0.3, 0.4, 0.5, 0.6, None, None, None, None],
                 "roc_auc": [0.5, 0.6, 0.7, 0.8, None, None, None, None],
+                "fit_time_mean": [None] * 8,
+                "predict_time_mean": [None] * 8,
+                "rmse_mean": [None] * 8,
+                "log_loss_mean": [None] * 8,
+                "roc_auc_mean": [None] * 8,
             },
             index=MultiIndex.from_tuples(
                 [
