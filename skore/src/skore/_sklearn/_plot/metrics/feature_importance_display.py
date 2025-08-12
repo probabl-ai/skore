@@ -69,15 +69,15 @@ class FeatureImportanceDisplay(
         Returns
         -------
         pd.DataFrame
-            The structure of the returned DataFrame depends on the type of report:
+            The structure of the returned DataFrame depends on the type of the underlying report:
 
-            - If the underlying report is an ``EstimatorReport``, a single column
+            - If an ``EstimatorReport``, a single column
             "Coefficient", with the index being the feature names.
 
-            - If the underlying report is a ``CrossValidationReport``, the columns are
+            - If a ``CrossValidationReport``, the columns are
             the feature names, and the index is the respective split number.
 
-            - If the underlying report is a ``ComparisonReport``, the columns are the
+            - If a ``ComparisonReport``, the columns are the
             models passed in the report, with the index being the feature names.
         """
         from skore import ComparisonReport, CrossValidationReport, EstimatorReport
