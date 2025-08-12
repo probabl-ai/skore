@@ -1,5 +1,4 @@
 from copy import deepcopy
-from pathlib import Path
 from types import SimpleNamespace
 
 from joblib import hash as joblib_hash

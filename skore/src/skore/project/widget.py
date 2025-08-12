@@ -83,6 +83,13 @@ class ModelExplorerWidget:
             "show": True,
         },
     }
+    _cross_validation_metrics = [
+        "fit_time_mean",
+        "predict_time_mean",
+        "rmse_mean",
+        "log_loss_mean",
+        "roc_auc_mean",
+    ]
     _estimators: dict[str, Axis] = {
         "learner": {"name": "Learner"},
     }
@@ -91,7 +98,10 @@ class ModelExplorerWidget:
     }
 
     _required_columns: list[str] = (
-        ["ml_task", "dataset"] + list(_estimators.keys()) + list(_metrics.keys())
+        ["ml_task", "dataset"]
+        + list(_estimators.keys())
+        + list(_metrics.keys())
+        + _cross_validation_metrics
     )
     _required_index: list[str | None] = [None, "id"]
 
@@ -108,6 +118,25 @@ class ModelExplorerWidget:
         if dataframe["learner"].dtype != "category":
             raise ValueError("Learner column must be a categorical column")
 
+    def _filtered_dataframe(self, ml_task, report_type) -> pd.DataFrame:
+        """Filter report data based on selected ML task and report type."""
+        df = self.dataframe.copy()
+        df = df.query(
+            f"ml_task.str.contains('{ml_task}') & report_type == '{report_type}'"
+        )
+
+        mean_metrics = [col for col in df.columns if col.endswith("_mean")]
+        if report_type == "estimator":
+            df = df.drop(columns=mean_metrics)
+        elif report_type == "cross-validation":
+            cols_to_remove = [col.removesuffix("_mean") for col in mean_metrics]
+            df = df.drop(columns=cols_to_remove)
+            df.columns = [col.removesuffix("_mean") for col in df.columns]
+        return df
+
+    def _datasets(self, ml_task, report_type) -> np.ndarray:
+        return self._filtered_dataframe(ml_task, report_type)["dataset"].unique()
+
     def __init__(self, dataframe: pd.DataFrame, seed: int = 0) -> None:
         if dataframe.empty:
             self.dataframe = dataframe
@@ -121,14 +150,29 @@ class ModelExplorerWidget:
         self.current_fig: go.FigureWidget | None = None
         self.current_selection: dict[str, Any] = {}
 
-        self._clf_datasets: np.ndarray = self.dataframe.query(
-            "ml_task.str.contains('classification')"
-        )["dataset"].unique()
-        self._reg_datasets: np.ndarray = self.dataframe.query(
-            "ml_task.str.contains('regression')"
-        )["dataset"].unique()
+        # Figure out dropdown defaults
+        for ml_task, report_type in [
+            ("classification", "estimator"),
+            ("regression", "estimator"),
+            ("classification", "cross-validation"),
+            ("regression", "cross-validation"),
+        ]:
+            if not self._filtered_dataframe(ml_task, report_type).empty:
+                default_task = ml_task
+                default_report_type = report_type
+                break
 
-        default_task = "classification" if len(self._clf_datasets) else "regression"
+        self._report_type_dropdown = widgets.Dropdown(
+            options=[
+                ("Estimator Report", "estimator"),
+                ("Cross-validation Report", "cross-validation"),
+            ],
+            value=default_report_type,
+            description="Report Type:",
+            disabled=False,
+            layout=widgets.Layout(width="200px"),
+        )
+
         self._task_dropdown = widgets.Dropdown(
             options=[
                 ("Classification", "classification"),
@@ -140,11 +184,7 @@ class ModelExplorerWidget:
             layout=widgets.Layout(width="200px"),
         )
 
-        default_dataset = (
-            self._clf_datasets
-            if default_task == "classification"
-            else self._reg_datasets
-        )
+        default_dataset = self._datasets(default_task, default_report_type)
         self._dataset_dropdown = widgets.Dropdown(
             options=default_dataset,
             description="Dataset:",
@@ -152,7 +192,9 @@ class ModelExplorerWidget:
             layout=widgets.Layout(width="250px"),
         )
 
-        self._metric_checkboxes: dict[str, dict[str, widgets.Checkbox]] = {
+        self._metric_checkboxes: dict[
+            Literal["classification", "regression"], dict[str, widgets.Checkbox]
+        ] = {
             "classification": {},
             "regression": {},
         }
@@ -202,8 +244,7 @@ class ModelExplorerWidget:
             ),
             "regression": widgets.Dropdown(
                 options=[
-                    self._metrics[metric]["name"]
-                    for metric in metrics_for_regression
+                    self._metrics[metric]["name"] for metric in metrics_for_regression
                 ],
                 value="RMSE",
                 description="Color by:",
@@ -227,6 +268,7 @@ class ModelExplorerWidget:
         controls_header = widgets.GridBox(
             [
                 self._task_dropdown,
+                self._report_type_dropdown,
                 self._dataset_dropdown,
                 self._color_metric_dropdown["classification"],
                 self._color_metric_dropdown["regression"],
@@ -337,6 +379,7 @@ class ModelExplorerWidget:
         )
 
         # callbacks
+        self._report_type_dropdown.observe(self._on_report_type_change, names="value")
         self._task_dropdown.observe(self._on_task_change, names="value")
         self._dataset_dropdown.observe(self._update_plot, names="value")
         for task in self._metric_checkboxes:
@@ -356,6 +399,11 @@ class ModelExplorerWidget:
             layout=widgets.Layout(width=f"{self._plot_width}px"),
         )
 
+    def _update_datasets(self, datasets: list[str]) -> None:
+        self._dataset_dropdown.options = datasets
+        if len(datasets):
+            self._dataset_dropdown.value = datasets[0]
+
     def _update_task_widgets(self) -> None:
         """Update widget visibility based on the currently selected task."""
         task = self._task_dropdown.value
@@ -373,6 +421,25 @@ class ModelExplorerWidget:
             self.regression_metrics_box.layout.display = ""
             self._color_metric_dropdown["regression"].layout.display = ""
 
+    def _on_report_type_change(self, change: dict[str, Any]) -> None:
+        """Handle report type dropdown change events.
+
+        Updates the dataset dropdown options based on the selected report type
+        and refreshes the widget visibility and plot.
+
+        Parameters
+        ----------
+        change : dict[str, Any]
+            dictionary containing information about the widget change,
+            including the new value under the 'new' key.
+        """
+        self._update_datasets(
+            self._datasets(ml_task=self._task_dropdown.value, report_type=change["new"])
+        )
+        self._update_task_widgets()
+        self._update_plot()
+        self.update_selection()
+
     def _on_task_change(self, change: dict[str, Any]) -> None:
         """Handle task dropdown change events.
 
@@ -385,17 +452,11 @@ class ModelExplorerWidget:
             dictionary containing information about the widget change,
             including the new value under the 'new' key.
         """
-        task = change["new"]
-
-        if task == "classification":
-            self._dataset_dropdown.options = self._clf_datasets
-            if len(self._clf_datasets):
-                self._dataset_dropdown.value = self._clf_datasets[0]
-        else:
-            self._dataset_dropdown.options = self._reg_datasets
-            if len(self._reg_datasets):
-                self._dataset_dropdown.value = self._reg_datasets[0]
-
+        self._update_datasets(
+            self._datasets(
+                ml_task=change["new"], report_type=self._report_type_dropdown.value
+            )
+        )
         self._update_task_widgets()
         self._update_plot()
         self.update_selection()
@@ -454,7 +515,8 @@ class ModelExplorerWidget:
         with self.output:
             clear_output(wait=True)
 
-            task = self._task_dropdown.value
+            ml_task = self._task_dropdown.value
+            report_type = self._report_type_dropdown.value
 
             if (
                 not hasattr(self._dataset_dropdown, "value")
@@ -463,19 +525,19 @@ class ModelExplorerWidget:
                 display(widgets.HTML("No dataset available for selected task."))
                 return
 
-            df_dataset = self.dataframe.query(
+            df_dataset = self._filtered_dataframe(ml_task, report_type).query(
                 "dataset == @self._dataset_dropdown.value"
-            ).copy()
+            )
             for col in df_dataset.select_dtypes(include=["category"]).columns:
                 df_dataset[col] = df_dataset[col].cat.remove_unused_categories()
 
             selected_metrics = [
                 metric
-                for metric in self._metric_checkboxes[task]
-                if self._metric_checkboxes[task][metric].value
+                for metric in self._metric_checkboxes[ml_task]
+                if self._metric_checkboxes[ml_task][metric].value
             ]
             color_metric = self._dimension_to_column[
-                self._color_metric_dropdown[task].value
+                self._color_metric_dropdown[ml_task].value
             ]
 
             dimensions = []
@@ -509,9 +571,7 @@ class ModelExplorerWidget:
                         color=df_dataset[color_metric].fillna(0),
                         colorscale=colorscale,
                         showscale=True,
-                        colorbar=dict(
-                            title=self._metrics[color_metric]["name"]
-                        ),
+                        colorbar=dict(title=self._metrics[color_metric]["name"]),
                     ),
                     dimensions=dimensions,
                     labelangle=-30,
