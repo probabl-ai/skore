@@ -17,7 +17,7 @@ class TableReport(Media):
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def representation(self) -> Representation:
-        function = self.report.data.analyze  # type: ignore[attr-defined]
+        function = self.report.data.analyze
         function_parameters = signature(function).parameters
         function_kwargs = {
             k: v for k, v in self.attributes.items() if k in function_parameters

@@ -1,6 +1,7 @@
+from collections.abc import Callable
 from functools import cached_property, reduce
 from inspect import signature
-from typing import ClassVar, Literal, Callable, cast, TypedDict
+from typing import ClassVar, Literal, cast
 
 from pydantic import Field, computed_field
 from skore import EstimatorReport

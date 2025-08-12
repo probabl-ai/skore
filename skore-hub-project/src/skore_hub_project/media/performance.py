@@ -1,7 +1,8 @@
+from collections.abc import Callable
 from functools import cached_property, reduce
 from inspect import signature
 from io import BytesIO
-from typing import ClassVar, Literal, Callable, cast, TypedDict
+from typing import ClassVar, Literal, cast
 
 from matplotlib import pyplot as plt
 from pydantic import Field, computed_field

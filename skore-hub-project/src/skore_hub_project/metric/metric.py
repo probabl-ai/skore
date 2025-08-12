@@ -5,7 +5,7 @@ from collections.abc import Callable
 from contextlib import suppress
 from functools import cached_property, reduce
 from math import isfinite
-from typing import Any, ClassVar, Literal, Callable, cast
+from typing import Any, ClassVar, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from skore import CrossValidationReport, EstimatorReport
