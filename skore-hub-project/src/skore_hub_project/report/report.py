@@ -67,7 +67,7 @@ class ReportPayload(ABC, BaseModel):
         return payloads
 
     @computed_field  # type: ignore[prop-decorator]
-    @property
+    @cached_property
     def related_items(self) -> list[Media]:
         payloads = [
             payload
