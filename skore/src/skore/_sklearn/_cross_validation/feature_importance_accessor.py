@@ -44,13 +44,16 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         4       	0.033695	74.259575	27.599610	17.390481
         >>> report.feature_importance.coefficients().plot() # shows plot
         """
-        coefficient_tables = [
-            report.feature_importance.coefficients().frame()
-            for report in self._parent.estimator_reports_
-        ]
-
         combined = pd.concat(
-            {split: df["Coefficient"] for split, df in enumerate(coefficient_tables)},
+            {
+                split: df["Coefficient"]
+                for split, df in enumerate(
+                    list(
+                        report.feature_importance.coefficients().frame()
+                        for report in self._parent.estimator_reports_
+                    )
+                )
+            },
             axis=1,
         ).T
         combined.index.name = "Split index"
