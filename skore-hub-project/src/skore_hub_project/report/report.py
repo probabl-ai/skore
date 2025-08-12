@@ -48,7 +48,7 @@ class ReportPayload(ABC, BaseModel):
     @property
     def ml_task(self) -> str:
         """Return the type of ML task covered by the report."""
-        return self.report._ml_task  # change to `self.report.ml_task` after rebase main
+        return self.report.ml_task
 
     @computed_field  # type: ignore[prop-decorator]
     @property
