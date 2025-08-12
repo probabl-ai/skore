@@ -30,7 +30,8 @@ class FitTimeAggregate(Metric):
     """
     Notes
     -----
-    >>> report.metrics.timings()
+    report.metrics.timings()
+
                                 mean       std
     Fit time (s)                 ...       ...
     Predict time test (s)        ...       ...
@@ -94,7 +95,8 @@ class PredictTimeAggregate(Metric):
     """
     Notes
     -----
-    >>> report.metrics.timings()
+    report.metrics.timings()
+
                                 mean       std
     Fit time (s)                 ...       ...
     Predict time test (s)        ...       ...
