@@ -89,7 +89,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
                         .add_prefix(f"{report_data['estimator_name']}__")
                     )
         else:
-            raise TypeError(f"Unexpected report type: {type(self._parent.reports_[0])}")
+            raise TypeError(f"Unexpected report type: {self._parent._reports_type)}")
 
         return FeatureImportanceDisplay(self._parent, coef_frames)
 
