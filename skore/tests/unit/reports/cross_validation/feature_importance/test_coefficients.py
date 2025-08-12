@@ -160,7 +160,7 @@ def test_all_sklearn_estimators(
     cv_report = CrossValidationReport(estimator, X=X, y=y)
     cv_report_coefs = cv_report.feature_importance.coefficients().frame()
 
-    expected_index = [i for i in range(expected_shape[0])]
+    expected_index = list(range(expected_shape[0]))
     assert cv_report_coefs.index.tolist() == expected_index
 
     expected_columns = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
