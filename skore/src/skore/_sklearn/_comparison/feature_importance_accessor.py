@@ -64,16 +64,19 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         coef_frames = []
         if self._parent._reports_type == "EstimatorReport":
             for reports_with_same_features in similar_reports.values():
-                coef_dict = {}
-                for report_data in reports_with_same_features:
-                    coef_dict[report_data["estimator_name"]] = (
-                        report_data["report_obj"]
-                        .feature_importance.coefficients()
-                        .frame()
-                        .iloc[:, 0]
-                    )
                 coef_frames.append(
-                    pd.DataFrame(coef_dict, index=report_data["feature_names"])
+                    pd.DataFrame(
+                        {
+                            report_data["estimator_name"]: (
+                                report_data["report_obj"]
+                                .feature_importance.coefficients()
+                                .frame()
+                                .iloc[:, 0]
+                            )
+                            for report_data in reports_with_same_features
+                        },
+                        index=report_data["feature_names"]
+                    )
                 )
 
         elif self._parent._reports_type == "CrossValidationReport":
