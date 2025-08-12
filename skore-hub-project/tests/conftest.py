@@ -1,6 +1,57 @@
 from datetime import datetime, timezone
 
 from pytest import fixture
+from sklearn.datasets import make_classification, make_regression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from skore import CrossValidationReport, EstimatorReport
+
+
+@fixture(scope="module")
+def regression() -> EstimatorReport:
+    X, y = make_regression(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    return EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+
+@fixture(scope="module")
+def cv_regression() -> CrossValidationReport:
+    X, y = make_regression(random_state=42)
+
+    return CrossValidationReport(LinearRegression(), X, y)
+
+
+@fixture(scope="module")
+def binary_classification() -> EstimatorReport:
+    X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    return EstimatorReport(
+        RandomForestClassifier(random_state=42),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+
+
+@fixture(scope="module")
+def cv_binary_classification() -> CrossValidationReport:
+    X, y = make_classification(random_state=42)
+
+    return CrossValidationReport(RandomForestClassifier(random_state=42), X, y)
 
 
 @fixture
