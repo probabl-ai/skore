@@ -135,7 +135,7 @@ class FeatureImportanceDisplay(
     def _plot_comparison_report(self):
         from skore import CrossValidationReport, EstimatorReport
 
-        if isinstance(self._parent.reports_[0], EstimatorReport):
+        if self._parent._reports_type == "EstimatorReport":
             for coef_frame in self._coefficient_data:
                 self.figure_, self.ax_ = plt.subplots()
                 coef_frame.plot.bar(ax=self.ax_)
