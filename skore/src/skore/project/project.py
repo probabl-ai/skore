@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from importlib.metadata import entry_points
-from typing import Any
+from typing import Any, Literal
 
 from skore._sklearn._estimator.report import EstimatorReport
 from skore.project.summary import Summary
@@ -148,10 +148,11 @@ class Project:
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
 
     @staticmethod
-    def __setup_plugin(name: str) -> tuple[str, str, Any, dict]:
+    def __setup_plugin(name: str) -> tuple[Literal["local", "hub"], str, Any, dict]:
         if not (PLUGINS := entry_points(group="skore.plugins.project")):
             raise SystemError("No project plugin found, please install at least one.")
 
+        mode: Literal["local", "hub"]
         if match := re.match(Project.__HUB_NAME_PATTERN, name):
             mode = "hub"
             name = match["name"]

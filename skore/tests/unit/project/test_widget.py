@@ -12,16 +12,31 @@ def metadata():
     """Minimal metadata dataframe containing a regressor and a classifier."""
     metadata = pd.DataFrame(
         data={
-            "ml_task": ["classification", "regression"],
-            "dataset": ["dataset1", "dataset2"],
-            "learner": ["learner1", "learner2"],
-            "fit_time": [1.0, 2.0],
-            "predict_time": [3.0, 4.0],
-            "rmse": [None, 0.2],
-            "log_loss": [0.3, None],
-            "roc_auc": [0.5, None],
+            "ml_task": ["classification", "regression", "classification", "regression"],
+            "dataset": ["dataset1", "dataset2", "dataset3", "dataset4"],
+            "learner": ["learner1", "learner2", "learner3", "learner4"],
+            "report_type": [
+                "estimator",
+                "estimator",
+                "cross-validation",
+                "cross-validation",
+            ],
+            "fit_time": [1.0, 2.0, None, None],
+            "predict_time": [3.0, 4.0, None, None],
+            "rmse": [None, 0.2, None, None],
+            "log_loss": [0.3, None, None, None],
+            "roc_auc": [0.5, None, None, None],
+            # For cross-validation only
+            # Mean
+            "fit_time_mean": [None, None, 6.0, 7.0],
+            "predict_time_mean": [None, None, 8.0, 9.0],
+            "rmse_mean": [None, None, None, 10.0],
+            "log_loss_mean": [None, None, 11.0, None],
+            "roc_auc_mean": [None, None, 12.0, None],
         },
-        index=pd.MultiIndex.from_tuples([(0, "id1"), (0, "id2")], names=[None, "id"]),
+        index=pd.MultiIndex.from_tuples(
+            [(0, "id1"), (0, "id2"), (0, "id3"), (0, "id4")], names=[None, "id"]
+        ),
     )
     metadata["learner"] = metadata["learner"].astype("category")
     return metadata
@@ -38,7 +53,9 @@ def test_model_explorer_widget_check_dataframe_schema_error():
     )
     err_msg = re.escape(
         "Dataframe is missing required columns: ['ml_task', 'dataset', 'learner', "
-        "'fit_time', 'predict_time', 'rmse', 'log_loss', 'roc_auc']"
+        "'fit_time', 'predict_time', 'rmse', 'log_loss', 'roc_auc', "
+        "'fit_time_mean', 'predict_time_mean', 'rmse_mean', 'log_loss_mean', "
+        "'roc_auc_mean']"
     )
     with pytest.raises(ValueError, match=err_msg):
         ModelExplorerWidget(df)
@@ -77,26 +94,21 @@ def test_model_explorer_widget_empty_dataframe(capsys):
     )
 
 
-def test_model_explorer_widget_controls():
+def test_model_explorer_widget_controls(metadata):
     """Check that the controls are correctly populated."""
-    metadata = pd.DataFrame(
-        data={
-            "ml_task": ["classification", "regression"],
-            "dataset": ["dataset1", "dataset2"],
-            "learner": ["learner1", "learner2"],
-            "fit_time": [1.0, 2.0],
-            "predict_time": [3.0, 4.0],
-            "rmse": [None, 0.2],
-            "log_loss": [0.3, None],
-            "roc_auc": [0.5, None],
-        },
-        index=pd.MultiIndex.from_tuples([(0, "id1"), (0, "id2")], names=[None, "id"]),
-    )
-    metadata["learner"] = metadata["learner"].astype("category")
-
     widget = ModelExplorerWidget(metadata)
-    np.testing.assert_array_equal(widget._clf_datasets, ["dataset1"])
-    np.testing.assert_array_equal(widget._reg_datasets, ["dataset2"])
+    np.testing.assert_array_equal(
+        widget._datasets("classification", "estimator"), ["dataset1"]
+    )
+    np.testing.assert_array_equal(
+        widget._datasets("regression", "estimator"), ["dataset2"]
+    )
+    np.testing.assert_array_equal(
+        widget._datasets("classification", "cross-validation"), ["dataset3"]
+    )
+    np.testing.assert_array_equal(
+        widget._datasets("regression", "cross-validation"), ["dataset4"]
+    )
     assert widget._metric_checkboxes.keys() == {"classification", "regression"}
     assert widget._metric_checkboxes["classification"].keys() == {
         "fit_time",
@@ -157,7 +169,7 @@ def test_model_explorer_widget_single_task(metadata):
     We switch ML task to the one having at least an item.
     """
     metadata = metadata.copy()  # do not modify the fixture
-    metadata["ml_task"] = ["classification", "classification"]
+    metadata["ml_task"] = "classification"
     widget = ModelExplorerWidget(metadata)
     # check that the classification dropdown menu is visible
     assert widget.classification_metrics_box.layout.display == ""
@@ -166,7 +178,7 @@ def test_model_explorer_widget_single_task(metadata):
     assert widget.regression_metrics_box.layout.display == "none"
     assert widget._color_metric_dropdown["regression"].layout.display == "none"
 
-    metadata["ml_task"] = ["regression", "regression"]
+    metadata["ml_task"] = "regression"
     widget = ModelExplorerWidget(metadata)
     # check that the classification dropdown menu is hidden
     assert widget.classification_metrics_box.layout.display == "none"
