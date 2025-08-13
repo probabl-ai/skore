@@ -17,10 +17,12 @@ def test_coefficients_frame():
     }
     est_comparison_report = ComparisonReport(est_reports)
     result = est_comparison_report.feature_importance.coefficients().frame()
-    assert result.shape == (11, 2)
+    assert result.shape == (11, 3)
 
-    expected_index = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
-    assert result.index.tolist() == expected_index
+    expected_column0_values = ["Intercept"] + [
+        f"Feature #{i}" for i in range(X.shape[1])
+    ]
+    assert result.iloc[:, 0].values.tolist() == expected_column0_values
 
-    expected_columns = list(estimators)
+    expected_columns = ["index"] + list(estimators)
     assert result.columns.tolist() == expected_columns

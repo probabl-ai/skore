@@ -100,7 +100,16 @@ class FeatureImportanceDisplay(
     def _frame_comparison_report(self):
         import pandas as pd
 
-        return pd.concat(self._coefficient_data, axis=1)
+        return pd.concat(
+            [
+                df.reset_index().reindex(
+                    range(max(len(df) for df in self._coefficient_data))
+                )
+                for df in self._coefficient_data
+            ],
+            axis=1,
+            keys=None,
+        )
 
     @StyleDisplayMixin.style_plot
     def _plot_matplotlib(self, **kwargs):
