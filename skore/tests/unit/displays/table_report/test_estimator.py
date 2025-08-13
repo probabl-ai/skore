@@ -3,7 +3,7 @@ import pytest
 from matplotlib.collections import QuadMesh
 from sklearn.model_selection import train_test_split
 from skore import Display, EstimatorReport
-from skrub import tabular_pipeline
+from skore._externals._skrub_compat import tabular_pipeline
 from skrub.datasets import fetch_employee_salaries
 
 

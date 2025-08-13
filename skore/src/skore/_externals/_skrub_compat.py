@@ -10,6 +10,7 @@ skrub_version = parse_version(parse_version(skrub.__version__).base_version)
 
 
 if skrub_version < parse_version("0.6.0"):
+    tabular_pipeline = skrub.tabular_learner
 
     @dispatch
     def concat(*dataframes, axis=0):
@@ -39,6 +40,9 @@ if skrub_version < parse_version("0.6.0"):
             return pl.concat(dataframes, how="horizontal")
 
     sbd.concat = concat
+
+else:
+    tabular_pipeline = skrub.tabular_pipeline
 
 
 @dispatch

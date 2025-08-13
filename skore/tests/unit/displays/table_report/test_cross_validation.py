@@ -4,7 +4,7 @@ import pytest
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_regression
 from skore import CrossValidationReport, Display, TableReportDisplay
-from skrub import tabular_pipeline
+from skore._externals._skrub_compat import tabular_pipeline
 
 
 @pytest.fixture
@@ -26,19 +26,22 @@ def test_table_report_display_constructor(display):
 
     assert hasattr(display, "summary")
     assert isinstance(display.summary, dict)
-    assert list(display.summary.keys()) == [
-        "dataframe",
-        "dataframe_module",
-        "n_rows",
-        "n_columns",
-        "columns",
-        "dataframe_is_empty",
-        "plots_skipped",
-        "associations_skipped",
-        "sample_table",
-        "n_constant_columns",
-        "top_associations",
-    ]
+    assert set(display.summary.keys()).issuperset(
+        {
+            "dataframe",
+            "dataframe_module",
+            "n_rows",
+            "n_columns",
+            "columns",
+            "dataframe_is_empty",
+            "plots_skipped",
+            # skrub>=0.6
+            # "associations_skipped",
+            "sample_table",
+            "n_constant_columns",
+            "top_associations",
+        }
+    )
 
 
 def test_table_report_display_frame(cross_validation_report):
