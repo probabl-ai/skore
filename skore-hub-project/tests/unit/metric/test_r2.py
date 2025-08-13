@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from numpy.testing import assert_almost_equal
 from pydantic import ValidationError
 from pytest import mark, param, raises
 from skore_hub_project.metric import (
@@ -98,13 +99,16 @@ def test_r2(
     report = request.getfixturevalue(report)
 
     # available accessor
-    assert Metric(report=report).model_dump() == {
+    metric = Metric(report=report).model_dump()
+    metric_value = metric.pop("value")
+
+    assert_almost_equal(metric_value, value)
+    assert metric == {
         "name": name,
         "verbose_name": verbose_name,
         "greater_is_better": greater_is_better,
         "data_source": data_source,
         "position": position,
-        "value": value,
     }
 
     # unavailable accessor
