@@ -95,7 +95,7 @@ def monkeypatch_tmpdir(monkeypatch, tmp_path):
 @fixture
 def monkeypatch_skrub(monkeypatch):
     """
-    Make `skrub.TableReport.html_snippet()` reproducible
+    Make `skrub.TableReport.html_snippet()` reproducible.
 
     https://github.com/skrub-data/skrub/blob/35f573ce586fe61ef2c72f4c0c4b188ebf2e664b/skrub/_reporting/_html.py#L153
     """
@@ -105,7 +105,7 @@ def monkeypatch_skrub(monkeypatch):
 @fixture
 def monkeypatch_matplotlib(monkeypatch):
     """
-    Make `matplotlib.Figure.savefig(format="svg")` reproducible
+    Make `matplotlib.Figure.savefig(format="svg")` reproducible.
 
     https://matplotlib.org/stable/users/prev_whats_new/whats_new_2.1.0.html#reproducible-ps-pdf-and-svg-output
     https://matplotlib.org/stable/users/prev_whats_new/whats_new_3.10.0.html#svg-id-rcparam
@@ -134,10 +134,23 @@ def monkeypatch_skore_hub_api_key(monkeypatch):
     monkeypatch.delenv("SKORE_HUB_API_KEY", raising=False)
 
 
+@fixture
+def monkeypatch_sklearn_estimator_html_repr(monkeypatch):
+    """
+    Make `sklearn.utils.estimator_html_repr` reproducible.
+
+    https://github.com/scikit-learn/scikit-learn/blob/main/sklearn/utils/_repr_html/estimator.py#L21
+    """
+    monkeypatch.setattr(
+        "sklearn.utils._repr_html.estimator._IDCounter.get_id", lambda self: "<id>"
+    )
+
+
 @fixture(autouse=True)
 def setup(
     monkeypatch_tmpdir,
     monkeypatch_matplotlib,
     monkeypatch_skrub,
     monkeypatch_skore_hub_api_key,
+    monkeypatch_sklearn_estimator_html_repr,
 ): ...
