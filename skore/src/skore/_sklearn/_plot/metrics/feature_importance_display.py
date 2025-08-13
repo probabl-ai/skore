@@ -100,7 +100,7 @@ class FeatureImportanceDisplay(
     def _frame_comparison_report(self):
         import pandas as pd
 
-        return pd.concat(
+        combined = pd.concat(
             [
                 df.reset_index().reindex(
                     range(max(len(df) for df in self._coefficient_data))
@@ -110,6 +110,44 @@ class FeatureImportanceDisplay(
             axis=1,
             keys=None,
         )
+        # An 'index' column is a column with feature names
+        feature_name_col_pos = [
+            i
+            for i, col in enumerate(combined.columns)
+            if col in ("index", "Split index")
+        ]
+        if self._parent._reports_type == "EstimatorReport":
+            if len(feature_name_col_pos) == 1:
+                # If the two models use the same features, there is 1 'index' column
+                combined.set_index("index", inplace=True)
+                combined.index.name = None
+            elif len(feature_name_col_pos) == 2:
+                feature_name_col_1 = combined.iloc[:, feature_name_col_pos[0]].dropna()
+                feature_name_col_2 = combined.iloc[:, feature_name_col_pos[1]].dropna()
+                if set(feature_name_col_1).issubset(set(feature_name_col_2)) or set(
+                    feature_name_col_2
+                ).issubset(set(feature_name_col_1)):
+                    # If one index is a subset of the other, set the output frame's
+                    # index to be the full index.
+                    # Otherwise, keep both feature ('index') columns
+                    nan_counts = [
+                        combined.iloc[:, pos].isna().sum()
+                        for pos in feature_name_col_pos
+                    ]
+                    best_position = feature_name_col_pos[
+                        nan_counts.index(min(nan_counts))
+                    ]
+                    combined.set_index(combined.iloc[:, best_position], inplace=True)
+                    combined.drop(
+                        combined.columns[feature_name_col_pos], axis=1, inplace=True
+                    )
+                    combined.index.name = None
+        elif self._parent._reports_type == "CrossValidationReport":
+            # Here the feature name columns just include unnecessary split index numbers
+            combined.drop(combined.columns[feature_name_col_pos], axis=1, inplace=True)
+            combined.index.name = "Split index"
+
+        return combined
 
     @StyleDisplayMixin.style_plot
     def _plot_matplotlib(self, **kwargs):

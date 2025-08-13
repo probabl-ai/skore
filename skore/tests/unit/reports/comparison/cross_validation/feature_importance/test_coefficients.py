@@ -18,7 +18,7 @@ def test_coefficients_frame():
     }
     est_comparison_report = ComparisonReport(cv_reports)
     result = est_comparison_report.feature_importance.coefficients().frame()
-    assert result.shape == (5, 24)
+    assert result.shape == (5, 22)
 
     expected_index = list(range(splitter))
     assert result.index.tolist() == expected_index
@@ -26,9 +26,7 @@ def test_coefficients_frame():
     base_columns = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
 
     expected_columns = [
-        col
-        for model in estimators
-        for col in ["Split index"] + [f"{model}__{c}" for c in base_columns]
+        f"{model}__{col}" for model in estimators for col in base_columns
     ]
 
     assert result.columns.tolist() == expected_columns
