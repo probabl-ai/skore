@@ -28,6 +28,9 @@ def skore_check_is_fitted(estimator):
     estimator has these three attributes to determine if the estimator is a skorch
     model. If so, extra attributes are passed to sklearn's `check_is_fitted`
     to avoid silently passing not fitted skorch models to `EstimatorReport`s.
+
+    TODO: Remove this when the issue is solved skorch-side
+          (https://github.com/skorch-dev/skorch/issues/1118)
     """
     if not all(
         attr in vars(estimator)
