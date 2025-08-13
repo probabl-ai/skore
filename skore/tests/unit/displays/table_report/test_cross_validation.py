@@ -16,10 +16,8 @@ def cross_validation_report():
 
 
 @pytest.fixture
-def display():
-    X, y = make_regression(n_samples=100, n_features=5, random_state=42)
-    report = CrossValidationReport(tabular_pipeline("regressor"), X=X, y=y)
-    return report.data.analyze()
+def display(cross_validation_report):
+    return cross_validation_report.data.analyze()
 
 
 def test_table_report_display_constructor(display):

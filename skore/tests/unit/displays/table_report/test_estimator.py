@@ -25,17 +25,8 @@ def estimator_report():
 
 
 @pytest.fixture
-def display():
-    data = fetch_employee_salaries()
-    X, y = data.X, data.y
-    X["gender"] = X["gender"].astype("category")
-    X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
-    X["timedelta_hired"] = (
-        pd.Timestamp.now() - X["date_first_hired"]
-    ).dt.to_pytimedelta()
-    split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    report = EstimatorReport(tabular_pipeline("regressor"), **split_data)
-    return report.data.analyze()
+def display(estimator_report):
+    return estimator_report.data.analyze()
 
 
 @pytest.mark.parametrize(
