@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from pytest import fixture
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
 from skore import CrossValidationReport, EstimatorReport
 
@@ -16,7 +16,7 @@ def regression() -> EstimatorReport:
     )
 
     return EstimatorReport(
-        LinearRegression(),
+        Ridge(random_state=42),
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
@@ -28,7 +28,7 @@ def regression() -> EstimatorReport:
 def cv_regression() -> CrossValidationReport:
     X, y = make_regression(random_state=42)
 
-    return CrossValidationReport(LinearRegression(), X, y)
+    return CrossValidationReport(Ridge(random_state=42), X, y)
 
 
 @fixture(scope="module")

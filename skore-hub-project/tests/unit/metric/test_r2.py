@@ -24,7 +24,7 @@ from skore_hub_project.metric import (
             True,
             "train",
             None,
-            1.0,
+            0.9997075936149707,
             id="R2Train",
         ),
         param(
@@ -35,7 +35,7 @@ from skore_hub_project.metric import (
             True,
             "test",
             None,
-            0.6688617330074285,
+            0.6757085221095596,
             id="R2Test",
         ),
         param(
@@ -46,7 +46,7 @@ from skore_hub_project.metric import (
             True,
             "train",
             None,
-            1.0,
+            0.9996757990105992,
             id="R2TrainMean",
         ),
         param(
@@ -57,7 +57,7 @@ from skore_hub_project.metric import (
             True,
             "test",
             None,
-            0.8049625101988015,
+            0.7999871077321583,
             id="R2TestMean",
         ),
         param(
@@ -68,7 +68,7 @@ from skore_hub_project.metric import (
             False,
             "train",
             None,
-            0.0,
+            4.8687384179271224e-05,
             id="R2TrainStd",
         ),
         param(
@@ -79,7 +79,7 @@ from skore_hub_project.metric import (
             False,
             "test",
             None,
-            0.04781012016573785,
+            0.0528129534702117,
             id="R2TestStd",
         ),
     ),
