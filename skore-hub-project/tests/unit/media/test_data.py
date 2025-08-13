@@ -6,7 +6,7 @@ from skore_hub_project.media import TableReportTest, TableReportTrain
 @fixture(autouse=True)
 def monkeypatch_to_json(monkeypatch):
     monkeypatch.setattr(
-        "skore._sklearn._plot.TableReportDisplay._to_json", lambda self: "<json>"
+        "skore._sklearn._plot.TableReportDisplay._to_json", lambda self: "[0,1]"
     )
 
 
@@ -28,8 +28,8 @@ def test_table_report(binary_classification, Media, data_source):
         "attributes": {"data_source": data_source},
         "parameters": {},
         "representation": {
-            "media_type": "application/vnd.skrub.table-report.v1+json",
-            "value": "<json>",
+            "media_type": "application/vnd.skrub.table-report.v1",
+            "value": [0, 1],
         },
     }
 

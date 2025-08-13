@@ -1,5 +1,6 @@
 from functools import cached_property
 from inspect import signature
+from json import loads
 from typing import Literal
 
 from pydantic import Field, computed_field
@@ -24,10 +25,12 @@ class TableReport(Media):
         }
 
         table_report_display = function(**function_kwargs)
+        table_report_json_str = table_report_display._to_json()
+        table_report = loads(table_report_json_str)
 
         return Representation(
-            media_type="application/vnd.skrub.table-report.v1+json",
-            value=table_report_display._to_json(),
+            media_type="application/vnd.skrub.table-report.v1",
+            value=table_report,
         )
 
 
