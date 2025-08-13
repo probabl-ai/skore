@@ -139,20 +139,7 @@ class FeatureImportanceDisplay(
                 coef_frame.plot.bar(ax=self.ax_)
                 self.ax_.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
 
-                if len(self._coefficient_data) == 1 or len(coef_frame.columns) > 1:
-                    # If there's only one DataFrame, or if the plot includes
-                    # multiple models with the same features, use a combined title
-                    # like "Model 1 vs Model 2 Coefficients".
-                    #
-                    # For example, if 3 reports are passed and 2 share the same
-                    # features, those two are plotted together with a combined
-                    # title, while the third goes to the else clause and gets its
-                    # title.
-                    self.ax_.set_title(
-                        f"{' vs '.join(coef_frame.columns)} Coefficients"
-                    )
-                else:
-                    self.ax_.set_title(f"{coef_frame.columns[0]} Coefficients")
+                self.ax_.set_title("Coefficients")
                 self.figure_.tight_layout()
                 plt.show()
         elif self._parent._reports_type == "CrossValidationReport":
