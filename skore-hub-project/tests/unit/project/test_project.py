@@ -1,7 +1,6 @@
+from functools import partialmethod
 from io import BytesIO
-from json import loads
-from math import ceil
-from operator import itemgetter
+from json import dumps, loads
 from types import SimpleNamespace
 from urllib.parse import urljoin
 
@@ -10,7 +9,10 @@ from httpx import Client, Response
 from pytest import fixture, mark, raises
 from skore import EstimatorReport
 from skore_hub_project import Project
-from skore_hub_project.project.artefact import Serializer
+from skore_hub_project.report import (
+    CrossValidationReportPayload,
+    EstimatorReportPayload,
+)
 
 
 class FakeClient(Client):
@@ -31,7 +33,7 @@ def monkeypatch_client(monkeypatch):
         FakeClient,
     )
     monkeypatch.setattr(
-        "skore_hub_project.project.artefact.HUBClient",
+        "skore_hub_project.artefact.upload.HUBClient",
         FakeClient,
     )
 
@@ -55,6 +57,26 @@ def regression():
     )
 
 
+@fixture(autouse=True)
+def monkeypatch_permutation(monkeypatch):
+    import skore
+
+    monkeypatch.setattr(
+        "skore.EstimatorReport.feature_importance.permutation",
+        partialmethod(
+            skore.EstimatorReport.feature_importance.permutation,
+            seed=42,
+        ),
+    )
+
+
+@fixture(autouse=True)
+def monkeypatch_to_json(monkeypatch):
+    monkeypatch.setattr(
+        "skore._sklearn._plot.TableReportDisplay._to_json", lambda self: "[0,1]"
+    )
+
+
 class TestProject:
     def test_tenant(self):
         assert Project("<tenant>", "<name>").tenant == "<tenant>"
@@ -65,259 +87,84 @@ class TestProject:
     @mark.respx(assert_all_called=True)
     def test_run_id(self, respx_mock):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": "<run_id>"})
+            Response(200, json={"id": 0})
         )
 
-        assert Project("<tenant>", "<name>").run_id == "<run_id>"
+        assert Project("<tenant>", "<name>").run_id == 0
 
     def test_put_exception(self, respx_mock):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": "<run_id>"})
+            Response(200, json={"id": 0})
         )
 
         with raises(TypeError, match="Key must be a string"):
             Project("<tenant>", "<name>").put(None, "<value>")
 
-        with raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
+        with raises(
+            TypeError,
+            match="must be a `skore.EstimatorReport` or `skore.CrossValidationReport`",
+        ):
             Project("<tenant>", "<name>").put("<key>", "<value>")
 
-    def test_upload_in_put(self, monkeypatch, respx_mock, regression):
-        cache = regression._cache
-        regression._cache = {}
-
-        try:
-            with Serializer(regression) as serializer:
-                pickle = serializer.filepath.read_bytes()
-                checksum = serializer.checksum
-                chunk_size = ceil(len(pickle) / 2)
-        finally:
-            regression._cache = cache
-
-        monkeypatch.setattr("skore_hub_project.project.artefact.CHUNK_SIZE", chunk_size)
+    def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": "<run_id>"})
-        )
-        respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
-            Response(
-                200,
-                json=[
-                    {"upload_url": "http://chunk2.com/", "chunk_id": 2},
-                    {"upload_url": "http://chunk1.com/", "chunk_id": 1},
-                ],
-            )
-        )
-        respx_mock.put("http://chunk1.com").mock(
-            Response(200, headers={"etag": '"<etag1>"'})
-        )
-        respx_mock.put("http://chunk2.com").mock(
-            Response(200, headers={"etag": '"<etag2>"'})
-        )
-        respx_mock.post("projects/<tenant>/<name>/artefacts/complete")
-        respx_mock.post("projects/<tenant>/<name>/items")
-
-        Project("<tenant>", "<name>").put("<key>", regression)
-
-        requests = [call.request for call in respx_mock.calls]
-
-        assert len(requests) == 6
-        assert requests[0].url.path == "/projects/<tenant>/<name>/runs"
-        assert requests[1].url.path == "/projects/<tenant>/<name>/artefacts"
-        assert loads(requests[1].content.decode()) == [
-            {
-                "checksum": checksum,
-                "chunk_number": 2,
-                "content_type": "estimator-report-pickle",
-            }
-        ]
-        assert sorted(
-            (
-                (str(requests[2].url), requests[2].content),
-                (str(requests[3].url), requests[3].content),
-            ),
-            key=itemgetter(0),
-        ) == [
-            ("http://chunk1.com/", pickle[:chunk_size]),
-            ("http://chunk2.com/", pickle[chunk_size:]),
-        ]
-        assert requests[4].url.path == "/projects/<tenant>/<name>/artefacts/complete"
-        assert loads(requests[4].content.decode()) == [
-            {
-                "checksum": checksum,
-                "etags": {
-                    "1": '"<etag1>"',
-                    "2": '"<etag2>"',
-                },
-            }
-        ]
-
-    def test_put(self, respx_mock, regression):
-        respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": "<run_id>"})
+            Response(200, json={"id": 0})
         )
         respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
             Response(200, json=[])
         )
-        respx_mock.post("projects/<tenant>/<name>/items").mock(Response(200))
+        respx_mock.post("projects/<tenant>/<name>/estimator-reports").mock(
+            Response(200)
+        )
 
-        Project("<tenant>", "<name>").put("<key>", regression)
-
-        cache = regression._cache
-        regression._cache = {}
-
-        try:
-            with Serializer(regression) as serializer:
-                checksum = serializer.checksum
-        finally:
-            regression._cache = cache
+        project = Project("<tenant>", "<name>")
+        project.put("<key>", binary_classification)
 
         # Retrieve the content of the request
         content = loads(respx_mock.calls.last.request.content.decode())
-
-        # Prepare the content to be compared
-        content["dataset_fingerprint"] = None
-
-        for item in content["related_items"]:
-            item["representation"]["value"] = None
-
-        for metric in content["metrics"]:
-            metric["value"] = None
+        desired = loads(
+            dumps(
+                EstimatorReportPayload(
+                    project=project, key="<key>", report=binary_classification
+                ).model_dump()
+            )
+        )
 
         # Compare content with the desired output
-        assert content == {
-            "dataset_fingerprint": None,
-            "estimator_class_name": "LinearRegression",
-            "metrics": [
-                {
-                    "name": "r2",
-                    "verbose_name": "R²",
-                    "value": None,
-                    "data_source": "train",
-                    "greater_is_better": True,
-                    "position": None,
-                },
-                {
-                    "name": "r2",
-                    "verbose_name": "R²",
-                    "value": None,
-                    "data_source": "test",
-                    "greater_is_better": True,
-                    "position": None,
-                },
-                {
-                    "name": "rmse",
-                    "verbose_name": "RMSE",
-                    "value": None,
-                    "data_source": "train",
-                    "greater_is_better": False,
-                    "position": 3,
-                },
-                {
-                    "name": "rmse",
-                    "verbose_name": "RMSE",
-                    "value": None,
-                    "data_source": "test",
-                    "greater_is_better": False,
-                    "position": 3,
-                },
-                {
-                    "name": "fit_time",
-                    "verbose_name": "Fit time (s)",
-                    "value": None,
-                    "data_source": None,
-                    "greater_is_better": False,
-                    "position": 1,
-                },
-                {
-                    "name": "predict_time",
-                    "verbose_name": "Predict time (s)",
-                    "value": None,
-                    "data_source": "train",
-                    "greater_is_better": False,
-                    "position": 2,
-                },
-                {
-                    "name": "predict_time",
-                    "verbose_name": "Predict time (s)",
-                    "value": None,
-                    "data_source": "test",
-                    "greater_is_better": False,
-                    "position": 2,
-                },
-            ],
-            "ml_task": "regression",
-            "related_items": [
-                {
-                    "key": "prediction_error",
-                    "verbose_name": "Prediction error",
-                    "category": "performance",
-                    "attributes": {"data_source": "train"},
-                    "parameters": {},
-                    "representation": {
-                        "media_type": "image/svg+xml;base64",
-                        "value": None,
-                    },
-                },
-                {
-                    "key": "prediction_error",
-                    "verbose_name": "Prediction error",
-                    "category": "performance",
-                    "attributes": {"data_source": "test"},
-                    "parameters": {},
-                    "representation": {
-                        "media_type": "image/svg+xml;base64",
-                        "value": None,
-                    },
-                },
-                {
-                    "key": "permutation",
-                    "verbose_name": "Feature importance - Permutation",
-                    "category": "feature_importance",
-                    "attributes": {"data_source": "train", "method": "permutation"},
-                    "parameters": {},
-                    "representation": {
-                        "media_type": "application/vnd.dataframe",
-                        "value": None,
-                    },
-                },
-                {
-                    "key": "permutation",
-                    "verbose_name": "Feature importance - Permutation",
-                    "category": "feature_importance",
-                    "attributes": {"data_source": "test", "method": "permutation"},
-                    "parameters": {},
-                    "representation": {
-                        "media_type": "application/vnd.dataframe",
-                        "value": None,
-                    },
-                },
-                {
-                    "key": "coefficients",
-                    "verbose_name": "Feature importance - Coefficients",
-                    "category": "feature_importance",
-                    "attributes": {"method": "coefficients"},
-                    "parameters": {},
-                    "representation": {
-                        "media_type": "application/vnd.dataframe",
-                        "value": None,
-                    },
-                },
-                {
-                    "key": "estimator_html_repr",
-                    "verbose_name": None,
-                    "category": "model",
-                    "attributes": {},
-                    "parameters": {},
-                    "representation": {"media_type": "text/html", "value": None},
-                },
-            ],
-            "parameters": {"checksum": checksum},
-            "key": "<key>",
-            "run_id": "<run_id>",
-        }
+        assert content == desired
+
+    def test_put_cross_validation_report(
+        self, monkeypatch, small_cv_binary_classification, respx_mock
+    ):
+        respx_mock.post("projects/<tenant>/<name>/runs").mock(
+            Response(200, json={"id": 0})
+        )
+        respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
+            Response(200, json=[])
+        )
+        respx_mock.post("projects/<tenant>/<name>/cross-validation-reports").mock(
+            Response(200)
+        )
+
+        project = Project("<tenant>", "<name>")
+        project.put("<key>", small_cv_binary_classification)
+
+        # Retrieve the content of the request
+        content = loads(respx_mock.calls.last.request.content.decode())
+        desired = loads(
+            dumps(
+                CrossValidationReportPayload(
+                    project=project, key="<key>", report=small_cv_binary_classification
+                ).model_dump()
+            )
+        )
+
+        # Compare content with the desired output
+        assert content == desired
 
     def test_reports(self, respx_mock):
         url = "projects/<tenant>/<name>/runs"
-        respx_mock.post(url).mock(Response(200, json={"id": "<run_id>"}))
+        respx_mock.post(url).mock(Response(200, json={"id": 0}))
 
         project = Project("<tenant>", "<name>")
 
@@ -328,7 +175,7 @@ class TestProject:
     def test_reports_get(self, respx_mock, regression):
         # Mock hub routes that will be called
         url = "projects/<tenant>/<name>/runs"
-        response = Response(200, json={"id": "<run_id>"})
+        response = Response(200, json={"id": 0})
         respx_mock.post(url).mock(response)
 
         url = "projects/<tenant>/<name>/experiments/estimator-reports/<report_id>"
@@ -356,7 +203,7 @@ class TestProject:
 
     def test_reports_metadata(self, nowstr, respx_mock):
         url = "projects/<tenant>/<name>/runs"
-        respx_mock.post(url).mock(Response(200, json={"id": "<run_id_2>"}))
+        respx_mock.post(url).mock(Response(200, json={"id": 2}))
 
         url = "projects/<tenant>/<name>/experiments/estimator-reports"
         respx_mock.get(url).mock(
@@ -365,7 +212,7 @@ class TestProject:
                 json=[
                     {
                         "id": "<report_id_0>",
-                        "run_id": "<run_id_0>",
+                        "run_id": 0,
                         "key": "<key>",
                         "ml_task": "<ml_task>",
                         "estimator_class_name": "<estimator_class_name>",
@@ -378,7 +225,7 @@ class TestProject:
                     },
                     {
                         "id": "<report_id_1>",
-                        "run_id": "<run_id_1>",
+                        "run_id": 1,
                         "key": "<key>",
                         "ml_task": "<ml_task>",
                         "estimator_class_name": "<estimator_class_name>",
@@ -399,7 +246,7 @@ class TestProject:
         assert metadata == [
             {
                 "id": "<report_id_0>",
-                "run_id": "<run_id_0>",
+                "run_id": 0,
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -413,7 +260,7 @@ class TestProject:
             },
             {
                 "id": "<report_id_1>",
-                "run_id": "<run_id_1>",
+                "run_id": 1,
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",

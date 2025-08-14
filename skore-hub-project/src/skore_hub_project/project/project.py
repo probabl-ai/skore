@@ -9,19 +9,16 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import joblib
+from skore import CrossValidationReport, EstimatorReport
 
-from ..client.client import Client, HTTPStatusError, HUBClient
-from ..item import skore_estimator_report_item
-from . import artefact
+from skore_hub_project.client.client import Client, HTTPStatusError, HUBClient
 
 if TYPE_CHECKING:
     from typing import TypedDict
 
-    from skore import EstimatorReport
-
     class Metadata(TypedDict):  # noqa: D101
         id: str
-        run_id: str
+        run_id: int
         key: str
         date: str
         learner: str
@@ -46,7 +43,8 @@ def ensure_project_is_created(method):
 
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        return self.run_id and method(self, *args, **kwargs)
+        self.run_id  # noqa: B018
+        return method(self, *args, **kwargs)
 
     return wrapper
 
@@ -82,7 +80,7 @@ class Project:
         The tenant of the project.
     name : str
         The name of the project.
-    run_id : str
+    run_id : int
         The current run identifier of the project.
     """
 
@@ -119,7 +117,7 @@ class Project:
         return self.__name
 
     @cached_property
-    def run_id(self) -> str:
+    def run_id(self) -> int:
         """The current run identifier of the project."""
         with HUBClient() as client:
             request = client.post(f"projects/{self.tenant}/{self.name}/runs")
@@ -147,45 +145,28 @@ class Project:
         TypeError
             If the combination of parameters are not valid.
         """
+        from ..report import CrossValidationReportPayload, EstimatorReportPayload
+
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        from skore import EstimatorReport
-
-        if not isinstance(report, EstimatorReport):
+        if isinstance(report, EstimatorReport):
+            Payload = EstimatorReportPayload
+            url = f"projects/{self.tenant}/{self.name}/estimator-reports"
+        elif isinstance(report, CrossValidationReport):
+            Payload = CrossValidationReportPayload
+            url = f"projects/{self.tenant}/{self.name}/cross-validation-reports"
+        else:
             raise TypeError(
-                f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
+                f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationRep"
+                f"ort` (found '{type(report)}')"
             )
 
-        # Upload report to artefacts storage.
-        #
-        # The report is pickled without its cache, to avoid salting the checksum.
-        # The report is pickled on disk to reduce RAM footprint.
-        cache = report._cache
-        report._cache = {}
+        payload = Payload(project=self, key=key, report=report)
+        payload_dict = payload.model_dump()
 
-        try:
-            checksum = artefact.upload(self, report, "estimator-report-pickle")
-        finally:
-            report._cache = cache
-
-        # Send metadata.
         with HUBClient() as client:
-            client.post(
-                url=f"projects/{self.tenant}/{self.name}/items",
-                json=dict(
-                    (
-                        *skore_estimator_report_item.Metadata(report),
-                        (
-                            "related_items",
-                            list(skore_estimator_report_item.Representations(report)),
-                        ),
-                        ("parameters", {"checksum": checksum}),
-                        ("key", key),
-                        ("run_id", self.run_id),
-                    )
-                ),
-            )
+            client.post(url=url, json=payload_dict)
 
     @property
     @ensure_project_is_created
