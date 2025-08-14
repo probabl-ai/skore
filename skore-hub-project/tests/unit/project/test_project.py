@@ -318,7 +318,7 @@ class TestProject:
                     "attributes": {"data_source": "test"},
                     "parameters": {},
                     "representation": {
-                        "media_type": "application/vnd.skrub.table-report.v1",
+                        "media_type": "application/vnd.skrub.table-report.v1+json",
                         "value": None,
                     },
                 },
@@ -329,7 +329,7 @@ class TestProject:
                     "attributes": {"data_source": "train"},
                     "parameters": {},
                     "representation": {
-                        "media_type": "application/vnd.skrub.table-report.v1",
+                        "media_type": "application/vnd.skrub.table-report.v1+json",
                         "value": None,
                     },
                 },

@@ -28,7 +28,7 @@ def test_table_report(binary_classification, Media, data_source):
         "attributes": {"data_source": data_source},
         "parameters": {},
         "representation": {
-            "media_type": "application/vnd.skrub.table-report.v1",
+            "media_type": "application/vnd.skrub.table-report.v1+json",
             "value": [0, 1],
         },
     }

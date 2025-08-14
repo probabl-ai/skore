@@ -29,7 +29,7 @@ class TableReport(Media):
         table_report = loads(table_report_json_str)
 
         return Representation(
-            media_type="application/vnd.skrub.table-report.v1",
+            media_type="application/vnd.skrub.table-report.v1+json",
             value=table_report,
         )
 
