@@ -161,10 +161,9 @@ class CrossValidationReportPayload(ReportPayload):
         - 0 if the sample is in the train-set,
         - 1 if the sample is in the test-set.
         """
-        splits = []
-
-        for i in range(len(self.report.split_indices)):
-            splits.append([0] * len(self.report.X))
+        splits = [
+            [0] * len(self.report.X) for i in range(len(self.report.split_indices))
+        ]
 
         for i, (_, test_indices) in enumerate(self.report.split_indices):
             for test_indice in test_indices:
