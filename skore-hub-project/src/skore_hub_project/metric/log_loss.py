@@ -27,6 +27,7 @@ class LogLossMean(CrossValidationReportMetric):
     name: str = "log_loss_mean"
     verbose_name: str = "Log loss - MEAN"
     greater_is_better: bool = False
+    position: int = 4
 
 
 class LogLossTrainMean(LogLossMean):

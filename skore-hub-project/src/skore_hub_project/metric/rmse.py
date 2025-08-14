@@ -27,6 +27,7 @@ class RmseMean(CrossValidationReportMetric):
     name: Literal["rmse_mean"] = "rmse_mean"
     verbose_name: Literal["RMSE - MEAN"] = "RMSE - MEAN"
     greater_is_better: Literal[False] = False
+    position: Literal[3] = 3
 
 
 class RmseTrainMean(RmseMean):

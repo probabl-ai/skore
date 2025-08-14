@@ -27,6 +27,7 @@ class RocAucMean(CrossValidationReportMetric):
     name: Literal["roc_auc_mean"] = "roc_auc_mean"
     verbose_name: Literal["ROC AUC - MEAN"] = "ROC AUC - MEAN"
     greater_is_better: Literal[True] = True
+    position: Literal[3] = 3
 
 
 class RocAucTrainMean(RocAucMean):

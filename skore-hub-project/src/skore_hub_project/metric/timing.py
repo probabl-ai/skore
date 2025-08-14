@@ -59,6 +59,7 @@ class FitTimeMean(FitTimeAggregate):
     aggregate: ClassVar[Literal["mean"]] = "mean"
     name: str = "fit_time_mean"
     verbose_name: str = "Fit time (s) - MEAN"
+    position: int = 1
 
 
 class FitTimeStd(FitTimeAggregate):
@@ -106,6 +107,7 @@ class PredictTimeAggregate(Metric):
     report: CrossValidationReport = Field(repr=False, exclude=True)
     aggregate: ClassVar[Literal["mean", "std"]]
     greater_is_better: bool = False
+    position: int = 2
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
