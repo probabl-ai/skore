@@ -158,8 +158,8 @@ class Project:
             url = f"projects/{self.tenant}/{self.name}/cross-validation-reports"
         else:
             raise TypeError(
-                f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationReport`"
-                f"(found '{type(report)}')"
+                f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationRep"
+                f"ort` (found '{type(report)}')"
             )
 
         payload = Payload(project=self, key=key, report=report)
