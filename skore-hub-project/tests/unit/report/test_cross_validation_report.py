@@ -2,7 +2,8 @@ from json import loads
 from urllib.parse import urljoin
 
 from httpx import Client, Response
-from pytest import fixture, mark
+from pydantic import ValidationError
+from pytest import fixture, mark, raises
 from skore import CrossValidationReport
 from skore_hub_project import Project
 from skore_hub_project.artefact.serializer import Serializer
@@ -215,12 +216,7 @@ class TestCrossValidationReportPayload:
 
         payload_dict = payload.model_dump()
 
-        payload_dict.pop("splitting_strategy_name")
-        payload_dict.pop("splits")
-        payload_dict.pop("class_names")
-        payload_dict.pop("classes")
         payload_dict.pop("estimators")
-        payload_dict.pop("parameters")
         payload_dict.pop("metrics")
         payload_dict.pop("related_items")
 
@@ -231,4 +227,18 @@ class TestCrossValidationReportPayload:
             "dataset_fingerprint": "cffe9686d06a56d0afe0c3a29d3ac6bf",
             "ml_task": "binary-classification",
             "groups": None,
+            "parameters": {"checksum": checksum},
+            "splitting_strategy_name": "StratifiedKFold",
+            "splits": [
+                [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
+            ],
+            "class_names": ["1", "0"],
+            "classes": [0, 0, 1, 1, 1, 0, 0, 1, 0, 1],
         }
+
+    def test_exception(self):
+        with raises(ValidationError):
+            CrossValidationReportPayload(
+                project=Project("<tenant>", "<name>"), report=None, key="<key>"
+            )
