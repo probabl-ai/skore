@@ -54,6 +54,15 @@ def cv_binary_classification() -> CrossValidationReport:
     return CrossValidationReport(RandomForestClassifier(random_state=42), X, y)
 
 
+@fixture(scope="module")
+def small_cv_binary_classification() -> CrossValidationReport:
+    X, y = make_classification(random_state=42, n_samples=10)
+
+    return CrossValidationReport(
+        RandomForestClassifier(random_state=42), X, y, splitter=2
+    )
+
+
 @fixture
 def now():
     return datetime.now(tz=timezone.utc)

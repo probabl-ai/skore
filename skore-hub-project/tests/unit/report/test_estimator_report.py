@@ -60,18 +60,8 @@ class FakeClient(Client):
 
 @fixture(autouse=True)
 def monkeypatch_client(monkeypatch):
-    monkeypatch.setattr(
-        "skore_hub_project.project.project.HUBClient",
-        FakeClient,
-    )
-    monkeypatch.setattr(
-        "skore_hub_project.artefact.upload.HUBClient",
-        FakeClient,
-    )
-
-
-# test with regression
-# test with binary_classification
+    monkeypatch.setattr("skore_hub_project.project.project.HUBClient", FakeClient)
+    monkeypatch.setattr("skore_hub_project.artefact.upload.HUBClient", FakeClient)
 
 
 def serialize(report) -> tuple[bytes, str, int]:
@@ -176,9 +166,10 @@ def test_estimator_report_payload(
     project = Project("<tenant>", "<name>")
     payload = EstimatorReportPayload(project=project, report=report, key="<key>")
     payload_dict = payload.model_dump()
-    requests = [call.request for call in respx_mock.calls]
 
     # Ensure upload is well done
+    requests = [call.request for call in respx_mock.calls]
+
     assert len(requests) == 5
     assert requests[0].url.path == "/projects/<tenant>/<name>/runs"
     assert requests[1].url.path == "/projects/<tenant>/<name>/artefacts"
