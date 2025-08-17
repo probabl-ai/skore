@@ -1,3 +1,5 @@
+"""Class definition of the payload used to send a RMSE metric to ``hub``."""
+
 from __future__ import annotations
 
 from typing import ClassVar, Literal
@@ -5,7 +7,7 @@ from typing import ClassVar, Literal
 from .metric import CrossValidationReportMetric, EstimatorReportMetric
 
 
-class Rmse(EstimatorReportMetric):
+class Rmse(EstimatorReportMetric):  # noqa: D101
     accessor: ClassVar[Literal["metrics.rmse"]] = "metrics.rmse"
     name: Literal["rmse"] = "rmse"
     verbose_name: Literal["RMSE"] = "RMSE"
@@ -13,15 +15,15 @@ class Rmse(EstimatorReportMetric):
     position: Literal[3] = 3
 
 
-class RmseTrain(Rmse):
+class RmseTrain(Rmse):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class RmseTest(Rmse):
+class RmseTest(Rmse):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class RmseMean(CrossValidationReportMetric):
+class RmseMean(CrossValidationReportMetric):  # noqa: D101
     accessor: ClassVar[Literal["metrics.rmse"]] = "metrics.rmse"
     aggregate: ClassVar[Literal["mean"]] = "mean"
     name: Literal["rmse_mean"] = "rmse_mean"
@@ -30,15 +32,15 @@ class RmseMean(CrossValidationReportMetric):
     position: Literal[3] = 3
 
 
-class RmseTrainMean(RmseMean):
+class RmseTrainMean(RmseMean):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class RmseTestMean(RmseMean):
+class RmseTestMean(RmseMean):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class RmseStd(CrossValidationReportMetric):
+class RmseStd(CrossValidationReportMetric):  # noqa: D101
     accessor: ClassVar[Literal["metrics.rmse"]] = "metrics.rmse"
     aggregate: ClassVar[Literal["std"]] = "std"
     name: Literal["rmse_std"] = "rmse_std"
@@ -46,9 +48,9 @@ class RmseStd(CrossValidationReportMetric):
     greater_is_better: Literal[False] = False
 
 
-class RmseTrainStd(RmseStd):
+class RmseTrainStd(RmseStd):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class RmseTestStd(RmseStd):
+class RmseTestStd(RmseStd):  # noqa: D101
     data_source: Literal["test"] = "test"

@@ -1,3 +1,5 @@
+"""Class definition of the payload used to send a log loss metric to ``hub``."""
+
 from __future__ import annotations
 
 from typing import ClassVar, Literal
@@ -5,7 +7,7 @@ from typing import ClassVar, Literal
 from .metric import CrossValidationReportMetric, EstimatorReportMetric
 
 
-class LogLoss(EstimatorReportMetric):
+class LogLoss(EstimatorReportMetric):  # noqa: D101
     accessor: ClassVar[str] = "metrics.log_loss"
     name: str = "log_loss"
     verbose_name: str = "Log loss"
@@ -13,15 +15,15 @@ class LogLoss(EstimatorReportMetric):
     position: int = 4
 
 
-class LogLossTrain(LogLoss):
+class LogLossTrain(LogLoss):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class LogLossTest(LogLoss):
+class LogLossTest(LogLoss):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class LogLossMean(CrossValidationReportMetric):
+class LogLossMean(CrossValidationReportMetric):  # noqa: D101
     accessor: ClassVar[str] = "metrics.log_loss"
     aggregate: ClassVar[Literal["mean"]] = "mean"
     name: str = "log_loss_mean"
@@ -30,15 +32,15 @@ class LogLossMean(CrossValidationReportMetric):
     position: int = 4
 
 
-class LogLossTrainMean(LogLossMean):
+class LogLossTrainMean(LogLossMean):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class LogLossTestMean(LogLossMean):
+class LogLossTestMean(LogLossMean):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class LogLossStd(CrossValidationReportMetric):
+class LogLossStd(CrossValidationReportMetric):  # noqa: D101
     accessor: ClassVar[str] = "metrics.log_loss"
     aggregate: ClassVar[Literal["std"]] = "std"
     name: str = "log_loss_std"
@@ -46,9 +48,9 @@ class LogLossStd(CrossValidationReportMetric):
     greater_is_better: bool = False
 
 
-class LogLossTrainStd(LogLossStd):
+class LogLossTrainStd(LogLossStd):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class LogLossTestStd(LogLossStd):
+class LogLossTestStd(LogLossStd):  # noqa: D101
     data_source: Literal["test"] = "test"

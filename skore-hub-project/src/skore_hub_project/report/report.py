@@ -101,7 +101,7 @@ class ReportPayload(ABC, BaseModel):
         - ignore ``list[float]`` for multi-output ML task,
         - ignore ``dict[str: float]`` for multi-classes ML task.
 
-        The position field is used to drive the HUB's parallel coordinates plot:
+        The position field is used to drive the ``hub``'s parallel coordinates plot:
         - int [0, inf[, to be displayed at the position,
         - None, not to be displayed.
         """

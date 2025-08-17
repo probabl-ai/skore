@@ -1,3 +1,5 @@
+"""Class definitions of the payloads used to send a metric to ``hub``."""
+
 from .accuracy import (
     AccuracyTest,
     AccuracyTestMean,
