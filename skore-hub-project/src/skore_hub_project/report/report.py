@@ -1,4 +1,4 @@
-"""Class definition of the payload used to sent a report from ``lib`` to ``hub``."""
+"""Class definition of the payload used to send a report to ``hub``."""
 
 from abc import ABC, abstractmethod
 from functools import cached_property
@@ -15,7 +15,7 @@ from skore_hub_project.metric.metric import Metric
 
 class ReportPayload(ABC, BaseModel):
     """
-    Payload used to sent a report from ``lib`` to ``hub``.
+    Payload used to send a report to ``hub``.
 
     Attributes
     ----------

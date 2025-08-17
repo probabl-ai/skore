@@ -1,3 +1,5 @@
+"""Class definition of the payload used to send a cross-validation report to ``hub``."""
+
 from collections import defaultdict
 from functools import cached_property
 from typing import ClassVar, Literal, cast
@@ -64,6 +66,25 @@ from skore_hub_project.report.report import ReportPayload
 
 
 class CrossValidationReportPayload(ReportPayload):
+    """
+    Payload used to send a cross-validation report to ``hub``.
+
+    Attributes
+    ----------
+    METRICS : ClassVar[tuple[Metric, ...]]
+        The metric classes that have to be computed from the report.
+    MEDIAS : ClassVar[tuple[Media, ...]]
+        The media classes that have to be computed from the report.
+    project : Project
+        The project to which the report payload should be sent.
+    report : CrossValidationReport
+        The report on which to calculate the payload to be sent.
+    upload : bool, optional
+        Upload the report to the artefacts storage, default True.
+    key : str
+        The key to associate to the report.
+    """
+
     METRICS: ClassVar[tuple[Metric, ...]] = cast(
         tuple[Metric, ...],
         (
@@ -123,7 +144,7 @@ class CrossValidationReportPayload(ReportPayload):
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
 
-    def model_post_init(self, context):
+    def model_post_init(self, context):  # noqa: D102
         if "classification" in self.ml_task:
             class_to_class_indice = defaultdict(lambda: len(class_to_class_indice))
 
@@ -143,6 +164,7 @@ class CrossValidationReportPayload(ReportPayload):
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def splitting_strategy_name(self) -> str:
+        """The name of the splitting strategy used by the report."""
         is_sklearn_splitter = isinstance(self.report.splitter, BaseCrossValidator)
         is_iterable_splitter = isinstance(self.report.splitter, _CVIterableWrapper)
         is_standard_strategy = is_sklearn_splitter and (not is_iterable_splitter)
@@ -155,6 +177,8 @@ class CrossValidationReportPayload(ReportPayload):
     @cached_property
     def splits(self) -> list[list[Literal[0, 1]]]:
         """
+        The dataset splits used by the report.
+
         Notes
         -----
         For each split and for each sample in the dataset:
@@ -176,16 +200,19 @@ class CrossValidationReportPayload(ReportPayload):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def class_names(self) -> list[str] | None:
+        """In classification, the class names of the dataset used in the report."""
         return self.__classes
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def classes(self) -> list[int] | None:
+        """In classification, the class indice of each sample used in the report."""
         return self.__sample_to_class_indice
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def estimators(self) -> list[EstimatorReportPayload]:
+        """The estimators used in each split by the report in a payload format."""
         return [
             EstimatorReportPayload(
                 project=self.project,
@@ -200,6 +227,17 @@ class CrossValidationReportPayload(ReportPayload):
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def parameters(self) -> CrossValidationReportArtefact | dict[()]:
+        """
+        The checksum of the instance.
+
+        The checksum of the instance that was assigned after being uploaded to the
+        artefact storage. It is based on its ``joblib`` serialization and mainly used to
+        retrieve it from the artefacts storage.
+
+        .. deprecated
+          The `parameters` property will be removed in favor of a new `checksum`
+          property in a near future.
+        """
         if self.upload:
             return CrossValidationReportArtefact(
                 project=self.project,
