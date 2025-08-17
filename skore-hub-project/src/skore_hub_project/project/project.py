@@ -126,7 +126,7 @@ class Project:
         return run["id"]
 
     @ensure_project_is_created
-    def put(self, key: str, report: EstimatorReport):
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport):
         """
         Put a key-report pair to the hub project.
 
