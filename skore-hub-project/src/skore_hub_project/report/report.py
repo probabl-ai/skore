@@ -83,7 +83,7 @@ class ReportPayload(ABC, BaseModel):
         retrieve it from the artefacts storage.
 
         .. deprecated
-          The `parameters` property will be removed in favor of a new `checksum`
+          The ``parameters`` property will be removed in favor of a new ``checksum``
           property in a near future.
         """
 

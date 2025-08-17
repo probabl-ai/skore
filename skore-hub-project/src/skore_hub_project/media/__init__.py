@@ -1,3 +1,5 @@
+"""Class definitions of the payloads used to send a media to ``hub``."""
+
 from __future__ import annotations
 
 from .data import TableReportTest, TableReportTrain
