@@ -58,7 +58,7 @@ class Metric(ABC, BaseModel):
 
 class EstimatorReportMetric(Metric):
     """
-    Payload used to send an estimator metric to ``hub``.
+    Payload used to send an estimator report metric.
 
     Attributes
     ----------
@@ -99,7 +99,7 @@ class EstimatorReportMetric(Metric):
 
 class CrossValidationReportMetric(Metric):
     """
-    Payload used to send a cross-validation metric to ``hub``, usually MEAN or STD.
+    Payload used to send a cross-validation report metric, usually MEAN or STD.
 
     Attributes
     ----------

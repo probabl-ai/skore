@@ -1,3 +1,5 @@
+"""Class definition of the payload used to send a data category media to ``hub``."""
+
 from functools import cached_property
 from inspect import signature
 from json import loads
@@ -9,7 +11,7 @@ from skore import EstimatorReport
 from .media import Media, Representation
 
 
-class TableReport(Media):
+class TableReport(Media):  # noqa: D101
     report: EstimatorReport = Field(repr=False, exclude=True)
     key: str = "table_report"
     verbose_name: str = "Table report"
@@ -17,7 +19,7 @@ class TableReport(Media):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def representation(self) -> Representation:
+    def representation(self) -> Representation:  # noqa: D102
         function = self.report.data.analyze
         function_parameters = signature(function).parameters
         function_kwargs = {
@@ -34,9 +36,9 @@ class TableReport(Media):
         )
 
 
-class TableReportTrain(TableReport):
+class TableReportTrain(TableReport):  # noqa: D101
     attributes: dict = {"data_source": "train"}
 
 
-class TableReportTest(TableReport):
+class TableReportTest(TableReport):  # noqa: D101
     attributes: dict = {"data_source": "test"}

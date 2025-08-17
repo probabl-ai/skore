@@ -1,3 +1,5 @@
+"""Class definition of the payload used to send a performance media to ``hub``."""
+
 from collections.abc import Callable
 from functools import cached_property, reduce
 from inspect import signature
@@ -11,14 +13,14 @@ from skore import CrossValidationReport, EstimatorReport
 from .media import Media, Representation
 
 
-class Performance(Media):
+class Performance(Media):  # noqa: D101
     report: EstimatorReport | CrossValidationReport = Field(repr=False, exclude=True)
     accessor: ClassVar[str]
     category: Literal["performance"] = "performance"
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def representation(self) -> Representation | None:
+    def representation(self) -> Representation | None:  # noqa: D102
         from skore_hub_project import bytes_to_b64_str, switch_mpl_backend
 
         try:
@@ -51,43 +53,43 @@ class Performance(Media):
         )
 
 
-class PrecisionRecall(Performance):
+class PrecisionRecall(Performance):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision_recall"
     key: str = "precision_recall"
     verbose_name: str = "Precision Recall"
 
 
-class PrecisionRecallTrain(PrecisionRecall):
+class PrecisionRecallTrain(PrecisionRecall):  # noqa: D101
     attributes: dict = {"data_source": "train"}
 
 
-class PrecisionRecallTest(PrecisionRecall):
+class PrecisionRecallTest(PrecisionRecall):  # noqa: D101
     attributes: dict = {"data_source": "test"}
 
 
-class PredictionError(Performance):
+class PredictionError(Performance):  # noqa: D101
     accessor: ClassVar[str] = "metrics.prediction_error"
     key: str = "prediction_error"
     verbose_name: str = "Prediction error"
 
 
-class PredictionErrorTrain(PredictionError):
+class PredictionErrorTrain(PredictionError):  # noqa: D101
     attributes: dict = {"data_source": "train"}
 
 
-class PredictionErrorTest(PredictionError):
+class PredictionErrorTest(PredictionError):  # noqa: D101
     attributes: dict = {"data_source": "test"}
 
 
-class Roc(Performance):
+class Roc(Performance):  # noqa: D101
     accessor: ClassVar[str] = "metrics.roc"
     key: str = "roc"
     verbose_name: str = "ROC"
 
 
-class RocTrain(Roc):
+class RocTrain(Roc):  # noqa: D101
     attributes: dict = {"data_source": "train"}
 
 
-class RocTest(Roc):
+class RocTest(Roc):  # noqa: D101
     attributes: dict = {"data_source": "test"}

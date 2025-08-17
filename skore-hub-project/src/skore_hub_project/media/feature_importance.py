@@ -1,3 +1,5 @@
+"""Class definition of the payload used to send feature importance medias to ``hub``."""
+
 from collections.abc import Callable
 from functools import cached_property, reduce
 from inspect import signature
@@ -9,14 +11,14 @@ from skore import EstimatorReport
 from .media import Media, Representation
 
 
-class FeatureImportance(Media):
+class FeatureImportance(Media):  # noqa: D101
     report: EstimatorReport = Field(repr=False, exclude=True)
     accessor: ClassVar[str]
     category: Literal["feature_importance"] = "feature_importance"
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def representation(self) -> Representation | None:
+    def representation(self) -> Representation | None:  # noqa: D102
         try:
             function = cast(
                 Callable,
@@ -38,28 +40,28 @@ class FeatureImportance(Media):
         )
 
 
-class Permutation(FeatureImportance):
+class Permutation(FeatureImportance):  # noqa: D101
     accessor: ClassVar[str] = "feature_importance.permutation"
     key: str = "permutation"
     verbose_name: str = "Feature importance - Permutation"
 
 
-class PermutationTrain(Permutation):
+class PermutationTrain(Permutation):  # noqa: D101
     attributes: dict = {"data_source": "train", "method": "permutation"}
 
 
-class PermutationTest(Permutation):
+class PermutationTest(Permutation):  # noqa: D101
     attributes: dict = {"data_source": "test", "method": "permutation"}
 
 
-class MeanDecreaseImpurity(FeatureImportance):
+class MeanDecreaseImpurity(FeatureImportance):  # noqa: D101
     accessor: ClassVar[str] = "feature_importance.mean_decrease_impurity"
     key: str = "mean_decrease_impurity"
     verbose_name: str = "Feature importance - Mean Decrease Impurity (MDI)"
     attributes: dict = {"method": "mean_decrease_impurity"}
 
 
-class Coefficients(FeatureImportance):
+class Coefficients(FeatureImportance):  # noqa: D101
     accessor: ClassVar[str] = "feature_importance.coefficients"
     key: str = "coefficients"
     verbose_name: str = "Feature importance - Coefficients"

@@ -1,3 +1,5 @@
+"""Class definition of the payload used to upload and send an artefact to ``hub``."""
+
 from __future__ import annotations
 
 from abc import ABC
@@ -12,6 +14,8 @@ from skore_hub_project.artefact.upload import upload
 
 
 class Artefact(ABC, BaseModel):
+    """Payload used to send the artefact of a report to ``hub``."""
+
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
     project: Project = Field(repr=False, exclude=True)
@@ -20,6 +24,8 @@ class Artefact(ABC, BaseModel):
 
 class EstimatorReportArtefact(Artefact):
     """
+    Payload used to upload and send an estimator report artefact to ``hub``.
+
     Notes
     -----
     It uploads the report to artefacts storage in a lazy way.
@@ -33,9 +39,7 @@ class EstimatorReportArtefact(Artefact):
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def checksum(self) -> str:
-        """
-        Artefact checksum, useful for retrieving the artefact from artefact storage.
-        """
+        """Checksum, useful for retrieving the artefact from artefact storage."""
         cache = self.object._cache
         self.object._cache = {}
 
@@ -47,6 +51,8 @@ class EstimatorReportArtefact(Artefact):
 
 class CrossValidationReportArtefact(Artefact):
     """
+    Payload used to upload and send a cross-validation report artefact to ``hub``.
+
     Notes
     -----
     It uploads the report to artefacts storage in a lazy way.
@@ -60,9 +66,7 @@ class CrossValidationReportArtefact(Artefact):
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def checksum(self) -> str:
-        """
-        Artefact checksum, useful for retrieving the artefact from artefact storage.
-        """
+        """Checksum, useful for retrieving the artefact from artefact storage."""
         reports = [self.object] + self.object.estimator_reports_
         caches = []
 
