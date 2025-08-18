@@ -217,6 +217,9 @@ jobs:
         working-directory: ${{ matrix.package }}/dist/
         run: wheel=(*.whl); python -m pip install --force-reinstall --no-deps "${wheel}"
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Test without coverage
         if: ${{ ! matrix.coverage }}
         timeout-minutes: 10
