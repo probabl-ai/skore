@@ -234,6 +234,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 data_source=data_source,
                 X=X,
                 y=y,
+                # To avoid crashing if one of the sub-reports does not support a metric
+                on_unavailable_metric="nan",
                 **metric_kwargs,
             )
             if self._parent._reports_type == "CrossValidationReport":
