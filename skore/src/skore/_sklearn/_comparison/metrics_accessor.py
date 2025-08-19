@@ -187,6 +187,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         aggregate: Aggregate | None = ("mean", "std"),
         **metric_kwargs: Any,
     ):
+        assert report_metric_name == "summarize"
+
         # build the cache key components to finally create a tuple that will be used
         # to check if the metric has already been computed
         cache_key_parts: list[Any] = [
