@@ -104,6 +104,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         "feature_importance": {"name": "feature_importance"},
         "data": {"name": "data"},
     }
+
     metrics: _MetricsAccessor
     feature_importance: _FeatureImportanceAccessor
     data: _DataAccessor
