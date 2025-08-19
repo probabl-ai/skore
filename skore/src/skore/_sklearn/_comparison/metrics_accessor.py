@@ -241,6 +241,24 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             if self._parent._reports_type == "CrossValidationReport":
                 kwargs["aggregate"] = None
 
+            # Check whether metrics are available in sub-reports
+
+            if isinstance(kwargs["scoring"], str):
+                scorings = [kwargs["scoring"]]
+            else:
+                scorings = kwargs["scoring"]
+
+            for scoring in scorings:
+                if isinstance(scoring, str):
+                    if any(
+                        hasattr(report.metrics, scoring)
+                        for report in self._parent.reports_
+                    ):
+                        continue
+                    raise ValueError(
+                        f"None of the compared reports support metric '{scoring}'"
+                    )
+
             generator = parallel(
                 joblib.delayed(getattr(report.metrics, report_metric_name))(**kwargs)
                 for report in self._parent.reports_
