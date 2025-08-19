@@ -24,6 +24,7 @@ from skore._utils._parallel import Parallel, delayed
 from skore._utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
+    from skore._sklearn._estimator.data_accessor import _DataAccessor
     from skore._sklearn._estimator.feature_importance_accessor import (
         _FeatureImportanceAccessor,
     )
@@ -105,6 +106,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     }
     metrics: _MetricsAccessor
     feature_importance: _FeatureImportanceAccessor
+    data: _DataAccessor
 
     @staticmethod
     def _fit_estimator(
