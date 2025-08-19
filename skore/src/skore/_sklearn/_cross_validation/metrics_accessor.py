@@ -62,6 +62,7 @@ class _MetricsAccessor(
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
+        on_unavailable_metric: Literal["raise", "nan"] = "raise",
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -124,6 +125,9 @@ class _MetricsAccessor(
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+
+        on_unavailable_metric : {"raise", "nan"}, default="raise"
+            Unused; present for compatibility with `skore.EstimatorReport`.
 
         Returns
         -------
