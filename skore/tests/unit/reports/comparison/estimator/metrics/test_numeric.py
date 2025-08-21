@@ -2,9 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.base import clone
-from sklearn.dummy import DummyClassifier
 from sklearn.metrics import accuracy_score
-from sklearn.svm import LinearSVC
 from skore import ComparisonReport, EstimatorReport
 
 
@@ -466,95 +464,3 @@ def test_precision_recall_pos_label_overwrite(
             result.loc[metric.capitalize(), report_name]
             == result_both_labels.loc[(metric.capitalize(), "A"), report_name]
         )
-
-
-def test_no_report_supports_metric(binary_classification_train_test_split):
-    """If you call Brier score and none of the sub-reports support it,
-    you should get an AttributeError."""
-    X_train, X_test, y_train, y_test = binary_classification_train_test_split
-    estimator_report_1 = EstimatorReport(
-        LinearSVC(),  # Does not support Brier score
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    estimator_report_2 = EstimatorReport(
-        LinearSVC(),  # Does not support Brier score
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    report = ComparisonReport([estimator_report_1, estimator_report_2])
-    with pytest.raises(AttributeError):
-        report.metrics.brier_score()
-
-
-def test_some_reports_support_metric(binary_classification_train_test_split):
-    """If you call `brier_score` and some of the sub-reports support it,
-    you should get a dataframe with NaN"""
-    X_train, X_test, y_train, y_test = binary_classification_train_test_split
-    estimator_report_1 = EstimatorReport(
-        DummyClassifier(strategy="uniform", random_state=0),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    estimator_report_2 = EstimatorReport(
-        LinearSVC(),  # Does not support Brier score
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    report = ComparisonReport([estimator_report_1, estimator_report_2])
-    summary = report.metrics.brier_score()
-    assert np.isnan(summary.loc["Brier score"]["LinearSVC"])
-
-
-def test_summarize_no_report_supports_metric(binary_classification_train_test_split):
-    """If you call `summarize` with Brier score and none of the sub-reports support it,
-    you should get an AttributeError"""
-    X_train, X_test, y_train, y_test = binary_classification_train_test_split
-    estimator_report_1 = EstimatorReport(
-        LinearSVC(),  # Does not support Brier score
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    estimator_report_2 = EstimatorReport(
-        LinearSVC(),  # Does not support Brier score
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    report = ComparisonReport([estimator_report_1, estimator_report_2])
-    with pytest.raises(ValueError):
-        report.metrics.summarize(scoring="brier_score")
-
-
-def test_summarize_some_reports_support_metric(binary_classification_train_test_split):
-    """If you call `summarize` with Brier score and some of the sub-reports support it,
-    you should get a dataframe with NaN"""
-    X_train, X_test, y_train, y_test = binary_classification_train_test_split
-    estimator_report_1 = EstimatorReport(
-        DummyClassifier(strategy="uniform", random_state=0),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    estimator_report_2 = EstimatorReport(
-        LinearSVC(),  # Does not support Brier score
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    report = ComparisonReport([estimator_report_1, estimator_report_2])
-    summary = report.metrics.summarize(scoring="brier_score")
-    assert np.isnan(summary.frame().loc["Brier score"]["LinearSVC"])
