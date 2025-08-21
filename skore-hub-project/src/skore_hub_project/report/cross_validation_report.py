@@ -4,6 +4,7 @@ from collections import defaultdict
 from functools import cached_property
 from typing import ClassVar, Literal, cast
 
+import numpy as np
 from pydantic import Field, computed_field
 from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
@@ -194,6 +195,24 @@ class CrossValidationReportPayload(ReportPayload):
                 splits[i][test_indice] = 1
 
         return cast(list[list[Literal[0, 1]]], splits)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def splits_test_samples_density(self) -> list[list[float]]:
+        """Compute the density of samples belonging to the test.
+
+        By downsampling to a length of maximum 200 elements.
+        """
+        X_len = len(self.report.X)
+        splits: list[list[float]] = []
+        for train_indices, test_indices in self.report.split_indices:
+            mask = np.zeros(X_len, dtype=int)
+            mask[train_indices] = 0
+            mask[test_indices] = 1
+            buckets = np.split(mask, min(X_len, 200))
+            splits.append([np.mean(bucket) for bucket in buckets])
+
+        return cast(list[list[float]], splits)
 
     groups: list[int] | None = None
 

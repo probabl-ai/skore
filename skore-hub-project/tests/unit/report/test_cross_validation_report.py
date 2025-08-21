@@ -69,7 +69,7 @@ def monkeypatch_client(monkeypatch):
     monkeypatch.setattr("skore_hub_project.artefact.upload.HUBClient", FakeClient)
 
 
-def serialize(object: CrossValidationReport) -> tuple[bytes, str, int]:
+def serialize(object: CrossValidationReport) -> tuple[bytes, str]:
     reports = [object] + object.estimator_reports_
     caches = []
 
@@ -115,6 +115,12 @@ class TestCrossValidationReportPayload:
 
     def test_splits(self, payload):
         assert payload.splits == [
+            [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
+        ]
+
+    def test_splits_test_samples_density(self, payload):
+        assert payload.splits_test_samples_density == [
             [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
         ]
