@@ -468,7 +468,7 @@ def test_precision_recall_pos_label_overwrite(
         )
 
 
-def test_stuff1(binary_classification_train_test_split):
+def test_no_report_supports_metric(binary_classification_train_test_split):
     """If you call Brier score and none of the sub-reports support it,
     you should get an AttributeError."""
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
@@ -491,7 +491,7 @@ def test_stuff1(binary_classification_train_test_split):
         report.metrics.brier_score()
 
 
-def test_stuff3(binary_classification_train_test_split):
+def test_some_reports_support_metric(binary_classification_train_test_split):
     """If you call `brier_score` and some of the sub-reports support it,
     you should get a dataframe with NaN"""
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
@@ -514,7 +514,7 @@ def test_stuff3(binary_classification_train_test_split):
     assert np.isnan(summary.loc["Brier score"]["LinearSVC"])
 
 
-def test_stuff2(binary_classification_train_test_split):
+def test_summarize_no_report_supports_metric(binary_classification_train_test_split):
     """If you call `summarize` with Brier score and none of the sub-reports support it,
     you should get an AttributeError"""
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
@@ -537,7 +537,7 @@ def test_stuff2(binary_classification_train_test_split):
         report.metrics.summarize(scoring="brier_score")
 
 
-def test_stuff4(binary_classification_train_test_split):
+def test_summarize_some_reports_support_metric(binary_classification_train_test_split):
     """If you call `summarize` with Brier score and some of the sub-reports support it,
     you should get a dataframe with NaN"""
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
