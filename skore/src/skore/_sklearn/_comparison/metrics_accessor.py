@@ -242,6 +242,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 kwargs["aggregate"] = None
 
             # Check whether metrics are available in sub-reports
+            # FIXME: These checks are already done by the sub-reports
 
             if isinstance(kwargs["scoring"], str):
                 scorings = [kwargs["scoring"]]
