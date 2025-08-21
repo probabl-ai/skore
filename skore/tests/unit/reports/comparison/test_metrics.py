@@ -242,3 +242,19 @@ class TestEstimatorReport:
         report = ComparisonReport([estimator_report_1, estimator_report_2])
         summary = report.metrics.summarize(scoring="brier_score")
         assert np.isnan(summary.frame().loc["Brier score"]["LinearSVC"])
+
+    def test_cv_summarize_some_reports_support_metric(self, binary_classification_data):
+        """If you call `summarize` with Brier score and some of the sub-reports
+        support it, you should get a dataframe with NaN"""
+        X, y = binary_classification_data
+        report_1 = CrossValidationReport(
+            DummyClassifier(strategy="uniform", random_state=0), X, y
+        )
+        report_2 = CrossValidationReport(
+            LinearSVC(),  # Does not support Brier score
+            X,
+            y,
+        )
+        comp_report = ComparisonReport([report_1, report_2])
+        summary = comp_report.metrics.summarize(scoring="brier_score")
+        assert np.isnan(summary.frame().loc["Brier score"][("mean", "LinearSVC")])
