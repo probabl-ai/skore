@@ -245,6 +245,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
             if isinstance(kwargs["scoring"], str):
                 scorings = [kwargs["scoring"]]
+            elif kwargs["scoring"] is None or callable(kwargs["scoring"]):
+                scorings = []  # No processing needed
             else:
                 scorings = kwargs["scoring"]
 
