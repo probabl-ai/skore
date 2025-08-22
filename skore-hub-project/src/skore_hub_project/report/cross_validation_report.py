@@ -194,7 +194,7 @@ class CrossValidationReportPayload(ReportPayload):
         return splits
 
     @computed_field  # type: ignore[prop-decorator]
-    @property
+    @cached_property
     def groups(self) -> list[int] | None:
         """The groups labels used when splitting the dataset.
 
