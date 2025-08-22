@@ -178,7 +178,7 @@ class TestCrossValidationReportPayload:
             LinearRegression(),
             X,
             y,
-            splitter=GroupKFold(shuffle=True, n_splits=7),
+            splitter=GroupKFold(n_splits=7),
             groups=rng.integers(8, size=10_000),
         )
         payload = CrossValidationReportPayload(
