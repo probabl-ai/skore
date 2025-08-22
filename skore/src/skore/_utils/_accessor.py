@@ -149,3 +149,19 @@ def _check_estimator_report_has_method(
         )
 
     return check
+
+
+########################################################################################
+# Accessor related to `ComparisonReport`
+########################################################################################
+
+
+def _check_any_sub_report_has_metric(metric: str) -> Callable[[Any], bool]:
+    """Check whether any sub-report of the ComparisonReport supports `metric`."""
+
+    def check(accessor: Any) -> bool:
+        return any(
+            hasattr(report.metrics, metric) for report in accessor._parent.reports_
+        )
+
+    return check

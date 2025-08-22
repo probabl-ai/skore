@@ -29,7 +29,10 @@ from skore._sklearn.types import (
     ScoringName,
     YPlotData,
 )
-from skore._utils._accessor import _check_supported_ml_task
+from skore._utils._accessor import (
+    _check_any_sub_report_has_metric,
+    _check_supported_ml_task,
+)
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
 from skore._utils._progress_bar import progress_decorator
@@ -187,6 +190,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         aggregate: Aggregate | None = ("mean", "std"),
         **metric_kwargs: Any,
     ):
+        assert report_metric_name == "summarize"
+
         # build the cache key components to finally create a tuple that will be used
         # to check if the metric has already been computed
         cache_key_parts: list[Any] = [
@@ -232,10 +237,33 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 data_source=data_source,
                 X=X,
                 y=y,
+                # To avoid crashing if one of the sub-reports does not support a metric
+                on_unavailable_metric="nan",
                 **metric_kwargs,
             )
             if self._parent._reports_type == "CrossValidationReport":
                 kwargs["aggregate"] = None
+
+            # Check whether metrics are available in sub-reports
+            # FIXME: These checks are already done by the sub-reports
+
+            if isinstance(kwargs["scoring"], str):
+                scorings = [kwargs["scoring"]]
+            elif kwargs["scoring"] is None or callable(kwargs["scoring"]):
+                scorings = []  # No processing needed
+            else:
+                scorings = kwargs["scoring"]
+
+            for scoring in scorings:
+                if isinstance(scoring, str):
+                    if any(
+                        hasattr(report.metrics, scoring)
+                        for report in self._parent.reports_
+                    ):
+                        continue
+                    raise ValueError(
+                        f"None of the compared reports support metric '{scoring}'"
+                    )
 
             generator = parallel(
                 joblib.delayed(getattr(report.metrics, report_metric_name))(**kwargs)
@@ -357,11 +385,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             )
             return timings
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("accuracy"))
     def accuracy(
         self,
         *,
@@ -427,11 +451,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("precision"))
     def precision(
         self,
         *,
@@ -535,11 +555,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("recall"))
     def recall(
         self,
         *,
@@ -644,9 +660,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
-    )
+    @available_if(_check_any_sub_report_has_metric("brier_score"))
     def brier_score(
         self,
         *,
@@ -712,11 +726,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("roc_auc"))
     def roc_auc(
         self,
         *,
@@ -819,11 +829,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("log_loss"))
     def log_loss(
         self,
         *,
@@ -889,11 +895,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("r2"))
     def r2(
         self,
         *,
@@ -971,11 +973,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("rmse"))
     def rmse(
         self,
         *,
