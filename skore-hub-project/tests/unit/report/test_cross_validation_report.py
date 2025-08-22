@@ -117,7 +117,7 @@ class TestCrossValidationReportPayload:
         assert payload.splitting_strategy_name == "StratifiedKFold"
 
     def test_splits_test_samples_density(self, payload):
-        assert payload.splits_test_samples_density == [
+        assert payload.splits == [
             [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
         ]
@@ -128,15 +128,15 @@ class TestCrossValidationReportPayload:
             LinearRegression(),
             X,
             y,
-            splitter=ShuffleSplit(random_state=42, n_splits=10),
+            splitter=ShuffleSplit(random_state=42, n_splits=7),
         )
         payload = CrossValidationReportPayload(
             project=Project("<tenant>", "<name>"),
             report=cvr,
             key="<key>",
         )
-        splits = payload.splits_test_samples_density
-        assert len(splits) == 10
+        splits = payload.splits
+        assert len(splits) == 7
         assert all(len(s) == 200 for s in splits)
         for s in splits:
             assert all(bucket >= 0 and bucket <= 1 for bucket in s)

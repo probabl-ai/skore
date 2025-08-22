@@ -188,7 +188,7 @@ class CrossValidationReportPayload(ReportPayload):
             mask = np.zeros(X_len, dtype=int)
             mask[train_indices] = 0
             mask[test_indices] = 1
-            buckets = np.split(mask, min(X_len, 200))
+            buckets = np.array_split(mask, min(X_len, 200))
             splits.append([np.mean(bucket) for bucket in buckets])
 
         return splits
