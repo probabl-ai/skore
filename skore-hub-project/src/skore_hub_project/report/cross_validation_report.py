@@ -147,6 +147,7 @@ class CrossValidationReportPayload(ReportPayload):
 
     def model_post_init(self, context):  # noqa: D102
         if "classification" in self.ml_task:
+            # FIXME: Black magic
             class_to_class_indice = defaultdict(lambda: len(class_to_class_indice))
 
             self.__sample_to_class_indices = [
@@ -192,7 +193,25 @@ class CrossValidationReportPayload(ReportPayload):
 
         return splits
 
-    groups: list[int] | None = None
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def groups(self) -> list[int] | None:
+        """The groups labels used when splitting the dataset.
+
+        Only non-null if a "Group" method was used (e.g. :class:`GroupKFold`).
+        """
+        if self.report.groups is None:
+            return None
+
+        buckets = np.array_split(
+            self.report.groups,
+            min(len(self.report.groups), 200),
+        )
+        dominant_groups = []
+        for bucket in buckets:
+            dominant_group = int(np.bincount(bucket).argmax())
+            dominant_groups.append(dominant_group)
+        return dominant_groups
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -206,7 +225,7 @@ class CrossValidationReportPayload(ReportPayload):
         """In classification, a summary of class distribution in samples.
 
         Split class indices into max 200 bucket
-        then find the domiannt class for each of them.
+        then find the dominant class for each of them.
         """
         if self.__sample_to_class_indices is None:
             return None
