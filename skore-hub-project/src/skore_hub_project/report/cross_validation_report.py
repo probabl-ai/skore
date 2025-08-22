@@ -149,17 +149,17 @@ class CrossValidationReportPayload(ReportPayload):
         if "classification" in self.ml_task:
             class_to_class_indice = defaultdict(lambda: len(class_to_class_indice))
 
-            self.__sample_to_class_indice = [
+            self.__sample_to_class_indices = [
                 class_to_class_indice[sample] for sample in self.report.y
             ]
 
-            assert len(self.__sample_to_class_indice) == len(self.report.X)
+            assert len(self.__sample_to_class_indices) == len(self.report.X)
 
             self.__classes = [str(class_) for class_ in class_to_class_indice]
 
-            assert max(self.__sample_to_class_indice) == (len(self.__classes) - 1)
+            assert max(self.__sample_to_class_indices) == (len(self.__classes) - 1)
         else:
-            self.__sample_to_class_indice = None
+            self.__sample_to_class_indices = None
             self.__classes = None
 
     @computed_field  # type: ignore[prop-decorator]
@@ -184,9 +184,8 @@ class CrossValidationReportPayload(ReportPayload):
         """
         X_len = len(self.report.X)
         splits: list[list[float]] = []
-        for train_indices, test_indices in self.report.split_indices:
+        for _, test_indices in self.report.split_indices:
             mask = np.zeros(X_len, dtype=int)
-            mask[train_indices] = 0
             mask[test_indices] = 1
             buckets = np.array_split(mask, min(X_len, 200))
             splits.append([np.mean(bucket) for bucket in buckets])
@@ -204,8 +203,23 @@ class CrossValidationReportPayload(ReportPayload):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def classes(self) -> list[int] | None:
-        """In classification, the class indice of each sample used in the report."""
-        return self.__sample_to_class_indice
+        """In classification, a summary of class distribution in samples.
+
+        Split class indices into max 200 bucket
+        then find the domiannt class for each of them.
+        """
+        if self.__sample_to_class_indices is None:
+            return None
+
+        buckets = np.array_split(
+            self.__sample_to_class_indices,
+            min(len(self.__sample_to_class_indices), 200),
+        )
+        dominant_classes = []
+        for bucket in buckets:
+            dominant_class = int(np.bincount(bucket).argmax())
+            dominant_classes.append(dominant_class)
+        return dominant_classes
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property

@@ -1,11 +1,12 @@
 from json import loads
 from urllib.parse import urljoin
 
+import numpy as np
 from httpx import Client, Response
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
-from sklearn.datasets import make_regression
-from sklearn.linear_model import LinearRegression
+from sklearn.datasets import make_classification, make_regression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import ShuffleSplit
 from skore import CrossValidationReport
 from skore_hub_project import Project
@@ -145,6 +146,28 @@ class TestCrossValidationReportPayload:
         assert payload.class_names == ["1", "0"]
 
     def test_classes(self, payload):
+        X, y = make_classification(
+            random_state=42,
+            n_samples=10_000,
+            n_classes=2,
+        )
+        cvr = CrossValidationReport(
+            LogisticRegression(),
+            X,
+            y,
+            splitter=ShuffleSplit(random_state=42, n_splits=7),
+        )
+        payload = CrossValidationReportPayload(
+            project=Project("<tenant>", "<name>"),
+            report=cvr,
+            key="<key>",
+        )
+        classes = payload.classes
+        assert len(classes) == 200
+        assert np.unique(classes).tolist() == [0, 1]
+        assert np.sum(classes) == 93
+
+    def test_classes_many_rows(self, payload):
         assert payload.classes == [0, 0, 1, 1, 1, 0, 0, 1, 0, 1]
 
     def test_estimators(self, payload, respx_mock):
