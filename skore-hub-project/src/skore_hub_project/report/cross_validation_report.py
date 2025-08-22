@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from functools import cached_property
-from typing import ClassVar, Literal, cast
+from typing import ClassVar, cast
 
 import numpy as np
 from pydantic import Field, computed_field
@@ -176,32 +176,11 @@ class CrossValidationReportPayload(ReportPayload):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def splits(self) -> list[list[Literal[0, 1]]]:
-        """
-        The dataset splits used by the report.
+    def splits(self) -> list[list[float]]:
+        """Distribution between train and test by split.
 
-        Notes
-        -----
-        For each split and for each sample in the dataset:
-        - 0 if the sample is in the train-set,
-        - 1 if the sample is in the test-set.
-        """
-        splits = [
-            [0] * len(self.report.X) for i in range(len(self.report.split_indices))
-        ]
-
-        for i, (_, test_indices) in enumerate(self.report.split_indices):
-            for test_indice in test_indices:
-                splits[i][test_indice] = 1
-
-        return cast(list[list[Literal[0, 1]]], splits)
-
-    @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def splits_test_samples_density(self) -> list[list[float]]:
-        """Compute the density of samples belonging to the test.
-
-        By downsampling to a length of maximum 200 elements.
+        Compute the density of samples belonging to the test
+        by downsampling to a length of maximum 200 elements.
         """
         X_len = len(self.report.X)
         splits: list[list[float]] = []
@@ -212,7 +191,7 @@ class CrossValidationReportPayload(ReportPayload):
             buckets = np.split(mask, min(X_len, 200))
             splits.append([np.mean(bucket) for bucket in buckets])
 
-        return cast(list[list[float]], splits)
+        return splits
 
     groups: list[int] | None = None
 

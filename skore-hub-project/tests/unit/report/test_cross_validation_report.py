@@ -4,6 +4,9 @@ from urllib.parse import urljoin
 from httpx import Client, Response
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
+from sklearn.datasets import make_regression
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import ShuffleSplit
 from skore import CrossValidationReport
 from skore_hub_project import Project
 from skore_hub_project.artefact.serializer import Serializer
@@ -113,17 +116,30 @@ class TestCrossValidationReportPayload:
     def test_splitting_strategy_name(self, payload):
         assert payload.splitting_strategy_name == "StratifiedKFold"
 
-    def test_splits(self, payload):
-        assert payload.splits == [
-            [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
-        ]
-
     def test_splits_test_samples_density(self, payload):
         assert payload.splits_test_samples_density == [
             [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
         ]
+
+    def test_splits_test_samples_density_many_rows(self):
+        X, y = make_regression(random_state=42, n_samples=10_000)
+        cvr = CrossValidationReport(
+            LinearRegression(),
+            X,
+            y,
+            splitter=ShuffleSplit(random_state=42, n_splits=10),
+        )
+        payload = CrossValidationReportPayload(
+            project=Project("<tenant>", "<name>"),
+            report=cvr,
+            key="<key>",
+        )
+        splits = payload.splits_test_samples_density
+        assert len(splits) == 10
+        assert all(len(s) == 200 for s in splits)
+        for s in splits:
+            assert all(bucket >= 0 and bucket <= 1 for bucket in s)
 
     def test_class_names(self, payload):
         assert payload.class_names == ["1", "0"]
