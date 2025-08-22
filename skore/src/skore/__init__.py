@@ -18,7 +18,6 @@ from skore._sklearn import (
     PredictionErrorDisplay,
     RocCurveDisplay,
     TableReportDisplay,
-    find_estimators,
     train_test_split,
 )
 from skore._sklearn._plot.base import Display
@@ -41,7 +40,6 @@ __all__ = [
     "config_context",
     "get_config",
     "set_config",
-    "find_estimators",
     "TableReportDisplay",
 ]
 
