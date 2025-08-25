@@ -190,7 +190,7 @@ class CrossValidationReportPayload(ReportPayload):
     def splits(self) -> list[list[float]]:
         """Distribution between train and test by split.
 
-        Compute the density of samples belonging to the test
+        Compute the density of samples belonging to the test set
         by downsampling to a length of maximum 200 elements.
         """
         X_len = len(self.report.X)
