@@ -101,7 +101,6 @@ class PredictTimeAggregate(Metric):  # noqa: D101
     report: CrossValidationReport = Field(repr=False, exclude=True)
     aggregate: ClassVar[Literal["mean", "std"]]
     greater_is_better: bool = False
-    position: int = 2
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -120,6 +119,7 @@ class PredictTimeMean(PredictTimeAggregate):  # noqa: D101
     aggregate: ClassVar[Literal["mean"]] = "mean"
     name: str = "predict_time_mean"
     verbose_name: str = "Predict time (s) - MEAN"
+    position: int = 2
 
 
 class PredictTimeTrainMean(PredictTimeMean):  # noqa: D101

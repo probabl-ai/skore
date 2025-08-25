@@ -2,8 +2,9 @@
 
 from collections import defaultdict
 from functools import cached_property
-from typing import ClassVar, Literal, cast
+from typing import ClassVar, cast
 
+import numpy as np
 from pydantic import Field, computed_field
 from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
@@ -146,20 +147,31 @@ class CrossValidationReportPayload(ReportPayload):
 
     def model_post_init(self, context):  # noqa: D102
         if "classification" in self.ml_task:
+            # FIXME: Black magic
             class_to_class_indice = defaultdict(lambda: len(class_to_class_indice))
 
-            self.__sample_to_class_indice = [
+            self.__sample_to_class_indices = [
                 class_to_class_indice[sample] for sample in self.report.y
             ]
 
-            assert len(self.__sample_to_class_indice) == len(self.report.X)
+            assert len(self.__sample_to_class_indices) == len(self.report.X)
 
             self.__classes = [str(class_) for class_ in class_to_class_indice]
 
-            assert max(self.__sample_to_class_indice) == (len(self.__classes) - 1)
+            assert max(self.__sample_to_class_indices) == (len(self.__classes) - 1)
         else:
-            self.__sample_to_class_indice = None
+            self.__sample_to_class_indices = None
             self.__classes = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def dataset_size(self) -> int:
+        """Size of the dataset.
+
+        This is necessary because the other properties might downsample the dataset
+        if it is very large.
+        """
+        return len(self.report.X)
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -175,27 +187,41 @@ class CrossValidationReportPayload(ReportPayload):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def splits(self) -> list[list[Literal[0, 1]]]:
+    def splits(self) -> list[list[float]]:
+        """Distribution between train and test by split.
+
+        Compute the density of samples belonging to the test
+        by downsampling to a length of maximum 200 elements.
         """
-        The dataset splits used by the report.
+        X_len = len(self.report.X)
+        splits: list[list[float]] = []
+        for _, test_indices in self.report.split_indices:
+            mask = np.zeros(X_len, dtype=int)
+            mask[test_indices] = 1
+            buckets = np.array_split(mask, min(X_len, 200))
+            splits.append([np.mean(bucket) for bucket in buckets])
 
-        Notes
-        -----
-        For each split and for each sample in the dataset:
-        - 0 if the sample is in the train-set,
-        - 1 if the sample is in the test-set.
+        return splits
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def groups(self) -> list[int] | None:
+        """The groups labels used when splitting the dataset.
+
+        Only non-null if a "Group" method was used (e.g. :class:`GroupKFold`).
         """
-        splits = [
-            [0] * len(self.report.X) for i in range(len(self.report.split_indices))
-        ]
+        if self.report.groups is None:
+            return None
 
-        for i, (_, test_indices) in enumerate(self.report.split_indices):
-            for test_indice in test_indices:
-                splits[i][test_indice] = 1
-
-        return cast(list[list[Literal[0, 1]]], splits)
-
-    groups: list[int] | None = None
+        buckets = np.array_split(
+            self.report.groups,
+            min(len(self.report.groups), 200),
+        )
+        dominant_groups = []
+        for bucket in buckets:
+            dominant_group = int(np.bincount(bucket).argmax())
+            dominant_groups.append(dominant_group)
+        return dominant_groups
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -206,8 +232,23 @@ class CrossValidationReportPayload(ReportPayload):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def classes(self) -> list[int] | None:
-        """In classification, the class indice of each sample used in the report."""
-        return self.__sample_to_class_indice
+        """In classification, a summary of class distribution in samples.
+
+        Split class indices into max 200 bucket
+        then find the dominant class for each of them.
+        """
+        if self.__sample_to_class_indices is None:
+            return None
+
+        buckets = np.array_split(
+            self.__sample_to_class_indices,
+            min(len(self.__sample_to_class_indices), 200),
+        )
+        dominant_classes = []
+        for bucket in buckets:
+            dominant_class = int(np.bincount(bucket).argmax())
+            dominant_classes.append(dominant_class)
+        return dominant_classes
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property

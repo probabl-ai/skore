@@ -1,9 +1,13 @@
 from json import loads
 from urllib.parse import urljoin
 
+import numpy as np
 from httpx import Client, Response
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
+from sklearn.datasets import make_classification, make_regression
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.model_selection import GroupKFold, ShuffleSplit
 from skore import CrossValidationReport
 from skore_hub_project import Project
 from skore_hub_project.artefact.serializer import Serializer
@@ -69,7 +73,7 @@ def monkeypatch_client(monkeypatch):
     monkeypatch.setattr("skore_hub_project.artefact.upload.HUBClient", FakeClient)
 
 
-def serialize(object: CrossValidationReport) -> tuple[bytes, str, int]:
+def serialize(object: CrossValidationReport) -> tuple[bytes, str]:
     reports = [object] + object.estimator_reports_
     caches = []
 
@@ -110,20 +114,85 @@ def monkeypatch_routes(respx_mock):
 
 
 class TestCrossValidationReportPayload:
+    def test_dataset_size(self, payload):
+        assert payload.dataset_size == 10
+
     def test_splitting_strategy_name(self, payload):
         assert payload.splitting_strategy_name == "StratifiedKFold"
 
-    def test_splits(self, payload):
+    def test_splits_test_samples_density(self, payload):
         assert payload.splits == [
             [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
         ]
 
+    def test_splits_test_samples_density_many_rows(self):
+        X, y = make_regression(random_state=42, n_samples=10_000)
+        cvr = CrossValidationReport(
+            LinearRegression(),
+            X,
+            y,
+            splitter=ShuffleSplit(random_state=42, n_splits=7),
+        )
+        payload = CrossValidationReportPayload(
+            project=Project("<tenant>", "<name>"),
+            report=cvr,
+            key="<key>",
+        )
+        splits = payload.splits
+        assert len(splits) == 7
+        assert all(len(s) == 200 for s in splits)
+        for s in splits:
+            assert all(bucket >= 0 and bucket <= 1 for bucket in s)
+
     def test_class_names(self, payload):
         assert payload.class_names == ["1", "0"]
 
     def test_classes(self, payload):
+        X, y = make_classification(
+            random_state=42,
+            n_samples=10_000,
+            n_classes=2,
+        )
+        cvr = CrossValidationReport(
+            LogisticRegression(),
+            X,
+            y,
+            splitter=ShuffleSplit(random_state=42, n_splits=7),
+        )
+        payload = CrossValidationReportPayload(
+            project=Project("<tenant>", "<name>"),
+            report=cvr,
+            key="<key>",
+        )
+        classes = payload.classes
+        assert len(classes) == 200
+        assert np.unique(classes).tolist() == [0, 1]
+        assert np.sum(classes) == 93
+
+    def test_classes_many_rows(self, payload):
         assert payload.classes == [0, 0, 1, 1, 1, 0, 0, 1, 0, 1]
+
+    def test_groups(self):
+        rng = np.random.default_rng(seed=42)
+        X, y = make_regression(random_state=42, n_samples=10_000)
+
+        cvr = CrossValidationReport(
+            LinearRegression(),
+            X,
+            y,
+            splitter=GroupKFold(n_splits=7),
+            groups=rng.integers(8, size=10_000),
+        )
+        payload = CrossValidationReportPayload(
+            project=Project("<tenant>", "<name>"),
+            report=cvr,
+            key="<key>",
+        )
+        groups = payload.groups
+        assert len(groups) == 200
+        assert np.unique(groups).tolist() == [0, 1, 2, 3, 4, 5, 6, 7]
+        assert groups[:10] == [6, 3, 6, 3, 5, 3, 2, 0, 7, 6]
 
     def test_estimators(self, payload, respx_mock):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
