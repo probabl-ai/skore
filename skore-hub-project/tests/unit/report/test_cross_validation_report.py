@@ -114,6 +114,9 @@ def monkeypatch_routes(respx_mock):
 
 
 class TestCrossValidationReportPayload:
+    def test_dataset_size(self, payload):
+        assert payload.dataset_size == 10
+
     def test_splitting_strategy_name(self, payload):
         assert payload.splitting_strategy_name == "StratifiedKFold"
 

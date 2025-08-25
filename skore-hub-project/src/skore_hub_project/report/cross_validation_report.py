@@ -165,6 +165,16 @@ class CrossValidationReportPayload(ReportPayload):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
+    def dataset_size(self) -> int:
+        """Size of the dataset.
+
+        This is necessary because the other properties might downsample the dataset
+        if it is very large.
+        """
+        return len(self.report.X)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
     def splitting_strategy_name(self) -> str:
         """The name of the splitting strategy used by the report."""
         is_sklearn_splitter = isinstance(self.report.splitter, BaseCrossValidator)
