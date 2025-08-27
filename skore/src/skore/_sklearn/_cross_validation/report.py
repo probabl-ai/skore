@@ -101,11 +101,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         Refer to scikit-learn's :ref:`User Guide <cross_validation>` for the various
         cross-validation strategies that can be used here.
 
-    groups : array-like of shape (n_samples,), default=None
-        Group labels for the samples used while splitting the dataset into train/test
-        set. Only used in conjunction with a "Group" `splitter` instance (e.g.
-        :class:`GroupKFold`).
-
     n_jobs : int, default=None
         Number of jobs to run in parallel. Training the estimator and computing
         the score are parallelized over the cross-validation splits.
@@ -155,7 +150,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = None,
         splitter: int | SKLearnCrossValidator | Generator | None = None,
-        groups: ArrayLike | None = None,
         n_jobs: int | None = None,
     ) -> None:
         # used to know if a parent launch a progress bar manager
@@ -167,12 +161,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         # those attributes
         self._X = X
         self._y = y
-        self._groups = groups
         self._pos_label = pos_label
         self._splitter = check_cv(splitter, y, classifier=is_classifier(estimator))
-        self._split_indices = tuple(
-            self._splitter.split(self._X, self._y, groups=self._groups)
-        )
+        self._split_indices = tuple(self._splitter.split(self._X, self._y))
         self.n_jobs = n_jobs
 
         self.estimator_reports_ = self._fit_estimator_reports()
@@ -474,10 +465,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     @property
     def y(self) -> ArrayLike | None:
         return self._y
-
-    @property
-    def groups(self) -> ArrayLike | None:
-        return self._groups
 
     @property
     def splitter(self) -> SKLearnCrossValidator:

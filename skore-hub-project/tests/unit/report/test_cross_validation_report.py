@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import GroupKFold, ShuffleSplit
+from sklearn.model_selection import ShuffleSplit
 from skore import CrossValidationReport
 from skore_hub_project import Project
 from skore_hub_project.artefact.serializer import Serializer
@@ -172,27 +172,6 @@ class TestCrossValidationReportPayload:
 
     def test_classes_many_rows(self, payload):
         assert payload.classes == [0, 0, 1, 1, 1, 0, 0, 1, 0, 1]
-
-    def test_groups(self):
-        rng = np.random.default_rng(seed=42)
-        X, y = make_regression(random_state=42, n_samples=10_000)
-
-        cvr = CrossValidationReport(
-            LinearRegression(),
-            X,
-            y,
-            splitter=GroupKFold(n_splits=7),
-            groups=rng.integers(8, size=10_000),
-        )
-        payload = CrossValidationReportPayload(
-            project=Project("<tenant>", "<name>"),
-            report=cvr,
-            key="<key>",
-        )
-        groups = payload.groups
-        assert len(groups) == 200
-        assert np.unique(groups).tolist() == [0, 1, 2, 3, 4, 5, 6, 7]
-        assert groups[:10] == [6, 3, 6, 3, 5, 3, 2, 0, 7, 6]
 
     def test_estimators(self, payload, respx_mock):
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
