@@ -66,9 +66,10 @@ def test_cross_validation_report_cleaned_up(report):
     https://github.com/probabl-ai/skore/pull/1512
     """
     report.metrics.summarize()
+    sub_report = list(report.reports_.values())[0]
 
     with BytesIO() as stream:
-        joblib.dump(report.reports_[0], stream)
+        joblib.dump(sub_report, stream)
 
 
 def test_metrics_help(capsys, report):

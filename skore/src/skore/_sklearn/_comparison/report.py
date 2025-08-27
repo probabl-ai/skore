@@ -57,14 +57,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Attributes
     ----------
-    reports_ : list of :class:`~skore.EstimatorReport` or list of \
-        :class:`~skore.CrossValidationReport`
+    reports_ : dict mapping names to reports
         The compared reports.
-
-    report_names_ : list of str
-        The names of the compared estimators. If the names are not customized (i.e. the
-        class names are used), a de-duplication process is used to make sure that the
-        names are distinct.
 
     See Also
     --------
@@ -87,13 +81,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
     >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
     >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
-    >>> report.report_names_
-    ['LogisticRegression_1', 'LogisticRegression_2']
+    >>> report.reports_
+    {'LogisticRegression_1': ..., 'LogisticRegression_2': ...}
     >>> report = ComparisonReport(
     ...     {"model1": estimator_report_1, "model2": estimator_report_2}
     ... )
-    >>> report.report_names_
-    ['model1', 'model2']
+    >>> report.reports_
+    {'LogisticRegression_1': ..., 'LogisticRegression_2': ...}
 
     >>> from sklearn.datasets import make_classification
     >>> from sklearn.linear_model import LogisticRegression
@@ -122,8 +116,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         | list[CrossValidationReport]
         | dict[str, CrossValidationReport],
     ) -> tuple[
-        list[EstimatorReport] | list[CrossValidationReport],
-        list[str],
+        dict[str, EstimatorReport] | dict[str, CrossValidationReport],
         ReportType,
         PositiveLabel,
     ]:
@@ -136,11 +129,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         Returns
         -------
-        list of EstimatorReport or list of CrossValidationReport
+        dict
             The validated reports.
-        list of str
-            The report names, either taken from dict keys or computed from the estimator
-            class names.
         {"EstimatorReport", "CrossValidationReport"}
             The inferred type of the reports that will be compared.
         int, float, bool, str or None
@@ -222,7 +212,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         else:
             deduped_report_names = report_names
 
-        return reports_list, deduped_report_names, reports_type, pos_label
+        reports = dict(zip(deduped_report_names, reports_list, strict=True))
+
+        return reports, reports_type, pos_label
 
     def __init__(
         self,
@@ -244,7 +236,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
-        self.reports_, self.report_names_, self._reports_type, self._pos_label = (
+        self.reports_, self._reports_type, self._pos_label = (
             ComparisonReport._validate_reports(reports)
         )
 
@@ -256,7 +248,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache: dict[tuple[Any, ...], Any] = {}
-        self._ml_task = self.reports_[0]._ml_task
+        self._ml_task = list(self.reports_.values())[0]._ml_task
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -279,7 +271,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> report._cache
         {}
         """
-        for report in self.reports_:
+        for report in self.reports_.values():
             report.clear_cache()
         self._cache = {}
 
@@ -332,7 +324,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         total_estimators = len(self.reports_)
         progress.update(main_task, total=total_estimators)
 
-        for report in self.reports_:
+        for report in self.reports_.values():
             # Share the parent's progress bar with child report
             report._progress_info = {"current_progress": progress}
             report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
@@ -418,7 +410,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 X=X,
                 pos_label=pos_label,
             )
-            for report in self.reports_
+            for report in self.reports_.values()
         ]
 
     @property
