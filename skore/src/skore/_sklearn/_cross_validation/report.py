@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import time
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, Literal
@@ -9,6 +11,8 @@ from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
 
+from skore._externals._pandas_accessors import DirNamesMixin
+from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.find_ml_task import _find_ml_task
@@ -16,10 +20,10 @@ from skore._sklearn.types import _DEFAULT, PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import Parallel, delayed
 from skore._utils._progress_bar import progress_decorator
-from skore.externals._pandas_accessors import DirNamesMixin
-from skore.externals._sklearn_compat import _safe_indexing
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
 
 
@@ -31,14 +35,21 @@ def _generate_estimator_report(
     train_indices: ArrayLike,
     test_indices: ArrayLike,
 ) -> EstimatorReport | KeyboardInterrupt | Exception:
+    if y is None:
+        # In the case of clustering, we do not have y
+        y_train = None
+        y_test = None
+    else:
+        y_train = _safe_indexing(y, train_indices)
+        y_test = _safe_indexing(y, test_indices)
     try:
         return EstimatorReport(
             estimator,
             fit=True,
             X_train=_safe_indexing(X, train_indices),
-            y_train=_safe_indexing(y, train_indices),
+            y_train=y_train,
             X_test=_safe_indexing(X, test_indices),
-            y_test=_safe_indexing(y, test_indices),
+            y_test=y_test,
             pos_label=pos_label,
         )
     except (KeyboardInterrupt, Exception) as e:
@@ -49,7 +60,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     """Report for cross-validation results.
 
     Upon initialization, `CrossValidationReport` will clone ``estimator`` according to
-    ``cv_splitter`` and fit the generated estimators. The fitting is done in parallel,
+    ``splitter`` and fit the generated estimators. The fitting is done in parallel,
     and can be interrupted: the estimators that have been fitted can be accessed even if
     the full cross-validation process did not complete. In particular,
     `KeyboardInterrupt` exceptions are swallowed and will only interrupt the
@@ -74,9 +85,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         are `{0, 1}` or `{-1, 1}`, the positive class is set to `1`. For other labels,
         some metrics might raise an error if `pos_label` is not defined.
 
-    cv_splitter : int, cross-validation generator or an iterable, default=5
+    splitter : int, cross-validation generator or an iterable, default=5
         Determines the cross-validation splitting strategy.
-        Possible inputs for `cv_splitter` are:
+        Possible inputs for `splitter` are:
 
         - int, to specify the number of folds in a `(Stratified)KFold`,
         - a scikit-learn :term:`CV splitter`,
@@ -124,13 +135,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     >>> X, y = make_classification(random_state=42)
     >>> estimator = LogisticRegression()
     >>> from skore import CrossValidationReport
-    >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+    >>> report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
     }
-    metrics: "_MetricsAccessor"
+    metrics: _MetricsAccessor
 
     def __init__(
         self,
@@ -138,7 +149,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         X: ArrayLike,
         y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = None,
-        cv_splitter: int | SKLearnCrossValidator | Generator | None = None,
+        splitter: int | SKLearnCrossValidator | Generator | None = None,
         n_jobs: int | None = None,
     ) -> None:
         # used to know if a parent launch a progress bar manager
@@ -151,9 +162,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._X = X
         self._y = y
         self._pos_label = pos_label
-        self._cv_splitter = check_cv(
-            cv_splitter, y, classifier=is_classifier(estimator)
-        )
+        self._splitter = check_cv(splitter, y, classifier=is_classifier(estimator))
+        self._split_indices = tuple(self._splitter.split(self._X, self._y))
         self.n_jobs = n_jobs
 
         self.estimator_reports_ = self._fit_estimator_reports()
@@ -189,8 +199,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         progress = self._progress_info["current_progress"]
         task = self._progress_info["current_task"]
 
-        n_splits = self._cv_splitter.get_n_splits(self._X, self._y)
-        progress.update(task, total=n_splits)
+        progress.update(task, total=len(self.split_indices))
 
         parallel = Parallel(
             **_validate_joblib_parallel_params(
@@ -207,7 +216,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 train_indices,
                 test_indices,
             )
-            for train_indices, test_indices in self._cv_splitter.split(self._X, self._y)
+            for (train_indices, test_indices) in self.split_indices
         )
 
         estimator_reports = []
@@ -274,7 +283,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
         >>> report.clear_cache()
         >>> report._cache
@@ -309,7 +318,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
         >>> report._cache
         {...}
@@ -409,7 +418,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> X, y = make_classification(random_state=42)
         >>> estimator = LogisticRegression()
         >>> from skore import CrossValidationReport
-        >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
         >>> predictions = report.get_predictions(data_source="test")
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(50,), (50,)]
@@ -428,6 +437,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
             for report in self.estimator_reports_
         ]
+
+    @property
+    def ml_task(self) -> str:
+        return self._ml_task
 
     @property
     def estimator(self) -> BaseEstimator:
@@ -454,8 +467,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return self._y
 
     @property
-    def cv_splitter(self) -> SKLearnCrossValidator:
-        return self._cv_splitter
+    def splitter(self) -> SKLearnCrossValidator:
+        return self._splitter
+
+    @property
+    def split_indices(self) -> tuple[tuple[Iterable[int], Iterable[int]]]:
+        return self._split_indices
 
     @property
     def pos_label(self) -> PositiveLabel | None:

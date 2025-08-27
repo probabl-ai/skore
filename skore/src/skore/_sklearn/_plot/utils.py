@@ -16,7 +16,14 @@ from sklearn.utils.validation import (
     check_consistent_length,
 )
 
-from skore._sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
+from skore._config import get_config
+from skore._sklearn.types import (
+    MLTask,
+    PlotBackend,
+    PositiveLabel,
+    ReportType,
+    YPlotData,
+)
 
 LINESTYLE = [
     ("solid", "solid"),
@@ -324,6 +331,27 @@ def _adjust_fig_size(
     width = _get_adjusted_fig_size(fig, ax, "width", target_width)
     height = _get_adjusted_fig_size(fig, ax, "height", target_height)
     fig.set_size_inches((width, height))
+
+
+class PlotBackendMixin:
+    """Mixin class for Displays to dispatch plotting to the configured backend."""
+
+    def plot(self, **kwargs):
+        plot_backend = get_config()["plot_backend"]
+        if plot_backend == "matplotlib":
+            return self._plot_matplotlib(**kwargs)
+        elif plot_backend == "plotly":
+            return self._plot_plotly(**kwargs)
+        else:
+            raise NotImplementedError(
+                f"Plotting backend {plot_backend} not available. "
+                f"Available options are {PlotBackend.__args__}."
+            )
+
+    def _plot_plotly(self, **kwargs):
+        raise NotImplementedError(
+            "Plotting with plotly is not supported for this Display."
+        )
 
 
 def _despine_matplotlib_axis(

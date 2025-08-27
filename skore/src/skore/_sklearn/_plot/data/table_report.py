@@ -17,15 +17,16 @@ from skrub._reporting._utils import (
     top_k_value_counts,
 )
 
+from skore._externals._skrub_compat import sbd
 from skore._sklearn._plot.style import StyleDisplayMixin
 from skore._sklearn._plot.utils import (
     HelpDisplayMixin,
+    PlotBackendMixin,
     _adjust_fig_size,
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
 from skore._utils._repr_html import ReprHTMLMixin
-from skore.externals._skrub_compat import sbd
 
 
 def _truncate_top_k_categories(
@@ -163,7 +164,9 @@ def _resize_categorical_axis(
     _adjust_fig_size(figure, ax, target_width, target_height)
 
 
-class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
+class TableReportDisplay(
+    StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin, PlotBackendMixin
+):
     """Display reporting information about a given dataset.
 
     This display summarizes the dataset and provides a way to visualize
@@ -222,7 +225,7 @@ class TableReportDisplay(StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin):
         return cls(summarize_dataframe(dataset, with_plots=True, title=None, verbose=0))
 
     @StyleDisplayMixin.style_plot
-    def plot(
+    def _plot_matplotlib(
         self,
         *,
         x: str | None = None,

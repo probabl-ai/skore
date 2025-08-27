@@ -12,6 +12,7 @@ from sklearn import metrics
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
+from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import (
     _BaseAccessor,
     _BaseMetricsAccessor,
@@ -35,10 +36,10 @@ from skore._sklearn.types import (
 from skore._utils._accessor import (
     _check_all_checks,
     _check_estimator_has_method,
+    _check_roc_auc,
     _check_supported_ml_task,
 )
 from skore._utils._index import flatten_multi_index
-from skore.externals._pandas_accessors import DirNamesMixin
 
 DataSource = Literal["test", "train", "X_y"]
 
@@ -701,8 +702,9 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        average: Literal["binary", "macro", "micro", "weighted", "samples"]
-        | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> float | dict[PositiveLabel, float]:
         """Compute the precision score.
@@ -794,8 +796,9 @@ class _MetricsAccessor(
         data_source_hash: int | None = None,
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        average: Literal["binary", "macro", "micro", "weighted", "samples"]
-        | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> float | dict[PositiveLabel, float]:
         """Private interface of `precision` to be able to pass `data_source_hash`.
@@ -835,8 +838,9 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        average: Literal["binary", "macro", "micro", "weighted", "samples"]
-        | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> float | dict[PositiveLabel, float]:
         """Compute the recall score.
@@ -929,8 +933,9 @@ class _MetricsAccessor(
         data_source_hash: int | None = None,
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        average: Literal["binary", "macro", "micro", "weighted", "samples"]
-        | None = None,
+        average: (
+            Literal["binary", "macro", "micro", "weighted", "samples"] | None
+        ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> float | dict[PositiveLabel, float]:
         """Private interface of `recall` to be able to pass `data_source_hash`.
@@ -1142,8 +1147,11 @@ class _MetricsAccessor(
         )
 
     @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        _check_roc_auc(
+            ml_task_and_methods=[
+                ("binary-classification", ["predict_proba", "decision_function"]),
+                ("multiclass-classification", ["predict_proba"]),
+            ]
         )
     )
     def _roc_auc(
@@ -1265,8 +1273,9 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        multioutput: Literal["raw_values", "uniform_average"]
-        | ArrayLike = "raw_values",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
     ) -> float | list:
         """Compute the R² score.
 
@@ -1335,8 +1344,9 @@ class _MetricsAccessor(
         data_source_hash: int | None = None,
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        multioutput: Literal["raw_values", "uniform_average"]
-        | ArrayLike = "raw_values",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
     ) -> float | list:
         """Private interface of `r2` to be able to pass `data_source_hash`.
 
@@ -1367,8 +1377,9 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        multioutput: Literal["raw_values", "uniform_average"]
-        | ArrayLike = "raw_values",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
     ) -> float | list:
         """Compute the root mean squared error.
 
@@ -1437,8 +1448,9 @@ class _MetricsAccessor(
         data_source_hash: int | None = None,
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        multioutput: Literal["raw_values", "uniform_average"]
-        | ArrayLike = "raw_values",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
     ) -> float | list:
         """Private interface of `rmse` to be able to pass `data_source_hash`.
 
@@ -1680,14 +1692,14 @@ class _MetricsAccessor(
                 y_true=[
                     YPlotData(
                         estimator_name=self._parent.estimator_name_,
-                        split_index=None,
+                        split=None,
                         y=y,
                     )
                 ],
                 y_pred=[
                     YPlotData(
                         estimator_name=self._parent.estimator_name_,
-                        split_index=None,
+                        split=None,
                         y=y_pred,
                     )
                 ],

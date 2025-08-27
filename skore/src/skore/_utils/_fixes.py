@@ -2,7 +2,7 @@ from typing import Any
 
 import joblib
 
-from skore.externals._sklearn_compat import parse_version
+from skore._externals._sklearn_compat import parse_version
 
 
 # FIXME: Remove this function once we support only joblib >= 1.4

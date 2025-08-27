@@ -8,6 +8,7 @@ from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
+from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import (
     _BaseAccessor,
     _BaseMetricsAccessor,
@@ -32,7 +33,6 @@ from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
 from skore._utils._progress_bar import progress_decorator
-from skore.externals._pandas_accessors import DirNamesMixin
 
 from .utils import _combine_cross_validation_results, _combine_estimator_results
 
@@ -1259,7 +1259,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     y_true.append(
                         YPlotData(
                             estimator_name=report_name,
-                            split_index=None,
+                            split=None,
                             y=report_y,
                         )
                     )
@@ -1280,7 +1280,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                             y_pred.append(
                                 YPlotData(
                                     estimator_name=report_name,
-                                    split_index=None,
+                                    split=None,
                                     y=value,
                                 )
                             )
@@ -1301,9 +1301,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 for report, report_name in zip(
                     self._parent.reports_, self._parent.report_names_, strict=False
                 ):
-                    for split_index, estimator_report in enumerate(
-                        report.estimator_reports_
-                    ):
+                    for split, estimator_report in enumerate(report.estimator_reports_):
                         report_X, report_y, _ = (
                             estimator_report.metrics._get_X_y_and_data_source_hash(
                                 data_source=data_source,
@@ -1315,7 +1313,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                         y_true.append(
                             YPlotData(
                                 estimator_name=report_name,
-                                split_index=split_index,
+                                split=split,
                                 y=report_y,
                             )
                         )
@@ -1337,7 +1335,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                                 y_pred.append(
                                     YPlotData(
                                         estimator_name=report_name,
-                                        split_index=split_index,
+                                        split=split,
                                         y=value,
                                     )
                                 )

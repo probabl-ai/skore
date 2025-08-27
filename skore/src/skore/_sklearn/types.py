@@ -6,6 +6,8 @@ from typing import Any, Literal, Protocol
 
 from numpy.typing import ArrayLike
 
+PlotBackend = Literal["matplotlib", "plotly"]
+
 MLTask = Literal[
     "binary-classification",
     "classification",
@@ -39,7 +41,7 @@ class YPlotData:
     """
 
     estimator_name: str
-    split_index: int | None
+    split: int | None
     y: ArrayLike
 
 

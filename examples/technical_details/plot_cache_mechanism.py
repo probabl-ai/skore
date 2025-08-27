@@ -10,14 +10,6 @@ This example shows how :class:`~skore.EstimatorReport` and
 """
 
 # %%
-#
-# We set some environment variables to avoid some spurious warnings related to
-# parallelism.
-import os
-
-os.environ["POLARS_ALLOW_FORKING_THREAD"] = "1"
-
-# %%
 # Loading some data
 # =================
 #
@@ -262,7 +254,7 @@ report._cache
 # in cross-validation by leveraging the previous :class:`~skore.EstimatorReport`:
 from skore import CrossValidationReport
 
-report = CrossValidationReport(model, X=df, y=y, cv_splitter=5, n_jobs=4)
+report = CrossValidationReport(model, X=df, y=y, splitter=5, n_jobs=4)
 report.help()
 
 # %%
