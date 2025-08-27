@@ -995,7 +995,7 @@ class RocCurveDisplay(
             report type:
 
             - `estimator_name`: Name of the estimator (when comparing estimators)
-            - `split`: Cross-validation fold ID (when doing cross-validation)
+            - `split`: Cross-validation split ID (when doing cross-validation)
             - `label`: Class label (for multiclass-classification)
             - `threshold`: Decision threshold
             - `fpr`: False Positive Rate

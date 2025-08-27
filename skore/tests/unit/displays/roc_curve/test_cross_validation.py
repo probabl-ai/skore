@@ -227,14 +227,14 @@ def test_legend(
     """Check the rendering of the legend for ROC curves with a
     `CrossValidationReport`."""
 
-    # binary classification <= 5 folds
+    # binary classification <= 5 splits
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     display = report.metrics.roc()
     display.plot()
     check_legend_position(display.ax_, loc="lower right", position="inside")
 
-    # binary classification > 5 folds
+    # binary classification > 5 splits
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=10)
     display = report.metrics.roc()

@@ -197,14 +197,14 @@ def test_legend(
 ):
     """Check the rendering of the legend for with an `CrossValidationReport`."""
 
-    # binary classification <= 5 folds
+    # binary classification <= 5 splits
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     display = report.metrics.precision_recall()
     display.plot()
     check_legend_position(display.ax_, loc="lower left", position="inside")
 
-    # binary classification > 5 folds
+    # binary classification > 5 splits
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=10)
     display = report.metrics.precision_recall()

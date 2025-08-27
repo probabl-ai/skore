@@ -305,13 +305,13 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
         for split_idx, prediction_error_split in self._prediction_error.groupby(
             "split", observed=True
         ):
-            data_points_kwargs_fold = {
+            data_points_kwargs_split = {
                 "color": colors_markers[split_idx],
                 **data_points_kwargs,
             }
 
             data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_fold, samples_kwargs[split_idx]
+                data_points_kwargs_split, samples_kwargs[split_idx]
             )
 
             label = f"Fold #{split_idx + 1}"
@@ -390,13 +390,13 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
         for idx, (estimator_name, prediction_error_estimator) in enumerate(
             self._prediction_error.groupby("estimator_name", observed=True)
         ):
-            data_points_kwargs_fold = {
+            data_points_kwargs_split = {
                 "color": colors_markers[idx],
                 **data_points_kwargs,
             }
 
             data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_fold, samples_kwargs[idx]
+                data_points_kwargs_split, samples_kwargs[idx]
             )
 
             if kind == "actual_vs_predicted":
@@ -473,13 +473,13 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
         for idx, (estimator_name, prediction_error_estimator) in enumerate(
             self._prediction_error.groupby("estimator_name", observed=True)
         ):
-            data_points_kwargs_fold = {
+            data_points_kwargs_split = {
                 "color": colors_markers[idx],
                 **data_points_kwargs,
             }
 
             data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_fold, samples_kwargs[idx]
+                data_points_kwargs_split, samples_kwargs[idx]
             )
 
             if kind == "actual_vs_predicted":
@@ -856,7 +856,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
             the report type:
 
             - `estimator_name`: Name of the estimator (when comparing estimators)
-            - `split`: Cross-validation fold ID (when doing cross-validation)
+            - `split`: Cross-validation split ID (when doing cross-validation)
             - `y_true`: True target values
             - `y_pred`: Predicted target values
             - `residuals`: Difference between true and predicted values
