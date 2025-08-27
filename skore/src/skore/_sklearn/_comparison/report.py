@@ -212,9 +212,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         else:
             deduped_report_names = report_names
 
-        reports = dict(zip(deduped_report_names, reports_list, strict=True))
+        reports_dict = cast(
+            dict[str, EstimatorReport] | dict[str, CrossValidationReport],
+            dict(zip(deduped_report_names, reports_list, strict=True)),
+        )
 
-        return reports, reports_type, pos_label
+        return reports_dict, reports_type, pos_label
 
     def __init__(
         self,
@@ -248,7 +251,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache: dict[tuple[Any, ...], Any] = {}
-        self._ml_task = list(self.reports_.values())[0]._ml_task
+        self._ml_task = list(self.reports_.values())[0]._ml_task  # type: ignore
 
     def clear_cache(self) -> None:
         """Clear the cache.
