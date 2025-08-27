@@ -17,8 +17,14 @@ from sklearn.utils.metaestimators import available_if
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
+from skore._sklearn._plot.metrics.feature_importance_display import (
+    FeatureImportanceDisplay,
+)
 from skore._sklearn.types import Aggregate
-from skore._utils._accessor import _check_has_coef, _check_has_feature_importances
+from skore._utils._accessor import (
+    _check_estimator_has_coef,
+    _check_has_feature_importances,
+)
 from skore._utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
@@ -151,8 +157,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    @available_if(_check_has_coef())
-    def coefficients(self) -> pd.DataFrame:
+    @available_if(_check_estimator_has_coef())
+    def coefficients(self) -> FeatureImportanceDisplay:
         """Retrieve the coefficients of a linear model, including the intercept.
 
         Examples
@@ -165,7 +171,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
         >>> report = EstimatorReport(regressor, **split_data)
-        >>> report.feature_importance.coefficients()
+        >>> report.feature_importance.coefficients().frame()
                    Coefficient
         Intercept     152.4...
         Feature #0     21.2...
@@ -178,6 +184,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Feature #7    112.6...
         Feature #8    250.5...
         Feature #9     99.5...
+        >>> report.feature_importance.coefficients().plot() # shows plot
         """
         parent_estimator = self._parent.estimator_
 
@@ -232,7 +239,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             columns=columns,
         )
 
-        return df
+        return FeatureImportanceDisplay(self._parent, df)
 
     @available_if(_check_has_feature_importances())
     def mean_decrease_impurity(self):

@@ -1,118 +1,55 @@
-import pandas as pd
 import pytest
+import sklearn
 import sklearn.cross_decomposition
 import sklearn.discriminant_analysis
-import sklearn.linear_model
 from sklearn.base import is_classifier, is_regressor
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
-from skore import EstimatorReport
+from skore import CrossValidationReport
 from skore._externals._sklearn_compat import get_tags
 
 
 @pytest.mark.parametrize(
-    "data, estimator, column_base_name, expected_shape",
+    "data, estimator, expected_shape",
     [
         (
             make_regression(n_features=5, random_state=42),
             LinearRegression(),
-            None,
-            (6, 1),
+            (5, 6),
         ),
         (
-            make_classification(n_features=5, random_state=42),
+            make_classification(n_features=10, random_state=42),
             LogisticRegression(),
-            None,
-            (6, 1),
-        ),
-        (
-            make_classification(
-                n_features=5,
-                n_classes=3,
-                n_samples=30,
-                n_informative=3,
-                random_state=42,
-            ),
-            LogisticRegression(),
-            "Class",
-            (6, 3),
-        ),
-        (
-            make_classification(
-                n_features=5,
-                n_classes=3,
-                n_samples=30,
-                n_informative=3,
-                random_state=42,
-            ),
-            make_pipeline(StandardScaler(), LogisticRegression()),
-            "Class",
-            (6, 3),
+            (5, 11),
         ),
         (
             make_regression(n_features=5, random_state=42),
             make_pipeline(StandardScaler(), LinearRegression()),
-            None,
-            (6, 1),
-        ),
-        (
-            make_regression(n_features=5, n_targets=3, random_state=42),
-            LinearRegression(),
-            "Target",
-            (6, 3),
+            (5, 6),
         ),
     ],
 )
-def test_coefficients_numpy_arrays(data, estimator, column_base_name, expected_shape):
+def test_cross_validation_report_coefficient_frame(
+    data,
+    estimator,
+    expected_shape,
+):
     X, y = data
-    estimator.fit(X, y)
-    report = EstimatorReport(estimator)
-    result = report.feature_importance.coefficients().frame()
-    assert result.shape == expected_shape
+    cv_report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
+    cv_report_coefs = cv_report.feature_importance.coefficients().frame()
+    assert cv_report_coefs.shape == expected_shape
 
-    expected_index = (
+    expected_index = [i for i in range(expected_shape[0])]
+    assert cv_report_coefs.index.tolist() == expected_index
+
+    expected_columns = (
         ["Intercept"] + [f"x{i}" for i in range(X.shape[1])]
         if isinstance(estimator, Pipeline)
         else ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
     )
-    assert result.index.tolist() == expected_index
-
-    expected_columns = (
-        ["Coefficient"]
-        if expected_shape[1] == 1
-        else [f"{column_base_name} #{i}" for i in range(expected_shape[1])]
-    )
-    assert result.columns.tolist() == expected_columns
-
-
-@pytest.mark.parametrize(
-    "estimator",
-    [
-        LinearRegression(),
-        make_pipeline(StandardScaler(), LinearRegression()),
-    ],
-)
-def test_coefficients_pandas_dataframe(estimator):
-    """If provided, the coefficients dataframe uses the feature names."""
-    X, y = make_regression(n_features=5, random_state=42)
-    X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(X.shape[1])])
-    estimator.fit(X, y)
-
-    report = EstimatorReport(estimator)
-    result = report.feature_importance.coefficients().frame()
-
-    assert result.shape == (6, 1)
-    assert result.index.tolist() == [
-        "Intercept",
-        "my_feature_0",
-        "my_feature_1",
-        "my_feature_2",
-        "my_feature_3",
-        "my_feature_4",
-    ]
-    assert result.columns.tolist() == ["Coefficient"]
+    assert cv_report_coefs.columns.tolist() == expected_columns
 
 
 @pytest.mark.parametrize(
@@ -219,58 +156,12 @@ def test_all_sklearn_estimators(
     else:
         raise Exception("Estimator not in ['classifier', 'regressor']")
 
-    estimator.fit(X, y)
+    expected_shape = (5, 6)
+    cv_report = CrossValidationReport(estimator, X=X, y=y)
+    cv_report_coefs = cv_report.feature_importance.coefficients().frame()
 
-    report = EstimatorReport(estimator)
-    result = report.feature_importance.coefficients().frame()
+    expected_index = list(range(expected_shape[0]))
+    assert cv_report_coefs.index.tolist() == expected_index
 
-    assert result.shape == (X.shape[1] + 1, 1)
-    assert result.index.tolist() == [
-        "Intercept",
-        *[f"Feature #{i}" for i in range(X.shape[1])],
-    ]
-    assert result.columns.tolist() == ["Coefficient"]
-
-
-def test_pipeline_with_transformer(regression_data):
-    """If the estimator is a pipeline containing a transformer that changes the
-    features, adapt the feature names in the output table."""
-    from sklearn.model_selection import train_test_split
-    from sklearn.preprocessing import PolynomialFeatures
-
-    X, y = regression_data
-    X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(5)])
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-
-    model = make_pipeline(
-        PolynomialFeatures(degree=2, interaction_only=True),
-        LinearRegression(),
-    )
-
-    report = EstimatorReport(
-        model, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
-    )
-
-    result = report.feature_importance.coefficients().frame()
-    assert result.shape == (17, 1)
-    assert result.index.tolist() == [
-        "Intercept",
-        "1",
-        "my_feature_0",
-        "my_feature_1",
-        "my_feature_2",
-        "my_feature_3",
-        "my_feature_4",
-        "my_feature_0 my_feature_1",
-        "my_feature_0 my_feature_2",
-        "my_feature_0 my_feature_3",
-        "my_feature_0 my_feature_4",
-        "my_feature_1 my_feature_2",
-        "my_feature_1 my_feature_3",
-        "my_feature_1 my_feature_4",
-        "my_feature_2 my_feature_3",
-        "my_feature_2 my_feature_4",
-        "my_feature_3 my_feature_4",
-    ]
-    assert result.columns.tolist() == ["Coefficient"]
+    expected_columns = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
+    assert cv_report_coefs.columns.tolist() == expected_columns
