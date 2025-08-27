@@ -5,6 +5,7 @@ import joblib
 import numpy as np
 import pytest
 from sklearn.base import clone
+from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
@@ -246,3 +247,10 @@ def test_failure_all_splits(n_jobs, binary_classification_data):
     err_msg = "Cross-validation failed: no estimators were successfully fitted"
     with pytest.raises(RuntimeError, match=err_msg):
         CrossValidationReport(estimator, X, y, n_jobs=n_jobs)
+
+
+def test_no_y():
+    """Check that we can create a report without y, in the case of clustering for
+    instance"""
+    report = CrossValidationReport(KMeans(), X=np.random.rand(100, 5))
+    assert isinstance(report, CrossValidationReport)

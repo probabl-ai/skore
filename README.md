@@ -23,27 +23,28 @@ Elevate ML Development with Built-in Recommended Practices \
 
 <br />
 
-## 🧩 What is Skore?
+## 🎯 Why Skore?
 
-The core mission of **Skore** is to turn uneven ML development into structured, effective decision-making. It is made of two complementary components:
-- **Skore Lib**: the open-source Python library (described here!) designed to help data scientists boost their ML development with effective guidance and tooling.
-- **Skore Hub**: the collaborative layer where teams connect, learn more on our [product page](https://probabl.ai/skore).
+When it comes to data science, you have excellent tools at your disposal: `pandas` and `polars` for data exploration, `skrub` for stateful transformations, and `scikit-learn` for model training and evaluation. These libraries are designed to be generic and accommodate a wide range of use cases.
+
+**But here's the challenge**: Your experience is key to choosing the right building blocks and methodologies. You often spend significant time navigating documentation, writing boilerplate code for common evaluations, and struggling to maintain clear project structure.
+
+**Skore is the conductor** that transforms your data science pipeline into structured, meaningful artifacts. It reduces the time you spend on documentation navigation, eliminates boilerplate code, and guides you toward the right methodological information to answer your questions.
+
+### What Skore does for you:
+
+- **Structures your experiments**: Automatically generates the insights that matter for your use case
+- **Reduces boilerplate**: One line of code gives you comprehensive model evaluation
+- **Guides your decisions**: Built-in methodological warnings help you avoid common pitfalls
+- **Maintains clarity**: Structured project organization makes your work easier to understand and maintain
 
 ⭐ Support us with a star and spread the word - it means a lot! ⭐
 
-### Key features of Skore Lib
+## 🧩 What is Skore?
 
-**Evaluate and inspect**: automated insightful reports.
-- `EstimatorReport`: feed your scikit-learn compatible estimator and dataset, and it generates recommended metrics, feature importance, and plots to help you evaluate and inspect your model. All in just one line of code. Under the hood, we use efficient caching to make the computations blazing fast.
-- `CrossValidationReport`: get a skore estimator report for each fold of your cross-validation.
-- `ComparisonReport`: benchmark your skore estimator reports.
-
-**Diagnose**: catch methodological errors before they impact your models.
-  - `train_test_split` supercharged with methodological guidance: the API is the same as scikit-learn's, but skore displays warnings when applicable. For example, it warns you against shuffling time series data or when you have class imbalance.
-
-## 🗓️ What's next?
-
-Skore Lib is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
+The core mission of **Skore** is to turn uneven ML development into structured, effective decision-making. It consists of two complementary components:
+- **Skore Lib**: the open-source Python library (described here!) that provides the structured artifacts and methodological guidance for your data science experiments.
+- **Skore Hub**: the collaborative platform where teams can share, compare, and build upon each other's structured experiments. Learn more on our [product page](https://probabl.ai/skore).
 
 ## ⚡️ Quick start
 
@@ -55,9 +56,9 @@ We recommend using a [virtual environment (venv)](https://docs.python.org/3/tuto
 
 Then, you can install skore by using `pip`:
 ```bash
-# If you just use skore locally
+# If you plan to use Skore locally
 pip install -U skore
-# If you wish to also interact with the skore hub
+# If you wish to interact with Skore Hub as well
 pip install -U skore[hub]
 ```
 
@@ -71,80 +72,42 @@ conda install conda-forge::skore
 
 You can find information on the latest version [here](https://anaconda.org/conda-forge/skore).
 
-### Get assistance when developing your ML/DS projects
+### Get structured insights from your ML pipeline
 
-Evaluate your model using `skore.CrossValidationReport`:
+Evaluate your model and get comprehensive insights in one line:
+
 ```python
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
-
 from skore import CrossValidationReport
 
 X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
 clf = LogisticRegression()
 
+# Get structured insights that matter for your use case
 cv_report = CrossValidationReport(clf, X, y)
 
-# Display the help tree to see all the insights that are available to you
+# See what insights are available
 cv_report.help()
-```
 
-```python
-# Display the report metrics that was computed for you:
-metrics_summary = cv_report.metrics.summarize()
-metrics_summary
-```
+# Example: Access the metrics summary
+metrics_summary = cv_report.metrics.summarize().frame()
 
-```python
-# Display the ROC curve that was generated for you:
+# Example: Get the ROC curve
 roc_plot = cv_report.metrics.roc()
 roc_plot.plot()
 ```
 
-### Create or connect to a Project to save and load reports
-
-```python
-from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
-
-import skore
-
-# Create or connect to a Project
-project = skore.Project("<name>") # local
-project = skore.Project("hub://<tenant>/<name>") # hub
-
-X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
-X_train, X_test, y_train, y_test = train_test_split(X, y)
-clf = LogisticRegression()
-
-report = skore.EstimatorReport(
-    clf,
-    X_train=X_train,
-    y_train=y_train,
-    X_test=X_test,
-    y_test=y_test,
-)
-
-# Save report to Project for future reference
-project.put("my_report", report)
-```
-
 Learn more in our [documentation](https://docs.skore.probabl.ai).
-
 
 ## 🛠️ Contributing
 
-Join our mission to promote open-source and make machine learning development more robust and effective. If you'd like to contribute, please check the contributing guidelines [here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
-
+Join our mission to promote open-source and make machine learning development more robust and effective. If you'd like to contribute, please check the contributing guidelines [here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
 
 ## 👋 Feedback & Community
 
 -   Join our [Discord](https://discord.probabl.ai/) to share ideas or get support.
 -   Request a feature or report a bug via [GitHub Issues](https://github.com/probabl-ai/skore/issues).
-
-<br />
-
 
 ## Support
 

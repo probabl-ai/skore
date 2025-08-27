@@ -38,14 +38,21 @@ def _generate_estimator_report(
     train_indices: ArrayLike,
     test_indices: ArrayLike,
 ) -> EstimatorReport | KeyboardInterrupt | Exception:
+    if y is None:
+        # In the case of clustering, we do not have y
+        y_train = None
+        y_test = None
+    else:
+        y_train = _safe_indexing(y, train_indices)
+        y_test = _safe_indexing(y, test_indices)
     try:
         return EstimatorReport(
             estimator,
             fit=True,
             X_train=_safe_indexing(X, train_indices),
-            y_train=_safe_indexing(y, train_indices),
+            y_train=y_train,
             X_test=_safe_indexing(X, test_indices),
-            y_test=_safe_indexing(y, test_indices),
+            y_test=y_test,
             pos_label=pos_label,
         )
     except (KeyboardInterrupt, Exception) as e:
@@ -434,6 +441,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
             for report in self.estimator_reports_
         ]
+
+    @property
+    def ml_task(self) -> str:
+        return self._ml_task
 
     @property
     def estimator(self) -> BaseEstimator:
