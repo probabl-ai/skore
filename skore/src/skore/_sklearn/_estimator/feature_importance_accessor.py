@@ -29,6 +29,8 @@ from skore._utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
 
+Stage = Literal["start", "end"]
+
 Metric = Literal[
     "accuracy",
     "precision",
@@ -309,6 +311,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
         flat_index: bool = False,
+        stage: Stage = "start",
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
 
@@ -447,6 +450,22 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         r2_feature_0  0.792...  0.131...
         r2_feature_1  2.478...  0.223...
         r2_feature_2  0.025...  0.003...
+
+        # Compute the importance at the end of feature engineering pipeline
+        >>> from sklearn.pipeline import make_pipeline
+        >>> from sklearn.preprocessing import StandardScaler
+        >>> pipeline = make_pipeline(StandardScaler(), Ridge())
+        >>> pipeline_report = EstimatorReport(pipeline, **split_data)
+        >>> pipeline_report.feature_importance.permutation(
+        ...    n_repeats=2,
+        ...    seed=0,
+        ...    stage="end",
+        ... )
+        Repeat             Repeat #0  Repeat #1
+        Metric Feature
+        r2     Feature #0   0.699...   0.884...
+               Feature #1   2.318...   2.633...
+               Feature #2   0.028...   0.022...
         """
         return self._feature_permutation(
             data_source=data_source,
@@ -460,6 +479,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             n_jobs=n_jobs,
             seed=seed,
             flat_index=flat_index,
+            stage=stage,
         )
 
     def _feature_permutation(
@@ -476,6 +496,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
         flat_index: bool = False,
+        stage: Stage = "start",
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
 
@@ -501,6 +522,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 self._parent._hash,
                 "permutation_importance",
                 data_source,
+                stage,
             ]
 
             if data_source_hash is not None:
@@ -532,9 +554,19 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if cache_key in self._parent._cache:
             score = self._parent._cache[cache_key]
         else:
+            if stage == "start" or not isinstance(self._parent.estimator_, Pipeline):
+                estimator = self._parent.estimator_
+                X_transformed = X_
+                feature_names_source = estimator
+            else:
+                pipeline = self._parent.estimator_
+                X_transformed = pipeline[:-1].transform(X_)
+                estimator = pipeline[-1]
+                feature_names_source = self._parent.estimator_
+
             sklearn_score = permutation_importance(
-                estimator=self._parent.estimator_,
-                X=X_,
+                estimator=estimator,
+                X=X_transformed,
                 y=y_true,
                 scoring=checked_scoring,
                 n_repeats=n_repeats,
@@ -545,8 +577,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             score = sklearn_score.get("importances")
 
             feature_names = (
-                self._parent.estimator_.feature_names_in_
-                if hasattr(self._parent.estimator_, "feature_names_in_")
+                feature_names_source.feature_names_in_
+                if hasattr(feature_names_source, "feature_names_in_")
                 else [f"Feature #{i}" for i in range(X_.shape[1])]
             )
 
@@ -569,9 +601,9 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
                 # Get score name
                 if scoring is None:
-                    if is_classifier(self._parent.estimator_):
+                    if is_classifier(estimator):
                         scoring_name = "accuracy"
-                    elif is_regressor(self._parent.estimator_):
+                    elif is_regressor(estimator):
                         scoring_name = "r2"
                 else:
                     # e.g. if scoring is a callable
