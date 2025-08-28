@@ -389,6 +389,16 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             Whether to flatten the multi-index columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
+        stage : {"start", "end"}, default="start"
+            If the estimator is a :class:`~sklearn.pipeline.Pipeline`, at which step of
+            the pipeline the importance is computed:
+
+            - If "start", compute the importance of the raw pipeline inputs.
+            - If "end", compute the importance of the feature-engineered features, just
+              before the actual prediction step.
+
+            Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
+
         Returns
         -------
         pandas.DataFrame
