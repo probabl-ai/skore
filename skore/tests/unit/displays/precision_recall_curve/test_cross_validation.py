@@ -47,7 +47,7 @@ def test_binary_classification(
         )["average_precision"].item()
 
         assert line.get_label() == (
-            f"Fold #{split_idx + 1} (AP = {average_precision:0.2f})"
+            f"Split #{split_idx + 1} (AP = {average_precision:0.2f})"
         )
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
 

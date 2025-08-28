@@ -285,7 +285,7 @@ class PrecisionRecallCurveDisplay(
                     line_kwargs, pr_curve_kwargs[split_idx]
                 )
                 line_kwargs_validated["label"] = (
-                    f"Fold #{split_idx + 1} (AP = {average_precision:0.2f})"
+                    f"Split #{split_idx + 1} (AP = {average_precision:0.2f})"
                 )
 
                 (line,) = self.ax_.plot(

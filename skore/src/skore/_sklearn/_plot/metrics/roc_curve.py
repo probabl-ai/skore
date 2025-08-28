@@ -325,7 +325,7 @@ class RocCurveDisplay(
                     line_kwargs, roc_curve_kwargs[split_idx]
                 )
                 line_kwargs_validated["label"] = (
-                    f"Fold #{split_idx + 1} (AUC = {roc_auc:0.2f})"
+                    f"Split #{split_idx + 1} (AUC = {roc_auc:0.2f})"
                 )
 
                 (line,) = self.ax_.plot(

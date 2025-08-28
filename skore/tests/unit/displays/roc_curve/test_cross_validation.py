@@ -48,7 +48,7 @@ def test_binary_classification(
             f"label == {pos_label} & split == {split_idx}"
         )["roc_auc"].item()
         assert line.get_label() == (
-            f"Fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
+            f"Split #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
         )
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
 

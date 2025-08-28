@@ -314,7 +314,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
                 data_points_kwargs_split, samples_kwargs[split_idx]
             )
 
-            label = f"Fold #{split_idx + 1}"
+            label = f"Split #{split_idx + 1}"
 
             if kind == "actual_vs_predicted":
                 scatter.append(
