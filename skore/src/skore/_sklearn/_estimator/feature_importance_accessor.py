@@ -461,7 +461,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         r2_feature_1  2.478...  0.223...
         r2_feature_2  0.025...  0.003...
 
-        # Compute the importance at the end of feature engineering pipeline
+        >>> # Compute the importance at the end of feature engineering pipeline
         >>> from sklearn.pipeline import make_pipeline
         >>> from sklearn.preprocessing import StandardScaler
         >>> pipeline = make_pipeline(StandardScaler(), Ridge())

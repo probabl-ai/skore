@@ -1083,7 +1083,7 @@ plot_permutation_train_test(tree_report)
 
 # %%
 # Computing permutation importance at different stages of a pipeline
-# =================================================================
+# ==================================================================
 #
 # When working with pipelines that contain feature engineering steps, we might be interested
 # in measuring feature importance at different stages:
