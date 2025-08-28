@@ -59,10 +59,10 @@ X, y = make_classification(
 )
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-lr = LogisticRegression(random_state=0)
+rf = LogisticRegression(random_state=0)
 
-lr_report = EstimatorReport(
-    lr, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+rf_report = EstimatorReport(
+    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
 )
 
 # %%
@@ -70,7 +70,7 @@ lr_report = EstimatorReport(
 # (skore detected that we are doing multiclass classification):
 
 # %%
-lr_report.help()
+rf_report.help()
 
 # %%
 # .. note::
@@ -87,20 +87,20 @@ lr_report.help()
 # fit and prediction times):
 
 # %%
-lr_report.metrics.summarize(indicator_favorability=True).frame()
+rf_report.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # For inspection, we can also retrieve the predictions, on the train set for example
 # (here we display only the first 10 predictions for conciseness purposes):
 
 # %%
-lr_report.get_predictions(data_source="train")[0:10]
+rf_report.get_predictions(data_source="train")[0:10]
 
 # %%
 # We can also plot the ROC curve that is generated for us:
 
 # %%
-roc_plot = lr_report.metrics.roc()
+roc_plot = rf_report.metrics.roc()
 roc_plot.plot()
 
 # %%
@@ -111,7 +111,7 @@ roc_plot.plot()
 # %%
 import matplotlib.pyplot as plt
 
-lr_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
+rf_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
 plt.tight_layout()
 
 # %%
@@ -133,7 +133,7 @@ plt.tight_layout()
 # %%
 from skore import CrossValidationReport
 
-cv_report = CrossValidationReport(lr, X, y, splitter=5)
+cv_report = CrossValidationReport(rf, X, y, splitter=5)
 
 # %%
 # We display the cross-validation report helper:
@@ -181,7 +181,7 @@ cv_report.estimator_reports_[0].metrics.summarize().frame()
 # (corresponding to several estimators) on a same test set, as in a benchmark of
 # estimators.
 #
-# Apart from the previous ``lr_report``, let us define another estimator report:
+# Apart from the previous ``rf_report``, let us define another estimator report:
 
 # %%
 from sklearn.ensemble import GradientBoostingClassifier
@@ -198,7 +198,7 @@ gb_report = EstimatorReport(
 # %%
 from skore import ComparisonReport
 
-comparator = ComparisonReport(reports=[lr_report, gb_report])
+comparator = ComparisonReport(reports=[rf_report, gb_report])
 
 # %%
 # As for the :class:`~skore.EstimatorReport` and the
@@ -303,7 +303,7 @@ my_project = skore.Project("my_project")
 # to help us track our experiments:
 
 # %%
-my_project.put("estimator_report", lr_report)
+my_project.put("estimator_report", rf_report)
 my_project.put("estimator_report", gb_report)
 
 # %%
@@ -386,10 +386,10 @@ pprint(summary.keys())
 # :class:`~sklearn.ensemble.RandomForestClassifier`:
 
 # %%
-report_search_lr = summary.query(
+report_search_rf = summary.query(
     "learner.str.contains('RandomForestClassifier')"
 ).reports()
-pprint(report_search_lr)
+pprint(report_search_rf)
 
 # %%
 # Or, we can query all the estimator reports corresponding to a classification
