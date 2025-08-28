@@ -18,10 +18,10 @@ if TYPE_CHECKING:
 
     import httpx
 
-    from .project import Project
+    from ..project.project import Project
 
 
-Progress = partial(
+SkinnedProgress = partial(
     Progress,
     TextColumn("[bold cyan blink]Uploading..."),
     BarColumn(
@@ -154,7 +154,7 @@ def upload(project: Project, o: Any, type: str) -> str:
                 task_to_chunk_id[task] = chunk_id
 
             try:
-                with Progress() as progress:
+                with SkinnedProgress() as progress:
                     tasks = as_completed(task_to_chunk_id)
                     total = len(task_to_chunk_id)
                     etags = dict(
