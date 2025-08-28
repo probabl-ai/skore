@@ -40,8 +40,8 @@ Skore: getting started
 # In order to assist its users when programming, skore has implemented a
 # :class:`skore.EstimatorReport` class.
 #
-# Let us load a multi-class classification dataset and get the estimator report for a
-# :class:`~sklearn.linear_model.LogisticRegression`:
+# Let us create a challenging synthetic binary classification dataset and get the estimator report for a
+# :class:`~sklearn.ensemble.RandomForestClassifier`:
 
 # %%
 from sklearn.datasets import make_classification
@@ -67,7 +67,7 @@ lr_report = EstimatorReport(
 
 # %%
 # Now, we can display the helper to see all the insights that are available to us
-# (skore detected that we are doing multi-class classification):
+# (skore detected that we are doing multiclass classification):
 
 # %%
 lr_report.help()
@@ -188,7 +188,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 gb = GradientBoostingClassifier(random_state=0)
 gb_report = EstimatorReport(
-    gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+    gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, pos_label=1
 )
 
 # %%
@@ -299,7 +299,7 @@ my_project = skore.Project("my_project")
 # :func:`~skore.Project.put`, with a key-value convention.
 
 # %%
-# Let us store the estimator reports of the logistic regression and the gradient boosting
+# Let us store the estimator reports of the random forest and the gradient boosting
 # to help us track our experiments:
 
 # %%
@@ -332,7 +332,7 @@ pprint(reports_get)
 
 # %%
 comparator = ComparisonReport(reports=reports_get)
-comparator.metrics.summarize(indicator_favorability=True).frame()
+comparator.metrics.summarize(pos_label=1, indicator_favorability=True).frame()
 
 # %%
 # We can retrieve any accessor of our stored estimator reports, for example
@@ -383,10 +383,12 @@ pprint(summary.keys())
 
 # %%
 # For example, we can query all the estimators corresponding to a
-# :class:`~sklearn.linear_model.LogisticRegression`:
+# :class:`~sklearn.ensemble.RandomForestClassifier`:
 
 # %%
-report_search_lr = summary.query("learner.str.contains('LogisticRegression')").reports()
+report_search_lr = summary.query(
+    "learner.str.contains('RandomForestClassifier')"
+).reports()
 pprint(report_search_lr)
 
 # %%
@@ -400,7 +402,6 @@ pprint(report_search_clf)
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
-
 # %%
 # .. admonition:: Stay tuned!
 #
