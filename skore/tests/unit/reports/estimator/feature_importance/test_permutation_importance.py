@@ -339,3 +339,47 @@ def test_not_fitted(regression_data):
     error_msg = "This LinearRegression instance is not fitted yet"
     with pytest.raises(NotFittedError, match=error_msg):
         report.feature_importance.permutation()
+
+
+@pytest.mark.parametrize("stage", ["start", "end"])
+def test_stage_parameter_pipeline(stage):
+    """Test the stage parameter for permutation importance with a pipeline."""
+    X, y = make_regression(n_features=3, random_state=0)
+
+    pipeline = make_pipeline(StandardScaler(), LinearRegression())
+
+    report = EstimatorReport(
+        pipeline,
+        X_train=X,
+        y_train=y,
+        X_test=X,
+        y_test=y,
+    )
+
+    result = report.feature_importance.permutation(seed=42, stage=stage)
+
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.nlevels == 2
+    assert result.index.names == ["Metric", "Feature"]
+    assert result.shape[0] > 0
+
+
+def test_stage_parameter_non_pipeline():
+    """Test the stage parameter for regular estimators."""
+    X, y = make_regression(n_features=3, random_state=0)
+
+    linear = LinearRegression()
+
+    report = EstimatorReport(
+        linear,
+        X_train=X,
+        y_train=y,
+        X_test=X,
+        y_test=y,
+    )
+
+    result_start = report.feature_importance.permutation(seed=42, stage="start")
+    result_end = report.feature_importance.permutation(seed=42, stage="end")
+
+    # For non-pipeline estimators, start and end should give same results
+    pd.testing.assert_frame_equal(result_start, result_end)
