@@ -45,7 +45,7 @@ Skore: getting started
 
 # %%
 from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
 from skore import EstimatorReport
@@ -59,7 +59,7 @@ X, y = make_classification(
 )
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-rf = LogisticRegression(random_state=0)
+rf = RandomForestClassifier(random_state=0)
 
 rf_report = EstimatorReport(
     rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
