@@ -263,7 +263,7 @@ ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
 # :meth:`skore.EstimatorReport.feature_importance` accessor:
 
 # %%
-ridge_report.feature_importance.coefficients()
+ridge_report.feature_importance.coefficients().frame()
 
 # %%
 # .. note::
@@ -276,11 +276,7 @@ ridge_report.feature_importance.coefficients()
 # We can plot this pandas datafame:
 
 # %%
-ridge_report.feature_importance.coefficients().plot.barh(
-    title="Model weights",
-    xlabel="Coefficient",
-    ylabel="Feature",
-)
+ridge_report.feature_importance.coefficients().plot()
 plt.tight_layout()
 
 # %%
@@ -337,7 +333,7 @@ def unscale_coefficients(df, feature_mean, feature_std):
 
 
 df_ridge_report_coef_unscaled = unscale_coefficients(
-    ridge_report.feature_importance.coefficients(), feature_mean, feature_std
+    ridge_report.feature_importance.coefficients().frame(), feature_mean, feature_std
 )
 df_ridge_report_coef_unscaled
 
@@ -452,9 +448,23 @@ print("Number of features after feature engineering:", n_features_engineered)
 # Let us display the 15 largest absolute coefficients:
 
 # %%
-engineered_ridge_report.feature_importance.coefficients().sort_values(
-    by="Coefficient", key=abs, ascending=True
-).tail(15).plot.barh(
+engineered_rigde_report_feature_importance = (
+    engineered_ridge_report.feature_importance.coefficients()
+    .frame()
+    .sort_values(by="Coefficient", key=abs, ascending=True)
+    .tail(15)
+)
+
+engineered_rigde_report_feature_importance.index = (
+    engineered_rigde_report_feature_importance.index.str.replace("remainder__", "")
+)
+engineered_rigde_report_feature_importance.index = (
+    engineered_rigde_report_feature_importance.index.str.replace(
+        "kmeans__", "geospatial__"
+    )
+)
+
+engineered_rigde_report_feature_importance.plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
@@ -700,7 +710,7 @@ print(selectk_features)
 # And here is the feature importance based on our model (sorted by absolute values):
 
 # %%
-selectk_ridge_report.feature_importance.coefficients().sort_values(
+selectk_ridge_report.feature_importance.coefficients().frame().sort_values(
     by="Coefficient", key=abs, ascending=True
 ).tail(15).plot.barh(
     title="Model weights",

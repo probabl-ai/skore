@@ -9,6 +9,7 @@ from matplotlib.artist import Artist
 from pandas import DataFrame
 from sklearn.utils.validation import _num_samples, check_array
 
+from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._plot.style import StyleDisplayMixin
 from skore._sklearn._plot.utils import (
     HelpDisplayMixin,
@@ -18,7 +19,6 @@ from skore._sklearn._plot.utils import (
     sample_mpl_colormap,
 )
 from skore._sklearn.types import MLTask, ReportType, YPlotData
-from skore.externals._sklearn_compat import _safe_indexing
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
@@ -32,7 +32,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
     using scatter plots to qualitatively assess the behavior of a regressor,
     preferably on held-out data points.
 
-    An instance of this class is should created by
+    An instance of this class should be created by
     `EstimatorReport.metrics.prediction_error()`.
     You should not create an instance of this class directly.
 
@@ -41,11 +41,11 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
     prediction_error : DataFrame
         The prediction error data to display. The columns are
 
-        - "estimator_name"
-        - "split_index" (may be null)
-        - "y_true"
-        - "y_pred"
-        - "residuals".
+        - `estimator_name`
+        - `split_index` (may be null)
+        - `y_true`
+        - `y_pred`
+        - `residuals`.
 
     range_y_true : RangeData
         Global range of the true values.
