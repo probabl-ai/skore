@@ -33,6 +33,21 @@ report are accessible through accessors.
    EstimatorReport.feature_importance
    EstimatorReport.metrics
 
+.. _estimator_data:
+
+Data
+----
+
+The `data` accessor helps you to get insights about the dataset used to train and test
+your estimator.
+
+.. autosummary::
+    :toctree: ../api/
+    :template: autosummary/accessor_method.rst
+
+    EstimatorReport.data.help
+    EstimatorReport.data.analyze
+
 .. _estimator_metrics:
 
 Metrics
