@@ -122,7 +122,7 @@ plt.tight_layout()
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # skore has also (re-)implemented a :class:`skore.CrossValidationReport` class that
-# contains several :class:`skore.EstimatorReport`, one for each fold.
+# contains several :class:`skore.EstimatorReport`, one for each split.
 
 # %%
 from skore import CrossValidationReport
@@ -142,21 +142,21 @@ cv_report.help()
 cv_report.metrics.summarize().frame()
 
 # %%
-# or by individual fold:
+# or by individual split:
 
 # %%
 cv_report.metrics.summarize(aggregate=None).frame()
 
 # %%
-# We display the ROC curves for each fold:
+# We display the ROC curves for each split:
 
 # %%
 roc_plot_cv = cv_report.metrics.roc()
 roc_plot_cv.plot()
 
 # %%
-# We can retrieve the estimator report of a specific fold to investigate further,
-# for example getting the report metrics for the first fold only:
+# We can retrieve the estimator report of a specific split to investigate further,
+# for example getting the report metrics for the first split only:
 
 # %%
 cv_report.estimator_reports_[0].metrics.summarize().frame()
