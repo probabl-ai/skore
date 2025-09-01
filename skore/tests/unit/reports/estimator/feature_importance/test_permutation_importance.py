@@ -341,7 +341,7 @@ def test_not_fitted(regression_data):
         report.feature_importance.permutation()
 
 
-@pytest.mark.parametrize("at_step", ["start", "end"])
+@pytest.mark.parametrize("at_step", [0, -1])
 def test_at_step_parameter_pipeline(at_step):
     """Test the `at_step` parameter for permutation importance with a pipeline."""
     X, y = make_regression(n_features=3, random_state=0)
@@ -378,8 +378,8 @@ def test_at_step_parameter_non_pipeline():
         y_test=y,
     )
 
-    result_start = report.feature_importance.permutation(seed=42, at_step="start")
-    result_end = report.feature_importance.permutation(seed=42, at_step="end")
+    result_start = report.feature_importance.permutation(seed=42, at_step=0)
+    result_end = report.feature_importance.permutation(seed=42, at_step=-1)
 
     # For non-pipeline estimators, start and end should give same results
     pd.testing.assert_frame_equal(result_start, result_end)
