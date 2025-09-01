@@ -45,6 +45,7 @@ def test_table_report_display_constructor(display):
 
 
 def test_table_report_display_frame(cross_validation_report):
+    """Check that we return the expected kind of data when calling `.frame`."""
     display = cross_validation_report.data.analyze()
     dataset = display.frame(kind="dataset")
 
