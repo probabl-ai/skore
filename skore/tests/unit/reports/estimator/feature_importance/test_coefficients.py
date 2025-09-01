@@ -69,7 +69,7 @@ def test_coefficients_numpy_arrays(data, estimator, column_base_name, expected_s
     X, y = data
     estimator.fit(X, y)
     report = EstimatorReport(estimator)
-    result = report.feature_importance.coefficients()
+    result = report.feature_importance.coefficients().frame()
     assert result.shape == expected_shape
 
     expected_index = (
@@ -101,7 +101,7 @@ def test_coefficients_pandas_dataframe(estimator):
     estimator.fit(X, y)
 
     report = EstimatorReport(estimator)
-    result = report.feature_importance.coefficients()
+    result = report.feature_importance.coefficients().frame()
 
     assert result.shape == (6, 1)
     assert result.index.tolist() == [
@@ -222,7 +222,7 @@ def test_all_sklearn_estimators(
     estimator.fit(X, y)
 
     report = EstimatorReport(estimator)
-    result = report.feature_importance.coefficients()
+    result = report.feature_importance.coefficients().frame()
 
     assert result.shape == (X.shape[1] + 1, 1)
     assert result.index.tolist() == [
@@ -252,7 +252,7 @@ def test_pipeline_with_transformer(regression_data):
         model, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
     )
 
-    result = report.feature_importance.coefficients()
+    result = report.feature_importance.coefficients().frame()
     assert result.shape == (17, 1)
     assert result.index.tolist() == [
         "Intercept",

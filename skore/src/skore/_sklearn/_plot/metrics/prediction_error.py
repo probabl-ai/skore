@@ -32,7 +32,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
     using scatter plots to qualitatively assess the behavior of a regressor,
     preferably on held-out data points.
 
-    An instance of this class is should created by
+    An instance of this class should be created by
     `EstimatorReport.metrics.prediction_error()`.
     You should not create an instance of this class directly.
 
@@ -41,11 +41,11 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
     prediction_error : DataFrame
         The prediction error data to display. The columns are
 
-        - "estimator_name"
-        - "split_index" (may be null)
-        - "y_true"
-        - "y_pred"
-        - "residuals".
+        - `estimator_name`
+        - `split_index` (may be null)
+        - `y_true`
+        - `y_pred`
+        - `residuals`.
 
     range_y_true : RangeData
         Global range of the true values.

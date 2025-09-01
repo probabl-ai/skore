@@ -68,7 +68,7 @@ class RocCurveDisplay(
 ):
     """ROC Curve visualization.
 
-    An instance of this class is should created by `EstimatorReport.metrics.roc()`.
+    An instance of this class should be created by `EstimatorReport.metrics.roc()`.
     You should not create an instance of this class directly.
 
     Parameters
@@ -76,20 +76,20 @@ class RocCurveDisplay(
     roc_curve : DataFrame
         The ROC curve data to display. The columns are
 
-        - "estimator_name"
-        - "split_index" (may be null)
-        - "label"
-        - "threshold"
-        - "fpr"
-        - "tpr".
+        - `estimator_name`
+        - `split_index` (may be null)
+        - `label`
+        - `threshold`
+        - `fpr`
+        - `tpr`.
 
     roc_auc : DataFrame
         The ROC AUC data to display. The columns are
 
-        - "estimator_name"
-        - "split_index" (may be null)
-        - "label"
-        - "roc_auc".
+        - `estimator_name`
+        - `split_index` (may be null)
+        - `label`
+        - `roc_auc`.
 
     pos_label : int, float, bool, str or None
         The class considered as positive. Only meaningful for binary classification.

@@ -50,7 +50,7 @@ class PrecisionRecallCurveDisplay(
 ):
     """Precision Recall visualization.
 
-    An instance of this class is should created by
+    An instance of this class should be created by
     `EstimatorReport.metrics.precision_recall()`. You should not create an
     instance of this class directly.
 
@@ -59,20 +59,20 @@ class PrecisionRecallCurveDisplay(
     precision_recall : DataFrame
         The precision-recall curve data to display. The columns are
 
-        - "estimator_name"
-        - "split_index" (may be null)
-        - "label"
-        - "threshold"
-        - "precision"
-        - "recall".
+        - `estimator_name`
+        - `split_index` (may be null)
+        - `label`
+        - `threshold`
+        - `precision`
+        - `recall`.
 
     average_precision : DataFrame
         The average precision data to display. The columns are
 
-        - "estimator_name"
-        - "split_index" (may be null)
-        - "label"
-        - "average_precision".
+        - `estimator_name`
+        - `split_index` (may be null)
+        - `label`
+        - `average_precision`.
 
     pos_label : int, float, bool, str or None
         The class considered as the positive class. If None, the class will not
