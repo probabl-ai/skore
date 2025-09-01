@@ -29,7 +29,7 @@ from skore._utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
 
-Stage = Literal["start", "end"]
+PipelineStep = Literal["start", "end"]
 
 Metric = Literal[
     "accuracy",
@@ -311,7 +311,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
         flat_index: bool = False,
-        at_step: Stage = "start",
+        at_step: PipelineStep = "start",
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
 
@@ -506,7 +506,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
         flat_index: bool = False,
-        at_step: Stage = "start",
+        at_step: PipelineStep = "start",
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
 
