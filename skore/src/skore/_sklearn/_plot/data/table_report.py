@@ -1,4 +1,5 @@
 import json
+from io import StringIO
 from typing import Any, Literal
 
 import numpy as np
@@ -697,4 +698,12 @@ class TableReportDisplay(
         """
         to_remove = ["dataframe", "sample_table"]
         data = {k: v for k, v in self.summary.items() if k not in to_remove}
+        data["extract"] = json.loads(
+            self.summary["dataframe"].head(3).to_json(orient="split")
+        )
+        with StringIO() as stream:
+            self.plot(kind="corr")
+            self.figure_.savefig(stream, format="svg", bbox_inches="tight")
+            data["cramer_v_correlation"] = stream.getvalue()
+
         return json.dumps(data, cls=JSONEncoder)
