@@ -366,7 +366,7 @@ def test_at_step_parameter_pipeline(at_step):
 
 
 def test_at_step_parameter_too_large():
-    """Test the behaviour when `at_step` is too large."""
+    """If `at_step` is too large, `permutation` should raise a ValueError."""
     X, y = make_regression(n_features=3, random_state=0)
 
     pipeline = make_pipeline(StandardScaler(), PCA(n_components=2), LinearRegression())
@@ -387,7 +387,7 @@ def test_at_step_parameter_too_large():
 
 
 def test_at_step_parameter_non_pipeline():
-    """Test the `at_step` parameter for regular estimators."""
+    """For non-pipeline estimators, changing at_step should not change the results."""
     X, y = make_regression(n_features=3, random_state=0)
 
     linear = LinearRegression()
@@ -403,5 +403,4 @@ def test_at_step_parameter_non_pipeline():
     result_start = report.feature_importance.permutation(seed=42, at_step=0)
     result_end = report.feature_importance.permutation(seed=42, at_step=-1)
 
-    # For non-pipeline estimators, start and end should give same results
     pd.testing.assert_frame_equal(result_start, result_end)
