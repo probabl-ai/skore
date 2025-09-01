@@ -368,11 +368,11 @@ def test_binary_classification_constructor(
     )
     display = report.metrics.roc()
 
-    index_columns = ["estimator_name", "split_index", "label"]
+    index_columns = ["estimator_name", "split", "label"]
     for df in [display.roc_curve, display.roc_auc]:
         assert all(col in df.columns for col in index_columns)
         assert df["estimator_name"].unique().tolist() == report.report_names_
-        assert df["split_index"].isnull().all()
+        assert df["split"].isnull().all()
         assert df["label"].unique() == 1
 
     assert len(display.roc_auc) == 2
@@ -396,11 +396,11 @@ def test_multiclass_classification_constructor(
     )
     display = report.metrics.roc()
 
-    index_columns = ["estimator_name", "split_index", "label"]
+    index_columns = ["estimator_name", "split", "label"]
     for df in [display.roc_curve, display.roc_auc]:
         assert all(col in df.columns for col in index_columns)
         assert df["estimator_name"].unique().tolist() == report.report_names_
-        assert df["split_index"].isnull().all()
+        assert df["split"].isnull().all()
         np.testing.assert_array_equal(df["label"].unique(), np.unique(y_train))
 
     assert len(display.roc_auc) == len(np.unique(y_train)) * 2

@@ -319,9 +319,9 @@ comparator.metrics.summarize(
 ).frame()
 
 # %%
-# Finally, we can even get a deeper understanding by analyzing each fold in the
+# Finally, we can even get a deeper understanding by analyzing each split in the
 # :class:`~skore.CrossValidationReport`.
-# Here, we plot the actual-vs-predicted values for each fold.
+# Here, we plot the actual-vs-predicted values for each split.
 
 # %%
 linear_model_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
