@@ -238,8 +238,9 @@ class Project:
 
         if not isinstance(report, EstimatorReport | CrossValidationReport):
             raise TypeError(
-                f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationRep"
-                f"ort` (found '{type(report)}')"
+                "Report must be a `skore.EstimatorReport` "
+                "or `skore.CrossValidationReport` "
+                f"(found '{type(report)}')"
             )
 
         return self.__project.put(key=key, report=report)
