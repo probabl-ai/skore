@@ -597,7 +597,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             feature_names = (
                 self._parent.estimator_.feature_names_in_
                 if hasattr(self._parent.estimator_, "feature_names_in_")
-                else [f"Feature #{i}" for i in range(X_.shape[1])]  # type: ignore
+                else [f"Feature #{i}" for i in range(estimator.n_features_in_)]  # type: ignore
             )
 
             # If there is more than one metric
