@@ -29,7 +29,7 @@ from skore._utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
 
-Stage = Literal["start", "end"]
+PipelineStep = Literal["start", "end"]
 
 Metric = Literal[
     "accuracy",
@@ -311,7 +311,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
         flat_index: bool = False,
-        stage: Stage = "start",
+        at_step: PipelineStep = "start",
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
 
@@ -389,7 +389,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             Whether to flatten the multi-index columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
-        stage : {"start", "end"}, default="start"
+        at_step : {"start", "end"}, default="start"
             If the estimator is a :class:`~sklearn.pipeline.Pipeline`, at which step of
             the pipeline the importance is computed:
 
@@ -469,7 +469,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> pipeline_report.feature_importance.permutation(
         ...    n_repeats=2,
         ...    seed=0,
-        ...    stage="end",
+        ...    at_step="end",
         ... )
         Repeat             Repeat #0  Repeat #1
         Metric Feature
@@ -489,7 +489,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             n_jobs=n_jobs,
             seed=seed,
             flat_index=flat_index,
-            stage=stage,
+            at_step=at_step,
         )
 
     def _feature_permutation(
@@ -506,7 +506,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
         flat_index: bool = False,
-        stage: Stage = "start",
+        at_step: PipelineStep = "start",
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
 
@@ -538,7 +538,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             self._parent._hash,
             "permutation_importance",
             data_source,
-            stage,
+            at_step,
         ]
         cache_key_parts.append(data_source_hash)
 
@@ -564,7 +564,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             # earlier.
             score = self._parent._cache[cache_key]
         else:
-            if stage == "start" or not isinstance(self._parent.estimator_, Pipeline):
+            if at_step == "start" or not isinstance(self._parent.estimator_, Pipeline):
                 estimator = self._parent.estimator_
                 X_transformed = X_
             else:

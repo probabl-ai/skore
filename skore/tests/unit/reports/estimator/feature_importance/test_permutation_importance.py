@@ -341,9 +341,9 @@ def test_not_fitted(regression_data):
         report.feature_importance.permutation()
 
 
-@pytest.mark.parametrize("stage", ["start", "end"])
-def test_stage_parameter_pipeline(stage):
-    """Test the stage parameter for permutation importance with a pipeline."""
+@pytest.mark.parametrize("at_step", ["start", "end"])
+def test_at_step_parameter_pipeline(at_step):
+    """Test the `at_step` parameter for permutation importance with a pipeline."""
     X, y = make_regression(n_features=3, random_state=0)
 
     pipeline = make_pipeline(StandardScaler(), LinearRegression())
@@ -356,7 +356,7 @@ def test_stage_parameter_pipeline(stage):
         y_test=y,
     )
 
-    result = report.feature_importance.permutation(seed=42, stage=stage)
+    result = report.feature_importance.permutation(seed=42, at_step=at_step)
 
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.nlevels == 2
@@ -364,8 +364,8 @@ def test_stage_parameter_pipeline(stage):
     assert result.shape[0] > 0
 
 
-def test_stage_parameter_non_pipeline():
-    """Test the stage parameter for regular estimators."""
+def test_at_step_parameter_non_pipeline():
+    """Test the `at_step` parameter for regular estimators."""
     X, y = make_regression(n_features=3, random_state=0)
 
     linear = LinearRegression()
@@ -378,8 +378,8 @@ def test_stage_parameter_non_pipeline():
         y_test=y,
     )
 
-    result_start = report.feature_importance.permutation(seed=42, stage="start")
-    result_end = report.feature_importance.permutation(seed=42, stage="end")
+    result_start = report.feature_importance.permutation(seed=42, at_step="start")
+    result_end = report.feature_importance.permutation(seed=42, at_step="end")
 
     # For non-pipeline estimators, start and end should give same results
     pd.testing.assert_frame_equal(result_start, result_end)
