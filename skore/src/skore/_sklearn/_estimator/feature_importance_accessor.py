@@ -577,6 +577,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     X_transformed = X_
                 elif isinstance(at_step, int):
                     pipeline = self._parent.estimator_
+                    if at_step >= len(pipeline.steps):
+                        raise ValueError(
+                            "at_step must be strictly smaller than the number of steps "
+                            f"in the Pipeline, which is {len(pipeline.steps)}; "
+                            f"got {at_step}"
+                        )
                     feature_eng, estimator = pipeline[:at_step], pipeline[at_step:]
                     X_transformed = feature_eng.transform(X_)
                 else:

@@ -365,6 +365,27 @@ def test_at_step_parameter_pipeline(at_step):
     assert result.shape[0] > 0
 
 
+def test_at_step_parameter_too_large():
+    """Test the behaviour when `at_step` is too large."""
+    X, y = make_regression(n_features=3, random_state=0)
+
+    pipeline = make_pipeline(StandardScaler(), PCA(n_components=2), LinearRegression())
+
+    report = EstimatorReport(
+        pipeline,
+        X_train=X,
+        y_train=y,
+        X_test=X,
+        y_test=y,
+    )
+
+    err_msg = (
+        "at_step must be strictly smaller than the number of steps in the Pipeline"
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.feature_importance.permutation(seed=42, at_step=8)
+
+
 def test_at_step_parameter_non_pipeline():
     """Test the `at_step` parameter for regular estimators."""
     X, y = make_regression(n_features=3, random_state=0)
