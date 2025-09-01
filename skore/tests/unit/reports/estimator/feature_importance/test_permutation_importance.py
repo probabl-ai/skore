@@ -343,8 +343,10 @@ def test_not_fitted(regression_data):
 
 
 @pytest.mark.parametrize("at_step", [0, -1, 1])
-def test_at_step_parameter_pipeline(at_step):
-    """Test the `at_step` parameter for permutation importance with a pipeline."""
+def test_at_step_parameter_pipeline_int(at_step):
+    """
+    Test the `at_step` integer parameter for permutation importance with a pipeline.
+    """
     X, y = make_regression(n_features=3, random_state=0)
 
     pipeline = make_pipeline(StandardScaler(), PCA(n_components=2), LinearRegression())
@@ -384,6 +386,51 @@ def test_at_step_parameter_too_large():
     )
     with pytest.raises(ValueError, match=err_msg):
         report.feature_importance.permutation(seed=42, at_step=8)
+
+
+def test_at_step_parameter_pipeline_str():
+    """
+    Test the `at_step` string parameter for permutation importance with a pipeline.
+    """
+    X, y = make_regression(n_features=3, random_state=0)
+
+    pipeline = make_pipeline(StandardScaler(), PCA(n_components=2), LinearRegression())
+
+    report = EstimatorReport(
+        pipeline,
+        X_train=X,
+        y_train=y,
+        X_test=X,
+        y_test=y,
+    )
+
+    result = report.feature_importance.permutation(seed=42, at_step="pca")
+
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.nlevels == 2
+    assert result.index.names == ["Metric", "Feature"]
+    assert result.shape[0] > 0
+
+
+def test_at_step_parameter_pipeline_str_wrong():
+    """
+    Test the `at_step` string parameter for permutation importance with a pipeline.
+    """
+    X, y = make_regression(n_features=3, random_state=0)
+
+    pipeline = make_pipeline(StandardScaler(), PCA(n_components=2), LinearRegression())
+
+    report = EstimatorReport(
+        pipeline,
+        X_train=X,
+        y_train=y,
+        X_test=X,
+        y_test=y,
+    )
+
+    err_msg = "'hello' is not in list"
+    with pytest.raises(ValueError, match=err_msg):
+        report.feature_importance.permutation(seed=42, at_step="hello")
 
 
 def test_at_step_parameter_non_pipeline():
