@@ -571,17 +571,14 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if not isinstance(self._parent.estimator_, Pipeline):
                 estimator = self._parent.estimator_
                 X_transformed = X_
-                feature_names_source = estimator
             else:
                 if at_step == 0:
                     estimator = self._parent.estimator_
                     X_transformed = X_
-                    feature_names_source = estimator
                 elif isinstance(at_step, int):
                     pipeline = self._parent.estimator_
                     feature_eng, estimator = pipeline[:at_step], pipeline[at_step:]
                     X_transformed = feature_eng.transform(X_)
-                    feature_names_source = self._parent.estimator_
                 else:
                     raise ValueError(f"at_step must be an integer; got {at_step!r}")
 
@@ -598,8 +595,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             score = sklearn_score.get("importances")
 
             feature_names = (
-                feature_names_source.feature_names_in_
-                if hasattr(feature_names_source, "feature_names_in_")
+                estimator.feature_names_in_
+                if hasattr(estimator, "feature_names_in_")
                 else [f"Feature #{i}" for i in range(estimator.n_features_in_)]
             )
 
