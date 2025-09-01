@@ -29,7 +29,7 @@ from skore._utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
 
-PipelineStep = int
+PipelineStep = int | str
 
 Metric = Literal[
     "accuracy",
@@ -389,7 +389,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             Whether to flatten the multi-index columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
-        at_step : int, default=0
+        at_step : int or str, default=0
             If the estimator is a :class:`~sklearn.pipeline.Pipeline`, at which step of
             the pipeline the importance is computed. If `n`, then the features that
             are evaluated are the ones *right before* the `n`-th step of the pipeline.
@@ -400,6 +400,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             - If -1, compute the importance just before the end of the pipeline (i.e.
               the importance of the fully engineered features, just before the actual
               prediction step).
+
+            If a string, will be searched among the pipeline's `named_steps`.
 
             Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
 
@@ -474,6 +476,17 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ...    n_repeats=2,
         ...    seed=0,
         ...    at_step=-1,
+        ... )
+        Repeat             Repeat #0  Repeat #1
+        Metric Feature
+        r2     Feature #0   0.699...   0.884...
+               Feature #1   2.318...   2.633...
+               Feature #2   0.028...   0.022...
+
+        >>> pipeline_report.feature_importance.permutation(
+        ...    n_repeats=2,
+        ...    seed=0,
+        ...    at_step="ridge",
         ... )
         Repeat             Repeat #0  Repeat #1
         Metric Feature
@@ -572,11 +585,13 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 estimator = self._parent.estimator_
                 X_transformed = X_
             else:
+                pipeline = self._parent.estimator_
+                if isinstance(at_step, str):
+                    at_step = list(pipeline.named_steps.keys()).index(at_step)
                 if at_step == 0:
                     estimator = self._parent.estimator_
                     X_transformed = X_
                 elif isinstance(at_step, int):
-                    pipeline = self._parent.estimator_
                     if at_step >= len(pipeline.steps):
                         raise ValueError(
                             "at_step must be strictly smaller than the number of steps "
