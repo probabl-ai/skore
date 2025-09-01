@@ -29,7 +29,7 @@ from skore._utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
 
-PipelineStep = Literal[0, -1]
+PipelineStep = int
 
 Metric = Literal[
     "accuracy",
@@ -389,9 +389,11 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             Whether to flatten the multi-index columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
-        at_step : {0, -1}, default=0
+        at_step : int, default=0
             If the estimator is a :class:`~sklearn.pipeline.Pipeline`, at which step of
-            the pipeline the importance is computed:
+            the pipeline the importance is computed. If `n`, then the features that
+            are evaluated are the ones *right before* the `n`-th step of the pipeline.
+            For instance,
 
             - If 0, compute the importance just before the start of the pipeline (i.e.
               the importance of the raw input features).
@@ -573,12 +575,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 if at_step == 0:
                     estimator = self._parent.estimator_
                     X_transformed = X_
-                elif at_step == -1:
+                elif isinstance(at_step, int):
                     pipeline = self._parent.estimator_
-                    X_transformed = pipeline[:-1].transform(X_)
-                    estimator = pipeline[-1]
+                    feature_eng, estimator = pipeline[:at_step], pipeline[at_step:]
+                    X_transformed = feature_eng.transform(X_)
                 else:
-                    raise ValueError(f"at_step must be 0 or -1; got {at_step!r}")
+                    raise ValueError(f"at_step must be an integer; got {at_step!r}")
 
             sklearn_score = permutation_importance(
                 estimator=estimator,

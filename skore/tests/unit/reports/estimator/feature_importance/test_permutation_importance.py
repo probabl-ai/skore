@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_regression
+from sklearn.decomposition import PCA
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import make_scorer, r2_score, root_mean_squared_error
@@ -341,12 +342,12 @@ def test_not_fitted(regression_data):
         report.feature_importance.permutation()
 
 
-@pytest.mark.parametrize("at_step", [0, -1])
+@pytest.mark.parametrize("at_step", [0, -1, 1])
 def test_at_step_parameter_pipeline(at_step):
     """Test the `at_step` parameter for permutation importance with a pipeline."""
     X, y = make_regression(n_features=3, random_state=0)
 
-    pipeline = make_pipeline(StandardScaler(), LinearRegression())
+    pipeline = make_pipeline(StandardScaler(), PCA(n_components=2), LinearRegression())
 
     report = EstimatorReport(
         pipeline,
