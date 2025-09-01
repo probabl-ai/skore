@@ -589,7 +589,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 if isinstance(at_step, str):
                     at_step = list(pipeline.named_steps.keys()).index(at_step)
                 if at_step == 0:
-                    estimator = self._parent.estimator_
+                    estimator = pipeline
                     X_transformed = X_
                 elif isinstance(at_step, int):
                     if at_step >= len(pipeline.steps):
@@ -626,17 +626,11 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 data = np.concatenate(
                     [v["importances"] for v in sklearn_score.values()]
                 )
-                n_repeats = data.shape[1]
                 index = pd.MultiIndex.from_product(
                     [sklearn_score, feature_names], names=("Metric", "Feature")
                 )
-                columns = pd.Index(
-                    (f"Repeat #{i}" for i in range(n_repeats)), name="Repeat"
-                )
-                score = pd.DataFrame(data=data, index=index, columns=columns)
             else:
                 data = score
-                n_repeats = data.shape[1]
 
                 # Get score name
                 if scoring is None:
@@ -658,10 +652,11 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                         [[scoring_name], feature_names], names=("Metric", "Feature")
                     )
 
-                columns = pd.Index(
-                    (f"Repeat #{i}" for i in range(n_repeats)), name="Repeat"
-                )
-                score = pd.DataFrame(data=data, index=index, columns=columns)
+            n_repeats = data.shape[1]
+            columns = pd.Index(
+                (f"Repeat #{i}" for i in range(n_repeats)), name="Repeat"
+            )
+            score = pd.DataFrame(data=data, index=index, columns=columns)
 
             if cache_key is not None:
                 # NOTE: for the moment, we will always store the permutation importance
