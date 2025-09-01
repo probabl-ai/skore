@@ -225,11 +225,10 @@ class CrossValidationReportPayload(ReportPayload):
             self.__sample_to_class_indices,
             min(len(self.__sample_to_class_indices), 200),
         )
-        dominant_classes = []
-        for bucket in buckets:
-            dominant_class = int(np.bincount(bucket).argmax())
-            dominant_classes.append(dominant_class)
-        return dominant_classes
+        return [
+            int(np.bincount(bucket).argmax())  # dominant class
+            for bucket in buckets
+        ]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
