@@ -566,15 +566,19 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             # earlier.
             score = self._parent._cache[cache_key]
         else:
-            if not isinstance(self._parent.estimator_, Pipeline) or at_step == 0:
+            if not isinstance(self._parent.estimator_, Pipeline):
                 estimator = self._parent.estimator_
                 X_transformed = X_
-            elif at_step == -1:
-                pipeline = self._parent.estimator_
-                X_transformed = pipeline[:-1].transform(X_)
-                estimator = pipeline[-1]
             else:
-                raise ValueError(f"at_step must be 0 or -1; got {at_step!r}")
+                if at_step == 0:
+                    estimator = self._parent.estimator_
+                    X_transformed = X_
+                elif at_step == -1:
+                    pipeline = self._parent.estimator_
+                    X_transformed = pipeline[:-1].transform(X_)
+                    estimator = pipeline[-1]
+                else:
+                    raise ValueError(f"at_step must be 0 or -1; got {at_step!r}")
 
             sklearn_score = permutation_importance(
                 estimator=estimator,
