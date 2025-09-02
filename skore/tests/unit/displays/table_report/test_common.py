@@ -15,19 +15,23 @@ from skore._sklearn._plot.data.table_report import (
 
 
 @pytest.fixture
-def estimator_report():
+def X_y():
     X, y = make_regression(n_samples=100, n_features=5, random_state=42)
     X = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(5)])
     y = pd.Series(y, name="Target_")
+    return X, y
+
+
+@pytest.fixture
+def estimator_report(X_y):
+    X, y = X_y
     split_data = train_test_split(X, y, random_state=0, as_dict=True)
     return EstimatorReport(tabular_pipeline("regressor"), **split_data)
 
 
 @pytest.fixture
-def cross_validation_report():
-    X, y = make_regression(n_samples=100, n_features=5, random_state=42)
-    X = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(5)])
-    y = pd.Series(y, name="Target_")
+def cross_validation_report(X_y):
+    X, y = X_y
     return CrossValidationReport(tabular_pipeline("regressor"), X=X, y=y)
 
 
@@ -107,8 +111,7 @@ def test_corr_plot(pyplot, estimator_report):
 
 
 def test_repr(display):
-    repr = display.__repr__()
-    assert repr == "<TableReportDisplay(...)>"
+    assert repr(display) == "<TableReportDisplay(...)>"
 
 
 def test_compute_contingency_table_error():
@@ -157,3 +160,11 @@ def test_compute_contingency_table(dtype):
 def test_json_dump(display):
     json_dict = json.loads(display._to_json())
     assert isinstance(json_dict, dict)
+
+
+def test_html_repr(display, X_y):
+    """Check the HTML representation of the `TableReportDisplay`."""
+    str_html = display._repr_html_()
+    X, _ = X_y
+    assert all(col in str_html for col in X.columns)
+    assert "<skrub-table-report" in str_html

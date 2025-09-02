@@ -264,13 +264,3 @@ def test_hue_plots_2d(pyplot, estimator_report):
     msg = "If 'x' and 'y' are categories, 'hue' must be continuous."
     with pytest.raises(ValueError, match=msg):
         display.plot(x="gender", y="division", hue="department_name")
-
-
-def test_html_repr(estimator_report):
-    """Check the HTML representation of the `TableReportDisplay`."""
-    display = estimator_report.data.analyze(data_source="train")
-    str_html = display._repr_html_()
-    for col in estimator_report.X_train.columns:
-        assert col in str_html
-
-    assert "<skrub-table-report" in str_html
