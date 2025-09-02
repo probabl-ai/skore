@@ -4,37 +4,37 @@ import numpy as np
 import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
-from sklearn.model_selection import train_test_split
-from skore import EstimatorReport
+from sklearn.datasets import make_regression
+from skore import CrossValidationReport, EstimatorReport, train_test_split
 from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._plot.data.table_report import (
     _compute_contingency_table,
     _resize_categorical_axis,
     _truncate_top_k_categories,
 )
-from skrub.datasets import fetch_employee_salaries
 
 
 @pytest.fixture
 def estimator_report():
-    data = fetch_employee_salaries()
-    X, y = data.X, data.y
-    X["gender"] = X["gender"].astype("category")
-    X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
-    X["cents"] = 100 * y
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-    return EstimatorReport(
-        tabular_pipeline("regressor"),
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-    )
+    X, y = make_regression(n_samples=100, n_features=5, random_state=42)
+    X = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(5)])
+    y = pd.Series(y, name="Target_")
+    split_data = train_test_split(X, y, random_state=0, as_dict=True)
+    return EstimatorReport(tabular_pipeline("regressor"), **split_data)
 
 
 @pytest.fixture
-def display(estimator_report):
-    return estimator_report.data.analyze()
+def cross_validation_report():
+    X, y = make_regression(n_samples=100, n_features=5, random_state=42)
+    X = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(5)])
+    y = pd.Series(y, name="Target_")
+    return CrossValidationReport(tabular_pipeline("regressor"), X=X, y=y)
+
+
+@pytest.fixture(params=["estimator_report", "cross_validation_report"])
+def display(request):
+    report = request.getfixturevalue(request.param)
+    return report.data.analyze()
 
 
 @pytest.mark.parametrize("dtype", ["category", "object"])
@@ -101,8 +101,8 @@ def test_corr_plot(pyplot, estimator_report):
     display = estimator_report.data.analyze(data_source="train")
     display.plot(kind="corr")
     assert isinstance(display.ax_.collections[0], QuadMesh)
-    assert len(display.ax_.get_xticklabels()) == 10
-    assert len(display.ax_.get_yticklabels()) == 10
+    assert len(display.ax_.get_xticklabels()) == 6
+    assert len(display.ax_.get_yticklabels()) == 6
     assert display.ax_.title.get_text() == "Cramer's V Correlation"
 
 
