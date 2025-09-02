@@ -44,7 +44,7 @@ class TestProject:
 
     @fixture(autouse=True)
     def monkeypatch_datetime(self, monkeypatch, Datetime):
-        monkeypatch.setattr("skore_local_project.project.datetime", Datetime)
+        monkeypatch.setattr("skore_local_project.metadata.datetime", Datetime)
 
     @fixture(autouse=True)
     def monkeypatch_metrics(self, monkeypatch, Datetime):
@@ -155,6 +155,7 @@ class TestProject:
                 "learner": regression.estimator_name_,
                 "dataset": joblib.hash(regression.y_test),
                 "ml_task": regression._ml_task,
+                "report_type": "estimator",
                 "rmse": float(hash("<rmse_test>")),
                 "log_loss": None,
                 "roc_auc": None,

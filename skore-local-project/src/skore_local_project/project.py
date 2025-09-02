@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import io
 import os
-from contextlib import suppress
-from datetime import datetime, timezone
 from operator import itemgetter
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,28 +12,13 @@ from uuid import uuid4
 
 import joblib
 import platformdirs
+from skore import CrossValidationReport, EstimatorReport
 
+from .metadata import CrossValidationReportMetadata, EstimatorReportMetadata
 from .storage import DiskCacheStorage
 
 if TYPE_CHECKING:
     from typing import TypedDict
-
-    from skore import EstimatorReport
-
-    class PersistedMetadata:  # noqa: D101
-        artifact_id: str
-        project_name: str
-        run_id: str
-        key: str
-        date: str
-        learner: str
-        dataset: str
-        ml_task: str
-        rmse: float | None
-        log_loss: float | None
-        roc_auc: float | None
-        fit_time: float
-        predict_time: float
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -185,7 +168,7 @@ class Project:
 
         return pickle_hash, pickle_bytes
 
-    def put(self, key: str, report: EstimatorReport):
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport):
         """
         Put a key-report pair to the local project.
 
@@ -196,7 +179,7 @@ class Project:
         ----------
         key : str
             The key to associate with ``report`` in the local project.
-        report : skore.EstimatorReport
+        report : skore.EstimatorReport | skore.CrossValidationReport
             The report to associate with ``key`` in the local project.
 
         Raises
@@ -207,11 +190,16 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        from skore import EstimatorReport
-
-        if not isinstance(report, EstimatorReport):
+        if isinstance(report, EstimatorReport):
+            Pickler = self  # EstimatorReportPickler
+            Metadata = EstimatorReportMetadata
+        elif isinstance(report, CrossValidationReport):
+            Pickler = self  # CrossValidationReportPickler
+            Metadata = CrossValidationReportMetadata
+        else:
             raise TypeError(
-                f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
+                f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationRep"
+                f"ort` (found '{type(report)}')"
             )
 
         if self.name not in self.__projects_storage:
@@ -220,44 +208,58 @@ class Project:
                 f"it had to be removed."
             )
 
-        pickle_hash, pickle_bytes = Project.pickle(report)
+        pickle_hash, pickle_bytes = Pickler.pickle(report)
 
         if pickle_hash not in self.__artifacts_storage:
             self.__artifacts_storage[pickle_hash] = pickle_bytes
 
-        def metric(name):
-            """
-            Compute ``report.metrics.name``.
+        self.__metadata_storage[uuid4().hex] = dict(
+            Metadata(
+                report=report,
+                artifact_id=pickle_hash,
+                project_name=self.name,
+                run_id=self.run_id,
+                key=key,
+            )
+        )
 
-            Notes
-            -----
-            Unavailable metrics return None.
+    def get(self, id: str) -> EstimatorReport:
+        """Get a persisted report by its id."""
+        if id in self.__artifacts_storage:
+            with io.BytesIO(self.__artifacts_storage[id]) as stream:
+                return joblib.load(stream)
 
-            All metrics whose report is not a scalar return None:
-            - ignore ``list[float]`` for multi-output ML task,
-            - ignore ``dict[str: float]`` for multi-classes ML task.
-            """
-            if hasattr(report.metrics, name):
-                with suppress(TypeError):
-                    return float(getattr(report.metrics, name)(data_source="test"))
-            return None
+        raise KeyError(id)
 
-        self.__metadata_storage[uuid4().hex] = {
-            "project_name": self.name,
-            "run_id": self.run_id,
-            "key": key,
-            "artifact_id": pickle_hash,
-            "date": datetime.now(timezone.utc).isoformat(),
-            "learner": report.estimator_name_,
-            "dataset": joblib.hash(report.y_test),
-            "ml_task": report._ml_task,
-            "rmse": metric("rmse"),
-            "log_loss": metric("log_loss"),
-            "roc_auc": metric("roc_auc"),
-            # timings must be calculated last
-            "fit_time": report.metrics.timings().get("fit_time"),
-            "predict_time": report.metrics.timings().get("predict_time_test"),
-        }
+    def summarize(self) -> list[Metadata]:
+        """Obtain metadata/metrics for all persisted reports."""
+        if self.name not in self.__projects_storage:
+            raise RuntimeError(
+                f"Bad condition: {repr(self)} does not exist anymore, "
+                f"it had to be removed."
+            )
+
+        return sorted(
+            (
+                {
+                    "id": value["artifact_id"],
+                    "run_id": value["run_id"],
+                    "key": value["key"],
+                    "date": value["date"],
+                    "learner": value["learner"],
+                    "dataset": value["dataset"],
+                    "ml_task": value["ml_task"],
+                    "rmse": value["rmse"],
+                    "log_loss": value["log_loss"],
+                    "roc_auc": value["roc_auc"],
+                    "fit_time": value["fit_time"],
+                    "predict_time": value["predict_time"],
+                }
+                for value in self.__metadata_storage.values()
+                if value["project_name"] == self.name
+            ),
+            key=itemgetter("date"),
+        )
 
     @property
     def reports(self):
@@ -269,36 +271,24 @@ class Project:
             )
 
         def get(id: str) -> EstimatorReport:
-            """Get a persisted report by its id."""
-            if id in self.__artifacts_storage:
-                with io.BytesIO(self.__artifacts_storage[id]) as stream:
-                    return joblib.load(stream)
+            """
+            Get a persisted report by its id.
 
-            raise KeyError(id)
+            .. deprecated
+              The ``Project.reports.get`` function will be removed in favor of
+              ``Project.get`` in a near future.
+            """
+            return self.get(id)
 
         def metadata() -> list[Metadata]:
-            """Obtain metadata for all persisted reports regardless of their run."""
-            return sorted(
-                (
-                    {
-                        "id": value["artifact_id"],
-                        "run_id": value["run_id"],
-                        "key": value["key"],
-                        "date": value["date"],
-                        "learner": value["learner"],
-                        "dataset": value["dataset"],
-                        "ml_task": value["ml_task"],
-                        "rmse": value["rmse"],
-                        "log_loss": value["log_loss"],
-                        "roc_auc": value["roc_auc"],
-                        "fit_time": value["fit_time"],
-                        "predict_time": value["predict_time"],
-                    }
-                    for value in self.__metadata_storage.values()
-                    if value["project_name"] == self.name
-                ),
-                key=itemgetter("date"),
-            )
+            """
+            Obtain metadata/metrics for all persisted reports.
+
+            .. deprecated
+              The ``Project.reports.metadata`` function will be removed in favor of
+              ``Project.summarize`` in a near future.
+            """
+            return self.summarize()
 
         return SimpleNamespace(get=get, metadata=metadata)
 
