@@ -35,9 +35,7 @@ def test_binary_classification(
         == [display.pos_label]
     )
     assert (
-        display.roc_curve["split_index"].nunique()
-        == display.roc_auc["split_index"].nunique()
-        == cv
+        display.roc_curve["split"].nunique() == display.roc_auc["split"].nunique() == cv
     )
 
     display.plot()
@@ -47,10 +45,10 @@ def test_binary_classification(
     for split_idx, line in enumerate(display.lines_):
         assert isinstance(line, mpl.lines.Line2D)
         roc_auc_split = display.roc_auc.query(
-            f"label == {pos_label} & split_index == {split_idx}"
+            f"label == {pos_label} & split == {split_idx}"
         )["roc_auc"].item()
         assert line.get_label() == (
-            f"Fold #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
+            f"Split #{split_idx + 1} (AUC = {roc_auc_split:0.2f})"
         )
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
 
@@ -97,9 +95,7 @@ def test_multiclass_classification(
         == list(class_labels)
     )
     assert (
-        display.roc_curve["split_index"].nunique()
-        == display.roc_auc["split_index"].nunique()
-        == cv
+        display.roc_curve["split"].nunique() == display.roc_auc["split"].nunique() == cv
     )
 
     display.plot()
@@ -190,16 +186,16 @@ def test_frame_binary_classification(logistic_binary_classification_data, with_r
     (estimator, X, y), cv = logistic_binary_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
-    expected_index = ["split_index"]
+    expected_index = ["split"]
     expected_columns = ["threshold", "fpr", "tpr"]
     if with_roc_auc:
         expected_columns.append("roc_auc")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["split_index"].nunique() == cv
+    assert df["split"].nunique() == cv
 
     if with_roc_auc:
-        for (_), group in df.groupby(["split_index"], observed=True):
+        for (_), group in df.groupby(["split"], observed=True):
             assert group["roc_auc"].nunique() == 1
 
 
@@ -211,17 +207,17 @@ def test_frame_multiclass_classification(
     (estimator, X, y), cv = logistic_multiclass_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     df = report.metrics.roc().frame(with_roc_auc=with_roc_auc)
-    expected_index = ["split_index", "label"]
+    expected_index = ["split", "label"]
     expected_columns = ["threshold", "fpr", "tpr"]
     if with_roc_auc:
         expected_columns.append("roc_auc")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["split_index"].nunique() == cv
+    assert df["split"].nunique() == cv
     assert df["label"].nunique() == len(np.unique(y))
 
     if with_roc_auc:
-        for (_, _), group in df.groupby(["split_index", "label"], observed=True):
+        for (_, _), group in df.groupby(["split", "label"], observed=True):
             assert group["roc_auc"].nunique() == 1
 
 
@@ -231,14 +227,14 @@ def test_legend(
     """Check the rendering of the legend for ROC curves with a
     `CrossValidationReport`."""
 
-    # binary classification <= 5 folds
+    # binary classification <= 5 splits
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     display = report.metrics.roc()
     display.plot()
     check_legend_position(display.ax_, loc="lower right", position="inside")
 
-    # binary classification > 5 folds
+    # binary classification > 5 splits
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=10)
     display = report.metrics.roc()
@@ -273,11 +269,11 @@ def test_binary_classification_constructor(logistic_binary_classification_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.roc()
 
-    index_columns = ["estimator_name", "split_index", "label"]
+    index_columns = ["estimator_name", "split", "label"]
     for df in [display.roc_curve, display.roc_auc]:
         assert all(col in df.columns for col in index_columns)
         assert df["estimator_name"].unique() == report.estimator_name_
-        assert df["split_index"].nunique() == cv
+        assert df["split"].nunique() == cv
         assert df["label"].unique() == 1
 
     assert len(display.roc_auc) == cv
@@ -289,11 +285,11 @@ def test_multiclass_classification_constructor(logistic_multiclass_classificatio
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.roc()
 
-    index_columns = ["estimator_name", "split_index", "label"]
+    index_columns = ["estimator_name", "split", "label"]
     for df in [display.roc_curve, display.roc_auc]:
         assert all(col in df.columns for col in index_columns)
         assert df["estimator_name"].unique() == report.estimator_name_
-        assert df["split_index"].unique().tolist() == list(range(cv))
+        assert df["split"].unique().tolist() == list(range(cv))
         np.testing.assert_array_equal(df["label"].unique(), np.unique(y))
 
     assert len(display.roc_auc) == len(np.unique(y)) * cv

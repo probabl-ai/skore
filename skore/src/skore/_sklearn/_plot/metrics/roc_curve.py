@@ -77,7 +77,7 @@ class RocCurveDisplay(
         The ROC curve data to display. The columns are
 
         - `estimator_name`
-        - `split_index` (may be null)
+        - `split` (may be null)
         - `label`
         - `threshold`
         - `fpr`
@@ -87,7 +87,7 @@ class RocCurveDisplay(
         The ROC AUC data to display. The columns are
 
         - `estimator_name`
-        - `split_index` (may be null)
+        - `split` (may be null)
         - `label`
         - `roc_auc`.
 
@@ -316,8 +316,8 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if self.ml_task == "binary-classification":
-            for split_idx in self.roc_curve["split_index"].cat.categories:
-                query = f"label == {self.pos_label!r} & split_index == {split_idx}"
+            for split_idx in self.roc_curve["split"].cat.categories:
+                query = f"label == {self.pos_label!r} & split == {split_idx}"
                 roc_curve = self.roc_curve.query(query)
                 roc_auc = self.roc_auc.query(query)["roc_auc"].item()
 
@@ -325,7 +325,7 @@ class RocCurveDisplay(
                     line_kwargs, roc_curve_kwargs[split_idx]
                 )
                 line_kwargs_validated["label"] = (
-                    f"Fold #{split_idx + 1} (AUC = {roc_auc:0.2f})"
+                    f"Split #{split_idx + 1} (AUC = {roc_auc:0.2f})"
                 )
 
                 (line,) = self.ax_.plot(
@@ -351,9 +351,9 @@ class RocCurveDisplay(
                 roc_auc = self.roc_auc.query(f"label == {class_label}")["roc_auc"]
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
-                for split_idx in self.roc_curve["split_index"].cat.categories:
+                for split_idx in self.roc_curve["split"].cat.categories:
                     roc_curve_label = self.roc_curve.query(
-                        f"label == {class_label} & split_index == {split_idx}"
+                        f"label == {class_label} & split == {split_idx}"
                     )
 
                     line_kwargs_validated = _validate_style_kwargs(
@@ -583,9 +583,7 @@ class RocCurveDisplay(
                     line_kwargs, roc_curve_kwargs[report_idx]
                 )
 
-                for split_idx, segment in roc_curve.groupby(
-                    "split_index", observed=True
-                ):
+                for split_idx, segment in roc_curve.groupby("split", observed=True):
                     if split_idx == 0:
                         label_kwargs = {
                             "label": (
@@ -649,9 +647,7 @@ class RocCurveDisplay(
 
                     roc_auc = self.roc_auc.query(query)["roc_auc"]
 
-                    for split_idx, segment in roc_curve.groupby(
-                        "split_index", observed=True
-                    ):
+                    for split_idx, segment in roc_curve.groupby("split", observed=True):
                         if split_idx == 0:
                             label_kwargs = {
                                 "label": (
@@ -913,7 +909,7 @@ class RocCurveDisplay(
                     roc_curve_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
-                            "split_index": y_true_i.split_index,
+                            "split": y_true_i.split,
                             "label": pos_label_validated,
                             "threshold": threshold,
                             "fpr": fpr,
@@ -924,7 +920,7 @@ class RocCurveDisplay(
                 roc_auc_records.append(
                     {
                         "estimator_name": y_true_i.estimator_name,
-                        "split_index": y_true_i.split_index,
+                        "split": y_true_i.split,
                         "label": pos_label_validated,
                         "roc_auc": roc_auc_i,
                     }
@@ -952,7 +948,7 @@ class RocCurveDisplay(
                         roc_curve_records.append(
                             {
                                 "estimator_name": y_true_i.estimator_name,
-                                "split_index": y_true_i.split_index,
+                                "split": y_true_i.split,
                                 "label": class_,
                                 "threshold": threshold,
                                 "fpr": fpr,
@@ -963,7 +959,7 @@ class RocCurveDisplay(
                     roc_auc_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
-                            "split_index": y_true_i.split_index,
+                            "split": y_true_i.split,
                             "label": class_,
                             "roc_auc": roc_auc_class_i,
                         }
@@ -971,7 +967,7 @@ class RocCurveDisplay(
 
         dtypes = {
             "estimator_name": "category",
-            "split_index": "category",
+            "split": "category",
             "label": "category",
         }
 
@@ -999,7 +995,7 @@ class RocCurveDisplay(
             report type:
 
             - `estimator_name`: Name of the estimator (when comparing estimators)
-            - `split_index`: Cross-validation fold ID (when doing cross-validation)
+            - `split`: Cross-validation split ID (when doing cross-validation)
             - `label`: Class label (for multiclass-classification)
             - `threshold`: Decision threshold
             - `fpr`: False Positive Rate
@@ -1035,11 +1031,11 @@ class RocCurveDisplay(
         if self.report_type == "estimator":
             indexing_columns = []
         elif self.report_type == "cross-validation":
-            indexing_columns = ["split_index"]
+            indexing_columns = ["split"]
         elif self.report_type == "comparison-estimator":
             indexing_columns = ["estimator_name"]
         else:  # self.report_type == "comparison-cross-validation"
-            indexing_columns = ["estimator_name", "split_index"]
+            indexing_columns = ["estimator_name", "split"]
 
         if self.ml_task == "binary-classification":
             columns = indexing_columns + statistical_columns

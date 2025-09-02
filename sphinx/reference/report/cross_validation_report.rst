@@ -38,7 +38,7 @@ Metrics
 -------
 
 The `metrics` accessor helps you to evaluate the statistical performance of your
-estimator across cross-validation folds.
+estimator across cross-validation splits.
 
 .. autosummary::
     :toctree: ../api/

@@ -32,7 +32,7 @@ Key features of Skore Lib
    All in just one line of code.
    Under the hood, we use efficient caching to make the computations blazing fast.
 
--  :class:`skore.CrossValidationReport`: get a skore estimator report for each fold
+-  :class:`skore.CrossValidationReport`: get a skore estimator report for each split
    of your cross-validation.
 
 -  :class:`skore.ComparisonReport`: benchmark your skore estimator reports.
