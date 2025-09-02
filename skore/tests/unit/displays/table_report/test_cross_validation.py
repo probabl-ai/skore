@@ -26,6 +26,7 @@ def test_table_report_display_constructor(display):
 
     assert hasattr(display, "summary")
     assert isinstance(display.summary, dict)
+    # checking that we have all the keys required to create a TableReportDisplay
     assert set(display.summary.keys()).issuperset(
         {
             "dataframe",
@@ -78,7 +79,8 @@ def test_table_report_display_frame(cross_validation_report):
         # pd.DataFrame(np.ones((100, 1)), columns=["Target"]),
     ],
 )
-def test_retrieve_data_as_frame(X, y):
+def test_display_creation(X, y):
+    """Check that the display can be created with different types of X and y."""
     report = CrossValidationReport(tabular_pipeline("regressor"), X=X, y=y)
     display = report.data.analyze()
     assert isinstance(display, TableReportDisplay)
