@@ -24,7 +24,7 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.11
     hooks:
-      - id: ruff
+      - id: ruff-check
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
         args: [--fix]
       - id: ruff-format
