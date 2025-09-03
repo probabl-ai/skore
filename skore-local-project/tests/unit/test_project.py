@@ -84,7 +84,7 @@ def monkeypatch_metrics(monkeypatch, Datetime):
         "skore.CrossValidationReport.metrics.rmse",
         lambda _, data_source, aggregate: DataFrame.from_dict(
             {
-                ("LinearRegression", "mean"): {
+                ("Ridge", "mean"): {
                     "RMSE": float(hash(f"<rmse_{aggregate}_{data_source}>"))
                 }
             }
