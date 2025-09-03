@@ -27,7 +27,7 @@ def report_type(report):
 
 
 @dataclass
-class EstimatorReportMetadata:
+class Metadata:
     report: InitVar[EstimatorReport]
 
     artifact_id: str
@@ -36,9 +36,26 @@ class EstimatorReportMetadata:
     key: str
     date: str = field(init=False)
     learner: str = field(init=False)
-    dataset: str = field(init=False)
     ml_task: str = field(init=False)
     report_type: str = field(init=False)
+    dataset: str = field(init=False)
+
+    def __iter__(self):
+        for field in fields(self):
+            yield (field.name, getattr(self, field.name))
+
+    def __post_init__(self, report: EstimatorReport | CrossValidationReport):
+        self.date = datetime.now(timezone.utc).isoformat()
+        self.learner = report.estimator_name_
+        self.ml_task = report.ml_task
+        self.report_type = report_type(report)
+        self.dataset = joblib.hash(
+            report.y_test if hasattr(report, "y_test") else report.y
+        )
+
+
+@dataclass
+class EstimatorReportMetadata(Metadata):
     rmse: float | None = field(init=False)
     log_loss: float | None = field(init=False)
     roc_auc: float | None = field(init=False)
@@ -53,36 +70,19 @@ class EstimatorReportMetadata:
         return cast_to_float(getattr(report.metrics, name)(data_source="test"))
 
     def __post_init__(self, report: EstimatorReport):
-        self.date = datetime.now(timezone.utc).isoformat()
-        self.learner = report.estimator_name_
-        self.dataset = joblib.hash(report.y_test)
-        self.ml_task = report.ml_task
-        self.report_type = report_type(report)
+        super().__post_init__(report)
+
         self.rmse = self.metric(report, "rmse")
         self.log_loss = self.metric(report, "log_loss")
         self.roc_auc = self.metric(report, "roc_auc")
+
         # timings must be calculated last
         self.fit_time = report.metrics.timings().get("fit_time")
         self.predict_time = report.metrics.timings().get("predict_time_test")
 
-    def __iter__(self):
-        for field in fields(self):
-            yield (field.name, getattr(self, field.name))
-
 
 @dataclass
-class CrossValidationReportMetadata:
-    report: InitVar[CrossValidationReport]
-
-    artifact_id: str
-    project_name: str
-    run_id: str
-    key: str
-    date: str = field(init=False)
-    learner: str = field(init=False)
-    dataset: str = field(init=False)
-    ml_task: str = field(init=False)
-    report_type: str = field(init=False)
+class CrossValidationReportMetadata(Metadata):
     rmse_mean: float | None = field(init=False)
     log_loss_mean: float | None = field(init=False)
     roc_auc_mean: float | None = field(init=False)
@@ -113,18 +113,12 @@ class CrossValidationReportMetadata:
         return cast_to_float(series.iloc[0])
 
     def __post_init__(self, report: CrossValidationReport):
-        self.date = datetime.now(timezone.utc).isoformat()
-        self.learner = report.estimator_name_
-        self.dataset = joblib.hash(report.y)
-        self.ml_task = report.ml_task
-        self.report_type = report_type(report)
+        super().__post_init__(report)
+
         self.rmse_mean = self.metric(report, "rmse")
         self.log_loss_mean = self.metric(report, "log_loss")
         self.roc_auc_mean = self.metric(report, "roc_auc")
+
         # timings must be calculated last
         self.fit_time_mean = self.timing(report, "Fit time (s)")
         self.predict_time_mean = self.timing(report, "Predict time test (s)")
-
-    def __iter__(self):
-        for field in fields(self):
-            yield (field.name, getattr(self, field.name))
