@@ -223,44 +223,6 @@ class Project:
             )
         )
 
-    def get(self, id: str) -> EstimatorReport:
-        """Get a persisted report by its id."""
-        if id in self.__artifacts_storage:
-            with io.BytesIO(self.__artifacts_storage[id]) as stream:
-                return joblib.load(stream)
-
-        raise KeyError(id)
-
-    def summarize(self) -> list[Metadata]:
-        """Obtain metadata/metrics for all persisted reports."""
-        if self.name not in self.__projects_storage:
-            raise RuntimeError(
-                f"Bad condition: {repr(self)} does not exist anymore, "
-                f"it had to be removed."
-            )
-
-        return sorted(
-            (
-                {
-                    "id": value["artifact_id"],
-                    "run_id": value["run_id"],
-                    "key": value["key"],
-                    "date": value["date"],
-                    "learner": value["learner"],
-                    "dataset": value["dataset"],
-                    "ml_task": value["ml_task"],
-                    "rmse": value["rmse"],
-                    "log_loss": value["log_loss"],
-                    "roc_auc": value["roc_auc"],
-                    "fit_time": value["fit_time"],
-                    "predict_time": value["predict_time"],
-                }
-                for value in self.__metadata_storage.values()
-                if value["project_name"] == self.name
-            ),
-            key=itemgetter("date"),
-        )
-
     @property
     def reports(self):
         """Accessor for interaction with the persisted reports."""
@@ -271,24 +233,36 @@ class Project:
             )
 
         def get(id: str) -> EstimatorReport:
-            """
-            Get a persisted report by its id.
+            """Get a persisted report by its id."""
+            if id in self.__artifacts_storage:
+                with io.BytesIO(self.__artifacts_storage[id]) as stream:
+                    return joblib.load(stream)
 
-            .. deprecated
-              The ``Project.reports.get`` function will be removed in favor of
-              ``Project.get`` in a near future.
-            """
-            return self.get(id)
+            raise KeyError(id)
 
         def metadata() -> list[Metadata]:
-            """
-            Obtain metadata/metrics for all persisted reports.
-
-            .. deprecated
-              The ``Project.reports.metadata`` function will be removed in favor of
-              ``Project.summarize`` in a near future.
-            """
-            return self.summarize()
+            """Obtain metadata/metrics for all persisted reports."""
+            return sorted(
+                (
+                    {
+                        "id": value["artifact_id"],
+                        "run_id": value["run_id"],
+                        "key": value["key"],
+                        "date": value["date"],
+                        "learner": value["learner"],
+                        "dataset": value["dataset"],
+                        "ml_task": value["ml_task"],
+                        "rmse": value["rmse"],
+                        "log_loss": value["log_loss"],
+                        "roc_auc": value["roc_auc"],
+                        "fit_time": value["fit_time"],
+                        "predict_time": value["predict_time"],
+                    }
+                    for value in self.__metadata_storage.values()
+                    if value["project_name"] == self.name
+                ),
+                key=itemgetter("date"),
+            )
 
         return SimpleNamespace(get=get, metadata=metadata)
 
