@@ -193,10 +193,8 @@ class Project:
         Metadata: type[EstimatorReportMetadata] | type[CrossValidationReportMetadata]
 
         if isinstance(report, EstimatorReport):
-            Pickler = self  # EstimatorReportPickler
             Metadata = EstimatorReportMetadata
         elif isinstance(report, CrossValidationReport):
-            Pickler = self  # CrossValidationReportPickler
             Metadata = CrossValidationReportMetadata
         else:
             raise TypeError(
@@ -210,7 +208,7 @@ class Project:
                 f"it had to be removed."
             )
 
-        pickle_hash, pickle_bytes = Pickler.pickle(report)
+        pickle_hash, pickle_bytes = Project.pickle(report)
 
         if pickle_hash not in self.__artifacts_storage:
             self.__artifacts_storage[pickle_hash] = pickle_bytes
