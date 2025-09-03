@@ -145,7 +145,7 @@ class Project:
         return self.__workspace
 
     @staticmethod
-    def pickle(report: EstimatorReport) -> tuple[str, bytes]:
+    def pickle(report: EstimatorReport | CrossValidationReport) -> tuple[str, bytes]:
         """
         Pickle ``report``, return the bytes and the corresponding hash.
 
@@ -153,18 +153,18 @@ class Project:
         -----
         The report is pickled without its cache, to avoid salting the hash.
         """
-        cache = report._cache
+        reports = [report] + getattr(report, "estimator_reports_", [])
+        caches = [report_to_clear.__dict__.pop("_cache") for report_to_clear in reports]
 
         try:
-            report._cache = {}
-
             with io.BytesIO() as stream:
                 joblib.dump(report, stream)
 
                 pickle_bytes = stream.getvalue()
                 pickle_hash = joblib.hash(pickle_bytes)
         finally:
-            report._cache = cache
+            for report, cache in zip(reports, caches, strict=True):
+                report._cache = cache
 
         return pickle_hash, pickle_bytes
 
@@ -189,6 +189,8 @@ class Project:
         """
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
+
+        Metadata: type[EstimatorReportMetadata] | type[CrossValidationReportMetadata]
 
         if isinstance(report, EstimatorReport):
             Pickler = self  # EstimatorReportPickler

@@ -1,3 +1,6 @@
+"""Class definition of the ``metadata`` objects used by ``project``."""
+
+from abc import ABC
 from contextlib import suppress
 from dataclasses import InitVar, dataclass, field, fields
 from datetime import datetime, timezone
@@ -17,7 +20,8 @@ def cast_to_float(value: Any) -> float | None:
     return None
 
 
-def report_type(report):
+def report_type(report: EstimatorReport | CrossValidationReport):
+    """Human readable type of a report."""
     if isinstance(report, CrossValidationReport):
         return "cross-validation"
     if isinstance(report, EstimatorReport):
@@ -26,9 +30,9 @@ def report_type(report):
     raise TypeError
 
 
-@dataclass
-class Metadata:
-    report: InitVar[EstimatorReport]
+@dataclass(kw_only=True)
+class Metadata(ABC):
+    report: InitVar[EstimatorReport | CrossValidationReport]
 
     artifact_id: str
     project_name: str
@@ -41,7 +45,7 @@ class Metadata:
     dataset: str = field(init=False)
 
     def __iter__(self):
-        for field in fields(self):
+        for field in fields(self):  # noqa: F402
             yield (field.name, getattr(self, field.name))
 
     def __post_init__(self, report: EstimatorReport | CrossValidationReport):
@@ -54,7 +58,7 @@ class Metadata:
         )
 
 
-@dataclass
+@dataclass(kw_only=True)
 class EstimatorReportMetadata(Metadata):
     rmse: float | None = field(init=False)
     log_loss: float | None = field(init=False)
@@ -69,7 +73,7 @@ class EstimatorReportMetadata(Metadata):
 
         return cast_to_float(getattr(report.metrics, name)(data_source="test"))
 
-    def __post_init__(self, report: EstimatorReport):
+    def __post_init__(self, report: EstimatorReport):  # type: ignore[override]
         super().__post_init__(report)
 
         self.rmse = self.metric(report, "rmse")
@@ -81,7 +85,7 @@ class EstimatorReportMetadata(Metadata):
         self.predict_time = report.metrics.timings().get("predict_time_test")
 
 
-@dataclass
+@dataclass(kw_only=True)
 class CrossValidationReportMetadata(Metadata):
     rmse_mean: float | None = field(init=False)
     log_loss_mean: float | None = field(init=False)
@@ -112,7 +116,7 @@ class CrossValidationReportMetadata(Metadata):
 
         return cast_to_float(series.iloc[0])
 
-    def __post_init__(self, report: CrossValidationReport):
+    def __post_init__(self, report: CrossValidationReport):  # type: ignore[override]
         super().__post_init__(report)
 
         self.rmse_mean = self.metric(report, "rmse")
