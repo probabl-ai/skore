@@ -75,7 +75,7 @@ class DiskCacheStorage:
 
     def __iter__(self) -> Iterator[str]:
         """
-        Yield the keys in the storage.
+        Yield the keys in the storage in insertion order.
 
         Returns
         -------
@@ -139,7 +139,7 @@ class DiskCacheStorage:
 
     def keys(self) -> Iterator[str]:
         """
-        Get an iterator over the keys in the storage.
+        Get an iterator over the keys in the storage in insertion order.
 
         Returns
         -------
@@ -147,11 +147,11 @@ class DiskCacheStorage:
             An iterator yielding all keys in the storage.
         """
         with Cache(self.directory) as storage:
-            return storage.iterkeys()
+            yield from storage
 
     def values(self) -> Iterator[Any]:
         """
-        Get an iterator over the values in the storage.
+        Get an iterator over the values in the storage in insertion order.
 
         Returns
         -------
@@ -159,12 +159,12 @@ class DiskCacheStorage:
             An iterator yielding all values in the storage.
         """
         with Cache(self.directory) as storage:
-            for key in storage.iterkeys():
+            for key in storage:
                 yield storage[key]
 
     def items(self) -> Iterator[tuple[str, Any]]:
         """
-        Get an iterator over the (key, value) pairs in the storage.
+        Get an iterator over the (key, value) pairs in the storage in insertion order.
 
         Returns
         -------
@@ -172,7 +172,7 @@ class DiskCacheStorage:
             An iterator yielding all (key, value) pairs in the storage.
         """
         with Cache(self.directory) as storage:
-            for key in storage.iterkeys():
+            for key in storage:
                 yield (key, storage[key])
 
     def __repr__(self) -> str:
