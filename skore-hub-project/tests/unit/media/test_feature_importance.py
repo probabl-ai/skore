@@ -1,6 +1,7 @@
 from functools import partialmethod
 from inspect import signature
 
+from pandas import DataFrame
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
 from skore_hub_project.media import (
@@ -9,10 +10,6 @@ from skore_hub_project.media import (
     PermutationTest,
     PermutationTrain,
 )
-
-
-def serialize(dataframe):
-    return dataframe.fillna("NaN").to_dict(orient="tight")
 
 
 @fixture(autouse=True)
@@ -63,6 +60,14 @@ def monkeypatch_permutation(monkeypatch):
             {"method": "coefficients"},
             id="Coefficients",
         ),
+        param(
+            Coefficients,
+            "cv_regression",
+            "coefficients",
+            "Feature importance - Coefficients",
+            {"method": "coefficients"},
+            id="Coefficients",
+        ),
     ),
 )
 def test_feature_importance(
@@ -79,8 +84,13 @@ def test_feature_importance(
     function = getattr(report.feature_importance, accessor)
     function_parameters = signature(function).parameters
     function_kwargs = {k: v for k, v in attributes.items() if k in function_parameters}
-    dataframe = function(**function_kwargs)
-    dataframe_serialized = serialize(dataframe)
+
+    result = function(**function_kwargs)
+
+    if not isinstance(result, DataFrame):
+        result = result.frame()
+
+    serialized = result.fillna("NaN").to_dict(orient="tight")
 
     # available accessor
     assert Media(report=report).model_dump() == {
@@ -91,7 +101,7 @@ def test_feature_importance(
         "parameters": {},
         "representation": {
             "media_type": "application/vnd.dataframe",
-            "value": dataframe_serialized,
+            "value": serialized,
         },
     }
 
