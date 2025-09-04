@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import io
 import os
-from contextlib import suppress
-from datetime import datetime, timezone
 from operator import itemgetter
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,28 +12,13 @@ from uuid import uuid4
 
 import joblib
 import platformdirs
+from skore import CrossValidationReport, EstimatorReport
 
+from .metadata import CrossValidationReportMetadata, EstimatorReportMetadata
 from .storage import DiskCacheStorage
 
 if TYPE_CHECKING:
     from typing import TypedDict
-
-    from skore import EstimatorReport
-
-    class PersistedMetadata:  # noqa: D101
-        artifact_id: str
-        project_name: str
-        run_id: str
-        key: str
-        date: str
-        learner: str
-        dataset: str
-        ml_task: str
-        rmse: float | None
-        log_loss: float | None
-        roc_auc: float | None
-        fit_time: float
-        predict_time: float
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -162,7 +145,7 @@ class Project:
         return self.__workspace
 
     @staticmethod
-    def pickle(report: EstimatorReport) -> tuple[str, bytes]:
+    def pickle(report: EstimatorReport | CrossValidationReport) -> tuple[str, bytes]:
         """
         Pickle ``report``, return the bytes and the corresponding hash.
 
@@ -170,22 +153,22 @@ class Project:
         -----
         The report is pickled without its cache, to avoid salting the hash.
         """
-        cache = report._cache
+        reports = [report] + getattr(report, "estimator_reports_", [])
+        caches = [report_to_clear.__dict__.pop("_cache") for report_to_clear in reports]
 
         try:
-            report._cache = {}
-
             with io.BytesIO() as stream:
                 joblib.dump(report, stream)
 
                 pickle_bytes = stream.getvalue()
                 pickle_hash = joblib.hash(pickle_bytes)
         finally:
-            report._cache = cache
+            for report, cache in zip(reports, caches, strict=True):
+                report._cache = cache
 
         return pickle_hash, pickle_bytes
 
-    def put(self, key: str, report: EstimatorReport):
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport):
         """
         Put a key-report pair to the local project.
 
@@ -196,7 +179,7 @@ class Project:
         ----------
         key : str
             The key to associate with ``report`` in the local project.
-        report : skore.EstimatorReport
+        report : skore.EstimatorReport | skore.CrossValidationReport
             The report to associate with ``key`` in the local project.
 
         Raises
@@ -207,11 +190,16 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        from skore import EstimatorReport
+        Metadata: type[EstimatorReportMetadata] | type[CrossValidationReportMetadata]
 
-        if not isinstance(report, EstimatorReport):
+        if isinstance(report, EstimatorReport):
+            Metadata = EstimatorReportMetadata
+        elif isinstance(report, CrossValidationReport):
+            Metadata = CrossValidationReportMetadata
+        else:
             raise TypeError(
-                f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
+                f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationRep"
+                f"ort` (found '{type(report)}')"
             )
 
         if self.name not in self.__projects_storage:
@@ -225,39 +213,15 @@ class Project:
         if pickle_hash not in self.__artifacts_storage:
             self.__artifacts_storage[pickle_hash] = pickle_bytes
 
-        def metric(name):
-            """
-            Compute ``report.metrics.name``.
-
-            Notes
-            -----
-            Unavailable metrics return None.
-
-            All metrics whose report is not a scalar return None:
-            - ignore ``list[float]`` for multi-output ML task,
-            - ignore ``dict[str: float]`` for multi-classes ML task.
-            """
-            if hasattr(report.metrics, name):
-                with suppress(TypeError):
-                    return float(getattr(report.metrics, name)(data_source="test"))
-            return None
-
-        self.__metadata_storage[uuid4().hex] = {
-            "project_name": self.name,
-            "run_id": self.run_id,
-            "key": key,
-            "artifact_id": pickle_hash,
-            "date": datetime.now(timezone.utc).isoformat(),
-            "learner": report.estimator_name_,
-            "dataset": joblib.hash(report.y_test),
-            "ml_task": report._ml_task,
-            "rmse": metric("rmse"),
-            "log_loss": metric("log_loss"),
-            "roc_auc": metric("roc_auc"),
-            # timings must be calculated last
-            "fit_time": report.metrics.timings().get("fit_time"),
-            "predict_time": report.metrics.timings().get("predict_time_test"),
-        }
+        self.__metadata_storage[uuid4().hex] = dict(
+            Metadata(
+                report=report,
+                artifact_id=pickle_hash,
+                project_name=self.name,
+                run_id=self.run_id,
+                key=key,
+            )
+        )
 
     @property
     def reports(self):
@@ -277,7 +241,7 @@ class Project:
             raise KeyError(id)
 
         def metadata() -> list[Metadata]:
-            """Obtain metadata for all persisted reports regardless of their run."""
+            """Obtain metadata/metrics for all persisted reports."""
             return sorted(
                 (
                     {
