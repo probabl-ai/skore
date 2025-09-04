@@ -181,9 +181,9 @@ def test_constructor(display):
 @pytest.mark.parametrize(
     "X",
     [
-        np.random.rand(100, 5),
+        np.ones((100, 5)),
         pd.DataFrame(
-            np.random.rand(100, 5), columns=[f"Feature number {i}" for i in range(5)]
+            np.ones((100, 5)), columns=[f"Feature number {i}" for i in range(5)]
         ),
     ],
 )
