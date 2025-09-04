@@ -6,6 +6,7 @@ import pytest
 from matplotlib.collections import QuadMesh
 from skore import Display, EstimatorReport, train_test_split
 from skore._sklearn._plot.data.table_report import (
+    TableReportDisplay,
     _compute_contingency_table,
     _resize_categorical_axis,
     _truncate_top_k_categories,
@@ -175,6 +176,31 @@ def test_constructor(display):
 
     assert hasattr(display, "summary")
     assert isinstance(display.summary, dict)
+
+
+@pytest.mark.parametrize(
+    "X",
+    [
+        np.random.rand(100, 5),
+        pd.DataFrame(
+            np.random.rand(100, 5), columns=[f"Feature number {i}" for i in range(5)]
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "y",
+    [
+        np.ones((100, 1)),
+        np.ones(100),
+        pd.Series(np.ones(100)),
+        pd.DataFrame(np.ones((100, 1)), columns=["Target"]),
+    ],
+)
+def test_X_y(X, y):
+    split_data = train_test_split(X, y, random_state=0, as_dict=True)
+    report = EstimatorReport(tabular_learner("regressor"), **split_data)
+    display = report.data.analyze()
+    assert isinstance(display, TableReportDisplay)
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
