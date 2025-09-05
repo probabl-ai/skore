@@ -1,13 +1,6 @@
 from pydantic import ValidationError
-from pytest import fixture, mark, param, raises
+from pytest import mark, param, raises
 from skore_hub_project.media import TableReportTest, TableReportTrain
-
-
-@fixture(autouse=True)
-def monkeypatch_to_json(monkeypatch):
-    monkeypatch.setattr(
-        "skore._sklearn._plot.TableReportDisplay._to_json", lambda self: "[0,1]"
-    )
 
 
 @mark.parametrize(
@@ -21,6 +14,8 @@ def test_table_report(binary_classification, Media, data_source):
     media = Media(report=binary_classification)
     media_dict = media.model_dump()
 
+    representation_value = media_dict["representation"]["value"]
+    media_dict["representation"]["value"] = {}
     assert media_dict == {
         "key": "table_report",
         "verbose_name": "Table report",
@@ -29,9 +24,19 @@ def test_table_report(binary_classification, Media, data_source):
         "parameters": {},
         "representation": {
             "media_type": "application/vnd.skrub.table-report.v1+json",
-            "value": [0, 1],
+            "value": {},
         },
     }
+    assert set(
+        [
+            "n_rows",
+            "n_columns",
+            "n_constant_columns",
+            "extract",
+            "columns",
+            "top_associations",
+        ]
+    ).issubset(representation_value.keys())
 
     # wrong type
     with raises(ValidationError):

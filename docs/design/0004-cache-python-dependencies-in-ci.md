@@ -7,7 +7,7 @@ decision-makers: ["@thomass-dev"]
 
 ## Context and Problem Statement
 
-The choice was made to support the 3 latests versions of `scikit-learn`, jointly with
+The choice was made to support the 3 latest versions of `scikit-learn`, jointly with
 the OS team.
 
 To date, we already have a CI running `skore` tests with 2 OS, and 4 python versions.

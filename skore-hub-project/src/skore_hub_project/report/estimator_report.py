@@ -4,7 +4,6 @@ from functools import cached_property
 from typing import ClassVar, cast
 
 from pydantic import Field, computed_field
-from skore import EstimatorReport
 
 from skore_hub_project.artefact import EstimatorReportArtefact
 from skore_hub_project.media import (
@@ -45,6 +44,7 @@ from skore_hub_project.metric import (
     RocAucTrain,
 )
 from skore_hub_project.metric.metric import Metric
+from skore_hub_project.protocol import EstimatorReport
 from skore_hub_project.report.report import ReportPayload
 
 

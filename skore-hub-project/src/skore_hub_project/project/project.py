@@ -9,9 +9,9 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import joblib
-from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.client.client import Client, HTTPStatusError, HUBClient
+from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 if TYPE_CHECKING:
     from typing import TypedDict

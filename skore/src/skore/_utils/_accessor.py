@@ -191,3 +191,19 @@ def _check_comparison_report_sub_estimators_have_coef() -> Callable:
         return all(_check_has_coef(e) for e in parent_estimators)
 
     return check
+
+
+########################################################################################
+# Accessor related to `ComparisonReport`
+########################################################################################
+
+
+def _check_any_sub_report_has_metric(metric: str) -> Callable[[Any], bool]:
+    """Check whether any sub-report of the ComparisonReport supports `metric`."""
+
+    def check(accessor: Any) -> bool:
+        return any(
+            hasattr(report.metrics, metric) for report in accessor._parent.reports_
+        )
+
+    return check

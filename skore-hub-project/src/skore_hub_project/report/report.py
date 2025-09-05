@@ -5,12 +5,12 @@ from functools import cached_property
 from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
-from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project import Project
 from skore_hub_project.artefact.artefact import Artefact
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric.metric import Metric
+from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 
 class ReportPayload(ABC, BaseModel):

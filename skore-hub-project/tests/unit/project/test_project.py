@@ -71,9 +71,9 @@ def monkeypatch_permutation(monkeypatch):
 
 
 @fixture(autouse=True)
-def monkeypatch_to_json(monkeypatch):
+def monkeypatch_table_report_representation(monkeypatch):
     monkeypatch.setattr(
-        "skore._sklearn._plot.TableReportDisplay._to_json", lambda self: "[0,1]"
+        "skore_hub_project.media.data.TableReport.representation", lambda self: {}
     )
 
 

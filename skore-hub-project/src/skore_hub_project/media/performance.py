@@ -8,7 +8,8 @@ from typing import ClassVar, Literal, cast
 
 from matplotlib import pyplot as plt
 from pydantic import Field, computed_field
-from skore import CrossValidationReport, EstimatorReport
+
+from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 from .media import Media, Representation
 
