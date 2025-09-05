@@ -7,7 +7,6 @@ from typing import ClassVar, Literal, cast
 from pydantic import Field, computed_field
 from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
-from skore import CrossValidationReport
 
 from skore_hub_project.artefact import CrossValidationReportArtefact
 from skore_hub_project.media import (
@@ -55,6 +54,7 @@ from skore_hub_project.metric import (
     RocAucTrainStd,
 )
 from skore_hub_project.metric.metric import Metric
+from skore_hub_project.protocol import CrossValidationReport
 from skore_hub_project.report.estimator_report import EstimatorReportPayload
 from skore_hub_project.report.report import ReportPayload
 
