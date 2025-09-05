@@ -49,21 +49,18 @@ class TableReport(Media):  # noqa: D101
             }
 
             table_report_display = function(**function_kwargs)
-            to_remove = ["dataframe", "sample_table"]
-            table_report_representation = {
-                k: v
-                for k, v in table_report_display.summary.items()
-                if k not in to_remove
-            }
-            table_report_representation["extract"] = (
-                table_report_display.summary["dataframe"]
-                .head(3)
-                .to_dict(orient="split")
+            table_report = table_report_display.summary
+
+            table_report["extract"] = (
+                table_report["dataframe"].head(3).to_dict(orient="split")
             )
+
+            del table_report["dataframe"]
+            del table_report["sample_table"]
 
             return Representation(
                 media_type="application/vnd.skrub.table-report.v1+json",
-                value=_to_native(table_report_representation),
+                value=_to_native(table_report),
             )
 
 
