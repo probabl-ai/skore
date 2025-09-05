@@ -126,7 +126,7 @@ class Project:
         return run["id"]
 
     @ensure_project_is_created
-    def put(self, key: str, report: EstimatorReport):
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport):
         """
         Put a key-report pair to the hub project.
 
@@ -158,8 +158,9 @@ class Project:
             url = f"projects/{self.tenant}/{self.name}/cross-validation-reports"
         else:
             raise TypeError(
-                f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationRep"
-                f"ort` (found '{type(report)}')"
+                "Report must be a `skore.EstimatorReport` "
+                "or `skore.CrossValidationReport` "
+                f"(found '{type(report)}')"
             )
 
         payload = Payload(project=self, key=key, report=report)
