@@ -14,6 +14,7 @@ target = [0] * 100 + [1] * 100 + [2] * 300
         pytest.param(target, id="list"),
         pytest.param(pandas.Series(target), id="pandas-series"),
         pytest.param(numpy.array(target), id="numpy"),
+        pytest.param(numpy.array(target).reshape(-1, 1), id="numpy-column"),
     ],
 )
 def test_check_high_class_imbalance(y):
