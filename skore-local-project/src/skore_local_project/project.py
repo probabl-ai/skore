@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import os
+from functools import wraps
 from operator import itemgetter
 from pathlib import Path
 from types import SimpleNamespace
@@ -33,6 +34,21 @@ if TYPE_CHECKING:
         roc_auc: float | None
         fit_time: float
         predict_time: float
+
+
+def ensure_project_is_not_deleted(method):
+    """Ensure project is not deleted, before executing any other operation."""
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if self.name not in self._Project__projects_storage:
+            raise RuntimeError(
+                f"Skore could not proceed because {repr(self)} does not exist anymore."
+            )
+
+        return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class Project:
@@ -168,6 +184,7 @@ class Project:
 
         return pickle_hash, pickle_bytes
 
+    @ensure_project_is_not_deleted
     def put(self, key: str, report: EstimatorReport | CrossValidationReport):
         """
         Put a key-report pair to the local project.
@@ -202,12 +219,6 @@ class Project:
                 f"ort` (found '{type(report)}')"
             )
 
-        if self.name not in self.__projects_storage:
-            raise RuntimeError(
-                f"Bad condition: {repr(self)} does not exist anymore, "
-                f"it had to be removed."
-            )
-
         pickle_hash, pickle_bytes = Project.pickle(report)
 
         if pickle_hash not in self.__artifacts_storage:
@@ -224,13 +235,9 @@ class Project:
         )
 
     @property
+    @ensure_project_is_not_deleted
     def reports(self):
         """Accessor for interaction with the persisted reports."""
-        if self.name not in self.__projects_storage:
-            raise RuntimeError(
-                f"Bad condition: {repr(self)} does not exist anymore, "
-                f"it had to be removed."
-            )
 
         def get(id: str) -> EstimatorReport:
             """Get a persisted report by its id."""
