@@ -15,13 +15,6 @@ from skore_hub_project.report import (
 )
 
 
-@fixture(autouse=True)
-def monkeypatch_to_json(monkeypatch):
-    monkeypatch.setattr(
-        "skore_hub_project.media.data.TableReport.representation", lambda self: {}
-    )
-
-
 class FakeClient(Client):
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -74,6 +67,13 @@ def monkeypatch_permutation(monkeypatch):
             skore.EstimatorReport.feature_importance.permutation,
             seed=42,
         ),
+    )
+
+
+@fixture(autouse=True)
+def monkeypatch_table_report_representation(monkeypatch):
+    monkeypatch.setattr(
+        "skore_hub_project.media.data.TableReport.representation", lambda self: {}
     )
 
 
