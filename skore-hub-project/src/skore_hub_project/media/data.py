@@ -14,27 +14,20 @@ from .media import Media, Representation
 
 
 def _to_native(obj):
-    # If it's a dictionary, recurse on values
+    """Walk an object and cast all numpy types to native type.
+
+    Useful for json serialization.
+    """
     if isinstance(obj, dict):
         return {k: _to_native(v) for k, v in obj.items()}
-
-    # If it's a list, recurse on each element
     elif isinstance(obj, list):
         return [_to_native(v) for v in obj]
-
-    # If it's a tuple, recurse on each element
     elif isinstance(obj, tuple):
         return tuple(_to_native(v) for v in obj)
-
-    # If it's a numpy array, convert to list (recursively handles inner scalars too)
     elif isinstance(obj, np.ndarray):
         return obj.tolist()
-
-    # If it's a numpy scalar (e.g., np.int32, np.float64), convert to native Python type
     elif isinstance(obj, np.generic):
         return obj.item()
-
-    # Otherwise, leave it as is
     else:
         return obj
 
