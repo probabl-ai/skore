@@ -2,15 +2,41 @@
 
 from functools import cached_property
 from inspect import signature
-from json import loads
 from typing import Literal
 
+import numpy as np
 from pydantic import Field, computed_field
 from skore import EstimatorReport
 
 from skore_hub_project import switch_mpl_backend
 
 from .media import Media, Representation
+
+
+def _to_native(obj):
+    # If it's a dictionary, recurse on values
+    if isinstance(obj, dict):
+        return {k: _to_native(v) for k, v in obj.items()}
+
+    # If it's a list, recurse on each element
+    elif isinstance(obj, list):
+        return [_to_native(v) for v in obj]
+
+    # If it's a tuple, recurse on each element
+    elif isinstance(obj, tuple):
+        return tuple(_to_native(v) for v in obj)
+
+    # If it's a numpy array, convert to list (recursively handles inner scalars too)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+
+    # If it's a numpy scalar (e.g., np.int32, np.float64), convert to native Python type
+    elif isinstance(obj, np.generic):
+        return obj.item()
+
+    # Otherwise, leave it as is
+    else:
+        return obj
 
 
 class TableReport(Media):  # noqa: D101
@@ -36,15 +62,15 @@ class TableReport(Media):  # noqa: D101
                 for k, v in table_report_display.summary.items()
                 if k not in to_remove
             }
-            table_report_representation["extract"] = loads(
+            table_report_representation["extract"] = (
                 table_report_display.summary["dataframe"]
                 .head(3)
-                .to_json(orient="split")
+                .to_dict(orient="split")
             )
 
             return Representation(
                 media_type="application/vnd.skrub.table-report.v1+json",
-                value=table_report_representation,
+                value=_to_native(table_report_representation),
             )
 
 
