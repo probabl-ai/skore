@@ -4,7 +4,8 @@ from functools import cached_property
 from typing import Literal
 
 from pydantic import Field, computed_field
-from skore import CrossValidationReport, EstimatorReport
+
+from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 from .media import Media, Representation
 
@@ -22,5 +23,5 @@ class EstimatorHtmlRepr(Media):  # noqa: D101
 
         return Representation(
             media_type="text/html",
-            value=sklearn.utils.estimator_html_repr(self.report.estimator_),
+            value=sklearn.utils.estimator_html_repr(self.report.estimator),
         )

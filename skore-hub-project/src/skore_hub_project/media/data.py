@@ -6,7 +6,8 @@ from typing import Literal
 
 import numpy as np
 from pydantic import Field, computed_field
-from skore import EstimatorReport
+
+from skore_hub_project.protocol import EstimatorReport
 
 from skore_hub_project import switch_mpl_backend
 
