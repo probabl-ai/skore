@@ -192,8 +192,9 @@ class TestProject:
         with raises(
             RuntimeError,
             match=re.escape(
-                f"Bad condition: {repr(project)} does not exist anymore, "
-                f"it had to be removed.",
+                f"Skore could not proceed because "
+                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"does not exist anymore."
             ),
         ):
             project.put("<key>", regression)
@@ -296,8 +297,9 @@ class TestProject:
         with raises(
             RuntimeError,
             match=re.escape(
-                f"Bad condition: {repr(project)} does not exist anymore, "
-                f"it had to be removed.",
+                f"Skore could not proceed because "
+                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"does not exist anymore."
             ),
         ):
             project.reports  # noqa: B018
