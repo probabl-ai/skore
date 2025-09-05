@@ -1,16 +1,20 @@
 """Class definition of the ``metadata`` objects used by ``project``."""
 
+from __future__ import annotations
+
 from abc import ABC
 from contextlib import suppress
 from dataclasses import InitVar, dataclass, field, fields
 from datetime import datetime, timezone
 from math import isfinite
-from typing import Any
+from typing import TYPE_CHECKING
 
-import joblib
-from skore import CrossValidationReport, EstimatorReport
+from joblib import hash
 
-Report = EstimatorReport | CrossValidationReport
+if TYPE_CHECKING:
+    from typing import Any
+
+    from skore import CrossValidationReport, EstimatorReport
 
 
 def cast_to_float(value: Any) -> float | None:
@@ -22,8 +26,10 @@ def cast_to_float(value: Any) -> float | None:
     return None
 
 
-def report_type(report: Report):
+def report_type(report: EstimatorReport | CrossValidationReport):
     """Human readable type of a report."""
+    from skore import CrossValidationReport, EstimatorReport
+
     if isinstance(report, CrossValidationReport):
         return "cross-validation"
     if isinstance(report, EstimatorReport):
@@ -61,7 +67,7 @@ class ReportMetadata(ABC):
         The hash of the targets.
     """
 
-    report: InitVar[Report]
+    report: InitVar[EstimatorReport | CrossValidationReport]
 
     artifact_id: str
     project_name: str
@@ -78,15 +84,13 @@ class ReportMetadata(ABC):
         for field in fields(self):  # noqa: F402
             yield (field.name, getattr(self, field.name))
 
-    def __post_init__(self, report: Report):
+    def __post_init__(self, report: EstimatorReport | CrossValidationReport):
         """Initialize dynamic fields."""
         self.date = datetime.now(timezone.utc).isoformat()
         self.learner = report.estimator_name_
         self.ml_task = report.ml_task
         self.report_type = report_type(report)
-        self.dataset = joblib.hash(
-            report.y_test if hasattr(report, "y_test") else report.y
-        )
+        self.dataset = hash(report.y_test if hasattr(report, "y_test") else report.y)
 
 
 @dataclass(kw_only=True)
