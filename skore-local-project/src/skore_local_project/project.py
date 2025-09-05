@@ -12,13 +12,14 @@ from uuid import uuid4
 
 import joblib
 import platformdirs
-from skore import CrossValidationReport, EstimatorReport
 
 from .metadata import CrossValidationReportMetadata, EstimatorReportMetadata
 from .storage import DiskCacheStorage
 
 if TYPE_CHECKING:
     from typing import TypedDict
+
+    from skore import CrossValidationReport, EstimatorReport
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -209,6 +210,8 @@ class Project:
         TypeError
             If the combination of parameters are not valid.
         """
+        from skore import CrossValidationReport, EstimatorReport
+
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
