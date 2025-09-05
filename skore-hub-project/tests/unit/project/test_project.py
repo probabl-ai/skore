@@ -178,7 +178,7 @@ class TestProject:
         response = Response(200, json={"id": 0})
         respx_mock.post(url).mock(response)
 
-        url = "projects/<tenant>/<name>/experiments/estimator-reports/<report_id>"
+        url = "projects/<tenant>/<name>/estimator-reports/<report_id>"
         response = Response(200, json={"raw": {"checksum": "<checksum>"}})
         respx_mock.get(url).mock(response)
 
@@ -195,23 +195,23 @@ class TestProject:
 
         # Test
         project = Project("<tenant>", "<name>")
-        report = project.reports.get("<report_id>")
+        report = project.reports.get("skore:report:estimator:<report_id>")
 
         assert isinstance(report, EstimatorReport)
         assert report.estimator_name_ == regression.estimator_name_
-        assert report._ml_task == regression._ml_task
+        assert report.ml_task == regression.ml_task
 
     def test_reports_metadata(self, nowstr, respx_mock):
         url = "projects/<tenant>/<name>/runs"
         respx_mock.post(url).mock(Response(200, json={"id": 2}))
 
-        url = "projects/<tenant>/<name>/experiments/estimator-reports"
+        url = "projects/<tenant>/<name>/estimator-reports"
         respx_mock.get(url).mock(
             Response(
                 200,
                 json=[
                     {
-                        "id": "<report_id_0>",
+                        "urn": "skore:report:estimator:<report_id_0>",
                         "run_id": 0,
                         "key": "<key>",
                         "ml_task": "<ml_task>",
@@ -224,7 +224,7 @@ class TestProject:
                         ],
                     },
                     {
-                        "id": "<report_id_1>",
+                        "urn": "skore:report:estimator:<report_id_1>",
                         "run_id": 1,
                         "key": "<key>",
                         "ml_task": "<ml_task>",
@@ -245,7 +245,7 @@ class TestProject:
 
         assert metadata == [
             {
-                "id": "<report_id_0>",
+                "id": "skore:report:estimator:<report_id_0>",
                 "run_id": 0,
                 "key": "<key>",
                 "date": nowstr,
@@ -259,7 +259,7 @@ class TestProject:
                 "predict_time": None,
             },
             {
-                "id": "<report_id_1>",
+                "id": "skore:report:estimator:<report_id_1>",
                 "run_id": 1,
                 "key": "<key>",
                 "date": nowstr,
