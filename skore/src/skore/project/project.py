@@ -153,6 +153,7 @@ class Project:
             raise SystemError("No project plugin found, please install at least one.")
 
         mode: Literal["local", "hub"]
+
         if match := re.match(Project.__HUB_NAME_PATTERN, name):
             mode = "hub"
             name = match["name"]
