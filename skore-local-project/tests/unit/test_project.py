@@ -288,22 +288,6 @@ class TestProject:
         assert hasattr(project.reports, "get")
         assert hasattr(project.reports, "metadata")
 
-    def test_reports_exception(self, tmp_path):
-        import re
-
-        project = Project("<project>", workspace=tmp_path)
-        Project.delete("<project>", workspace=tmp_path)
-
-        with raises(
-            RuntimeError,
-            match=re.escape(
-                f"Skore could not proceed because "
-                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
-                f"does not exist anymore."
-            ),
-        ):
-            project.reports  # noqa: B018
-
     def test_reports_get(self, tmp_path, regression):
         project = Project("<project>", workspace=tmp_path)
         project.put("<key>", regression)
@@ -317,44 +301,111 @@ class TestProject:
         assert report.estimator_name_ == regression.estimator_name_
         assert report._ml_task == regression._ml_task
 
-    def test_reports_metadata(self, tmp_path, nowstr, regression):
+    def test_reports_get_exception(self, tmp_path, regression):
+        import re
+
+        project = Project("<project>", workspace=tmp_path)
+        Project.delete("<project>", workspace=tmp_path)
+
+        with raises(
+            RuntimeError,
+            match=re.escape(
+                f"Skore could not proceed because "
+                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"does not exist anymore."
+            ),
+        ):
+            project.reports.get(None)
+
+    def test_reports_metadata(self, tmp_path, Datetime, regression, cv_regression):
         project = Project("<project>", workspace=tmp_path)
 
-        project.put("<key>", regression)
-        project.put("<key>", regression)
+        project.put("<key1>", regression)
+        project.put("<key1>", regression)
+        project.put("<key2>", cv_regression)
 
-        assert len(project._Project__artifacts_storage) == 1
-        assert len(project._Project__metadata_storage) == 2
+        artifact_ids = list(project._Project__artifacts_storage.keys())
+
+        assert len(project._Project__artifacts_storage) == 2
+        assert len(project._Project__metadata_storage) == 3
         assert project.reports.metadata() == [
             {
-                "id": next(project._Project__artifacts_storage.keys()),
+                "id": artifact_ids[0],
                 "run_id": project.run_id,
-                "key": "<key>",
-                "date": nowstr,
-                "learner": regression.estimator_name_,
+                "key": "<key1>",
+                "date": Datetime.nows_isoformat[0],
+                "learner": "Ridge",
+                "ml_task": "regression",
+                "report_type": "estimator",
                 "dataset": joblib.hash(regression.y_test),
-                "ml_task": regression._ml_task,
                 "rmse": float(hash("<rmse_test>")),
                 "log_loss": None,
                 "roc_auc": None,
                 "fit_time": float(hash("<fit_time>")),
                 "predict_time": float(hash("<predict_time_test>")),
+                "rmse_mean": None,
+                "log_loss_mean": None,
+                "roc_auc_mean": None,
+                "fit_time_mean": None,
+                "predict_time_mean": None,
             },
             {
-                "id": next(project._Project__artifacts_storage.keys()),
+                "id": artifact_ids[0],
                 "run_id": project.run_id,
-                "key": "<key>",
-                "date": nowstr,
-                "learner": regression.estimator_name_,
+                "key": "<key1>",
+                "date": Datetime.nows_isoformat[1],
+                "learner": "Ridge",
+                "ml_task": "regression",
+                "report_type": "estimator",
                 "dataset": joblib.hash(regression.y_test),
-                "ml_task": regression._ml_task,
                 "rmse": float(hash("<rmse_test>")),
                 "log_loss": None,
                 "roc_auc": None,
                 "fit_time": float(hash("<fit_time>")),
                 "predict_time": float(hash("<predict_time_test>")),
+                "rmse_mean": None,
+                "log_loss_mean": None,
+                "roc_auc_mean": None,
+                "fit_time_mean": None,
+                "predict_time_mean": None,
+            },
+            {
+                "id": artifact_ids[1],
+                "run_id": project.run_id,
+                "key": "<key2>",
+                "date": Datetime.nows_isoformat[2],
+                "learner": "Ridge",
+                "ml_task": "regression",
+                "report_type": "cross-validation",
+                "dataset": joblib.hash(cv_regression.y),
+                "rmse": None,
+                "log_loss": None,
+                "roc_auc": None,
+                "fit_time": None,
+                "predict_time": None,
+                "rmse_mean": float(hash("<rmse_mean_test>")),
+                "log_loss_mean": None,
+                "roc_auc_mean": None,
+                "fit_time_mean": float(hash("<fit_time_mean>")),
+                "predict_time_mean": float(hash("<predict_time_mean_test>")),
             },
         ]
+
+    def test_reports_metadata_exception(self, tmp_path, regression):
+        import re
+
+        project = Project("<project>", workspace=tmp_path)
+        Project.delete("<project>", workspace=tmp_path)
+
+        with raises(
+            RuntimeError,
+            match=re.escape(
+                f"Skore could not proceed because "
+                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"does not exist anymore."
+            ),
+        ):
+            project.reports.metadata()
 
     def test_delete(self, tmp_path, binary_classification, regression):
         project1 = Project("<project1>", workspace=tmp_path)

@@ -5,7 +5,6 @@ from __future__ import annotations
 import io
 import os
 from functools import wraps
-from operator import itemgetter
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
@@ -27,13 +26,19 @@ if TYPE_CHECKING:
         key: str
         date: str
         learner: str
-        dataset: str
         ml_task: str
+        report_type: str
+        dataset: str
         rmse: float | None
         log_loss: float | None
         roc_auc: float | None
-        fit_time: float
-        predict_time: float
+        fit_time: float | None
+        predict_time: float | None
+        rmse_mean: float | None
+        log_loss_mean: float | None
+        roc_auc_mean: float | None
+        fit_time_mean: float | None
+        predict_time_mean: float | None
 
 
 def ensure_project_is_not_deleted(method):
@@ -234,42 +239,66 @@ class Project:
             )
         )
 
-    @property
     @ensure_project_is_not_deleted
+    def get(self, id: str) -> EstimatorReport | CrossValidationReport:
+        """Get a persisted report by its id."""
+        if id in self.__artifacts_storage:
+            with io.BytesIO(self.__artifacts_storage[id]) as stream:
+                return joblib.load(stream)
+
+        raise KeyError(id)
+
+    @ensure_project_is_not_deleted
+    def summarize(self) -> list[Metadata]:
+        """Obtain metadata/metrics for all persisted reports in insertion order."""
+        return [
+            {
+                "id": value["artifact_id"],
+                "run_id": value["run_id"],
+                "key": value["key"],
+                "date": value["date"],
+                "learner": value["learner"],
+                "ml_task": value["ml_task"],
+                "report_type": value["report_type"],
+                "dataset": value["dataset"],
+                "rmse": value.get("rmse"),
+                "log_loss": value.get("log_loss"),
+                "roc_auc": value.get("roc_auc"),
+                "fit_time": value.get("fit_time"),
+                "predict_time": value.get("predict_time"),
+                "rmse_mean": value.get("rmse_mean"),
+                "log_loss_mean": value.get("log_loss_mean"),
+                "roc_auc_mean": value.get("roc_auc_mean"),
+                "fit_time_mean": value.get("fit_time_mean"),
+                "predict_time_mean": value.get("predict_time_mean"),
+            }
+            for value in self.__metadata_storage.values()
+            if value["project_name"] == self.name
+        ]
+
+    @property
     def reports(self):
         """Accessor for interaction with the persisted reports."""
 
-        def get(id: str) -> EstimatorReport:
-            """Get a persisted report by its id."""
-            if id in self.__artifacts_storage:
-                with io.BytesIO(self.__artifacts_storage[id]) as stream:
-                    return joblib.load(stream)
+        def get(id: str) -> EstimatorReport | CrossValidationReport:
+            """
+            Get a persisted report by its id.
 
-            raise KeyError(id)
+            .. deprecated
+              The ``Project.reports.get`` function will be removed in favor of
+              ``Project.get`` in a near future.
+            """
+            return self.get(id)
 
         def metadata() -> list[Metadata]:
-            """Obtain metadata/metrics for all persisted reports."""
-            return sorted(
-                (
-                    {
-                        "id": value["artifact_id"],
-                        "run_id": value["run_id"],
-                        "key": value["key"],
-                        "date": value["date"],
-                        "learner": value["learner"],
-                        "dataset": value["dataset"],
-                        "ml_task": value["ml_task"],
-                        "rmse": value["rmse"],
-                        "log_loss": value["log_loss"],
-                        "roc_auc": value["roc_auc"],
-                        "fit_time": value["fit_time"],
-                        "predict_time": value["predict_time"],
-                    }
-                    for value in self.__metadata_storage.values()
-                    if value["project_name"] == self.name
-                ),
-                key=itemgetter("date"),
-            )
+            """
+            Obtain metadata/metrics for all persisted reports in insertion order.
+
+            .. deprecated
+              The ``Project.reports.metadata`` function will be removed in favor of
+              ``Project.summarize`` in a near future.
+            """
+            return self.summarize()
 
         return SimpleNamespace(get=get, metadata=metadata)
 
