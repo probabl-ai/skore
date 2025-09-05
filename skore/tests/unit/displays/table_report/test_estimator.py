@@ -1,5 +1,3 @@
-import json
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -378,18 +376,6 @@ def test_corr_plot(pyplot, estimator_report):
     assert len(display.ax_.get_xticklabels()) == 10
     assert len(display.ax_.get_yticklabels()) == 10
     assert display.ax_.title.get_text() == "Cramer's V Correlation"
-
-
-def test_json_dump(display):
-    """Check the JSON serialization of the `TableReportDisplay`."""
-    json_dict = json.loads(display._to_json())
-    assert "columns" in json_dict
-    assert "extract" in json_dict
-    assert "top_associations" in json_dict
-    assert "n_rows" in json_dict
-    assert "n_columns" in json_dict
-    assert "cramer_v_correlation" in json_dict
-    assert isinstance(json_dict, dict)
 
 
 def test_repr(display):
