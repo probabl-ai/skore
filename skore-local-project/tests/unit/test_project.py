@@ -126,36 +126,56 @@ class TestProject:
     def test_pickle_estimator_report(self, regression):
         # Pickle the report once, without any value in the cache
         assert not regression._cache
-        pickle_1 = Project.pickle(regression)
+        hash1, pickle1 = Project.pickle(regression)
         assert not regression._cache
 
         # Pickle the same report, but with values in the cache
         regression.cache_predictions()
 
         assert regression._cache
-        pickle_2 = Project.pickle(regression)
+        hash2, pickle2 = Project.pickle(regression)
         assert regression._cache
 
         # Make sure that the two pickles on the report are not affected by the cache
-        assert pickle_1 == pickle_2
+        assert (hash1, pickle1) == (hash2, pickle2)
+
+        # Make sure that pickles are not broken
+        with BytesIO(pickle1) as stream:
+            report1 = joblib.load(stream)
+
+        with BytesIO(pickle2) as stream:
+            report2 = joblib.load(stream)
+
+        report1.cache_predictions()
+        report2.cache_predictions()
 
     def test_pickle_cross_validation_report(self, cv_regression):
         reports = [cv_regression] + cv_regression.estimator_reports_
 
         # Pickle the report once, without any value in the cache
         assert not any(report._cache for report in reports)
-        pickle_1 = Project.pickle(cv_regression)
+        hash1, pickle1 = Project.pickle(cv_regression)
         assert not any(report._cache for report in reports)
 
         # Pickle the same report, but with values in the cache
         cv_regression.cache_predictions()
 
         assert any(report._cache for report in reports)
-        pickle_2 = Project.pickle(cv_regression)
+        hash2, pickle2 = Project.pickle(cv_regression)
         assert any(report._cache for report in reports)
 
         # Make sure that the two pickles on the report are not affected by the cache
-        assert pickle_1 == pickle_2
+        assert (hash1, pickle1) == (hash2, pickle2)
+
+        # Make sure that pickles are not broken
+        with BytesIO(pickle1) as stream:
+            report1 = joblib.load(stream)
+
+        with BytesIO(pickle2) as stream:
+            report2 = joblib.load(stream)
+
+        report1.cache_predictions()
+        report2.cache_predictions()
 
     def test_init_with_envar(self, monkeypatch, tmp_path):
         monkeypatch.setenv("SKORE_WORKSPACE", str(tmp_path))

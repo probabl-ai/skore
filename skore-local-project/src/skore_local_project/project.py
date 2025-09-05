@@ -170,7 +170,9 @@ class Project:
         The report is pickled without its cache, to avoid salting the hash.
         """
         reports = [report] + getattr(report, "estimator_reports_", [])
-        caches = [report_to_clear.__dict__.pop("_cache") for report_to_clear in reports]
+        caches = [report_to_clear._cache for report_to_clear in reports]
+
+        report.clear_cache()
 
         try:
             with io.BytesIO() as stream:
