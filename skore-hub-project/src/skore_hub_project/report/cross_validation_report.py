@@ -12,12 +12,6 @@ from skore import CrossValidationReport
 from skore_hub_project.artefact import CrossValidationReportArtefact
 from skore_hub_project.media import (
     EstimatorHtmlRepr,
-    PrecisionRecallTest,
-    PrecisionRecallTrain,
-    PredictionErrorTest,
-    PredictionErrorTrain,
-    RocTest,
-    RocTrain,
 )
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric import (
@@ -129,18 +123,7 @@ class CrossValidationReportPayload(ReportPayload):
             PredictTimeTrainStd,
         ),
     )
-    MEDIAS: ClassVar[tuple[Media, ...]] = cast(
-        tuple[Media, ...],
-        (
-            EstimatorHtmlRepr,
-            PrecisionRecallTest,
-            PrecisionRecallTrain,
-            PredictionErrorTest,
-            PredictionErrorTrain,
-            RocTest,
-            RocTrain,
-        ),
-    )
+    MEDIAS: ClassVar[tuple[Media, ...]] = cast(tuple[Media, ...], (EstimatorHtmlRepr,))
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
 
