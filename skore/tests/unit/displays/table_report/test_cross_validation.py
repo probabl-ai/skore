@@ -75,8 +75,8 @@ def test_table_report_display_frame(cross_validation_report):
     [
         np.ones((100, 1)),
         np.ones(100),
-        # pd.Series(np.ones(100)),
-        # pd.DataFrame(np.ones((100, 1)), columns=["Target"]),
+        pd.Series(np.ones(100)),
+        pd.DataFrame(np.ones((100, 1)), columns=["Target"]),
     ],
 )
 def test_display_creation(X, y):

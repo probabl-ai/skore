@@ -43,7 +43,8 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 raise ValueError("y is required when `with_y=True`.")
 
             if isinstance(y, pd.Series):
-                y = y.to_frame()
+                name = y.name if y.name is not None else "Target"
+                y = y.to_frame(name=name)
             elif not sbd.is_dataframe(y):
                 if y.ndim == 1:
                     columns = ["Target"]
