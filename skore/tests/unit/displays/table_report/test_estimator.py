@@ -3,10 +3,8 @@ import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
 from skore import Display, EstimatorReport, train_test_split
-from skore._sklearn._plot.data.table_report import (
-    TableReportDisplay
-)
 from skore._externals._skrub_compat import tabular_pipeline
+from skore._sklearn._plot.data.table_report import TableReportDisplay
 from skrub.datasets import fetch_employee_salaries
 
 
