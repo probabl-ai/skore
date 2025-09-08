@@ -1,10 +1,18 @@
+import numpy
+import pytest
 from skore._sklearn.train_test_split.warning import (
     HighClassImbalanceTooFewExamplesWarning,
 )
 
 
-def test_check_high_class_imbalance_too_few_examples():
-    y_test = [0] * 100
+@pytest.mark.parametrize(
+    "y_test",
+    [
+        pytest.param([0] * 100, id="list"),
+        pytest.param(numpy.array([0] * 100).reshape(-1, 1), id="numpy-column"),
+    ],
+)
+def test_check_high_class_imbalance_too_few_examples(y_test):
     y_labels = [0, 1]
 
     warning = HighClassImbalanceTooFewExamplesWarning.check(

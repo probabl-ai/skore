@@ -60,7 +60,7 @@ class PrecisionRecallCurveDisplay(
         The precision-recall curve data to display. The columns are
 
         - `estimator_name`
-        - `split_index` (may be null)
+        - `split` (may be null)
         - `label`
         - `threshold`
         - `precision`
@@ -70,7 +70,7 @@ class PrecisionRecallCurveDisplay(
         The average precision data to display. The columns are
 
         - `estimator_name`
-        - `split_index` (may be null)
+        - `split` (may be null)
         - `label`
         - `average_precision`.
 
@@ -274,8 +274,8 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if self.ml_task == "binary-classification":
-            for split_idx in self.precision_recall["split_index"].cat.categories:
-                query = f"label == {self.pos_label!r} & split_index == {split_idx}"
+            for split_idx in self.precision_recall["split"].cat.categories:
+                query = f"label == {self.pos_label!r} & split == {split_idx}"
                 precision_recall = self.precision_recall.query(query)
                 average_precision = self.average_precision.query(query)[
                     "average_precision"
@@ -285,7 +285,7 @@ class PrecisionRecallCurveDisplay(
                     line_kwargs, pr_curve_kwargs[split_idx]
                 )
                 line_kwargs_validated["label"] = (
-                    f"Fold #{split_idx + 1} (AP = {average_precision:0.2f})"
+                    f"Split #{split_idx + 1} (AP = {average_precision:0.2f})"
                 )
 
                 (line,) = self.ax_.plot(
@@ -314,8 +314,8 @@ class PrecisionRecallCurveDisplay(
                 # average_precision_class = self.average_precision[class_]
                 pr_curve_kwargs_class = pr_curve_kwargs[class_idx]
 
-                for split_idx in self.precision_recall["split_index"].cat.categories:
-                    query = f"label == {class_label!r} & split_index == {split_idx}"
+                for split_idx in self.precision_recall["split"].cat.categories:
+                    query = f"label == {class_label!r} & split == {split_idx}"
                     precision_recall = self.precision_recall.query(query)
                     average_precision = self.average_precision.query(query)[
                         "average_precision"
@@ -519,7 +519,7 @@ class PrecisionRecallCurveDisplay(
                 precision_recall = self.precision_recall.query(query)
 
                 for split_idx, segment in precision_recall.groupby(
-                    "split_index", observed=True
+                    "split", observed=True
                 ):
                     if split_idx == 0:
                         label_kwargs = {
@@ -586,7 +586,7 @@ class PrecisionRecallCurveDisplay(
                     precision_recall = self.precision_recall.query(query)
 
                     for split_idx, segment in precision_recall.groupby(
-                        "split_index", observed=True
+                        "split", observed=True
                     ):
                         if split_idx == 0:
                             label_kwargs = {
@@ -836,7 +836,7 @@ class PrecisionRecallCurveDisplay(
                     precision_recall_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
-                            "split_index": y_true_i.split_index,
+                            "split": y_true_i.split,
                             "label": pos_label_validated,
                             "threshold": threshold,
                             "precision": precision,
@@ -846,7 +846,7 @@ class PrecisionRecallCurveDisplay(
                 average_precision_records.append(
                     {
                         "estimator_name": y_true_i.estimator_name,
-                        "split_index": y_true_i.split_index,
+                        "split": y_true_i.split,
                         "label": pos_label_validated,
                         "average_precision": average_precision_i,
                     }
@@ -879,7 +879,7 @@ class PrecisionRecallCurveDisplay(
                         precision_recall_records.append(
                             {
                                 "estimator_name": y_true_i.estimator_name,
-                                "split_index": y_true_i.split_index,
+                                "split": y_true_i.split,
                                 "label": class_,
                                 "threshold": threshold,
                                 "precision": precision,
@@ -889,7 +889,7 @@ class PrecisionRecallCurveDisplay(
                     average_precision_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
-                            "split_index": y_true_i.split_index,
+                            "split": y_true_i.split,
                             "label": class_,
                             "average_precision": average_precision_class_i,
                         }
@@ -897,7 +897,7 @@ class PrecisionRecallCurveDisplay(
 
         dtypes = {
             "estimator_name": "category",
-            "split_index": "category",
+            "split": "category",
             "label": "category",
         }
 
@@ -929,7 +929,7 @@ class PrecisionRecallCurveDisplay(
             depending on the report type:
 
             - `estimator_name`: Name of the estimator (when comparing estimators)
-            - `split_index`: Cross-validation fold ID (when doing cross-validation)
+            - `split`: Cross-validation split ID (when doing cross-validation)
             - `label`: Class label (for multiclass-classification)
             - `threshold`: Decision threshold
             - `precision`: Precision score at threshold
@@ -966,11 +966,11 @@ class PrecisionRecallCurveDisplay(
         if self.report_type == "estimator":
             indexing_columns = []
         elif self.report_type == "cross-validation":
-            indexing_columns = ["split_index"]
+            indexing_columns = ["split"]
         elif self.report_type == "comparison-estimator":
             indexing_columns = ["estimator_name"]
         else:  # self.report_type == "comparison-cross-validation"
-            indexing_columns = ["estimator_name", "split_index"]
+            indexing_columns = ["estimator_name", "split"]
 
         if self.ml_task == "binary-classification":
             columns = indexing_columns + statistical_columns

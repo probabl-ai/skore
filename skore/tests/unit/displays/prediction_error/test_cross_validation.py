@@ -24,7 +24,7 @@ def test_regression(pyplot, linear_regression_data, data_source):
 
     # check the structure of the attributes
     assert isinstance(display._prediction_error, pd.DataFrame)
-    assert display._prediction_error["split_index"].nunique() == cv
+    assert display._prediction_error["split"].nunique() == cv
     assert display.data_source == data_source
     assert isinstance(display.range_y_true, RangeData)
     assert isinstance(display.range_y_pred, RangeData)
@@ -68,7 +68,7 @@ def test_regression_actual_vs_predicted(pyplot, linear_regression_data):
 
     # check the structure of the attributes
     assert isinstance(display._prediction_error, pd.DataFrame)
-    assert display._prediction_error["split_index"].nunique() == cv
+    assert display._prediction_error["split"].nunique() == cv
     assert display.data_source == "test"
 
     assert isinstance(display.line_, mpl.lines.Line2D)
@@ -135,11 +135,11 @@ def test_frame(linear_regression_data):
     display = report.metrics.prediction_error()
     df = display.frame()
 
-    expected_index = ["split_index"]
+    expected_index = ["split"]
     expected_columns = ["y_true", "y_pred", "residuals"]
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["split_index"].nunique() == cv
+    assert df["split"].nunique() == cv
 
 
 def test_legend(pyplot, linear_regression_data):
@@ -171,8 +171,8 @@ def test_constructor(linear_regression_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
 
-    index_columns = ["estimator_name", "split_index"]
+    index_columns = ["estimator_name", "split"]
     df = display._prediction_error
     assert all(col in df.columns for col in index_columns)
     assert df["estimator_name"].unique() == report.estimator_name_
-    assert df["split_index"].unique().tolist() == list(range(cv))
+    assert df["split"].unique().tolist() == list(range(cv))

@@ -53,7 +53,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
     """Check the structure of the display's internal data."""
     assert list(display.roc_curve.columns) == [
         "estimator_name",
-        "split_index",
+        "split",
         "label",
         "threshold",
         "fpr",
@@ -61,7 +61,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
     ]
     assert list(display.roc_auc.columns) == [
         "estimator_name",
-        "split_index",
+        "split",
         "label",
         "roc_auc",
     ]
@@ -71,7 +71,7 @@ def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDispl
     """Check the structure of the display's internal data."""
     assert list(display.precision_recall.columns) == [
         "estimator_name",
-        "split_index",
+        "split",
         "label",
         "threshold",
         "precision",
@@ -79,7 +79,7 @@ def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDispl
     ]
     assert list(display.average_precision.columns) == [
         "estimator_name",
-        "split_index",
+        "split",
         "label",
         "average_precision",
     ]
@@ -104,7 +104,7 @@ def check_frame_structure(df, expected_index, expected_data_columns):
     df : DataFrame
         The DataFrame to check.
     expected_index : list of str
-        The expected index column names (e.g., `estimator_name`, `split_index`,
+        The expected index column names (e.g., `estimator_name`, `split`,
         `label`).
         These columns should be of categorical type.
     expected_data_columns : list of str

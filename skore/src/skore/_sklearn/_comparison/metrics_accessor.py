@@ -29,7 +29,10 @@ from skore._sklearn.types import (
     ScoringName,
     YPlotData,
 )
-from skore._utils._accessor import _check_supported_ml_task
+from skore._utils._accessor import (
+    _check_any_sub_report_has_metric,
+    _check_supported_ml_task,
+)
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
 from skore._utils._progress_bar import progress_decorator
@@ -357,11 +360,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             )
             return timings
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("accuracy"))
     def accuracy(
         self,
         *,
@@ -427,11 +426,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("precision"))
     def precision(
         self,
         *,
@@ -535,11 +530,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("recall"))
     def recall(
         self,
         *,
@@ -644,9 +635,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
-    )
+    @available_if(_check_any_sub_report_has_metric("brier_score"))
     def brier_score(
         self,
         *,
@@ -712,11 +701,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("roc_auc"))
     def roc_auc(
         self,
         *,
@@ -819,11 +804,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("log_loss"))
     def log_loss(
         self,
         *,
@@ -889,11 +870,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("r2"))
     def r2(
         self,
         *,
@@ -971,11 +948,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("rmse"))
     def rmse(
         self,
         *,
@@ -1259,7 +1232,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     y_true.append(
                         YPlotData(
                             estimator_name=report_name,
-                            split_index=None,
+                            split=None,
                             y=report_y,
                         )
                     )
@@ -1280,7 +1253,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                             y_pred.append(
                                 YPlotData(
                                     estimator_name=report_name,
-                                    split_index=None,
+                                    split=None,
                                     y=value,
                                 )
                             )
@@ -1301,9 +1274,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 for report, report_name in zip(
                     self._parent.reports_, self._parent.report_names_, strict=False
                 ):
-                    for split_index, estimator_report in enumerate(
-                        report.estimator_reports_
-                    ):
+                    for split, estimator_report in enumerate(report.estimator_reports_):
                         report_X, report_y, _ = (
                             estimator_report.metrics._get_X_y_and_data_source_hash(
                                 data_source=data_source,
@@ -1315,7 +1286,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                         y_true.append(
                             YPlotData(
                                 estimator_name=report_name,
-                                split_index=split_index,
+                                split=split,
                                 y=report_y,
                             )
                         )
@@ -1337,7 +1308,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                                 y_pred.append(
                                     YPlotData(
                                         estimator_name=report_name,
-                                        split_index=split_index,
+                                        split=split,
                                         y=value,
                                     )
                                 )

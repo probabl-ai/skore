@@ -33,6 +33,19 @@ gives full control over the fitting process. Omitting part of the data reduces t
 number of available methods when inspecting the model. For instance, you cannot inspect
 the metrics of the model on the test data if you do not provide the test data.
 
+Data insights
+^^^^^^^^^^^^^
+
+:obj:`EstimatorReport.data` is the entry point to get insights on the dataset used to
+train and test the predictive model. It provides a :meth:`EstimatorReport.data.analyze`
+method that returns a :class:`~skore.TableReportDisplay` display. This display makes
+essential analysis of the dataset. The parameter `data_source` specifies which portion
+of the dataset to analyze, whether the train or test data or both. This display is
+particularly useful to see feature distributions and correlation between features as
+well as general statistics of the dataset such as type of data, missing values, etc.
+
+Refer to :ref:`estimator_data` for more details regarding the API.
+
 Model evaluation
 ^^^^^^^^^^^^^^^^
 
@@ -130,12 +143,13 @@ To compare the performance of different predictive models, `skore` provides the
 :class:`CrossValidationReport` instances. It then provides methods to compare the
 performance of the different models.
 
-In order for the comparison to make sense, the reports must all have the same test target.
-However, they may have different training data or target; this might be the case when comparing a new model with the current production model, for example.
-They may also have different testing data (:math:`X_{test}`), which means the compared model pipelines do not necessarily need to be the same.
-The comparison of test targets is done by computing a hash of the arrays. Therefore, if
-the y_test are functionally equal, but have different data types, they will be
-considered as different.
+In order for the comparison to make sense, the reports must all have the same test
+target. However, they may have different training data or target; this might be the case
+when comparing a new model with the current production model, for example. They may also
+have different testing data (:math:`X_{test}`), which means the compared model pipelines
+do not necessarily need to be the same. The comparison of test targets is done by
+computing a hash of the arrays. Therefore, if the y_test are functionally equal, but
+have different data types, they will be considered as different.
 
 The caching mechanism is also available and exposes the same methods.
 

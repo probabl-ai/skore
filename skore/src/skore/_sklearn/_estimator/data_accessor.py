@@ -55,7 +55,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if y is None:
                 raise ValueError(err_msg.format(f"y_{dataset}", data_source))
 
-            if isinstance(y, pd.Series):
+            if isinstance(y, pd.Series) and y.name is not None:
                 y = y.to_frame()
             elif not sbd.is_dataframe(y):
                 if y.ndim == 1:

@@ -337,6 +337,7 @@ class PlotBackendMixin:
     """Mixin class for Displays to dispatch plotting to the configured backend."""
 
     def plot(self, **kwargs):
+        """Show as a plot."""
         plot_backend = get_config()["plot_backend"]
         if plot_backend == "matplotlib":
             return self._plot_matplotlib(**kwargs)

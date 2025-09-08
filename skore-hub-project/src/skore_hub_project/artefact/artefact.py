@@ -7,10 +7,10 @@ from functools import cached_property
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
-from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project import Project
 from skore_hub_project.artefact.upload import upload
+from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 
 class Artefact(ABC, BaseModel):

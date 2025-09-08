@@ -13,10 +13,6 @@ from skore_hub_project import Project
 from skore_hub_project.artefact.serializer import Serializer
 from skore_hub_project.media import (
     EstimatorHtmlRepr,
-    PrecisionRecallTest,
-    PrecisionRecallTrain,
-    RocTest,
-    RocTrain,
 )
 from skore_hub_project.metric import (
     AccuracyTestMean,
@@ -250,13 +246,7 @@ class TestCrossValidationReportPayload:
         ]
 
     def test_related_items(self, payload):
-        assert list(map(type, payload.related_items)) == [
-            EstimatorHtmlRepr,
-            PrecisionRecallTest,
-            PrecisionRecallTrain,
-            RocTest,
-            RocTrain,
-        ]
+        assert list(map(type, payload.related_items)) == [EstimatorHtmlRepr]
 
     @mark.usefixtures("monkeypatch_routes")
     def test_model_dump(self, small_cv_binary_classification, payload):

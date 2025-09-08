@@ -24,6 +24,9 @@ from skore._utils._progress_bar import progress_decorator
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from skore._sklearn._cross_validation.feature_importance_accessor import (
+        _FeatureImportanceAccessor,
+    )
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
 
 
@@ -89,7 +92,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         Determines the cross-validation splitting strategy.
         Possible inputs for `splitter` are:
 
-        - int, to specify the number of folds in a `(Stratified)KFold`,
+        - int, to specify the number of splits in a `(Stratified)KFold`,
         - a scikit-learn :term:`CV splitter`,
         - An iterable yielding (train, test) splits as arrays of indices.
 
@@ -142,6 +145,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         "metrics": {"name": "metrics"},
     }
     metrics: _MetricsAccessor
+    feature_importance: _FeatureImportanceAccessor
 
     def __init__(
         self,
@@ -166,7 +170,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._split_indices = tuple(self._splitter.split(self._X, self._y))
         self.n_jobs = n_jobs
 
-        self.estimator_reports_ = self._fit_estimator_reports()
+        self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
 
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
@@ -335,19 +339,19 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         total_estimators = len(self.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
-        for fold_idx, estimator_report in enumerate(self.estimator_reports_, 1):
+        for split_idx, estimator_report in enumerate(self.estimator_reports_, 1):
             # Share the parent's progress bar with child report
             estimator_report._progress_info = {
                 "current_progress": progress,
-                "fold_info": {"current": fold_idx, "total": total_estimators},
+                "split_info": {"current": split_idx, "total": total_estimators},
             }
 
-            # Update the progress bar description to include the fold number
+            # Update the progress bar description to include the split number
             progress.update(
                 main_task,
                 description=(
-                    "Cross-validation predictions for fold "
-                    f"#{fold_idx}/{total_estimators}"
+                    "Cross-validation predictions for split "
+                    f"#{split_idx}/{total_estimators}"
                 ),
             )
 
