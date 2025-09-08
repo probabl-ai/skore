@@ -173,6 +173,7 @@ class Project:
         with HUBClient() as client:
             client.post(url=url, json=payload_dict)
 
+    @ensure_project_is_created
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its URN."""
         if m := re.match(Project.__REPORT_URN_PATTERN, urn):
