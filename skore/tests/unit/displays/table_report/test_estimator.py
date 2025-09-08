@@ -14,6 +14,9 @@ def estimator_report():
     X, y = data.X, data.y
     X["gender"] = X["gender"].astype("category")
     X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
+    X["timedelta_hired"] = (
+        pd.Timestamp.now() - X["date_first_hired"]
+    ).dt.to_pytimedelta()
     X["cents"] = 100 * y
     split_data = train_test_split(X, y, random_state=0, as_dict=True)
     return EstimatorReport(tabular_pipeline("regressor"), **split_data)

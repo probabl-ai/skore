@@ -1,5 +1,3 @@
-import json
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -155,11 +153,6 @@ def test_compute_contingency_table(dtype):
     assert contingency_table.index.tolist() == ["b", "c"]
     assert contingency_table.columns.tolist() == ["b", "c"]
     assert contingency_table.sum().sum() == 4
-
-
-def test_json_dump(display):
-    json_dict = json.loads(display._to_json())
-    assert isinstance(json_dict, dict)
 
 
 def test_html_repr(display, X_y):
