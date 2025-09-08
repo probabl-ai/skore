@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Sequence
 
+import numpy as np
 from numpy.typing import ArrayLike
 
 from skore._sklearn.train_test_split.warning.train_test_split_warning import (
@@ -72,6 +73,9 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
             or ("classification" not in ml_task)
         ):
             return None
+
+        if isinstance(y_test, np.ndarray) and y_test.ndim >= 2:
+            y_test = y_test.flatten()
 
         counts = Counter(y_test)
 
