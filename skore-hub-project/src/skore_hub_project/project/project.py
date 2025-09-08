@@ -175,10 +175,12 @@ class Project:
 
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its urn."""
-        if match := re.match(Project.__REPORT_URN_PATTERN, urn):
-            url = f"projects/{self.tenant}/{self.name}/{match['type']}-reports/{match['id']}"
+        if m := re.match(Project.__REPORT_URN_PATTERN, urn):
+            url = f"projects/{self.tenant}/{self.name}/{m['type']}-reports/{m['id']}"
         else:
-            raise ValueError
+            raise ValueError(
+                f"URN '{urn}' format does not match '{Project.__REPORT_URN_PATTERN}'"
+            )
 
         # Retrieve report metadata.
         with HUBClient() as client:
