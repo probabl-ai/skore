@@ -174,7 +174,7 @@ class Project:
             client.post(url=url, json=payload_dict)
 
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
-        """Get a persisted report by its urn."""
+        """Get a persisted report by its URN."""
         if m := re.match(Project.__REPORT_URN_PATTERN, urn):
             url = f"projects/{self.tenant}/{self.name}/{m['type']}-reports/{m['id']}"
         else:
@@ -221,7 +221,7 @@ class Project:
 
         def get(urn: str) -> EstimatorReport | CrossValidationReport:
             """
-            Get a persisted report by its urn.
+            Get a persisted report by its URN.
 
             .. deprecated
               The ``Project.reports.get`` function will be removed in favor of
