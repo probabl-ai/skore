@@ -240,7 +240,7 @@ class Project:
                 }
 
                 return {
-                    "id": summary["urn"],
+                    "id": summary["id"],
                     "run_id": summary["run_id"],
                     "key": summary["key"],
                     "date": summary["created_at"],
@@ -256,7 +256,7 @@ class Project:
 
             with HUBClient() as client:
                 response = client.get(
-                    f"projects/{self.tenant}/{self.name}/estimator-reports"
+                    f"projects/{self.tenant}/{self.name}/experiments/estimator-reports"
                 )
 
             return sorted(map(dto, response.json()), key=itemgetter("date"))
