@@ -205,13 +205,13 @@ class TestProject:
         url = "projects/<tenant>/<name>/runs"
         respx_mock.post(url).mock(Response(200, json={"id": 2}))
 
-        url = "projects/<tenant>/<name>/estimator-reports"
+        url = "projects/<tenant>/<name>/experiments/estimator-reports"
         respx_mock.get(url).mock(
             Response(
                 200,
                 json=[
                     {
-                        "urn": "skore:report:estimator:<report_id_0>",
+                        "id": "<report_id_0>",
                         "run_id": 0,
                         "key": "<key>",
                         "ml_task": "<ml_task>",
@@ -224,7 +224,7 @@ class TestProject:
                         ],
                     },
                     {
-                        "urn": "skore:report:estimator:<report_id_1>",
+                        "id": "<report_id_1>",
                         "run_id": 1,
                         "key": "<key>",
                         "ml_task": "<ml_task>",
@@ -245,7 +245,7 @@ class TestProject:
 
         assert metadata == [
             {
-                "id": "skore:report:estimator:<report_id_0>",
+                "id": "<report_id_0>",
                 "run_id": 0,
                 "key": "<key>",
                 "date": nowstr,
@@ -259,7 +259,7 @@ class TestProject:
                 "predict_time": None,
             },
             {
-                "id": "skore:report:estimator:<report_id_1>",
+                "id": "<report_id_1>",
                 "run_id": 1,
                 "key": "<key>",
                 "date": nowstr,
