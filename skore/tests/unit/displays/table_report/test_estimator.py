@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
-from sklearn.model_selection import train_test_split
-from skore import Display, EstimatorReport
+from skore import Display, EstimatorReport, train_test_split
 from skore._sklearn._plot.data.table_report import (
+    TableReportDisplay,
     _compute_contingency_table,
     _resize_categorical_axis,
     _truncate_top_k_categories,
@@ -20,14 +20,8 @@ def estimator_report():
     X["gender"] = X["gender"].astype("category")
     X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
     X["cents"] = 100 * y
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-    return EstimatorReport(
-        tabular_learner("regressor"),
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-    )
+    split_data = train_test_split(X, y, random_state=0, as_dict=True)
+    return EstimatorReport(tabular_learner("regressor"), **split_data)
 
 
 @pytest.fixture
@@ -39,14 +33,8 @@ def display():
     X["timedelta_hired"] = (
         pd.Timestamp.now() - X["date_first_hired"]
     ).dt.to_pytimedelta()
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-    report = EstimatorReport(
-        tabular_learner("regressor"),
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-    )
+    split_data = train_test_split(X, y, random_state=0, as_dict=True)
+    report = EstimatorReport(tabular_learner("regressor"), **split_data)
     return report.data.analyze()
 
 
@@ -186,6 +174,31 @@ def test_constructor(display):
 
     assert hasattr(display, "summary")
     assert isinstance(display.summary, dict)
+
+
+@pytest.mark.parametrize(
+    "X",
+    [
+        np.ones((100, 5)),
+        pd.DataFrame(
+            np.ones((100, 5)), columns=[f"Feature number {i}" for i in range(5)]
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "y",
+    [
+        np.ones((100, 1)),
+        np.ones(100),
+        pd.Series(np.ones(100)),
+        pd.DataFrame(np.ones((100, 1)), columns=["Target"]),
+    ],
+)
+def test_X_y(X, y):
+    split_data = train_test_split(X, y, random_state=0, as_dict=True)
+    report = EstimatorReport(tabular_learner("regressor"), **split_data)
+    display = report.data.analyze()
+    assert isinstance(display, TableReportDisplay)
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
