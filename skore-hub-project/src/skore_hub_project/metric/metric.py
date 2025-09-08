@@ -10,7 +10,8 @@ from math import isfinite
 from typing import Any, ClassVar, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
-from skore import CrossValidationReport, EstimatorReport
+
+from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 
 def cast_to_float(value: Any) -> float | None:
