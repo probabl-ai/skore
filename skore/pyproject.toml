@@ -59,7 +59,7 @@ sphinx-base = [
   "altair",
   "kaleido",
   "numpydoc",
-  "plotly>=5,<6",
+  "plotly>=6,<7",
   "pydata-sphinx-theme",
   "seaborn",
   "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
