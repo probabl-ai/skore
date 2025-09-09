@@ -28,13 +28,13 @@ def test_binary_classification(
 
     pos_label = 1
     n_reports = len(report.reports_)
-    n_splits = len(report.reports_[0].estimator_reports_)
+    n_splits = len(list(report.reports_.values())[0].estimator_reports_)
 
     display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == n_reports * n_splits
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for i, estimator_name in enumerate(report.report_names_):
+    for i, estimator_name in enumerate(report.reports_.keys()):
         precision_recall_mpl = display.lines_[i * n_splits]
         assert isinstance(precision_recall_mpl, Line2D)
 
@@ -76,7 +76,7 @@ def test_multiclass_classification(
 
     labels = display.precision_recall["label"].cat.categories
     n_reports = len(report.reports_)
-    n_splits = len(report.reports_[0].estimator_reports_)
+    n_splits = len(list(report.reports_.values())[0].estimator_reports_)
 
     display.plot()
     assert isinstance(display.lines_, list)
@@ -84,7 +84,7 @@ def test_multiclass_classification(
 
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for i, ((estimator_idx, estimator_name), label) in enumerate(
-        product(enumerate(report.report_names_), labels)
+        product(enumerate(report.reports_.keys()), labels)
     ):
         precision_recall_mpl = display.lines_[i * n_splits]
         assert isinstance(precision_recall_mpl, Line2D)
@@ -219,7 +219,7 @@ def test_binary_classification_constructor(forest_binary_classification_data):
         assert df.query("estimator_name == 'estimator_2'")[
             "split"
         ].unique().tolist() == list(range(cv + 1))
-        assert df["estimator_name"].unique().tolist() == report.report_names_
+        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
         assert df["label"].unique() == 1
 
     assert len(display.average_precision) == cv + (cv + 1)
@@ -245,7 +245,7 @@ def test_multiclass_classification_constructor(forest_multiclass_classification_
         assert df.query("estimator_name == 'estimator_2'")[
             "split"
         ].unique().tolist() == list(range(cv + 1))
-        assert df["estimator_name"].unique().tolist() == report.report_names_
+        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
         np.testing.assert_array_equal(df["label"].unique(), classes)
 
     assert len(display.average_precision) == len(classes) * cv + len(classes) * (cv + 1)

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from skore._sklearn._comparison.feature_importance_accessor import (
         _FeatureImportanceAccessor,
     )
-    from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
+    from skore._sklearn._comparison.metrics_accessor import _MetricsAccessor
 
     ReportType = Literal["EstimatorReport", "CrossValidationReport"]
 
@@ -87,7 +87,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ...     {"model1": estimator_report_1, "model2": estimator_report_2}
     ... )
     >>> report.reports_
-    {'LogisticRegression_1': ..., 'LogisticRegression_2': ...}
+    {'model1': ..., 'model2': ...}
 
     >>> from sklearn.datasets import make_classification
     >>> from sklearn.linear_model import LogisticRegression

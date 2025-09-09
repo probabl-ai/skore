@@ -60,5 +60,5 @@ def test_get_predictions(
         predictions = report.get_predictions(data_source=data_source)
 
     assert len(predictions) == len(report.reports_)
-    for i, cv_report in enumerate(report.reports_):
+    for i, cv_report in enumerate(report.reports_.values()):
         assert len(predictions[i]) == cv_report._splitter.n_splits

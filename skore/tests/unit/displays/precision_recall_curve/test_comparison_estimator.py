@@ -43,7 +43,7 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
     display.plot()
     expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for idx, (estimator_name, line) in enumerate(
-        zip(report.report_names_, display.lines_, strict=False)
+        zip(report.reports_.keys(), display.lines_, strict=False)
     ):
         assert isinstance(line, mpl.lines.Line2D)
         average_precision = display.average_precision.query(
@@ -96,14 +96,14 @@ def test_multiclass_classification(
     assert isinstance(display, PrecisionRecallCurveDisplay)
     check_display_data(display)
 
-    class_labels = report.reports_[0].estimator_.classes_
+    class_labels = list(report.reports_.values())[0].estimator_.classes_
 
     display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * 2
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for idx, (estimator_name, expected_color) in enumerate(
-        zip(report.report_names_, default_colors, strict=False)
+        zip(report.reports_.keys(), default_colors, strict=False)
     ):
         for class_label_idx, class_label in enumerate(class_labels):
             roc_curve_mpl = display.lines_[idx * len(class_labels) + class_label_idx]
@@ -350,7 +350,7 @@ def test_binary_classification_constructor(
     index_columns = ["estimator_name", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique().tolist() == report.report_names_
+        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
         assert df["split"].isnull().all()
         assert df["label"].unique() == 1
 
@@ -378,7 +378,7 @@ def test_multiclass_classification_constructor(
     index_columns = ["estimator_name", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique().tolist() == report.report_names_
+        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
         assert df["split"].isnull().all()
         np.testing.assert_array_equal(df["label"].unique(), np.unique(y_train))
 

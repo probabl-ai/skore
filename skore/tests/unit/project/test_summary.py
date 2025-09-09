@@ -271,7 +271,10 @@ class TestSummary:
         comparison = summary.reports(return_as="comparison")
 
         assert isinstance(comparison, ComparisonReport)
-        assert comparison.reports_ == [regression1, regression2]
+        assert comparison.reports_ == {
+            "LinearRegression_1": regression1,
+            "LinearRegression_2": regression2,
+        }
 
     def test_reports_exception_invalid_object(self):
         with raises(

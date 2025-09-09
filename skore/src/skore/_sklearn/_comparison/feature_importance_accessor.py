@@ -46,9 +46,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         """
         similar_reports = defaultdict(list)
 
-        for report, name in zip(
-            self._parent.reports_, self._parent.report_names_, strict=False
-        ):
+        for name, report in self._parent.reports_.items():
             report = cast(CrossValidationReport | EstimatorReport, report)
             feature_names = (
                 report.feature_importance.coefficients().frame().index.tolist()
