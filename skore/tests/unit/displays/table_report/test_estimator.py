@@ -3,13 +3,8 @@ import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
 from skore import Display, EstimatorReport, train_test_split
-from skore._sklearn._plot.data.table_report import (
-    TableReportDisplay,
-    _compute_contingency_table,
-    _resize_categorical_axis,
-    _truncate_top_k_categories,
-)
-from skrub import tabular_learner
+from skore._externals._skrub_compat import tabular_pipeline
+from skore._sklearn._plot.data.table_report import TableReportDisplay
 from skrub.datasets import fetch_employee_salaries
 
 
@@ -19,126 +14,17 @@ def estimator_report():
     X, y = data.X, data.y
     X["gender"] = X["gender"].astype("category")
     X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
-    X["cents"] = 100 * y
-    split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    return EstimatorReport(tabular_learner("regressor"), **split_data)
-
-
-@pytest.fixture
-def display():
-    data = fetch_employee_salaries()
-    X, y = data.X, data.y
-    X["gender"] = X["gender"].astype("category")
-    X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
     X["timedelta_hired"] = (
         pd.Timestamp.now() - X["date_first_hired"]
     ).dt.to_pytimedelta()
+    X["cents"] = 100 * y
     split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    report = EstimatorReport(tabular_learner("regressor"), **split_data)
-    return report.data.analyze()
+    return EstimatorReport(tabular_pipeline("regressor"), **split_data)
 
 
-@pytest.mark.parametrize("col", [None, pd.Series(range(10))])
-def test_truncate_top_k_categories_return_as_is(col):
-    """Check the behaviour of `_truncate_top_k_categories` when `col` is None or
-    numeric where no changes are made."""
-    assert _truncate_top_k_categories(col, k=3) is col
-
-
-@pytest.mark.parametrize("dtype", ["category", "object"])
-@pytest.mark.parametrize("other_label", ["other", "xxx"])
-def test_truncate_top_k_categories(dtype, other_label):
-    """Check the behaviour of `_truncate_top_k_categories` when `col` is a categorical
-    column."""
-    col = pd.Series(
-        ["a", "a", "b", "b", "b", "c", "c", "c", "c", "c", "d", "e", np.nan, np.nan],
-        dtype=dtype,
-    )
-    expected_col = pd.Series(
-        [
-            "a",
-            "a",
-            "b",
-            "b",
-            "b",
-            "c",
-            "c",
-            "c",
-            "c",
-            "c",
-            other_label,
-            other_label,
-            np.nan,
-            np.nan,
-        ],
-        dtype=dtype,
-    )
-    truncated_col = _truncate_top_k_categories(col, k=3, other_label=other_label)
-    pd.testing.assert_series_equal(truncated_col, expected_col)
-
-
-def test_compute_contingency_table_error():
-    """Check that we raise an error when the series x and y don't have a name."""
-    series = pd.Series(["a", "a", "b", "b", "b", "c", "c", "c", "c", "c", "d", "e"])
-    err_msg = "The series x and y must have a name."
-    with pytest.raises(ValueError, match=err_msg):
-        _compute_contingency_table(x=series, y=series, hue=None, k=1)
-
-
-@pytest.mark.parametrize("dtype", ["category", "object"])
-def test_compute_contingency_table(dtype):
-    """Check the behaviour of the `_compute_contingency_table` function."""
-    x = pd.Series(
-        ["a", "a", "b", "b", "b", "c", "c", "c", "c", "c", "d", "e"],
-        name="x",
-        dtype=dtype,
-    )
-    y = pd.Series(
-        ["a", "a", "b", "b", "b", "c", "c", "c", "c", "c", "d", "e"],
-        name="y",
-        dtype=dtype,
-    )
-    contingency_table = _compute_contingency_table(x, y, hue=None, k=100)
-    assert contingency_table.sum().sum() == len(x)
-    assert sorted(contingency_table.columns.tolist()) == sorted(x.unique().tolist())
-    assert sorted(contingency_table.index.tolist()) == sorted(y.unique().tolist())
-
-    hue = pd.Series(np.ones_like(x) * 2.0)
-    contingency_table = _compute_contingency_table(x, y, hue, k=100)
-    assert contingency_table.sum().sum() == pytest.approx(x.unique().size * 2)
-    assert sorted(contingency_table.columns.tolist()) == sorted(x.unique().tolist())
-    assert sorted(contingency_table.index.tolist()) == sorted(y.unique().tolist())
-
-    contingency_table = _compute_contingency_table(x, y, hue=None, k=2)
-    assert contingency_table.index.tolist() == ["b", "c"]
-    assert contingency_table.columns.tolist() == ["b", "c"]
-    assert contingency_table.sum().sum() == 8
-
-    contingency_table = _compute_contingency_table(x, y, hue=hue, k=2)
-    assert contingency_table.index.tolist() == ["b", "c"]
-    assert contingency_table.columns.tolist() == ["b", "c"]
-    assert contingency_table.sum().sum() == 4
-
-
-@pytest.mark.parametrize("is_x_axis", [True, False])
-def test_resize_categorical_axis(pyplot, is_x_axis):
-    """Check the behaviour of the `_resize_categorical_axis` function."""
-    figure, ax = pyplot.subplots(figsize=(10, 10))
-    _resize_categorical_axis(
-        figure=figure,
-        ax=ax,
-        n_categories=1,
-        is_x_axis=is_x_axis,
-        size_per_category=0.5,
-    )
-
-    fig_width, fig_height = figure.get_size_inches()
-    if is_x_axis:
-        assert 0.5 < fig_width < 1.0
-        assert 10.0 < fig_height < 13.0
-    else:
-        assert 0.5 < fig_height < 1.0
-        assert 10.0 < fig_width < 13.0
+@pytest.fixture
+def display(estimator_report):
+    return estimator_report.data.analyze()
 
 
 @pytest.mark.parametrize(
@@ -196,7 +82,7 @@ def test_constructor(display):
 )
 def test_X_y(X, y):
     split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    report = EstimatorReport(tabular_learner("regressor"), **split_data)
+    report = EstimatorReport(tabular_pipeline("regressor"), **split_data)
     display = report.data.analyze()
     assert isinstance(display, TableReportDisplay)
 
@@ -379,29 +265,3 @@ def test_hue_plots_2d(pyplot, estimator_report):
     msg = "If 'x' and 'y' are categories, 'hue' must be continuous."
     with pytest.raises(ValueError, match=msg):
         display.plot(x="gender", y="division", hue="department_name")
-
-
-def test_corr_plot(pyplot, estimator_report):
-    """Check the correlation plot."""
-    display = estimator_report.data.analyze(data_source="train")
-    display.plot(kind="corr")
-    assert isinstance(display.ax_.collections[0], QuadMesh)
-    assert len(display.ax_.get_xticklabels()) == 10
-    assert len(display.ax_.get_yticklabels()) == 10
-    assert display.ax_.title.get_text() == "Cramer's V Correlation"
-
-
-def test_repr(display):
-    """Check the string representation of the `TableReportDisplay`."""
-    repr = display.__repr__()
-    assert repr == "<TableReportDisplay(...)>"
-
-
-def test_html_repr(estimator_report):
-    """Check the HTML representation of the `TableReportDisplay`."""
-    display = estimator_report.data.analyze(data_source="train")
-    str_html = display._repr_html_()
-    for col in estimator_report.X_train.columns:
-        assert col in str_html
-
-    assert "<skrub-table-report" in str_html
