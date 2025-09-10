@@ -679,7 +679,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             despine=despine,
         )
 
-
     def _plot_matplotlib(
         self,
         *,

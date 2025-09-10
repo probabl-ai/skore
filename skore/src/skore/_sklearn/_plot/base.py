@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Callable
-from io import StringIO
 from functools import wraps
+from io import StringIO
 from typing import Any, Protocol, runtime_checkable
 
 import matplotlib.pyplot as plt
@@ -12,7 +12,6 @@ from rich.tree import Tree
 
 from skore._config import get_config
 from skore._sklearn.types import PlotBackend
-
 
 ########################################################################################
 # Display protocol
@@ -278,10 +277,13 @@ class HelpDisplayMixin:
         console.print(f"[cyan]skore.{self.__class__.__name__}(...)[/cyan]")
         return string_buffer.getvalue()
 
+
 ########################################################################################
 # Display mixin inheriting from the different mixins
 ########################################################################################
 
+
 class DisplayMixin(HelpDisplayMixin, PlotBackendMixin, StyleDisplayMixin):
     """Mixin inheriting help, plotting, and style functionality."""
+
     pass

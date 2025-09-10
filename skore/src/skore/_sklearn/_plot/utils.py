@@ -6,7 +6,6 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
-
 from sklearn.utils.validation import (
     _check_pos_label_consistency,
     check_consistent_length,
