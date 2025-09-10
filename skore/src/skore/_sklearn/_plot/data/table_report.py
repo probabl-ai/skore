@@ -16,7 +16,7 @@ from skrub._reporting._utils import (
 )
 
 from skore._externals._skrub_compat import sbd
-from skore._sklearn._plot.base import BaseDisplay
+from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _adjust_fig_size,
     _rotate_ticklabels,
@@ -160,7 +160,7 @@ def _resize_categorical_axis(
     _adjust_fig_size(figure, ax, target_width, target_height)
 
 
-class TableReportDisplay(ReprHTMLMixin, BaseDisplay):
+class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
     """Display reporting information about a given dataset.
 
     This display summarizes the dataset and provides a way to visualize
@@ -218,7 +218,7 @@ class TableReportDisplay(ReprHTMLMixin, BaseDisplay):
         """
         return cls(summarize_dataframe(dataset, with_plots=True, title=None, verbose=0))
 
-    @BaseDisplay.style_plot
+    @DisplayMixin.style_plot
     def plot(
         self,
         *,

@@ -279,9 +279,9 @@ class HelpDisplayMixin:
         return string_buffer.getvalue()
 
 ########################################################################################
-# Base display inheriting from the different mixins
+# Display mixin inheriting from the different mixins
 ########################################################################################
 
-class BaseDisplay(HelpDisplayMixin, PlotBackendMixin, StyleDisplayMixin):
-    """Base display class inheriting from the different mixins."""
+class DisplayMixin(HelpDisplayMixin, PlotBackendMixin, StyleDisplayMixin):
+    """Mixin inheriting help, plotting, and style functionality."""
     pass

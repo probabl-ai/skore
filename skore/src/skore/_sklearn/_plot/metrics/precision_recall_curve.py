@@ -12,7 +12,7 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 
-from skore._sklearn._plot.base import BaseDisplay
+from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     LINESTYLE,
     _ClassifierCurveDisplayMixin,
@@ -43,7 +43,7 @@ def _set_axis_labels(ax: Axes, info_pos_label: str | None) -> None:
 MAX_N_LABELS = 5
 
 
-class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, BaseDisplay):
+class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     """Precision Recall visualization.
 
     An instance of this class should be created by
@@ -626,7 +626,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, BaseDisplay):
 
         return self.ax_, lines, info_pos_label
 
-    @BaseDisplay.style_plot
+    @DisplayMixin.style_plot
     def plot(
         self,
         *,

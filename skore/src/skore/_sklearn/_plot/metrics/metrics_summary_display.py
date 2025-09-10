@@ -1,7 +1,7 @@
-from skore._sklearn._plot.base import BaseDisplay
+from skore._sklearn._plot.base import DisplayMixin
 
 
-class MetricsSummaryDisplay(BaseDisplay):
+class MetricsSummaryDisplay(DisplayMixin):
     """Display for summarize.
 
     An instance of this class will be created by `Report.metrics.summarize()`.
@@ -21,7 +21,7 @@ class MetricsSummaryDisplay(BaseDisplay):
         """
         return self.summarize_data
 
-    @BaseDisplay.style_plot
+    @DisplayMixin.style_plot
     def plot(self):
         """Not yet implemented."""
         raise NotImplementedError

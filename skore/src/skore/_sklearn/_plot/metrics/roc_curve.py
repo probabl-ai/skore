@@ -11,7 +11,7 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, roc_curve
 from sklearn.preprocessing import LabelBinarizer
 
-from skore._sklearn._plot.base import BaseDisplay
+from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     LINESTYLE,
     _ClassifierCurveDisplayMixin,
@@ -61,7 +61,7 @@ def _add_chance_level(
     return cast(Line2D, chance_level)
 
 
-class RocCurveDisplay(_ClassifierCurveDisplayMixin, BaseDisplay):
+class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     """ROC Curve visualization.
 
     An instance of this class should be created by `EstimatorReport.metrics.roc()`.
@@ -699,7 +699,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, BaseDisplay):
 
         return self.ax_, lines, info_pos_label
 
-    @BaseDisplay.style_plot
+    @DisplayMixin.style_plot
     def plot(
         self,
         *,
