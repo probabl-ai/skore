@@ -305,7 +305,7 @@ def test_pos_label_overwrite(metric):
     result = report.metrics.summarize(scoring=metric).frame().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in report.reports_:
         assert (
             result.loc[metric.capitalize(), ("mean", report_name)]
             == result_both_labels.loc[(metric.capitalize(), "B"), ("mean", report_name)]
@@ -316,7 +316,7 @@ def test_pos_label_overwrite(metric):
     )
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in report.reports_:
         assert (
             result.loc[metric.capitalize(), ("mean", report_name)]
             == result_both_labels.loc[(metric.capitalize(), "A"), ("mean", report_name)]
@@ -355,7 +355,7 @@ def test_precision_recall_pos_label_overwrite(metric):
     result = getattr(report.metrics, metric)(pos_label="B").reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in report.reports_:
         assert (
             result.loc[metric.capitalize(), ("mean", report_name)]
             == result_both_labels.loc[(metric.capitalize(), "B"), ("mean", report_name)]
@@ -364,7 +364,7 @@ def test_precision_recall_pos_label_overwrite(metric):
     result = getattr(report.metrics, metric)(pos_label="A").reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in report.reports_:
         assert (
             result.loc[metric.capitalize(), ("mean", report_name)]
             == result_both_labels.loc[(metric.capitalize(), "A"), ("mean", report_name)]

@@ -275,5 +275,5 @@ def test_constructor(linear_regression_with_train_test):
     index_columns = ["estimator_name", "split"]
     df = display._prediction_error
     assert all(col in df.columns for col in index_columns)
-    assert df["estimator_name"].unique().tolist() == report.report_names_
+    assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
     assert df["split"].isnull().all()

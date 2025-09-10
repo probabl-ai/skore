@@ -144,12 +144,12 @@ def test_child_report_cleanup():
     class Parent:
         def __init__(self):
             self._progress_info = None
-            self.reports_ = [Child(), Child()]
+            self.reports_ = {"child1": Child(), "child2": Child()}
 
         @progress_decorator("Parent Process")
         def run(self):
             results = []
-            for rpt in self.reports_:
+            for rpt in self.reports_.values():
                 results.append(rpt.process())
             return results
 
@@ -157,9 +157,9 @@ def test_child_report_cleanup():
     results = parent.run()
 
     assert results == ["child_done", "child_done"]
-    assert all(rp.called for rp in parent.reports_)
+    assert all(rp.called for rp in parent.reports_.values())
     # Verify that progress attributes are cleaned for each child report
-    for rp in parent.reports_:
+    for rp in parent.reports_.values():
         assert rp._progress_info is None
     # Also verify if parent reports are cleaned up as well
     assert parent._progress_info is None

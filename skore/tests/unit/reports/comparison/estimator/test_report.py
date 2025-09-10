@@ -125,11 +125,12 @@ def test_get_predictions(
         data_source=data_source, response_method=response_method, pos_label=pos_label
     )
     assert len(predictions) == 2
+    sub_reports = list(report.reports_.values())
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_shape = report.reports_[split_idx].y_train.shape
+            expected_shape = sub_reports[split_idx].y_train.shape
         else:
-            expected_shape = report.reports_[split_idx].y_test.shape
+            expected_shape = sub_reports[split_idx].y_test.shape
         assert split_predictions.shape == expected_shape
 
 
