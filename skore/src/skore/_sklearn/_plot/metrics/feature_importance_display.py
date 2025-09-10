@@ -1,12 +1,10 @@
 import matplotlib.pyplot as plt
 
-from skore._sklearn._plot.base import Display
-from skore._sklearn._plot.style import StyleDisplayMixin
-from skore._sklearn._plot.utils import HelpDisplayMixin, PlotBackendMixin
+from skore._sklearn._plot.base import HelpDisplayMixin, PlotBackendMixin, StyleDisplayMixin
 
 
 class FeatureImportanceDisplay(
-    HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixin, Display
+    HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixin
 ):
     """Feature importance display.
 

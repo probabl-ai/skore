@@ -12,11 +12,9 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 
-from skore._sklearn._plot.style import StyleDisplayMixin
+from skore._sklearn._plot.base import BaseDisplay
 from skore._sklearn._plot.utils import (
     LINESTYLE,
-    HelpDisplayMixin,
-    PlotBackendMixin,
     _ClassifierCurveDisplayMixin,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
@@ -45,9 +43,7 @@ def _set_axis_labels(ax: Axes, info_pos_label: str | None) -> None:
 MAX_N_LABELS = 5
 
 
-class PrecisionRecallCurveDisplay(
-    StyleDisplayMixin, HelpDisplayMixin, _ClassifierCurveDisplayMixin, PlotBackendMixin
-):
+class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, BaseDisplay):
     """Precision Recall visualization.
 
     An instance of this class should be created by
@@ -630,8 +626,8 @@ class PrecisionRecallCurveDisplay(
 
         return self.ax_, lines, info_pos_label
 
-    @StyleDisplayMixin.style_plot
-    def _plot_matplotlib(
+    @BaseDisplay.style_plot
+    def plot(
         self,
         *,
         estimator_name: str | None = None,
@@ -639,8 +635,6 @@ class PrecisionRecallCurveDisplay(
         despine: bool = True,
     ) -> None:
         """Plot visualization.
-
-        Extra keyword arguments will be passed to matplotlib's `plot`.
 
         Parameters
         ----------
@@ -679,6 +673,21 @@ class PrecisionRecallCurveDisplay(
         >>> display = report.metrics.precision_recall()
         >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
+        return self._plot(
+            estimator_name=estimator_name,
+            pr_curve_kwargs=pr_curve_kwargs,
+            despine=despine,
+        )
+
+
+    def _plot_matplotlib(
+        self,
+        *,
+        estimator_name: str | None = None,
+        pr_curve_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
+        despine: bool = True,
+    ) -> None:
+        """Matplotlib implementation of the `plot` method."""
         if (
             self.report_type == "comparison-cross-validation"
             and self.ml_task == "multiclass-classification"

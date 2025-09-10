@@ -10,10 +10,8 @@ from pandas import DataFrame
 from sklearn.utils.validation import _num_samples, check_array
 
 from skore._externals._sklearn_compat import _safe_indexing
-from skore._sklearn._plot.style import StyleDisplayMixin
+from skore._sklearn._plot.base import BaseDisplay
 from skore._sklearn._plot.utils import (
-    HelpDisplayMixin,
-    PlotBackendMixin,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
     sample_mpl_colormap,
@@ -25,7 +23,7 @@ RangeData = namedtuple("RangeData", ["min", "max"])
 MAX_N_LABELS = 6  # 5 + 1 for the perfect model line
 
 
-class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMixin):
+class PredictionErrorDisplay(BaseDisplay):
     """Visualization of the prediction error of a regression model.
 
     This tool can display "residuals vs predicted" or "actual vs predicted"
@@ -522,8 +520,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
 
         return scatter
 
-    @StyleDisplayMixin.style_plot
-    def _plot_matplotlib(
+    @BaseDisplay.style_plot
+    def plot(
         self,
         *,
         estimator_name: str | None = None,
@@ -578,6 +576,26 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
         >>> display = report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
+        return self._plot(
+            estimator_name=estimator_name,
+            kind=kind,
+            data_points_kwargs=data_points_kwargs,
+            perfect_model_kwargs=perfect_model_kwargs,
+            despine=despine,
+        )
+
+    def _plot_matplotlib(
+        self,
+        *,
+        estimator_name: str | None = None,
+        kind: Literal[
+            "actual_vs_predicted", "residual_vs_predicted"
+        ] = "residual_vs_predicted",
+        data_points_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
+        perfect_model_kwargs: dict[str, Any] | None = None,
+        despine: bool = True,
+    ) -> None:
+        """Matplolib implementation of the `plot` method."""
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
             raise ValueError(

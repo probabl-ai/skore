@@ -1,6 +1,4 @@
-import inspect
 from collections.abc import Sequence
-from io import StringIO
 from typing import Any
 
 import numpy as np
@@ -8,18 +6,14 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
-from rich.console import Console
-from rich.panel import Panel
-from rich.tree import Tree
+
 from sklearn.utils.validation import (
     _check_pos_label_consistency,
     check_consistent_length,
 )
 
-from skore._config import get_config
 from skore._sklearn.types import (
     MLTask,
-    PlotBackend,
     PositiveLabel,
     ReportType,
     YPlotData,
@@ -44,96 +38,6 @@ LINESTYLE = [
     ("loosely dashdotdotted", (0, (3, 10, 1, 10, 1, 10))),
     ("densely dashdotdotted", (0, (3, 1, 1, 1, 1, 1))),
 ]
-
-
-class HelpDisplayMixin:
-    """Mixin class to add help functionality to a class."""
-
-    estimator_name: str  # defined in the concrete display class
-
-    def _get_attributes_for_help(self) -> list[str]:
-        """Get the attributes ending with '_' to display in help."""
-        attributes = []
-        for name in dir(self):
-            if name.endswith("_") and not name.startswith("_"):
-                attributes.append(f".{name}")
-        return sorted(attributes)
-
-    def _get_methods_for_help(self) -> list[tuple[str, Any]]:
-        """Get the public methods to display in help."""
-        methods = inspect.getmembers(self, predicate=inspect.ismethod)
-        filtered_methods = []
-        for name, method in methods:
-            is_private = name.startswith("_")
-            is_class_method = inspect.ismethod(method) and method.__self__ is type(self)
-            is_help_method = name == "help"
-            if not (is_private or is_class_method or is_help_method):
-                filtered_methods.append((f".{name}(...)", method))
-        return sorted(filtered_methods)
-
-    def _create_help_tree(self) -> Tree:
-        """Create a rich Tree with attributes and methods."""
-        tree = Tree("display")
-
-        attributes = self._get_attributes_for_help()
-        attr_branch = tree.add("[bold cyan] Attributes[/bold cyan]")
-        # Ensure figure_ and ax_ are first
-        sorted_attrs = sorted(attributes)
-        if ("figure_" in sorted_attrs) and ("ax_" in sorted_attrs):
-            sorted_attrs.remove(".ax_")
-            sorted_attrs.remove(".figure_")
-            sorted_attrs = [".figure_", ".ax_"] + [
-                attr for attr in sorted_attrs if attr not in [".figure_", ".ax_"]
-            ]
-        for attr in sorted_attrs:
-            attr_branch.add(attr)
-
-        methods = self._get_methods_for_help()
-        method_branch = tree.add("[bold cyan]Methods[/bold cyan]")
-        for name, method in methods:
-            description = (
-                method.__doc__.split("\n")[0]
-                if method.__doc__
-                else "No description available"
-            )
-            method_branch.add(f"{name} - {description}")
-
-        return tree
-
-    def _create_help_panel(self) -> Panel:
-        return Panel(
-            self._create_help_tree(),
-            title=f"[bold cyan]{self.__class__.__name__} [/bold cyan]",
-            border_style="orange1",
-            expand=False,
-        )
-
-    def help(self) -> None:
-        """Display available attributes and methods using rich."""
-        from skore import console  # avoid circular import
-
-        console.print(self._create_help_panel())
-
-    def __str__(self) -> str:
-        """Return a string representation using rich."""
-        string_buffer = StringIO()
-        console = Console(file=string_buffer, force_terminal=False)
-        console.print(
-            Panel(
-                "Get guidance using the help() method",
-                title=f"[cyan]{self.__class__.__name__}[/cyan]",
-                border_style="orange1",
-                expand=False,
-            )
-        )
-        return string_buffer.getvalue()
-
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        string_buffer = StringIO()
-        console = Console(file=string_buffer, force_terminal=False)
-        console.print(f"[cyan]skore.{self.__class__.__name__}(...)[/cyan]")
-        return string_buffer.getvalue()
 
 
 class _ClassifierCurveDisplayMixin:
@@ -331,28 +235,6 @@ def _adjust_fig_size(
     width = _get_adjusted_fig_size(fig, ax, "width", target_width)
     height = _get_adjusted_fig_size(fig, ax, "height", target_height)
     fig.set_size_inches((width, height))
-
-
-class PlotBackendMixin:
-    """Mixin class for Displays to dispatch plotting to the configured backend."""
-
-    def plot(self, **kwargs):
-        """Show as a plot."""
-        plot_backend = get_config()["plot_backend"]
-        if plot_backend == "matplotlib":
-            return self._plot_matplotlib(**kwargs)
-        elif plot_backend == "plotly":
-            return self._plot_plotly(**kwargs)
-        else:
-            raise NotImplementedError(
-                f"Plotting backend {plot_backend} not available. "
-                f"Available options are {PlotBackend.__args__}."
-            )
-
-    def _plot_plotly(self, **kwargs):
-        raise NotImplementedError(
-            "Plotting with plotly is not supported for this Display."
-        )
 
 
 def _despine_matplotlib_axis(
