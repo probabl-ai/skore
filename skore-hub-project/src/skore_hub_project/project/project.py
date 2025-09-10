@@ -126,7 +126,7 @@ class Project:
         return run["id"]
 
     @ensure_project_is_created
-    def put(self, key: str, report: EstimatorReport):
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport):
         """
         Put a key-report pair to the hub project.
 
@@ -137,7 +137,7 @@ class Project:
         ----------
         key : str
             The key to associate with ``report`` in the hub project.
-        report : skore.EstimatorReport
+        report : skore.EstimatorReport | skore.CrossValidationReport
             The report to associate with ``key`` in the hub project.
 
         Raises
@@ -158,8 +158,8 @@ class Project:
             url = f"projects/{self.tenant}/{self.name}/cross-validation-reports"
         else:
             raise TypeError(
-                f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationRep"
-                f"ort` (found '{type(report)}')"
+                f"Report must be a `skore.EstimatorReport` or "
+                f"`skore.CrossValidationReport` (found '{type(report)}')"
             )
 
         payload = Payload(project=self, key=key, report=report)
