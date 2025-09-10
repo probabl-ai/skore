@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING
 
 from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
 
-from skore._sklearn import ComparisonReport
+from skore import ComparisonReport
 from skore.project.widget import ModelExplorerWidget
 
 if TYPE_CHECKING:
     from typing import Literal
 
-    from skore._sklearn import EstimatorReport
+    from skore import CrossValidationReport, EstimatorReport
 
 
 class Summary(DataFrame):
@@ -45,7 +45,7 @@ class Summary(DataFrame):
 
         Parameters
         ----------
-        project : Union[skore_local_project.Project, skore_hub_project.Project]
+        project : ``skore_local_project.Project`` | ``skore_hub_project.Project``
             The project from which the summary object is to be constructed.
 
         Notes
@@ -53,7 +53,7 @@ class Summary(DataFrame):
         This function is not intended for direct use. Instead simply use the accessor
         :meth:`skore.Project.summarize`.
         """
-        summary = DataFrame(project.reports.metadata(), copy=False)
+        summary = DataFrame(project.summarize(), copy=False)
 
         if not summary.empty:
             summary["learner"] = Categorical(summary["learner"])
@@ -79,7 +79,7 @@ class Summary(DataFrame):
         *,
         filter: bool = True,
         return_as: Literal["list", "comparison"] = "list",
-    ) -> list[EstimatorReport] | ComparisonReport:
+    ) -> list[EstimatorReport | CrossValidationReport] | ComparisonReport:
         """
         Return the reports referenced by the summary object from the project.
 
@@ -100,9 +100,7 @@ class Summary(DataFrame):
         if filter and (querystr := self._query_string_selection()):
             self = self.query(querystr)
 
-        reports = [
-            self.project.reports.get(id) for id in self.index.get_level_values("id")
-        ]
+        reports = [self.project.get(id) for id in self.index.get_level_values("id")]
 
         if return_as == "comparison":
             try:
