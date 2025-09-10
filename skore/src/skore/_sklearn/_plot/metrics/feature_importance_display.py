@@ -1,11 +1,9 @@
 import matplotlib.pyplot as plt
 
-from skore._sklearn._plot.base import HelpDisplayMixin, PlotBackendMixin, StyleDisplayMixin
+from skore._sklearn._plot.base import DisplayMixin
 
 
-class FeatureImportanceDisplay(
-    HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixin
-):
+class FeatureImportanceDisplay(DisplayMixin):
     """Feature importance display.
 
     Each report type produces its own output frame and plot.
@@ -100,7 +98,17 @@ class FeatureImportanceDisplay(
 
         return pd.concat(self._coefficient_data, axis=1)
 
-    @StyleDisplayMixin.style_plot
+    @DisplayMixin.style_plot
+    def plot(self, **kwargs) -> None:
+        """Plot the coefficients of linear models.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Additional keyword arguments to be passed to the plot method.
+        """
+        return self._plot(**kwargs)
+
     def _plot_matplotlib(self, **kwargs):
         from skore._sklearn._comparison import ComparisonReport
         from skore._sklearn._cross_validation import CrossValidationReport
