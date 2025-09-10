@@ -33,7 +33,7 @@ def monkeypatch_client(monkeypatch):
         FakeClient,
     )
     monkeypatch.setattr(
-        "skore_hub_project.artefact.upload.HUBClient",
+        "skore_hub_project.artifact.upload.HUBClient",
         FakeClient,
     )
 
@@ -110,7 +110,7 @@ class TestProject:
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
             Response(200, json={"id": 0})
         )
-        respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
+        respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
             Response(200, json=[])
         )
         respx_mock.post("projects/<tenant>/<name>/estimator-reports").mock(
@@ -139,7 +139,7 @@ class TestProject:
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
             Response(200, json={"id": 0})
         )
-        respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
+        respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
             Response(200, json=[])
         )
         respx_mock.post("projects/<tenant>/<name>/cross-validation-reports").mock(
@@ -182,7 +182,7 @@ class TestProject:
         response = Response(200, json={"raw": {"checksum": "<checksum>"}})
         respx_mock.get(url).mock(response)
 
-        url = "projects/<tenant>/<name>/artefacts/read"
+        url = "projects/<tenant>/<name>/artifacts/read"
         response = Response(200, json=[{"url": "http://url.com"}])
         respx_mock.get(url).mock(response)
 

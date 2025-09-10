@@ -5,7 +5,7 @@ from typing import ClassVar, cast
 
 from pydantic import Field, computed_field
 
-from skore_hub_project.artefact import EstimatorReportArtefact
+from skore_hub_project.artifact import EstimatorReportArtifact
 from skore_hub_project.media import (
     Coefficients,
     EstimatorHtmlRepr,
@@ -63,7 +63,7 @@ class EstimatorReportPayload(ReportPayload):
     report : EstimatorReport
         The report on which to calculate the payload to be sent.
     upload : bool, optional
-        Upload the report to the artefacts storage, default True.
+        Upload the report to the artifacts storage, default True.
     key : str
         The key to associate to the report.
     """
@@ -116,18 +116,18 @@ class EstimatorReportPayload(ReportPayload):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def parameters(self) -> EstimatorReportArtefact | dict:
+    def parameters(self) -> EstimatorReportArtifact | dict:
         """
         The checksum of the instance.
 
         The checksum of the instance that was assigned after being uploaded to the
-        artefact storage. It is based on its ``joblib`` serialization and mainly used to
-        retrieve it from the artefacts storage.
+        artifact storage. It is based on its ``joblib`` serialization and mainly used to
+        retrieve it from the artifacts storage.
 
         .. deprecated
           The ``parameters`` property will be removed in favor of a new ``checksum``
           property in a near future.
         """
         if self.upload:
-            return EstimatorReportArtefact(project=self.project, report=self.report)
+            return EstimatorReportArtifact(project=self.project, report=self.report)
         return {}
