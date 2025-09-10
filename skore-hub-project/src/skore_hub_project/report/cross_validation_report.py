@@ -132,27 +132,23 @@ class CrossValidationReportPayload(ReportPayload):
         if "classification" in self.ml_task:
             class_to_class_indice = defaultdict(lambda: len(class_to_class_indice))
 
-            self.__sample_to_class_indices = [
+            self.__sample_to_class_index = [
                 class_to_class_indice[sample] for sample in self.report.y
             ]
 
-            assert len(self.__sample_to_class_indices) == len(self.report.X)
+            assert len(self.__sample_to_class_index) == len(self.report.X)
 
             self.__classes = [str(class_) for class_ in class_to_class_indice]
 
-            assert max(self.__sample_to_class_indices) == (len(self.__classes) - 1)
+            assert max(self.__sample_to_class_index) == (len(self.__classes) - 1)
         else:
-            self.__sample_to_class_indices = None
+            self.__sample_to_class_index = None
             self.__classes = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def dataset_size(self) -> int:
-        """Size of the dataset.
-
-        This is necessary because the other properties might downsample the dataset
-        if it is very large.
-        """
+        """Size of the dataset."""
         return len(self.report.X)
 
     @computed_field  # type: ignore[prop-decorator]
@@ -170,20 +166,28 @@ class CrossValidationReportPayload(ReportPayload):
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def splits(self) -> list[list[float]]:
-        """Distribution between train and test by split.
-
-        Compute the density of samples belonging to the test set
-        by downsampling to a length of maximum 200 elements.
         """
-        X_len = len(self.report.X)
-        splits: list[list[float]] = []
-        for _, test_indices in self.report.split_indices:
-            mask = np.zeros(X_len, dtype=int)
-            mask[test_indices] = 1
-            buckets = np.array_split(mask, min(X_len, 200))
-            splits.append([np.mean(bucket) for bucket in buckets])
+        Distribution between train and test by split.
 
-        return splits
+        The distribution of each split is computed by dividing the split into a maximum
+        of 200 buckets, and averaging the number of samples belonging to the test-set in
+        each of these buckets.
+        """
+        distributions = []
+        buckets_number = min(len(self.report.X), 200)
+
+        for _, test_indices in self.report.split_indices:
+            split = np.zeros(len(self.report.X), dtype=int)
+            split[test_indices] = 1
+
+            distributions.append(
+                [
+                    float(np.mean(bucket))
+                    for bucket in np.array_split(split, buckets_number)
+                ]
+            )
+
+        return distributions
 
     groups: list[int] | None = None
 
@@ -196,22 +200,19 @@ class CrossValidationReportPayload(ReportPayload):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def classes(self) -> list[int] | None:
-        """In classification, a summary of class distribution in samples.
-
-        Split class indices into max 200 bucket
-        then find the domiannt class for each of them.
         """
-        if self.__sample_to_class_indices is None:
+        In classification, the distribution of the classes in the dataset.
+
+        The distribution is computed by dividing the dataset into a maximum of 200
+        buckets, and noting the dominant class in each of these buckets.
+        """
+        if self.__sample_to_class_index is None:
             return None
 
-        buckets = np.array_split(
-            self.__sample_to_class_indices,
-            min(len(self.__sample_to_class_indices), 200),
-        )
-        return [
-            int(np.bincount(bucket).argmax())  # dominant class
-            for bucket in buckets
-        ]
+        buckets_number = min(len(self.__sample_to_class_index), 200)
+        buckets = np.array_split(self.__sample_to_class_index, buckets_number)
+
+        return [int(np.bincount(bucket).argmax()) for bucket in buckets]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
