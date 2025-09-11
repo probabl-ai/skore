@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from contextlib import suppress
 from http import HTTPStatus
 from os import environ
@@ -25,6 +26,10 @@ from httpx import (
 from httpx._types import HeaderTypes
 
 from ..authentication import token as Token
+
+logging.basicConfig()
+
+logger = logging.getLogger(__name__)
 
 
 class Client(HTTPXClient):
@@ -106,7 +111,14 @@ class Client(HTTPXClient):
             timeout = self.retry_backoff_factor * (2**retries)
             retries += 1
 
-            sleep(min(timeout, self.retry_backoff_max))
+            sleep_duration = min(timeout, self.retry_backoff_max)
+
+            logger.warn(
+                "Request failed to reach server. "
+                f"Trying again in {sleep_duration} seconds."
+            )
+
+            sleep(sleep_duration)
 
         # Raise extended exception with body message when available.
         status_class = response.status_code // 100
