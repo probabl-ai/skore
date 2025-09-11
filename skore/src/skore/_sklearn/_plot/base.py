@@ -285,5 +285,3 @@ class HelpDisplayMixin:
 
 class DisplayMixin(HelpDisplayMixin, PlotBackendMixin, StyleDisplayMixin):
     """Mixin inheriting help, plotting, and style functionality."""
-
-    pass
