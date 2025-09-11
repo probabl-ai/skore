@@ -1,4 +1,4 @@
-"""Class definition of the payload used to upload and send an artefact to ``hub``."""
+"""Class definition of the payload used to upload and send an artifact to ``hub``."""
 
 from __future__ import annotations
 
@@ -9,12 +9,12 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project import Project
-from skore_hub_project.artefact.upload import upload
+from skore_hub_project.artifact.upload import upload
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 
-class Artefact(ABC, BaseModel):
-    """Payload used to send the artefact of a report to ``hub``."""
+class Artifact(ABC, BaseModel):
+    """Payload used to send the artifact of a report to ``hub``."""
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
@@ -22,13 +22,13 @@ class Artefact(ABC, BaseModel):
     object: Any = Field(repr=False, exclude=True)
 
 
-class EstimatorReportArtefact(Artefact):
+class EstimatorReportArtifact(Artifact):
     """
-    Payload used to upload and send an estimator report artefact to ``hub``.
+    Payload used to upload and send an estimator report artifact to ``hub``.
 
     Notes
     -----
-    It uploads the report to artefacts storage in a lazy way.
+    It uploads the report to artifacts storage in a lazy way.
 
     The report is uploaded without its cache, to avoid salting the checksum.
     The report is primarily pickled on disk to reduce RAM footprint.
@@ -39,7 +39,7 @@ class EstimatorReportArtefact(Artefact):
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def checksum(self) -> str:
-        """Checksum, useful for retrieving the artefact from artefact storage."""
+        """Checksum, useful for retrieving the artifact from artifact storage."""
         cache = self.object._cache
         self.object._cache = {}
 
@@ -49,13 +49,13 @@ class EstimatorReportArtefact(Artefact):
             self.object._cache = cache
 
 
-class CrossValidationReportArtefact(Artefact):
+class CrossValidationReportArtifact(Artifact):
     """
-    Payload used to upload and send a cross-validation report artefact to ``hub``.
+    Payload used to upload and send a cross-validation report artifact to ``hub``.
 
     Notes
     -----
-    It uploads the report to artefacts storage in a lazy way.
+    It uploads the report to artifacts storage in a lazy way.
 
     The report is uploaded without its cache, to avoid salting the checksum.
     The report is primarily pickled on disk to reduce RAM footprint.
@@ -66,7 +66,7 @@ class CrossValidationReportArtefact(Artefact):
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def checksum(self) -> str:
-        """Checksum, useful for retrieving the artefact from artefact storage."""
+        """Checksum, useful for retrieving the artifact from artifact storage."""
         reports = [self.object] + self.object.estimator_reports_
         caches = []
 

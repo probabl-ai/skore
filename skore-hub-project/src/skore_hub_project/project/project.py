@@ -187,8 +187,8 @@ class Project:
             # Ask for read url.
             with HUBClient() as client:
                 response = client.get(
-                    url=f"projects/{self.tenant}/{self.name}/artefacts/read",
-                    params={"artefact_checksum": [checksum]},
+                    url=f"projects/{self.tenant}/{self.name}/artifacts/read",
+                    params={"artifact_checksum": [checksum]},
                 )
 
             url = response.json()[0]["url"]

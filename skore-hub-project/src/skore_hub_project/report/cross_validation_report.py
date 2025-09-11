@@ -9,7 +9,7 @@ from pydantic import Field, computed_field
 from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
 
-from skore_hub_project.artefact import CrossValidationReportArtefact
+from skore_hub_project.artifact import CrossValidationReportArtifact
 from skore_hub_project.media import (
     EstimatorHtmlRepr,
 )
@@ -75,7 +75,7 @@ class CrossValidationReportPayload(ReportPayload):
     report : CrossValidationReport
         The report on which to calculate the payload to be sent.
     upload : bool, optional
-        Upload the report to the artefacts storage, default True.
+        Upload the report to the artifacts storage, default True.
     key : str
         The key to associate to the report.
     """
@@ -231,20 +231,20 @@ class CrossValidationReportPayload(ReportPayload):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def parameters(self) -> CrossValidationReportArtefact | dict[()]:
+    def parameters(self) -> CrossValidationReportArtifact | dict[()]:
         """
         The checksum of the instance.
 
         The checksum of the instance that was assigned after being uploaded to the
-        artefact storage. It is based on its ``joblib`` serialization and mainly used to
-        retrieve it from the artefacts storage.
+        artifact storage. It is based on its ``joblib`` serialization and mainly used to
+        retrieve it from the artifacts storage.
 
         .. deprecated
           The ``parameters`` property will be removed in favor of a new ``checksum``
           property in a near future.
         """
         if self.upload:
-            return CrossValidationReportArtefact(
+            return CrossValidationReportArtifact(
                 project=self.project,
                 report=self.report,
             )

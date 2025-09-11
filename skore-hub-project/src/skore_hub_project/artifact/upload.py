@@ -1,4 +1,4 @@
-"""Function definition of the artefact ``upload``."""
+"""Function definition of the artifact ``upload``."""
 
 from __future__ import annotations
 
@@ -43,16 +43,16 @@ def upload_chunk(
     length: int,
 ) -> str:
     """
-    Upload a chunk of the serialized object to the artefacts storage.
+    Upload a chunk of the serialized object to the artifacts storage.
 
     Parameters
     ----------
     filepath : ``Path``
         The path of the file containing the serialized object.
     client : ``httpx.Client``
-        The client used to upload the chunk to the artefacts storage.
+        The client used to upload the chunk to the artifacts storage.
     url : str
-        The url used to upload the chunk to the artefacts storage.
+        The url used to upload the chunk to the artifacts storage.
     offset : int
         The start of the chunk in the file containing the serialized object.
     length: int
@@ -61,7 +61,7 @@ def upload_chunk(
     Returns
     -------
     etag : str
-        The ETag assigned by the artefacts storage to the chunk, used to acknowledge the
+        The ETag assigned by the artifacts storage to the chunk, used to acknowledge the
         upload.
 
     Notes
@@ -88,7 +88,7 @@ CHUNK_SIZE: Final[int] = int(1e7)  # ~10mb
 
 def upload(project: Project, o: Any, type: str) -> str:
     """
-    Upload an object to the artefacts storage.
+    Upload an object to the artifacts storage.
 
     Parameters
     ----------
@@ -97,12 +97,12 @@ def upload(project: Project, o: Any, type: str) -> str:
     o : Any
         The object to upload.
     type : str
-        The type to associate to object in the artefacts storage.
+        The type to associate to object in the artifacts storage.
 
     Returns
     -------
     checksum : str
-        The checksum of the object after upload to the artefacts storage, based on its
+        The checksum of the object after upload to the artifacts storage, based on its
         ``joblib`` serialization.
 
     Notes
@@ -117,7 +117,7 @@ def upload(project: Project, o: Any, type: str) -> str:
     ):
         # Ask for upload urls.
         response = hub_client.post(
-            url=f"projects/{project.tenant}/{project.name}/artefacts",
+            url=f"projects/{project.tenant}/{project.name}/artifacts",
             json=[
                 {
                     "checksum": serializer.checksum,
@@ -127,12 +127,12 @@ def upload(project: Project, o: Any, type: str) -> str:
             ],
         )
 
-        # An empty response means that an artefact with the same checksum already
+        # An empty response means that an artifact with the same checksum already
         # exists. The object doesn't have to be re-uploaded.
         if urls := response.json():
             task_to_chunk_id = {}
 
-            # Upload each chunk of the serialized object to the artefacts storage, using
+            # Upload each chunk of the serialized object to the artifacts storage, using
             # a disk temporary file.
             #
             # Each task is in charge of reading its own file chunk at runtime, to reduce
@@ -175,7 +175,7 @@ def upload(project: Project, o: Any, type: str) -> str:
 
             # Acknowledge the upload, to let the hub/storage rebuild the whole.
             hub_client.post(
-                url=f"projects/{project.tenant}/{project.name}/artefacts/complete",
+                url=f"projects/{project.tenant}/{project.name}/artifacts/complete",
                 json=[
                     {
                         "checksum": serializer.checksum,
