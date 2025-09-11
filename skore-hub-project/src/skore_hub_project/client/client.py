@@ -27,8 +27,6 @@ from httpx._types import HeaderTypes
 
 from ..authentication import token as Token
 
-logging.basicConfig()
-
 logger = logging.getLogger(__name__)
 
 

@@ -1,5 +1,6 @@
 """Package that provides APIs to communicate between ``skore`` and ``skore hub``."""
 
+import logging
 from base64 import b64decode, b64encode
 from contextlib import contextmanager
 
@@ -17,6 +18,9 @@ __all__ = [
     "switch_mpl_backend",
 ]
 
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 console = Console(
     width=88,
