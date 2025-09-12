@@ -48,7 +48,7 @@ def progress_decorator(
 
             created_progress = False
 
-            if getattr(self_obj, "_progress_info", None) is not None:
+            if self_obj._progress_info is not None:
                 progress = self_obj._progress_info["current_progress"]
             else:
                 progress = Progress(
