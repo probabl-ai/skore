@@ -150,7 +150,7 @@ class TestProject:
         report2.cache_predictions()
 
     def test_pickle_cross_validation_report(self, cv_regression):
-        reports = [cv_regression] + cv_regression.estimator_reports_
+        reports = [cv_regression] + cv_regression.reports_
 
         # Pickle the report once, without any value in the cache
         assert not any(report._cache for report in reports)

@@ -70,7 +70,7 @@ def monkeypatch_client(monkeypatch):
 
 
 def serialize(object: CrossValidationReport) -> tuple[bytes, str]:
-    reports = [object] + object.estimator_reports_
+    reports = [object] + object.reports_
     caches = []
 
     for report in reports:

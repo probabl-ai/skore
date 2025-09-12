@@ -28,7 +28,7 @@ def test_binary_classification(
 
     pos_label = 1
     n_reports = len(report.reports_)
-    n_splits = len(list(report.reports_.values())[0].estimator_reports_)
+    n_splits = len(list(report.reports_.values())[0].reports_)
 
     display.plot()
     assert isinstance(display.lines_, list)
@@ -76,7 +76,7 @@ def test_multiclass_classification(
 
     labels = display.precision_recall["label"].cat.categories
     n_reports = len(report.reports_)
-    n_splits = len(list(report.reports_.values())[0].estimator_reports_)
+    n_splits = len(list(report.reports_.values())[0].reports_)
 
     display.plot()
     assert isinstance(display.lines_, list)
