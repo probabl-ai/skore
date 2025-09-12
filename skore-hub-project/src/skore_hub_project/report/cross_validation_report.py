@@ -10,9 +10,8 @@ from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.artefact import CrossValidationReportArtefact
-from skore_hub_project.media import (
-    EstimatorHtmlRepr,
-)
+from skore_hub_project.media import EstimatorHtmlRepr
+from skore_hub_project.media.data import TableReport
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric import (
     AccuracyTestMean,
@@ -124,7 +123,9 @@ class CrossValidationReportPayload(ReportPayload):
             PredictTimeTrainStd,
         ),
     )
-    MEDIAS: ClassVar[tuple[Media, ...]] = cast(tuple[Media, ...], (EstimatorHtmlRepr,))
+    MEDIAS: ClassVar[tuple[Media, ...]] = cast(
+        tuple[Media, ...], (EstimatorHtmlRepr, TableReport)
+    )
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
 
@@ -224,7 +225,6 @@ class CrossValidationReportPayload(ReportPayload):
                 report=report,
                 upload=False,
                 key=f"{self.key}:estimator-report",
-                run_id=self.run_id,
             )
             for report in self.report.estimator_reports_
         ]

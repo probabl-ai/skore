@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import Field, computed_field
 
 from skore_hub_project import switch_mpl_backend
-from skore_hub_project.protocol import EstimatorReport
+from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 from .media import Media, Representation
 
@@ -33,7 +33,7 @@ def _to_native(obj):
 
 
 class TableReport(Media):  # noqa: D101
-    report: EstimatorReport = Field(repr=False, exclude=True)
+    report: EstimatorReport | CrossValidationReport = Field(repr=False, exclude=True)
     key: str = "table_report"
     verbose_name: str = "Table report"
     category: Literal["data"] = "data"
