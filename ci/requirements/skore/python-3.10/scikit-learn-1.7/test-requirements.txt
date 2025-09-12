@@ -181,7 +181,7 @@ seaborn==0.13.2
     # via skore (skore/pyproject.toml)
 six==1.17.0
     # via python-dateutil
-skore-local-project==0.0.3
+skore-local-project==0.0.4
     # via skore (skore/pyproject.toml)
 skrub==0.6.1
     # via skore (skore/pyproject.toml)
