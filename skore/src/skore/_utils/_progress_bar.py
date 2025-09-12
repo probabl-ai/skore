@@ -38,6 +38,8 @@ def progress_decorator(
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> T:
+            from skore import ComparisonReport
+
             self_obj: Any = args[0]
 
             if hasattr(self_obj, "_parent"):
@@ -69,7 +71,7 @@ def progress_decorator(
 
             # assigning progress to child reports
             reports_to_cleanup: list[Any] = []
-            if hasattr(self_obj, "reports_"):
+            if isinstance(self_obj, ComparisonReport):
                 for report in self_obj.reports_.values():
                     if hasattr(report, "_progress_info"):
                         report._progress_info = {"current_progress": progress}
