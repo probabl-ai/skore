@@ -67,7 +67,7 @@ class CrossValidationReportArtefact(Artefact):
     @cached_property
     def checksum(self) -> str:
         """Checksum, useful for retrieving the artefact from artefact storage."""
-        reports = [self.object] + self.object.estimator_reports_
+        reports = [self.object] + self.object.reports_
         caches = []
 
         for report in reports:

@@ -175,7 +175,7 @@ class Project:
         -----
         The report is pickled without its cache, to avoid salting the hash.
         """
-        reports = [report] + getattr(report, "estimator_reports_", [])
+        reports = [report] + getattr(report, "reports_", [])
         caches = [report_to_clear._cache for report_to_clear in reports]
 
         report.clear_cache()
