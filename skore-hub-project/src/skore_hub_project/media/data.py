@@ -51,8 +51,12 @@ class TableReport(Media):  # noqa: D101
             table_report_display = function(**function_kwargs)
             table_report = table_report_display.summary
 
-            table_report["extract"] = (
+            table_report["extract_head"] = (
                 table_report["dataframe"].head(3).to_dict(orient="split")
+            )
+
+            table_report["extract_tail"] = (
+                table_report["dataframe"].tail(3).to_dict(orient="split")
             )
 
             del table_report["dataframe"]
