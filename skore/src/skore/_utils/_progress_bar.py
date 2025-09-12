@@ -73,9 +73,8 @@ def progress_decorator(
             reports_to_cleanup: list[Any] = []
             if isinstance(self_obj, ComparisonReport):
                 for report in self_obj.reports_.values():
-                    if hasattr(report, "_progress_info"):
-                        report._progress_info = {"current_progress": progress}
-                        reports_to_cleanup.append(report)
+                    report._progress_info = {"current_progress": progress}
+                    reports_to_cleanup.append(report)
 
             task = progress.add_task(desc, total=None)
             self_obj._progress_info = {
