@@ -46,8 +46,6 @@ def progress_decorator(
                 # self_obj is an accessor
                 self_obj = self_obj._parent
 
-            desc = description(self_obj) if callable(description) else description
-
             created_progress = False
 
             if getattr(self_obj, "_progress_info", None) is not None:
@@ -76,7 +74,12 @@ def progress_decorator(
                     report._progress_info = {"current_progress": progress}
                     reports_to_cleanup.append(report)
 
-            task = progress.add_task(desc, total=None)
+            task = progress.add_task(
+                description=(
+                    description(self_obj) if callable(description) else description
+                ),
+                total=None,
+            )
             self_obj._progress_info = {
                 "current_progress": progress,
                 "current_task": task,
