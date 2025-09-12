@@ -2,12 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 
-from skore._sklearn._plot.base import Display
-from skore._sklearn._plot.style import StyleDisplayMixin
-from skore._sklearn._plot.utils import PlotBackendMixin
+from skore._sklearn._plot.base import DisplayMixin
 
 
-class ConfusionMatrixDisplay(PlotBackendMixin, Display):
+class ConfusionMatrixDisplay(DisplayMixin):
     """Display for confusion matrix.
 
     Parameters
@@ -45,7 +43,6 @@ class ConfusionMatrixDisplay(PlotBackendMixin, Display):
         confusion matrix.
     """
 
-    @StyleDisplayMixin.style_plot
     def __init__(
         self,
         confusion_matrix,
@@ -64,7 +61,8 @@ class ConfusionMatrixDisplay(PlotBackendMixin, Display):
         self.ax_ = None
         self.text_ = None
 
-    def _plot_matplotlib(self, ax=None, *, cmap="Blues", colorbar=True, **kwargs):
+    @DisplayMixin.style_plot
+    def plot(self, ax=None, *, cmap="Blues", colorbar=True, **kwargs):
         """Plot the confusion matrix.
 
         Parameters
@@ -87,6 +85,9 @@ class ConfusionMatrixDisplay(PlotBackendMixin, Display):
         self : ConfusionMatrixDisplay
             Configured with the confusion matrix.
         """
+        return self._plot(ax=ax, cmap=cmap, colorbar=colorbar, **kwargs)
+
+    def _plot_matplotlib(self, ax=None, *, cmap="Blues", colorbar=True, **kwargs):
         if self.normalize not in (None, "true", "pred", "all"):
             raise ValueError(
                 "normalize must be one of None, 'true', 'pred', 'all'; "

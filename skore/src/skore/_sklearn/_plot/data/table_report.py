@@ -16,10 +16,8 @@ from skrub._reporting._utils import (
 )
 
 from skore._externals._skrub_compat import sbd
-from skore._sklearn._plot.style import StyleDisplayMixin
+from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
-    HelpDisplayMixin,
-    PlotBackendMixin,
     _adjust_fig_size,
     _rotate_ticklabels,
     _validate_style_kwargs,
@@ -162,9 +160,7 @@ def _resize_categorical_axis(
     _adjust_fig_size(figure, ax, target_width, target_height)
 
 
-class TableReportDisplay(
-    StyleDisplayMixin, HelpDisplayMixin, ReprHTMLMixin, PlotBackendMixin
-):
+class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
     """Display reporting information about a given dataset.
 
     This display summarizes the dataset and provides a way to visualize
@@ -222,8 +218,8 @@ class TableReportDisplay(
         """
         return cls(summarize_dataframe(dataset, with_plots=True, title=None, verbose=0))
 
-    @StyleDisplayMixin.style_plot
-    def _plot_matplotlib(
+    @DisplayMixin.style_plot
+    def plot(
         self,
         *,
         x: str | None = None,
@@ -305,6 +301,34 @@ class TableReportDisplay(
         >>> display = report.data.analyze()
         >>> display.plot(kind="corr")
         """
+        return self._plot(
+            x=x,
+            y=y,
+            hue=hue,
+            kind=kind,
+            top_k_categories=top_k_categories,
+            scatterplot_kwargs=scatterplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
+            boxplot_kwargs=boxplot_kwargs,
+            heatmap_kwargs=heatmap_kwargs,
+            histplot_kwargs=histplot_kwargs,
+        )
+
+    def _plot_matplotlib(
+        self,
+        *,
+        x: str | None = None,
+        y: str | None = None,
+        hue: str | None = None,
+        kind: Literal["dist", "corr"] = "dist",
+        top_k_categories: int = 20,
+        scatterplot_kwargs: dict[str, Any] | None = None,
+        stripplot_kwargs: dict[str, Any] | None = None,
+        boxplot_kwargs: dict[str, Any] | None = None,
+        heatmap_kwargs: dict[str, Any] | None = None,
+        histplot_kwargs: dict[str, Any] | None = None,
+    ) -> None:
+        """Matplotlib implementation of the `plot` method."""
         self.figure_, self.ax_ = plt.subplots()
         if kind == "dist":
             match (x is None, y is None, hue is None):
