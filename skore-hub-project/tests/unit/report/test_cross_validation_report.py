@@ -174,11 +174,11 @@ class TestCrossValidationReportPayload:
             Response(200, json={"id": 0})
         )
 
-        assert len(payload.estimators) == len(payload.report.estimator_reports_)
+        assert len(payload.estimators) == len(payload.report.reports_)
 
         for i, er_payload in enumerate(payload.estimators):
             assert isinstance(er_payload, EstimatorReportPayload)
-            assert er_payload.report == payload.report.estimator_reports_[i]
+            assert er_payload.report == payload.report.reports_[i]
             assert er_payload.upload is False
             assert er_payload.parameters == {}
 

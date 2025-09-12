@@ -26,7 +26,7 @@ class CrossValidationReport(Protocol):
 
     _cache: Any
     metrics: Any
-    estimator_reports_: Any
+    reports_: Any
     ml_task: Any
     estimator: Any
     estimator_name_: Any

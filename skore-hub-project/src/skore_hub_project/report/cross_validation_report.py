@@ -226,7 +226,7 @@ class CrossValidationReportPayload(ReportPayload):
                 key=f"{self.key}:estimator-report",
                 run_id=self.run_id,
             )
-            for report in self.report.estimator_reports_
+            for report in self.report.reports_
         ]
 
     @computed_field  # type: ignore[prop-decorator]
