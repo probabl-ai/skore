@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import re
 from functools import cached_property, wraps
 from operator import itemgetter
@@ -23,13 +24,19 @@ if TYPE_CHECKING:
         key: str
         date: str
         learner: str
-        dataset: str
         ml_task: str
+        report_type: str
+        dataset: str
         rmse: float | None
         log_loss: float | None
         roc_auc: float | None
-        fit_time: float
-        predict_time: float
+        fit_time: float | None
+        predict_time: float | None
+        rmse_mean: float | None
+        log_loss_mean: float | None
+        roc_auc_mean: float | None
+        fit_time_mean: float | None
+        predict_time_mean: float | None
 
 
 def ensure_project_is_created(method):
@@ -215,6 +222,57 @@ class Project:
 
             return joblib.load(tmpfile)
 
+    @ensure_project_is_created
+    def summarize(self) -> list[Metadata]:
+        """Obtain metadata/metrics for all persisted reports in insertion order."""
+
+        def dto(response):
+            report_type, summary = response
+            metrics = {
+                metric["name"]: metric["value"]
+                for metric in summary["metrics"]
+                if metric["data_source"] in (None, "test")
+            }
+
+            return {
+                "id": summary["urn"],
+                "run_id": summary["run_id"],
+                "key": summary["key"],
+                "date": summary["created_at"],
+                "learner": summary["estimator_class_name"],
+                "ml_task": summary["ml_task"],
+                "report_type": report_type,
+                "dataset": summary["dataset_fingerprint"],
+                "rmse": metrics.get("rmse"),
+                "log_loss": metrics.get("log_loss"),
+                "roc_auc": metrics.get("roc_auc"),
+                "fit_time": metrics.get("fit_time"),
+                "predict_time": metrics.get("predict_time"),
+                "rmse_mean": metrics.get("rmse_mean"),
+                "log_loss_mean": metrics.get("log_loss_mean"),
+                "roc_auc_mean": metrics.get("roc_auc_mean"),
+                "fit_time_mean": metrics.get("fit_time_mean"),
+                "predict_time_mean": metrics.get("predict_time_mean"),
+            }
+
+        with HUBClient() as client:
+            responses = itertools.chain(
+                zip(
+                    itertools.repeat("estimator"),
+                    client.get(
+                        f"projects/{self.tenant}/{self.name}/estimator-reports/"
+                    ).json(),
+                ),
+                zip(
+                    itertools.repeat("cross-validation"),
+                    client.get(
+                        f"projects/{self.tenant}/{self.name}/cross-validation-reports/"
+                    ).json(),
+                ),
+            )
+
+        return sorted(map(dto, responses), key=itemgetter("date"))
+
     @property
     @ensure_project_is_created
     def reports(self):
@@ -231,36 +289,14 @@ class Project:
             return self.get(urn)
 
         def metadata() -> list[Metadata]:
-            """Obtain metadata for all persisted reports regardless of their run."""
+            """
+            Obtain metadata/metrics for all persisted reports in insertion order.
 
-            def dto(summary):
-                metrics = {
-                    metric["name"]: metric["value"]
-                    for metric in summary["metrics"]
-                    if metric["data_source"] in (None, "test")
-                }
-
-                return {
-                    "id": summary["id"],
-                    "run_id": summary["run_id"],
-                    "key": summary["key"],
-                    "date": summary["created_at"],
-                    "learner": summary["estimator_class_name"],
-                    "dataset": summary["dataset_fingerprint"],
-                    "ml_task": summary["ml_task"],
-                    "rmse": metrics.get("rmse"),
-                    "log_loss": metrics.get("log_loss"),
-                    "roc_auc": metrics.get("roc_auc"),
-                    "fit_time": metrics.get("fit_time"),
-                    "predict_time": metrics.get("predict_time"),
-                }
-
-            with HUBClient() as client:
-                response = client.get(
-                    f"projects/{self.tenant}/{self.name}/experiments/estimator-reports"
-                )
-
-            return sorted(map(dto, response.json()), key=itemgetter("date"))
+            .. deprecated
+              The ``Project.reports.metadata`` function will be removed in favor of
+              ``Project.summarize`` in a near future.
+            """
+            return self.summarize()
 
         return SimpleNamespace(get=get, metadata=metadata)
 
