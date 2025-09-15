@@ -190,6 +190,42 @@ class TestProject:
             ),
         )
 
+    def test_summarize_with_skore_local_project(self, monkeypatch, tmpdir):
+        """Smoke test to check that ModelExplorerWidget can be shown."""
+        from IPython.core.interactiveshell import InteractiveShell
+
+        snippet = f"""
+        from pathlib import Path
+
+        from sklearn.datasets import make_regression
+        from sklearn.linear_model import LinearRegression
+        from sklearn.model_selection import train_test_split
+        from skore import EstimatorReport, Project
+
+        X, y = make_regression(random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+
+        regression = EstimatorReport(
+            LinearRegression(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+
+        project = Project("<project>", workspace=Path(r"{tmpdir}"))
+        project.put("<report>", regression)
+        project.summarize()
+        """
+
+        monkeypatch.undo()
+
+        shell = InteractiveShell.instance()
+        execution_result = shell.run_cell(snippet, silent=True)
+        execution_result.raise_error()
+
     def test_repr(self):
         project = Project("<name>")
         assert repr(project) == repr(project._Project__project)
