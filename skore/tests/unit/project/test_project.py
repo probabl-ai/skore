@@ -191,6 +191,7 @@ class TestProject:
         )
 
     def test_summarize_with_skore_local_project(self, monkeypatch, tmpdir):
+        """Smoke test to check that ModelExplorerWidget can be shown."""
         from IPython.core.interactiveshell import InteractiveShell
 
         snippet = f"""
