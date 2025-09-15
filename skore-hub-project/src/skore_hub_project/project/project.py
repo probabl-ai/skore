@@ -162,6 +162,8 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
+        Payload: type
+
         if isinstance(report, EstimatorReport):
             Payload = EstimatorReportPayload
             url = f"projects/{self.tenant}/{self.name}/estimator-reports"

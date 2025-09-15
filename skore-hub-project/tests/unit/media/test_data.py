@@ -32,7 +32,8 @@ def test_table_report(binary_classification, Media, data_source):
             "n_rows",
             "n_columns",
             "n_constant_columns",
-            "extract",
+            "extract_head",
+            "extract_tail",
             "columns",
             "top_associations",
         ]

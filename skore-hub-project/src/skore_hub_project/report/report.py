@@ -1,8 +1,9 @@
 """Class definition of the payload used to send a report to ``hub``."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from functools import cached_property
-from typing import ClassVar
+from typing import ClassVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -127,7 +128,7 @@ class ReportPayload(ABC, BaseModel):
         """
         payloads = [
             payload
-            for media in self.MEDIAS
+            for media in cast(list[Callable], self.MEDIAS)
             if (payload := media(report=self.report)).representation is not None
         ]
 

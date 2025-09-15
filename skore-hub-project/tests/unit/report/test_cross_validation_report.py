@@ -11,9 +11,8 @@ from sklearn.model_selection import ShuffleSplit
 from skore import CrossValidationReport
 from skore_hub_project import Project
 from skore_hub_project.artefact.serializer import Serializer
-from skore_hub_project.media import (
-    EstimatorHtmlRepr,
-)
+from skore_hub_project.media import EstimatorHtmlRepr
+from skore_hub_project.media.data import TableReport
 from skore_hub_project.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
@@ -246,7 +245,10 @@ class TestCrossValidationReportPayload:
         ]
 
     def test_related_items(self, payload):
-        assert list(map(type, payload.related_items)) == [EstimatorHtmlRepr]
+        assert list(map(type, payload.related_items)) == [
+            EstimatorHtmlRepr,
+            TableReport,
+        ]
 
     @mark.usefixtures("monkeypatch_routes")
     def test_model_dump(self, small_cv_binary_classification, payload):
