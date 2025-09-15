@@ -28,7 +28,7 @@ test-base = [
   "pytest-randomly",
   "pytest-xdist",
   "respx",
-  "skore",
+  "skore>=0.10.3",
   "skrub",
   "xdoctest",
 ]

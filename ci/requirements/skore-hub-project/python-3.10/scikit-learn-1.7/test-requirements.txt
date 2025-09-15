@@ -248,7 +248,7 @@ six==1.17.0
     # via python-dateutil
 skops==0.13.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
-skore==0.10.2
+skore==0.10.3
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 skore-local-project==0.0.3
     # via skore
