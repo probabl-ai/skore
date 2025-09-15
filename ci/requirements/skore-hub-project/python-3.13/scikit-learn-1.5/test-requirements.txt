@@ -124,6 +124,8 @@ numpy==2.3.2
     #   skops
     #   skore
     #   skrub
+orjson==3.11.3
+    # via skore-hub-project (skore-hub-project/pyproject.toml)
 packaging==25.0
     # via
     #   altair

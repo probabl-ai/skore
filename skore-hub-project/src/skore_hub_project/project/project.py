@@ -11,6 +11,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import joblib
+import orjson
 
 from skore_hub_project.client.client import Client, HTTPStatusError, HUBClient
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
@@ -178,9 +179,17 @@ class Project:
 
         payload = Payload(project=self, key=key, report=report)
         payload_dict = payload.model_dump()
+        payload_json_bytes = orjson.dumps(payload_dict, option=orjson.OPT_NON_STR_KEYS)
 
         with HUBClient() as client:
-            client.post(url=url, json=payload_dict)
+            client.post(
+                url=url,
+                content=payload_json_bytes,
+                headers={
+                    "Content-Length": str(len(payload_json_bytes)),
+                    "Content-Type": "application/json",
+                },
+            )
 
     @ensure_project_is_created
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:

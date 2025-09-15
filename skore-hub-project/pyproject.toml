@@ -8,6 +8,7 @@ dependencies = [
   "httpx",
   "joblib",
   "matplotlib",
+  "orjson",
   "pydantic",
   "rich",
   "scikit-learn",
