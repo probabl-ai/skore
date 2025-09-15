@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from functools import cached_property, wraps
 from operator import itemgetter
 from tempfile import TemporaryFile
@@ -83,6 +84,10 @@ class Project:
     run_id : int
         The current run identifier of the project.
     """
+
+    __REPORT_URN_PATTERN = re.compile(
+        r"skore:report:(?P<type>(estimator|cross-validation)):(?P<id>.+)"
+    )
 
     def __init__(self, tenant: str, name: str):
         """
@@ -168,46 +173,62 @@ class Project:
         with HUBClient() as client:
             client.post(url=url, json=payload_dict)
 
+    @ensure_project_is_created
+    def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
+        """Get a persisted report by its URN."""
+        if m := re.match(Project.__REPORT_URN_PATTERN, urn):
+            url = f"projects/{self.tenant}/{self.name}/{m['type']}-reports/{m['id']}"
+        else:
+            raise ValueError(
+                f"URN '{urn}' format does not match '{Project.__REPORT_URN_PATTERN}'"
+            )
+
+        # Retrieve report metadata.
+        with HUBClient() as client:
+            response = client.get(url=url)
+
+        metadata = response.json()
+        checksum = metadata["raw"]["checksum"]
+
+        # Ask for read url.
+        with HUBClient() as client:
+            response = client.get(
+                url=f"projects/{self.tenant}/{self.name}/artefacts/read",
+                params={"artefact_checksum": [checksum]},
+            )
+
+        url = response.json()[0]["url"]
+
+        # Download pickled report before unpickling it.
+        #
+        # It uses streaming responses that do not load the entire response body into
+        # memory at once.
+        with (
+            TemporaryFile(mode="w+b") as tmpfile,
+            Client() as client,
+            client.stream(method="GET", url=url, timeout=30) as response,
+        ):
+            for data in response.iter_bytes():
+                tmpfile.write(data)
+
+            tmpfile.seek(0)
+
+            return joblib.load(tmpfile)
+
     @property
     @ensure_project_is_created
     def reports(self):
         """Accessor for interaction with the persisted reports."""
 
-        def get(id: str) -> EstimatorReport:
-            """Get a persisted report by its id."""
-            # Retrieve report metadata.
-            with HUBClient() as client:
-                response = client.get(
-                    url=f"projects/{self.tenant}/{self.name}/experiments/estimator-reports/{id}"
-                )
+        def get(urn: str) -> EstimatorReport | CrossValidationReport:
+            """
+            Get a persisted report by its URN.
 
-            metadata = response.json()
-            checksum = metadata["raw"]["checksum"]
-
-            # Ask for read url.
-            with HUBClient() as client:
-                response = client.get(
-                    url=f"projects/{self.tenant}/{self.name}/artefacts/read",
-                    params={"artefact_checksum": [checksum]},
-                )
-
-            url = response.json()[0]["url"]
-
-            # Download pickled report before unpickling it.
-            #
-            # It uses streaming responses that do not load the entire response body into
-            # memory at once.
-            with (
-                TemporaryFile(mode="w+b") as tmpfile,
-                Client() as client,
-                client.stream(method="GET", url=url, timeout=30) as response,
-            ):
-                for data in response.iter_bytes():
-                    tmpfile.write(data)
-
-                tmpfile.seek(0)
-
-                return joblib.load(tmpfile)
+            .. deprecated
+              The ``Project.reports.get`` function will be removed in favor of
+              ``Project.get`` in a near future.
+            """
+            return self.get(urn)
 
         def metadata() -> list[Metadata]:
             """Obtain metadata for all persisted reports regardless of their run."""
