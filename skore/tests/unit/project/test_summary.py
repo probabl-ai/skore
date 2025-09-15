@@ -1,5 +1,4 @@
 from copy import deepcopy
-from types import SimpleNamespace
 
 from joblib import hash as joblib_hash
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
@@ -58,7 +57,7 @@ class FakeProject:
     def __init__(self, *reports):
         self.__reports = reports
 
-    def _make_report_metadata(self, index, report):
+    def make_report_metadata(self, index, report):
         return {
             "id": index,
             "run_id": None,
@@ -93,18 +92,14 @@ class FakeProject:
             "predict_time_std": None,
         }
 
-    @property
-    def reports(self):
-        def get(id: str):
-            return self.__reports[int(id)]
+    def get(self, id: str):
+        return self.__reports[int(id)]
 
-        def metadata():
-            return [
-                self._make_report_metadata(index, report)
-                for index, report in enumerate(self.__reports)
-            ]
-
-        return SimpleNamespace(metadata=metadata, get=get)
+    def summarize(self):
+        return [
+            self.make_report_metadata(index, report)
+            for index, report in enumerate(self.__reports)
+        ]
 
 
 class TestSummary:
