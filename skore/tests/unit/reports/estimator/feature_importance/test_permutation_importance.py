@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_regression
+from sklearn.decomposition import PCA
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import make_scorer, r2_score, root_mean_squared_error
@@ -314,3 +315,76 @@ def test_not_fitted(regression_data):
     error_msg = "This LinearRegression instance is not fitted yet"
     with pytest.raises(NotFittedError, match=error_msg):
         report.feature_importance.permutation()
+
+
+@pytest.fixture
+def pipeline_report() -> EstimatorReport:
+    X, y = make_regression(n_features=3, random_state=0)
+
+    pipeline = make_pipeline(StandardScaler(), PCA(n_components=2), LinearRegression())
+
+    return EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
+
+
+@pytest.mark.parametrize("at_step", [0, -1, 1])
+def test_at_step_parameter_pipeline_int(pipeline_report, at_step):
+    """
+    Test the `at_step` integer parameter for permutation importance with a pipeline.
+    """
+
+    result = pipeline_report.feature_importance.permutation(seed=42, at_step=at_step)
+
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.nlevels == 2
+    assert result.index.names == ["Metric", "Feature"]
+    assert result.shape[0] > 0
+
+
+def test_at_step_parameter_too_large(pipeline_report):
+    """If `at_step` is too large, `permutation` should raise a ValueError."""
+    err_msg = (
+        "at_step must be strictly smaller than the number of steps in the Pipeline"
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        pipeline_report.feature_importance.permutation(seed=42, at_step=8)
+
+
+def test_at_step_parameter_pipeline_str(pipeline_report):
+    """
+    Test the `at_step` string parameter for permutation importance with a pipeline.
+    """
+    result = pipeline_report.feature_importance.permutation(seed=42, at_step="pca")
+
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.nlevels == 2
+    assert result.index.names == ["Metric", "Feature"]
+    assert result.shape[0] > 0
+
+
+def test_at_step_parameter_pipeline_str_wrong(pipeline_report):
+    """
+    Test the `at_step` string parameter for permutation importance with a pipeline.
+    """
+    err_msg = "'hello' is not in list"
+    with pytest.raises(ValueError, match=err_msg):
+        pipeline_report.feature_importance.permutation(seed=42, at_step="hello")
+
+
+def test_at_step_parameter_non_pipeline():
+    """For non-pipeline estimators, changing at_step should not change the results."""
+    X, y = make_regression(n_features=3, random_state=0)
+
+    linear = LinearRegression()
+
+    report = EstimatorReport(
+        linear,
+        X_train=X,
+        y_train=y,
+        X_test=X,
+        y_test=y,
+    )
+
+    result_start = report.feature_importance.permutation(seed=42, at_step=0)
+    result_end = report.feature_importance.permutation(seed=42, at_step=-1)
+
+    pd.testing.assert_frame_equal(result_start, result_end)
