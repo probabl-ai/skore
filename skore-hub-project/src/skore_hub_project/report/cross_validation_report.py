@@ -124,7 +124,11 @@ class CrossValidationReportPayload(ReportPayload):
         ),
     )
     MEDIAS: ClassVar[tuple[Media, ...]] = cast(
-        tuple[Media, ...], (EstimatorHtmlRepr, TableReport)
+        tuple[Media, ...],
+        (
+            EstimatorHtmlRepr,
+            TableReport,
+        ),
     )
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
