@@ -187,3 +187,67 @@ def test_data_accessor_clustering():
 
     report = EstimatorReport(KMeans(), X_train=X_train, X_test=X_test)
     report.data.analyze()  # with_y is True by default
+
+
+def test_analyze_df_with_integer_column_names_multiclass():
+    """Ensure analyze works when X/y are DataFrames with integer column names."""
+    X, y = make_classification(
+        n_samples=300,
+        n_features=6,
+        n_informative=4,
+        n_redundant=1,
+        n_classes=3,
+        random_state=42,
+    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    X_train = pd.DataFrame(X_train)
+    X_test = pd.DataFrame(X_test)
+    y_train = pd.DataFrame(y_train)
+    y_test = pd.DataFrame(y_test)
+
+    report = EstimatorReport(
+        LogisticRegression(max_iter=1000),
+        fit=False,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    display = report.data.analyze()
+    df = display.summary["dataframe"]
+
+    assert all(isinstance(col, str) for col in df.columns)
+    assert df.shape[1] == X_train.shape[1] + 1
+
+
+def test_analyze_df_with_mixed_column_name_types():
+    """Ensure analyze handles X with mixed-type column names and single-column y."""
+    X, y = make_classification(
+        n_samples=200,
+        n_features=4,
+        n_informative=3,
+        n_redundant=0,
+        n_classes=3,
+        random_state=0,
+    )
+    X = pd.DataFrame(X, columns=["a", 1, "c", 3])
+    y = pd.DataFrame(y)
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+
+    report = EstimatorReport(
+        LogisticRegression(max_iter=1000),
+        fit=False,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    display = report.data.analyze(data_source="all")
+    df = display.summary["dataframe"]
+
+    assert all(isinstance(col, str) for col in df.columns)
+    assert df.shape[1] == X.shape[1] + 1
