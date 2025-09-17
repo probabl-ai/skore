@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from contextlib import suppress
 from functools import cached_property, reduce
 from math import isfinite
-from typing import Any, ClassVar, Literal, cast
+from typing import Any, ClassVar, Literal, Protocol, cast
 
+from pandas import DataFrame
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
@@ -17,8 +17,10 @@ from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 def cast_to_float(value: Any) -> float | None:
     """Cast value to float."""
     with suppress(TypeError):
-        if isfinite(value := float(value)):
-            return value
+        float_value = float(value)
+
+        if isfinite(float_value):
+            return float_value
 
     return None
 
@@ -87,10 +89,15 @@ class EstimatorReportMetric(Metric):
     @cached_property
     def value(self) -> float | None:
         """The value of the metric."""
+
+        class Function(Protocol):
+            def __call__(
+                self, data_source: Literal["train", "test"] | None
+            ) -> float | None: ...
+
         try:
             function = cast(
-                Callable,
-                reduce(getattr, self.accessor.split("."), self.report),
+                Function, reduce(getattr, self.accessor.split("."), self.report)
             )
         except AttributeError:
             return None
@@ -131,10 +138,17 @@ class CrossValidationReportMetric(Metric):
     @cached_property
     def value(self) -> float | None:
         """The value of the metric."""
+
+        class Function(Protocol):
+            def __call__(
+                self,
+                data_source: Literal["train", "test"] | None,
+                aggregate: Literal["mean", "std"],
+            ) -> DataFrame: ...
+
         try:
             function = cast(
-                Callable,
-                reduce(getattr, self.accessor.split("."), self.report),
+                Function, reduce(getattr, self.accessor.split("."), self.report)
             )
         except AttributeError:
             return None

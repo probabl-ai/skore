@@ -40,8 +40,8 @@ class Media(ABC, BaseModel):
     key: str
     verbose_name: str
     category: Literal["performance", "feature_importance", "model", "data"]
-    attributes: dict = {}
-    parameters: dict = {}
+    attributes: dict[str, str] = {}
+    parameters: dict[str, str] = {}
 
     @computed_field  # type: ignore[prop-decorator]
     @property
