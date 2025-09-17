@@ -96,5 +96,6 @@ convention = "numpy"
 "tests/*" = ["D"]
 
 [tool.mypy]
-ignore_missing_imports = true
 exclude = ["hatch/*", "tests/*"]
+ignore_missing_imports = true
+strict = true

@@ -23,7 +23,7 @@ class FitTime(Metric):  # noqa: D101
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:  # noqa: D102
-        timings: dict = self.report.metrics.timings()
+        timings = self.report.metrics.timings()
         fit_time = timings.get("fit_time")
 
         return cast_to_float(fit_time)
@@ -77,7 +77,7 @@ class PredictTime(Metric):  # noqa: D101
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:  # noqa: D102
-        timings: dict = self.report.metrics.timings()
+        timings = self.report.metrics.timings()
         predict_time = timings.get(f"predict_time_{self.data_source}")
 
         return cast_to_float(predict_time)
