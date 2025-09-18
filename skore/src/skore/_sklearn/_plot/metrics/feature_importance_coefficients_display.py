@@ -10,7 +10,8 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
 
     Parameters
     ----------
-    parent : EstimatorReport | CrossValidationReport | ComparisonReport
+    parent : {"estimator", "cross-validation", "comparison-estimator",
+            "comparison-cross-validation"}
         Report type from which the display is created.
 
     coefficient_data : DataFrame | list[DataFrame]
@@ -76,16 +77,12 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
             - If a ``ComparisonReport``, the columns are the
             models passed in the report, with the index being the feature names.
         """
-        from skore import ComparisonReport, CrossValidationReport, EstimatorReport
-
-        if isinstance(self._parent, EstimatorReport):
+        if self._parent == "estimator":
             return self._frame_estimator_report()
-        elif isinstance(self._parent, CrossValidationReport):
+        elif self._parent == "cross-validation":
             return self._frame_cross_validation_report()
-        elif isinstance(self._parent, ComparisonReport):
-            return self._frame_comparison_report()
         else:
-            raise TypeError(f"Unrecognised report type: {self._parent}")
+            return self._frame_comparison_report()
 
     def _frame_estimator_report(self):
         return self._coefficient_data
@@ -110,23 +107,17 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
         return self._plot(**kwargs)
 
     def _plot_matplotlib(self, **kwargs):
-        from skore._sklearn._comparison import ComparisonReport
-        from skore._sklearn._cross_validation import CrossValidationReport
-        from skore._sklearn._estimator import EstimatorReport
-
-        if isinstance(self._parent, EstimatorReport):
+        if self._parent == "estimator":
             return self._plot_estimator_report()
-        elif isinstance(self._parent, CrossValidationReport):
+        elif self._parent == "cross-validation":
             return self._plot_cross_validation_report()
-        elif isinstance(self._parent, ComparisonReport):
-            return self._plot_comparison_report()
         else:
-            raise TypeError(f"Unrecognised report type: {self._parent}")
+            return self._plot_comparison_report()
 
     def _plot_estimator_report(self):
         self.figure_, self.ax_ = plt.subplots()
         self._coefficient_data.plot.bar(ax=self.ax_)
-        self.ax_.set_title(f"{self._parent.estimator_name_} Coefficients")
+        self.ax_.set_title("Coefficients")
         self.ax_.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
         self.figure_.tight_layout()
         plt.show()
@@ -139,7 +130,7 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
         plt.show()
 
     def _plot_comparison_report(self):
-        if self._parent._reports_type == "EstimatorReport":
+        if self._parent == "comparison-estimator":
             for coef_frame in self._coefficient_data:
                 self.figure_, self.ax_ = plt.subplots()
                 coef_frame.plot.bar(ax=self.ax_)
@@ -148,7 +139,7 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
                 self.ax_.set_title("Coefficients")
                 self.figure_.tight_layout()
                 plt.show()
-        elif self._parent._reports_type == "CrossValidationReport":
+        elif self._parent == "comparison-cross-validation":
             for coef_frame in self._coefficient_data:
                 self.figure_, self.ax_ = plt.subplots()
                 coef_frame.boxplot(ax=self.ax_)
@@ -159,4 +150,4 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
                 plt.tight_layout()
                 plt.show()
         else:
-            raise TypeError(f"Unexpected report type: {type(self._parent.reports_[0])}")
+            raise TypeError(f"Unexpected report type: {type(self._parent)}")

@@ -95,7 +95,12 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         else:
             raise TypeError(f"Unexpected report type: {self._parent._reports_type}")
 
-        return FeatureImportanceCoefficientsDisplay(self._parent, coef_frames)
+        return FeatureImportanceCoefficientsDisplay(
+            "comparison-estimator"
+            if self._parent._reports_type == "EstimatorReport"
+            else "comparison-cross-validation",
+            coef_frames,
+        )
 
     ####################################################################################
     # Methods related to the help tree

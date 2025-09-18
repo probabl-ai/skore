@@ -65,7 +65,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         ).T
         combined.index.name = "Split index"
 
-        return FeatureImportanceCoefficientsDisplay(self._parent, combined)
+        return FeatureImportanceCoefficientsDisplay("cross-validation", combined)
 
     ####################################################################################
     # Methods related to the help tree

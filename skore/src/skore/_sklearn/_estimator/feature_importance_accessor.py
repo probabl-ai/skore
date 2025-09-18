@@ -246,7 +246,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             columns=columns,
         )
 
-        return FeatureImportanceCoefficientsDisplay(self._parent, df)
+        return FeatureImportanceCoefficientsDisplay("estimator", df)
 
     @available_if(_check_has_feature_importances())
     def mean_decrease_impurity(self):
