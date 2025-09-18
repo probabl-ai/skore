@@ -6,8 +6,8 @@ from sklearn.utils.metaestimators import available_if
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._cross_validation.report import CrossValidationReport
-from skore._sklearn._plot.metrics.feature_importance_display import (
-    FeatureImportanceDisplay,
+from skore._sklearn._plot.metrics.feature_importance_coefficients_display import (
+    FeatureImportanceCoefficientsDisplay,
 )
 from skore._utils._accessor import _check_cross_validation_sub_estimator_has_coef
 
@@ -22,12 +22,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         super().__init__(parent)
 
     @available_if(_check_cross_validation_sub_estimator_has_coef())
-    def coefficients(self) -> FeatureImportanceDisplay:
+    def coefficients(self) -> FeatureImportanceCoefficientsDisplay:
         """Retrieve the coefficients across splits, including the intercept.
 
         Returns
         -------
-        FeatureImportanceDisplay
+        FeatureImportanceCoefficientsDisplay
             The feature importance display containing model coefficients and
             intercept.
 
@@ -65,7 +65,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         ).T
         combined.index.name = "Split index"
 
-        return FeatureImportanceDisplay(self._parent, combined)
+        return FeatureImportanceCoefficientsDisplay(self._parent, combined)
 
     ####################################################################################
     # Methods related to the help tree
