@@ -161,6 +161,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def coefficients(self) -> FeatureImportanceDisplay:
         """Retrieve the coefficients of a linear model, including the intercept.
 
+        Returns
+        -------
+        FeatureImportanceDisplay
+            The feature importance display containing model coefficients and
+            intercept.
+
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
@@ -171,7 +177,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
         >>> report = EstimatorReport(regressor, **split_data)
-        >>> report.feature_importance.coefficients().frame()
+        >>> display = report.feature_importance.coefficients()
+        >>> display.frame()
                    Coefficient
         Intercept     152.4...
         Feature #0     21.2...
@@ -184,7 +191,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Feature #7    112.6...
         Feature #8    250.5...
         Feature #9     99.5...
-        >>> report.feature_importance.coefficients().plot() # shows plot
+        >>> display.plot() # shows plot
         """
         parent_estimator = self._parent.estimator_
 

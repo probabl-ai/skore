@@ -84,6 +84,16 @@ Refer to the :ref:`displays` section for more details regarding the `skore` disp
 API. Refer to the :ref:`estimator_metrics` section for more details on all the
 available metrics in `skore`.
 
+Model interpretability
+^^^^^^^^^^^^^^^^^^^^^^
+
+:obj:`EstimatorReport.feature_importance` is the entry point to interpret and explain a
+predictive model. This accessor provides methods that return a `skore` :class:`Display`
+object. As with other display objects, they expose three methods:
+(i) `plot` that visualizes the information.
+(ii) `set_style` that sets graphical options.
+(iii) `frame` that returns a `pandas.DataFrame` with the underlying data.
+
 Caching mechanism
 ^^^^^^^^^^^^^^^^^
 

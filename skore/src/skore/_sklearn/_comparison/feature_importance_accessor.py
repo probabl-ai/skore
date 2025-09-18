@@ -43,6 +43,12 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         together.
         When some reports share the same features and others do not, those with the same
         features are plotted together.
+
+        Returns
+        -------
+        FeatureImportanceDisplay
+            The feature importance display containing model coefficients and
+            intercept.
         """
         similar_reports = defaultdict(list)
 

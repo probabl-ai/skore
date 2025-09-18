@@ -25,6 +25,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
     def coefficients(self) -> FeatureImportanceDisplay:
         """Retrieve the coefficients across splits, including the intercept.
 
+        Returns
+        -------
+        FeatureImportanceDisplay
+            The feature importance display containing model coefficients and
+            intercept.
+
         Examples
         --------
         >>> from sklearn.datasets import make_regression
@@ -34,7 +40,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         >>> report = CrossValidationReport(
         >>>     estimator=Ridge(), X=X, y=y, splitter=5, n_jobs=4
         >>> )
-        >>> report.feature_importance.coefficients().frame()
+        >>> display = report.feature_importance.coefficients()
+        >>> display.frame()
                     Intercept	Feature #0	Feature #1	Feature #2
         Split index
         0       	0.064837	74.100966	27.309656	17.367865
@@ -42,7 +49,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         2       	0.000084	74.107126	27.614821	17.277730
         3       	0.145613	74.207645	27.523667	17.391055
         4       	0.033695	74.259575	27.599610	17.390481
-        >>> report.feature_importance.coefficients().plot() # shows plot
+        >>> display.plot() # shows plot
         """
         combined = pd.concat(
             {
