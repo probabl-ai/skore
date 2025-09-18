@@ -116,38 +116,62 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
 
     def _plot_estimator_report(self):
         self.figure_, self.ax_ = plt.subplots()
-        self._coefficient_data.plot.bar(ax=self.ax_)
+        self._coefficient_data.plot.barh(ax=self.ax_)
         self.ax_.set_title("Coefficients")
         self.ax_.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
+        self.ax_.grid(False)
+        self.ax_.spines["top"].set_visible(False)
+        self.ax_.spines["right"].set_visible(False)
+        self.ax_.spines["left"].set_visible(False)
+        self.ax_.tick_params(axis="y", length=0)
         self.figure_.tight_layout()
         plt.show()
 
     def _plot_cross_validation_report(self):
         self.figure_, self.ax_ = plt.subplots()
-        self._coefficient_data.boxplot(ax=self.ax_)
+        self._coefficient_data.boxplot(ax=self.ax_, vert=False)
         self.ax_.set_title("Coefficient variance across CV splits")
+        self.ax_.grid(False)
+        self.ax_.spines["top"].set_visible(False)
+        self.ax_.spines["right"].set_visible(False)
+        self.ax_.spines["left"].set_visible(False)
+        self.ax_.tick_params(axis="y", length=0)
         self.figure_.tight_layout()
         plt.show()
 
     def _plot_comparison_report(self):
-        if self._parent == "comparison-estimator":
-            for coef_frame in self._coefficient_data:
-                self.figure_, self.ax_ = plt.subplots()
-                coef_frame.plot.bar(ax=self.ax_)
-                self.ax_.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
+        self.figure_, self.ax_ = plt.subplots(
+            nrows=1,
+            ncols=len(self._coefficient_data),
+            figsize=(5 * len(self._coefficient_data), 6),
+            squeeze=False,
+        )
+        self.ax_ = self.ax_.flatten()
 
-                self.ax_.set_title("Coefficients")
-                self.figure_.tight_layout()
-                plt.show()
+        if self._parent == "comparison-estimator":
+            for ax, coef_frame in zip(self.ax_, self._coefficient_data, strict=False):
+                coef_frame.plot.barh(ax=ax)
+                ax.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
+                ax.set_title("Coefficients")
+                ax.grid(False)
+                ax.spines["top"].set_visible(False)
+                ax.spines["right"].set_visible(False)
+                ax.spines["left"].set_visible(False)
+                ax.tick_params(axis="y", length=0)
+
         elif self._parent == "comparison-cross-validation":
-            for coef_frame in self._coefficient_data:
-                self.figure_, self.ax_ = plt.subplots()
-                coef_frame.boxplot(ax=self.ax_)
-                self.ax_.set_title(
+            for ax, coef_frame in zip(self.ax_, self._coefficient_data, strict=False):
+                coef_frame.boxplot(ax=ax, vert=False)
+                ax.set_title(
                     f"{coef_frame.columns[0].split('__')[0]} Coefficients across splits"
                 )
-                plt.xticks(rotation=90)
-                plt.tight_layout()
-                plt.show()
+                ax.grid(False)
+                ax.spines["top"].set_visible(False)
+                ax.spines["right"].set_visible(False)
+                ax.spines["left"].set_visible(False)
+                ax.tick_params(axis="y", length=0)
         else:
             raise TypeError(f"Unexpected report type: {type(self._parent)}")
+
+        self.figure_.tight_layout()
+        plt.show()
