@@ -56,3 +56,16 @@ get the common performance metric representations.
     ComparisonReport.metrics.rmse
     ComparisonReport.metrics.roc_auc
     ComparisonReport.metrics.timings
+
+Feature importance
+------------------
+
+The `feature_importance` accessor helps you evaluate the importance
+used to train your estimator.
+
+.. autosummary::
+    :toctree: ../api/
+    :template: autosummary/accessor_method.rst
+
+    ComparisonReport.feature_importance.help
+    ComparisonReport.feature_importance.coefficients
