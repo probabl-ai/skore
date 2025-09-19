@@ -67,6 +67,12 @@ addopts = [
   "--verbosity=2",
   "--dist=loadscope",
 ]
+filterwarnings = [
+    "error::DeprecationWarning",
+    "error::FutureWarning",
+    "error::PendingDeprecationWarning",
+    "error::ImportWarning",
+]
 
 [tool.coverage.run]
 branch = true
