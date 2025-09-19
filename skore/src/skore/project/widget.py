@@ -648,30 +648,6 @@ class ModelExplorerWidget:
             )
             return None
 
-        # Add CSS to remove accordion padding
-        from IPython.display import HTML
-
-        display(
-            HTML(
-                """
-        <style>
-        .no-padding-accordion .jupyter-widgets-accordion-content {
-            padding: 0px !important;
-            margin: 0px !important;
-        }
-        .no-padding-accordion .widget-accordion .accordion-body {
-            padding: 0px !important;
-            margin: 0px !important;
-        }
-        .no-padding-accordion .widget-vbox {
-            padding: 0px !important;
-            margin: 0px !important;
-        }
-        </style>
-        """
-            )
-        )
-
         display(self._layout)
         self._update_plot()
         self.update_selection()
