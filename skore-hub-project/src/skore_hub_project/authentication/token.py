@@ -7,7 +7,42 @@ import pathlib
 import tempfile
 from datetime import datetime, timezone
 
-from ..client.api import post_oauth_refresh_token
+
+def post_oauth_refresh_token(refresh_token: str):
+    """Refresh an access token using a provided refresh token.
+
+    This endpoint allows a client to obtain a new access token
+    by providing a valid refresh token.
+
+    Parameters
+    ----------
+    refresh_token : str
+        A valid refresh token
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - access_token : str
+            The OAuth access token
+        - refresh_token : str
+            The OAuth refresh token
+        - expires_at : str
+            The expiration datetime as ISO 8601 str of the access token
+    """
+    from skore_hub_project.client.client import HUBClient
+
+    url = "identity/oauth/token/refresh"
+    json = {"refresh_token": refresh_token}
+
+    with HUBClient(authenticated=False) as client:
+        response = client.post(url, json=json).json()
+
+        return (
+            response["access_token"],
+            response["refresh_token"],
+            response["expires_at"],
+        )
 
 
 def filepath():
