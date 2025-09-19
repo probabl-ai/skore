@@ -37,7 +37,7 @@ dependencies = [
   "plotly",
   "rich",
   "scikit-learn",
-  "skore-local-project",
+  "skore[local]",
   "skrub",
   "seaborn",
 ]
@@ -79,7 +79,8 @@ dev = [
   "nbformat",
   "ipykernel",
 ]
-hub = ["skore-hub-project"]
+local = ["skore-local-project>=0.0.4"]
+hub = ["skore-hub-project>=0.0.10"]
 
 [project.urls]
 Homepage = "https://probabl.ai"
