@@ -7,7 +7,7 @@ from urllib.parse import urljoin
 import joblib
 from httpx import Client, Response
 from pytest import fixture, mark, raises
-from skore import EstimatorReport
+from skore import CrossValidationReport, EstimatorReport
 from skore_hub_project import Project
 from skore_hub_project.report import (
     CrossValidationReportPayload,
@@ -172,13 +172,13 @@ class TestProject:
         assert hasattr(project.reports, "get")
         assert hasattr(project.reports, "metadata")
 
-    def test_reports_get(self, respx_mock, regression):
+    def test_reports_get_estimator_report(self, respx_mock, regression):
         # Mock hub routes that will be called
         url = "projects/<tenant>/<name>/runs"
         response = Response(200, json={"id": 0})
         respx_mock.post(url).mock(response)
 
-        url = "projects/<tenant>/<name>/experiments/estimator-reports/<report_id>"
+        url = "projects/<tenant>/<name>/estimator-reports/<report_id>"
         response = Response(200, json={"raw": {"checksum": "<checksum>"}})
         respx_mock.get(url).mock(response)
 
@@ -195,22 +195,52 @@ class TestProject:
 
         # Test
         project = Project("<tenant>", "<name>")
-        report = project.reports.get("<report_id>")
+        report = project.reports.get("skore:report:estimator:<report_id>")
 
         assert isinstance(report, EstimatorReport)
         assert report.estimator_name_ == regression.estimator_name_
-        assert report._ml_task == regression._ml_task
+        assert report.ml_task == regression.ml_task
+
+    def test_reports_get_cross_validation_report(self, respx_mock, cv_regression):
+        # Mock hub routes that will be called
+        url = "projects/<tenant>/<name>/runs"
+        response = Response(200, json={"id": 0})
+        respx_mock.post(url).mock(response)
+
+        url = "projects/<tenant>/<name>/cross-validation-reports/<report_id>"
+        response = Response(200, json={"raw": {"checksum": "<checksum>"}})
+        respx_mock.get(url).mock(response)
+
+        url = "projects/<tenant>/<name>/artefacts/read"
+        response = Response(200, json=[{"url": "http://url.com"}])
+        respx_mock.get(url).mock(response)
+
+        with BytesIO() as stream:
+            joblib.dump(cv_regression, stream)
+
+            url = "http://url.com"
+            response = Response(200, content=stream.getvalue())
+            respx_mock.get(url).mock(response)
+
+        # Test
+        project = Project("<tenant>", "<name>")
+        report = project.reports.get("skore:report:cross-validation:<report_id>")
+
+        assert isinstance(report, CrossValidationReport)
+        assert report.estimator_name_ == cv_regression.estimator_name_
+        assert report.ml_task == cv_regression.ml_task
 
     def test_reports_metadata(self, nowstr, respx_mock):
         url = "projects/<tenant>/<name>/runs"
         respx_mock.post(url).mock(Response(200, json={"id": 2}))
 
-        url = "projects/<tenant>/<name>/experiments/estimator-reports"
+        url = "projects/<tenant>/<name>/estimator-reports/"
         respx_mock.get(url).mock(
             Response(
                 200,
                 json=[
                     {
+                        "urn": "skore:report:estimator:<report_id_0>",
                         "id": "<report_id_0>",
                         "run_id": 0,
                         "key": "<key>",
@@ -224,6 +254,7 @@ class TestProject:
                         ],
                     },
                     {
+                        "urn": "skore:report:estimator:<report_id_1>",
                         "id": "<report_id_1>",
                         "run_id": 1,
                         "key": "<key>",
@@ -233,7 +264,30 @@ class TestProject:
                         "created_at": nowstr,
                         "metrics": [
                             {"name": "log_loss", "value": 0, "data_source": "train"},
-                            {"name": "log_loss", "value": 1, "data_source": "test"},
+                            {"name": "log_loss", "value": 2, "data_source": "test"},
+                        ],
+                    },
+                ],
+            )
+        )
+
+        url = "projects/<tenant>/<name>/cross-validation-reports/"
+        respx_mock.get(url).mock(
+            Response(
+                200,
+                json=[
+                    {
+                        "urn": "skore:report:cross-validation:<report_id_2>",
+                        "id": "<report_id_2>",
+                        "run_id": 3,
+                        "key": "<key>",
+                        "ml_task": "<ml_task>",
+                        "estimator_class_name": "<estimator_class_name>",
+                        "dataset_fingerprint": "<dataset_fingerprint>",
+                        "created_at": nowstr,
+                        "metrics": [
+                            {"name": "rmse_mean", "value": 0, "data_source": "train"},
+                            {"name": "rmse_mean", "value": 3, "data_source": "test"},
                         ],
                     },
                 ],
@@ -245,32 +299,64 @@ class TestProject:
 
         assert metadata == [
             {
-                "id": "<report_id_0>",
+                "id": "skore:report:estimator:<report_id_0>",
                 "run_id": 0,
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
-                "dataset": "<dataset_fingerprint>",
                 "ml_task": "<ml_task>",
+                "report_type": "estimator",
+                "dataset": "<dataset_fingerprint>",
                 "rmse": 1,
                 "log_loss": None,
                 "roc_auc": None,
                 "fit_time": None,
                 "predict_time": None,
+                "rmse_mean": None,
+                "log_loss_mean": None,
+                "roc_auc_mean": None,
+                "fit_time_mean": None,
+                "predict_time_mean": None,
             },
             {
-                "id": "<report_id_1>",
+                "id": "skore:report:estimator:<report_id_1>",
                 "run_id": 1,
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
-                "dataset": "<dataset_fingerprint>",
                 "ml_task": "<ml_task>",
+                "report_type": "estimator",
+                "dataset": "<dataset_fingerprint>",
                 "rmse": None,
-                "log_loss": 1,
+                "log_loss": 2,
                 "roc_auc": None,
                 "fit_time": None,
                 "predict_time": None,
+                "rmse_mean": None,
+                "log_loss_mean": None,
+                "roc_auc_mean": None,
+                "fit_time_mean": None,
+                "predict_time_mean": None,
+            },
+            {
+                "id": "skore:report:cross-validation:<report_id_2>",
+                "run_id": 3,
+                "key": "<key>",
+                "date": nowstr,
+                "learner": "<estimator_class_name>",
+                "ml_task": "<ml_task>",
+                "report_type": "cross-validation",
+                "dataset": "<dataset_fingerprint>",
+                "rmse": None,
+                "log_loss": None,
+                "roc_auc": None,
+                "fit_time": None,
+                "predict_time": None,
+                "rmse_mean": 3,
+                "log_loss_mean": None,
+                "roc_auc_mean": None,
+                "fit_time_mean": None,
+                "predict_time_mean": None,
             },
         ]
 

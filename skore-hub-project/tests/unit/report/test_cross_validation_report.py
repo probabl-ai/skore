@@ -11,9 +11,8 @@ from sklearn.model_selection import ShuffleSplit
 from skore import CrossValidationReport
 from skore_hub_project import Project
 from skore_hub_project.artefact.serializer import Serializer
-from skore_hub_project.media import (
-    EstimatorHtmlRepr,
-)
+from skore_hub_project.media import EstimatorHtmlRepr
+from skore_hub_project.media.data import TableReport
 from skore_hub_project.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
@@ -70,7 +69,7 @@ def monkeypatch_client(monkeypatch):
 
 
 def serialize(object: CrossValidationReport) -> tuple[bytes, str]:
-    reports = [object] + object.reports_
+    reports = [object] + object.estimator_reports_
     caches = []
 
     for report in reports:
@@ -174,11 +173,11 @@ class TestCrossValidationReportPayload:
             Response(200, json={"id": 0})
         )
 
-        assert len(payload.estimators) == len(payload.report.reports_)
+        assert len(payload.estimators) == len(payload.report.estimator_reports_)
 
         for i, er_payload in enumerate(payload.estimators):
             assert isinstance(er_payload, EstimatorReportPayload)
-            assert er_payload.report == payload.report.reports_[i]
+            assert er_payload.report == payload.report.estimator_reports_[i]
             assert er_payload.upload is False
             assert er_payload.parameters == {}
 
@@ -246,7 +245,10 @@ class TestCrossValidationReportPayload:
         ]
 
     def test_related_items(self, payload):
-        assert list(map(type, payload.related_items)) == [EstimatorHtmlRepr]
+        assert list(map(type, payload.related_items)) == [
+            EstimatorHtmlRepr,
+            TableReport,
+        ]
 
     @mark.usefixtures("monkeypatch_routes")
     def test_model_dump(self, small_cv_binary_classification, payload):
