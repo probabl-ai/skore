@@ -177,9 +177,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache: dict[tuple[Any, ...], Any] = {}
-        self._ml_task = _find_ml_task(
-            y, estimator=self.reports_[0]._estimator
-        )
+        self._ml_task = _find_ml_task(y, estimator=self.reports_[0]._estimator)
 
     @progress_decorator(
         description=lambda self: (
@@ -488,6 +486,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             "The pos_label attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
+
+    @property
+    def estimator_reports_(self) -> list[EstimatorReport]:
+        """
+        The estimator reports for each split.
+
+        .. deprecated
+          The ``report.estimator_reports_`` property will be removed in favor of
+        ``report.reports_`` in a near future.
+        """
+        return self.reports_
 
     ####################################################################################
     # Methods related to the help and repr
