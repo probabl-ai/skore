@@ -494,7 +494,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         .. deprecated
           The ``report.estimator_reports_`` property will be removed in favor of
-        ``report.reports_`` in a near future.
+          ``report.reports_`` in a near future.
         """
         return self.reports_
 
