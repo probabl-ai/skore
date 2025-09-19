@@ -5,7 +5,7 @@ from typing import Any, Literal, TypedDict
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from IPython.display import clear_output, display
+from IPython.display import HTML, clear_output, display
 from ipywidgets import widgets
 from rich.panel import Panel
 
@@ -583,9 +583,9 @@ class ModelExplorerWidget:
             fig.update_layout(
                 font=dict(size=18),
                 height=500,
-                width=800,
+                width=self._plot_width,
                 margin=dict(l=250, r=0, t=120, b=30),
-                autosize=True,
+                autosize=False,
             )
 
             fig.data[0].on_selection(self.update_selection)  # callback
@@ -647,6 +647,55 @@ class ModelExplorerWidget:
                 )
             )
             return None
+
+        display(
+            HTML("""
+<style>
+    /* Text-based widgets */
+    .widget-text input,
+    .widget-textarea textarea,
+    .widget-password input {
+        font-size: 16px !important;
+    }
+
+    /* Labels and descriptions */
+    .widget-label,
+    .widget-label-basic {
+        font-size: 16px !important;
+        min-width: fit-content !important;
+    }
+
+    /* Buttons */
+    .widget-button,
+    .widget-toggle-button {
+        font-size: 16px !important;
+    }
+
+    /* Dropdowns and select widgets */
+    .widget-dropdown select,
+    .widget-select select {
+        font-size: 16px !important;
+    }
+
+    /* Slider readouts */
+    .widget-readout {
+        font-size: 16px !important;
+    }
+
+    /* HTML widgets */
+    .widget-html,
+    .widget-html-content {
+        font-size: 16px !important;
+    }
+
+    /* Custom SelectMultiple Dropdown */
+    .jupyter-widget-Collapse-header {
+        font-size: 16px !important;
+        font-weight: normal !important;
+    }
+</style>
+""")
+        )
 
         display(self._layout)
         self._update_plot()
