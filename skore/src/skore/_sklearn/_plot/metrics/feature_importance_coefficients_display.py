@@ -149,10 +149,10 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
         self.ax_ = self.ax_.flatten()
 
         if self._parent == "comparison-estimator":
+            self.figure_.suptitle("Coefficients")
             for ax, coef_frame in zip(self.ax_, self._coefficient_data, strict=False):
                 coef_frame.plot.barh(ax=ax)
                 ax.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
-                ax.set_title("Coefficients")
                 ax.grid(False)
                 ax.spines["top"].set_visible(False)
                 ax.spines["right"].set_visible(False)
@@ -171,7 +171,7 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
                 ax.spines["left"].set_visible(False)
                 ax.tick_params(axis="y", length=0)
         else:
-            raise TypeError(f"Unexpected report type: {type(self._parent)}")
+            raise TypeError(f"Unexpected report type: {self._parent}")
 
         self.figure_.tight_layout()
         plt.show()
