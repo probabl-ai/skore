@@ -50,7 +50,6 @@ class ModelExplorerWidget:
         Dictionary containing the current user selection criteria.
     """
 
-    _plot_width: int = 800
     _metrics: dict[str, MetricAxis] = {
         "fit_time": {
             "name": "Fit Time",
@@ -583,15 +582,21 @@ class ModelExplorerWidget:
             fig.update_layout(
                 font=dict(size=18),
                 height=500,
-                width=self._plot_width,
                 margin=dict(l=250, r=0, t=120, b=30),
-                autosize=False,
+                autosize=True,
             )
 
             fig.data[0].on_selection(self.update_selection)  # callback
 
             self.current_fig = fig
-            display(fig)
+            # generate the raw HTML to be able to request responsive resizing and scale
+            # the width to the parent container
+            html_fig = fig.to_html(
+                full_html=False,
+                include_plotlyjs="cdn",
+                config=dict(responsive=True),
+            )
+            display(HTML(html_fig))
 
     def update_selection(
         self, trace=None, points=None, selector=None
@@ -649,7 +654,8 @@ class ModelExplorerWidget:
             return None
 
         display(
-            HTML("""
+            HTML(
+                """
 <style>
     /* Text-based widgets */
     .widget-text input,
@@ -694,7 +700,8 @@ class ModelExplorerWidget:
         font-weight: normal !important;
     }
 </style>
-""")
+"""
+            )
         )
 
         display(self._layout)
