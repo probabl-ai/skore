@@ -32,10 +32,10 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
     def coefficients(self) -> FeatureImportanceCoefficientsDisplay:
         """Retrieve the coefficients for each report, including the intercepts.
 
-        If the compared reports are `EstimatorReport`s, the coefficients from each
+        If the compared reports are ``EstimatorReport``s, the coefficients from each
         report's estimator are returned as a single-column DataFrame.
 
-        If the compared reports are `CrossValidationReport`s, the coefficients
+        If the compared reports are ``CrossValidationReport``s, the coefficients
         across all cross-validation splits are retained and the columns are prefixed
         with the corresponding estimator name to distinguish them.
 
