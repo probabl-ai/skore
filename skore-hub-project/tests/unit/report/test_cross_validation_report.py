@@ -8,8 +8,9 @@ from pytest import fixture, mark, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import ShuffleSplit
-from skore import CrossValidationReport
+from skore import CrossValidationReport, EstimatorReport
 from skore_hub_project import Project
+from skore_hub_project.artefact import EstimatorReportArtefact
 from skore_hub_project.artefact.serializer import Serializer
 from skore_hub_project.media import EstimatorHtmlRepr
 from skore_hub_project.media.data import TableReport
@@ -168,18 +169,59 @@ class TestCrossValidationReportPayload:
     def test_classes_many_rows(self, payload):
         assert payload.classes == [0, 0, 1, 1, 1, 0, 0, 1, 0, 1]
 
+    @mark.usefixtures("monkeypatch_routes")
     def test_estimators(self, payload, respx_mock):
-        respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": 0})
-        )
+        estimators = [estimator.model_dump() for estimator in payload.estimators]
 
-        assert len(payload.estimators) == len(payload.report.estimator_reports_)
+        # Ensure payload dict is well constructed
+        assert len(estimators) == len(payload.report.estimator_reports_)
 
-        for i, er_payload in enumerate(payload.estimators):
-            assert isinstance(er_payload, EstimatorReportPayload)
-            assert er_payload.report == payload.report.estimator_reports_[i]
-            assert er_payload.upload is False
-            assert er_payload.parameters == {}
+        for i, estimator in enumerate(payload.estimators):
+            assert isinstance(estimator, EstimatorReportPayload)
+            assert isinstance(estimator.parameters, EstimatorReportArtefact)
+            assert estimator.report == payload.report.estimator_reports_[i]
+
+        # Ensure upload is well done
+        requests = [call.request for call in respx_mock.calls][1:]
+
+        assert len(requests) == (len(payload.report.estimator_reports_) * 3)
+
+        def serialize(object: EstimatorReport) -> tuple[bytes, str]:
+            cache = object._cache
+            object._cache = {}
+
+            try:
+                with Serializer(object) as serializer:
+                    pickle = serializer.filepath.read_bytes()
+                    checksum = serializer.checksum
+            finally:
+                object._cache = cache
+
+            return pickle, checksum
+
+        for i in range(len(payload.report.estimator_reports_)):
+            pickle, checksum = serialize(payload.report.estimator_reports_[i])
+            r0 = requests[(i * 3)]
+            r1 = requests[(i * 3) + 1]
+            r2 = requests[(i * 3) + 2]
+
+            assert r0.url.path == "/projects/<tenant>/<name>/artefacts"
+            assert loads(r0.content.decode()) == [
+                {
+                    "checksum": checksum,
+                    "chunk_number": 1,
+                    "content_type": "estimator-report",
+                }
+            ]
+            assert r1.url == "http://chunk1.com/"
+            assert r1.content == pickle
+            assert r2.url.path == "/projects/<tenant>/<name>/artefacts/complete"
+            assert loads(r2.content.decode()) == [
+                {
+                    "checksum": checksum,
+                    "etags": {"1": '"<etag1>"'},
+                }
+            ]
 
     @mark.usefixtures("monkeypatch_routes")
     def test_parameters(self, small_cv_binary_classification, payload, respx_mock):
