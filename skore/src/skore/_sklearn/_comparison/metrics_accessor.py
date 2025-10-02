@@ -1272,7 +1272,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
             else:
                 for report_name, report in self._parent.reports_.items():
-                    for split, estimator_report in enumerate(report.estimator_reports_):
+                    for split, estimator_report in enumerate(report.reports_):
                         report_X, report_y, _ = (
                             estimator_report.metrics._get_X_y_and_data_source_hash(
                                 data_source=data_source,
@@ -1320,7 +1320,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     estimators=[
                         estimator_report.estimator_
                         for report in self._parent.reports_.values()
-                        for estimator_report in report.estimator_reports_
+                        for estimator_report in report.reports_
                     ],
                     ml_task=self._parent._ml_task,
                     data_source=data_source,
