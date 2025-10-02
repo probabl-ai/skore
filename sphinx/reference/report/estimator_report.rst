@@ -30,6 +30,7 @@ report are accessible through accessors.
    :toctree: ../api/
    :template: autosummary/accessor.rst
 
+   EstimatorReport.data
    EstimatorReport.feature_importance
    EstimatorReport.metrics
 
