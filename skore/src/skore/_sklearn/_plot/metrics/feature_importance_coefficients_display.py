@@ -3,14 +3,15 @@ import matplotlib.pyplot as plt
 from skore._sklearn._plot.base import DisplayMixin
 
 
-class FeatureImportanceDisplay(DisplayMixin):
+class FeatureImportanceCoefficientsDisplay(DisplayMixin):
     """Feature importance display.
 
     Each report type produces its own output frame and plot.
 
     Parameters
     ----------
-    parent : EstimatorReport | CrossValidationReport | ComparisonReport
+    parent : {"estimator", "cross-validation", "comparison-estimator",
+            "comparison-cross-validation"}
         Report type from which the display is created.
 
     coefficient_data : DataFrame | list[DataFrame]
@@ -76,16 +77,12 @@ class FeatureImportanceDisplay(DisplayMixin):
             - If a ``ComparisonReport``, the columns are the
             models passed in the report, with the index being the feature names.
         """
-        from skore import ComparisonReport, CrossValidationReport, EstimatorReport
-
-        if isinstance(self._parent, EstimatorReport):
+        if self._parent == "estimator":
             return self._frame_estimator_report()
-        elif isinstance(self._parent, CrossValidationReport):
+        elif self._parent == "cross-validation":
             return self._frame_cross_validation_report()
-        elif isinstance(self._parent, ComparisonReport):
-            return self._frame_comparison_report()
         else:
-            raise TypeError(f"Unrecognised report type: {self._parent}")
+            return self._frame_comparison_report()
 
     def _frame_estimator_report(self):
         return self._coefficient_data
@@ -110,53 +107,71 @@ class FeatureImportanceDisplay(DisplayMixin):
         return self._plot(**kwargs)
 
     def _plot_matplotlib(self, **kwargs):
-        from skore._sklearn._comparison import ComparisonReport
-        from skore._sklearn._cross_validation import CrossValidationReport
-        from skore._sklearn._estimator import EstimatorReport
-
-        if isinstance(self._parent, EstimatorReport):
+        if self._parent == "estimator":
             return self._plot_estimator_report()
-        elif isinstance(self._parent, CrossValidationReport):
+        elif self._parent == "cross-validation":
             return self._plot_cross_validation_report()
-        elif isinstance(self._parent, ComparisonReport):
-            return self._plot_comparison_report()
         else:
-            raise TypeError(f"Unrecognised report type: {self._parent}")
+            return self._plot_comparison_report()
 
     def _plot_estimator_report(self):
         self.figure_, self.ax_ = plt.subplots()
-        self._coefficient_data.plot.bar(ax=self.ax_)
-        self.ax_.set_title(f"{self._parent.estimator_name_} Coefficients")
+        self._coefficient_data.plot.barh(ax=self.ax_)
+        self.ax_.set_title("Coefficients")
         self.ax_.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
+        self.ax_.grid(False)
+        self.ax_.spines["top"].set_visible(False)
+        self.ax_.spines["right"].set_visible(False)
+        self.ax_.spines["left"].set_visible(False)
+        self.ax_.tick_params(axis="y", length=0)
         self.figure_.tight_layout()
         plt.show()
 
     def _plot_cross_validation_report(self):
         self.figure_, self.ax_ = plt.subplots()
-        self._coefficient_data.boxplot(ax=self.ax_)
+        self._coefficient_data.boxplot(ax=self.ax_, vert=False)
         self.ax_.set_title("Coefficient variance across CV splits")
+        self.ax_.grid(False)
+        self.ax_.spines["top"].set_visible(False)
+        self.ax_.spines["right"].set_visible(False)
+        self.ax_.spines["left"].set_visible(False)
+        self.ax_.tick_params(axis="y", length=0)
         self.figure_.tight_layout()
         plt.show()
 
     def _plot_comparison_report(self):
-        if self._parent._reports_type == "EstimatorReport":
-            for coef_frame in self._coefficient_data:
-                self.figure_, self.ax_ = plt.subplots()
-                coef_frame.plot.bar(ax=self.ax_)
-                self.ax_.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
+        self.figure_, self.ax_ = plt.subplots(
+            nrows=1,
+            ncols=len(self._coefficient_data),
+            figsize=(5 * len(self._coefficient_data), 6),
+            squeeze=False,
+        )
+        self.ax_ = self.ax_.flatten()
 
-                self.ax_.set_title("Coefficients")
-                self.figure_.tight_layout()
-                plt.show()
-        elif self._parent._reports_type == "CrossValidationReport":
-            for coef_frame in self._coefficient_data:
-                self.figure_, self.ax_ = plt.subplots()
-                coef_frame.boxplot(ax=self.ax_)
-                self.ax_.set_title(
+        if self._parent == "comparison-estimator":
+            self.figure_.suptitle("Coefficients")
+            for ax, coef_frame in zip(self.ax_, self._coefficient_data, strict=False):
+                coef_frame.plot.barh(ax=ax)
+                ax.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
+                ax.grid(False)
+                ax.spines["top"].set_visible(False)
+                ax.spines["right"].set_visible(False)
+                ax.spines["left"].set_visible(False)
+                ax.tick_params(axis="y", length=0)
+
+        elif self._parent == "comparison-cross-validation":
+            for ax, coef_frame in zip(self.ax_, self._coefficient_data, strict=False):
+                coef_frame.boxplot(ax=ax, vert=False)
+                ax.set_title(
                     f"{coef_frame.columns[0].split('__')[0]} Coefficients across splits"
                 )
-                plt.xticks(rotation=90)
-                plt.tight_layout()
-                plt.show()
+                ax.grid(False)
+                ax.spines["top"].set_visible(False)
+                ax.spines["right"].set_visible(False)
+                ax.spines["left"].set_visible(False)
+                ax.tick_params(axis="y", length=0)
         else:
-            raise TypeError(f"Unexpected report type: {type(self._parent.reports_[0])}")
+            raise TypeError(f"Unexpected report type: {self._parent}")
+
+        self.figure_.tight_layout()
+        plt.show()
