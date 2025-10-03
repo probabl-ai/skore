@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
-from pandas.io.formats.style import Styler
 
 from skore import ComparisonReport
 from skore.project.widget import ModelExplorerWidget
