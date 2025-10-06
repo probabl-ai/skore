@@ -154,9 +154,8 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
                 coef_frame.plot.barh(ax=ax)
                 ax.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
                 ax.grid(False)
-                ax.spines["top"].set_visible(False)
-                ax.spines["right"].set_visible(False)
-                ax.spines["left"].set_visible(False)
+                for spine in ["top", "right", "left"]:
+                    ax.spines[spine].set_visible(False)
                 ax.tick_params(axis="y", length=0)
 
         elif self._parent == "comparison-cross-validation":
@@ -166,9 +165,8 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
                     f"{coef_frame.columns[0].split('__')[0]} Coefficients across splits"
                 )
                 ax.grid(False)
-                ax.spines["top"].set_visible(False)
-                ax.spines["right"].set_visible(False)
-                ax.spines["left"].set_visible(False)
+                for spine in ["top", "right", "left"]:
+                    ax.spines[spine].set_visible(False)
                 ax.tick_params(axis="y", length=0)
         else:
             raise TypeError(f"Unexpected report type: {self._parent}")
