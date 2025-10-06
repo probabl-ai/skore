@@ -120,9 +120,8 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
         self.ax_.set_title("Coefficients")
         self.ax_.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
         self.ax_.grid(False)
-        self.ax_.spines["top"].set_visible(False)
-        self.ax_.spines["right"].set_visible(False)
-        self.ax_.spines["left"].set_visible(False)
+        for spine in ["top", "right", "left"]:
+            self.ax_.spines[spine].set_visible(False)
         self.ax_.tick_params(axis="y", length=0)
         self.figure_.tight_layout()
         plt.show()
@@ -132,9 +131,8 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
         self._coefficient_data.boxplot(ax=self.ax_, vert=False)
         self.ax_.set_title("Coefficient variance across CV splits")
         self.ax_.grid(False)
-        self.ax_.spines["top"].set_visible(False)
-        self.ax_.spines["right"].set_visible(False)
-        self.ax_.spines["left"].set_visible(False)
+        for spine in ["top", "right", "left"]:
+            self.ax_.spines[spine].set_visible(False)
         self.ax_.tick_params(axis="y", length=0)
         self.figure_.tight_layout()
         plt.show()
