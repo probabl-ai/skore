@@ -62,8 +62,6 @@ class EstimatorReportPayload(ReportPayload):
         The project to which the report payload should be sent.
     report : EstimatorReport
         The report on which to calculate the payload to be sent.
-    upload : bool, optional
-        Upload the report to the artefacts storage, default True.
     key : str
         The key to associate to the report.
     """
@@ -120,7 +118,7 @@ class EstimatorReportPayload(ReportPayload):
         """
         The checksum of the instance.
 
-        The checksum of the instance that was assigned after being uploaded to the
+        The checksum of the instance that was assigned before being uploaded to the
         artefact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artefacts storage.
 
@@ -128,6 +126,4 @@ class EstimatorReportPayload(ReportPayload):
           The ``parameters`` property will be removed in favor of a new ``checksum``
           property in a near future.
         """
-        if self.upload:
-            return EstimatorReportArtefact(project=self.project, report=self.report)
-        return {}
+        return EstimatorReportArtefact(project=self.project, report=self.report)
