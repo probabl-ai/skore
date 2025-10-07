@@ -13,7 +13,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     """
     The data accessor helps you to get insights about the train and test datasets.
 
-    It provides methods to create plots and to visualise the dataset.
+    It provides methods to create plots and to visualise the datasets.
     """
 
     def __init__(self, parent: EstimatorReport) -> None:
