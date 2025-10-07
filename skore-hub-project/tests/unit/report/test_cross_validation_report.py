@@ -10,8 +10,8 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import ShuffleSplit
 from skore import CrossValidationReport, EstimatorReport
 from skore_hub_project import Project
-from skore_hub_project.artefact import EstimatorReportArtefact
-from skore_hub_project.artefact.serializer import Serializer
+from skore_hub_project.artifact import EstimatorReportArtifact
+from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.media import EstimatorHtmlRepr
 from skore_hub_project.media.data import TableReport
 from skore_hub_project.metric import (
@@ -66,7 +66,7 @@ class FakeClient(Client):
 @fixture(autouse=True)
 def monkeypatch_client(monkeypatch):
     monkeypatch.setattr("skore_hub_project.project.project.HUBClient", FakeClient)
-    monkeypatch.setattr("skore_hub_project.artefact.upload.HUBClient", FakeClient)
+    monkeypatch.setattr("skore_hub_project.artifact.upload.HUBClient", FakeClient)
 
 
 def serialize(object: CrossValidationReport) -> tuple[bytes, str]:
@@ -100,13 +100,13 @@ def payload(small_cv_binary_classification):
 @fixture
 def monkeypatch_routes(respx_mock):
     respx_mock.post("projects/<tenant>/<name>/runs").mock(Response(200, json={"id": 0}))
-    respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
+    respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
         Response(200, json=[{"upload_url": "http://chunk1.com/", "chunk_id": 1}])
     )
     respx_mock.put("http://chunk1.com").mock(
         Response(200, headers={"etag": '"<etag1>"'})
     )
-    respx_mock.post("projects/<tenant>/<name>/artefacts/complete")
+    respx_mock.post("projects/<tenant>/<name>/artifacts/complete")
 
 
 class TestCrossValidationReportPayload:
@@ -178,7 +178,7 @@ class TestCrossValidationReportPayload:
 
         for i, estimator in enumerate(payload.estimators):
             assert isinstance(estimator, EstimatorReportPayload)
-            assert isinstance(estimator.parameters, EstimatorReportArtefact)
+            assert isinstance(estimator.parameters, EstimatorReportArtifact)
             assert estimator.report == payload.report.estimator_reports_[i]
 
         # Ensure upload is well done
@@ -205,7 +205,7 @@ class TestCrossValidationReportPayload:
             r1 = requests[(i * 3) + 1]
             r2 = requests[(i * 3) + 2]
 
-            assert r0.url.path == "/projects/<tenant>/<name>/artefacts"
+            assert r0.url.path == "/projects/<tenant>/<name>/artifacts"
             assert loads(r0.content.decode()) == [
                 {
                     "checksum": checksum,
@@ -215,7 +215,7 @@ class TestCrossValidationReportPayload:
             ]
             assert r1.url == "http://chunk1.com/"
             assert r1.content == pickle
-            assert r2.url.path == "/projects/<tenant>/<name>/artefacts/complete"
+            assert r2.url.path == "/projects/<tenant>/<name>/artifacts/complete"
             assert loads(r2.content.decode()) == [
                 {
                     "checksum": checksum,
@@ -234,7 +234,7 @@ class TestCrossValidationReportPayload:
         requests = [call.request for call in respx_mock.calls]
 
         assert len(requests) == 3
-        assert requests[0].url.path == "/projects/<tenant>/<name>/artefacts"
+        assert requests[0].url.path == "/projects/<tenant>/<name>/artifacts"
         assert loads(requests[0].content.decode()) == [
             {
                 "checksum": checksum,
@@ -244,7 +244,7 @@ class TestCrossValidationReportPayload:
         ]
         assert requests[1].url == "http://chunk1.com/"
         assert requests[1].content == pickle
-        assert requests[2].url.path == "/projects/<tenant>/<name>/artefacts/complete"
+        assert requests[2].url.path == "/projects/<tenant>/<name>/artifacts/complete"
         assert loads(requests[2].content.decode()) == [
             {
                 "checksum": checksum,

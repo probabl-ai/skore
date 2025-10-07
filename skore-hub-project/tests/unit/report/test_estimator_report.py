@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from skore import EstimatorReport
 from skore_hub_project import Project
-from skore_hub_project.artefact.serializer import Serializer
+from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.media import (
     EstimatorHtmlRepr,
     MeanDecreaseImpurity,
@@ -53,7 +53,7 @@ class FakeClient(Client):
 @fixture(autouse=True)
 def monkeypatch_client(monkeypatch):
     monkeypatch.setattr("skore_hub_project.project.project.HUBClient", FakeClient)
-    monkeypatch.setattr("skore_hub_project.artefact.upload.HUBClient", FakeClient)
+    monkeypatch.setattr("skore_hub_project.artifact.upload.HUBClient", FakeClient)
 
 
 def serialize(object: EstimatorReport) -> tuple[bytes, str]:
@@ -80,13 +80,13 @@ def payload(binary_classification):
 @fixture
 def monkeypatch_routes(respx_mock):
     respx_mock.post("projects/<tenant>/<name>/runs").mock(Response(200, json={"id": 0}))
-    respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
+    respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
         Response(200, json=[{"upload_url": "http://chunk1.com/", "chunk_id": 1}])
     )
     respx_mock.put("http://chunk1.com").mock(
         Response(200, headers={"etag": '"<etag1>"'})
     )
-    respx_mock.post("projects/<tenant>/<name>/artefacts/complete")
+    respx_mock.post("projects/<tenant>/<name>/artifacts/complete")
 
 
 class TestEstimatorReportPayload:
@@ -101,7 +101,7 @@ class TestEstimatorReportPayload:
         requests = [call.request for call in respx_mock.calls]
 
         assert len(requests) == 3
-        assert requests[0].url.path == "/projects/<tenant>/<name>/artefacts"
+        assert requests[0].url.path == "/projects/<tenant>/<name>/artifacts"
         assert loads(requests[0].content.decode()) == [
             {
                 "checksum": checksum,
@@ -111,7 +111,7 @@ class TestEstimatorReportPayload:
         ]
         assert requests[1].url == "http://chunk1.com/"
         assert requests[1].content == pickle
-        assert requests[2].url.path == "/projects/<tenant>/<name>/artefacts/complete"
+        assert requests[2].url.path == "/projects/<tenant>/<name>/artifacts/complete"
         assert loads(requests[2].content.decode()) == [
             {
                 "checksum": checksum,

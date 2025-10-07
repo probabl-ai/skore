@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import Field, computed_field
 from sklearn.model_selection._split import _CVIterableWrapper
 
-from skore_hub_project.artefact import CrossValidationReportArtefact
+from skore_hub_project.artifact import CrossValidationReportArtifact
 from skore_hub_project.media import EstimatorHtmlRepr
 from skore_hub_project.media.data import TableReport
 from skore_hub_project.media.media import Media
@@ -229,16 +229,16 @@ class CrossValidationReportPayload(ReportPayload):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def parameters(self) -> CrossValidationReportArtefact | dict[()]:
+    def parameters(self) -> CrossValidationReportArtifact | dict[()]:
         """
         The checksum of the instance.
 
         The checksum of the instance that was assigned before being uploaded to the
-        artefact storage. It is based on its ``joblib`` serialization and mainly used to
-        retrieve it from the artefacts storage.
+        artifact storage. It is based on its ``joblib`` serialization and mainly used to
+        retrieve it from the artifacts storage.
 
         .. deprecated
           The ``parameters`` property will be removed in favor of a new ``checksum``
           property in a near future.
         """
-        return CrossValidationReportArtefact(project=self.project, report=self.report)
+        return CrossValidationReportArtifact(project=self.project, report=self.report)

@@ -8,7 +8,7 @@ from typing import ClassVar, cast
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project import Project
-from skore_hub_project.artefact.artefact import Artefact
+from skore_hub_project.artifact.artifact import Artifact
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
@@ -72,13 +72,13 @@ class ReportPayload(ABC, BaseModel):
     @computed_field  # type: ignore[prop-decorator]
     @property
     @abstractmethod
-    def parameters(self) -> Artefact | dict[()]:
+    def parameters(self) -> Artifact | dict[()]:
         """
         The checksum of the instance.
 
         The checksum of the instance that was assigned before being uploaded to the
-        artefact storage. It is based on its ``joblib`` serialization and mainly used to
-        retrieve it from the artefacts storage.
+        artifact storage. It is based on its ``joblib`` serialization and mainly used to
+        retrieve it from the artifacts storage.
 
         .. deprecated
           The ``parameters`` property will be removed in favor of a new ``checksum``
