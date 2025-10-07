@@ -1,25 +1,19 @@
 """Function definition of the object ``Serializer``."""
 
-from __future__ import annotations
-
+from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING
+from typing import Any
 
 from blake3 import blake3 as Blake3
-from joblib import dump
-
-if TYPE_CHECKING:
-    from typing import Any
 
 
-class Serializer:
-    """Serialize an object using ``joblib``, on disk to reduce RAM footprint."""
+class Serializer(ABC):  # noqa: B024
+    """Interface to serialize an object directly on disk to reduce RAM footprint."""
 
-    def __init__(self, o: Any):
-        with self.filepath.open("wb") as file:
-            dump(o, file)
+    @abstractmethod
+    def __init__(self, _: Any): ...
 
     def __enter__(self):  # noqa: D105
         return self
@@ -58,3 +52,33 @@ class Serializer:
     def size(self) -> int:
         """The size of the serialized object, in bytes."""
         return self.filepath.stat().st_size
+
+
+class JoblibSerializer(Serializer):
+    def __init__(self, object: Any):
+        import joblib
+
+        with self.filepath.open("wb") as file:
+            joblib.dump(object, file)
+
+
+class TxtSerializer(Serializer):
+    def __init__(self, txt: str):
+        self.filepath.write_text(txt)
+
+
+class BytesSerializer(Serializer):
+    def __init__(self, txt: bytes):
+        self.filepath.write_bytes(txt)
+
+
+class JsonSerializer(Serializer):
+    def __init__(self, object: Any):
+        import orjson
+
+        self.filepath.write_bytes(
+            orjson.dumps(
+                object,
+                option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
+            )
+        )

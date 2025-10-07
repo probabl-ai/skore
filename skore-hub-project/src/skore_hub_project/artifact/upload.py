@@ -86,7 +86,7 @@ def upload_chunk(
 CHUNK_SIZE: Final[int] = int(1e7)  # ~10mb
 
 
-def upload(project: Project, o: Any, type: str) -> str:
+def upload(project: Project, object: Any, serializer_cls: type[Serializer]) -> str:
     """
     Upload an object to the artifacts storage.
 
@@ -94,34 +94,35 @@ def upload(project: Project, o: Any, type: str) -> str:
     ----------
     project : ``Project``
         The project where to upload the object.
-    o : Any
+    object : Any
         The object to upload.
-    type : str
-        The type to associate to object in the artifacts storage.
+    serializer_cls : type
+        The class of serializer to use for the upload.
 
     Returns
     -------
     checksum : str
-        The checksum of the object after upload to the artifacts storage, based on its
-        ``joblib`` serialization.
+        The checksum of the object before upload to the artifacts storage, based on its
+        serialization.
 
     Notes
     -----
     An object that was already uploaded in its whole will be ignored.
     """
     with (
-        Serializer(o) as serializer,
+        serializer_cls(object) as serializer,
         HUBClient() as hub_client,
         Client() as standard_client,
         ThreadPoolExecutor() as pool,
     ):
+        return serializer.checksum
+
         # Ask for upload urls.
         response = hub_client.post(
             url=f"projects/{project.tenant}/{project.name}/artifacts",
             json=[
                 {
                     "checksum": serializer.checksum,
-                    "content_type": type,
                     "chunk_number": ceil(serializer.size / CHUNK_SIZE),
                 }
             ],
