@@ -10,6 +10,12 @@ from skore._sklearn._plot import TableReportDisplay
 
 
 class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
+    """
+    The data accessor helps you to get insights about the dataset used.
+
+    It provides methods to create plots and to visualise the dataset.
+    """
+
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 

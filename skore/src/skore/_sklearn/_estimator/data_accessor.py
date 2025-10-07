@@ -10,6 +10,12 @@ from skore._sklearn._plot import TableReportDisplay
 
 
 class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
+    """
+    The data accessor helps you to get insights about the train and test datasets.
+
+    It provides methods to create plots and to visualise the dataset.
+    """
+
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
