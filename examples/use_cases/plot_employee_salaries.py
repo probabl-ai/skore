@@ -114,7 +114,7 @@ model
 from skore import CrossValidationReport
 
 hgbt_model_report = CrossValidationReport(
-    estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4
+    estimator=model, X=df, y=y, splitter=5, n_jobs=4
 )
 hgbt_model_report.help()
 
@@ -137,6 +137,25 @@ hgbt_model_report.cache_predictions(n_jobs=4)
 hgbt_model_report.metrics.summarize().frame()
 
 # %%
+# Similarly to what we saw in the previous section, the
+# :class:`skore.CrossValidationReport` also stores some information about the dataset
+# used.
+
+# %%
+data_display = hgbt_model_report.data.analyze()
+data_display
+
+# %%
+# The display obtained allows for a quick overview with the same HTML-based view
+# as the :class:`skrub.TableReport` we have seen earlier. In addition, you can access
+# a :meth:`skore.TableReportDisplay.plot` method to have a particular focus on one
+# potential analysis. For instance, we can get a figure representing the correlation
+# matrix of the dataset.
+
+# %%
+data_display.plot(kind="corr")
+
+# %%
 # We get the results from some statistical metrics aggregated over the cross-validation
 # splits as well as some performance metrics related to the time it took to train and
 # test the model.
@@ -152,25 +171,6 @@ hgbt_split_1.metrics.summarize(indicator_favorability=True).frame()
 # %%
 # The favorability of each metric indicates whether the metric is better
 # when higher or lower.
-
-# %%
-# We also have access to some additional information regarding the dataset used for
-# training and testing of the model, similar to what we have seen in the previous
-# section. For example, let's check some information about the training dataset.
-
-# %%
-train_data_display = hgbt_split_1.data.analyze(data_source="train")
-train_data_display
-
-# %%
-# The display obtained allows for a quick overview with the same HTML-based view
-# as the :class:`skrub.TableReport` we have seen earlier. In addition, you can access
-# a :meth:`skore.TableReportDisplay.plot` method to have a particular focus on one
-# potential analysis. For instance, we can get a figure representing the correlation
-# matrix of the training dataset.
-
-# %%
-train_data_display.plot(kind="corr")
 
 # %%
 # Linear model
@@ -258,7 +258,7 @@ model
 
 # %%
 linear_model_report = CrossValidationReport(
-    estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4
+    estimator=model, X=df, y=y, splitter=5, n_jobs=4
 )
 linear_model_report.help()
 
@@ -319,9 +319,9 @@ comparator.metrics.summarize(
 ).frame()
 
 # %%
-# Finally, we can even get a deeper understanding by analyzing each fold in the
+# Finally, we can even get a deeper understanding by analyzing each split in the
 # :class:`~skore.CrossValidationReport`.
-# Here, we plot the actual-vs-predicted values for each fold.
+# Here, we plot the actual-vs-predicted values for each split.
 
 # %%
 linear_model_report.metrics.prediction_error().plot(kind="actual_vs_predicted")

@@ -250,11 +250,11 @@ report._cache
 # Caching with :class:`~skore.CrossValidationReport`
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# :class:`~skore.CrossValidationReport` uses the same caching system for each fold
+# :class:`~skore.CrossValidationReport` uses the same caching system for each split
 # in cross-validation by leveraging the previous :class:`~skore.EstimatorReport`:
 from skore import CrossValidationReport
 
-report = CrossValidationReport(model, X=df, y=y, cv_splitter=5, n_jobs=4)
+report = CrossValidationReport(model, X=df, y=y, splitter=5, n_jobs=4)
 report.help()
 
 # %%
@@ -262,7 +262,7 @@ report.help()
 # Since a :class:`~skore.CrossValidationReport` uses many
 # :class:`~skore.EstimatorReport`, we will observe the same behaviour as we previously
 # exposed.
-# The first call will be slow because it computes the predictions for each fold.
+# The first call will be slow because it computes the predictions for each split.
 start = time.time()
 result = report.metrics.summarize().frame()
 end = time.time()

@@ -143,7 +143,7 @@ def config_context(
     >>> with skore.config_context(show_progress=False, plot_backend="matplotlib"):
     ...     X, y = make_classification(random_state=42)
     ...     estimator = LogisticRegression()
-    ...     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+    ...     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     """
     old_config = get_config()
     set_config(

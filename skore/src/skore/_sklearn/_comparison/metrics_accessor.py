@@ -30,7 +30,10 @@ from skore._sklearn.types import (
     ScoringName,
     YPlotData,
 )
-from skore._utils._accessor import _check_supported_ml_task
+from skore._utils._accessor import (
+    _check_any_sub_report_has_metric,
+    _check_supported_ml_task,
+)
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
 from skore._utils._progress_bar import progress_decorator
@@ -257,7 +260,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
             generator = parallel(
                 joblib.delayed(getattr(report.metrics, report_metric_name))(**kwargs)
-                for report in self._parent.reports_
+                for report in self._parent.reports_.values()
             )
             individual_results = []
             for result in generator:
@@ -271,7 +274,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             if self._parent._reports_type == "EstimatorReport":
                 results = _combine_estimator_results(
                     individual_results,
-                    estimator_names=self._parent.report_names_,
+                    estimator_names=self._parent.reports_.keys(),
                     indicator_favorability=metric_kwargs.get(
                         "indicator_favorability", False
                     ),
@@ -279,7 +282,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             else:  # "CrossValidationReport"
                 results = _combine_cross_validation_results(
                     individual_results,
-                    estimator_names=self._parent.report_names_,
+                    estimator_names=self._parent.reports_.keys(),
                     indicator_favorability=metric_kwargs.get(
                         "indicator_favorability", False
                     ),
@@ -340,10 +343,10 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             timings: pd.DataFrame = pd.concat(
                 [
                     pd.Series(report.metrics.timings())
-                    for report in self._parent.reports_
+                    for report in self._parent.reports_.values()
                 ],
                 axis=1,
-                keys=self._parent.report_names_,
+                keys=self._parent.reports_.keys(),
             )
             timings.index = timings.index.str.replace("_", " ").str.capitalize()
 
@@ -357,29 +360,25 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         else:  # "CrossValidationReport"
             results = [
                 report.metrics.timings(aggregate=None)
-                for report in self._parent.reports_
+                for report in self._parent.reports_.values()
             ]
 
             # Put dataframes in the right shape
             for i, result in enumerate(results):
                 result.index.name = "Metric"
                 result.columns = pd.MultiIndex.from_product(
-                    [[self._parent.report_names_[i]], result.columns]
+                    [[list(self._parent.reports_.keys())[i]], result.columns]
                 )
 
             timings = _combine_cross_validation_results(
                 results,
-                self._parent.report_names_,
+                self._parent.reports_.keys(),
                 indicator_favorability=False,
                 aggregate=aggregate,
             )
             return timings
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("accuracy"))
     def accuracy(
         self,
         *,
@@ -445,11 +444,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("precision"))
     def precision(
         self,
         *,
@@ -553,11 +548,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("recall"))
     def recall(
         self,
         *,
@@ -662,9 +653,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
-    )
+    @available_if(_check_any_sub_report_has_metric("brier_score"))
     def brier_score(
         self,
         *,
@@ -730,11 +719,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("roc_auc"))
     def roc_auc(
         self,
         *,
@@ -837,11 +822,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("log_loss"))
     def log_loss(
         self,
         *,
@@ -907,11 +888,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("r2"))
     def r2(
         self,
         *,
@@ -989,11 +966,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         ).frame()
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_any_sub_report_has_metric("rmse"))
     def rmse(
         self,
         *,
@@ -1263,9 +1236,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             y_pred: list[YPlotData] = []
 
             if self._parent._reports_type == "EstimatorReport":
-                for report, report_name in zip(
-                    self._parent.reports_, self._parent.report_names_, strict=False
-                ):
+                for report_name, report in self._parent.reports_.items():
                     report_X, report_y, _ = (
                         report.metrics._get_X_y_and_data_source_hash(
                             data_source=data_source,
@@ -1277,7 +1248,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     y_true.append(
                         YPlotData(
                             estimator_name=report_name,
-                            split_index=None,
+                            split=None,
                             y=report_y,
                         )
                     )
@@ -1298,7 +1269,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                             y_pred.append(
                                 YPlotData(
                                     estimator_name=report_name,
-                                    split_index=None,
+                                    split=None,
                                     y=value,
                                 )
                             )
@@ -1309,19 +1280,17 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     y_true=y_true,
                     y_pred=y_pred,
                     report_type="comparison-estimator",
-                    estimators=[report.estimator_ for report in self._parent.reports_],
+                    estimators=[
+                        report.estimator_ for report in self._parent.reports_.values()
+                    ],
                     ml_task=self._parent._ml_task,
                     data_source=data_source,
                     **display_kwargs,
                 )
 
             else:
-                for report, report_name in zip(
-                    self._parent.reports_, self._parent.report_names_, strict=False
-                ):
-                    for split_index, estimator_report in enumerate(
-                        report.estimator_reports_
-                    ):
+                for report_name, report in self._parent.reports_.items():
+                    for split, estimator_report in enumerate(report.estimator_reports_):
                         report_X, report_y, _ = (
                             estimator_report.metrics._get_X_y_and_data_source_hash(
                                 data_source=data_source,
@@ -1333,7 +1302,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                         y_true.append(
                             YPlotData(
                                 estimator_name=report_name,
-                                split_index=split_index,
+                                split=split,
                                 y=report_y,
                             )
                         )
@@ -1355,7 +1324,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                                 y_pred.append(
                                     YPlotData(
                                         estimator_name=report_name,
-                                        split_index=split_index,
+                                        split=split,
                                         y=value,
                                     )
                                 )
@@ -1368,7 +1337,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     report_type="comparison-cross-validation",
                     estimators=[
                         estimator_report.estimator_
-                        for report in self._parent.reports_
+                        for report in self._parent.reports_.values()
                         for estimator_report in report.estimator_reports_
                     ],
                     ml_task=self._parent._ml_task,

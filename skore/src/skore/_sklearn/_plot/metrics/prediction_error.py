@@ -10,10 +10,8 @@ from pandas import DataFrame
 from sklearn.utils.validation import _num_samples, check_array
 
 from skore._externals._sklearn_compat import _safe_indexing
-from skore._sklearn._plot.style import StyleDisplayMixin
+from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
-    HelpDisplayMixin,
-    PlotBackendMixin,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
     sample_mpl_colormap,
@@ -25,14 +23,14 @@ RangeData = namedtuple("RangeData", ["min", "max"])
 MAX_N_LABELS = 6  # 5 + 1 for the perfect model line
 
 
-class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMixin):
+class PredictionErrorDisplay(DisplayMixin):
     """Visualization of the prediction error of a regression model.
 
     This tool can display "residuals vs predicted" or "actual vs predicted"
     using scatter plots to qualitatively assess the behavior of a regressor,
     preferably on held-out data points.
 
-    An instance of this class is should created by
+    An instance of this class should be created by
     `EstimatorReport.metrics.prediction_error()`.
     You should not create an instance of this class directly.
 
@@ -41,11 +39,11 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
     prediction_error : DataFrame
         The prediction error data to display. The columns are
 
-        - "estimator_name"
-        - "split_index" (may be null)
-        - "y_true"
-        - "y_pred"
-        - "residuals".
+        - `estimator_name`
+        - `split` (may be null)
+        - `y_true`
+        - `y_pred`
+        - `residuals`.
 
     range_y_true : RangeData
         Global range of the true values.
@@ -148,7 +146,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
             n_scatter_groups = 1
         elif self.report_type == "cross-validation":
             allow_single_dict = True
-            n_scatter_groups = len(self._prediction_error["split_index"].cat.categories)
+            n_scatter_groups = len(self._prediction_error["split"].cat.categories)
         elif self.report_type in (
             "comparison-estimator",
             "comparison-cross-validation",
@@ -296,25 +294,25 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
         """
         scatter = []
         data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
-        n_splits = len(self._prediction_error["split_index"].cat.categories)
+        n_splits = len(self._prediction_error["split"].cat.categories)
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
             n_splits if n_splits > 10 else 10,
         )
 
         for split_idx, prediction_error_split in self._prediction_error.groupby(
-            "split_index", observed=True
+            "split", observed=True
         ):
-            data_points_kwargs_fold = {
+            data_points_kwargs_split = {
                 "color": colors_markers[split_idx],
                 **data_points_kwargs,
             }
 
             data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_fold, samples_kwargs[split_idx]
+                data_points_kwargs_split, samples_kwargs[split_idx]
             )
 
-            label = f"Fold #{split_idx + 1}"
+            label = f"Split #{split_idx + 1}"
 
             if kind == "actual_vs_predicted":
                 scatter.append(
@@ -390,13 +388,13 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
         for idx, (estimator_name, prediction_error_estimator) in enumerate(
             self._prediction_error.groupby("estimator_name", observed=True)
         ):
-            data_points_kwargs_fold = {
+            data_points_kwargs_split = {
                 "color": colors_markers[idx],
                 **data_points_kwargs,
             }
 
             data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_fold, samples_kwargs[idx]
+                data_points_kwargs_split, samples_kwargs[idx]
             )
 
             if kind == "actual_vs_predicted":
@@ -473,13 +471,13 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
         for idx, (estimator_name, prediction_error_estimator) in enumerate(
             self._prediction_error.groupby("estimator_name", observed=True)
         ):
-            data_points_kwargs_fold = {
+            data_points_kwargs_split = {
                 "color": colors_markers[idx],
                 **data_points_kwargs,
             }
 
             data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_fold, samples_kwargs[idx]
+                data_points_kwargs_split, samples_kwargs[idx]
             )
 
             if kind == "actual_vs_predicted":
@@ -522,8 +520,8 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
 
         return scatter
 
-    @StyleDisplayMixin.style_plot
-    def _plot_matplotlib(
+    @DisplayMixin.style_plot
+    def plot(
         self,
         *,
         estimator_name: str | None = None,
@@ -578,6 +576,26 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
         >>> display = report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
+        return self._plot(
+            estimator_name=estimator_name,
+            kind=kind,
+            data_points_kwargs=data_points_kwargs,
+            perfect_model_kwargs=perfect_model_kwargs,
+            despine=despine,
+        )
+
+    def _plot_matplotlib(
+        self,
+        *,
+        estimator_name: str | None = None,
+        kind: Literal[
+            "actual_vs_predicted", "residual_vs_predicted"
+        ] = "residual_vs_predicted",
+        data_points_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
+        perfect_model_kwargs: dict[str, Any] | None = None,
+        despine: bool = True,
+    ) -> None:
+        """Matplolib implementation of the `plot` method."""
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
             raise ValueError(
@@ -799,7 +817,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
                     prediction_error_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
-                            "split_index": y_true_i.split_index,
+                            "split": y_true_i.split,
                             "y_true": y_true_sample_i,
                             "y_pred": y_pred_sample_i,
                             "residuals": residuals_sample_i,
@@ -816,7 +834,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
                     prediction_error_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
-                            "split_index": y_true_i.split_index,
+                            "split": y_true_i.split,
                             "y_true": y_true_sample_i,
                             "y_pred": y_pred_sample_i,
                             "residuals": residuals_sample_i,
@@ -836,7 +854,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
 
         return cls(
             prediction_error=DataFrame.from_records(prediction_error_records).astype(
-                {"estimator_name": "category", "split_index": "category"}
+                {"estimator_name": "category", "split": "category"}
             ),
             range_y_true=range_y_true,
             range_y_pred=range_y_pred,
@@ -856,7 +874,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
             the report type:
 
             - `estimator_name`: Name of the estimator (when comparing estimators)
-            - `split_index`: Cross-validation fold ID (when doing cross-validation)
+            - `split`: Cross-validation split ID (when doing cross-validation)
             - `y_true`: True target values
             - `y_pred`: Predicted target values
             - `residuals`: Difference between true and predicted values
@@ -879,10 +897,10 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin, PlotBackendMix
         if self.report_type == "estimator":
             columns = statistical_columns
         elif self.report_type == "cross-validation":
-            columns = ["split_index"] + statistical_columns
+            columns = ["split"] + statistical_columns
         elif self.report_type == "comparison-estimator":
             columns = ["estimator_name"] + statistical_columns
         else:  # self.report_type == "comparison-cross-validation"
-            columns = ["estimator_name", "split_index"] + statistical_columns
+            columns = ["estimator_name", "split"] + statistical_columns
 
         return self._prediction_error[columns]

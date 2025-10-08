@@ -50,12 +50,16 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             raise ValueError(err_msg.format(f"X_{dataset}", data_source))
         elif not sbd.is_dataframe(X):
             X = pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])])
+        else:
+            if not all(isinstance(col, str) for col in X.columns):
+                X = X.copy()
+                X.columns = [str(col) for col in X.columns]
 
         if with_y:
             if y is None:
                 raise ValueError(err_msg.format(f"y_{dataset}", data_source))
 
-            if isinstance(y, pd.Series):
+            if isinstance(y, pd.Series) and y.name is not None:
                 y = y.to_frame()
             elif not sbd.is_dataframe(y):
                 if y.ndim == 1:
@@ -63,6 +67,13 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 else:
                     columns = [f"Target {i}" for i in range(y.shape[1])]
                 y = pd.DataFrame(y, columns=columns)
+            else:
+                if not all(isinstance(col, str) for col in y.columns):
+                    y = y.copy()
+                    if y.shape[1] == 1 and list(y.columns) == [0]:
+                        y.columns = ["Target"]
+                    else:
+                        y.columns = [str(col) for col in y.columns]
 
         return X, y
 
@@ -133,20 +144,24 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 f"{subsample_strategy}."
             )
 
+        with_y_task_aware = with_y and (self._parent.ml_task != "clustering")
+
         if data_source == "train":
-            X, y = self._retrieve_data_as_frame("train", with_y, data_source)
+            X, y = self._retrieve_data_as_frame("train", with_y_task_aware, data_source)
         elif data_source == "test":
-            X, y = self._retrieve_data_as_frame("test", with_y, data_source)
+            X, y = self._retrieve_data_as_frame("test", with_y_task_aware, data_source)
         else:
             X_train, y_train = self._retrieve_data_as_frame(
-                "train", with_y, data_source
+                "train", with_y_task_aware, data_source
             )
-            X_test, y_test = self._retrieve_data_as_frame("test", with_y, data_source)
+            X_test, y_test = self._retrieve_data_as_frame(
+                "test", with_y_task_aware, data_source
+            )
             X = sbd.concat(X_train, X_test, axis=0)
-            if with_y:
+            if with_y_task_aware:
                 y = sbd.concat(y_train, y_test, axis=0)
 
-        df = sbd.concat(X, y, axis=1) if with_y else X
+        df = sbd.concat(X, y, axis=1) if with_y_task_aware else X
 
         if subsample:
             if subsample_strategy == "head":

@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Sequence
 
+import numpy as np
 from numpy.typing import ArrayLike
 
 from skore._sklearn.train_test_split.warning.train_test_split_warning import (
@@ -25,7 +26,7 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
         "may not be a good idea because of high variability in the scores obtained on "
         "the test set. We suggest three options to tackle this challenge: you can "
         "increase test_size, collect more data, or use skore's CrossValidationReport "
-        "with the `cv_splitter` parameter of your choice. "
+        "with the `splitter` parameter of your choice. "
     )
 
     @staticmethod
@@ -72,6 +73,9 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
             or ("classification" not in ml_task)
         ):
             return None
+
+        if isinstance(y_test, np.ndarray) and y_test.ndim >= 2:
+            y_test = y_test.flatten()
 
         counts = Counter(y_test)
 

@@ -162,3 +162,7 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixi
         ax.legend(title="Models", loc="best")
 
         self.ax_ = ax
+    @DisplayMixin.style_plot
+    def plot(self):
+        """Not yet implemented."""
+        raise NotImplementedError

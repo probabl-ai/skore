@@ -30,7 +30,25 @@ functionalities of the report are exposed through accessors.
    :toctree: ../api/
    :template: autosummary/accessor.rst
 
+   CrossValidationReport.data
    CrossValidationReport.metrics
+
+
+.. _cross_validation_data:
+
+Data
+----
+
+The `data` accessor helps you to get insights about the dataset used in the
+cross-validation.
+
+.. autosummary::
+    :toctree: ../api/
+    :template: autosummary/accessor_method.rst
+
+    CrossValidationReport.data.help
+    CrossValidationReport.data.analyze
+
 
 .. _cross_validation_metrics:
 
@@ -38,7 +56,7 @@ Metrics
 -------
 
 The `metrics` accessor helps you to evaluate the statistical performance of your
-estimator across cross-validation folds.
+estimator across cross-validation splits.
 
 .. autosummary::
     :toctree: ../api/

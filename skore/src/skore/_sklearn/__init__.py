@@ -10,7 +10,6 @@ from skore._sklearn._plot import (
     RocCurveDisplay,
     TableReportDisplay,
 )
-from skore._sklearn.find_estimators import find_estimators
 from skore._sklearn.train_test_split.train_test_split import train_test_split
 
 __all__ = [
@@ -23,5 +22,4 @@ __all__ = [
     "RocCurveDisplay",
     "MetricsSummaryDisplay",
     "train_test_split",
-    "find_estimators",
 ]

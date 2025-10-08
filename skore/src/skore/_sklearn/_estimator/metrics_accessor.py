@@ -1698,14 +1698,14 @@ class _MetricsAccessor(
                 y_true=[
                     YPlotData(
                         estimator_name=self._parent.estimator_name_,
-                        split_index=None,
+                        split=None,
                         y=y,
                     )
                 ],
                 y_pred=[
                     YPlotData(
                         estimator_name=self._parent.estimator_name_,
-                        split_index=None,
+                        split=None,
                         y=y_pred,
                     )
                 ],

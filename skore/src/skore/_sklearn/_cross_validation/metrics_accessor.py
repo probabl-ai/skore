@@ -137,7 +137,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.metrics.summarize(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
@@ -306,7 +306,7 @@ class _MetricsAccessor(
         >>> X, y = make_classification(random_state=42)
         >>> estimator = LogisticRegression()
         >>> from skore import CrossValidationReport
-        >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
         >>> report.metrics.timings()
                           mean       std
         Fit time (s)       ...       ...
@@ -382,7 +382,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.metrics.accuracy()
                 LogisticRegression
                             mean      std
@@ -476,7 +476,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.metrics.precision()
                                 LogisticRegression
                                                 mean       std
@@ -574,7 +574,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.metrics.recall()
                             LogisticRegression
                                             mean       std
@@ -636,7 +636,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.metrics.brier_score()
                     LogisticRegression
                                 mean       std
@@ -730,7 +730,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.metrics.roc_auc()
                 LogisticRegression
                             mean       std
@@ -790,7 +790,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.metrics.log_loss()
                 LogisticRegression
                             mean       std
@@ -860,7 +860,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
         >>> report.metrics.r2()
                 Ridge
                     mean       std
@@ -931,7 +931,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
         >>> report.metrics.rmse()
                     Ridge
                     mean       std
@@ -1020,7 +1020,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
         >>> report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
@@ -1151,7 +1151,7 @@ class _MetricsAccessor(
                 y_true.append(
                     YPlotData(
                         estimator_name=self._parent.estimator_name_,
-                        split_index=report_idx,
+                        split=report_idx,
                         y=y,
                     )
                 )
@@ -1172,7 +1172,7 @@ class _MetricsAccessor(
                         y_pred.append(
                             YPlotData(
                                 estimator_name=self._parent.estimator_name_,
-                                split_index=report_idx,
+                                split=report_idx,
                                 y=value,
                             )
                         )
@@ -1243,7 +1243,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
@@ -1311,7 +1311,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> display = report.metrics.precision_recall()
         >>> display.plot()
         """
@@ -1386,7 +1386,7 @@ class _MetricsAccessor(
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
         >>> display = report.metrics.prediction_error()
         >>> display.plot(
         ...     kind="actual_vs_predicted", perfect_model_kwargs={"color": "tab:red"}

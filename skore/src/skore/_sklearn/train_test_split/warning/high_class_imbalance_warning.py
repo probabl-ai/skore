@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Sequence
 
+import numpy as np
 from numpy.typing import ArrayLike
 
 from skore._sklearn.train_test_split.warning.train_test_split_warning import (
@@ -25,7 +26,7 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
         "case, using train_test_split may not be a good idea because of high "
         "variability in the scores obtained on the test set. "
         "To tackle this challenge we suggest to use skore's "
-        "CrossValidationReport with the `cv_splitter` parameter "
+        "CrossValidationReport with the `splitter` parameter "
         "of your choice. "
     )
 
@@ -61,6 +62,9 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
         """
         if stratify or (y is None or len(y) == 0) or ("classification" not in ml_task):
             return None
+
+        if isinstance(y, np.ndarray) and y.ndim >= 2:
+            y = y.flatten()
 
         counter = Counter(y)
         counts = sorted(counter.values())

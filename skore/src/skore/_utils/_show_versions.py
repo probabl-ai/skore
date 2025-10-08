@@ -46,11 +46,18 @@ def _get_deps_info() -> dict[str, Any]:
     from importlib.metadata import PackageNotFoundError, version
 
     deps = ["pip"]
+    extras = ["'hub'"]
 
     raw_requirements = importlib.metadata.requires("skore")
     requirements: list[str] = [] if raw_requirements is None else raw_requirements
 
-    for requirement in filter(lambda r: "; extra" not in r, requirements):
+    for requirement in requirements:
+        if len(split := requirement.split("; extra == ")) > 1:
+            requirement, extra = split
+
+            if extra not in extras:
+                continue
+
         # Extract just the package name before any version specifiers
         package_name: str = re.split(r"[<>=~!]", requirement)[0].strip()
         deps.append(package_name)
