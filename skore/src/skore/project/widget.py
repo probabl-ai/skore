@@ -104,11 +104,27 @@ class ModelExplorerWidget:
     )
     _required_index: list[str | None] = [None, "id"]
 
-    def _create_multi_select_dropdown(self, options, value, description, placeholder):
+    def _create_multi_select_dropdown(
+        self, options: list[tuple[str, str]], value: list[str], description: str
+    ) -> widgets.VBox:
         """Create a compact multi-select dropdown widget.
 
-        This creates a dropdown that shows selected items as a summary text
-        and expands to show checkboxes when clicked.
+        This creates a dropdown that shows selected items as a summary text and expands
+        to show checkboxes when clicked.
+
+        Parameters
+        ----------
+        options : list[tuple[str, str]]
+            The options to display in the dropdown.
+        value : list[str]
+            The values that are currently selected.
+        description : str
+            The description of the dropdown. String shown in the dropdown header.
+
+        Returns
+        -------
+        widgets.VBox
+            The compact multi-select dropdown widget.
         """
         checkboxes = {}
         checkbox_widgets = []
@@ -123,22 +139,6 @@ class ModelExplorerWidget:
             checkboxes[val] = checkbox
             checkbox_widgets.append(checkbox)
 
-        def get_summary_text():
-            selected = [label for label, val in options if checkboxes[val].value]
-            if not selected:
-                return placeholder
-            elif len(selected) == 1:
-                return selected[0]
-            elif len(selected) <= 2:
-                return ", ".join(selected)
-            else:
-                return f"{selected[0]}, {selected[1]}, ... (+{len(selected) - 2} more)"
-
-        summary_label = widgets.Label(
-            value=get_summary_text(),
-            layout=widgets.Layout(width="auto", border="1px solid #ccc"),
-        )
-
         checkbox_container = widgets.VBox(
             checkbox_widgets, layout=widgets.Layout(max_height="auto")
         )
@@ -149,18 +149,10 @@ class ModelExplorerWidget:
         )
         accordion.set_title(0, description.rstrip(":"))
         accordion.selected_index = None
-
         accordion.add_class("no-padding-accordion")
-
-        def update_summary(change=None):
-            summary_label.value = get_summary_text()
-
-        for checkbox in checkbox_widgets:
-            checkbox.observe(update_summary, names="value")
 
         widget_container = widgets.VBox([accordion], layout=widgets.Layout(flex="1"))
         widget_container._checkboxes = checkboxes
-        widget_container._summary_label = summary_label
         widget_container._get_selected_values = lambda: [
             val for val, cb in checkboxes.items() if cb.value
         ]
@@ -180,7 +172,7 @@ class ModelExplorerWidget:
         if dataframe["learner"].dtype != "category":
             raise ValueError("Learner column must be a categorical column")
 
-    def _filtered_dataframe(self, ml_task, report_type) -> pd.DataFrame:
+    def _filter_dataframe(self, ml_task: str, report_type: str) -> pd.DataFrame:
         """Filter report data based on selected ML task and report type."""
         df = self.dataframe.copy()
         df = df.query(
@@ -196,8 +188,8 @@ class ModelExplorerWidget:
             df.columns = [col.removesuffix("_mean") for col in df.columns]
         return df
 
-    def _datasets(self, ml_task, report_type) -> np.ndarray:
-        return self._filtered_dataframe(ml_task, report_type)["dataset"].unique()
+    def _get_datasets(self, ml_task: str, report_type: str) -> np.ndarray:
+        return self._filter_dataframe(ml_task, report_type)["dataset"].unique()
 
     def __init__(self, dataframe: pd.DataFrame, seed: int = 0) -> None:
         if dataframe.empty:
@@ -219,7 +211,7 @@ class ModelExplorerWidget:
             ("classification", "cross-validation"),
             ("regression", "cross-validation"),
         ]:
-            if not self._filtered_dataframe(ml_task, report_type).empty:
+            if not self._filter_dataframe(ml_task, report_type).empty:
                 default_task = ml_task
                 default_report_type = report_type
                 break
@@ -246,7 +238,7 @@ class ModelExplorerWidget:
             layout=widgets.Layout(flex="1"),
         )
 
-        default_dataset = self._datasets(default_task, default_report_type)
+        default_dataset = self._get_datasets(default_task, default_report_type)
         self._dataset_dropdown = widgets.Dropdown(
             options=default_dataset,
             description="Dataset:",
@@ -281,7 +273,6 @@ class ModelExplorerWidget:
                     options=computation_options,
                     value=[],
                     description="Computation Metrics:",
-                    placeholder="Select computation metrics...",
                 )
             )
 
@@ -310,7 +301,6 @@ class ModelExplorerWidget:
                 options=classification_stat_options,
                 value=classification_stat_default,
                 description="Statistical Metrics:",
-                placeholder="Select statistical metrics...",
             )
         )
 
@@ -319,7 +309,6 @@ class ModelExplorerWidget:
                 options=regression_stat_options,
                 value=regression_stat_default,
                 description="Statistical Metrics:",
-                placeholder="Select statistical metrics...",
             )
         )
         self._color_metric_dropdown: dict[str, widgets.Dropdown] = {
@@ -432,7 +421,9 @@ class ModelExplorerWidget:
             including the new value under the 'new' key.
         """
         self._update_datasets(
-            self._datasets(ml_task=self._task_dropdown.value, report_type=change["new"])
+            self._get_datasets(
+                ml_task=self._task_dropdown.value, report_type=change["new"]
+            )
         )
         self._update_task_widgets()
         self._update_plot()
@@ -451,7 +442,7 @@ class ModelExplorerWidget:
             including the new value under the 'new' key.
         """
         self._update_datasets(
-            self._datasets(
+            self._get_datasets(
                 ml_task=change["new"], report_type=self._report_type_dropdown.value
             )
         )
@@ -523,7 +514,7 @@ class ModelExplorerWidget:
                 display(widgets.HTML("No dataset available for selected task."))
                 return
 
-            df_dataset = self._filtered_dataframe(ml_task, report_type).query(
+            df_dataset = self._filter_dataframe(ml_task, report_type).query(
                 "dataset == @self._dataset_dropdown.value"
             )
             for col in df_dataset.select_dtypes(include=["category"]).columns:

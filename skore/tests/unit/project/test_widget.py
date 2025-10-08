@@ -99,19 +99,18 @@ def test_model_explorer_widget_controls(metadata):
     widget = ModelExplorerWidget(metadata)
 
     np.testing.assert_array_equal(
-        widget._datasets("classification", "estimator"), ["dataset1"]
+        widget._get_datasets("classification", "estimator"), ["dataset1"]
     )
     np.testing.assert_array_equal(
-        widget._datasets("regression", "estimator"), ["dataset2"]
+        widget._get_datasets("regression", "estimator"), ["dataset2"]
     )
     np.testing.assert_array_equal(
-        widget._datasets("classification", "cross-validation"), ["dataset3"]
+        widget._get_datasets("classification", "cross-validation"), ["dataset3"]
     )
     np.testing.assert_array_equal(
-        widget._datasets("regression", "cross-validation"), ["dataset4"]
+        widget._get_datasets("regression", "cross-validation"), ["dataset4"]
     )
 
-    # Check that computation and statistical metrics dropdowns exist for both tasks
     assert widget._computation_metrics_dropdown.keys() == {
         "classification",
         "regression",
