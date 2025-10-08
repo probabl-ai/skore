@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 import re
-from functools import cached_property, wraps
+from functools import wraps
 from operator import itemgetter
 from tempfile import TemporaryFile
 from types import SimpleNamespace
@@ -41,19 +41,17 @@ if TYPE_CHECKING:
 
 
 def ensure_project_is_created(method):
-    """
-    Ensure project is created before executing any other operation.
-
-    Notes
-    -----
-    This is based on the fact that requesting a ``run`` ID of a missing hub's project
-    will trigger its creation on demand.
-    """
+    """Ensure project is created before executing any other operation."""
 
     @wraps(method)
-    def wrapper(self, *args, **kwargs):
-        self.run_id  # noqa: B018
-        return method(self, *args, **kwargs)
+    def wrapper(project: Project, *args, **kwargs):
+        if not hasattr(project, "__created__"):
+            with HUBClient() as client:
+                client.post(f"projects/{project.tenant}/{project.name}")
+
+            project.__created__ = ...
+
+        return method(project, *args, **kwargs)
 
     return wrapper
 
@@ -89,8 +87,6 @@ class Project:
         The tenant of the project.
     name : str
         The name of the project.
-    run_id : int
-        The current run identifier of the project.
     """
 
     __REPORT_URN_PATTERN = re.compile(
@@ -128,15 +124,6 @@ class Project:
     def name(self) -> str:
         """The name of the project."""
         return self.__name
-
-    @cached_property
-    def run_id(self) -> int:
-        """The current run identifier of the project."""
-        with HUBClient() as client:
-            request = client.post(f"projects/{self.tenant}/{self.name}/runs")
-            run = request.json()
-
-        return run["id"]
 
     @ensure_project_is_created
     def put(self, key: str, report: EstimatorReport | CrossValidationReport):
@@ -247,7 +234,7 @@ class Project:
 
             return {
                 "id": summary["urn"],
-                "run_id": summary["run_id"],
+                "run_id": -1,  # FIXME: deprecated
                 "key": summary["key"],
                 "date": summary["created_at"],
                 "learner": summary["estimator_class_name"],

@@ -115,8 +115,6 @@ def upload(project: Project, object: Any, serializer_cls: type[Serializer]) -> s
         Client() as standard_client,
         ThreadPoolExecutor() as pool,
     ):
-        return serializer.checksum
-
         # Ask for upload urls.
         response = hub_client.post(
             url=f"projects/{project.tenant}/{project.name}/artifacts",

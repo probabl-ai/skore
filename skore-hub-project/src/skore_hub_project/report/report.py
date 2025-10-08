@@ -42,12 +42,6 @@ class ReportPayload(BaseModel, ABC):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def run_id(self) -> int:
-        """The current run identifier of the project."""
-        return self.project.run_id
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
     def estimator_class_name(self) -> str:
         """The name of the report's estimator."""
         return self.report.estimator_name_
