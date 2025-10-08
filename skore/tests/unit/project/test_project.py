@@ -1,12 +1,13 @@
 from importlib.metadata import EntryPoint, EntryPoints
+from re import escape
 from unittest.mock import Mock
 
 from pandas import DataFrame, MultiIndex, Series
-from pytest import fixture, raises
+from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from skore import EstimatorReport, Project
+from skore import CrossValidationReport, EstimatorReport, Project
 from skore.project.summary import Summary
 
 
@@ -47,7 +48,7 @@ def monkeypatch_entrypoints(monkeypatch, request, FakeLocalProject, FakeHubProje
 
 
 @fixture(scope="module")
-def regression():
+def regression() -> EstimatorReport:
     X, y = make_regression(random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
@@ -60,6 +61,11 @@ def regression():
         X_test=X_test,
         y_test=y_test,
     )
+
+
+@fixture(scope="module")
+def cv_regression() -> CrossValidationReport:
+    return CrossValidationReport(LinearRegression(), *make_regression(random_state=42))
 
 
 class TestProject:
@@ -115,10 +121,7 @@ class TestProject:
 
         with raises(
             ValueError,
-            match=(
-                "Unknown mode `local`. "
-                "Please install the `skore-local-project` python package."
-            ),
+            match=escape("Unknown mode `local`. Please install `skore[local]`."),
         ):
             Project("<name>")
 
@@ -130,24 +133,32 @@ class TestProject:
         assert Project("<name>").name == "<name>"
         assert Project("hub://<tenant>/<name>").name == "<name>"
 
-    def test_put(self, regression, FakeLocalProject):
+    @mark.parametrize(
+        "report",
+        (
+            param("regression", id="EstimatorReport - regression"),
+            param("cv_regression", id="CrossValidationReport - regression"),
+        ),
+    )
+    def test_put(self, report, FakeLocalProject, request):
+        report = request.getfixturevalue(report)
         project = Project("<name>")
 
-        project.put("<key>", regression)
+        project.put("<key>", report)
 
         assert FakeLocalProject.called
         assert project._Project__project.put.called
         assert not project._Project__project.put.call_args.args
         assert project._Project__project.put.call_args.kwargs == {
             "key": "<key>",
-            "report": regression,
+            "report": report,
         }
 
     def test_put_exception(self):
         with raises(TypeError, match="Key must be a string"):
             Project("<name>").put(None, "<value>")
 
-        with raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
+        with raises(TypeError, match="Report must be `EstimatorReport` or"):
             Project("<name>").put("<key>", "<value>")
 
     def test_get(self, FakeLocalProject):
@@ -156,13 +167,13 @@ class TestProject:
         project.get("<id>")
 
         assert FakeLocalProject.called
-        assert project._Project__project.reports.get.called
-        assert project._Project__project.reports.get.call_args.args == ("<id>",)
-        assert not project._Project__project.reports.get.call_args.kwargs
+        assert project._Project__project.get.called
+        assert project._Project__project.get.call_args.args == ("<id>",)
+        assert not project._Project__project.get.call_args.kwargs
 
     def test_summarize(self):
         project = Project("<name>")
-        project._Project__project.reports.metadata.return_value = [
+        project._Project__project.summarize.return_value = [
             {
                 "learner": "<learner>",
                 "accuracy": 1.0,
@@ -172,7 +183,7 @@ class TestProject:
 
         summary = project.summarize()
 
-        assert project._Project__project.reports.metadata.called
+        assert project._Project__project.summarize.called
         assert isinstance(summary, DataFrame)
         assert isinstance(summary, Summary)
         assert DataFrame.equals(
@@ -189,6 +200,42 @@ class TestProject:
                 index=MultiIndex.from_tuples([(0, "<id>")], names=[None, "id"]),
             ),
         )
+
+    def test_summarize_with_skore_local_project(self, monkeypatch, tmpdir):
+        """Smoke test to check that ModelExplorerWidget can be shown."""
+        from IPython.core.interactiveshell import InteractiveShell
+
+        snippet = f"""
+        from pathlib import Path
+
+        from sklearn.datasets import make_regression
+        from sklearn.linear_model import LinearRegression
+        from sklearn.model_selection import train_test_split
+        from skore import EstimatorReport, Project
+
+        X, y = make_regression(random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+
+        regression = EstimatorReport(
+            LinearRegression(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+
+        project = Project("<project>", workspace=Path(r"{tmpdir}"))
+        project.put("<report>", regression)
+        project.summarize()
+        """
+
+        monkeypatch.undo()
+
+        shell = InteractiveShell.instance()
+        execution_result = shell.run_cell(snippet, silent=True)
+        execution_result.raise_error()
 
     def test_repr(self):
         project = Project("<name>")

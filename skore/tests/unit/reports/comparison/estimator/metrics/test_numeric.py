@@ -98,7 +98,8 @@ def test_binary_classification(
 ):
     """Check the metrics work."""
     report = comparison_estimator_reports_binary_classification
-    X_test, y_test = report.reports_[0].X_test, report.reports_[0].y_test
+    sub_report = list(report.reports_.values())[0]
+    X_test, y_test = sub_report.X_test, sub_report.y_test
 
     # ensure metric is valid
     if data_source == "X_y":
@@ -152,7 +153,8 @@ def test_regression(
 ):
     """Check the metrics work."""
     comp = comparison_estimator_reports_regression
-    X_test, y_test = comp.reports_[0].X_test, comp.reports_[0].y_test
+    sub_report = list(comp.reports_.values())[0]
+    X_test, y_test = sub_report.X_test, sub_report.y_test
 
     # ensure metric is valid
     if data_source == "X_y":
@@ -215,13 +217,13 @@ def test_timings(comparison_estimator_reports_binary_classification):
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == ["Fit time (s)"]
-    assert timings.columns.tolist() == report.report_names_
+    assert timings.columns.tolist() == list(report.reports_.keys())
 
     report.get_predictions(data_source="train")
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == ["Fit time (s)", "Predict time train (s)"]
-    assert timings.columns.tolist() == report.report_names_
+    assert timings.columns.tolist() == list(report.reports_.keys())
 
     report.get_predictions(data_source="test")
     timings = report.metrics.timings()
@@ -231,7 +233,7 @@ def test_timings(comparison_estimator_reports_binary_classification):
         "Predict time train (s)",
         "Predict time test (s)",
     ]
-    assert timings.columns.tolist() == report.report_names_
+    assert timings.columns.tolist() == list(report.reports_.keys())
 
 
 def test_timings_flat_index(
@@ -370,7 +372,7 @@ def test_summarize_pos_label_overwrite(
     result = report.metrics.summarize(scoring=metric).frame().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in report.reports_:
         assert (
             result.loc[metric.capitalize(), report_name]
             == result_both_labels.loc[(metric.capitalize(), "B"), report_name]
@@ -381,7 +383,7 @@ def test_summarize_pos_label_overwrite(
     )
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in report.reports_:
         assert (
             result.loc[metric.capitalize(), report_name]
             == result_both_labels.loc[(metric.capitalize(), "A"), report_name]
@@ -450,7 +452,7 @@ def test_precision_recall_pos_label_overwrite(
     result = getattr(report.metrics, metric)(pos_label="B").reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in report.reports_:
         assert (
             result.loc[metric.capitalize(), report_name]
             == result_both_labels.loc[(metric.capitalize(), "B"), report_name]
@@ -459,7 +461,7 @@ def test_precision_recall_pos_label_overwrite(
     result = getattr(report.metrics, metric)(pos_label="A").reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
-    for report_name in report.report_names_:
+    for report_name in report.reports_:
         assert (
             result.loc[metric.capitalize(), report_name]
             == result_both_labels.loc[(metric.capitalize(), "A"), report_name]

@@ -1,8 +1,9 @@
 """Class definition of the payload used to send a report to ``hub``."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from functools import cached_property
-from typing import ClassVar
+from typing import ClassVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -27,8 +28,6 @@ class ReportPayload(ABC, BaseModel):
         The project to which the report payload should be sent.
     report : EstimatorReport | CrossValidationReport
         The report on which to calculate the payload to be sent.
-    upload : bool, optional
-        Upload the report to the artefacts storage, default True.
     key : str
         The key to associate to the report.
     """
@@ -40,7 +39,6 @@ class ReportPayload(ABC, BaseModel):
 
     project: Project = Field(repr=False, exclude=True)
     report: EstimatorReport | CrossValidationReport = Field(repr=False, exclude=True)
-    upload: bool = Field(default=True, repr=False, exclude=True)
     key: str
 
     @computed_field  # type: ignore[prop-decorator]
@@ -78,7 +76,7 @@ class ReportPayload(ABC, BaseModel):
         """
         The checksum of the instance.
 
-        The checksum of the instance that was assigned after being uploaded to the
+        The checksum of the instance that was assigned before being uploaded to the
         artefact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artefacts storage.
 
@@ -105,13 +103,11 @@ class ReportPayload(ABC, BaseModel):
         - int [0, inf[, to be displayed at the position,
         - None, not to be displayed.
         """
-        payloads = [
+        return [
             payload
             for metric in self.METRICS
             if (payload := metric(report=self.report)).value is not None
         ]
-
-        return payloads
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -125,10 +121,8 @@ class ReportPayload(ABC, BaseModel):
         -----
         Unavailable medias have been filtered out.
         """
-        payloads = [
+        return [
             payload
-            for media in self.MEDIAS
+            for media in cast(list[Callable], self.MEDIAS)
             if (payload := media(report=self.report)).representation is not None
         ]
-
-        return payloads

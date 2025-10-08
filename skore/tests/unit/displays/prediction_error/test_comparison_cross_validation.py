@@ -142,7 +142,7 @@ def test_constructor(linear_regression_data):
     assert df.query("estimator_name == 'estimator_2'")[
         "split"
     ].unique().tolist() == list(range(cv + 1))
-    assert df["estimator_name"].unique().tolist() == report.report_names_
+    assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
 
 
 def test_frame(comparison_cross_validation_reports_regression):

@@ -2,16 +2,15 @@
 
 from collections import defaultdict
 from functools import cached_property
-from typing import ClassVar, Literal, cast
+from typing import ClassVar, cast
 
+import numpy as np
 from pydantic import Field, computed_field
-from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.artefact import CrossValidationReportArtefact
-from skore_hub_project.media import (
-    EstimatorHtmlRepr,
-)
+from skore_hub_project.media import EstimatorHtmlRepr
+from skore_hub_project.media.data import TableReport
 from skore_hub_project.media.media import Media
 from skore_hub_project.metric import (
     AccuracyTestMean,
@@ -73,8 +72,6 @@ class CrossValidationReportPayload(ReportPayload):
         The project to which the report payload should be sent.
     report : CrossValidationReport
         The report on which to calculate the payload to be sent.
-    upload : bool, optional
-        Upload the report to the artefacts storage, default True.
     key : str
         The key to associate to the report.
     """
@@ -123,7 +120,13 @@ class CrossValidationReportPayload(ReportPayload):
             PredictTimeTrainStd,
         ),
     )
-    MEDIAS: ClassVar[tuple[Media, ...]] = cast(tuple[Media, ...], (EstimatorHtmlRepr,))
+    MEDIAS: ClassVar[tuple[Media, ...]] = cast(
+        tuple[Media, ...],
+        (
+            EstimatorHtmlRepr,
+            TableReport,
+        ),
+    )
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
 
@@ -131,52 +134,60 @@ class CrossValidationReportPayload(ReportPayload):
         if "classification" in self.ml_task:
             class_to_class_indice = defaultdict(lambda: len(class_to_class_indice))
 
-            self.__sample_to_class_indice = [
+            self.__sample_to_class_index = [
                 class_to_class_indice[sample] for sample in self.report.y
             ]
 
-            assert len(self.__sample_to_class_indice) == len(self.report.X)
+            assert len(self.__sample_to_class_index) == len(self.report.X)
 
             self.__classes = [str(class_) for class_ in class_to_class_indice]
 
-            assert max(self.__sample_to_class_indice) == (len(self.__classes) - 1)
+            assert max(self.__sample_to_class_index) == (len(self.__classes) - 1)
         else:
-            self.__sample_to_class_indice = None
+            self.__sample_to_class_index = None
             self.__classes = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def dataset_size(self) -> int:
+        """Size of the dataset."""
+        return len(self.report.X)
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def splitting_strategy_name(self) -> str:
         """The name of the splitting strategy used by the report."""
-        is_sklearn_splitter = isinstance(self.report.splitter, BaseCrossValidator)
         is_iterable_splitter = isinstance(self.report.splitter, _CVIterableWrapper)
-        is_standard_strategy = is_sklearn_splitter and (not is_iterable_splitter)
 
         return (
-            is_standard_strategy and self.report.splitter.__class__.__name__ or "custom"
+            is_iterable_splitter and "custom" or self.report.splitter.__class__.__name__
         )
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def splits(self) -> list[list[Literal[0, 1]]]:
+    def splits(self) -> list[list[float]]:
         """
-        The dataset splits used by the report.
+        Distribution between train and test by split.
 
-        Notes
-        -----
-        For each split and for each sample in the dataset:
-        - 0 if the sample is in the train-set,
-        - 1 if the sample is in the test-set.
+        The distribution of each split is computed by dividing the split into a maximum
+        of 200 buckets, and averaging the number of samples belonging to the test-set in
+        each of these buckets.
         """
-        splits = [
-            [0] * len(self.report.X) for i in range(len(self.report.split_indices))
-        ]
+        distributions = []
+        buckets_number = min(len(self.report.X), 200)
 
-        for i, (_, test_indices) in enumerate(self.report.split_indices):
-            for test_indice in test_indices:
-                splits[i][test_indice] = 1
+        for _, test_indices in self.report.split_indices:
+            split = np.zeros(len(self.report.X), dtype=int)
+            split[test_indices] = 1
 
-        return cast(list[list[Literal[0, 1]]], splits)
+            distributions.append(
+                [
+                    float(np.mean(bucket))
+                    for bucket in np.array_split(split, buckets_number)
+                ]
+            )
+
+        return distributions
 
     groups: list[int] | None = None
 
@@ -189,8 +200,19 @@ class CrossValidationReportPayload(ReportPayload):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def classes(self) -> list[int] | None:
-        """In classification, the class indice of each sample used in the report."""
-        return self.__sample_to_class_indice
+        """
+        In classification, the distribution of the classes in the dataset.
+
+        The distribution is computed by dividing the dataset into a maximum of 200
+        buckets, and noting the dominant class in each of these buckets.
+        """
+        if self.__sample_to_class_index is None:
+            return None
+
+        buckets_number = min(len(self.__sample_to_class_index), 200)
+        buckets = np.array_split(self.__sample_to_class_index, buckets_number)
+
+        return [int(np.bincount(bucket).argmax()) for bucket in buckets]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -200,9 +222,7 @@ class CrossValidationReportPayload(ReportPayload):
             EstimatorReportPayload(
                 project=self.project,
                 report=report,
-                upload=False,
                 key=f"{self.key}:estimator-report",
-                run_id=self.run_id,
             )
             for report in self.report.estimator_reports_
         ]
@@ -213,7 +233,7 @@ class CrossValidationReportPayload(ReportPayload):
         """
         The checksum of the instance.
 
-        The checksum of the instance that was assigned after being uploaded to the
+        The checksum of the instance that was assigned before being uploaded to the
         artefact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artefacts storage.
 
@@ -221,9 +241,4 @@ class CrossValidationReportPayload(ReportPayload):
           The ``parameters`` property will be removed in favor of a new ``checksum``
           property in a near future.
         """
-        if self.upload:
-            return CrossValidationReportArtefact(
-                project=self.project,
-                report=self.report,
-            )
-        return {}
+        return CrossValidationReportArtefact(project=self.project, report=self.report)

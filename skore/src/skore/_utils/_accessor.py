@@ -180,7 +180,7 @@ def _check_comparison_report_sub_estimators_have_coef() -> Callable:
 
         parent = accessor._parent
         parent_estimators = []
-        for parent_report in parent.reports_:
+        for parent_report in parent.reports_.values():
             if parent._reports_type == "CrossValidationReport":
                 parent_report = cast(CrossValidationReport, parent_report)
                 parent_estimators.append(parent_report.estimator_reports_[0].estimator_)
@@ -203,7 +203,8 @@ def _check_any_sub_report_has_metric(metric: str) -> Callable[[Any], bool]:
 
     def check(accessor: Any) -> bool:
         return any(
-            hasattr(report.metrics, metric) for report in accessor._parent.reports_
+            hasattr(report.metrics, metric)
+            for report in accessor._parent.reports_.values()
         )
 
     return check

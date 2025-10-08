@@ -70,7 +70,7 @@ def progress_decorator(
             # assigning progress to child reports
             reports_to_cleanup: list[Any] = []
             if hasattr(self_obj, "reports_"):
-                for report in self_obj.reports_:
+                for report in self_obj.reports_.values():
                     if hasattr(report, "_progress_info"):
                         report._progress_info = {"current_progress": progress}
                         reports_to_cleanup.append(report)
