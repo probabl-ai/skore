@@ -51,10 +51,11 @@ class MetricsSummaryDisplay(DisplayMixin):
         y : str, default=None
             The metric to display on y-axis. By default, the second column.
         """
-        if self.report_type in (
-            ["estimator", "cross-validation", "comparison-cross-validation"]
-        ):
+        if self.report_type in (["cross-validation", "comparison-cross-validation"]):
             raise NotImplementedError("To come soon!")
+        elif self.report_type == "estimator":
+            raise NotImplementedError()
+        # it does not make sense to plot the metrics for a single estimator
         elif self.report_type == "comparison-estimator":
             self._plot_matplotlib_comparison_estimator(x, y)
 
@@ -160,6 +161,5 @@ class MetricsSummaryDisplay(DisplayMixin):
         self.ax_ = ax
 
     @DisplayMixin.style_plot
-    def plot(self):
-        """Not yet implemented."""
-        raise NotImplementedError
+    def plot(self, x: str, y: str):
+        self._plot(**{"x": x, "y": y})
