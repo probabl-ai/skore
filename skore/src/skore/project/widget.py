@@ -396,7 +396,8 @@ class ModelExplorerWidget:
 
         self._update_task_widgets()
         self._layout = widgets.VBox(
-            [controls, self.output], layout=widgets.Layout(width="100%")
+            [controls, self.output],
+            layout=widgets.Layout(width="100%", overflow="hidden"),
         )
 
     def _update_datasets(self, datasets: list[str]) -> None:
@@ -583,20 +584,18 @@ class ModelExplorerWidget:
                 font=dict(size=18),
                 height=500,
                 margin=dict(l=250, r=0, t=120, b=30),
-                autosize=True,
             )
 
             fig.data[0].on_selection(self.update_selection)  # callback
 
             self.current_fig = fig
-            # generate the raw HTML to be able to request responsive resizing and scale
-            # the width to the parent container
-            html_fig = fig.to_html(
-                full_html=False,
-                include_plotlyjs="cdn",
-                config=dict(responsive=True),
-            )
-            display(HTML(html_fig))
+            # It is important to set autosize after the figure is displayed so that the
+            # width matches the parent container. However, it is not responsive to width
+            # resizing, but this is the only way to achieve the correct width. This
+            # issue can be tracked in the following bug report:
+            # https://github.com/plotly/plotly.py/issues/5208
+            display(fig)
+            fig.layout.autosize = True
 
     def update_selection(
         self, trace=None, points=None, selector=None
