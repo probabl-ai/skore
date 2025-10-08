@@ -6,7 +6,6 @@ from typing import ClassVar, cast
 
 import numpy as np
 from pydantic import Field, computed_field
-from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.artefact import CrossValidationReportArtefact
@@ -73,8 +72,6 @@ class CrossValidationReportPayload(ReportPayload):
         The project to which the report payload should be sent.
     report : CrossValidationReport
         The report on which to calculate the payload to be sent.
-    upload : bool, optional
-        Upload the report to the artefacts storage, default True.
     key : str
         The key to associate to the report.
     """
@@ -160,12 +157,10 @@ class CrossValidationReportPayload(ReportPayload):
     @cached_property
     def splitting_strategy_name(self) -> str:
         """The name of the splitting strategy used by the report."""
-        is_sklearn_splitter = isinstance(self.report.splitter, BaseCrossValidator)
         is_iterable_splitter = isinstance(self.report.splitter, _CVIterableWrapper)
-        is_standard_strategy = is_sklearn_splitter and (not is_iterable_splitter)
 
         return (
-            is_standard_strategy and self.report.splitter.__class__.__name__ or "custom"
+            is_iterable_splitter and "custom" or self.report.splitter.__class__.__name__
         )
 
     @computed_field  # type: ignore[prop-decorator]
@@ -227,7 +222,6 @@ class CrossValidationReportPayload(ReportPayload):
             EstimatorReportPayload(
                 project=self.project,
                 report=report,
-                upload=False,
                 key=f"{self.key}:estimator-report",
             )
             for report in self.report.estimator_reports_
@@ -239,7 +233,7 @@ class CrossValidationReportPayload(ReportPayload):
         """
         The checksum of the instance.
 
-        The checksum of the instance that was assigned after being uploaded to the
+        The checksum of the instance that was assigned before being uploaded to the
         artefact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artefacts storage.
 
@@ -247,9 +241,4 @@ class CrossValidationReportPayload(ReportPayload):
           The ``parameters`` property will be removed in favor of a new ``checksum``
           property in a near future.
         """
-        if self.upload:
-            return CrossValidationReportArtefact(
-                project=self.project,
-                report=self.report,
-            )
-        return {}
+        return CrossValidationReportArtefact(project=self.project, report=self.report)

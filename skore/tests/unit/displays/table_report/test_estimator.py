@@ -69,6 +69,8 @@ def test_constructor(display):
         pd.DataFrame(
             np.ones((100, 5)), columns=[f"Feature number {i}" for i in range(5)]
         ),
+        pd.DataFrame(np.ones((100, 5))),
+        pd.DataFrame(np.ones((100, 5)), columns=["a", 1, "c", 3, "e"]),
     ],
 )
 @pytest.mark.parametrize(
@@ -78,6 +80,7 @@ def test_constructor(display):
         np.ones(100),
         pd.Series(np.ones(100)),
         pd.DataFrame(np.ones((100, 1)), columns=["Target"]),
+        pd.DataFrame(np.ones((100, 1))),
     ],
 )
 def test_X_y(X, y):
