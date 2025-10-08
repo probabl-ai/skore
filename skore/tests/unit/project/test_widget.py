@@ -97,6 +97,7 @@ def test_model_explorer_widget_empty_dataframe(capsys):
 def test_model_explorer_widget_controls(metadata):
     """Check that the controls are correctly populated."""
     widget = ModelExplorerWidget(metadata)
+
     np.testing.assert_array_equal(
         widget._datasets("classification", "estimator"), ["dataset1"]
     )
@@ -109,18 +110,31 @@ def test_model_explorer_widget_controls(metadata):
     np.testing.assert_array_equal(
         widget._datasets("regression", "cross-validation"), ["dataset4"]
     )
-    assert widget._metric_checkboxes.keys() == {"classification", "regression"}
-    assert widget._metric_checkboxes["classification"].keys() == {
-        "fit_time",
-        "predict_time",
-        "log_loss",
-        "roc_auc",
+
+    # Check that computation and statistical metrics dropdowns exist for both tasks
+    assert widget._computation_metrics_dropdown.keys() == {
+        "classification",
+        "regression",
     }
-    assert widget._metric_checkboxes["regression"].keys() == {
-        "fit_time",
-        "predict_time",
-        "rmse",
+    assert widget._statistical_metrics_dropdown.keys() == {
+        "classification",
+        "regression",
     }
+
+    for task in ["classification", "regression"]:
+        computation_checkboxes = widget._computation_metrics_dropdown[task]._checkboxes
+        assert computation_checkboxes.keys() == {"fit_time", "predict_time"}
+
+    classification_stat_checkboxes = widget._statistical_metrics_dropdown[
+        "classification"
+    ]._checkboxes
+    assert classification_stat_checkboxes.keys() == {"log_loss", "roc_auc"}
+
+    regression_stat_checkboxes = widget._statistical_metrics_dropdown[
+        "regression"
+    ]._checkboxes
+    assert regression_stat_checkboxes.keys() == {"rmse"}
+
     assert widget._color_metric_dropdown.keys() == {"classification", "regression"}
     assert widget._color_metric_dropdown["classification"].options == (
         "Fit Time",
@@ -133,31 +147,81 @@ def test_model_explorer_widget_controls(metadata):
         "Predict Time",
         "RMSE",
     )
-    assert len(widget.classification_metrics_box.children) == 2
-    # time
-    components = widget.classification_metrics_box.children[0].children
-    assert len(components) == 3
-    assert components[0].value == "Computation Metrics: "
-    assert components[1].description == "Fit Time"
-    assert components[2].description == "Predict Time"
-    # statistical
-    components = widget.classification_metrics_box.children[1].children
-    assert len(components) == 3
-    assert components[0].value == "Statistical Metrics: "
-    assert components[1].description == "Macro ROC AUC"
-    assert components[2].description == "Log Loss"
 
-    # regression
-    components = widget.regression_metrics_box.children[0].children
-    assert len(components) == 3
-    assert components[0].value == "Computation Metrics: "
-    assert components[1].description == "Fit Time"
-    assert components[2].description == "Predict Time"
-    # statistical
-    components = widget.regression_metrics_box.children[1].children
-    assert len(components) == 2
-    assert components[0].value == "Statistical Metrics: "
-    assert components[1].description == "RMSE"
+    assert len(widget.classification_metrics_box.children) == 3
+    assert (
+        widget.classification_metrics_box.children[0]
+        is widget._computation_metrics_dropdown["classification"]
+    )
+    assert (
+        widget.classification_metrics_box.children[1]
+        is widget._statistical_metrics_dropdown["classification"]
+    )
+    assert (
+        widget.classification_metrics_box.children[2]
+        is widget._color_metric_dropdown["classification"]
+    )
+
+    assert len(widget.regression_metrics_box.children) == 3
+    assert (
+        widget.regression_metrics_box.children[0]
+        is widget._computation_metrics_dropdown["regression"]
+    )
+    assert (
+        widget.regression_metrics_box.children[1]
+        is widget._statistical_metrics_dropdown["regression"]
+    )
+    assert (
+        widget.regression_metrics_box.children[2]
+        is widget._color_metric_dropdown["regression"]
+    )
+
+    computation_accordion_classification = widget._computation_metrics_dropdown[
+        "classification"
+    ].children[0]
+    assert computation_accordion_classification.get_title(0) == "Computation Metrics"
+
+    statistical_accordion_classification = widget._statistical_metrics_dropdown[
+        "classification"
+    ].children[0]
+    assert statistical_accordion_classification.get_title(0) == "Statistical Metrics"
+
+    computation_checkboxes_classification = (
+        computation_accordion_classification.children[0].children
+    )
+    assert len(computation_checkboxes_classification) == 2
+    assert computation_checkboxes_classification[0].description == "Fit Time"
+    assert computation_checkboxes_classification[1].description == "Predict Time"
+
+    statistical_checkboxes_classification = (
+        statistical_accordion_classification.children[0].children
+    )
+    assert len(statistical_checkboxes_classification) == 2
+    assert statistical_checkboxes_classification[0].description == "Macro ROC AUC"
+    assert statistical_checkboxes_classification[1].description == "Log Loss"
+
+    computation_accordion_regression = widget._computation_metrics_dropdown[
+        "regression"
+    ].children[0]
+    assert computation_accordion_regression.get_title(0) == "Computation Metrics"
+
+    statistical_accordion_regression = widget._statistical_metrics_dropdown[
+        "regression"
+    ].children[0]
+    assert statistical_accordion_regression.get_title(0) == "Statistical Metrics"
+
+    computation_checkboxes_regression = computation_accordion_regression.children[
+        0
+    ].children
+    assert len(computation_checkboxes_regression) == 2
+    assert computation_checkboxes_regression[0].description == "Fit Time"
+    assert computation_checkboxes_regression[1].description == "Predict Time"
+
+    statistical_checkboxes_regression = statistical_accordion_regression.children[
+        0
+    ].children
+    assert len(statistical_checkboxes_regression) == 1
+    assert statistical_checkboxes_regression[0].description == "RMSE"
 
     assert widget.current_fig is None
     assert widget.current_selection == {}
@@ -210,15 +274,15 @@ def test_model_explorer_widget_update_plot(metadata):
     parallel_coordinate = widget.current_fig.data[0]
     # by default with the data at hand we expect a classification problem
     dimension_labels = [dim["label"] for dim in parallel_coordinate.dimensions]
-    assert dimension_labels == ["Learner", "Log Loss", "Macro ROC AUC"]
+    assert dimension_labels == ["Learner", "Macro ROC AUC", "Log Loss"]
     assert parallel_coordinate.dimensions[0]["ticktext"] == ["learner1"]
     np.testing.assert_array_equal(
         parallel_coordinate.dimensions[1]["values"],
-        metadata["log_loss"].dropna().to_numpy(),
+        metadata["roc_auc"].dropna().to_numpy(),
     )
     np.testing.assert_array_equal(
         parallel_coordinate.dimensions[2]["values"],
-        metadata["roc_auc"].dropna().to_numpy(),
+        metadata["log_loss"].dropna().to_numpy(),
     )
     assert parallel_coordinate["line"]["colorbar"]["title"]["text"] == "Log Loss"
 
