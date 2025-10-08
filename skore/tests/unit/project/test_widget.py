@@ -173,7 +173,7 @@ def test_model_explorer_widget_single_task(metadata):
     widget = ModelExplorerWidget(metadata)
     # check that the classification dropdown menu is visible
     assert widget.classification_metrics_box.layout.display == ""
-    assert widget._color_metric_dropdown["classification"].layout.display == ""
+    assert widget._color_metric_dropdown["classification"].layout.display is None
     # check that the regression dropdown menu is hidden
     assert widget.regression_metrics_box.layout.display == "none"
     assert widget._color_metric_dropdown["regression"].layout.display == "none"
@@ -185,7 +185,7 @@ def test_model_explorer_widget_single_task(metadata):
     assert widget._color_metric_dropdown["classification"].layout.display == "none"
     # check that the regression dropdown menu is visible
     assert widget.regression_metrics_box.layout.display == ""
-    assert widget._color_metric_dropdown["regression"].layout.display == ""
+    assert widget._color_metric_dropdown["regression"].layout.display is None
 
 
 def test_model_explorer_widget_jitter(metadata):

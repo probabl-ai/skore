@@ -140,8 +140,7 @@ class ModelExplorerWidget:
         )
 
         checkbox_container = widgets.VBox(
-            checkbox_widgets,
-            layout=widgets.Layout(max_height="auto", overflow_y="auto"),
+            checkbox_widgets, layout=widgets.Layout(max_height="auto")
         )
 
         accordion = widgets.Accordion(
@@ -350,7 +349,7 @@ class ModelExplorerWidget:
                 self._task_dropdown,
                 self._dataset_dropdown,
             ],
-            layout=widgets.Layout(width="100%", gap="10px"),
+            layout=widgets.Layout(width="100%"),
         )
 
         self.classification_metrics_box = widgets.HBox(
@@ -359,7 +358,7 @@ class ModelExplorerWidget:
                 self._statistical_metrics_dropdown["classification"],
                 self._color_metric_dropdown["classification"],
             ],
-            layout=widgets.Layout(width="100%", gap="10px"),
+            layout=widgets.Layout(width="100%"),
         )
 
         self.regression_metrics_box = widgets.HBox(
@@ -368,7 +367,7 @@ class ModelExplorerWidget:
                 self._statistical_metrics_dropdown["regression"],
                 self._color_metric_dropdown["regression"],
             ],
-            layout=widgets.Layout(width="100%", gap="10px"),
+            layout=widgets.Layout(width="100%"),
         )
         controls_metrics = widgets.VBox(
             [self.classification_metrics_box, self.regression_metrics_box],
@@ -411,10 +410,14 @@ class ModelExplorerWidget:
 
         if task == "classification":
             self.classification_metrics_box.layout.display = ""
+            self._color_metric_dropdown["classification"].layout.display = None
             self.regression_metrics_box.layout.display = "none"
+            self._color_metric_dropdown["regression"].layout.display = "none"
         else:
             self.classification_metrics_box.layout.display = "none"
+            self._color_metric_dropdown["classification"].layout.display = "none"
             self.regression_metrics_box.layout.display = ""
+            self._color_metric_dropdown["regression"].layout.display = None
 
     def _on_report_type_change(self, change: dict[str, Any]) -> None:
         """Handle report type dropdown change events.
