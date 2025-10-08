@@ -3,16 +3,12 @@ import itertools
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from skore._sklearn._plot.style import StyleDisplayMixin
-from skore._sklearn._plot.utils import (
-    HelpDisplayMixin,
-    PlotBackendMixin,
-    _interval_max_min_ratio,
-)
+from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn._plot.utils import _interval_max_min_ratio
 from skore._sklearn.types import ReportType, ScoringName
 
 
-class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixin):
+class MetricsSummaryDisplay(DisplayMixin):
     """Display for summarize.
 
     An instance of this class will be created by `Report.metrics.summarize()`.
@@ -162,6 +158,7 @@ class MetricsSummaryDisplay(HelpDisplayMixin, StyleDisplayMixin, PlotBackendMixi
         ax.legend(title="Models", loc="best")
 
         self.ax_ = ax
+
     @DisplayMixin.style_plot
     def plot(self):
         """Not yet implemented."""
