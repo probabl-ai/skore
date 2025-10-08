@@ -298,3 +298,82 @@ def test_model_explorer_widget_update_plot(metadata):
         metadata["rmse"].dropna().to_numpy(),
     )
     assert parallel_coordinate["line"]["colorbar"]["title"]["text"] == "RMSE"
+
+
+def test_model_explorer_widget_on_report_type_change(metadata):
+    """Check the behaviour of the method `_on_report_type_change`."""
+    widget = ModelExplorerWidget(metadata)
+    widget.update_selection()
+
+    assert widget._dataset_dropdown.options == ("dataset1",)
+    assert widget._dataset_dropdown.value == "dataset1"
+    assert widget.classification_metrics_box.layout.display == ""
+    assert widget._color_metric_dropdown["classification"].layout.display is None
+    assert widget.regression_metrics_box.layout.display == "none"
+    assert widget._color_metric_dropdown["regression"].layout.display == "none"
+    assert widget.current_selection == {
+        "dataset": "dataset1",
+        "ml_task": "classification",
+    }
+
+    # switch to cross-validation report type
+    widget._report_type_dropdown.value = "cross-validation"
+    widget._on_report_type_change({"new": "cross-validation"})
+    assert widget._dataset_dropdown.options == ("dataset3",)
+    assert widget._dataset_dropdown.value == "dataset3"
+    assert widget.classification_metrics_box.layout.display == ""
+    assert widget._color_metric_dropdown["classification"].layout.display is None
+    assert widget.regression_metrics_box.layout.display == "none"
+    assert widget._color_metric_dropdown["regression"].layout.display == "none"
+    assert widget.current_selection == {
+        "dataset": "dataset3",
+        "ml_task": "classification",
+    }
+
+
+def test_model_explorer_widget_on_task_change(metadata):
+    """Check the behaviour of the method `_on_task_change`."""
+    widget = ModelExplorerWidget(metadata)
+    widget.update_selection()
+
+    assert widget._dataset_dropdown.options == ("dataset1",)
+    assert widget._dataset_dropdown.value == "dataset1"
+    assert widget.classification_metrics_box.layout.display == ""
+    assert widget._color_metric_dropdown["classification"].layout.display is None
+    assert widget.regression_metrics_box.layout.display == "none"
+    assert widget._color_metric_dropdown["regression"].layout.display == "none"
+
+    # switch to a regression task
+    widget._task_dropdown.value = "regression"
+    widget._on_task_change({"new": "regression"})
+    assert widget._dataset_dropdown.options == ("dataset2",)
+    assert widget._dataset_dropdown.value == "dataset2"
+    assert widget.classification_metrics_box.layout.display == "none"
+    assert widget._color_metric_dropdown["classification"].layout.display == "none"
+    assert widget.regression_metrics_box.layout.display == ""
+    assert widget._color_metric_dropdown["regression"].layout.display is None
+    assert widget.current_selection == {
+        "dataset": "dataset2",
+        "ml_task": "regression",
+    }
+
+
+def test_model_explorer_widget_no_dataset_for_task(metadata, capsys):
+    """Check the behaviour when there's no dataset available for a selected task."""
+    metadata = metadata.copy()
+    # select a small subset of the original metadata to be able to switch task
+    metadata = metadata[
+        (metadata["ml_task"] == "classification")
+        & (metadata["report_type"] == "estimator")
+    ]
+
+    widget = ModelExplorerWidget(metadata)
+    widget.update_selection()
+
+    widget._report_type_dropdown.value = "cross-validation"
+    widget._on_report_type_change({"new": "cross-validation"})
+
+    widget._update_plot()
+
+    captured = capsys.readouterr()
+    assert "No dataset available for selected task." in captured.out

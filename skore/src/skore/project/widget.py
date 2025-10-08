@@ -160,7 +160,13 @@ class ModelExplorerWidget:
         return widget_container
 
     def _check_dataframe_schema(self, dataframe: pd.DataFrame) -> None:
-        """Check if the dataframe has the required columns and index."""
+        """Check if the dataframe has the required columns and index.
+
+        Parameters
+        ----------
+        dataframe : pd.DataFrame
+            The dataframe to check.
+        """
         if not all(col in dataframe.columns for col in self._required_columns):
             raise ValueError(
                 f"Dataframe is missing required columns: {self._required_columns}"
@@ -173,7 +179,20 @@ class ModelExplorerWidget:
             raise ValueError("Learner column must be a categorical column")
 
     def _filter_dataframe(self, ml_task: str, report_type: str) -> pd.DataFrame:
-        """Filter report data based on selected ML task and report type."""
+        """Filter report data based on selected ML task and report type.
+
+        Parameters
+        ----------
+        ml_task : str
+            The ML task to filter by.
+        report_type : str
+            The report type to filter by.
+
+        Returns
+        -------
+        pd.DataFrame
+            The filtered dataframe.
+        """
         df = self.dataframe.copy()
         df = df.query(
             f"ml_task.str.contains('{ml_task}') & report_type == '{report_type}'"
@@ -189,6 +208,20 @@ class ModelExplorerWidget:
         return df
 
     def _get_datasets(self, ml_task: str, report_type: str) -> np.ndarray:
+        """Get the unique datasets from the filtered dataframe.
+
+        Parameters
+        ----------
+        ml_task : str
+            The ML task to filter by.
+        report_type : str
+            The report type to filter by.
+
+        Returns
+        -------
+        np.ndarray
+            The unique datasets.
+        """
         return self._filter_dataframe(ml_task, report_type)["dataset"].unique()
 
     def __init__(self, dataframe: pd.DataFrame, seed: int = 0) -> None:
@@ -382,27 +415,38 @@ class ModelExplorerWidget:
 
         self.output = widgets.Output(layout=widgets.Layout(width="100%"))
 
-        self._update_task_widgets()
+        self._update_task_widgets(ml_task=self._task_dropdown.value)
         self._layout = widgets.VBox(
             [controls, self.output],
             layout=widgets.Layout(width="100%", overflow="hidden"),
         )
 
-    def _update_datasets(self, datasets: list[str]) -> None:
+    def _update_dataset_dropdown(self, datasets: list[str]) -> None:
+        """Update the dataset dropdown options.
+
+        Parameters
+        ----------
+        datasets : list[str]
+            The datasets to display in the dropdown.
+        """
         self._dataset_dropdown.options = datasets
         if len(datasets):
             self._dataset_dropdown.value = datasets[0]
 
-    def _update_task_widgets(self) -> None:
-        """Update widget visibility based on the currently selected task."""
-        task = self._task_dropdown.value
+    def _update_task_widgets(self, ml_task: str) -> None:
+        """Update widgets that are dependent on the selected task.
 
-        if task == "classification":
+        Parameters
+        ----------
+        ml_task : str
+            The task to display in the dropdown.
+        """
+        if ml_task == "classification":
             self.classification_metrics_box.layout.display = ""
             self._color_metric_dropdown["classification"].layout.display = None
             self.regression_metrics_box.layout.display = "none"
             self._color_metric_dropdown["regression"].layout.display = "none"
-        else:
+        else:  # ml_task == "regression"
             self.classification_metrics_box.layout.display = "none"
             self._color_metric_dropdown["classification"].layout.display = "none"
             self.regression_metrics_box.layout.display = ""
@@ -420,12 +464,11 @@ class ModelExplorerWidget:
             dictionary containing information about the widget change,
             including the new value under the 'new' key.
         """
-        self._update_datasets(
-            self._get_datasets(
-                ml_task=self._task_dropdown.value, report_type=change["new"]
-            )
+        ml_task, report_type = self._task_dropdown.value, change["new"]
+        self._update_dataset_dropdown(
+            self._get_datasets(ml_task=ml_task, report_type=report_type)
         )
-        self._update_task_widgets()
+        self._update_task_widgets(ml_task=ml_task)
         self._update_plot()
         self.update_selection()
 
@@ -441,12 +484,11 @@ class ModelExplorerWidget:
             dictionary containing information about the widget change,
             including the new value under the 'new' key.
         """
-        self._update_datasets(
-            self._get_datasets(
-                ml_task=change["new"], report_type=self._report_type_dropdown.value
-            )
+        ml_task, report_type = change["new"], self._report_type_dropdown.value
+        self._update_dataset_dropdown(
+            self._get_datasets(ml_task=ml_task, report_type=report_type)
         )
-        self._update_task_widgets()
+        self._update_task_widgets(ml_task=ml_task)
         self._update_plot()
         self.update_selection()
 
