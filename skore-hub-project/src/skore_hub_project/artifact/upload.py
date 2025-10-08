@@ -14,7 +14,7 @@ from ..client.client import Client, HUBClient
 from .serializer import Serializer
 
 if TYPE_CHECKING:
-    from typing import Any, Final
+    from typing import Final
 
     import httpx
 
@@ -43,20 +43,20 @@ def upload_chunk(
     length: int,
 ) -> str:
     """
-    Upload a chunk of the serialized object to the artifacts storage.
+    Upload a chunk of the serialized content to the artifacts storage.
 
     Parameters
     ----------
     filepath : ``Path``
-        The path of the file containing the serialized object.
+        The path of the file containing the serialized content.
     client : ``httpx.Client``
         The client used to upload the chunk to the artifacts storage.
     url : str
         The url used to upload the chunk to the artifacts storage.
     offset : int
-        The start of the chunk in the file containing the serialized object.
+        The start of the chunk in the file containing the serialized content.
     length: int
-        The length of the chunk in the file containing the serialized object.
+        The length of the chunk in the file containing the serialized content.
 
     Returns
     -------
@@ -81,36 +81,36 @@ def upload_chunk(
         return response.headers["etag"]
 
 
-# This is both the threshold at which an object is split into several small parts for
+# This is both the threshold at which a content is split into several small parts for
 # upload, and the size of these small parts.
 CHUNK_SIZE: Final[int] = int(1e7)  # ~10mb
 
 
-def upload(project: Project, object: Any, serializer_cls: type[Serializer]) -> str:
+def upload(project: Project, content: str | bytes, content_type: str) -> str:
     """
-    Upload an object to the artifacts storage.
+    Upload content to the artifacts storage.
 
     Parameters
     ----------
     project : ``Project``
-        The project where to upload the object.
-    object : Any
-        The object to upload.
-    serializer_cls : type
-        The class of serializer to use for the upload.
+        The project where to upload the content.
+    content : str | bytes
+        The content to upload.
+    content_type : str
+        The type of content to upload.
 
     Returns
     -------
     checksum : str
-        The checksum of the object before upload to the artifacts storage, based on its
+        The checksum of the content before upload to the artifacts storage, based on its
         serialization.
 
     Notes
     -----
-    An object that was already uploaded in its whole will be ignored.
+    A content that was already uploaded in its whole will be ignored.
     """
     with (
-        serializer_cls(object) as serializer,
+        Serializer(content) as serializer,
         HUBClient() as hub_client,
         Client() as standard_client,
         ThreadPoolExecutor() as pool,
@@ -122,17 +122,18 @@ def upload(project: Project, object: Any, serializer_cls: type[Serializer]) -> s
                 {
                     "checksum": serializer.checksum,
                     "chunk_number": ceil(serializer.size / CHUNK_SIZE),
+                    "content_type": content_type,
                 }
             ],
         )
 
         # An empty response means that an artifact with the same checksum already
-        # exists. The object doesn't have to be re-uploaded.
+        # exists. The content doesn't have to be re-uploaded.
         if urls := response.json():
             task_to_chunk_id = {}
 
-            # Upload each chunk of the serialized object to the artifacts storage, using
-            # a disk temporary file.
+            # Upload each chunk of the serialized content to the artifacts storage,
+            # using a disk temporary file.
             #
             # Each task is in charge of reading its own file chunk at runtime, to reduce
             # RAM footprint.

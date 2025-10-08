@@ -1,19 +1,20 @@
-"""Function definition of the object ``Serializer``."""
+"""Function definition of the content ``Serializer``."""
 
-from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any
 
 from blake3 import blake3 as Blake3
 
 
-class Serializer(ABC):  # noqa: B024
-    """Interface to serialize an object directly on disk to reduce RAM footprint."""
+class Serializer:
+    """Serialize a content directly on disk to reduce RAM footprint."""
 
-    @abstractmethod
-    def __init__(self, _: Any): ...
+    def __init__(self, content: str | bytes):
+        if isinstance(content, str):
+            self.filepath.write_text(content)
+        else:
+            self.filepath.write_bytes(content)
 
     def __enter__(self):  # noqa: D105
         return self
@@ -23,18 +24,18 @@ class Serializer(ABC):  # noqa: B024
 
     @cached_property
     def filepath(self) -> Path:
-        """The filepath used to serialize the object."""
+        """The filepath used to serialize the content."""
         with NamedTemporaryFile(mode="w+b", delete=False) as file:
             return Path(file.name)
 
     @cached_property
     def checksum(self) -> str:
         """
-        The checksum of the serialized object.
+        The checksum of the serialized content.
 
         Notes
         -----
-        Depending on the size of the serialized object, the checksum can be computed on
+        Depending on the size of the serialized content, the checksum can be computed on
         one or more threads:
 
             Note that this can be slower for inputs shorter than ~1 MB
@@ -50,35 +51,5 @@ class Serializer(ABC):  # noqa: B024
 
     @cached_property
     def size(self) -> int:
-        """The size of the serialized object, in bytes."""
+        """The size of the serialized content, in bytes."""
         return self.filepath.stat().st_size
-
-
-class JoblibSerializer(Serializer):
-    def __init__(self, object: Any):
-        import joblib
-
-        with self.filepath.open("wb") as file:
-            joblib.dump(object, file)
-
-
-class TxtSerializer(Serializer):
-    def __init__(self, txt: str):
-        self.filepath.write_text(txt)
-
-
-class BytesSerializer(Serializer):
-    def __init__(self, txt: bytes):
-        self.filepath.write_bytes(txt)
-
-
-class JsonSerializer(Serializer):
-    def __init__(self, object: Any):
-        import orjson
-
-        self.filepath.write_bytes(
-            orjson.dumps(
-                object,
-                option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
-            )
-        )

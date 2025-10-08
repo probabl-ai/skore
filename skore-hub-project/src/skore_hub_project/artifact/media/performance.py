@@ -10,15 +10,13 @@ from matplotlib import pyplot as plt
 
 from skore_hub_project import switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media
-from skore_hub_project.artifact.serializer import BytesSerializer
 
 
 class Performance(Media, ABC):  # noqa: D101
     accessor: ClassVar[str]
-    serializer: ClassVar[type[BytesSerializer]] = BytesSerializer
-    media_type: Literal["image/svg+xml"] = "image/svg+xml"
+    content_type: Literal["image/svg+xml"] = "image/svg+xml"
 
-    def object_to_upload(self) -> bytes | None:
+    def content_to_upload(self) -> bytes | None:
         try:
             function = cast(
                 Callable,

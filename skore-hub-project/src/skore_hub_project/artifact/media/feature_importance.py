@@ -9,16 +9,16 @@ from pandas import DataFrame
 from pydantic import Field
 
 from skore_hub_project.artifact.media.media import Media
-from skore_hub_project.artifact.serializer import JsonSerializer
 from skore_hub_project.protocol import EstimatorReport
 
 
 class FeatureImportance(Media, ABC):  # noqa: D101
     accessor: ClassVar[str]
-    serializer: ClassVar[type[JsonSerializer]] = JsonSerializer
-    media_type: Literal["application/vnd.dataframe"] = "application/vnd.dataframe"
+    content_type: Literal["application/vnd.dataframe"] = "application/vnd.dataframe"
 
-    def object_to_upload(self) -> dict | None:
+    def content_to_upload(self) -> bytes | None:
+        import orjson
+
         try:
             function = cast(
                 Callable,
@@ -36,7 +36,10 @@ class FeatureImportance(Media, ABC):  # noqa: D101
         if not isinstance(result, DataFrame):
             result = result.frame()
 
-        return result.fillna("NaN").to_dict(orient="tight")
+        return orjson.dumps(
+            result.fillna("NaN").to_dict(orient="tight"),
+            option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
+        )
 
 
 class Permutation(FeatureImportance, ABC):  # noqa: D101

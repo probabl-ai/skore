@@ -1,23 +1,23 @@
 """Class definition of the payload used to send a data category media to ``hub``."""
 
-from typing import ClassVar, Literal
+from typing import Literal
 
 from pydantic import Field
 
 from skore_hub_project import switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media
-from skore_hub_project.artifact.serializer import JsonSerializer
 from skore_hub_project.protocol import EstimatorReport
 
 
 class TableReport(Media):  # noqa: D101
-    serializer: ClassVar[type[JsonSerializer]] = JsonSerializer
     name: Literal["table_report"] = "table_report"
-    media_type: Literal["application/vnd.skrub.table-report.v1+json"] = (
+    content_type: Literal["application/vnd.skrub.table-report.v1+json"] = (
         "application/vnd.skrub.table-report.v1+json"
     )
 
-    def object_to_upload(self) -> str:
+    def content_to_upload(self) -> bytes:
+        import orjson
+
         with switch_mpl_backend():
             display = (
                 self.report.data.analyze()
@@ -35,7 +35,10 @@ class TableReport(Media):  # noqa: D101
         # Remove irrelevant information
         del table_report["sample_table"]
 
-        return table_report
+        return orjson.dumps(
+            table_report,
+            option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
+        )
 
 
 class TableReportTrain(TableReport):  # noqa: D101
