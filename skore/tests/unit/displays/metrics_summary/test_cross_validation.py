@@ -56,7 +56,7 @@ def test_data_source_external(
     for split_idx in range(splitter):
         # check that it is equivalent to call the individual estimator report
         report_result = (
-            report.estimator_reports_[split_idx]
+            report.reports_[split_idx]
             .metrics.summarize(data_source="X_y", X=X, y=y)
             .frame()
         )
@@ -389,7 +389,7 @@ def test_scorer(linear_regression_data):
                 est_rep.y_test, est_rep.estimator_.predict(est_rep.X_test)
             ),
         ]
-        for est_rep in report.estimator_reports_
+        for est_rep in report.reports_
     ]
     np.testing.assert_allclose(
         result.to_numpy(),
