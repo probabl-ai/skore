@@ -193,7 +193,7 @@ class Project:
             response = client.get(url=url)
 
         metadata = response.json()
-        checksum = metadata["raw"]["checksum"]
+        checksum = metadata["pickle"]["checksum"]
 
         # Ask for read url.
         with HUBClient() as client:
