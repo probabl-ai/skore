@@ -41,6 +41,7 @@ def upload_chunk(
     url: str,
     offset: int,
     length: int,
+    content_type: str,
 ) -> str:
     """
     Upload a chunk of the serialized content to the artifacts storage.
@@ -57,6 +58,8 @@ def upload_chunk(
         The start of the chunk in the file containing the serialized content.
     length: int
         The length of the chunk in the file containing the serialized content.
+    content_type: strategy
+        The type of the content to upload.
 
     Returns
     -------
@@ -74,7 +77,7 @@ def upload_chunk(
         response = client.put(
             url=url,
             content=file.read(length),
-            headers={"Content-Type": "application/octet-stream"},
+            headers={"Content-Type": content_type},
             timeout=30,
         )
 
@@ -149,6 +152,9 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
                     url=url["upload_url"],
                     offset=((chunk_id - 1) * CHUNK_SIZE),
                     length=CHUNK_SIZE,
+                    content_type=(
+                        content_type if len(urls) == 1 else "application/octet-stream"
+                    ),
                 )
 
                 task_to_chunk_id[task] = chunk_id
