@@ -23,7 +23,6 @@ if TYPE_CHECKING:
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
-        run_id: str
         key: str
         date: str
         learner: str
@@ -86,8 +85,6 @@ class Project:
         - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
         - on Linux, usually ``${HOME}/.cache/skore``,
         - on macOS, usually ``${HOME}/Library/Caches/skore``.
-    run_id : str
-        The current run identifier of the project.
     """
 
     @staticmethod
@@ -142,7 +139,6 @@ class Project:
         workspace, projects, metadata, artifacts = Project.__setup_diskcache(workspace)
 
         self.__name = name
-        self.__run_id = uuid4().hex
         self.__workspace = workspace
         self.__projects_storage = projects
         self.__metadata_storage = metadata
@@ -155,11 +151,6 @@ class Project:
     def name(self) -> str:
         """The name of the project."""
         return self.__name
-
-    @property
-    def run_id(self) -> str:
-        """The run identifier of the project."""
-        return self.__run_id
 
     @property
     def workspace(self) -> Path:
@@ -239,7 +230,6 @@ class Project:
                 report=report,
                 artifact_id=pickle_hash,
                 project_name=self.name,
-                run_id=self.run_id,
                 key=key,
             )
         )
@@ -259,7 +249,6 @@ class Project:
         return [
             {
                 "id": value["artifact_id"],
-                "run_id": value["run_id"],
                 "key": value["key"],
                 "date": value["date"],
                 "learner": value["learner"],
