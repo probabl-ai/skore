@@ -5,7 +5,7 @@ from typing import Any, Literal, TypedDict
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from IPython.display import clear_output, display
+from IPython.display import HTML, clear_output, display
 from ipywidgets import widgets
 from rich.panel import Panel
 
@@ -50,7 +50,6 @@ class ModelExplorerWidget:
         Dictionary containing the current user selection criteria.
     """
 
-    _plot_width: int = 800
     _metrics: dict[str, MetricAxis] = {
         "fit_time": {
             "name": "Fit Time",
@@ -105,8 +104,69 @@ class ModelExplorerWidget:
     )
     _required_index: list[str | None] = [None, "id"]
 
+    def _create_multi_select_dropdown(
+        self, options: list[tuple[str, str]], value: list[str], description: str
+    ) -> widgets.VBox:
+        """Create a compact multi-select dropdown widget.
+
+        This creates a dropdown that shows selected items as a summary text and expands
+        to show checkboxes when clicked.
+
+        Parameters
+        ----------
+        options : list[tuple[str, str]]
+            The options to display in the dropdown.
+        value : list[str]
+            The values that are currently selected.
+        description : str
+            The description of the dropdown. String shown in the dropdown header.
+
+        Returns
+        -------
+        widgets.VBox
+            The compact multi-select dropdown widget.
+        """
+        checkboxes = {}
+        checkbox_widgets = []
+
+        for label, val in options:
+            checkbox = widgets.Checkbox(
+                value=val in value,
+                description=label,
+                indent=False,
+                layout=widgets.Layout(width="auto"),
+            )
+            checkboxes[val] = checkbox
+            checkbox_widgets.append(checkbox)
+
+        checkbox_container = widgets.VBox(
+            checkbox_widgets, layout=widgets.Layout(max_height="auto")
+        )
+
+        accordion = widgets.Accordion(
+            children=[checkbox_container],
+            layout=widgets.Layout(width="auto"),
+        )
+        accordion.set_title(0, description.rstrip(":"))
+        accordion.selected_index = None
+        accordion.add_class("no-padding-accordion")
+
+        widget_container = widgets.VBox([accordion], layout=widgets.Layout(flex="1"))
+        widget_container._checkboxes = checkboxes
+        widget_container._get_selected_values = lambda: [
+            val for val, cb in checkboxes.items() if cb.value
+        ]
+
+        return widget_container
+
     def _check_dataframe_schema(self, dataframe: pd.DataFrame) -> None:
-        """Check if the dataframe has the required columns and index."""
+        """Check if the dataframe has the required columns and index.
+
+        Parameters
+        ----------
+        dataframe : pd.DataFrame
+            The dataframe to check.
+        """
         if not all(col in dataframe.columns for col in self._required_columns):
             raise ValueError(
                 f"Dataframe is missing required columns: {self._required_columns}"
@@ -118,8 +178,21 @@ class ModelExplorerWidget:
         if dataframe["learner"].dtype != "category":
             raise ValueError("Learner column must be a categorical column")
 
-    def _filtered_dataframe(self, ml_task, report_type) -> pd.DataFrame:
-        """Filter report data based on selected ML task and report type."""
+    def _filter_dataframe(self, ml_task: str, report_type: str) -> pd.DataFrame:
+        """Filter report data based on selected ML task and report type.
+
+        Parameters
+        ----------
+        ml_task : str
+            The ML task to filter by.
+        report_type : str
+            The report type to filter by.
+
+        Returns
+        -------
+        pd.DataFrame
+            The filtered dataframe.
+        """
         df = self.dataframe.copy()
         df = df.query(
             f"ml_task.str.contains('{ml_task}') & report_type == '{report_type}'"
@@ -134,8 +207,22 @@ class ModelExplorerWidget:
             df.columns = [col.removesuffix("_mean") for col in df.columns]
         return df
 
-    def _datasets(self, ml_task, report_type) -> np.ndarray:
-        return self._filtered_dataframe(ml_task, report_type)["dataset"].unique()
+    def _get_datasets(self, ml_task: str, report_type: str) -> np.ndarray:
+        """Get the unique datasets from the filtered dataframe.
+
+        Parameters
+        ----------
+        ml_task : str
+            The ML task to filter by.
+        report_type : str
+            The report type to filter by.
+
+        Returns
+        -------
+        np.ndarray
+            The unique datasets.
+        """
+        return self._filter_dataframe(ml_task, report_type)["dataset"].unique()
 
     def __init__(self, dataframe: pd.DataFrame, seed: int = 0) -> None:
         if dataframe.empty:
@@ -157,20 +244,20 @@ class ModelExplorerWidget:
             ("classification", "cross-validation"),
             ("regression", "cross-validation"),
         ]:
-            if not self._filtered_dataframe(ml_task, report_type).empty:
+            if not self._filter_dataframe(ml_task, report_type).empty:
                 default_task = ml_task
                 default_report_type = report_type
                 break
 
         self._report_type_dropdown = widgets.Dropdown(
             options=[
-                ("Estimator Report", "estimator"),
-                ("Cross-validation Report", "cross-validation"),
+                ("Estimator", "estimator"),
+                ("Cross-validation", "cross-validation"),
             ],
             value=default_report_type,
             description="Report Type:",
             disabled=False,
-            layout=widgets.Layout(width="200px"),
+            layout=widgets.Layout(flex="1"),
         )
 
         self._task_dropdown = widgets.Dropdown(
@@ -181,45 +268,19 @@ class ModelExplorerWidget:
             value=default_task,
             description="Task Type:",
             disabled=False,
-            layout=widgets.Layout(width="200px"),
+            layout=widgets.Layout(flex="1"),
         )
 
-        default_dataset = self._datasets(default_task, default_report_type)
+        default_dataset = self._get_datasets(default_task, default_report_type)
         self._dataset_dropdown = widgets.Dropdown(
             options=default_dataset,
             description="Dataset:",
             disabled=False,
-            layout=widgets.Layout(width="250px"),
+            layout=widgets.Layout(flex="1"),
         )
 
-        self._metric_checkboxes: dict[
-            Literal["classification", "regression"], dict[str, widgets.Checkbox]
-        ] = {
-            "classification": {},
-            "regression": {},
-        }
-        for metric in self._metrics:
-            default_value = self._metrics[metric]["show"]
-            metric_type = self._metrics[metric]["type"]
-            if metric_type == "time":
-                # the "time" metrics should be added to all the different types
-                # (i.e. classification and regression)
-                for metric_type in self._metric_checkboxes:
-                    self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
-                        indent=False,
-                        value=default_value,
-                        description=self._metrics[metric]["name"],
-                        disabled=False,
-                        layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
-                    )
-            else:
-                self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
-                    indent=False,
-                    value=default_value,
-                    description=self._metrics[metric]["name"],
-                    disabled=False,
-                    layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
-                )
+        self._computation_metrics_dropdown: dict[str, widgets.SelectMultiple] = {}
+        self._statistical_metrics_dropdown: dict[str, widgets.SelectMultiple] = {}
 
         metrics_for_classification = [
             metric
@@ -231,6 +292,58 @@ class ModelExplorerWidget:
             for metric in self._metrics
             if self._metrics[metric]["type"] in ("regression", "time")
         ]
+
+        self._computation_metrics_dropdown = {}
+        self._statistical_metrics_dropdown = {}
+
+        computation_metrics = ["fit_time", "predict_time"]
+        computation_options = [
+            (self._metrics[metric]["name"], metric) for metric in computation_metrics
+        ]
+        for task in ["classification", "regression"]:
+            self._computation_metrics_dropdown[task] = (
+                self._create_multi_select_dropdown(
+                    options=computation_options,
+                    value=[],
+                    description="Computation Metrics:",
+                )
+            )
+
+        classification_statistical = ["roc_auc", "log_loss"]
+        regression_statistical = ["rmse"]
+
+        classification_stat_options = [
+            (self._metrics[metric]["name"], metric)
+            for metric in classification_statistical
+        ]
+        regression_stat_options = [
+            (self._metrics[metric]["name"], metric) for metric in regression_statistical
+        ]
+
+        classification_stat_default = [
+            metric
+            for metric in classification_statistical
+            if self._metrics[metric]["show"]
+        ]
+        regression_stat_default = [
+            metric for metric in regression_statistical if self._metrics[metric]["show"]
+        ]
+
+        self._statistical_metrics_dropdown["classification"] = (
+            self._create_multi_select_dropdown(
+                options=classification_stat_options,
+                value=classification_stat_default,
+                description="Statistical Metrics:",
+            )
+        )
+
+        self._statistical_metrics_dropdown["regression"] = (
+            self._create_multi_select_dropdown(
+                options=regression_stat_options,
+                value=regression_stat_default,
+                description="Statistical Metrics:",
+            )
+        )
         self._color_metric_dropdown: dict[str, widgets.Dropdown] = {
             "classification": widgets.Dropdown(
                 options=[
@@ -240,7 +353,7 @@ class ModelExplorerWidget:
                 value="Log Loss",
                 description="Color by:",
                 disabled=False,
-                layout=widgets.Layout(width="200px"),
+                layout=widgets.Layout(flex="1"),
             ),
             "regression": widgets.Dropdown(
                 options=[
@@ -249,177 +362,95 @@ class ModelExplorerWidget:
                 value="RMSE",
                 description="Color by:",
                 disabled=False,
-                layout=widgets.Layout(width="200px"),
+                layout=widgets.Layout(flex="1"),
             ),
         }
+        controls_header = widgets.HBox(
+            [
+                self._report_type_dropdown,
+                self._task_dropdown,
+                self._dataset_dropdown,
+            ],
+            layout=widgets.Layout(width="100%"),
+        )
+
         self.classification_metrics_box = widgets.HBox(
             [
-                self._metric_checkboxes["classification"][metric]
-                for metric in metrics_for_classification
-            ]
+                self._computation_metrics_dropdown["classification"],
+                self._statistical_metrics_dropdown["classification"],
+                self._color_metric_dropdown["classification"],
+            ],
+            layout=widgets.Layout(width="100%"),
         )
+
         self.regression_metrics_box = widgets.HBox(
             [
-                self._metric_checkboxes["regression"][metric]
-                for metric in metrics_for_regression
-            ]
-        )
-
-        controls_header = widgets.GridBox(
-            [
-                self._task_dropdown,
-                self._report_type_dropdown,
-                self._dataset_dropdown,
-                self._color_metric_dropdown["classification"],
+                self._computation_metrics_dropdown["regression"],
+                self._statistical_metrics_dropdown["regression"],
                 self._color_metric_dropdown["regression"],
             ],
-            layout=widgets.Layout(
-                width=f"{self._plot_width}px",
-                grid_template_columns="repeat(4, auto)",
-                grid_gap="5px",
-                align_items="center",
-            ),
+            layout=widgets.Layout(width="100%"),
         )
-
-        clf_computation_row = widgets.GridBox(
-            [
-                widgets.Label(
-                    value="Computation Metrics: ",
-                    layout=widgets.Layout(padding="5px 0px"),
-                ),
-                self._metric_checkboxes["classification"]["fit_time"],
-                self._metric_checkboxes["classification"]["predict_time"],
-            ],
-            layout=widgets.Layout(
-                width=f"{self._plot_width}px",
-                grid_template_columns="200px auto auto",
-                align_items="center",
-            ),
-        )
-        clf_statistical_row = widgets.GridBox(
-            [
-                widgets.Label(
-                    value="Statistical Metrics: ",
-                    layout=widgets.Layout(padding="5px 0px"),
-                ),
-                self._metric_checkboxes["classification"]["roc_auc"],
-                self._metric_checkboxes["classification"]["log_loss"],
-            ],
-            layout=widgets.Layout(
-                width=f"{self._plot_width}px",
-                grid_template_columns="200px auto auto auto",
-                align_items="center",
-            ),
-        )
-        self.classification_metrics_box = widgets.GridBox(
-            [clf_computation_row, clf_statistical_row],
-            layout=widgets.Layout(
-                width=f"{self._plot_width}px",
-                grid_template_rows="auto auto",
-                grid_gap="5px",
-                align_items="center",
-            ),
-        )
-        reg_computation_row = widgets.GridBox(
-            [
-                widgets.Label(
-                    value="Computation Metrics: ",
-                    layout=widgets.Layout(padding="5px 0px"),
-                ),
-                self._metric_checkboxes["regression"]["fit_time"],
-                self._metric_checkboxes["regression"]["predict_time"],
-            ],
-            layout=widgets.Layout(
-                width=f"{self._plot_width}px",
-                grid_template_columns="200px auto auto",
-                align_items="center",
-            ),
-        )
-        reg_statistical_row = widgets.GridBox(
-            [
-                widgets.Label(
-                    value="Statistical Metrics: ",
-                    layout=widgets.Layout(padding="5px 0px"),
-                ),
-                self._metric_checkboxes["regression"]["rmse"],
-            ],
-            layout=widgets.Layout(
-                width=f"{self._plot_width}px",
-                grid_template_columns="200px auto auto",
-                align_items="center",
-            ),
-        )
-        self.regression_metrics_box = widgets.GridBox(
-            [reg_computation_row, reg_statistical_row],
-            layout=widgets.Layout(
-                width=f"{self._plot_width}px",
-                grid_template_rows="auto auto",
-                grid_gap="5px",
-                align_items="center",
-            ),
-        )
-        controls_metrics = widgets.GridBox(
+        controls_metrics = widgets.VBox(
             [self.classification_metrics_box, self.regression_metrics_box],
-            layout=widgets.Layout(
-                width=f"{self._plot_width}px",
-                grid_template_rows="auto auto",
-                grid_gap="10px",
-                align_items="center",
-            ),
+            layout=widgets.Layout(width="100%"),
         )
-        controls = widgets.GridBox(
-            [controls_header, controls_metrics],
-            layout=widgets.Layout(
-                width=f"{self._plot_width}px",
-                grid_template_rows="auto auto",
-                grid_gap="10px",
-                align_items="center",
-                margin="0px 0px 5px 0px",
-            ),
-        )
+        controls = widgets.VBox([controls_header, controls_metrics])
 
         # callbacks
         self._report_type_dropdown.observe(self._on_report_type_change, names="value")
         self._task_dropdown.observe(self._on_task_change, names="value")
         self._dataset_dropdown.observe(self._update_plot, names="value")
-        for task in self._metric_checkboxes:
-            for metric in self._metric_checkboxes[task]:
-                self._metric_checkboxes[task][metric].observe(
-                    self._update_plot, names="value"
-                )
+        for task in ["classification", "regression"]:
+            # Add observers to all checkboxes in the multi-select dropdowns
+            for checkbox in self._computation_metrics_dropdown[
+                task
+            ]._checkboxes.values():
+                checkbox.observe(self._update_plot, names="value")
+            for checkbox in self._statistical_metrics_dropdown[
+                task
+            ]._checkboxes.values():
+                checkbox.observe(self._update_plot, names="value")
             self._color_metric_dropdown[task].observe(self._update_plot, names="value")
 
-        self.output = widgets.Output(
-            layout=widgets.Layout(width=f"{self._plot_width}px", margin="0px")
-        )
+        self.output = widgets.Output(layout=widgets.Layout(width="100%"))
 
-        self._update_task_widgets()
+        self._update_task_widgets(ml_task=self._task_dropdown.value)
         self._layout = widgets.VBox(
             [controls, self.output],
-            layout=widgets.Layout(width=f"{self._plot_width}px"),
+            layout=widgets.Layout(width="100%", overflow="hidden"),
         )
 
-    def _update_datasets(self, datasets: list[str]) -> None:
+    def _update_dataset_dropdown(self, datasets: list[str]) -> None:
+        """Update the dataset dropdown options.
+
+        Parameters
+        ----------
+        datasets : list[str]
+            The datasets to display in the dropdown.
+        """
         self._dataset_dropdown.options = datasets
         if len(datasets):
             self._dataset_dropdown.value = datasets[0]
 
-    def _update_task_widgets(self) -> None:
-        """Update widget visibility based on the currently selected task."""
-        task = self._task_dropdown.value
+    def _update_task_widgets(self, ml_task: str) -> None:
+        """Update widgets that are dependent on the selected task.
 
-        if task == "classification":
+        Parameters
+        ----------
+        ml_task : str
+            The task to display in the dropdown.
+        """
+        if ml_task == "classification":
             self.classification_metrics_box.layout.display = ""
-            self._color_metric_dropdown["classification"].layout.display = ""
-
+            self._color_metric_dropdown["classification"].layout.display = None
             self.regression_metrics_box.layout.display = "none"
             self._color_metric_dropdown["regression"].layout.display = "none"
-        else:
+        else:  # ml_task == "regression"
             self.classification_metrics_box.layout.display = "none"
             self._color_metric_dropdown["classification"].layout.display = "none"
-
             self.regression_metrics_box.layout.display = ""
-            self._color_metric_dropdown["regression"].layout.display = ""
+            self._color_metric_dropdown["regression"].layout.display = None
 
     def _on_report_type_change(self, change: dict[str, Any]) -> None:
         """Handle report type dropdown change events.
@@ -433,10 +464,11 @@ class ModelExplorerWidget:
             dictionary containing information about the widget change,
             including the new value under the 'new' key.
         """
-        self._update_datasets(
-            self._datasets(ml_task=self._task_dropdown.value, report_type=change["new"])
+        ml_task, report_type = self._task_dropdown.value, change["new"]
+        self._update_dataset_dropdown(
+            self._get_datasets(ml_task=ml_task, report_type=report_type)
         )
-        self._update_task_widgets()
+        self._update_task_widgets(ml_task=ml_task)
         self._update_plot()
         self.update_selection()
 
@@ -452,12 +484,11 @@ class ModelExplorerWidget:
             dictionary containing information about the widget change,
             including the new value under the 'new' key.
         """
-        self._update_datasets(
-            self._datasets(
-                ml_task=change["new"], report_type=self._report_type_dropdown.value
-            )
+        ml_task, report_type = change["new"], self._report_type_dropdown.value
+        self._update_dataset_dropdown(
+            self._get_datasets(ml_task=ml_task, report_type=report_type)
         )
-        self._update_task_widgets()
+        self._update_task_widgets(ml_task=ml_task)
         self._update_plot()
         self.update_selection()
 
@@ -525,17 +556,22 @@ class ModelExplorerWidget:
                 display(widgets.HTML("No dataset available for selected task."))
                 return
 
-            df_dataset = self._filtered_dataframe(ml_task, report_type).query(
+            df_dataset = self._filter_dataframe(ml_task, report_type).query(
                 "dataset == @self._dataset_dropdown.value"
             )
             for col in df_dataset.select_dtypes(include=["category"]).columns:
                 df_dataset[col] = df_dataset[col].cat.remove_unused_categories()
 
-            selected_metrics = [
-                metric
-                for metric in self._metric_checkboxes[ml_task]
-                if self._metric_checkboxes[ml_task][metric].value
-            ]
+            # Get selected metrics from both dropdowns
+            selected_computation_metrics = self._computation_metrics_dropdown[
+                ml_task
+            ]._get_selected_values()
+            selected_statistical_metrics = self._statistical_metrics_dropdown[
+                ml_task
+            ]._get_selected_values()
+            selected_metrics = (
+                selected_computation_metrics + selected_statistical_metrics
+            )
             color_metric = self._dimension_to_column[
                 self._color_metric_dropdown[ml_task].value
             ]
@@ -556,7 +592,9 @@ class ModelExplorerWidget:
                 dimensions.append(
                     dict(
                         label=self._metrics[col]["name"],
-                        values=df_dataset[col].fillna(0),
+                        # convert to float in case that the column has None values and
+                        # thus is object type
+                        values=df_dataset[col].astype(float).fillna(0),
                     )
                 )
 
@@ -579,17 +617,21 @@ class ModelExplorerWidget:
             )
 
             fig.update_layout(
-                font=dict(size=16),
+                font=dict(size=18),
                 height=500,
-                width=self._plot_width,
-                margin=dict(l=250, r=150, t=120, b=30),
-                autosize=False,
+                margin=dict(l=250, r=0, t=120, b=30),
             )
 
             fig.data[0].on_selection(self.update_selection)  # callback
 
             self.current_fig = fig
+            # It is important to set autosize after the figure is displayed so that the
+            # width matches the parent container. However, it is not responsive to width
+            # resizing, but this is the only way to achieve the correct width. This
+            # issue can be tracked in the following bug report:
+            # https://github.com/plotly/plotly.py/issues/5208
             display(fig)
+            fig.layout.autosize = True
 
     def update_selection(
         self, trace=None, points=None, selector=None
@@ -645,6 +687,57 @@ class ModelExplorerWidget:
                 )
             )
             return None
+
+        display(
+            HTML(
+                """
+<style>
+    /* Text-based widgets */
+    .widget-text input,
+    .widget-textarea textarea,
+    .widget-password input {
+        font-size: 16px !important;
+    }
+
+    /* Labels and descriptions */
+    .widget-label,
+    .widget-label-basic {
+        font-size: 16px !important;
+        min-width: fit-content !important;
+    }
+
+    /* Buttons */
+    .widget-button,
+    .widget-toggle-button {
+        font-size: 16px !important;
+    }
+
+    /* Dropdowns and select widgets */
+    .widget-dropdown select,
+    .widget-select select {
+        font-size: 16px !important;
+    }
+
+    /* Slider readouts */
+    .widget-readout {
+        font-size: 16px !important;
+    }
+
+    /* HTML widgets */
+    .widget-html,
+    .widget-html-content {
+        font-size: 16px !important;
+    }
+
+    /* Custom SelectMultiple Dropdown */
+    .jupyter-widget-Collapse-header {
+        font-size: 16px !important;
+        font-weight: normal !important;
+    }
+</style>
+"""
+            )
+        )
 
         display(self._layout)
         self._update_plot()
