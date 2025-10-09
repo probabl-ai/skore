@@ -188,21 +188,12 @@ class Project:
                 f"URN '{urn}' format does not match '{Project.__REPORT_URN_PATTERN}'"
             )
 
-        # Retrieve report metadata.
+        # Retrieve presigned URL
         with HUBClient() as client:
             response = client.get(url=url)
 
         metadata = response.json()
-        checksum = metadata["pickle"]["checksum"]
-
-        # Ask for read url.
-        with HUBClient() as client:
-            response = client.get(
-                url=f"projects/{self.tenant}/{self.name}/artifacts/read",
-                params={"artifact_checksum": [checksum]},
-            )
-
-        url = response.json()[0]["url"]
+        url = metadata["pickle"]["presigned_url"]
 
         # Download pickled report before unpickling it.
         #
