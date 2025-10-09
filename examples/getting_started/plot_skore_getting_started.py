@@ -214,10 +214,10 @@ comparator.help()
 comparator.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
-# To be more specific in our comparison, we can decide to compare the Brier score and the fitting time.
+# To be more specific in our comparison, we can decide to compare the ROC AUC and the fitting time.
 
 # %%
-comparator.metrics.summarize().plot(x="brier_score", y="fit_time")
+comparator.metrics.summarize().plot(x="roc_auc", y="fit_time")
 # %%
 # Thus, we easily have the result of our benchmark for several recommended metrics.
 
