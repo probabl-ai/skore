@@ -1,7 +1,6 @@
 """Payload definition used to upload an artifact to ``hub``."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Generator
 from contextlib import AbstractContextManager, nullcontext
 from functools import cached_property
 
@@ -27,7 +26,7 @@ class Artifact(BaseModel, ABC):
     content_type: str
 
     @abstractmethod
-    def content_to_upload(self) -> Content | Generator[Content, None, None]:
+    def content_to_upload(self) -> Content | AbstractContextManager[Content]:
         """
         Example
         -------

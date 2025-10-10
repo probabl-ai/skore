@@ -45,11 +45,11 @@ def ensure_project_is_created(method):
 
     @wraps(method)
     def wrapper(project: Project, *args, **kwargs):
-        if not hasattr(project, "__created__"):
-            with HUBClient() as client:
-                client.post(f"projects/{project.tenant}/{project.name}")
+        if not project.created:
+            with HUBClient() as hub_client:
+                hub_client.post(f"projects/{project.tenant}/{project.name}")
 
-            project.__created__ = ...
+            project.created = True
 
         return method(project, *args, **kwargs)
 
@@ -112,6 +112,8 @@ class Project:
         name : str
             The name of the project.
         """
+        self.created = False
+
         self.__tenant = tenant
         self.__name = name
 
@@ -150,27 +152,26 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        Payload: type
+        payload: EstimatorReportPayload | CrossValidationReportPayload
 
         if isinstance(report, EstimatorReport):
-            Payload = EstimatorReportPayload
-            url = f"projects/{self.tenant}/{self.name}/estimator-reports"
+            payload = EstimatorReportPayload(project=self, key=key, report=report)
+            endpoint = "estimator-reports"
         elif isinstance(report, CrossValidationReport):
-            Payload = CrossValidationReportPayload
-            url = f"projects/{self.tenant}/{self.name}/cross-validation-reports"
+            payload = CrossValidationReportPayload(project=self, key=key, report=report)
+            endpoint = "cross-validation-reports"
         else:
             raise TypeError(
                 f"Report must be a `skore.EstimatorReport` or "
                 f"`skore.CrossValidationReport` (found '{type(report)}')"
             )
 
-        payload = Payload(project=self, key=key, report=report)
         payload_dict = payload.model_dump()
         payload_json_bytes = orjson.dumps(payload_dict, option=orjson.OPT_NON_STR_KEYS)
 
-        with HUBClient() as client:
-            client.post(
-                url=url,
+        with HUBClient() as hub_client:
+            hub_client.post(
+                url=f"projects/{self.tenant}/{self.name}/{endpoint}",
                 content=payload_json_bytes,
                 headers={
                     "Content-Length": str(len(payload_json_bytes)),
@@ -189,11 +190,10 @@ class Project:
             )
 
         # Retrieve presigned URL
-        with HUBClient() as client:
-            response = client.get(url=url)
-
-        metadata = response.json()
-        url = metadata["pickle"]["presigned_url"]
+        with HUBClient() as hub_client:
+            response = hub_client.get(url=url)
+            metadata = response.json()
+            presigned_url = metadata["pickle"]["presigned_url"]
 
         # Download pickled report before unpickling it.
         #
@@ -202,7 +202,7 @@ class Project:
         with (
             TemporaryFile(mode="w+b") as tmpfile,
             Client() as client,
-            client.stream(method="GET", url=url, timeout=30) as response,
+            client.stream(method="GET", url=presigned_url, timeout=30) as response,
         ):
             for data in response.iter_bytes():
                 tmpfile.write(data)
@@ -244,17 +244,17 @@ class Project:
                 "predict_time_mean": metrics.get("predict_time_mean"),
             }
 
-        with HUBClient() as client:
+        with HUBClient() as hub_client:
             responses = itertools.chain(
                 zip(
                     itertools.repeat("estimator"),
-                    client.get(
+                    hub_client.get(
                         f"projects/{self.tenant}/{self.name}/estimator-reports/"
                     ).json(),
                 ),
                 zip(
                     itertools.repeat("cross-validation"),
-                    client.get(
+                    hub_client.get(
                         f"projects/{self.tenant}/{self.name}/cross-validation-reports/"
                     ).json(),
                 ),
@@ -309,9 +309,9 @@ class Project:
         name : str
             The name of the project.
         """
-        with HUBClient() as client:
+        with HUBClient() as hub_client:
             try:
-                client.delete(f"projects/{tenant}/{name}")
+                hub_client.delete(f"projects/{tenant}/{name}")
             except HTTPStatusError as e:
                 if e.response.status_code == 403:
                     raise PermissionError(
