@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 
 import joblib
 from httpx import Client, Response
-from pytest import fixture, mark, raises
+from pytest import fixture, raises
 from skore import CrossValidationReport, EstimatorReport
 from skore_hub_project import Project
 from skore_hub_project.report import (
@@ -73,7 +73,8 @@ def monkeypatch_permutation(monkeypatch):
 @fixture(autouse=True)
 def monkeypatch_table_report_representation(monkeypatch):
     monkeypatch.setattr(
-        "skore_hub_project.media.data.TableReport.representation", lambda self: {}
+        "skore_hub_project.artifact.media.data.TableReport.content_to_upload",
+        lambda self: None,
     )
 
 
@@ -84,18 +85,8 @@ class TestProject:
     def test_name(self):
         assert Project("<tenant>", "<name>").name == "<name>"
 
-    @mark.respx(assert_all_called=True)
-    def test_run_id(self, respx_mock):
-        respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": 0})
-        )
-
-        assert Project("<tenant>", "<name>").run_id == 0
-
     def test_put_exception(self, respx_mock):
-        respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": 0})
-        )
+        respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
 
         with raises(TypeError, match="Key must be a string"):
             Project("<tenant>", "<name>").put(None, "<value>")
@@ -107,9 +98,7 @@ class TestProject:
             Project("<tenant>", "<name>").put("<key>", "<value>")
 
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
-        respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": 0})
-        )
+        respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
         respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
             Response(200, json=[])
         )
@@ -136,9 +125,7 @@ class TestProject:
     def test_put_cross_validation_report(
         self, monkeypatch, small_cv_binary_classification, respx_mock
     ):
-        respx_mock.post("projects/<tenant>/<name>/runs").mock(
-            Response(200, json={"id": 0})
-        )
+        respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
         respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
             Response(200, json=[])
         )
@@ -163,8 +150,7 @@ class TestProject:
         assert content == desired
 
     def test_reports(self, respx_mock):
-        url = "projects/<tenant>/<name>/runs"
-        respx_mock.post(url).mock(Response(200, json={"id": 0}))
+        respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
 
         project = Project("<tenant>", "<name>")
 
@@ -174,16 +160,10 @@ class TestProject:
 
     def test_reports_get_estimator_report(self, respx_mock, regression):
         # Mock hub routes that will be called
-        url = "projects/<tenant>/<name>/runs"
-        response = Response(200, json={"id": 0})
-        respx_mock.post(url).mock(response)
+        respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
 
         url = "projects/<tenant>/<name>/estimator-reports/<report_id>"
-        response = Response(200, json={"raw": {"checksum": "<checksum>"}})
-        respx_mock.get(url).mock(response)
-
-        url = "projects/<tenant>/<name>/artifacts/read"
-        response = Response(200, json=[{"url": "http://url.com"}])
+        response = Response(200, json={"pickle": {"presigned_url": "http://url.com"}})
         respx_mock.get(url).mock(response)
 
         with BytesIO() as stream:
@@ -203,16 +183,10 @@ class TestProject:
 
     def test_reports_get_cross_validation_report(self, respx_mock, cv_regression):
         # Mock hub routes that will be called
-        url = "projects/<tenant>/<name>/runs"
-        response = Response(200, json={"id": 0})
-        respx_mock.post(url).mock(response)
+        respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
 
         url = "projects/<tenant>/<name>/cross-validation-reports/<report_id>"
-        response = Response(200, json={"raw": {"checksum": "<checksum>"}})
-        respx_mock.get(url).mock(response)
-
-        url = "projects/<tenant>/<name>/artifacts/read"
-        response = Response(200, json=[{"url": "http://url.com"}])
+        response = Response(200, json={"pickle": {"presigned_url": "http://url.com"}})
         respx_mock.get(url).mock(response)
 
         with BytesIO() as stream:
@@ -231,8 +205,7 @@ class TestProject:
         assert report.ml_task == cv_regression.ml_task
 
     def test_reports_metadata(self, nowstr, respx_mock):
-        url = "projects/<tenant>/<name>/runs"
-        respx_mock.post(url).mock(Response(200, json={"id": 2}))
+        respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
 
         url = "projects/<tenant>/<name>/estimator-reports/"
         respx_mock.get(url).mock(
@@ -242,7 +215,6 @@ class TestProject:
                     {
                         "urn": "skore:report:estimator:<report_id_0>",
                         "id": "<report_id_0>",
-                        "run_id": 0,
                         "key": "<key>",
                         "ml_task": "<ml_task>",
                         "estimator_class_name": "<estimator_class_name>",
@@ -256,7 +228,6 @@ class TestProject:
                     {
                         "urn": "skore:report:estimator:<report_id_1>",
                         "id": "<report_id_1>",
-                        "run_id": 1,
                         "key": "<key>",
                         "ml_task": "<ml_task>",
                         "estimator_class_name": "<estimator_class_name>",
@@ -279,7 +250,6 @@ class TestProject:
                     {
                         "urn": "skore:report:cross-validation:<report_id_2>",
                         "id": "<report_id_2>",
-                        "run_id": 3,
                         "key": "<key>",
                         "ml_task": "<ml_task>",
                         "estimator_class_name": "<estimator_class_name>",
@@ -300,7 +270,6 @@ class TestProject:
         assert metadata == [
             {
                 "id": "skore:report:estimator:<report_id_0>",
-                "run_id": 0,
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -317,10 +286,10 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
+                "run_id": -1,
             },
             {
                 "id": "skore:report:estimator:<report_id_1>",
-                "run_id": 1,
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -337,10 +306,10 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
+                "run_id": -1,
             },
             {
                 "id": "skore:report:cross-validation:<report_id_2>",
-                "run_id": 3,
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -357,6 +326,7 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
+                "run_id": -1,
             },
         ]
 

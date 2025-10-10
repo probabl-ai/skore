@@ -7,7 +7,7 @@ from pytest import fixture, mark, raises
 from skore import EstimatorReport
 from skore_hub_project import Project
 from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.media import (
+from skore_hub_project.artifact.media import (
     EstimatorHtmlRepr,
     MeanDecreaseImpurity,
     PermutationTest,

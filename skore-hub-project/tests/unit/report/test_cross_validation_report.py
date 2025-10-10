@@ -10,10 +10,10 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import ShuffleSplit
 from skore import CrossValidationReport, EstimatorReport
 from skore_hub_project import Project
-from skore_hub_project.artifact import EstimatorReportArtifact
+from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.media import EstimatorHtmlRepr
-from skore_hub_project.media.data import TableReport
+from skore_hub_project.artifact.media.model import EstimatorHtmlRepr
+from skore_hub_project.artifact.media.data import TableReport
 from skore_hub_project.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
@@ -178,7 +178,7 @@ class TestCrossValidationReportPayload:
 
         for i, estimator in enumerate(payload.estimators):
             assert isinstance(estimator, EstimatorReportPayload)
-            assert isinstance(estimator.parameters, EstimatorReportArtifact)
+            assert isinstance(estimator.parameters, Pickle)
             assert estimator.report == payload.report.estimator_reports_[i]
 
         # Ensure upload is well done
