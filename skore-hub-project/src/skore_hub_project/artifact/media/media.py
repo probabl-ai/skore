@@ -1,4 +1,4 @@
-""""Class definition of the payload used to associate a media with the report."""
+"""Class definition of the payload used to associate a media with the report."""
 
 from pydantic import Field
 
