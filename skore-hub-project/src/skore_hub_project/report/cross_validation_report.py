@@ -2,16 +2,15 @@
 
 from collections import defaultdict
 from functools import cached_property
-from typing import ClassVar, cast
+from typing import ClassVar
 
 import numpy as np
 from pydantic import Field, computed_field
 from sklearn.model_selection._split import _CVIterableWrapper
 
-from skore_hub_project.artefact import CrossValidationReportArtefact
-from skore_hub_project.media import EstimatorHtmlRepr
-from skore_hub_project.media.data import TableReport
-from skore_hub_project.media.media import Media
+from skore_hub_project.artifact.media import EstimatorHtmlRepr
+from skore_hub_project.artifact.media.data import TableReport
+from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
@@ -76,56 +75,50 @@ class CrossValidationReportPayload(ReportPayload):
         The key to associate to the report.
     """
 
-    METRICS: ClassVar[tuple[Metric, ...]] = cast(
-        tuple[Metric, ...],
-        (
-            AccuracyTestMean,
-            AccuracyTestStd,
-            AccuracyTrainMean,
-            AccuracyTrainStd,
-            BrierScoreTestMean,
-            BrierScoreTestStd,
-            BrierScoreTrainMean,
-            BrierScoreTrainStd,
-            LogLossTestMean,
-            LogLossTestStd,
-            LogLossTrainMean,
-            LogLossTrainStd,
-            PrecisionTestMean,
-            PrecisionTestStd,
-            PrecisionTrainMean,
-            PrecisionTrainStd,
-            R2TestMean,
-            R2TestStd,
-            R2TrainMean,
-            R2TrainStd,
-            RecallTestMean,
-            RecallTestStd,
-            RecallTrainMean,
-            RecallTrainStd,
-            RmseTestMean,
-            RmseTestStd,
-            RmseTrainMean,
-            RmseTrainStd,
-            RocAucTestMean,
-            RocAucTestStd,
-            RocAucTrainMean,
-            RocAucTrainStd,
-            # timings must be calculated last
-            FitTimeMean,
-            FitTimeStd,
-            PredictTimeTestMean,
-            PredictTimeTestStd,
-            PredictTimeTrainMean,
-            PredictTimeTrainStd,
-        ),
+    METRICS: ClassVar[tuple[type[Metric], ...]] = (
+        AccuracyTestMean,
+        AccuracyTestStd,
+        AccuracyTrainMean,
+        AccuracyTrainStd,
+        BrierScoreTestMean,
+        BrierScoreTestStd,
+        BrierScoreTrainMean,
+        BrierScoreTrainStd,
+        LogLossTestMean,
+        LogLossTestStd,
+        LogLossTrainMean,
+        LogLossTrainStd,
+        PrecisionTestMean,
+        PrecisionTestStd,
+        PrecisionTrainMean,
+        PrecisionTrainStd,
+        R2TestMean,
+        R2TestStd,
+        R2TrainMean,
+        R2TrainStd,
+        RecallTestMean,
+        RecallTestStd,
+        RecallTrainMean,
+        RecallTrainStd,
+        RmseTestMean,
+        RmseTestStd,
+        RmseTrainMean,
+        RmseTrainStd,
+        RocAucTestMean,
+        RocAucTestStd,
+        RocAucTrainMean,
+        RocAucTrainStd,
+        # timings must be calculated last
+        FitTimeMean,
+        FitTimeStd,
+        PredictTimeTestMean,
+        PredictTimeTestStd,
+        PredictTimeTrainMean,
+        PredictTimeTrainStd,
     )
-    MEDIAS: ClassVar[tuple[Media, ...]] = cast(
-        tuple[Media, ...],
-        (
-            EstimatorHtmlRepr,
-            TableReport,
-        ),
+    MEDIAS: ClassVar[tuple[type[Media], ...]] = (
+        EstimatorHtmlRepr,
+        TableReport,
     )
 
     report: CrossValidationReport = Field(repr=False, exclude=True)
@@ -226,19 +219,3 @@ class CrossValidationReportPayload(ReportPayload):
             )
             for report in self.report.estimator_reports_
         ]
-
-    @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def parameters(self) -> CrossValidationReportArtefact | dict[()]:
-        """
-        The checksum of the instance.
-
-        The checksum of the instance that was assigned before being uploaded to the
-        artefact storage. It is based on its ``joblib`` serialization and mainly used to
-        retrieve it from the artefacts storage.
-
-        .. deprecated
-          The ``parameters`` property will be removed in favor of a new ``checksum``
-          property in a near future.
-        """
-        return CrossValidationReportArtefact(project=self.project, report=self.report)

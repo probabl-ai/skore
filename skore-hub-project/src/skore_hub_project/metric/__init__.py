@@ -76,6 +76,11 @@ from .timing import (
     PredictTimeTrainStd,
 )
 
+# __Payload__
+# name: str
+# value: float
+# data_source: str | None = None
+
 __all__ = [
     "AccuracyTest",
     "AccuracyTestMean",
