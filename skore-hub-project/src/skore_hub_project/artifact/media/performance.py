@@ -1,4 +1,4 @@
-"""Class definition of the payload used to send a performance media to ``hub``."""
+"""Definition of the payload used to associate a performance media with report."""
 
 from abc import ABC
 from collections.abc import Callable
@@ -16,7 +16,7 @@ class Performance(Media, ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["image/svg+xml"] = "image/svg+xml"
 
-    def content_to_upload(self) -> bytes | None:
+    def content_to_upload(self) -> bytes | None:  # noqa: D102
         try:
             function = cast(
                 Callable,

@@ -1,4 +1,4 @@
-"""Payload definition used to upload a report to ``hub`` using ``joblib``."""
+""""Definition of the payload used to associate the pickled report with the report."""
 
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -16,11 +16,20 @@ Report = EstimatorReport | CrossValidationReport
 
 class Pickle(Artifact):
     """
-    Payload used to upload a report to ``hub`` using ``joblib``.
+    Payload used to associate the pickled report with the report, using ``joblib``.
+
+    Attributes
+    ----------
+    project : Project
+        The project to which the artifact's payload must be associated.
+    content_type : str
+        The content-type of the artifact content.
+    report : EstimatorReport | CrossValidationReport
+        The report to pickled.
 
     Notes
     -----
-    It uploads the report pickle to the artifacts storage in a lazy way.
+    It uploads the pickled report to the artifacts storage in a lazy way.
 
     The report is uploaded without its cache, to avoid salting the checksum.
     The report is primarily pickled on disk to reduce RAM footprint.
@@ -32,9 +41,11 @@ class Pickle(Artifact):
     @contextmanager
     def content_to_upload(self) -> Generator[bytes, None, None]:
         """
+        Content of the pickled report.
+
         Notes
         -----
-        The report is pickled without its cache, to avoid salting the hash.
+        The report is pickled without its cache, to avoid salting the checksum.
         """
         reports = [self.report] + getattr(self.report, "estimator_reports_", [])
         caches = [report_to_clear._cache for report_to_clear in reports]

@@ -1,4 +1,4 @@
-"""Payload definitions used to upload a pickle to ``hub``."""
+""""Definition of the payload used to associate the pickled report with the report."""
 
 from .pickle import Pickle
 

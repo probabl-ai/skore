@@ -1,4 +1,4 @@
-"""Class definition of the payload used to send a data category media to ``hub``."""
+"""Definition of the payload used to associate a data category media with report."""
 
 from typing import Literal
 
@@ -15,7 +15,7 @@ class TableReport(Media):  # noqa: D101
         "application/vnd.skrub.table-report.v1+json"
     )
 
-    def content_to_upload(self) -> bytes:
+    def content_to_upload(self) -> bytes:  # noqa: D102
         import orjson
 
         with switch_mpl_backend():
