@@ -12,7 +12,7 @@ class Serializer:
 
     def __init__(self, content: str | bytes):
         if isinstance(content, str):
-            self.filepath.write_text(content)
+            self.filepath.write_text(content, encoding="utf-8")
         else:
             self.filepath.write_bytes(content)
 
