@@ -1,20 +1,19 @@
 """Class definition of the payload used to send a report to ``hub``."""
 
-from abc import ABC, abstractmethod
-from collections.abc import Callable
+from abc import ABC
 from functools import cached_property
-from typing import ClassVar, cast
+from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project import Project
-from skore_hub_project.artefact.artefact import Artefact
-from skore_hub_project.media.media import Media
+from skore_hub_project.artifact.media.media import Media
+from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 
-class ReportPayload(ABC, BaseModel):
+class ReportPayload(BaseModel, ABC):
     """
     Payload used to send a report to ``hub``.
 
@@ -34,18 +33,12 @@ class ReportPayload(ABC, BaseModel):
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    METRICS: ClassVar[tuple[Metric, ...]]
-    MEDIAS: ClassVar[tuple[Media, ...]]
+    METRICS: ClassVar[tuple[type[Metric], ...]]
+    MEDIAS: ClassVar[tuple[type[Media], ...]]
 
     project: Project = Field(repr=False, exclude=True)
     report: EstimatorReport | CrossValidationReport = Field(repr=False, exclude=True)
     key: str
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def run_id(self) -> int:
-        """The current run identifier of the project."""
-        return self.project.run_id
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -70,22 +63,6 @@ class ReportPayload(ABC, BaseModel):
         return self.report.ml_task
 
     @computed_field  # type: ignore[prop-decorator]
-    @property
-    @abstractmethod
-    def parameters(self) -> Artefact | dict[()]:
-        """
-        The checksum of the instance.
-
-        The checksum of the instance that was assigned before being uploaded to the
-        artefact storage. It is based on its ``joblib`` serialization and mainly used to
-        retrieve it from the artefacts storage.
-
-        .. deprecated
-          The ``parameters`` property will be removed in favor of a new ``checksum``
-          property in a near future.
-        """
-
-    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def metrics(self) -> list[Metric]:
         """
@@ -103,15 +80,19 @@ class ReportPayload(ABC, BaseModel):
         - int [0, inf[, to be displayed at the position,
         - None, not to be displayed.
         """
-        return [
-            payload
-            for metric in self.METRICS
-            if (payload := metric(report=self.report)).value is not None
-        ]
+        payloads = []
+
+        for metric_cls in self.METRICS:
+            payload = metric_cls(report=self.report)
+
+            if payload.value is not None:
+                payloads.append(payload)
+
+        return payloads
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def related_items(self) -> list[Media]:
+    def medias(self) -> list[Media]:
         """
         The list of medias that have been computed from the report.
 
@@ -121,8 +102,24 @@ class ReportPayload(ABC, BaseModel):
         -----
         Unavailable medias have been filtered out.
         """
-        return [
-            payload
-            for media in cast(list[Callable], self.MEDIAS)
-            if (payload := media(report=self.report)).representation is not None
-        ]
+        payloads = []
+
+        for media_cls in self.MEDIAS:
+            payload = media_cls(project=self.project, report=self.report)
+
+            if payload.checksum is not None:
+                payloads.append(payload)
+
+        return payloads
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def pickle(self) -> Pickle:
+        """
+        The checksum of the instance.
+
+        The checksum of the instance that was assigned before being uploaded to the
+        artifact storage. It is based on its ``joblib`` serialization and mainly used to
+        retrieve it from the artifacts storage.
+        """
+        return Pickle(project=self.project, report=self.report)

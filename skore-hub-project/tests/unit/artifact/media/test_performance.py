@@ -3,8 +3,8 @@ from io import BytesIO
 from matplotlib import pyplot as plt
 from pydantic import ValidationError
 from pytest import mark, param, raises
-from skore_hub_project import bytes_to_b64_str, switch_mpl_backend
-from skore_hub_project.media import (
+from skore_hub_project import Project, switch_mpl_backend
+from skore_hub_project.artifact.media import (
     PrecisionRecallTest,
     PrecisionRecallTrain,
     PredictionErrorTest,
@@ -12,29 +12,30 @@ from skore_hub_project.media import (
     RocTest,
     RocTrain,
 )
+from skore_hub_project.artifact.serializer import Serializer
 
 
-def serialize(display):
+def serialize(display) -> bytes:
     with switch_mpl_backend(), BytesIO() as stream:
         display.plot()
         display.figure_.savefig(stream, format="svg", bbox_inches="tight")
-
-        figure_bytes = stream.getvalue()
-        figure_b64_str = bytes_to_b64_str(figure_bytes)
-
         plt.close(display.figure_)
 
-    return figure_b64_str
+        figure_bytes = stream.getvalue()
+
+    return figure_bytes
 
 
+@mark.usefixtures("monkeypatch_artifact_hub_client")
+@mark.usefixtures("monkeypatch_upload_routes")
+@mark.usefixtures("monkeypatch_upload_with_mock")
 @mark.parametrize(
-    "Media,report,accessor,verbose_name,data_source",
+    "Media,report,accessor,data_source",
     (
         param(
             PrecisionRecallTest,
             "binary_classification",
             "precision_recall",
-            "Precision Recall",
             "test",
             id="PrecisionRecallTest[estimator]",
         ),
@@ -42,7 +43,6 @@ def serialize(display):
             PrecisionRecallTrain,
             "binary_classification",
             "precision_recall",
-            "Precision Recall",
             "train",
             id="PrecisionRecallTrain[estimator]",
         ),
@@ -50,7 +50,6 @@ def serialize(display):
             PrecisionRecallTest,
             "cv_binary_classification",
             "precision_recall",
-            "Precision Recall",
             "test",
             id="PrecisionRecallTest[cross-validation]",
         ),
@@ -58,7 +57,6 @@ def serialize(display):
             PrecisionRecallTrain,
             "cv_binary_classification",
             "precision_recall",
-            "Precision Recall",
             "train",
             id="PrecisionRecallTrain[cross-validation]",
         ),
@@ -66,7 +64,6 @@ def serialize(display):
             PredictionErrorTest,
             "regression",
             "prediction_error",
-            "Prediction error",
             "test",
             id="PredictionErrorTest[estimator]",
         ),
@@ -74,7 +71,6 @@ def serialize(display):
             PredictionErrorTrain,
             "regression",
             "prediction_error",
-            "Prediction error",
             "train",
             id="PredictionErrorTrain[estimator]",
         ),
@@ -82,7 +78,6 @@ def serialize(display):
             PredictionErrorTest,
             "cv_regression",
             "prediction_error",
-            "Prediction error",
             "test",
             id="PredictionErrorTest[cross-validation]",
         ),
@@ -90,7 +85,6 @@ def serialize(display):
             PredictionErrorTrain,
             "cv_regression",
             "prediction_error",
-            "Prediction error",
             "train",
             id="PredictionErrorTrain[cross-validation]",
         ),
@@ -98,7 +92,6 @@ def serialize(display):
             RocTest,
             "binary_classification",
             "roc",
-            "ROC",
             "test",
             id="RocTest[estimator]",
         ),
@@ -106,7 +99,6 @@ def serialize(display):
             RocTrain,
             "binary_classification",
             "roc",
-            "ROC",
             "train",
             id="RocTrain[estimator]",
         ),
@@ -114,7 +106,6 @@ def serialize(display):
             RocTest,
             "cv_binary_classification",
             "roc",
-            "ROC",
             "test",
             id="RocTest[cross-validation]",
         ),
@@ -122,43 +113,52 @@ def serialize(display):
             RocTrain,
             "cv_binary_classification",
             "roc",
-            "ROC",
             "train",
             id="RocTrain[cross-validation]",
         ),
     ),
 )
 def test_performance(
-    monkeypatch, Media, report, accessor, verbose_name, data_source, request
+    monkeypatch, Media, report, accessor, data_source, upload_mock, request
 ):
+    project = Project("<tenant>", "<name>")
     report = request.getfixturevalue(report)
     display = getattr(report.metrics, accessor)(data_source=data_source)
-    display_serialized = serialize(display)
+    content = serialize(display)
+
+    with Serializer(content) as serializer:
+        checksum = serializer.checksum
 
     # available accessor
-    assert Media(report=report).model_dump() == {
-        "key": accessor,
-        "verbose_name": verbose_name,
-        "category": "performance",
-        "attributes": {"data_source": data_source},
-        "parameters": {},
-        "representation": {
-            "media_type": "image/svg+xml;base64",
-            "value": display_serialized,
-        },
+    assert Media(project=project, report=report).model_dump() == {
+        "content_type": "image/svg+xml",
+        "name": accessor,
+        "data_source": data_source,
+        "checksum": checksum,
+    }
+
+    # ensure `upload` is well called
+    assert upload_mock.called
+    assert not upload_mock.call_args.args
+    assert upload_mock.call_args.kwargs == {
+        "project": project,
+        "content": content,
+        "content_type": "image/svg+xml",
     }
 
     # unavailable accessor
     monkeypatch.delattr(report.metrics.__class__, accessor)
+    upload_mock.reset_mock()
 
-    assert Media(report=report).model_dump() == {
-        "key": accessor,
-        "verbose_name": verbose_name,
-        "category": "performance",
-        "attributes": {"data_source": data_source},
-        "parameters": {},
-        "representation": None,
+    assert Media(project=project, report=report).model_dump() == {
+        "content_type": "image/svg+xml",
+        "name": accessor,
+        "data_source": data_source,
+        "checksum": None,
     }
+
+    # ensure `upload` is not called
+    assert not upload_mock.called
 
     # wrong type
     with raises(ValidationError):
