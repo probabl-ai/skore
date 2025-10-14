@@ -286,7 +286,6 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
-                "run_id": -1,
             },
             {
                 "id": "skore:report:estimator:<report_id_1>",
@@ -306,7 +305,6 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
-                "run_id": -1,
             },
             {
                 "id": "skore:report:cross-validation:<report_id_2>",
@@ -326,7 +324,6 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
-                "run_id": -1,
             },
         ]
 

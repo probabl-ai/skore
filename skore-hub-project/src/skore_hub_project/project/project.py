@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
-        run_id: int
         key: str
         date: str
         learner: str
@@ -225,7 +224,6 @@ class Project:
 
             return {
                 "id": summary["urn"],
-                "run_id": -1,  # FIXME: deprecated
                 "key": summary["key"],
                 "date": summary["created_at"],
                 "learner": summary["estimator_class_name"],
