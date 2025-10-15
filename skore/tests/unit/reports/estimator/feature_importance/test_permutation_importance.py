@@ -376,6 +376,15 @@ def test_at_step_parameter_too_large(pipeline_report, at_step):
         pipeline_report.feature_importance.permutation(seed=42, at_step=at_step)
 
 
+def test_at_step_parameter_wrong_type(pipeline_report):
+    """
+    If `at_step` is not an integer or string, `permutation` should raise a ValueError.
+    """
+    err_msg = "at_step must be an integer or a string"
+    with pytest.raises(ValueError, match=err_msg):
+        pipeline_report.feature_importance.permutation(seed=42, at_step=0.5)
+
+
 def test_at_step_parameter_pipeline_str(pipeline_report):
     """
     Test the `at_step` string parameter for permutation importance with a pipeline.
@@ -403,13 +412,7 @@ def test_at_step_parameter_non_pipeline():
 
     linear = LinearRegression()
 
-    report = EstimatorReport(
-        linear,
-        X_train=X,
-        y_train=y,
-        X_test=X,
-        y_test=y,
-    )
+    report = EstimatorReport(linear, X_train=X, y_train=y, X_test=X, y_test=y)
 
     result_start = report.feature_importance.permutation(seed=42, at_step=0)
     result_end = report.feature_importance.permutation(seed=42, at_step=-1)
