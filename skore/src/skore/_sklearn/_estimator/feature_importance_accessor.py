@@ -586,6 +586,11 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 X_transformed = X_
             else:
                 pipeline = self._parent.estimator_
+                if not isinstance(at_step, str | int):
+                    raise ValueError(
+                        f"at_step must be an integer or a string; got {at_step!r}"
+                    )
+
                 if isinstance(at_step, str):
                     at_step = list(pipeline.named_steps.keys()).index(at_step)
                 if at_step == 0:
@@ -600,8 +605,6 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                         )
                     feature_eng, estimator = pipeline[:at_step], pipeline[at_step:]
                     X_transformed = feature_eng.transform(X_)
-                else:
-                    raise ValueError(f"at_step must be an integer; got {at_step!r}")
 
             sklearn_score = permutation_importance(
                 estimator=estimator,
