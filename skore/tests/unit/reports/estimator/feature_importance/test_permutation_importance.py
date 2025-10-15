@@ -365,26 +365,6 @@ def test_at_step_parameter_pipeline_int(pipeline_report, at_step):
     assert result.shape[0] > 0
 
 
-@pytest.mark.parametrize("at_step", [8, -8])
-def test_at_step_parameter_too_large(pipeline_report, at_step):
-    """If `at_step` is too large, `permutation` should raise a ValueError."""
-    err_msg = (
-        "at_step must be strictly smaller in magnitude than "
-        "the number of steps in the Pipeline"
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        pipeline_report.feature_importance.permutation(seed=42, at_step=at_step)
-
-
-def test_at_step_parameter_wrong_type(pipeline_report):
-    """
-    If `at_step` is not an integer or string, `permutation` should raise a ValueError.
-    """
-    err_msg = "at_step must be an integer or a string"
-    with pytest.raises(ValueError, match=err_msg):
-        pipeline_report.feature_importance.permutation(seed=42, at_step=0.5)
-
-
 def test_at_step_parameter_pipeline_str(pipeline_report):
     """
     Test the `at_step` string parameter for permutation importance with a pipeline.
@@ -395,15 +375,6 @@ def test_at_step_parameter_pipeline_str(pipeline_report):
     assert result.index.nlevels == 2
     assert result.index.names == ["Metric", "Feature"]
     assert result.shape[0] > 0
-
-
-def test_at_step_parameter_pipeline_str_wrong(pipeline_report):
-    """
-    Test the `at_step` string parameter for permutation importance with a pipeline.
-    """
-    err_msg = "'hello' is not in list"
-    with pytest.raises(ValueError, match=err_msg):
-        pipeline_report.feature_importance.permutation(seed=42, at_step="hello")
 
 
 def test_at_step_parameter_non_pipeline():
@@ -418,3 +389,23 @@ def test_at_step_parameter_non_pipeline():
     result_end = report.feature_importance.permutation(seed=42, at_step=-1)
 
     pd.testing.assert_frame_equal(result_start, result_end)
+
+
+AT_STEP_TOO_LARGE = (
+    "at_step must be strictly smaller in magnitude than "
+    "the number of steps in the Pipeline"
+)
+
+
+@pytest.mark.parametrize(
+    "at_step, err_msg",
+    [
+        (8, AT_STEP_TOO_LARGE),
+        (-8, AT_STEP_TOO_LARGE),
+        ("hello", "'hello' is not in list"),
+        (0.5, "at_step must be an integer or a string"),
+    ],
+)
+def test_at_step_wrong(pipeline_report, at_step, err_msg):
+    with pytest.raises(ValueError, match=err_msg):
+        pipeline_report.feature_importance.permutation(seed=42, at_step=at_step)
