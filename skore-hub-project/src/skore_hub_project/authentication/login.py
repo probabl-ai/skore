@@ -16,6 +16,7 @@ from . import token as Token
 
 def login(*, timeout=600):
     """Login to ``skore hub``."""
+    print('hello')
     with suppress(HTTPError):
         if Token.exists() and (Token.access() is not None):
             return
@@ -36,7 +37,7 @@ def login(*, timeout=600):
             title_align="center",
         )
     )
-    open_webbrowser(url)
+    # open_webbrowser(url)
 
     api.get_oauth_device_code_probe(device_code, timeout=timeout)
     api.post_oauth_device_callback(device_code, user_code)
