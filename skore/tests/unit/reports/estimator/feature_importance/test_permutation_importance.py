@@ -365,13 +365,15 @@ def test_at_step_parameter_pipeline_int(pipeline_report, at_step):
     assert result.shape[0] > 0
 
 
-def test_at_step_parameter_too_large(pipeline_report):
+@pytest.mark.parametrize("at_step", [8, -8])
+def test_at_step_parameter_too_large(pipeline_report, at_step):
     """If `at_step` is too large, `permutation` should raise a ValueError."""
     err_msg = (
-        "at_step must be strictly smaller than the number of steps in the Pipeline"
+        "at_step must be strictly smaller in magnitude than "
+        "the number of steps in the Pipeline"
     )
     with pytest.raises(ValueError, match=err_msg):
-        pipeline_report.feature_importance.permutation(seed=42, at_step=8)
+        pipeline_report.feature_importance.permutation(seed=42, at_step=at_step)
 
 
 def test_at_step_parameter_pipeline_str(pipeline_report):
