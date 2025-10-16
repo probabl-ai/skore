@@ -80,10 +80,16 @@ def monkeypatch_table_report_representation(monkeypatch):
 
 class TestProject:
     def test_tenant(self):
-        assert Project("<tenant>", "<name>").tenant == "<tenant>"
+        assert Project("tenant", "name").tenant == "tenant"
+
+    def test_tenant_is_quoted(self):
+        assert Project("my/tenant", "name").tenant == "my%2Ftenant"
 
     def test_name(self):
-        assert Project("<tenant>", "<name>").name == "<name>"
+        assert Project("tenant", "name").name == "name"
+
+    def test_name_is_quoted(self):
+        assert Project("tenant", "my/name").name == "my%2Fname"
 
     def test_put_exception(self, respx_mock):
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))

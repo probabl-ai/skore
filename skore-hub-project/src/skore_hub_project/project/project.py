@@ -9,6 +9,7 @@ from operator import itemgetter
 from tempfile import TemporaryFile
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
+from urllib.parse import quote_plus
 
 import joblib
 import orjson
@@ -113,8 +114,8 @@ class Project:
         """
         self.created = False
 
-        self.__tenant = tenant
-        self.__name = name
+        self.__tenant = quote_plus(tenant)
+        self.__name = quote_plus(name)
 
     @property
     def tenant(self) -> str:
@@ -309,7 +310,7 @@ class Project:
         """
         with HUBClient() as hub_client:
             try:
-                hub_client.delete(f"projects/{tenant}/{name}")
+                hub_client.delete(f"projects/{quote_plus(tenant)}/{quote_plus(name)}")
             except HTTPStatusError as e:
                 if e.response.status_code == 403:
                     raise PermissionError(
