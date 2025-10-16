@@ -16,28 +16,32 @@ from . import token as Token
 
 def login(*, timeout=600):
     """Login to ``skore hub``."""
-    print('hello')
     with suppress(HTTPError):
         if Token.exists() and (Token.access() is not None):
+            console.print(
+                Panel(
+                    Align(
+                        "Already logged in!",
+                        align="center",
+                    ),
+                    title="[cyan]Skore Hub[/cyan]",
+                    border_style="orange1",
+                    expand=False,
+                    padding=1,
+                    title_align="center",
+                )
+            )
             return
 
     url, device_code, user_code = api.get_oauth_device_login()
 
-    print(url)
+    console.rule("[cyan]Skore Hub[/cyan]")
     console.print(
-        Panel(
-            Align(
-                f"Please visit this URL to log in: {url}",
-                align="center",
-            ),
-            title="[cyan]Skore HUB[/cyan]",
-            border_style="orange1",
-            expand=False,
-            padding=1,
-            title_align="center",
-        )
+        f"Opening browser; if this fails, please visit this URL to log in:\n{url}",
+        soft_wrap=True,
     )
-    # open_webbrowser(url)
+
+    open_webbrowser(url)
 
     api.get_oauth_device_code_probe(device_code, timeout=timeout)
     api.post_oauth_device_callback(device_code, user_code)
