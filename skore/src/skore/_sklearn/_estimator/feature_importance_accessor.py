@@ -7,6 +7,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
+from scipy.sparse import issparse
 from sklearn import metrics
 from sklearn.base import is_classifier, is_regressor
 from sklearn.inspection import permutation_importance
@@ -604,6 +605,9 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                         )
                     feature_eng, estimator = pipeline[:at_step], pipeline[at_step:]
                     X_transformed = feature_eng.transform(X_)
+
+            if issparse(X_transformed):
+                X_transformed = X_transformed.todense()
 
             sklearn_score = permutation_importance(
                 estimator=estimator,
