@@ -1,15 +1,28 @@
 from functools import partialmethod
-from inspect import signature
 
 from pandas import DataFrame
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
-from skore_hub_project.media import (
+from skore_hub_project import Project
+from skore_hub_project.artifact.media import (
     Coefficients,
     MeanDecreaseImpurity,
     PermutationTest,
     PermutationTrain,
 )
+from skore_hub_project.artifact.serializer import Serializer
+
+
+def serialize(result) -> bytes:
+    import orjson
+
+    if not isinstance(result, DataFrame):
+        result = result.frame()
+
+    return orjson.dumps(
+        result.fillna("NaN").to_dict(orient="tight"),
+        option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
+    )
 
 
 @fixture(autouse=True)
@@ -25,47 +38,45 @@ def monkeypatch_permutation(monkeypatch):
     )
 
 
+@mark.usefixtures("monkeypatch_artifact_hub_client")
+@mark.usefixtures("monkeypatch_upload_routes")
+@mark.usefixtures("monkeypatch_upload_with_mock")
 @mark.parametrize(
-    "Media,report,accessor,verbose_name,attributes",
+    "Media,report,accessor,data_source",
     (
         param(
             PermutationTest,
             "binary_classification",
             "permutation",
-            "Feature importance - Permutation",
-            {"data_source": "test", "method": "permutation"},
+            "test",
             id="PermutationTest",
         ),
         param(
             PermutationTrain,
             "binary_classification",
             "permutation",
-            "Feature importance - Permutation",
-            {"data_source": "train", "method": "permutation"},
+            "train",
             id="PermutationTrain",
         ),
         param(
             MeanDecreaseImpurity,
             "binary_classification",
             "mean_decrease_impurity",
-            "Feature importance - Mean Decrease Impurity (MDI)",
-            {"method": "mean_decrease_impurity"},
+            None,
             id="MeanDecreaseImpurity",
         ),
         param(
             Coefficients,
             "regression",
             "coefficients",
-            "Feature importance - Coefficients",
-            {"method": "coefficients"},
+            None,
             id="Coefficients",
         ),
         param(
             Coefficients,
             "cv_regression",
             "coefficients",
-            "Feature importance - Coefficients",
-            {"method": "coefficients"},
+            None,
             id="Coefficients",
         ),
     ),
@@ -75,47 +86,51 @@ def test_feature_importance(
     Media,
     report,
     accessor,
-    verbose_name,
-    attributes,
+    data_source,
+    upload_mock,
     request,
 ):
+    project = Project("<tenant>", "<name>")
     report = request.getfixturevalue(report)
 
     function = getattr(report.feature_importance, accessor)
-    function_parameters = signature(function).parameters
-    function_kwargs = {k: v for k, v in attributes.items() if k in function_parameters}
-
+    function_kwargs = {"data_source": data_source} if data_source else {}
     result = function(**function_kwargs)
+    content = serialize(result)
 
-    if not isinstance(result, DataFrame):
-        result = result.frame()
-
-    serialized = result.fillna("NaN").to_dict(orient="tight")
+    with Serializer(content) as serializer:
+        checksum = serializer.checksum
 
     # available accessor
-    assert Media(report=report).model_dump() == {
-        "key": accessor,
-        "verbose_name": verbose_name,
-        "category": "feature_importance",
-        "attributes": attributes,
-        "parameters": {},
-        "representation": {
-            "media_type": "application/vnd.dataframe",
-            "value": serialized,
-        },
+    assert Media(project=project, report=report).model_dump() == {
+        "content_type": "application/vnd.dataframe",
+        "name": accessor,
+        "data_source": data_source,
+        "checksum": checksum,
+    }
+
+    # ensure `upload` is well called
+    assert upload_mock.called
+    assert not upload_mock.call_args.args
+    assert upload_mock.call_args.kwargs == {
+        "project": project,
+        "content": content,
+        "content_type": "application/vnd.dataframe",
     }
 
     # unavailable accessor
     monkeypatch.delattr(report.feature_importance.__class__, accessor)
+    upload_mock.reset_mock()
 
-    assert Media(report=report).model_dump() == {
-        "key": accessor,
-        "verbose_name": verbose_name,
-        "category": "feature_importance",
-        "attributes": attributes,
-        "parameters": {},
-        "representation": None,
+    assert Media(project=project, report=report).model_dump() == {
+        "content_type": "application/vnd.dataframe",
+        "name": accessor,
+        "data_source": data_source,
+        "checksum": None,
     }
+
+    # ensure `upload` is not called
+    assert not upload_mock.called
 
     # wrong type
     with raises(ValidationError):

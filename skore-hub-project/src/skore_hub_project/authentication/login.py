@@ -162,26 +162,34 @@ def login(*, timeout=600):
         # - the persisted token is valid or can be refreshed
         URI()
         access(refresh=True)
-        return
 
-    logout()
-
-    url, device_code, user_code = get_oauth_device_login()
-
-    if not open_webbrowser(url):
         console.print(
             Panel(
                 Align(
-                    f"Please visit this [link={url}]page[/link] to login.",
+                    "Already logged in!",
                     align="center",
                 ),
-                title="[cyan]Skore HUB[/cyan]",
+                title="[cyan]Skore Hub[/cyan]",
                 border_style="orange1",
                 expand=False,
                 padding=1,
                 title_align="center",
             )
         )
+
+        return
+
+    logout()
+
+    url, device_code, user_code = get_oauth_device_login()
+
+    console.rule("[cyan]Skore Hub[/cyan]")
+    console.print(
+        f"Opening browser; if this fails, please visit this URL to log in:\n{url}",
+        soft_wrap=True,
+    )
+
+    open_webbrowser(url)
 
     get_oauth_device_code_probe(device_code, timeout=timeout)
     post_oauth_device_callback(device_code, user_code)

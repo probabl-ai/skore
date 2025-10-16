@@ -60,7 +60,6 @@ class FakeProject:
     def make_report_metadata(self, index, report):
         return {
             "id": index,
-            "run_id": None,
             "key": None,
             "date": None,
             "learner": None,
@@ -131,7 +130,6 @@ class TestSummary:
             ),
         )
         assert list(summary.columns) == [
-            "run_id",
             "key",
             "date",
             "learner",
@@ -356,7 +354,7 @@ class TestSummary:
         )
         summary["learner"] = summary["learner"].astype("category")
         summary = Summary(summary)
-        summary._repr_html_()  # trigger the creation of the widget
+        summary._repr_mimebundle_()  # trigger the creation of the widget
 
         expected_query = (
             "ml_task.str.contains('classification') and dataset == 'dataset1'"

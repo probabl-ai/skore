@@ -119,7 +119,6 @@ class TestProject:
 
         assert project.workspace == (tmp_path / "skore")
         assert project.name == "<project>"
-        assert project.run_id
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
         assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
@@ -183,7 +182,6 @@ class TestProject:
 
         assert project.workspace == tmp_path
         assert project.name == "<project>"
-        assert project.run_id
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
         assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
@@ -192,7 +190,6 @@ class TestProject:
 
         assert project.workspace == tmp_path
         assert project.name == "<project>"
-        assert project.run_id
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
         assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
@@ -238,7 +235,6 @@ class TestProject:
         assert list(project._Project__metadata_storage.values()) == [
             {
                 "project_name": "<project>",
-                "run_id": project.run_id,
                 "key": "<key>",
                 "artifact_id": next(project._Project__artifacts_storage.keys()),
                 "date": nowstr,
@@ -279,7 +275,6 @@ class TestProject:
         assert list(project._Project__metadata_storage.values()) == [
             {
                 "project_name": "<project>",
-                "run_id": project.run_id,
                 "key": "<key>",
                 "artifact_id": next(project._Project__artifacts_storage.keys()),
                 "date": nowstr,
@@ -351,7 +346,6 @@ class TestProject:
         assert project.reports.metadata() == [
             {
                 "id": artifact_ids[0],
-                "run_id": project.run_id,
                 "key": "<key1>",
                 "date": Datetime.nows_isoformat[0],
                 "learner": "Ridge",
@@ -371,7 +365,6 @@ class TestProject:
             },
             {
                 "id": artifact_ids[0],
-                "run_id": project.run_id,
                 "key": "<key1>",
                 "date": Datetime.nows_isoformat[1],
                 "learner": "Ridge",
@@ -391,7 +384,6 @@ class TestProject:
             },
             {
                 "id": artifact_ids[1],
-                "run_id": project.run_id,
                 "key": "<key2>",
                 "date": Datetime.nows_isoformat[2],
                 "learner": "Ridge",

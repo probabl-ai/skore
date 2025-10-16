@@ -10,6 +10,12 @@ from skore._sklearn._plot import TableReportDisplay
 
 
 class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
+    """
+    The data accessor helps you to get insights about the train and test datasets.
+
+    It provides methods to create plots and to visualise the datasets.
+    """
+
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
@@ -50,6 +56,10 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             raise ValueError(err_msg.format(f"X_{dataset}", data_source))
         elif not sbd.is_dataframe(X):
             X = pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])])
+        else:
+            if not all(isinstance(col, str) for col in X.columns):
+                X = X.copy()
+                X.columns = [str(col) for col in X.columns]
 
         if with_y:
             if y is None:
@@ -63,6 +73,13 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 else:
                     columns = [f"Target {i}" for i in range(y.shape[1])]
                 y = pd.DataFrame(y, columns=columns)
+            else:
+                if not all(isinstance(col, str) for col in y.columns):
+                    y = y.copy()
+                    if y.shape[1] == 1 and list(y.columns) == [0]:
+                        y.columns = ["Target"]
+                    else:
+                        y.columns = [str(col) for col in y.columns]
 
         return X, y
 

@@ -97,30 +97,43 @@ def test_model_explorer_widget_empty_dataframe(capsys):
 def test_model_explorer_widget_controls(metadata):
     """Check that the controls are correctly populated."""
     widget = ModelExplorerWidget(metadata)
+
     np.testing.assert_array_equal(
-        widget._datasets("classification", "estimator"), ["dataset1"]
+        widget._get_datasets("classification", "estimator"), ["dataset1"]
     )
     np.testing.assert_array_equal(
-        widget._datasets("regression", "estimator"), ["dataset2"]
+        widget._get_datasets("regression", "estimator"), ["dataset2"]
     )
     np.testing.assert_array_equal(
-        widget._datasets("classification", "cross-validation"), ["dataset3"]
+        widget._get_datasets("classification", "cross-validation"), ["dataset3"]
     )
     np.testing.assert_array_equal(
-        widget._datasets("regression", "cross-validation"), ["dataset4"]
+        widget._get_datasets("regression", "cross-validation"), ["dataset4"]
     )
-    assert widget._metric_checkboxes.keys() == {"classification", "regression"}
-    assert widget._metric_checkboxes["classification"].keys() == {
-        "fit_time",
-        "predict_time",
-        "log_loss",
-        "roc_auc",
+
+    assert widget._computation_metrics_dropdown.keys() == {
+        "classification",
+        "regression",
     }
-    assert widget._metric_checkboxes["regression"].keys() == {
-        "fit_time",
-        "predict_time",
-        "rmse",
+    assert widget._statistical_metrics_dropdown.keys() == {
+        "classification",
+        "regression",
     }
+
+    for task in ["classification", "regression"]:
+        computation_checkboxes = widget._computation_metrics_dropdown[task]._checkboxes
+        assert computation_checkboxes.keys() == {"fit_time", "predict_time"}
+
+    classification_stat_checkboxes = widget._statistical_metrics_dropdown[
+        "classification"
+    ]._checkboxes
+    assert classification_stat_checkboxes.keys() == {"log_loss", "roc_auc"}
+
+    regression_stat_checkboxes = widget._statistical_metrics_dropdown[
+        "regression"
+    ]._checkboxes
+    assert regression_stat_checkboxes.keys() == {"rmse"}
+
     assert widget._color_metric_dropdown.keys() == {"classification", "regression"}
     assert widget._color_metric_dropdown["classification"].options == (
         "Fit Time",
@@ -133,31 +146,81 @@ def test_model_explorer_widget_controls(metadata):
         "Predict Time",
         "RMSE",
     )
-    assert len(widget.classification_metrics_box.children) == 2
-    # time
-    components = widget.classification_metrics_box.children[0].children
-    assert len(components) == 3
-    assert components[0].value == "Computation Metrics: "
-    assert components[1].description == "Fit Time"
-    assert components[2].description == "Predict Time"
-    # statistical
-    components = widget.classification_metrics_box.children[1].children
-    assert len(components) == 3
-    assert components[0].value == "Statistical Metrics: "
-    assert components[1].description == "Macro ROC AUC"
-    assert components[2].description == "Log Loss"
 
-    # regression
-    components = widget.regression_metrics_box.children[0].children
-    assert len(components) == 3
-    assert components[0].value == "Computation Metrics: "
-    assert components[1].description == "Fit Time"
-    assert components[2].description == "Predict Time"
-    # statistical
-    components = widget.regression_metrics_box.children[1].children
-    assert len(components) == 2
-    assert components[0].value == "Statistical Metrics: "
-    assert components[1].description == "RMSE"
+    assert len(widget.classification_metrics_box.children) == 3
+    assert (
+        widget.classification_metrics_box.children[0]
+        is widget._computation_metrics_dropdown["classification"]
+    )
+    assert (
+        widget.classification_metrics_box.children[1]
+        is widget._statistical_metrics_dropdown["classification"]
+    )
+    assert (
+        widget.classification_metrics_box.children[2]
+        is widget._color_metric_dropdown["classification"]
+    )
+
+    assert len(widget.regression_metrics_box.children) == 3
+    assert (
+        widget.regression_metrics_box.children[0]
+        is widget._computation_metrics_dropdown["regression"]
+    )
+    assert (
+        widget.regression_metrics_box.children[1]
+        is widget._statistical_metrics_dropdown["regression"]
+    )
+    assert (
+        widget.regression_metrics_box.children[2]
+        is widget._color_metric_dropdown["regression"]
+    )
+
+    computation_accordion_classification = widget._computation_metrics_dropdown[
+        "classification"
+    ].children[0]
+    assert computation_accordion_classification.get_title(0) == "Computation Metrics"
+
+    statistical_accordion_classification = widget._statistical_metrics_dropdown[
+        "classification"
+    ].children[0]
+    assert statistical_accordion_classification.get_title(0) == "Statistical Metrics"
+
+    computation_checkboxes_classification = (
+        computation_accordion_classification.children[0].children
+    )
+    assert len(computation_checkboxes_classification) == 2
+    assert computation_checkboxes_classification[0].description == "Fit Time"
+    assert computation_checkboxes_classification[1].description == "Predict Time"
+
+    statistical_checkboxes_classification = (
+        statistical_accordion_classification.children[0].children
+    )
+    assert len(statistical_checkboxes_classification) == 2
+    assert statistical_checkboxes_classification[0].description == "Macro ROC AUC"
+    assert statistical_checkboxes_classification[1].description == "Log Loss"
+
+    computation_accordion_regression = widget._computation_metrics_dropdown[
+        "regression"
+    ].children[0]
+    assert computation_accordion_regression.get_title(0) == "Computation Metrics"
+
+    statistical_accordion_regression = widget._statistical_metrics_dropdown[
+        "regression"
+    ].children[0]
+    assert statistical_accordion_regression.get_title(0) == "Statistical Metrics"
+
+    computation_checkboxes_regression = computation_accordion_regression.children[
+        0
+    ].children
+    assert len(computation_checkboxes_regression) == 2
+    assert computation_checkboxes_regression[0].description == "Fit Time"
+    assert computation_checkboxes_regression[1].description == "Predict Time"
+
+    statistical_checkboxes_regression = statistical_accordion_regression.children[
+        0
+    ].children
+    assert len(statistical_checkboxes_regression) == 1
+    assert statistical_checkboxes_regression[0].description == "RMSE"
 
     assert widget.current_fig is None
     assert widget.current_selection == {}
@@ -173,7 +236,7 @@ def test_model_explorer_widget_single_task(metadata):
     widget = ModelExplorerWidget(metadata)
     # check that the classification dropdown menu is visible
     assert widget.classification_metrics_box.layout.display == ""
-    assert widget._color_metric_dropdown["classification"].layout.display == ""
+    assert widget._color_metric_dropdown["classification"].layout.display is None
     # check that the regression dropdown menu is hidden
     assert widget.regression_metrics_box.layout.display == "none"
     assert widget._color_metric_dropdown["regression"].layout.display == "none"
@@ -185,7 +248,7 @@ def test_model_explorer_widget_single_task(metadata):
     assert widget._color_metric_dropdown["classification"].layout.display == "none"
     # check that the regression dropdown menu is visible
     assert widget.regression_metrics_box.layout.display == ""
-    assert widget._color_metric_dropdown["regression"].layout.display == ""
+    assert widget._color_metric_dropdown["regression"].layout.display is None
 
 
 def test_model_explorer_widget_jitter(metadata):
@@ -210,15 +273,15 @@ def test_model_explorer_widget_update_plot(metadata):
     parallel_coordinate = widget.current_fig.data[0]
     # by default with the data at hand we expect a classification problem
     dimension_labels = [dim["label"] for dim in parallel_coordinate.dimensions]
-    assert dimension_labels == ["Learner", "Log Loss", "Macro ROC AUC"]
+    assert dimension_labels == ["Learner", "Macro ROC AUC", "Log Loss"]
     assert parallel_coordinate.dimensions[0]["ticktext"] == ["learner1"]
     np.testing.assert_array_equal(
         parallel_coordinate.dimensions[1]["values"],
-        metadata["log_loss"].dropna().to_numpy(),
+        metadata["roc_auc"].dropna().to_numpy(),
     )
     np.testing.assert_array_equal(
         parallel_coordinate.dimensions[2]["values"],
-        metadata["roc_auc"].dropna().to_numpy(),
+        metadata["log_loss"].dropna().to_numpy(),
     )
     assert parallel_coordinate["line"]["colorbar"]["title"]["text"] == "Log Loss"
 
@@ -235,3 +298,82 @@ def test_model_explorer_widget_update_plot(metadata):
         metadata["rmse"].dropna().to_numpy(),
     )
     assert parallel_coordinate["line"]["colorbar"]["title"]["text"] == "RMSE"
+
+
+def test_model_explorer_widget_on_report_type_change(metadata):
+    """Check the behaviour of the method `_on_report_type_change`."""
+    widget = ModelExplorerWidget(metadata)
+    widget.update_selection()
+
+    assert widget._dataset_dropdown.options == ("dataset1",)
+    assert widget._dataset_dropdown.value == "dataset1"
+    assert widget.classification_metrics_box.layout.display == ""
+    assert widget._color_metric_dropdown["classification"].layout.display is None
+    assert widget.regression_metrics_box.layout.display == "none"
+    assert widget._color_metric_dropdown["regression"].layout.display == "none"
+    assert widget.current_selection == {
+        "dataset": "dataset1",
+        "ml_task": "classification",
+    }
+
+    # switch to cross-validation report type
+    widget._report_type_dropdown.value = "cross-validation"
+    widget._on_report_type_change({"new": "cross-validation"})
+    assert widget._dataset_dropdown.options == ("dataset3",)
+    assert widget._dataset_dropdown.value == "dataset3"
+    assert widget.classification_metrics_box.layout.display == ""
+    assert widget._color_metric_dropdown["classification"].layout.display is None
+    assert widget.regression_metrics_box.layout.display == "none"
+    assert widget._color_metric_dropdown["regression"].layout.display == "none"
+    assert widget.current_selection == {
+        "dataset": "dataset3",
+        "ml_task": "classification",
+    }
+
+
+def test_model_explorer_widget_on_task_change(metadata):
+    """Check the behaviour of the method `_on_task_change`."""
+    widget = ModelExplorerWidget(metadata)
+    widget.update_selection()
+
+    assert widget._dataset_dropdown.options == ("dataset1",)
+    assert widget._dataset_dropdown.value == "dataset1"
+    assert widget.classification_metrics_box.layout.display == ""
+    assert widget._color_metric_dropdown["classification"].layout.display is None
+    assert widget.regression_metrics_box.layout.display == "none"
+    assert widget._color_metric_dropdown["regression"].layout.display == "none"
+
+    # switch to a regression task
+    widget._task_dropdown.value = "regression"
+    widget._on_task_change({"new": "regression"})
+    assert widget._dataset_dropdown.options == ("dataset2",)
+    assert widget._dataset_dropdown.value == "dataset2"
+    assert widget.classification_metrics_box.layout.display == "none"
+    assert widget._color_metric_dropdown["classification"].layout.display == "none"
+    assert widget.regression_metrics_box.layout.display == ""
+    assert widget._color_metric_dropdown["regression"].layout.display is None
+    assert widget.current_selection == {
+        "dataset": "dataset2",
+        "ml_task": "regression",
+    }
+
+
+def test_model_explorer_widget_no_dataset_for_task(metadata, capsys):
+    """Check the behaviour when there's no dataset available for a selected task."""
+    metadata = metadata.copy()
+    # select a small subset of the original metadata to be able to switch task
+    metadata = metadata[
+        (metadata["ml_task"] == "classification")
+        & (metadata["report_type"] == "estimator")
+    ]
+
+    widget = ModelExplorerWidget(metadata)
+    widget.update_selection()
+
+    widget._report_type_dropdown.value = "cross-validation"
+    widget._on_report_type_change({"new": "cross-validation"})
+
+    widget._update_plot()
+
+    captured = capsys.readouterr()
+    assert "No dataset available for selected task." in captured.out
