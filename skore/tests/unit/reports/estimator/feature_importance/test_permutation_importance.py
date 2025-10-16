@@ -11,7 +11,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import make_scorer, r2_score, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import SplineTransformer, StandardScaler
 
 from skore import EstimatorReport
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
@@ -412,3 +412,15 @@ class TestAtStep:
         """If `at_step` value is not appropriate, a ValueError is raised."""
         with pytest.raises(ValueError, match=err_msg):
             pipeline_report.feature_importance.permutation(seed=42, at_step=at_step)
+
+    def test_sparse_array(self):
+        """If one of the steps outputs a sparse array, `permutation` still works."""
+        X, y = make_regression(n_features=3, random_state=0)
+
+        pipeline = make_pipeline(
+            SplineTransformer(sparse_output=True),
+            LinearRegression(),
+        )
+        report = EstimatorReport(pipeline, X_train=X, X_test=X, y_train=y, y_test=y)
+
+        report.feature_importance.permutation(seed=42, at_step=-1)
