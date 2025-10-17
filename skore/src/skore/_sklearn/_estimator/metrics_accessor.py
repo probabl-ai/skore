@@ -145,7 +145,7 @@ class _MetricsAccessor(
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
-        >>> report.metrics.summarize(indicator_favorability=True).frame()
+        >>> report.metrics._summarize(indicator_favorability=True).frame()
                     LogisticRegression Favorability
         Metric
         Precision              0.98...         (↗︎)
@@ -153,7 +153,7 @@ class _MetricsAccessor(
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
-        >>> report.metrics.summarize(
+        >>> report.metrics._summarize(
         ...     scoring=["f1"],
         ...     indicator_favorability=True,
         ... ).frame()
@@ -525,15 +525,13 @@ class _MetricsAccessor(
         >>> report.metrics.summarize(
         ...    indicator_favorability=True,
         ...    data_source="all"
-        ... ).frame()
-                          LogisticRegression (train)  ... Favorability (test)
+        ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
+                          LogisticRegression (train)  ...  Favorability
         Metric                                        ...
-        Precision                           0.962963  ...                (↗︎)
-        Recall                              0.973783  ...                (↗︎)
-        ROC AUC                             0.994252  ...                (↗︎)
-        Brier score                         0.027383  ...                (↘︎)
-        Fit time (s)                        0.405457  ...                (↘︎)
-        Predict time (s)                    0.000340  ...                (↘︎)
+        Precision                           0.962963  ...          (↗︎)
+        Recall                              0.973783  ...          (↗︎)
+        ROC AUC                             0.994300  ...          (↗︎)
+        Brier score                         0.027365  ...          (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
         ...     scoring=["f1"],
@@ -571,13 +569,17 @@ class _MetricsAccessor(
             test_df = test_summary.frame().add_suffix(" (test)")
             combined = pd.concat(
                 [
-                    train_df.drop(columns=["Favorability"], errors="ignore"),
-                    test_df.drop(columns=["Favorability"], errors="ignore"),
+                    train_df,
+                    test_df,
                 ],
                 axis=1,
             )
             if indicator_favorability:
                 combined["Favorability"] = train_df["Favorability (train)"]
+                combined.drop(
+                    columns=["Favorability (train)", "Favorability (test)"],
+                    inplace=True,
+                )
             return MetricsSummaryDisplay(summarize_data=combined)
         return self._summarize(
             data_source=data_source,
