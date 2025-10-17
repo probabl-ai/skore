@@ -948,7 +948,7 @@ plt.tight_layout()
 # models and the MDI that is specific to tree-based models.
 # In this section, we look into the
 # `permutation importance <https://scikit-learn.org/stable/modules/permutation_importance.html>`_
-# which is model agnostic, meaning that it can be applied to any fitted estimator.
+# which is model-agnostic, meaning that it can be applied to any fitted estimator.
 # In particular, it works for linear models and tree-based ones.
 
 # %%
