@@ -424,3 +424,15 @@ class TestAtStep:
         report = EstimatorReport(pipeline, X_train=X, X_test=X, y_train=y, y_test=y)
 
         report.feature_importance.permutation(seed=42, at_step=-1)
+
+    def test_feature_names(self):
+        """If the requested pipeline step gives proper feature names,
+        these names should appear in the output."""
+        X, y = make_regression(n_features=3, random_state=0)
+
+        pipeline = make_pipeline(SplineTransformer(), LinearRegression())
+        report = EstimatorReport(pipeline, X_train=X, X_test=X, y_train=y, y_test=y)
+
+        result = report.feature_importance.permutation(seed=42, at_step=-1)
+        last_step_feature_names = list(report.estimator_[0].get_feature_names_out())
+        assert list(result.index.get_level_values(1)) == last_step_feature_names
