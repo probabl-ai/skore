@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import itertools
 import re
-from functools import wraps
+from functools import cached_property, wraps
 from operator import itemgetter
 from tempfile import TemporaryFile
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
+from urllib.parse import quote
 
 import joblib
 import orjson
@@ -46,7 +47,9 @@ def ensure_project_is_created(method):
     def wrapper(project: Project, *args, **kwargs):
         if not project.created:
             with HUBClient() as hub_client:
-                hub_client.post(f"projects/{project.tenant}/{project.name}")
+                hub_client.post(
+                    f"projects/{project.quoted_tenant}/{project.quoted_name}"
+                )
 
             project.created = True
 
@@ -126,6 +129,16 @@ class Project:
         """The name of the project."""
         return self.__name
 
+    @cached_property
+    def quoted_tenant(self) -> str:
+        """The quoted tenant of the project."""
+        return quote(self.__tenant, safe="")
+
+    @cached_property
+    def quoted_name(self) -> str:
+        """The quoted name of the project."""
+        return quote(self.__name, safe="")
+
     @ensure_project_is_created
     def put(self, key: str, report: EstimatorReport | CrossValidationReport):
         """
@@ -170,7 +183,7 @@ class Project:
 
         with HUBClient() as hub_client:
             hub_client.post(
-                url=f"projects/{self.tenant}/{self.name}/{endpoint}",
+                url=f"projects/{self.quoted_tenant}/{self.quoted_name}/{endpoint}",
                 content=payload_json_bytes,
                 headers={
                     "Content-Length": str(len(payload_json_bytes)),
@@ -182,7 +195,11 @@ class Project:
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its URN."""
         if m := re.match(Project.__REPORT_URN_PATTERN, urn):
-            url = f"projects/{self.tenant}/{self.name}/{m['type']}-reports/{m['id']}"
+            tenant = self.quoted_tenant
+            name = self.quoted_name
+            type = m["type"]
+            id = m["id"]
+            url = f"projects/{tenant}/{name}/{type}-reports/{id}"
         else:
             raise ValueError(
                 f"URN '{urn}' format does not match '{Project.__REPORT_URN_PATTERN}'"
@@ -247,13 +264,13 @@ class Project:
                 zip(
                     itertools.repeat("estimator"),
                     hub_client.get(
-                        f"projects/{self.tenant}/{self.name}/estimator-reports/"
+                        f"projects/{self.quoted_tenant}/{self.quoted_name}/estimator-reports/"
                     ).json(),
                 ),
                 zip(
                     itertools.repeat("cross-validation"),
                     hub_client.get(
-                        f"projects/{self.tenant}/{self.name}/cross-validation-reports/"
+                        f"projects/{self.quoted_tenant}/{self.quoted_name}/cross-validation-reports/"
                     ).json(),
                 ),
             )
@@ -309,11 +326,13 @@ class Project:
         """
         with HUBClient() as hub_client:
             try:
-                hub_client.delete(f"projects/{tenant}/{name}")
+                hub_client.delete(
+                    f"projects/{quote(tenant, safe='')}/{quote(name, safe='')}"
+                )
             except HTTPStatusError as e:
                 if e.response.status_code == 403:
                     raise PermissionError(
-                        f"Failed to delete the project; "
+                        f"Failed to delete the project '{name}'; "
                         f"please contact the '{tenant}' owner"
                     ) from e
                 raise
