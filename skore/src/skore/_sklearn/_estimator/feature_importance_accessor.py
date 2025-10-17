@@ -584,6 +584,17 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if not isinstance(self._parent.estimator_, Pipeline) or at_step == 0:
                 estimator = self._parent.estimator_
                 X_transformed = X_
+                if hasattr(estimator, "feature_names_in_"):
+                    feature_names = estimator.feature_names_in_
+                elif hasattr(estimator, "n_features_in_"):
+                    feature_names = [
+                        f"Feature #{i}" for i in range(estimator.n_features_in_)
+                    ]
+                else:
+                    feature_names = [
+                        f"Feature #{i}" for i in range(X_transformed.shape[1])
+                    ]
+
             else:
                 pipeline = self._parent.estimator_
                 if not isinstance(at_step, str | int):
@@ -605,6 +616,13 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     feature_eng, estimator = pipeline[:at_step], pipeline[at_step:]
                     X_transformed = feature_eng.transform(X_)
 
+                if hasattr(estimator, "feature_names_in_"):
+                    feature_names = estimator.feature_names_in_
+                elif hasattr(feature_eng, "get_feature_names_out"):
+                    feature_names = feature_eng.get_feature_names_out()
+                else:
+                    [f"Feature #{i}" for i in range(estimator.n_features_in_)]
+
             if issparse(X_transformed):
                 X_transformed = X_transformed.todense()
 
@@ -619,12 +637,6 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 max_samples=max_samples,
             )
             score = sklearn_score.get("importances")
-
-            feature_names = (
-                estimator.feature_names_in_
-                if hasattr(estimator, "feature_names_in_")
-                else [f"Feature #{i}" for i in range(estimator.n_features_in_)]
-            )
 
             # If there is more than one metric
             if score is None:
