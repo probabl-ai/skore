@@ -581,7 +581,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             # earlier.
             score = self._parent._cache[cache_key]
         else:
-            if not isinstance(self._parent.estimator_, Pipeline):
+            if not isinstance(self._parent.estimator_, Pipeline) or at_step == 0:
                 estimator = self._parent.estimator_
                 X_transformed = X_
             else:
@@ -592,11 +592,10 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     )
 
                 if isinstance(at_step, str):
+                    # Make at_step an int and process it as usual
                     at_step = list(pipeline.named_steps.keys()).index(at_step)
-                if at_step == 0:
-                    estimator = pipeline
-                    X_transformed = X_
-                elif isinstance(at_step, int):
+
+                if isinstance(at_step, int):
                     if abs(at_step) >= len(pipeline.steps):
                         raise ValueError(
                             "at_step must be strictly smaller in magnitude than the "
