@@ -4,12 +4,13 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_regression
+from sklearn.decomposition import PCA
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import make_scorer, r2_score, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import SplineTransformer, StandardScaler
 from skore import EstimatorReport
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
 
@@ -314,3 +315,99 @@ def test_not_fitted(regression_data):
     error_msg = "This LinearRegression instance is not fitted yet"
     with pytest.raises(NotFittedError, match=error_msg):
         report.feature_importance.permutation()
+
+
+class TestAtStep:
+    @pytest.fixture
+    def pipeline_report(self) -> EstimatorReport:
+        X, y = make_regression(n_features=3, random_state=0)
+
+        pipeline = make_pipeline(
+            StandardScaler(), PCA(n_components=2), LinearRegression()
+        )
+
+        return EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
+
+    @pytest.mark.parametrize("at_step", [0, -1, 1])
+    def test_int(self, pipeline_report, at_step):
+        """
+        Test the `at_step` integer parameter for permutation importance with a pipeline.
+        """
+
+        result = pipeline_report.feature_importance.permutation(
+            seed=42, at_step=at_step
+        )
+
+        assert isinstance(result.index, pd.MultiIndex)
+        assert result.index.nlevels == 2
+        assert result.index.names == ["Metric", "Feature"]
+        assert result.shape[0] > 0
+
+    def test_str(self, pipeline_report):
+        """
+        Test the `at_step` string parameter for permutation importance with a pipeline.
+        """
+        result = pipeline_report.feature_importance.permutation(seed=42, at_step="pca")
+
+        assert isinstance(result.index, pd.MultiIndex)
+        assert result.index.nlevels == 2
+        assert result.index.names == ["Metric", "Feature"]
+        assert result.shape[0] > 0
+
+    def test_non_pipeline(self):
+        """
+        For non-pipeline estimators, changing at_step should not change the results.
+        """
+        X, y = make_regression(n_features=3, random_state=0)
+
+        linear = LinearRegression()
+
+        report = EstimatorReport(linear, X_train=X, y_train=y, X_test=X, y_test=y)
+
+        result_start = report.feature_importance.permutation(seed=42, at_step=0)
+        result_end = report.feature_importance.permutation(seed=42, at_step=-1)
+
+        pd.testing.assert_frame_equal(result_start, result_end)
+
+    AT_STEP_TOO_LARGE = (
+        "at_step must be strictly smaller in magnitude than "
+        "the number of steps in the Pipeline"
+    )
+
+    @pytest.mark.parametrize(
+        "at_step, err_msg",
+        [
+            (8, AT_STEP_TOO_LARGE),
+            (-8, AT_STEP_TOO_LARGE),
+            ("hello", "'hello' is not in list"),
+            (0.5, "at_step must be an integer or a string"),
+        ],
+    )
+    def test_value_error(self, pipeline_report, at_step, err_msg):
+        """If `at_step` value is not appropriate, a ValueError is raised."""
+        with pytest.raises(ValueError, match=err_msg):
+            pipeline_report.feature_importance.permutation(seed=42, at_step=at_step)
+
+    def test_sparse_array(self):
+        """If one of the steps outputs a sparse array, `permutation` still works."""
+        X, y = make_regression(n_features=3, random_state=0)
+
+        pipeline = make_pipeline(
+            SplineTransformer(sparse_output=True),
+            LinearRegression(),
+        )
+        report = EstimatorReport(pipeline, X_train=X, X_test=X, y_train=y, y_test=y)
+
+        report.feature_importance.permutation(seed=42, at_step=-1)
+
+    def test_feature_names(self):
+        """If the requested pipeline step gives proper feature names,
+        these names should appear in the output."""
+        X, y = make_regression(n_features=3, random_state=0)
+
+        pipeline = make_pipeline(SplineTransformer(), LinearRegression())
+        report = EstimatorReport(pipeline, X_train=X, X_test=X, y_train=y, y_test=y)
+
+        result = report.feature_importance.permutation(seed=42, at_step=-1)
+        last_step_feature_names = list(report.estimator_[0].get_feature_names_out())
+        assert list(result.index.get_level_values(1)) == last_step_feature_names
