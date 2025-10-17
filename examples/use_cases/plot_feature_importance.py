@@ -572,7 +572,7 @@ X_y_plot.sample(10)
 # We visualize the distributions of the prediction errors on both train and test sets:
 
 # %%
-sns.histplot(data=X_y_plot, x="squared_error", hue="split", bins=30)
+sns.histplot(data=X_y_plot, x="squared_error", hue="split", multiple="dodge", bins=30)
 plt.title("Train and test sets")
 plt.show()
 
