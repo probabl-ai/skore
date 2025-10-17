@@ -11,7 +11,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.36.0
+    rev: v1.38.1
     hooks:
       - id: typos
 
@@ -22,7 +22,7 @@ repos:
         args: [--keep-id]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.11
+    rev: v0.14.1
     hooks:
       - id: ruff-check
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
@@ -31,7 +31,20 @@ repos:
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.17.1
+    rev: v1.18.2
     hooks:
       - id: mypy
-        files: ^(skore|skore-hub-project|skore-local-project)/src/
+        alias: mypy-skore
+        name: mypy skore/
+        files: ^skore/src/
+        args: [--config-file=skore/pyproject.toml]
+      - id: mypy
+        alias: mypy-skore-hub-project
+        name: mypy skore-hub-project/
+        files: ^skore-hub-project/src/
+        args: [--config-file=skore-hub-project/pyproject.toml]
+      - id: mypy
+        alias: mypy-skore-local-project
+        name: mypy skore-local-project/
+        files: ^skore-local-project/src/
+        args: [--config-file=skore-local-project/pyproject.toml]
