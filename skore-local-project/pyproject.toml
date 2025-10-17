@@ -12,6 +12,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+  "pandas",
   "pre-commit",
   "pytest",
   "pytest-cov",

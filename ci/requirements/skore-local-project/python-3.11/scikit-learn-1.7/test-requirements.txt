@@ -96,6 +96,7 @@ packaging==25.0
     #   pytest
 pandas==2.3.2
     # via
+    #   skore-local-project (skore-local-project/pyproject.toml)
     #   seaborn
     #   skore
     #   skrub
