@@ -8,21 +8,16 @@ dependencies = [
   "httpx",
   "joblib",
   "matplotlib",
+  "numpy",
   "orjson",
   "pydantic",
   "rich",
   "scikit-learn",
-  "skops",
 ]
 
 [project.optional-dependencies]
-test-base = [
-  "altair",
-  "numpy",
-  "pillow",
-  "plotly",
+test = [
   "pre-commit",
-  "pyarrow",  # needed for polars.to_pandas()
   "pytest",
   "pytest-cov",
   "pytest-order",
@@ -30,11 +25,8 @@ test-base = [
   "pytest-xdist",
   "respx",
   "skore>=0.10.3",
-  "skrub",
   "xdoctest",
 ]
-test = ["skore-hub-project[test-base]", "polars"]
-test-lts-cpu = ["skore-hub-project[test-base]", "polars-lts-cpu"]
 
 [project.scripts]
 skore-hub-login = "skore_hub_project.authentication.login:login"
