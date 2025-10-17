@@ -446,12 +446,13 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "all"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "all" : use both the train and test sets to compute the metrics.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -568,7 +569,15 @@ class _MetricsAccessor(
             # Add suffix to the dataframes to distinguish train and test.
             train_df = train_summary.frame().add_suffix(" (train)")
             test_df = test_summary.frame().add_suffix(" (test)")
-            combined = pd.concat([train_df, test_df], axis=1)
+            combined = pd.concat(
+                [
+                    train_df.drop(columns=["Favorability"], errors="ignore"),
+                    test_df.drop(columns=["Favorability"], errors="ignore"),
+                ],
+                axis=1,
+            )
+            if indicator_favorability:
+                combined["Favorability"] = train_df["Favorability (train)"]
             return MetricsSummaryDisplay(summarize_data=combined)
         return self._summarize(
             data_source=data_source,
