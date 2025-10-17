@@ -80,16 +80,16 @@ def monkeypatch_table_report_representation(monkeypatch):
 
 class TestProject:
     def test_tenant(self):
-        assert Project("tenant", "name").tenant == "tenant"
+        assert Project("my/ tenant", "my/ name").tenant == "my/ tenant"
 
-    def test_tenant_is_quoted(self):
-        assert Project("my/tenant", "name").tenant == "my%2Ftenant"
+    def test_quoted_tenant(self):
+        assert Project("my/ tenant", "my/ name").quoted_tenant == "my%2F%20tenant"
 
     def test_name(self):
-        assert Project("tenant", "name").name == "name"
+        assert Project("my/ tenant", "my/ name").name == "my/ name"
 
-    def test_name_is_quoted(self):
-        assert Project("tenant", "my/name").name == "my%2Fname"
+    def test_quoted_name(self):
+        assert Project("my/ tenant", "my/ name").quoted_name == "my%2F%20name"
 
     def test_put_exception(self, respx_mock):
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
@@ -342,6 +342,9 @@ class TestProject:
 
         with raises(
             PermissionError,
-            match="Failed to delete the project; please contact the '<tenant>' owner",
+            match=(
+                "Failed to delete the project '<name>'; "
+                "please contact the '<tenant>' owner"
+            ),
         ):
             Project.delete("<tenant>", "<name>")
