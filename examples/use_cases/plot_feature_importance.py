@@ -999,29 +999,31 @@ ridge_report.feature_importance.permutation(seed=0)
 # Now, we plot the permutation feature importance on the train and test sets using boxplots:
 
 
-def plot_permutation_train_test(est_report):
+def plot_permutation_train_test(*, train_importance, test_importance):
     _, ax = plt.subplots(figsize=(8, 6))
 
     train_color = "blue"
     test_color = "orange"
 
-    est_report.feature_importance.permutation(data_source="train", seed=0).T.boxplot(
+    features = list(train_importance.reset_index()["Feature"])
+
+    train_importance.T.boxplot(
         ax=ax,
         vert=False,
         widths=0.35,
         patch_artist=True,
         boxprops={"facecolor": train_color, "alpha": 0.7},
         medianprops={"color": "black"},
-        positions=[x + 0.4 for x in range(len(est_report.X_train.columns))],
+        positions=[x + 0.4 for x in range(len(features))],
     )
-    est_report.feature_importance.permutation(data_source="test", seed=0).T.boxplot(
+    test_importance.T.boxplot(
         ax=ax,
         vert=False,
         widths=0.35,
         patch_artist=True,
         boxprops={"facecolor": test_color, "alpha": 0.7},
         medianprops={"color": "black"},
-        positions=range(len(est_report.X_test.columns)),
+        positions=range(len(features)),
     )
 
     ax.legend(
@@ -1033,19 +1035,30 @@ def plot_permutation_train_test(est_report):
         title="Dataset",
     )
 
-    ax.set_title(
-        f"Permutation feature importance of {est_report.estimator_name_} (Train vs Test)"
-    )
+    ax.set_title("Permutation feature importance (Train vs Test)")
     ax.set_xlabel("Importance")
-    ax.set_yticks([x + 0.2 for x in range(len(est_report.X_train.columns))])
-    ax.set_yticklabels(est_report.X_train.columns)
+    ax.set_yticks([x + 0.2 for x in range(len(features))])
+    ax.set_yticklabels(features)
 
     plt.tight_layout()
     plt.show()
 
 
 # %%
-plot_permutation_train_test(ridge_report)
+
+
+def compute_permutation_importances(report, **kwargs):
+    train_importance = report.feature_importance.permutation(
+        data_source="train", seed=0, **kwargs
+    )
+    test_importance = report.feature_importance.permutation(
+        data_source="test", seed=0, **kwargs
+    )
+    return {"train_importance": train_importance, "test_importance": test_importance}
+
+
+# %%
+plot_permutation_train_test(**compute_permutation_importances(ridge_report))
 
 # %%
 # The standard deviation seems quite low.
@@ -1061,19 +1074,49 @@ plot_permutation_train_test(ridge_report)
 # pipeline (with regards to the original features):
 
 # %%
-plot_permutation_train_test(selectk_ridge_report)
+plot_permutation_train_test(**compute_permutation_importances(selectk_ridge_report))
+
+# %%
+# Since this estimator is a Pipeline, it can be also be interesting to look at the *engineered*
+# features rather than the raw input features; this can be done by setting the ``at_step`` parameter:
+
+# %%
+importances = compute_permutation_importances(selectk_ridge_report, at_step=-1)
+train_importance, test_importance = (
+    importances["train_importance"],
+    importances["test_importance"],
+)
+
+# Rename the features for clarity
+train_importance.index = test_importance.index = train_importance.index.str.replace(
+    "remainder__", ""
+).str.replace("kmeans__", "geospatial__")
+
+# Take only the 15 most important train features
+best_15_features = (
+    train_importance.aggregate("mean", axis=1).sort_values(key=abs).tail(15).index
+)
+train_importance = train_importance.loc[best_15_features]
+test_importance = test_importance.loc[best_15_features]
+
+plot_permutation_train_test(
+    train_importance=train_importance, test_importance=test_importance
+)
 
 # %%
 # Hence, contrary to coefficients, although we have created many features in our
 # preprocessing, the interpretability is easier.
 # We notice that, due to our preprocessing using a clustering on the geospatial data,
 # these features are of great importance to our model.
+#
+# Also, Average Bedrooms and Average Rooms appear often in the plot, whereas they were not considered
+# as important when looking at the coefficients.
 
 # %%
 # For our decision tree, here is our permutation importance on the train and test sets:
 
 # %%
-plot_permutation_train_test(tree_report)
+plot_permutation_train_test(**compute_permutation_importances(tree_report))
 
 # %%
 # The result of the inspection is the same as with the MDI:
