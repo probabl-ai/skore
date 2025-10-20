@@ -238,7 +238,7 @@ jobs:
     #
     # Using `if: ${{ (! cancelled()) && contains(needs.*.result, 'success') }}` at
     # __job level__ doesn't work as expected. It always returns true if one of the needs
-    # , or unfortunately one of their **transitive** needs, satistfies the condition.
+    # , or unfortunately one of their **transitive** needs, satisfies the condition.
     #
     # https://github.com/actions/runner/issues/1540
     #
