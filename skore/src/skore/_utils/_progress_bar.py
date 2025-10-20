@@ -38,17 +38,23 @@ def progress_decorator(
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> T:
+            # Avoid circular import
+            from skore import ComparisonReport
+
+            # The object to which a `rich.Progress` instance will be attached.
+            # Expected to be a Report
+            # (EstimatorReport | CrossValidationReport | ComparisonReport)
             self_obj: Any = args[0]
 
+            # If the decorated method is in an Accessor (e.g. MetricsAccessor),
+            # then make sure `self_obj` is the Report, not the Accessor.
             if hasattr(self_obj, "_parent"):
                 # self_obj is an accessor
                 self_obj = self_obj._parent
 
-            desc = description(self_obj) if callable(description) else description
-
             created_progress = False
 
-            if getattr(self_obj, "_progress_info", None) is not None:
+            if self_obj._progress_info is not None:
                 progress = self_obj._progress_info["current_progress"]
             else:
                 progress = Progress(
@@ -67,15 +73,20 @@ def progress_decorator(
                 progress.start()
                 created_progress = True
 
-            # assigning progress to child reports
+            # Make child reports share their parent's Progress instance
+            # so that there is only one Progress instance at any given point
             reports_to_cleanup: list[Any] = []
-            if hasattr(self_obj, "reports_"):
+            if isinstance(self_obj, ComparisonReport):
                 for report in self_obj.reports_.values():
-                    if hasattr(report, "_progress_info"):
-                        report._progress_info = {"current_progress": progress}
-                        reports_to_cleanup.append(report)
+                    report._progress_info = {"current_progress": progress}
+                    reports_to_cleanup.append(report)
 
-            task = progress.add_task(desc, total=None)
+            task = progress.add_task(
+                description=(
+                    description(self_obj) if callable(description) else description
+                ),
+                total=None,
+            )
             self_obj._progress_info = {
                 "current_progress": progress,
                 "current_task": task,
