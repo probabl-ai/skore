@@ -1,6 +1,5 @@
 from functools import partialmethod
 
-from pandas import DataFrame
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
 from skore_hub_project import Project
@@ -16,7 +15,7 @@ from skore_hub_project.artifact.serializer import Serializer
 def serialize(result) -> bytes:
     import orjson
 
-    if not isinstance(result, DataFrame):
+    if hasattr(result, "frame"):
         result = result.frame()
 
     return orjson.dumps(
