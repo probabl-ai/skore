@@ -1088,9 +1088,11 @@ train_importance, test_importance = (
 )
 
 # Rename the features for clarity
-train_importance.index = test_importance.index = train_importance.index.str.replace(
-    "remainder__", ""
-).str.replace("kmeans__", "geospatial__")
+train_importance.index = test_importance.index = (
+    train_importance.index.droplevel(0)
+    .str.replace("remainder__", "")
+    .str.replace("kmeans__", "geospatial__")
+)
 
 # Take only the 15 most important train features
 best_15_features = (
