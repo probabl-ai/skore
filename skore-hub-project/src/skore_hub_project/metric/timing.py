@@ -5,7 +5,6 @@ from __future__ import annotations
 from functools import cached_property
 from typing import ClassVar, Literal
 
-from pandas import DataFrame, Series
 from pydantic import Field, computed_field
 
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
@@ -44,10 +43,10 @@ class FitTimeAggregate(Metric):  # noqa: D101
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:  # noqa: D102
-        timings: DataFrame = self.report.metrics.timings(aggregate=self.aggregate)
+        timings = self.report.metrics.timings(aggregate=self.aggregate)
 
         try:
-            fit_times: Series = timings.loc["Fit time (s)"]
+            fit_times = timings.loc["Fit time (s)"]
         except KeyError:
             return None
 
@@ -106,10 +105,10 @@ class PredictTimeAggregate(Metric):  # noqa: D101
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:  # noqa: D102
-        timings: DataFrame = self.report.metrics.timings(aggregate=self.aggregate)
+        timings = self.report.metrics.timings(aggregate=self.aggregate)
 
         try:
-            predict_times: Series = timings.loc[f"Predict time {self.data_source} (s)"]
+            predict_times = timings.loc[f"Predict time {self.data_source} (s)"]
         except KeyError:
             return None
 

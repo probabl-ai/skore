@@ -5,7 +5,6 @@ from collections.abc import Callable
 from functools import reduce
 from typing import ClassVar, Literal, cast
 
-from pandas import DataFrame
 from pydantic import Field
 
 from skore_hub_project.artifact.media.media import Media
@@ -33,7 +32,7 @@ class FeatureImportance(Media, ABC):  # noqa: D101
             else function(data_source=self.data_source)
         )
 
-        if not isinstance(result, DataFrame):
+        if hasattr(result, "frame"):
             result = result.frame()
 
         return orjson.dumps(
