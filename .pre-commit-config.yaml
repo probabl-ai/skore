@@ -34,4 +34,23 @@ repos:
     rev: v1.18.2
     hooks:
       - id: mypy
-        files: ^(skore|skore-hub-project|skore-local-project)/src/
+        pass_filenames: false
+        alias: mypy-skore
+        name: mypy skore/
+        files: ^skore/
+        args: [--config-file=skore/pyproject.toml, skore]
+        additional_dependencies: [IPython, matplotlib, numpy, polars, rich]
+      - id: mypy
+        pass_filenames: false
+        alias: mypy-skore-hub-project
+        name: mypy skore-hub-project/
+        files: ^skore-hub-project/
+        args: [--config-file=skore-hub-project/pyproject.toml, skore-hub-project]
+        additional_dependencies: [skore, blake3, httpx, orjson, pydantic]
+      - id: mypy
+        pass_filenames: false
+        alias: mypy-skore-local-project
+        name: mypy skore-local-project/
+        files: ^skore-local-project/
+        args: [--config-file=skore-local-project/pyproject.toml, skore-local-project]
+        additional_dependencies: [skore]
