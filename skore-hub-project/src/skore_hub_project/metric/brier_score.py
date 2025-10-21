@@ -12,6 +12,7 @@ class BrierScore(EstimatorReportMetric):  # noqa: D101
     name: Literal["brier_score"] = "brier_score"
     verbose_name: Literal["Brier score"] = "Brier score"
     greater_is_better: Literal[False] = False
+    position: None = None
 
 
 class BrierScoreTrain(BrierScore):  # noqa: D101
@@ -28,6 +29,7 @@ class BrierScoreMean(CrossValidationReportMetric):  # noqa: D101
     name: Literal["brier_score_mean"] = "brier_score_mean"
     verbose_name: Literal["Brier score - MEAN"] = "Brier score - MEAN"
     greater_is_better: Literal[False] = False
+    position: None = None
 
 
 class BrierScoreTrainMean(BrierScoreMean):  # noqa: D101
@@ -44,6 +46,7 @@ class BrierScoreStd(CrossValidationReportMetric):  # noqa: D101
     name: Literal["brier_score_std"] = "brier_score_std"
     verbose_name: Literal["Brier score - STD"] = "Brier score - STD"
     greater_is_better: Literal[False] = False
+    position: None = None
 
 
 class BrierScoreTrainStd(BrierScoreStd):  # noqa: D101

@@ -2,8 +2,6 @@
 
 from typing import ClassVar
 
-from pydantic import Field
-
 from skore_hub_project.artifact.media import (
     Coefficients,
     EstimatorHtmlRepr,
@@ -41,12 +39,15 @@ from skore_hub_project.metric import (
     RocAucTest,
     RocAucTrain,
 )
-from skore_hub_project.metric.metric import Metric
+from skore_hub_project.metric.metric import EstimatorReportMetric
+from skore_hub_project.metric.timing import PredictTime
 from skore_hub_project.protocol import EstimatorReport
 from skore_hub_project.report.report import ReportPayload
 
+Metric = EstimatorReportMetric | FitTime | PredictTime
 
-class EstimatorReportPayload(ReportPayload):
+
+class EstimatorReportPayload(ReportPayload[EstimatorReport]):
     """
     Payload used to send an estimator report to ``hub``.
 
@@ -101,5 +102,3 @@ class EstimatorReportPayload(ReportPayload):
         TableReportTest,
         TableReportTrain,
     )
-
-    report: EstimatorReport = Field(repr=False, exclude=True)

@@ -32,7 +32,7 @@ class Artifact(BaseModel, ABC):
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
     project: Project = Field(repr=False, exclude=True)
-    content_type: str
+    content_type: str = Field(init=False)
 
     @abstractmethod
     def content_to_upload(self) -> Content | AbstractContextManager[Content]:

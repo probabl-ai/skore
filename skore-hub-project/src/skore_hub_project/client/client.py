@@ -58,7 +58,7 @@ class Client(HTTPXClient):
         )
     )
 
-    RETRYABLE_EXCEPTIONS: Final[tuple[HTTPError, ...]] = (
+    RETRYABLE_EXCEPTIONS: Final[tuple[type[HTTPError], ...]] = (
         TimeoutException,
         NetworkError,
         RemoteProtocolError,

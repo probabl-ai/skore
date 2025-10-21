@@ -15,6 +15,7 @@ class Recall(EstimatorReportMetric):  # noqa: D101
     name: str = "recall"
     verbose_name: str = "Recall (macro)"
     greater_is_better: bool = True
+    position: None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -41,6 +42,7 @@ class RecallMean(CrossValidationReportMetric):  # noqa: D101
     name: str = "recall_mean"
     verbose_name: str = "Recall (macro) - MEAN"
     greater_is_better: bool = True
+    position: None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -71,6 +73,7 @@ class RecallStd(CrossValidationReportMetric):  # noqa: D101
     name: str = "recall_std"
     verbose_name: str = "Recall (macro) - STD"
     greater_is_better: bool = False
+    position: None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property

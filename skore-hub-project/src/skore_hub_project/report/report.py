@@ -2,7 +2,7 @@
 
 from abc import ABC
 from functools import cached_property
-from typing import ClassVar
+from typing import ClassVar, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -12,8 +12,10 @@ from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
+Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
-class ReportPayload(BaseModel, ABC):
+
+class ReportPayload(BaseModel, Generic[Report], ABC):
     """
     Payload used to send a report to ``hub``.
 
@@ -37,7 +39,7 @@ class ReportPayload(BaseModel, ABC):
     MEDIAS: ClassVar[tuple[type[Media], ...]]
 
     project: Project = Field(repr=False, exclude=True)
-    report: EstimatorReport | CrossValidationReport = Field(repr=False, exclude=True)
+    report: Report = Field(repr=False, exclude=True)
     key: str
 
     @computed_field  # type: ignore[prop-decorator]
@@ -53,7 +55,9 @@ class ReportPayload(BaseModel, ABC):
         import joblib
 
         return joblib.hash(
-            self.report.y_test if hasattr(self.report, "y_test") else self.report.y
+            self.report.y_test
+            if isinstance(self.report, EstimatorReport)
+            else self.report.y
         )
 
     @computed_field  # type: ignore[prop-decorator]

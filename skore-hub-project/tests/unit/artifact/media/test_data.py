@@ -62,5 +62,7 @@ def test_table_report(
     }
 
     # wrong type
-    with raises(ValidationError):
-        Media(report=None)
+    with raises(
+        ValidationError, match="Input should be an instance of EstimatorReport"
+    ):
+        Media(project=project, report=None)
