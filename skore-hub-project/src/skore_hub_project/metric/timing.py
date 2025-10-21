@@ -18,6 +18,7 @@ class FitTime(Metric):  # noqa: D101
     verbose_name: str = "Fit time (s)"
     greater_is_better: bool = False
     position: int = 1
+    data_source: None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -39,6 +40,7 @@ class FitTimeAggregate(Metric):  # noqa: D101
     report: CrossValidationReport = Field(repr=False, exclude=True)
     aggregate: ClassVar[Literal["mean", "std"]]
     greater_is_better: bool = False
+    data_source: None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -64,6 +66,7 @@ class FitTimeStd(FitTimeAggregate):  # noqa: D101
     aggregate: ClassVar[Literal["std"]] = "std"
     name: str = "fit_time_std"
     verbose_name: str = "Fit time (s) - STD"
+    position: None = None
 
 
 class PredictTime(Metric):  # noqa: D101
@@ -134,6 +137,7 @@ class PredictTimeStd(PredictTimeAggregate):  # noqa: D101
     aggregate: ClassVar[Literal["std"]] = "std"
     name: str = "predict_time_std"
     verbose_name: str = "Predict time (s) - STD"
+    position: None = None
 
 
 class PredictTimeTrainStd(PredictTimeStd):  # noqa: D101

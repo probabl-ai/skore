@@ -5,7 +5,7 @@ from functools import cached_property
 from typing import ClassVar
 
 import numpy as np
-from pydantic import Field, computed_field
+from pydantic import computed_field
 from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.artifact.media import EstimatorHtmlRepr
@@ -51,13 +51,16 @@ from skore_hub_project.metric import (
     RocAucTrainMean,
     RocAucTrainStd,
 )
-from skore_hub_project.metric.metric import Metric
+from skore_hub_project.metric.metric import CrossValidationReportMetric
+from skore_hub_project.metric.timing import FitTimeAggregate, PredictTimeAggregate
 from skore_hub_project.protocol import CrossValidationReport
 from skore_hub_project.report.estimator_report import EstimatorReportPayload
 from skore_hub_project.report.report import ReportPayload
 
+Metric = CrossValidationReportMetric | FitTimeAggregate | PredictTimeAggregate
 
-class CrossValidationReportPayload(ReportPayload):
+
+class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     """
     Payload used to send a cross-validation report to ``hub``.
 
@@ -120,8 +123,6 @@ class CrossValidationReportPayload(ReportPayload):
         EstimatorHtmlRepr,
         TableReport,
     )
-
-    report: CrossValidationReport = Field(repr=False, exclude=True)
 
     def model_post_init(self, context):  # noqa: D102
         if "classification" in self.ml_task:

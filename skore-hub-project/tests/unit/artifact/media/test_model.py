@@ -38,5 +38,7 @@ def test_estimator_html_repr(respx_mock, binary_classification, upload_mock):
     }
 
     # wrong type
-    with raises(ValidationError):
-        EstimatorHtmlRepr(report=None)
+    with raises(
+        ValidationError, match="Input should be an instance of EstimatorReport"
+    ):
+        EstimatorHtmlRepr(project=project, report=None)

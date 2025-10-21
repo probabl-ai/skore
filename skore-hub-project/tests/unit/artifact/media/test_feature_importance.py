@@ -132,5 +132,8 @@ def test_feature_importance(
     assert not upload_mock.called
 
     # wrong type
-    with raises(ValidationError):
-        Media(report=None)
+    with raises(
+        ValidationError,
+        match=f"Input should be an instance of {report.__class__.__name__}",
+    ):
+        Media(project=project, report=None)

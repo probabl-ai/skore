@@ -7,11 +7,13 @@ from collections.abc import Callable
 from contextlib import suppress
 from functools import cached_property, reduce
 from math import isfinite
-from typing import Any, ClassVar, Literal, cast
+from typing import Any, ClassVar, Generic, Literal, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
+
+Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
 
 def cast_to_float(value: Any) -> float | None:
@@ -23,12 +25,14 @@ def cast_to_float(value: Any) -> float | None:
     return None
 
 
-class Metric(ABC, BaseModel):
+class Metric(BaseModel, Generic[Report], ABC):
     """
     Payload used to send a metric to ``hub``.
 
     Attributes
     ----------
+    report : EstimatorReport | CrossValidationReport
+        The report on which compute the metric.
     name : str
         Name of the metric.
     verbose_name : str
@@ -44,11 +48,12 @@ class Metric(ABC, BaseModel):
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    name: str
-    verbose_name: str
-    data_source: Literal["train", "test"] | None = None
-    greater_is_better: bool | None = None
-    position: int | None = None
+    report: Report = Field(repr=False, exclude=True)
+    name: str = Field(init=False)
+    verbose_name: str = Field(init=False)
+    data_source: Literal["train", "test"] | None = Field(init=False)
+    greater_is_better: bool | None = Field(init=False)
+    position: int | None = Field(init=False)
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -57,12 +62,14 @@ class Metric(ABC, BaseModel):
         """The value of the metric."""
 
 
-class EstimatorReportMetric(Metric):
+class EstimatorReportMetric(Metric[EstimatorReport]):
     """
     Payload used to send an estimator report metric.
 
     Attributes
     ----------
+    report: EstimatorReport
+        The report on which compute the metric.
     name : str
         Name of the metric.
     verbose_name : str
@@ -74,13 +81,10 @@ class EstimatorReportMetric(Metric):
     position: int | None, optional
         Indicator of the "position" of the metric in the parallel coordinates plot,
         default None to disable its display.
-    report: EstimatorReport
-        The report on which compute the metric.
     accessor : ClassVar[str]
         The "accessor" of the metric i.e., the path to the metric calculation function.
     """
 
-    report: EstimatorReport = Field(repr=False, exclude=True)
     accessor: ClassVar[str]
 
     @computed_field  # type: ignore[prop-decorator]
@@ -98,12 +102,14 @@ class EstimatorReportMetric(Metric):
         return cast_to_float(function(data_source=self.data_source))
 
 
-class CrossValidationReportMetric(Metric):
+class CrossValidationReportMetric(Metric[CrossValidationReport]):
     """
     Payload used to send a cross-validation report metric, usually MEAN or STD.
 
     Attributes
     ----------
+    report: CrossValidationReport
+        The report on which compute the metric.
     name : str
         Name of the metric.
     verbose_name : str
@@ -115,15 +121,12 @@ class CrossValidationReportMetric(Metric):
     position: int | None, optional
         Indicator of the "position" of the metric in the parallel coordinates plot,
         default None to disable its display.
-    report: CrossValidationReport
-        The report on which compute the metric.
     accessor : ClassVar[str]
         The "accessor" of the metric i.e., the path to the metric calculation function.
     aggregate : ClassVar[Literal["mean", "std"]]
         The aggregation parameter passed to the ``accessor``.
     """
 
-    report: CrossValidationReport = Field(repr=False, exclude=True)
     accessor: ClassVar[str]
     aggregate: ClassVar[Literal["mean", "std"]]
 

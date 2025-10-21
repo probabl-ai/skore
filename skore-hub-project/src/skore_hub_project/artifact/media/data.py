@@ -2,15 +2,14 @@
 
 from typing import Literal
 
-from pydantic import Field
-
 from skore_hub_project import switch_mpl_backend
-from skore_hub_project.artifact.media.media import Media
+from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.protocol import EstimatorReport
 
 
-class TableReport(Media):  # noqa: D101
+class TableReport(Media[Report]):  # noqa: D101
     name: Literal["table_report"] = "table_report"
+    data_source: Literal["train", "test"] | None = None
     content_type: Literal["application/vnd.skrub.table-report.v1+json"] = (
         "application/vnd.skrub.table-report.v1+json"
     )
@@ -41,11 +40,9 @@ class TableReport(Media):  # noqa: D101
         )
 
 
-class TableReportTrain(TableReport):  # noqa: D101
-    report: EstimatorReport = Field(repr=False, exclude=True)
+class TableReportTrain(TableReport[EstimatorReport]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class TableReportTest(TableReport):  # noqa: D101
-    report: EstimatorReport = Field(repr=False, exclude=True)
+class TableReportTest(TableReport[EstimatorReport]):  # noqa: D101
     data_source: Literal["test"] = "test"

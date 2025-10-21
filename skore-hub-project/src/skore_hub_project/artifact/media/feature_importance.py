@@ -5,13 +5,11 @@ from collections.abc import Callable
 from functools import reduce
 from typing import ClassVar, Literal, cast
 
-from pydantic import Field
-
-from skore_hub_project.artifact.media.media import Media
+from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.protocol import EstimatorReport
 
 
-class FeatureImportance(Media, ABC):  # noqa: D101
+class FeatureImportance(Media[Report], ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["application/vnd.dataframe"] = "application/vnd.dataframe"
 
@@ -41,8 +39,7 @@ class FeatureImportance(Media, ABC):  # noqa: D101
         )
 
 
-class Permutation(FeatureImportance, ABC):  # noqa: D101
-    report: EstimatorReport = Field(repr=False, exclude=True)
+class Permutation(FeatureImportance[EstimatorReport], ABC):  # noqa: D101
     accessor: ClassVar[str] = "feature_importance.permutation"
     name: Literal["permutation"] = "permutation"
 
@@ -55,12 +52,13 @@ class PermutationTest(Permutation):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class MeanDecreaseImpurity(FeatureImportance):  # noqa: D101
-    report: EstimatorReport = Field(repr=False, exclude=True)
+class MeanDecreaseImpurity(FeatureImportance[EstimatorReport]):  # noqa: D101
     accessor: ClassVar[str] = "feature_importance.mean_decrease_impurity"
     name: Literal["mean_decrease_impurity"] = "mean_decrease_impurity"
+    data_source: None = None
 
 
 class Coefficients(FeatureImportance):  # noqa: D101
     accessor: ClassVar[str] = "feature_importance.coefficients"
     name: Literal["coefficients"] = "coefficients"
+    data_source: None = None

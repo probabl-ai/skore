@@ -12,6 +12,7 @@ class Accuracy(EstimatorReportMetric):  # noqa: D101
     name: Literal["accuracy"] = "accuracy"
     verbose_name: Literal["Accuracy"] = "Accuracy"
     greater_is_better: Literal[True] = True
+    position: None = None
 
 
 class AccuracyTrain(Accuracy):  # noqa: D101
@@ -28,6 +29,7 @@ class AccuracyMean(CrossValidationReportMetric):  # noqa: D101
     name: Literal["accuracy_mean"] = "accuracy_mean"
     verbose_name: Literal["Accuracy - MEAN"] = "Accuracy - MEAN"
     greater_is_better: Literal[True] = True
+    position: None = None
 
 
 class AccuracyTrainMean(AccuracyMean):  # noqa: D101
@@ -44,6 +46,7 @@ class AccuracyStd(CrossValidationReportMetric):  # noqa: D101
     name: Literal["accuracy_std"] = "accuracy_std"
     verbose_name: Literal["Accuracy - STD"] = "Accuracy - STD"
     greater_is_better: Literal[False] = False
+    position: None = None
 
 
 class AccuracyTrainStd(AccuracyStd):  # noqa: D101
