@@ -121,6 +121,10 @@ class Summary(DataFrame):
 
     def _repr_mimebundle_(self, include=None, exclude=None):
         """Display the interactive plot and controls."""
+        # Do not use the widget if we're in an IPython terminal
+        if is_in_ipython_terminal():
+            return {"text/html": super()._repr_html_()}
+
         self._plot_widget = ModelExplorerWidget(dataframe=self)
         return {"text/html": self._plot_widget.display()}
 
@@ -200,3 +204,15 @@ class Summary(DataFrame):
                 query_parts.append("(" + " or ".join(dim_query) + ")")
 
         return " and ".join(query_parts)
+
+
+def is_in_ipython_terminal():
+    """Check whether we're running in an IPython terminal or not."""
+    try:
+        # get_ipython is made available in the global namespace when IPython is started
+        shell = get_ipython()  # pyright: ignore[reportUndefinedVariable]
+        if shell is None:
+            return False
+        return shell.__class__.__name__ == "TerminalInteractiveShell"
+    except NameError:
+        return False
