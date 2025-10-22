@@ -421,12 +421,12 @@ class ModelExplorerWidget:
             layout=widgets.Layout(width="100%", overflow="hidden"),
         )
 
-    def _update_dataset_dropdown(self, datasets: list[str]) -> None:
+    def _update_dataset_dropdown(self, datasets: np.ndarray) -> None:
         """Update the dataset dropdown options.
 
         Parameters
         ----------
-        datasets : list[str]
+        datasets : np.ndarray
             The datasets to display in the dropdown.
         """
         self._dataset_dropdown.options = datasets

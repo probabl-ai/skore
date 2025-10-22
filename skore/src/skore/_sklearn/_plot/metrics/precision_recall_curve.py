@@ -865,17 +865,19 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             ):
                 label_binarizer = LabelBinarizer().fit(est.classes_)
                 y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)
+                y_pred_i_y = cast(NDArray, y_pred_i.y)
+
                 for class_idx, class_ in enumerate(est.classes_):
                     precision_class_i, recall_class_i, thresholds_class_i = (
                         precision_recall_curve(
                             y_true_onehot_i[:, class_idx],
-                            y_pred_i.y[:, class_idx],
+                            y_pred_i_y[:, class_idx],
                             pos_label=None,
                             drop_intermediate=drop_intermediate,
                         )
                     )
                     average_precision_class_i = average_precision_score(
-                        y_true_onehot_i[:, class_idx], y_pred_i.y[:, class_idx]
+                        y_true_onehot_i[:, class_idx], y_pred_i_y[:, class_idx]
                     )
 
                     for precision, recall, threshold in zip(

@@ -482,7 +482,7 @@ class _MetricsAccessor(
 
             results = _get_cached_response_values(
                 cache=self._parent._cache,
-                estimator_hash=self._parent._hash,
+                estimator_hash=int(self._parent._hash),
                 estimator=self._parent.estimator_,
                 X=X,
                 response_method=response_method,
@@ -1674,7 +1674,7 @@ class _MetricsAccessor(
         else:
             results = _get_cached_response_values(
                 cache=self._parent._cache,
-                estimator_hash=self._parent._hash,
+                estimator_hash=int(self._parent._hash),
                 estimator=self._parent.estimator_,
                 X=X,
                 response_method=response_method,
