@@ -1,20 +1,21 @@
 """Class definition of the payload used to send a report to ``hub``."""
 
-from abc import ABC, abstractmethod
-from collections.abc import Callable
+from abc import ABC
 from functools import cached_property
-from typing import ClassVar, cast
+from typing import ClassVar, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project import Project
-from skore_hub_project.artefact.artefact import Artefact
-from skore_hub_project.media.media import Media
+from skore_hub_project.artifact.media.media import Media
+from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
+Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
-class ReportPayload(ABC, BaseModel):
+
+class ReportPayload(BaseModel, Generic[Report], ABC):
     """
     Payload used to send a report to ``hub``.
 
@@ -28,27 +29,18 @@ class ReportPayload(ABC, BaseModel):
         The project to which the report payload should be sent.
     report : EstimatorReport | CrossValidationReport
         The report on which to calculate the payload to be sent.
-    upload : bool, optional
-        Upload the report to the artefacts storage, default True.
     key : str
         The key to associate to the report.
     """
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    METRICS: ClassVar[tuple[Metric, ...]]
-    MEDIAS: ClassVar[tuple[Media, ...]]
+    METRICS: ClassVar[tuple[type[Metric], ...]]
+    MEDIAS: ClassVar[tuple[type[Media], ...]]
 
     project: Project = Field(repr=False, exclude=True)
-    report: EstimatorReport | CrossValidationReport = Field(repr=False, exclude=True)
-    upload: bool = Field(default=True, repr=False, exclude=True)
+    report: Report = Field(repr=False, exclude=True)
     key: str
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def run_id(self) -> int:
-        """The current run identifier of the project."""
-        return self.project.run_id
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -63,7 +55,9 @@ class ReportPayload(ABC, BaseModel):
         import joblib
 
         return joblib.hash(
-            self.report.y_test if hasattr(self.report, "y_test") else self.report.y
+            self.report.y_test
+            if isinstance(self.report, EstimatorReport)
+            else self.report.y
         )
 
     @computed_field  # type: ignore[prop-decorator]
@@ -71,22 +65,6 @@ class ReportPayload(ABC, BaseModel):
     def ml_task(self) -> str:
         """The type of ML task covered by the report."""
         return self.report.ml_task
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    @abstractmethod
-    def parameters(self) -> Artefact | dict[()]:
-        """
-        The checksum of the instance.
-
-        The checksum of the instance that was assigned after being uploaded to the
-        artefact storage. It is based on its ``joblib`` serialization and mainly used to
-        retrieve it from the artefacts storage.
-
-        .. deprecated
-          The ``parameters`` property will be removed in favor of a new ``checksum``
-          property in a near future.
-        """
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -106,17 +84,19 @@ class ReportPayload(ABC, BaseModel):
         - int [0, inf[, to be displayed at the position,
         - None, not to be displayed.
         """
-        payloads = [
-            payload
-            for metric in self.METRICS
-            if (payload := metric(report=self.report)).value is not None
-        ]
+        payloads = []
+
+        for metric_cls in self.METRICS:
+            payload = metric_cls(report=self.report)
+
+            if payload.value is not None:
+                payloads.append(payload)
 
         return payloads
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def related_items(self) -> list[Media]:
+    def medias(self) -> list[Media]:
         """
         The list of medias that have been computed from the report.
 
@@ -126,10 +106,24 @@ class ReportPayload(ABC, BaseModel):
         -----
         Unavailable medias have been filtered out.
         """
-        payloads = [
-            payload
-            for media in cast(list[Callable], self.MEDIAS)
-            if (payload := media(report=self.report)).representation is not None
-        ]
+        payloads = []
+
+        for media_cls in self.MEDIAS:
+            payload = media_cls(project=self.project, report=self.report)
+
+            if payload.checksum is not None:
+                payloads.append(payload)
 
         return payloads
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def pickle(self) -> Pickle:
+        """
+        The checksum of the instance.
+
+        The checksum of the instance that was assigned before being uploaded to the
+        artifact storage. It is based on its ``joblib`` serialization and mainly used to
+        retrieve it from the artifacts storage.
+        """
+        return Pickle(project=self.project, report=self.report)

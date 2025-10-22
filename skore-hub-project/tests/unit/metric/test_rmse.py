@@ -124,5 +124,8 @@ def test_rmse(
     }
 
     # wrong type
-    with raises(ValidationError):
+    with raises(
+        ValidationError,
+        match=f"Input should be an instance of {report.__class__.__name__}",
+    ):
         Metric(report=None)

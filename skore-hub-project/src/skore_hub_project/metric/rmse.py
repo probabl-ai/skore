@@ -46,6 +46,7 @@ class RmseStd(CrossValidationReportMetric):  # noqa: D101
     name: Literal["rmse_std"] = "rmse_std"
     verbose_name: Literal["RMSE - STD"] = "RMSE - STD"
     greater_is_better: Literal[False] = False
+    position: None = None
 
 
 class RmseTrainStd(RmseStd):  # noqa: D101

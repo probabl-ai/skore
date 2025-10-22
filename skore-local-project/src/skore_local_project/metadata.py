@@ -51,8 +51,6 @@ class ReportMetadata(ABC):
         ID of the artifact in the artifacts storage.
     project_name : str
         The name of the project the metadata should be associated with.
-    run_id : str
-        The run the metadata should be associated with.
     date : str
         The date the metadata were created.
     key : str
@@ -71,7 +69,6 @@ class ReportMetadata(ABC):
 
     artifact_id: str
     project_name: str
-    run_id: str
     key: str
     date: str = field(init=False)
     learner: str = field(init=False)

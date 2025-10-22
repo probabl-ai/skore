@@ -12,6 +12,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+  "pandas",
   "pre-commit",
   "pytest",
   "pytest-cov",
@@ -78,5 +79,15 @@ convention = "numpy"
 "tests/*" = ["D"]
 
 [tool.mypy]
+exclude = ["hatch/", "tests/"]
+
+[[tool.mypy.overrides]]
+follow_untyped_imports = true
+module = ["skore.*"]
+
+[[tool.mypy.overrides]]
 ignore_missing_imports = true
-exclude = ["hatch/*", "tests/*"]
+module = [
+  "diskcache.*",
+  "joblib.*",
+]

@@ -60,7 +60,6 @@ class FakeProject:
     def make_report_metadata(self, index, report):
         return {
             "id": index,
-            "run_id": None,
             "key": None,
             "date": None,
             "learner": None,
@@ -131,7 +130,6 @@ class TestSummary:
             ),
         )
         assert list(summary.columns) == [
-            "run_id",
             "key",
             "date",
             "learner",

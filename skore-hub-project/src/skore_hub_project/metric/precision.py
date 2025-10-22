@@ -15,6 +15,7 @@ class Precision(EstimatorReportMetric):  # noqa: D101
     name: str = "precision"
     verbose_name: str = "Precision (macro)"
     greater_is_better: bool = True
+    position: None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -41,6 +42,7 @@ class PrecisionMean(CrossValidationReportMetric):  # noqa: D101
     name: str = "precision_mean"
     verbose_name: str = "Precision (macro) - MEAN"
     greater_is_better: bool = True
+    position: None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -71,6 +73,7 @@ class PrecisionStd(CrossValidationReportMetric):  # noqa: D101
     name: str = "precision_std"
     verbose_name: str = "Precision (macro) - STD"
     greater_is_better: bool = False
+    position: None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property

@@ -3,7 +3,7 @@
 from datetime import datetime
 from time import sleep
 
-from httpx import HTTPError, TimeoutException
+from httpx import HTTPStatusError, TimeoutException
 
 
 def get_oauth_device_login(success_uri: str | None = None):
@@ -125,7 +125,7 @@ def get_oauth_device_code_probe(device_code: str, *, timeout=600):
         while True:
             try:
                 client.get(url, params=params)
-            except HTTPError as exc:
+            except HTTPStatusError as exc:
                 if exc.response.status_code != 400:
                     raise
 

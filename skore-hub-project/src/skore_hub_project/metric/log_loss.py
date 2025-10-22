@@ -46,6 +46,7 @@ class LogLossStd(CrossValidationReportMetric):  # noqa: D101
     name: str = "log_loss_std"
     verbose_name: str = "Log loss - STD"
     greater_is_better: bool = False
+    position: None = None
 
 
 class LogLossTrainStd(LogLossStd):  # noqa: D101
