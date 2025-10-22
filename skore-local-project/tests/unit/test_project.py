@@ -111,7 +111,7 @@ def monkeypatch_metrics(monkeypatch, Datetime):
 class TestProject:
     def test_init(self, monkeypatch, tmp_path):
         monkeypatch.setattr(
-            "skore_local_project.project.platformdirs.user_cache_dir",
+            "skore_local_project.project.platformdirs.user_data_dir",
             lambda: str(tmp_path),
         )
 

@@ -83,8 +83,8 @@ class Project:
           cache directory:
 
         - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-        - on Linux, usually ``${HOME}/.cache/skore``,
-        - on macOS, usually ``${HOME}/Library/Caches/skore``.
+        - on Linux, usually ``${HOME}/.local/share/skore``,
+        - on macOS, usually ``${HOME}/Library/Application Support/skore``.
     """
 
     @staticmethod
@@ -100,7 +100,7 @@ class Project:
             if "SKORE_WORKSPACE" in os.environ:
                 workspace = Path(os.environ["SKORE_WORKSPACE"])
             else:
-                workspace = Path(platformdirs.user_cache_dir()) / "skore"
+                workspace = Path(platformdirs.user_data_dir()) / "skore"
 
         for directory in ("projects", "metadata", "artifacts"):
             (workspace / directory).mkdir(parents=True, exist_ok=True)
