@@ -37,8 +37,8 @@ def URI() -> str:
         raise URIError(
             f"\nBad condition: the persisted URI is conflicting with the environment:\n"
             f"\tFrom {filepath}: '{uri_from_persistence}'\n"
-            f"\tFrom ${ENVARNAME}: '{uri_from_environment}'\n."
-            f"Please run `skore-hub-logout`."
+            f"\tFrom ${ENVARNAME}: '{uri_from_environment}'\n"
+            f"\nPlease run `skore-hub-logout`."
         )
 
     return uri_from_persistence or uri_from_environment or DEFAULT
