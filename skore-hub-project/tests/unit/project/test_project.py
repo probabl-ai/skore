@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 
 import joblib
 from httpx import Client, Response
-from pytest import fixture, raises
+from pytest import fixture, mark, raises
 from skore import CrossValidationReport, EstimatorReport
 from skore_hub_project import Project
 from skore_hub_project.report import (
@@ -128,6 +128,11 @@ class TestProject:
         # Compare content with the desired output
         assert content == desired
 
+    @mark.filterwarnings(
+        # ignore precision warning due to the low number of labels in
+        # `small_cv_binary_classification`, raised by `scikit-learn`
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
     def test_put_cross_validation_report(
         self, monkeypatch, small_cv_binary_classification, respx_mock
     ):
