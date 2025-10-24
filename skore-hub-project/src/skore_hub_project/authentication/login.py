@@ -19,7 +19,7 @@ from .uri import URI, URIError
 from .uri import persist as persist_URI
 
 
-def get_oauth_device_login(success_uri: str | None = None):
+def get_oauth_device_login(success_uri: str | None = None) -> tuple[str, str, str]:
     """
     Initiate device OAuth flow.
 
@@ -58,7 +58,7 @@ def get_oauth_device_login(success_uri: str | None = None):
         )
 
 
-def get_oauth_device_code_probe(device_code: str, *, timeout=600):
+def get_oauth_device_code_probe(device_code: str, *, timeout: int = 600) -> None:
     """
     Ensure authorization code is acknowledged.
 
@@ -93,7 +93,7 @@ def get_oauth_device_code_probe(device_code: str, *, timeout=600):
                 break
 
 
-def post_oauth_device_callback(state: str, user_code: str):
+def post_oauth_device_callback(state: str, user_code: str) -> None:
     """
     Validate the user-provided device code.
 
@@ -115,7 +115,7 @@ def post_oauth_device_callback(state: str, user_code: str):
         client.post(url, data=data)
 
 
-def get_oauth_device_token(device_code: str):
+def get_oauth_device_token(device_code: str) -> tuple[str, str, str]:
     """
     Exchanges the device code for an access token.
 
@@ -154,7 +154,7 @@ def get_oauth_device_token(device_code: str):
         )
 
 
-def login(*, timeout=600):
+def login(*, timeout: int = 600) -> None:
     """Login to ``skore hub``."""
     with suppress(URIError, TokenError, HTTPError):
         # Avoid re-login when
