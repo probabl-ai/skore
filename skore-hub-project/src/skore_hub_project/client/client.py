@@ -1,7 +1,5 @@
 """Client exchanging with ``skore hub``."""
 
-from __future__ import annotations
-
 import logging
 from contextlib import suppress
 from http import HTTPStatus
@@ -20,12 +18,11 @@ from httpx import (
     Response,
     TimeoutException,
 )
-from httpx import (
-    Client as HTTPXClient,
-)
+from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
 from ..authentication import token as Token
+from ..authentication.uri import URI
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +108,7 @@ class Client(HTTPXClient):
 
             sleep_duration = min(timeout, self.retry_backoff_max)
 
-            logger.warn(
+            logger.warning(
                 "Request failed to reach server. "
                 f"Trying again in {sleep_duration} seconds."
             )
@@ -135,10 +132,6 @@ class Client(HTTPXClient):
         raise HTTPStatusError(message, request=response.request, response=response)
 
 
-class AuthenticationError(Exception):
-    """An exception dedicated to authentication."""
-
-
 class HUBClient(Client):
     """
     Client exchanging with ``skore hub``.
@@ -149,14 +142,7 @@ class HUBClient(Client):
         Use headers with API key or token, default True.
     """
 
-    URI: Final[str] = environ.get("SKORE_HUB_URI", "https://api.skore.probabl.ai")
-
-    def __init__(
-        self,
-        *,
-        authenticated=True,
-        **kwargs,
-    ):
+    def __init__(self, *, authenticated=True, **kwargs):
         super().__init__(**kwargs)
 
         self.authenticated = authenticated
@@ -176,14 +162,9 @@ class HUBClient(Client):
             if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
                 headers.update({"X-API-Key": f"{apikey}"})
             else:
-                if not Token.exists():
-                    raise AuthenticationError(
-                        "You are not logged in. Please run `skore-hub-login`"
-                    )
-
                 headers.update({"Authorization": f"Bearer {Token.access()}"})
 
-        # Prefix ``url`` by the hub URI when it's possible
-        url = urljoin(self.URI, str(url))
+        # Prefix the request by the hub URI when ``url`` is not absolute
+        url = urljoin(URI(), str(url))
 
         return super().request(method=method, url=url, headers=headers, **kwargs)
