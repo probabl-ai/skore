@@ -13,8 +13,9 @@ from urllib.parse import quote
 
 import joblib
 import orjson
+from httpx import HTTPStatusError
 
-from skore_hub_project.client.client import Client, HTTPStatusError, HUBClient
+from skore_hub_project.client.client import Client, HUBClient
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 if TYPE_CHECKING:
@@ -211,6 +212,8 @@ class Project:
             metadata = response.json()
             presigned_url = metadata["pickle"]["presigned_url"]
 
+        report: EstimatorReport | CrossValidationReport
+
         # Download pickled report before unpickling it.
         #
         # It uses streaming responses that do not load the entire response body into
@@ -225,7 +228,9 @@ class Project:
 
             tmpfile.seek(0)
 
-            return joblib.load(tmpfile)
+            report = joblib.load(tmpfile)
+
+        return report
 
     @ensure_project_is_created
     def summarize(self) -> list[Metadata]:

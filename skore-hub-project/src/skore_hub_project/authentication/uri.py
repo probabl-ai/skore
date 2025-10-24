@@ -18,7 +18,7 @@ def Filepath() -> Path:
     return Path(gettempdir(), "skore.uri")
 
 
-def persist(uri: str):
+def persist(uri: str) -> None:
     """Persist the URI."""
     Filepath().write_text(uri)
 
