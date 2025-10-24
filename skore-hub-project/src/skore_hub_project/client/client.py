@@ -5,7 +5,7 @@ from contextlib import suppress
 from http import HTTPStatus
 from os import environ
 from time import sleep
-from typing import Final
+from typing import Any, Final
 from urllib.parse import urljoin
 
 from httpx import (
@@ -83,7 +83,7 @@ class Client(HTTPXClient):
         self.retry_backoff_factor = retry_backoff_factor
         self.retry_backoff_max = retry_backoff_max
 
-    def request(self, *args, **kwargs) -> Response:
+    def request(self, *args: Any, **kwargs: Any) -> Response:
         """Execute request with retry strategy."""
         retries = 0
 
@@ -142,7 +142,7 @@ class HUBClient(Client):
         Use headers with API key or token, default True.
     """
 
-    def __init__(self, *, authenticated=True, **kwargs):
+    def __init__(self, *, authenticated: bool = True, **kwargs: Any):
         super().__init__(**kwargs)
 
         self.authenticated = authenticated
@@ -152,7 +152,7 @@ class HUBClient(Client):
         method: str,
         url: URL | str,
         headers: HeaderTypes | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Response:
         """Execute request with authorization."""
         headers = Headers(headers)
