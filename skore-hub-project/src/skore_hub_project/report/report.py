@@ -1,8 +1,10 @@
 """Class definition of the payload used to send a report to ``hub``."""
 
+from __future__ import annotations
+
 from abc import ABC
 from functools import cached_property
-from typing import ClassVar, Generic, TypeVar
+from typing import ClassVar, Generic, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -35,8 +37,8 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    METRICS: ClassVar[tuple[type[Metric], ...]]
-    MEDIAS: ClassVar[tuple[type[Media], ...]]
+    METRICS: ClassVar[tuple[type[Metric[Report]], ...]]
+    MEDIAS: ClassVar[tuple[type[Media[Report]], ...]]
 
     project: Project = Field(repr=False, exclude=True)
     report: Report = Field(repr=False, exclude=True)
@@ -54,10 +56,13 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         """The hash of the targets in the test-set."""
         import joblib
 
-        return joblib.hash(
-            self.report.y_test
-            if isinstance(self.report, EstimatorReport)
-            else self.report.y
+        return cast(
+            str,
+            joblib.hash(
+                self.report.y_test
+                if isinstance(self.report, EstimatorReport)
+                else self.report.y
+            ),
         )
 
     @computed_field  # type: ignore[prop-decorator]
@@ -68,7 +73,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def metrics(self) -> list[Metric]:
+    def metrics(self) -> list[Metric[Report]]:
         """
         The list of scalar metrics that have been computed from the report.
 
@@ -96,7 +101,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def medias(self) -> list[Media]:
+    def medias(self) -> list[Media[Report]]:
         """
         The list of medias that have been computed from the report.
 

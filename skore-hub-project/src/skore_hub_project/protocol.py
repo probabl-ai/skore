@@ -15,9 +15,9 @@ class EstimatorReport(Protocol):
     _cache: Any
     metrics: Any
     data: Any
-    ml_task: Any
+    ml_task: str
     estimator: Any
-    estimator_name_: Any
+    estimator_name_: str
     X_train: Any
     y_train: Any
     X_test: Any
@@ -42,9 +42,9 @@ class CrossValidationReport(Protocol):
     metrics: Any
     data: Any
     estimator_reports_: Any
-    ml_task: Any
+    ml_task: str
     estimator: Any
-    estimator_name_: Any
+    estimator_name_: str
     X: Any
     y: Any
     splitter: Any
