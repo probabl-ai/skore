@@ -159,9 +159,16 @@ convention = "numpy"
 "tests/*" = ["D"]
 
 [tool.mypy]
-ignore_missing_imports = true
-exclude = ["src/skore/_externals/.*", "hatch/*", "tests/*"]
+exclude = ["src/skore/_externals/", "hatch/", "tests/"]
 
 [[tool.mypy.overrides]]
-module = ["sklearn.*"]
 ignore_missing_imports = true
+module = [
+  "ipywidgets.*",
+  "joblib.*",
+  "pandas.*",
+  "plotly.*",
+  "seaborn.*",
+  "sklearn.*",
+  "skrub.*",
+]

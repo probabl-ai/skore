@@ -207,6 +207,8 @@ def train_test_split(
     if y is None and len(arrays) >= 2:
         y = arrays[-1]
 
+    y_labels: np.ndarray | None
+
     if y is not None:
         y_labels = np.unique(y)
         y_test = (

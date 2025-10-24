@@ -389,7 +389,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         results = _get_cached_response_values(
             cache=self._cache,
-            estimator_hash=self._hash,
+            estimator_hash=int(self._hash),
             estimator=self._estimator,
             X=X_,
             response_method=response_method,

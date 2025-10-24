@@ -1143,16 +1143,17 @@ class _MetricsAccessor(
                     X, y, _ = report.metrics._get_X_y_and_data_source_hash(
                         data_source=data_source
                     )
+
                 y_true.append(
                     YPlotData(
                         estimator_name=self._parent.estimator_name_,
                         split=report_idx,
-                        y=y,
+                        y=cast(ArrayLike, y),
                     )
                 )
                 results = _get_cached_response_values(
                     cache=report._cache,
-                    estimator_hash=report._hash,
+                    estimator_hash=int(report._hash),
                     estimator=report._estimator,
                     X=X,
                     response_method=response_method,

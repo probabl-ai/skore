@@ -342,7 +342,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ] = "predict",
         X: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
-    ) -> list[ArrayLike]:
+    ) -> list[ArrayLike | list[ArrayLike]]:
         """Get predictions from the underlying reports.
 
         This method has the advantage to reload from the cache if the predictions
