@@ -7,6 +7,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
+from scipy.sparse import issparse
 from sklearn import metrics
 from sklearn.base import is_classifier, is_regressor
 from sklearn.inspection import permutation_importance
@@ -28,6 +29,7 @@ from skore._utils._accessor import (
 from skore._utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
+
 
 Metric = Literal[
     "accuracy",
@@ -309,6 +311,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
         flat_index: bool = False,
+        at_step: int | str = 0,
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
 
@@ -386,6 +389,22 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             Whether to flatten the multi-index columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
+        at_step : int or str, default=0
+            If the estimator is a :class:`~sklearn.pipeline.Pipeline`, at which step of
+            the pipeline the importance is computed. If `n`, then the features that
+            are evaluated are the ones *right before* the `n`-th step of the pipeline.
+            For instance,
+
+            - If 0, compute the importance just before the start of the pipeline (i.e.
+              the importance of the raw input features).
+            - If -1, compute the importance just before the end of the pipeline (i.e.
+              the importance of the fully engineered features, just before the actual
+              prediction step).
+
+            If a string, will be searched among the pipeline's `named_steps`.
+
+            Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
+
         Returns
         -------
         pandas.DataFrame
@@ -447,6 +466,33 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         r2_feature_0  0.792...  0.131...
         r2_feature_1  2.478...  0.223...
         r2_feature_2  0.025...  0.003...
+
+        >>> # Compute the importance at the end of feature engineering pipeline
+        >>> from sklearn.pipeline import make_pipeline
+        >>> from sklearn.preprocessing import StandardScaler
+        >>> pipeline = make_pipeline(StandardScaler(), Ridge())
+        >>> pipeline_report = EstimatorReport(pipeline, **split_data)
+        >>> pipeline_report.feature_importance.permutation(
+        ...    n_repeats=2,
+        ...    seed=0,
+        ...    at_step=-1,
+        ... )
+        Repeat         Repeat #0  Repeat #1
+        Metric Feature
+        r2     x0       0.699...   0.884...
+               x1       2.318...   2.633...
+               x2       0.028...   0.022...
+
+        >>> pipeline_report.feature_importance.permutation(
+        ...    n_repeats=2,
+        ...    seed=0,
+        ...    at_step="ridge",
+        ... )
+        Repeat         Repeat #0  Repeat #1
+        Metric Feature
+        r2     x0       0.699...   0.884...
+               x1       2.318...   2.633...
+               x2       0.028...   0.022...
         """
         return self._feature_permutation(
             data_source=data_source,
@@ -460,22 +506,24 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             n_jobs=n_jobs,
             seed=seed,
             flat_index=flat_index,
+            at_step=at_step,
         )
 
     def _feature_permutation(
         self,
         *,
-        data_source: DataSource = "test",
-        data_source_hash: int | None = None,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-        aggregate: Aggregate | None = None,
-        scoring: Scoring | None = None,
-        n_repeats: int = 5,
-        max_samples: float = 1.0,
-        n_jobs: int | None = None,
-        seed: int | None = None,
-        flat_index: bool = False,
+        data_source: DataSource,
+        data_source_hash: int | None,
+        X: ArrayLike | None,
+        y: ArrayLike | None,
+        aggregate: Aggregate | None,
+        scoring: Scoring | None,
+        n_repeats: int,
+        max_samples: float,
+        n_jobs: int | None,
+        seed: int | None,
+        flat_index: bool,
+        at_step: int | str,
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
 
@@ -501,6 +549,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 self._parent._hash,
                 "permutation_importance",
                 data_source,
+                at_step,
             ]
 
             if data_source_hash is not None:
@@ -532,9 +581,54 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if cache_key in self._parent._cache:
             score = self._parent._cache[cache_key]
         else:
+            if not isinstance(self._parent.estimator_, Pipeline) or at_step == 0:
+                estimator = self._parent.estimator_
+                X_transformed = X_
+                if hasattr(estimator, "feature_names_in_"):
+                    feature_names = estimator.feature_names_in_
+                elif hasattr(estimator, "n_features_in_"):
+                    feature_names = [
+                        f"Feature #{i}" for i in range(estimator.n_features_in_)
+                    ]
+                else:
+                    feature_names = [
+                        f"Feature #{i}" for i in range(X_transformed.shape[1])
+                    ]
+
+            else:
+                pipeline = self._parent.estimator_
+                if not isinstance(at_step, str | int):
+                    raise ValueError(
+                        f"at_step must be an integer or a string; got {at_step!r}"
+                    )
+
+                if isinstance(at_step, str):
+                    # Make at_step an int and process it as usual
+                    at_step = list(pipeline.named_steps.keys()).index(at_step)
+
+                if isinstance(at_step, int):
+                    if abs(at_step) >= len(pipeline.steps):
+                        raise ValueError(
+                            "at_step must be strictly smaller in magnitude than the "
+                            "number of steps in the Pipeline, which is "
+                            f"{len(pipeline.steps)}; got {at_step}"
+                        )
+                    feature_eng, estimator = pipeline[:at_step], pipeline[at_step:]
+                    X_transformed = feature_eng.transform(X_)
+
+                if hasattr(estimator, "feature_names_in_"):
+                    feature_names = estimator.feature_names_in_
+                elif hasattr(feature_eng, "get_feature_names_out"):
+                    feature_names = feature_eng.get_feature_names_out()
+                else:
+                    [f"Feature #{i}" for i in range(estimator.n_features_in_)]
+
+            if issparse(X_transformed):
+                X_transformed = X_transformed.todense()
+
             sklearn_score = permutation_importance(
-                estimator=self._parent.estimator_,
-                X=X_,
+                estimator=estimator,
+                X=X_transformed,
                 y=y_true,
                 scoring=checked_scoring,
                 n_repeats=n_repeats,
@@ -544,34 +638,22 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
             score = sklearn_score.get("importances")
 
-            feature_names = (
-                self._parent.estimator_.feature_names_in_
-                if hasattr(self._parent.estimator_, "feature_names_in_")
-                else [f"Feature #{i}" for i in range(X_.shape[1])]
-            )
-
             # If there is more than one metric
             if score is None:
                 data = np.concatenate(
                     [v["importances"] for v in sklearn_score.values()]
                 )
-                n_repeats = data.shape[1]
                 index = pd.MultiIndex.from_product(
                     [sklearn_score, feature_names], names=("Metric", "Feature")
                 )
-                columns = pd.Index(
-                    (f"Repeat #{i}" for i in range(n_repeats)), name="Repeat"
-                )
-                score = pd.DataFrame(data=data, index=index, columns=columns)
             else:
                 data = score
-                n_repeats = data.shape[1]
 
                 # Get score name
                 if scoring is None:
-                    if is_classifier(self._parent.estimator_):
+                    if is_classifier(estimator):
                         scoring_name = "accuracy"
-                    elif is_regressor(self._parent.estimator_):
+                    elif is_regressor(estimator):
                         scoring_name = "r2"
                 else:
                     # e.g. if scoring is a callable
@@ -587,10 +669,11 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                         [[scoring_name], feature_names], names=("Metric", "Feature")
                     )
 
-                columns = pd.Index(
-                    (f"Repeat #{i}" for i in range(n_repeats)), name="Repeat"
-                )
-                score = pd.DataFrame(data=data, index=index, columns=columns)
+            n_repeats = data.shape[1]
+            columns = pd.Index(
+                (f"Repeat #{i}" for i in range(n_repeats)), name="Repeat"
+            )
+            score = pd.DataFrame(data=data, index=index, columns=columns)
 
             if cache_key is not None:
                 # Unless seed is an int (i.e. the call is deterministic),
