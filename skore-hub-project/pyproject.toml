@@ -59,6 +59,7 @@ addopts = [
   "--verbosity=2",
   "--dist=loadscope",
 ]
+filterwarnings = ["error"]
 
 [tool.coverage.run]
 branch = true
