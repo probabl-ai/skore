@@ -62,3 +62,9 @@ def test_get_predictions(
     assert len(predictions) == len(report.reports_)
     for i, cv_report in enumerate(report.reports_.values()):
         assert len(predictions[i]) == cv_report._splitter.n_splits
+
+
+def test_estimator_reports_(cross_validation_reports_regression):
+    cv, _ = cross_validation_reports_regression
+
+    assert id(cv.estimator_reports_) == id(cv.reports_)

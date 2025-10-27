@@ -165,7 +165,7 @@ roc_plot_cv.plot()
 # for example getting the report metrics for the first split only:
 
 # %%
-cv_report.estimator_reports_[0].metrics.summarize().frame()
+cv_report.reports_[0].metrics.summarize().frame()
 
 # %%
 # .. seealso::
