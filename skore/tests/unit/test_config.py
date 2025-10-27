@@ -119,11 +119,8 @@ def test_config_threadsafe():
     sleep_durations = [0.1, 0.2, 0.1, 0.2]
 
     with ThreadPoolExecutor(max_workers=2) as e:
-        items = [
-            output
-            for output in e.map(
-                _set_show_progress_for_testing, show_progresses, sleep_durations
-            )
-        ]
+        items = list(
+            e.map(_set_show_progress_for_testing, show_progresses, sleep_durations)
+        )
 
     assert items == [False, True, False, True]
