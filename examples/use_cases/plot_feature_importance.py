@@ -999,46 +999,24 @@ ridge_report.feature_importance.permutation(seed=0)
 # Now, we plot the permutation feature importance on the train and test sets using boxplots:
 
 
-def plot_permutation_train_test(*, train_importance, test_importance):
+def plot_permutation_train_test(importances):
     _, ax = plt.subplots(figsize=(8, 6))
 
-    train_color = "blue"
-    test_color = "orange"
+    # create a long format required by seaborn
+    importances = importances.stack().reset_index()
+    importances.columns = ["Dataset", "Feature", "Repeats", "Importance"]
 
-    features = list(train_importance.reset_index()["Feature"])
-
-    train_importance.T.boxplot(
+    sns.boxplot(
+        data=importances,
+        x="Importance",
+        y="Feature",
+        hue="Dataset",
+        orient="h",
+        order=importances["Feature"].unique()[::-1],
         ax=ax,
-        vert=False,
-        widths=0.35,
-        patch_artist=True,
-        boxprops={"facecolor": train_color, "alpha": 0.7},
-        medianprops={"color": "black"},
-        positions=[x + 0.4 for x in range(len(features))],
     )
-    test_importance.T.boxplot(
-        ax=ax,
-        vert=False,
-        widths=0.35,
-        patch_artist=True,
-        boxprops={"facecolor": test_color, "alpha": 0.7},
-        medianprops={"color": "black"},
-        positions=range(len(features)),
-    )
-
-    ax.legend(
-        handles=[
-            plt.Line2D([0], [0], color=train_color, lw=5, label="Train"),
-            plt.Line2D([0], [0], color=test_color, lw=5, label="Test"),
-        ],
-        loc="best",
-        title="Dataset",
-    )
-
+    ax.set_xlabel("Decrease of $R^2$ score")
     ax.set_title("Permutation feature importance (Train vs Test)")
-    ax.set_xlabel("Importance")
-    ax.set_yticks([x + 0.2 for x in range(len(features))])
-    ax.set_yticklabels(features)
 
     plt.tight_layout()
     plt.show()
@@ -1047,18 +1025,24 @@ def plot_permutation_train_test(*, train_importance, test_importance):
 # %%
 
 
-def compute_permutation_importances(report, **kwargs):
+def compute_permutation_importances(report, at_step=0):
     train_importance = report.feature_importance.permutation(
-        data_source="train", seed=0, **kwargs
+        data_source="train", seed=0, at_step=at_step
     )
     test_importance = report.feature_importance.permutation(
-        data_source="test", seed=0, **kwargs
+        data_source="test", seed=0, at_step=at_step
     )
-    return {"train_importance": train_importance, "test_importance": test_importance}
+    print(train_importance)
+
+    return pd.concat(
+        {"train": train_importance, "test": test_importance},
+        axis=0,
+        names=["Dataset"],
+    ).droplevel(level=1, axis=0)
 
 
 # %%
-plot_permutation_train_test(**compute_permutation_importances(ridge_report))
+plot_permutation_train_test(compute_permutation_importances(ridge_report))
 
 # %%
 # The standard deviation seems quite low.
@@ -1074,7 +1058,7 @@ plot_permutation_train_test(**compute_permutation_importances(ridge_report))
 # pipeline (with regards to the original features):
 
 # %%
-plot_permutation_train_test(**compute_permutation_importances(selectk_ridge_report))
+plot_permutation_train_test(compute_permutation_importances(selectk_ridge_report))
 
 # %%
 # Since this estimator involves complex feature engineering, it is interesting to look
@@ -1084,28 +1068,27 @@ plot_permutation_train_test(**compute_permutation_importances(selectk_ridge_repo
 
 # %%
 importances = compute_permutation_importances(selectk_ridge_report, at_step=-1)
-train_importance, test_importance = (
-    importances["train_importance"],
-    importances["test_importance"],
-)
 
-# Rename the features for clarity
-train_importance.index = test_importance.index = (
-    train_importance.index.droplevel(0)
+# Rename some features for clarity
+importances = importances.reset_index()
+importances["Feature"] = (
+    importances["Feature"]
     .str.replace("remainder__", "")
     .str.replace("kmeans__", "geospatial__")
 )
 
 # Take only the 15 most important train features
+importances = importances.set_index(["Dataset", "Feature"])
 best_15_features = (
-    train_importance.aggregate("mean", axis=1).sort_values(key=abs).tail(15).index
+    importances.loc[("test", slice(None))]
+    .aggregate("mean", axis=1)
+    .sort_values(key=abs)
+    .tail(15)
+    .index
 )
-train_importance = train_importance.loc[best_15_features]
-test_importance = test_importance.loc[best_15_features]
+importances = importances[importances.index.isin(best_15_features, level=1)]
 
-plot_permutation_train_test(
-    train_importance=train_importance, test_importance=test_importance
-)
+plot_permutation_train_test(importances)
 
 # %%
 # Hence, contrary to coefficients, although we have created many features in our
@@ -1121,7 +1104,7 @@ plot_permutation_train_test(
 # For our decision tree, here is our permutation importance on the train and test sets:
 
 # %%
-plot_permutation_train_test(**compute_permutation_importances(tree_report))
+plot_permutation_train_test(compute_permutation_importances(tree_report))
 
 # %%
 # The result of the inspection is the same as with the MDI:
