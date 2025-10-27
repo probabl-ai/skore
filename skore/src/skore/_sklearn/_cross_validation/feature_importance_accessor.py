@@ -48,10 +48,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
             {
                 split: df["Coefficient"]
                 for split, df in enumerate(
-                    list(
-                        report.feature_importance.coefficients().frame()
-                        for report in self._parent.estimator_reports_
-                    )
+                    report.feature_importance.coefficients().frame()
+                    for report in self._parent.estimator_reports_
                 )
             },
             axis=1,
