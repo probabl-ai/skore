@@ -41,17 +41,15 @@ def test_table_report(
     # ensure content is well constructed
     dataframe = loads(content)
 
-    assert set(
-        [
-            "n_rows",
-            "n_columns",
-            "n_constant_columns",
-            "extract_head",
-            "extract_tail",
-            "columns",
-            "top_associations",
-        ]
-    ).issubset(dataframe.keys())
+    assert {
+        "n_rows",
+        "n_columns",
+        "n_constant_columns",
+        "extract_head",
+        "extract_tail",
+        "columns",
+        "top_associations",
+    }.issubset(dataframe.keys())
 
     # ensure payload is well constructed
     assert media.model_dump() == {
