@@ -79,7 +79,7 @@ class Project:
         | The workspace can be shared between all the projects.
         | The workspace can be set using kwargs or the environment variable
           ``SKORE_WORKSPACE``.
-        | If not, it will be by default set to a ``skore/`` directory in the USER
+        | If not, it will be by default set to a ``skore/`` directory in the user
           cache directory:
 
         - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
