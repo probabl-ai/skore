@@ -1,5 +1,6 @@
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 from skrub import _dataframe as sbd
 
@@ -41,21 +42,20 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         X = self._parent.X
         y = self._parent.y
 
-        if not sbd.is_dataframe(X):
-            X = pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])])  # type: ignore
+        if isinstance(X, np.ndarray):
+            X = pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])])
 
         if with_y:
             if y is None:
                 raise ValueError("y is required when `with_y=True`.")
 
             if isinstance(y, pd.Series):
-                name = y.name if y.name is not None else "Target"
-                y = y.to_frame(name=name)
-            elif not sbd.is_dataframe(y):
-                if y.ndim == 1:  # type: ignore
+                y = y.to_frame(name=(y.name or "Target"))
+            elif isinstance(y, np.ndarray):
+                if y.ndim == 1:
                     columns = ["Target"]
                 else:
-                    columns = [f"Target {i}" for i in range(y.shape[1])]  # type: ignore
+                    columns = [f"Target {i}" for i in range(y.shape[1])]
 
                 y = pd.DataFrame(y, columns=columns)
 
