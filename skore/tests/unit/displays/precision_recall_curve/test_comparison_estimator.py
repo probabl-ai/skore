@@ -96,7 +96,7 @@ def test_multiclass_classification(
     assert isinstance(display, PrecisionRecallCurveDisplay)
     check_display_data(display)
 
-    class_labels = list(report.reports_.values())[0].estimator_.classes_
+    class_labels = next(iter(report.reports_.values())).estimator_.classes_
 
     display.plot()
     assert isinstance(display.lines_, list)
