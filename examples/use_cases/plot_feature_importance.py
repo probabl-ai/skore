@@ -1077,8 +1077,10 @@ plot_permutation_train_test(**compute_permutation_importances(ridge_report))
 plot_permutation_train_test(**compute_permutation_importances(selectk_ridge_report))
 
 # %%
-# Since this estimator is a Pipeline, it can be also be interesting to look at the *engineered*
-# features rather than the raw input features; this can be done by setting the ``at_step`` parameter:
+# Since this estimator involves complex feature engineering, it is interesting to look
+# at the impact of the *engineered* features rather than the original input features.
+# For instance, we can check whether features with a low importance rating have indeed
+# been selected out of the engineered features.
 
 # %%
 importances = compute_permutation_importances(selectk_ridge_report, at_step=-1)
@@ -1111,8 +1113,9 @@ plot_permutation_train_test(
 # We notice that, due to our preprocessing using a clustering on the geospatial data,
 # these features are of great importance to our model.
 #
-# Also, Average Bedrooms and Average Rooms appear often in the plot, whereas they were not considered
-# as important when looking at the coefficients.
+# Also, Average Bedrooms and Average Rooms appear often in the plot, whereas they were
+# not considered as important when looking at the coefficients. It means that once
+# combined with other features, they become more relevant.
 
 # %%
 # For our decision tree, here is our permutation importance on the train and test sets:
