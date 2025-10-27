@@ -111,8 +111,8 @@ def _compute_contingency_table(
     cols = sbd.concat(sbd.to_frame(x), sbd.to_frame(y), axis=1)
     top_pairs = cols.value_counts().nlargest(k).index
 
-    top_x_values = sorted(set(pair[0] for pair in top_pairs))
-    top_y_values = sorted(set(pair[1] for pair in top_pairs))
+    top_x_values = sorted({pair[0] for pair in top_pairs})
+    top_y_values = sorted({pair[1] for pair in top_pairs})
 
     # As stated by a pandas warning, we call explicitly `infer_objects` to downcast
     # the contingency table and silence the warning using the context manager.
