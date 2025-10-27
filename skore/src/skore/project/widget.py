@@ -578,24 +578,24 @@ class ModelExplorerWidget:
 
             dimensions = []
             dimensions.append(
-                dict(
-                    label="Learner",
-                    values=self._add_jitter_to_categorical(
+                {
+                    "label": "Learner",
+                    "values": self._add_jitter_to_categorical(
                         self.seed, df_dataset["learner"]
                     ),
-                    ticktext=df_dataset["learner"].cat.categories,
-                    tickvals=np.arange(len(df_dataset["learner"].cat.categories)),
-                )
+                    "ticktext": df_dataset["learner"].cat.categories,
+                    "tickvals": np.arange(len(df_dataset["learner"].cat.categories)),
+                }
             )
 
             for col in selected_metrics:  # use the order defined in the constructor
                 dimensions.append(
-                    dict(
-                        label=self._metrics[col]["name"],
+                    {
+                        "label": self._metrics[col]["name"],
                         # convert to float in case that the column has None values and
                         # thus is object type
-                        values=df_dataset[col].astype(float).fillna(0),
-                    )
+                        "values": df_dataset[col].astype(float).fillna(0),
+                    }
                 )
 
             colorscale = (
@@ -605,21 +605,21 @@ class ModelExplorerWidget:
             )
             fig = go.FigureWidget(
                 data=go.Parcoords(
-                    line=dict(
-                        color=df_dataset[color_metric].fillna(0),
-                        colorscale=colorscale,
-                        showscale=True,
-                        colorbar=dict(title=self._metrics[color_metric]["name"]),
-                    ),
+                    line={
+                        "color": df_dataset[color_metric].fillna(0),
+                        "colorscale": colorscale,
+                        "showscale": True,
+                        "colorbar": {"title": self._metrics[color_metric]["name"]},
+                    },
                     dimensions=dimensions,
                     labelangle=-30,
                 )
             )
 
             fig.update_layout(
-                font=dict(size=18),
+                font={"size": 18},
                 height=500,
-                margin=dict(l=250, r=0, t=120, b=30),
+                margin={"l": 250, "r": 0, "t": 120, "b": 30},
             )
 
             fig.data[0].on_selection(self.update_selection)  # callback

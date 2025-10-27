@@ -31,19 +31,19 @@ def display(estimator_report):
     "params, err_msg",
     [
         (
-            dict(kind="dist"),
+            {"kind": "dist"},
             "When kind='dist', at least one of x, y must be provided and",
         ),
         (
-            dict(kind="dist", hue="current_annual_salary"),
+            {"kind": "dist", "hue": "current_annual_salary"},
             "When kind='dist', at least one of x, y must be provided and",
         ),
         (
-            dict(kind="corr", x="current_annual_salary"),
+            {"kind": "corr", "x": "current_annual_salary"},
             "When kind='corr', 'x' argument must be None.",
         ),
         (
-            dict(kind="unknown"),
+            {"kind": "unknown"},
             "'kind' options are 'dist', 'corr', got 'unknown'.",
         ),
     ],

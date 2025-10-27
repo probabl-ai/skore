@@ -624,7 +624,7 @@ fig.add_shape(
     y0=X_y_plot["y_pred"].min(),
     x1=X_y_plot["y_pred"].max(),
     y1=X_y_plot["y_pred"].max(),
-    line=dict(color="black", width=2),
+    line={"color": "black", "width": 2},
 )
 fig
 
@@ -1011,8 +1011,8 @@ def plot_permutation_train_test(est_report):
         vert=False,
         widths=0.35,
         patch_artist=True,
-        boxprops=dict(facecolor=train_color, alpha=0.7),
-        medianprops=dict(color="black"),
+        boxprops={"facecolor": train_color, "alpha": 0.7},
+        medianprops={"color": "black"},
         positions=[x + 0.4 for x in range(len(est_report.X_train.columns))],
     )
     est_report.feature_importance.permutation(data_source="test", seed=0).T.boxplot(
@@ -1020,8 +1020,8 @@ def plot_permutation_train_test(est_report):
         vert=False,
         widths=0.35,
         patch_artist=True,
-        boxprops=dict(facecolor=test_color, alpha=0.7),
-        medianprops=dict(color="black"),
+        boxprops={"facecolor": test_color, "alpha": 0.7},
+        medianprops={"color": "black"},
         positions=range(len(est_report.X_test.columns)),
     )
 

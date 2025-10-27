@@ -260,7 +260,7 @@ def test_roc_curve_kwargs_multiclass_classification(
     )
     display = report.metrics.roc()
     display.plot(
-        roc_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")],
+        roc_curve_kwargs=[{"color": "red"}, {"color": "blue"}, {"color": "green"}],
         chance_level_kwargs={"color": "blue"},
     )
     assert display.lines_[0].get_color() == "red"

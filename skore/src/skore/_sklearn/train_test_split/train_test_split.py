@@ -218,19 +218,19 @@ def train_test_split(
 
     ml_task = _find_ml_task(y)
 
-    kwargs = dict(
-        arrays=new_arrays,
-        test_size=test_size,
-        train_size=train_size,
-        random_state=random_state,
-        shuffle=shuffle,
-        stratify=stratify,
-        X=X,
-        y=y,
-        y_test=y_test,
-        y_labels=y_labels,
-        ml_task=ml_task,
-    )
+    kwargs = {
+        "arrays": new_arrays,
+        "test_size": test_size,
+        "train_size": train_size,
+        "random_state": random_state,
+        "shuffle": shuffle,
+        "stratify": stratify,
+        "X": X,
+        "y": y,
+        "y_test": y_test,
+        "y_labels": y_labels,
+        "ml_task": ml_task,
+    }
 
     from skore import console  # avoid circular import
 
