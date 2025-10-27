@@ -14,8 +14,8 @@ from sphinx_gallery.sorting import ExplicitOrder
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath("sphinxext"))
-from github_link import make_linkcode_resolve  # noqa
-from matplotlib_skore_scraper import matplotlib_skore_scraper  # noqa
+from github_link import make_linkcode_resolve
+from matplotlib_skore_scraper import matplotlib_skore_scraper
 
 project = "skore"
 copyright = "2024, Probabl"
