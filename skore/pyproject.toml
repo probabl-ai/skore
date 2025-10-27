@@ -5,13 +5,13 @@ description = """\
 Skore's open-source Python library accelerates ML model development with automated evaluation reports, \
 smart methodological guidance, and comprehensive cross-validation analysis.\
 """
-dynamic = ["license", "readme", "version"]
+dynamic = ["license-files", "readme", "version"]
 requires-python = ">=3.10"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
+license = "MIT"
 classifiers = [
   "Intended Audience :: Science/Research",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python",
   "Topic :: Software Development",
   "Topic :: Scientific/Engineering",

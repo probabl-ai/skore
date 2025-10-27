@@ -1,5 +1,6 @@
 """Hatchling hooks used to dynamically update the metadata of the package."""
 
+from os.path import basename
 from pathlib import Path
 
 from hatchling.metadata.plugin.interface import MetadataHookInterface
@@ -34,15 +35,16 @@ class MetadataHook(MetadataHookInterface):
         """
         # Retrieve LICENCE from root files
         license_filepath = self.config["license"]["file"]
-        license = Path(self.root, license_filepath).read_text(encoding="utf-8")
+        license_text = Path(self.root, license_filepath).read_text(encoding="utf-8")
 
         # Copy LICENCE file in `sdist`
-        with open(Path(self.root, "LICENSE"), "w") as f:
-            f.write(license)
+        license_filepath = basename(license_filepath)
+        with open(Path(self.root, license_filepath), "w") as f:
+            f.write(license_text)
 
         # Retrieve README from root files
         readme_filepath = self.config["readme"]["file"]
-        readme = Path(self.root, readme_filepath).read_text(encoding="utf-8")
+        readme_text = Path(self.root, readme_filepath).read_text(encoding="utf-8")
 
         # Retrieve VERSION from file created by the CI
         try:
@@ -51,6 +53,6 @@ class MetadataHook(MetadataHookInterface):
             version = self.config["version-default"]
 
         # Update metadata
-        metadata["license"] = {"text": license, "content-type": "text/plain"}
-        metadata["readme"] = {"text": readme, "content-type": "text/markdown"}
+        metadata["license-files"] = [license_filepath]
+        metadata["readme"] = {"text": readme_text, "content-type": "text/markdown"}
         metadata["version"] = version
