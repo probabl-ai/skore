@@ -120,6 +120,10 @@ class TestCrossValidationReportPayload:
     def test_class_names(self, payload):
         assert payload.class_names == ["1", "0"]
 
+    @mark.filterwarnings(
+        # ignore `scipy` deprecation warning, raised by `scikit-learn<1.7`
+        "ignore:scipy.optimize*:DeprecationWarning"
+    )
     def test_classes(self, payload):
         X, y = make_classification(
             random_state=42,
@@ -145,6 +149,11 @@ class TestCrossValidationReportPayload:
     def test_classes_many_rows(self, payload):
         assert payload.classes == [0, 0, 1, 1, 1, 0, 0, 1, 0, 1]
 
+    @mark.filterwarnings(
+        # ignore precision warning due to the low number of labels in
+        # `small_cv_binary_classification`, raised by `scikit-learn`
+        "ignore:Precision is ill-defined*:sklearn.exceptions.UndefinedMetricWarning"
+    )
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
     @mark.usefixtures("monkeypatch_upload_with_mock")
@@ -192,6 +201,11 @@ class TestCrossValidationReportPayload:
             "content_type": "application/octet-stream",
         }
 
+    @mark.filterwarnings(
+        # ignore precision warning due to the low number of labels in
+        # `small_cv_binary_classification`, raised by `scikit-learn`
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
     def test_metrics(self, payload):
         assert list(map(type, payload.metrics)) == [
             AccuracyTestMean,
@@ -234,6 +248,11 @@ class TestCrossValidationReportPayload:
             TableReport,
         ]
 
+    @mark.filterwarnings(
+        # ignore precision warning due to the low number of labels in
+        # `small_cv_binary_classification`, raised by `scikit-learn`
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
     def test_model_dump(self, small_cv_binary_classification, payload):
