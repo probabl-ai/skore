@@ -48,7 +48,7 @@ def ensure_project_is_not_deleted(method):
     def wrapper(self, *args, **kwargs):
         if self.name not in self._Project__projects_storage:
             raise RuntimeError(
-                f"Skore could not proceed because {repr(self)} does not exist anymore."
+                f"Skore could not proceed because {self!r} does not exist anymore."
             )
 
         return method(self, *args, **kwargs)
