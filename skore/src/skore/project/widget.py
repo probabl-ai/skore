@@ -207,7 +207,7 @@ class ModelExplorerWidget:
             df.columns = [col.removesuffix("_mean") for col in df.columns]
         return df
 
-    def _get_datasets(self, ml_task: str, report_type: str) -> np.ndarray:
+    def _get_datasets(self, ml_task: str, report_type: str) -> list[str]:
         """Get the unique datasets from the filtered dataframe.
 
         Parameters
@@ -219,7 +219,7 @@ class ModelExplorerWidget:
 
         Returns
         -------
-        np.ndarray
+        list[str]
             The unique datasets.
         """
         return self._filter_dataframe(ml_task, report_type)["dataset"].unique()
@@ -421,12 +421,12 @@ class ModelExplorerWidget:
             layout=widgets.Layout(width="100%", overflow="hidden"),
         )
 
-    def _update_dataset_dropdown(self, datasets: np.ndarray) -> None:
+    def _update_dataset_dropdown(self, datasets: list[str]) -> None:
         """Update the dataset dropdown options.
 
         Parameters
         ----------
-        datasets : np.ndarray
+        datasets : list[str]
             The datasets to display in the dropdown.
         """
         self._dataset_dropdown.options = datasets
