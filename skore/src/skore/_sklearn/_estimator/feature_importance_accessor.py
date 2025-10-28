@@ -501,6 +501,10 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         r2     x0       0.699...   0.884...
                x1       2.318...   2.633...
                x2       0.028...   0.022...
+
+        Notes
+        -----
+        Even if pipeline components output sparse arrays, these will be made dense.
         """
         return self._feature_permutation(
             data_source=data_source,
