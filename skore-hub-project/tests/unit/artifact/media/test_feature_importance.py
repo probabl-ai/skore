@@ -118,6 +118,7 @@ def test_feature_importance(
     }
 
     # unavailable accessor
+    report.clear_cache()
     monkeypatch.delattr(report.feature_importance.__class__, accessor)
     upload_mock.reset_mock()
 
