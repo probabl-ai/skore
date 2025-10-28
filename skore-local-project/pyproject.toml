@@ -71,7 +71,7 @@ exclude_also = [
 src = ["skore_local_project"]
 
 [tool.ruff.lint]
-select = ["E", "F", "UP", "B", "C4", "SIM", "T", "I", "D"]
+select = ["E", "F", "UP", "B", "C4", "SIM", "T", "I", "D", "RUF010", "RUF015"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"

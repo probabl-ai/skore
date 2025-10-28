@@ -152,6 +152,8 @@ select = [
   "I",
   # pydocstyle
   "D",
+  # Ruff-specific rules
+  "RUF010", "RUF015",
 ]
 
 [tool.ruff.lint.pydocstyle]
