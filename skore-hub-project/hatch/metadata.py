@@ -34,10 +34,10 @@ class MetadataHook(MetadataHookInterface):
             }
         """
         # Copy LICENCE file from root to `sdist`
-        license_filepath = self.config["license"]["file"]
-        license_filepath = Path(self.root, license_filepath)
-        copy(license_filepath, self.root)
+        license_filepath = Path(self.root, self.config["license"]["file"])
         license_filename = license_filepath.name
+
+        copy(license_filepath, self.root)
 
         # Retrieve README from root files
         readme_filepath = self.config["readme"]["file"]
