@@ -63,6 +63,12 @@ metric_to_scorer: dict[Metric, Callable] = {
     "rmse": make_scorer(metrics.root_mean_squared_error),
 }
 
+def _function_call_succeeds(func: Callable) -> bool:
+    try:
+        func()
+        return True
+    except Exception:
+        return False
 
 def _check_scoring(scoring: Any) -> Scoring | None:
     """Check that `scoring` is valid, and convert it to a suitable form as needed.
@@ -618,10 +624,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
                 if hasattr(estimator, "feature_names_in_"):
                     feature_names = estimator.feature_names_in_
-                elif hasattr(feature_eng, "get_feature_names_out"):
+                elif _function_call_succeeds(feature_eng.get_feature_names_out):
                     feature_names = feature_eng.get_feature_names_out()
                 else:
-                    [f"Feature #{i}" for i in range(estimator.n_features_in_)]
+                    feature_names = [
+                        f"Feature #{i}" for i in range(estimator.n_features_in_)
+                    ]
 
             if issparse(X_transformed):
                 X_transformed = X_transformed.todense()
