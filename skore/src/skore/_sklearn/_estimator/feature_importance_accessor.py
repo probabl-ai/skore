@@ -63,12 +63,14 @@ metric_to_scorer: dict[Metric, Callable] = {
     "rmse": make_scorer(metrics.root_mean_squared_error),
 }
 
+
 def _function_call_succeeds(func: Callable) -> bool:
     try:
         func()
         return True
     except Exception:
         return False
+
 
 def _check_scoring(scoring: Any) -> Scoring | None:
     """Check that `scoring` is valid, and convert it to a suitable form as needed.
@@ -592,10 +594,9 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 X_transformed = X_
                 if hasattr(estimator, "feature_names_in_"):
                     feature_names = estimator.feature_names_in_
-                elif hasattr(estimator, "n_features_in_"):
-                    feature_names = [
-                        f"Feature #{i}" for i in range(estimator.n_features_in_)
-                    ]
+                elif hasattr(X_transformed, "columns"):
+                    # Infer the column from the dataframe if it is one
+                    feature_names = X_transformed.columns.tolist()
                 else:
                     feature_names = [
                         f"Feature #{i}" for i in range(X_transformed.shape[1])
@@ -626,9 +627,11 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     feature_names = estimator.feature_names_in_
                 elif _function_call_succeeds(feature_eng.get_feature_names_out):
                     feature_names = feature_eng.get_feature_names_out()
+                elif hasattr(X_transformed, "columns"):
+                    feature_names = X_transformed.columns.tolist()
                 else:
                     feature_names = [
-                        f"Feature #{i}" for i in range(estimator.n_features_in_)
+                        f"Feature #{i}" for i in range(X_transformed.shape[1])
                     ]
 
             if issparse(X_transformed):
