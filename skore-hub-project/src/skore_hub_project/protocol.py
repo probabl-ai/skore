@@ -7,6 +7,7 @@ from typing import Any, Protocol, runtime_checkable
 class EstimatorReport(Protocol):
     """Protocol equivalent to ``skore.EstimatorReport``."""
 
+    _hash: int
     clear_cache: Any
     _cache: Any
     metrics: Any
@@ -25,6 +26,7 @@ class EstimatorReport(Protocol):
 class CrossValidationReport(Protocol):
     """Protocol equivalent to ``skore.CrossValidationReport``."""
 
+    _hash: int
     clear_cache: Any
     _cache: Any
     metrics: Any
