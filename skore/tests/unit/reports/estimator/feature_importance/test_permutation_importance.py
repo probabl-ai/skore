@@ -241,7 +241,7 @@ def test_cache_seed_none(regression_data):
         pd.testing.assert_frame_equal(importance_first_call, importance_second_call)
     # the cache should contain the last result
     assert len(report._cache) == 1
-    key = list(report._cache.keys())[0]
+    key = next(iter(report._cache.keys()))
     pd.testing.assert_frame_equal(report._cache[key], importance_second_call)
 
 
@@ -265,7 +265,7 @@ def test_cache_seed_int(regression_data):
     pd.testing.assert_frame_equal(importance_first_call, importance_second_call)
     # the cache should contain the last result
     assert len(report._cache) == 1
-    key = list(report._cache.keys())[0]
+    key = next(iter(report._cache.keys()))
     pd.testing.assert_frame_equal(report._cache[key], importance_second_call)
 
 

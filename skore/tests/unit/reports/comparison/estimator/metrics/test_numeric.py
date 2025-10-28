@@ -98,7 +98,7 @@ def test_binary_classification(
 ):
     """Check the metrics work."""
     report = comparison_estimator_reports_binary_classification
-    sub_report = list(report.reports_.values())[0]
+    sub_report = next(iter(report.reports_.values()))
     X_test, y_test = sub_report.X_test, sub_report.y_test
 
     # ensure metric is valid
@@ -153,7 +153,7 @@ def test_regression(
 ):
     """Check the metrics work."""
     comp = comparison_estimator_reports_regression
-    sub_report = list(comp.reports_.values())[0]
+    sub_report = next(iter(comp.reports_.values()))
     X_test, y_test = sub_report.X_test, sub_report.y_test
 
     # ensure metric is valid

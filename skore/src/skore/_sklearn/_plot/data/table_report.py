@@ -588,7 +588,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 ellide_string(s) for s in contingency_table.columns
             ]
 
-            if max_value := contingency_table.max(axis=None) < 100_000:  # noqa: SIM108
+            if max_value := contingency_table.max(axis=None) < 100_000:
                 # avoid scientific notation for small numbers
                 annotation_format = (
                     ".0f"

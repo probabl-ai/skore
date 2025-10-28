@@ -24,7 +24,7 @@ def test_binary_classification(
 
     pos_label = 1
     n_reports = len(report.reports_)
-    n_splits = list(report.reports_.values())[0]._splitter.n_splits
+    n_splits = next(iter(report.reports_.values()))._splitter.n_splits
 
     display.plot()
     assert isinstance(display.lines_, list)
@@ -73,7 +73,7 @@ def test_multiclass_classification(
 
     labels = display.roc_curve["label"].unique()
     n_reports = len(report.reports_)
-    n_splits = list(report.reports_.values())[0]._splitter.n_splits
+    n_splits = next(iter(report.reports_.values()))._splitter.n_splits
 
     display.plot()
     assert isinstance(display.lines_, list)

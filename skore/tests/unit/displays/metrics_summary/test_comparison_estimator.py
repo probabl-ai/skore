@@ -37,7 +37,7 @@ def test_data_source_external(
     pd.testing.assert_index_equal(result.columns, expected_columns)
 
     assert len(report._cache) == 1
-    cached_result = list(report._cache.values())[0]
+    cached_result = next(iter(report._cache.values()))
     pd.testing.assert_index_equal(cached_result.index, expected_index)
     pd.testing.assert_index_equal(cached_result.columns, expected_columns)
 

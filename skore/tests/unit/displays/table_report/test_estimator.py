@@ -195,11 +195,11 @@ def test_hue_plots_1d(pyplot, estimator_report):
 
 def test_plot_duration_data_1d(pyplot, display):
     """Check the plot output with duration data in 1-d."""
-    ## 1D - timedelta as x
+    ## 1D - timedelta as x
     display.plot(x="timedelta_hired")
     assert display.ax_.get_xlabel() == "Years"
 
-    ## 1D - timedelta as y
+    ## 1D - timedelta as y
     display.plot(y="timedelta_hired")
     assert display.ax_.get_ylabel() == "Years"
 
