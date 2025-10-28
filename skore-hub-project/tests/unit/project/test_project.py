@@ -8,6 +8,7 @@ import joblib
 from httpx import Client, Response
 from pytest import fixture, mark, raises
 from skore import CrossValidationReport, EstimatorReport
+
 from skore_hub_project import Project
 from skore_hub_project.report import (
     CrossValidationReportPayload,

@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 
 from httpx import Response
 from pytest import fixture, mark, raises
+
 from skore_hub_project.authentication import token
 from skore_hub_project.authentication.uri import DEFAULT as URI
 

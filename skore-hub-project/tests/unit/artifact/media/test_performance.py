@@ -3,6 +3,7 @@ from io import BytesIO
 from matplotlib import pyplot as plt
 from pydantic import ValidationError
 from pytest import mark, param, raises
+
 from skore_hub_project import Project, switch_mpl_backend
 from skore_hub_project.artifact.media import (
     PrecisionRecallTest,

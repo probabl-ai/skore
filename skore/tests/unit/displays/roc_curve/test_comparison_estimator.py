@@ -2,6 +2,7 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from sklearn.base import clone
+
 from skore import ComparisonReport, EstimatorReport
 from skore._sklearn._plot import RocCurveDisplay
 from skore._sklearn._plot.utils import sample_mpl_colormap

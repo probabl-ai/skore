@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
+
 from skore import CrossValidationReport
 from skore._sklearn._plot import PrecisionRecallCurveDisplay
 from skore._sklearn._plot.utils import sample_mpl_colormap

@@ -11,6 +11,7 @@ from sklearn.metrics import (
     median_absolute_error,
     r2_score,
 )
+
 from skore import CrossValidationReport, MetricsSummaryDisplay
 
 

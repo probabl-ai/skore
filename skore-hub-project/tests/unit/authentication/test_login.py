@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 
 from httpx import HTTPError, Response, TimeoutException
 from pytest import mark, raises
+
 from skore_hub_project.authentication import token, uri
 from skore_hub_project.authentication.login import (
     get_oauth_device_code_probe,

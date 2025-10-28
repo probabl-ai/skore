@@ -7,6 +7,7 @@ from pandas.testing import assert_index_equal
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+
 from skore import ComparisonReport, CrossValidationReport
 
 expected_columns = pd.MultiIndex.from_tuples(

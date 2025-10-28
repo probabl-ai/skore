@@ -9,6 +9,7 @@ from httpx import (
     TimeoutException,
 )
 from pytest import mark, raises
+
 from skore_hub_project.authentication import token, uri
 from skore_hub_project.authentication.uri import DEFAULT as URI
 from skore_hub_project.client.client import Client, HUBClient

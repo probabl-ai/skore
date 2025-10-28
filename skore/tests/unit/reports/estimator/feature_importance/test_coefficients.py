@@ -8,6 +8,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
+
 from skore import EstimatorReport
 from skore._externals._sklearn_compat import get_tags
 

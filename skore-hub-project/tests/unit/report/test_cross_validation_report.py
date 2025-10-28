@@ -5,6 +5,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import ShuffleSplit
 from skore import CrossValidationReport, EstimatorReport
+
 from skore_hub_project import Project
 from skore_hub_project.artifact.media.data import TableReport
 from skore_hub_project.artifact.media.model import EstimatorHtmlRepr

@@ -6,6 +6,7 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from matplotlib.lines import Line2D
+
 from skore import ComparisonReport, CrossValidationReport
 from skore._sklearn._plot.metrics.roc_curve import RocCurveDisplay
 from skore._sklearn._plot.utils import sample_mpl_colormap

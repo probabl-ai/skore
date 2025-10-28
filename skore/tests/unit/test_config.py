@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
+
 from skore import config_context, get_config, set_config
 from skore._config import _set_show_progress_for_testing
 from skore._utils._parallel import Parallel, delayed

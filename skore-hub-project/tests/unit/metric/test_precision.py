@@ -3,6 +3,7 @@ from __future__ import annotations
 from numpy.testing import assert_almost_equal
 from pydantic import ValidationError
 from pytest import mark, param, raises
+
 from skore_hub_project.metric import (
     PrecisionTest,
     PrecisionTestMean,

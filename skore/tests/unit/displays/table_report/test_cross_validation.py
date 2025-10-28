@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_regression
+
 from skore import CrossValidationReport, Display, TableReportDisplay
 from skore._externals._skrub_compat import tabular_pipeline
 
