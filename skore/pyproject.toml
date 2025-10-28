@@ -129,9 +129,6 @@ exclude_also = [
     "if TYPE_CHECKING:",
 ]
 
-[tool.ruff]
-src = ["skore"]
-
 [tool.ruff.lint]
 select = [
   # pycodestyle
