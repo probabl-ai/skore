@@ -1,3 +1,4 @@
+import contextlib
 import copy
 
 import numpy as np
@@ -207,42 +208,65 @@ def test_cache_n_jobs(regression_data):
     pd.testing.assert_frame_equal(cached_result, result)
 
 
-def test_cache_seed(regression_data):
-    """If `seed` is not an int (the default is None)
-    then the result is not cached.
+def test_cache_seed_error(regression_data):
+    """Check that we only accept int and None as value for `seed`."""
 
-    `seed` must be an int or None.
+    X, y = regression_data
+    report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
+    assert report._cache == {}
+
+    err_msg = "seed must be an integer or None"
+    with pytest.raises(ValueError, match=err_msg):
+        report.feature_importance.permutation(
+            data_source="train", seed=np.random.RandomState(42)
+        )
+
+
+def test_cache_seed_none(regression_data):
+    """Check the strategy on how we use the cache when `seed` is None.
+
+    In this case, we store the result in the cache for sending to the hub but we
+    always retrigger the computation.
     """
 
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
+    assert report._cache == {}
 
-    # seed is None so no cache
-    with check_cache_unchanged(report._cache):
-        report.feature_importance.permutation(data_source="train")
+    importance_first_call = report.feature_importance.permutation(data_source="train")
+    assert report._cache != {}
+    importance_second_call = report.feature_importance.permutation(data_source="train")
+    # the dataframes should be different
+    with contextlib.suppress(AssertionError):
+        pd.testing.assert_frame_equal(importance_first_call, importance_second_call)
+    # the cache should contain the last result
+    assert len(report._cache) == 1
+    key = list(report._cache.keys())[0]
+    pd.testing.assert_frame_equal(report._cache[key], importance_second_call)
 
-    # seed is a RandomState so no cache
-    with check_cache_unchanged(report._cache):
-        err_msg = (
-            "seed must be an integer or None; "
-            "got <class 'numpy.random.mtrand.RandomState'>"
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            report.feature_importance.permutation(
-                data_source="train",
-                seed=np.random.RandomState(42),
-            )
 
-    # seed is an int so the result is cached
-    with check_cache_changed(report._cache):
-        result = report.feature_importance.permutation(data_source="train", seed=42)
+def test_cache_seed_int(regression_data):
+    """Check the strategy on how we use the cache when `seed` is an int.
 
-    with check_cache_unchanged(report._cache):
-        cached_result = report.feature_importance.permutation(
-            data_source="train", seed=42
-        )
+    In this case, we store and reload from the cache
+    """
+    X, y = regression_data
+    report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
+    assert report._cache == {}
 
-    pd.testing.assert_frame_equal(cached_result, result)
+    importance_first_call = report.feature_importance.permutation(
+        data_source="train", seed=42
+    )
+    assert report._cache != {}
+    importance_second_call = report.feature_importance.permutation(
+        data_source="train", seed=42
+    )
+    # the dataframes should be the same
+    pd.testing.assert_frame_equal(importance_first_call, importance_second_call)
+    # the cache should contain the last result
+    assert len(report._cache) == 1
+    key = list(report._cache.keys())[0]
+    pd.testing.assert_frame_equal(report._cache[key], importance_second_call)
 
 
 def test_cache_scoring(regression_data):

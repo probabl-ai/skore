@@ -490,48 +490,46 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 data_source=data_source, X=X, y=y
             )
 
-        # If seed is None, then we do not do any caching
-        if seed is None:
-            cache_key = None
+        # NOTE: to temporary improve the `project.put` UX, we always store the
+        # permutation importance into the cache dictionary even when seed is None.
+        # Be aware that if seed is None, we still trigger the computation for all cases.
+        # We only store it such that when we serialize to send to the hub, we only
+        # fetch for the cache store instead of recomputing it because it is expensive.
+        # FIXME: the workaround above should be removed once we are able to trigger
+        # computation on the server side of skore-hub.
 
-        elif isinstance(seed, int):
-            # build the cache key components to finally create a tuple that will be used
-            # to check if the metric has already been computed
-            cache_key_parts: list[Any] = [
-                self._parent._hash,
-                "permutation_importance",
-                data_source,
-            ]
-
-            if data_source_hash is not None:
-                cache_key_parts.append(data_source_hash)
-
-            if callable(scoring) or isinstance(scoring, list | dict):
-                cache_key_parts.append(joblib.hash(scoring))
-            else:
-                cache_key_parts.append(scoring)
-
-            # aggregate is not included in the cache
-            # in order to trade off computation for storage
-
-            # order arguments by key to ensure cache works
-            # n_jobs variable should not be in the cache
-            kwargs = {
-                "n_repeats": n_repeats,
-                "max_samples": max_samples,
-                "seed": seed,
-            }
-            for _, v in sorted(kwargs.items()):
-                cache_key_parts.append(v)
-
-            # (parent_hash, "permutation_importance", data_source == {"train", "test"},
-            # scoring == None)
-            cache_key = tuple(cache_key_parts)
-
-        else:
+        if seed is not None and not isinstance(seed, int):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
 
-        if cache_key in self._parent._cache:
+        # build the cache key components to finally create a tuple that will be used
+        # to check if the metric has already been computed
+        cache_key_parts: list[Any] = [
+            self._parent._hash,
+            "permutation_importance",
+            data_source,
+        ]
+        cache_key_parts.append(data_source_hash)
+
+        if callable(scoring) or isinstance(scoring, list | dict):
+            cache_key_parts.append(joblib.hash(scoring))
+        else:
+            cache_key_parts.append(scoring)
+
+        # aggregate is not included in the cache in order to trade off computation for
+        # storage
+        # order arguments by key to ensure cache works n_jobs variable should not be in
+        # the cache
+        kwargs = {"n_repeats": n_repeats, "max_samples": max_samples, "seed": seed}
+        for _, v in sorted(kwargs.items()):
+            cache_key_parts.append(v)
+
+        cache_key = tuple(cache_key_parts)
+
+        if cache_key in self._parent._cache and seed is not None:
+            # NOTE: avoid to fetch from the cache if the seed is None because we want
+            # to trigger the computation in this case. We only have the permutation
+            # stored as a workaround for the serialization for skore-hub as explained
+            # earlier.
             score = self._parent._cache[cache_key]
         else:
             sklearn_score = permutation_importance(
@@ -595,8 +593,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 score = pd.DataFrame(data=data, index=index, columns=columns)
 
             if cache_key is not None:
-                # Unless seed is an int (i.e. the call is deterministic),
-                # we do not cache
+                # NOTE: for the moment, we will always store the permutation importance
                 self._parent._cache[cache_key] = score
 
         if aggregate:
