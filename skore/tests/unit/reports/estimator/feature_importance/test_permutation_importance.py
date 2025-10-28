@@ -4,6 +4,7 @@ import copy
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.datasets import make_regression
 from sklearn.decomposition import PCA
 from sklearn.exceptions import NotFittedError
@@ -353,6 +354,24 @@ class TestAtStep:
 
         return EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
 
+    @pytest.fixture
+    def pipeline_report_non_sklearn_scaler(self) -> EstimatorReport:
+        class Scaler(TransformerMixin, BaseEstimator):
+            def fit(self, X, y=None):
+                self.mean_ = X.mean(axis=0)
+                self.std_ = X.std(axis=0)
+                return self
+
+            def transform(self, X, y=None):
+                X_ = X.copy()
+                return (X_ - self.mean_) / self.std_
+
+        X, y = make_regression(n_features=3, random_state=0)
+
+        pipeline = make_pipeline(Scaler(), LinearRegression())
+
+        return EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
+
     @pytest.mark.parametrize("at_step", [0, -1, 1])
     def test_int(self, pipeline_report, at_step):
         """
@@ -436,3 +455,25 @@ class TestAtStep:
         result = report.feature_importance.permutation(seed=42, at_step=-1)
         last_step_feature_names = list(report.estimator_[0].get_feature_names_out())
         assert list(result.index.get_level_values(1)) == last_step_feature_names
+
+    def test_non_sklearn_pipeline(self):
+        """If the pipeline contains non-sklearn-compliant transformers,
+        `permutation` still works."""
+
+        class Scaler(TransformerMixin, BaseEstimator):
+            def fit(self, X, y=None):
+                self.mean_ = X.mean(axis=0)
+                self.std_ = X.std(axis=0)
+                return self
+
+            def transform(self, X, y=None):
+                X_ = X.copy()
+                return (X_ - self.mean_) / self.std_
+
+        X, y = make_regression(n_features=3, random_state=0)
+
+        pipeline = make_pipeline(Scaler(), LinearRegression())
+
+        report = EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
+
+        report.feature_importance.permutation(seed=42, at_step=-1)
