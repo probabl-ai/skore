@@ -1,6 +1,5 @@
 """Hatchling hooks used to dynamically update the metadata of the package."""
 
-from os.path import basename
 from pathlib import Path
 from shutil import copy
 
@@ -34,9 +33,9 @@ class MetadataHook(MetadataHookInterface):
                 'readme': {'file': '../README.md'},
             }
         """
-        # Retrieve LICENCE from root files into `sdist`
+        # Copy LICENCE file from root to `sdist`
         license_filepath = self.config["license"]["file"]
-        copy(license_filepath, self.root)
+        copy(Path(self.root, license_filepath), self.root)
 
         # Retrieve README from root files
         readme_filepath = self.config["readme"]["file"]
