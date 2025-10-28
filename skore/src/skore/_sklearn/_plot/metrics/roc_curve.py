@@ -148,6 +148,8 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         self.ml_task = ml_task
         self.report_type = report_type
 
+        self.chance_level_: Line2D | list[Line2D] | None
+
     def _plot_single_estimator(
         self,
         *,
@@ -947,10 +949,12 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             ):
                 label_binarizer = LabelBinarizer().fit(est.classes_)
                 y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)
+                y_pred_i_y = cast(NDArray, y_pred_i.y)
+
                 for class_idx, class_ in enumerate(est.classes_):
                     fpr_class_i, tpr_class_i, thresholds_class_i = roc_curve(
                         y_true_onehot_i[:, class_idx],
-                        y_pred_i.y[:, class_idx],
+                        y_pred_i_y[:, class_idx],
                         pos_label=None,
                         drop_intermediate=drop_intermediate,
                     )

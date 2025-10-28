@@ -342,7 +342,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ] = "predict",
         X: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
-    ) -> list[ArrayLike]:
+    ) -> list[ArrayLike] | list[list[ArrayLike]]:
         """Get predictions from the underlying reports.
 
         This method has the advantage to reload from the cache if the predictions
@@ -406,7 +406,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(25,), (25,)]
         """
-        return [
+        return [  # type: ignore
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,
