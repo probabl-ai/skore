@@ -35,7 +35,9 @@ class MetadataHook(MetadataHookInterface):
         """
         # Copy LICENCE file from root to `sdist`
         license_filepath = self.config["license"]["file"]
-        copy(Path(self.root, license_filepath), self.root)
+        license_filepath = Path(self.root, license_filepath)
+        copy(license_filepath, self.root)
+        license_filename = license_filepath.name
 
         # Retrieve README from root files
         readme_filepath = self.config["readme"]["file"]
@@ -48,6 +50,6 @@ class MetadataHook(MetadataHookInterface):
             version = self.config["version-default"]
 
         # Update metadata
-        metadata["license-files"] = [license_filepath]
+        metadata["license-files"] = [license_filename]
         metadata["readme"] = {"text": readme, "content-type": "text/markdown"}
         metadata["version"] = version
