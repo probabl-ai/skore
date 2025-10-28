@@ -524,6 +524,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             for _, v in sorted(kwargs.items()):
                 cache_key_parts.append(v)
 
+            # (parent_hash, "permutation_importance", data_source == {"train", "test"},
+            # scoring == None)
             cache_key = tuple(cache_key_parts)
 
         else:
