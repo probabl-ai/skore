@@ -66,6 +66,10 @@ def project():
 
 @fixture
 def payload(project, binary_classification):
+    # Force the compute of the permutations
+    binary_classification.feature_importance.permutation(data_source="train", seed=42)
+    binary_classification.feature_importance.permutation(data_source="test", seed=42)
+
     return EstimatorReportPayload(
         project=project,
         report=binary_classification,
