@@ -41,7 +41,7 @@ def test_cross_validation_report_coefficient_frame(
     cv_report_coefs = cv_report.feature_importance.coefficients().frame()
     assert cv_report_coefs.shape == expected_shape
 
-    expected_index = [i for i in range(expected_shape[0])]
+    expected_index = list(range(expected_shape[0]))
     assert cv_report_coefs.index.tolist() == expected_index
 
     expected_columns = (

@@ -185,7 +185,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 f"or list of dict of {CrossValidationReport.__name__}"
             )
 
-        if len(set(id(report) for report in reports_list)) < len(reports_list):
+        if len({id(report) for report in reports_list}) < len(reports_list):
             raise ValueError("Expected reports to be distinct objects")
 
         ml_tasks = {report._ml_task for report in reports_list}

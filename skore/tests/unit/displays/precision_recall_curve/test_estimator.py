@@ -165,7 +165,7 @@ def test_pr_curve_kwargs(
     )
     display = report.metrics.precision_recall()
     display.plot(
-        pr_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")],
+        pr_curve_kwargs=[{"color": "red"}, {"color": "blue"}, {"color": "green"}],
     )
     assert display.lines_[0].get_color() == "red"
     assert display.lines_[1].get_color() == "blue"

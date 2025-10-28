@@ -11,8 +11,8 @@ from skore import EstimatorReport
 @pytest.mark.parametrize(
     "params, err_msg",
     [
-        (dict(data_source="invalid"), "'data_source' options are"),
-        (dict(subsample_strategy="invalid"), "'subsample_strategy' options are"),
+        ({"data_source": "invalid"}, "'data_source' options are"),
+        ({"subsample_strategy": "invalid"}, "'subsample_strategy' options are"),
     ],
 )
 def test_analyze_error(forest_binary_classification_with_test, params, err_msg):
