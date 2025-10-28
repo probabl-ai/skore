@@ -2,6 +2,7 @@
 
 from os.path import basename
 from pathlib import Path
+from shutil import copy
 
 from hatchling.metadata.plugin.interface import MetadataHookInterface
 
@@ -33,18 +34,13 @@ class MetadataHook(MetadataHookInterface):
                 'readme': {'file': '../README.md'},
             }
         """
-        # Retrieve LICENCE from root files
+        # Retrieve LICENCE from root files into `sdist`
         license_filepath = self.config["license"]["file"]
-        license_text = Path(self.root, license_filepath).read_text(encoding="utf-8")
-
-        # Copy LICENCE file in `sdist`
-        license_filepath = basename(license_filepath)
-        with open(Path(self.root, license_filepath), "w") as f:
-            f.write(license_text)
+        copy(license_filepath, self.root)
 
         # Retrieve README from root files
         readme_filepath = self.config["readme"]["file"]
-        readme_text = Path(self.root, readme_filepath).read_text(encoding="utf-8")
+        readme = Path(self.root, readme_filepath).read_text(encoding="utf-8")
 
         # Retrieve VERSION from file created by the CI
         try:
@@ -54,5 +50,5 @@ class MetadataHook(MetadataHookInterface):
 
         # Update metadata
         metadata["license-files"] = [license_filepath]
-        metadata["readme"] = {"text": readme_text, "content-type": "text/markdown"}
+        metadata["readme"] = {"text": readme, "content-type": "text/markdown"}
         metadata["version"] = version

@@ -3,6 +3,7 @@ name = "skore-hub-project"
 dynamic = ["license-files", "readme", "version"]
 requires-python = ">=3.10"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
+license = "MIT"
 dependencies = [
   "blake3",
   "httpx",
