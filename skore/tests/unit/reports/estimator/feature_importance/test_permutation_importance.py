@@ -344,9 +344,17 @@ def test_not_fitted(regression_data):
 
 
 class TestAtStep:
-    @pytest.fixture
-    def data(self):
+    @pytest.fixture(params=["numpy", "dataframe"])
+    def data(self, request):
+        array_type = request.param
+
         X, y = make_regression(n_features=3, random_state=0)
+
+        if array_type == "dataframe":
+            X = pd.DataFrame(X, columns=["x0", "x1", "x2"])
+            y = pd.Series(y)
+
+        return X, y
 
     @pytest.fixture
     def pipeline_report(self, data) -> EstimatorReport:
