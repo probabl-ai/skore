@@ -30,7 +30,6 @@ from skore._sklearn.types import (
     _DEFAULT,
     PositiveLabel,
     Scoring,
-    ScoringName,
     YPlotData,
 )
 from skore._utils._accessor import (
@@ -66,8 +65,7 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        scoring: Scoring | list[Scoring] | None = None,
-        scoring_names: ScoringName | list[ScoringName] | None = None,
+        scoring: Scoring | list[Scoring] | dict[str, Scoring] | None = None,
         scoring_kwargs: dict[str, Any] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
@@ -92,8 +90,8 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : str, callable, scorer or list of such instances, default=None
-            The metrics to report. The possible values (whether or not in a list) are:
+        scoring : str, callable, scorer, dict, or list of such instances, default=None
+            The metrics to report. The possible values are:
 
             - if a string, either one of the built-in metrics or a scikit-learn scorer
               name. You can get the possible list of string using
@@ -108,10 +106,10 @@ class _MetricsAccessor(
               scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
               the metric favorability will only be displayed if it is given explicitly
               via `make_scorer`'s `greater_is_better` parameter.
-
-        scoring_names : str, None or list of such instances, default=None
-            Used to overwrite the default scoring names in the report. It should be of
-            the same length as the `scoring` parameter.
+            - if a dict, the keys are used as metric names and the values are the
+              scoring functions (strings, callables, or scorers as described above).
+            - if a list, each element can be any of the above types (strings, callables,
+              scorers).
 
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
@@ -164,11 +162,13 @@ class _MetricsAccessor(
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
-        if scoring is not None and not isinstance(scoring, list):
+        # Handle dictionary scoring
+        scoring_names = None
+        if isinstance(scoring, dict):
+            scoring_names = list(scoring.keys())
+            scoring = list(scoring.values())
+        elif scoring is not None and not isinstance(scoring, list):
             scoring = [scoring]
-
-        if scoring_names is not None and not isinstance(scoring_names, list):
-            scoring_names = [scoring_names]
 
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
@@ -181,7 +181,6 @@ class _MetricsAccessor(
         else:
             data_source_hash = None
 
-        scoring_was_none = scoring is None
         if scoring is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
@@ -196,22 +195,7 @@ class _MetricsAccessor(
                 scoring = ["_r2", "_rmse"]
             scoring += ["_fit_time", "_predict_time"]
 
-        if scoring_names is not None and len(scoring_names) != len(scoring):
-            if scoring_was_none:
-                # we raise a better error message since we decide the default scores
-                raise ValueError(
-                    "The `scoring_names` parameter should be of the same length as "
-                    "the `scoring` parameter. In your case, `scoring` was set to None "
-                    f"and you are using our default scores that are {len(scoring)}. "
-                    f"The list is the following: {scoring}."
-                )
-            else:
-                raise ValueError(
-                    "The `scoring_names` parameter should be of the same length as "
-                    f"the `scoring` parameter. Got {len(scoring_names)} names for "
-                    f"{len(scoring)} scoring functions."
-                )
-        elif scoring_names is None:
+        if scoring_names is None:
             scoring_names = [None] * len(scoring)
 
         scores = []
