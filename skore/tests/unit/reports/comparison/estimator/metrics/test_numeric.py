@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 from sklearn.base import clone
 from sklearn.metrics import accuracy_score
+
 from skore import ComparisonReport, EstimatorReport
 
 

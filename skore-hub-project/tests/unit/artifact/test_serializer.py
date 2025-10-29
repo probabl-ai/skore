@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from blake3 import blake3 as Blake3
+
 from skore_hub_project import bytes_to_b64_str
 from skore_hub_project.artifact.serializer import Serializer
 

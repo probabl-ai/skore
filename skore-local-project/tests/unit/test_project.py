@@ -9,6 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
 from skore import CrossValidationReport, EstimatorReport
+
 from skore_local_project import Project
 from skore_local_project.storage import DiskCacheStorage
 

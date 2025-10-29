@@ -2,6 +2,7 @@ import os
 import shutil
 
 import pytest
+
 from skore_local_project.storage import DiskCacheStorage
 
 

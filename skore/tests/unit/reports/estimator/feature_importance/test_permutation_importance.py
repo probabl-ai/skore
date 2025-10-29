@@ -11,6 +11,7 @@ from sklearn.metrics import make_scorer, r2_score, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+
 from skore import EstimatorReport
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
 

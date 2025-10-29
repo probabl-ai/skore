@@ -68,9 +68,6 @@ exclude_also = [
     "if TYPE_CHECKING:",
 ]
 
-[tool.ruff]
-src = ["skore_local_project"]
-
 [tool.ruff.lint]
 select = ["E", "F", "UP", "B", "C4", "SIM", "T", "I", "D", "RUF010", "RUF015"]
 

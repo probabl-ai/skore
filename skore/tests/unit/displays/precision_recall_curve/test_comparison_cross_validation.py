@@ -4,6 +4,7 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from matplotlib.lines import Line2D
+
 from skore import ComparisonReport, CrossValidationReport
 from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,

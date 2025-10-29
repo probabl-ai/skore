@@ -2,6 +2,7 @@ import sys
 from unittest.mock import patch
 
 import pytest
+
 from skore._utils._environment import get_environment_info, is_environment_notebook_like
 
 

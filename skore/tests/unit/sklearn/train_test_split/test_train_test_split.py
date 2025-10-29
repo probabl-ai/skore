@@ -4,6 +4,7 @@ from datetime import datetime
 import pandas
 import polars
 import pytest
+
 from skore._sklearn.train_test_split.train_test_split import (
     train_test_split,
 )

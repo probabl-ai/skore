@@ -2,6 +2,7 @@ from json import loads
 
 from pydantic import ValidationError
 from pytest import mark, param, raises
+
 from skore_hub_project import Project
 from skore_hub_project.artifact.media import TableReportTest, TableReportTrain
 from skore_hub_project.artifact.serializer import Serializer

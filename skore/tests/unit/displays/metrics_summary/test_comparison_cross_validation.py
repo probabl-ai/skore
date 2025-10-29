@@ -6,6 +6,7 @@ from pandas.testing import assert_frame_equal, assert_index_equal
 from sklearn.base import clone
 from sklearn.dummy import DummyClassifier
 from sklearn.metrics import accuracy_score, get_scorer
+
 from skore import ComparisonReport, CrossValidationReport, MetricsSummaryDisplay
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
 

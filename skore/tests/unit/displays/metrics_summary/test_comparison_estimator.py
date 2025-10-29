@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.metrics import accuracy_score, get_scorer
+
 from skore import ComparisonReport, MetricsSummaryDisplay
 
 

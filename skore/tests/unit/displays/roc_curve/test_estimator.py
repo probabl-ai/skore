@@ -4,6 +4,7 @@ import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+
 from skore import EstimatorReport
 from skore._sklearn._plot import RocCurveDisplay
 from skore._sklearn._plot.utils import sample_mpl_colormap

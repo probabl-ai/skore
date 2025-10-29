@@ -4,6 +4,7 @@ import joblib
 import pandas as pd
 import pytest
 from sklearn.ensemble import RandomForestClassifier
+
 from skore import EstimatorReport
 
 

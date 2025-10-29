@@ -7,6 +7,7 @@ from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+
 from skore import CrossValidationReport, EstimatorReport, Project
 from skore.project.summary import Summary
 
