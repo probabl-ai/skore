@@ -653,12 +653,6 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
             score = sklearn_score.get("importances")
 
-            feature_names = (
-                estimator.feature_names_in_
-                if hasattr(estimator, "feature_names_in_")
-                else [f"Feature #{i}" for i in range(estimator.n_features_in_)]  # type: ignore
-            )
-
             # If there is more than one metric
             if score is None:
                 data = np.concatenate(
