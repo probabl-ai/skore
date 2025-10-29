@@ -576,8 +576,7 @@ class ModelExplorerWidget:
                 self._color_metric_dropdown[ml_task].value
             ]
 
-            dimensions = []
-            dimensions.append(
+            dimensions = [
                 {
                     "label": "Learner",
                     "values": self._add_jitter_to_categorical(
@@ -586,17 +585,17 @@ class ModelExplorerWidget:
                     "ticktext": df_dataset["learner"].cat.categories,
                     "tickvals": np.arange(len(df_dataset["learner"].cat.categories)),
                 }
-            )
+            ]
 
-            for col in selected_metrics:  # use the order defined in the constructor
-                dimensions.append(
-                    {
-                        "label": self._metrics[col]["name"],
-                        # convert to float in case that the column has None values and
-                        # thus is object type
-                        "values": df_dataset[col].astype(float).fillna(0),
-                    }
-                )
+            dimensions.extend(
+                {
+                    "label": self._metrics[col]["name"],
+                    # convert to float in case that the column has None values and
+                    # thus is object type
+                    "values": df_dataset[col].astype(float).fillna(0),
+                }
+                for col in selected_metrics  # use the order defined in the constructor
+            )
 
             colorscale = (
                 "Viridis"

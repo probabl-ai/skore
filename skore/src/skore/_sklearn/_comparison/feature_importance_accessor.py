@@ -59,33 +59,31 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
                 }
             )
 
-        coef_frames = []
         if self._parent._reports_type == "EstimatorReport":
-            for reports_with_same_features in similar_reports.values():
-                coef_frames.append(
-                    pd.DataFrame(
-                        {
-                            report_data["estimator_name"]: (
-                                report_data["report_obj"]
-                                .feature_importance.coefficients()
-                                .frame()
-                                .iloc[:, 0]
-                            )
-                            for report_data in reports_with_same_features
-                        },
-                        index=reports_with_same_features[-1]["feature_names"],
-                    )
+            coef_frames = [
+                pd.DataFrame(
+                    {
+                        report_data["estimator_name"]: (
+                            report_data["report_obj"]
+                            .feature_importance.coefficients()
+                            .frame()
+                            .iloc[:, 0]
+                        )
+                        for report_data in reports_with_same_features
+                    },
+                    index=reports_with_same_features[-1]["feature_names"],
                 )
-
+                for reports_with_same_features in similar_reports.values()
+            ]
         elif self._parent._reports_type == "CrossValidationReport":
-            for reports_with_same_features in similar_reports.values():
-                for report_data in reports_with_same_features:
-                    coef_frames.append(
-                        report_data["report_obj"]
-                        .feature_importance.coefficients()
-                        .frame()
-                        .add_prefix(f"{report_data['estimator_name']}__")
-                    )
+            coef_frames = [
+                report_data["report_obj"]
+                .feature_importance.coefficients()
+                .frame()
+                .add_prefix(f"{report_data['estimator_name']}__")
+                for reports_with_same_features in similar_reports.values()
+                for report_data in reports_with_same_features
+            ]
         else:
             raise TypeError(f"Unexpected report type: {self._parent._reports_type}")
 
