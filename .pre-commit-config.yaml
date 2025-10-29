@@ -39,7 +39,7 @@ repos:
         name: mypy skore/
         files: ^skore/
         args: [--config-file=skore/pyproject.toml, skore]
-        additional_dependencies: [IPython, matplotlib, numpy, polars, rich]
+        additional_dependencies: [IPython, matplotlib, numpy, polars, rich, scipy-stubs]
       - id: mypy
         pass_filenames: false
         alias: mypy-skore-hub-project

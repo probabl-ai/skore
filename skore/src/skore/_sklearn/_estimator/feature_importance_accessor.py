@@ -603,7 +603,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     feature_names = X_transformed.columns.tolist()
                 else:
                     feature_names = [
-                        f"Feature #{i}" for i in range(X_transformed.shape[1])
+                        f"Feature #{i}"
+                        for i in range(X_transformed.shape[1])  # type: ignore
                     ]
 
             else:
