@@ -103,8 +103,7 @@ def test_get_cached_response_values(
     )
 
     # cache the results
-    for key, value, _ in results:
-        cache[key] = value
+    cache.update((key, value) for key, value, _ in results)
 
     # Reload from the cache
     results = _get_cached_response_values(cache=cache, **params)
@@ -131,8 +130,8 @@ def test_get_cached_response_values(
         assert not is_cached
         assert response_values.shape == y.shape
 
-        for key, value, _ in results:
-            cache[key] = value
+        cache.update((key, value) for key, value, _ in results)
+
     else:
         assert len(results) == 1
         assert current_calls == initial_calls
@@ -183,8 +182,7 @@ def test_get_cached_response_values_different_data_source_hash(
     initial_calls = getattr(estimator, f"n_call_{response_method}")
 
     # cache the results
-    for key, value, _ in results:
-        cache[key] = value
+    cache.update((key, value) for key, value, _ in results)
 
     # Second call by passing the hash of the data should not trigger new computation
     # because we consider it trustworthy
