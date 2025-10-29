@@ -20,11 +20,6 @@ from skore import EstimatorReport
             (5, 1),
         ),
         (
-            make_classification(n_features=5, random_state=42),
-            RandomForestClassifier(n_estimators=2, random_state=0),
-            (5, 1),
-        ),
-        (
             make_classification(
                 n_features=5,
                 n_classes=3,

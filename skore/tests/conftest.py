@@ -61,7 +61,7 @@ def MockDatetime(mock_now):
     return MockDatetime
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def pyplot():
     """Setup and teardown fixture for matplotlib.
 

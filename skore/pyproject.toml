@@ -150,6 +150,8 @@ select = [
   "SIM",
   # flake8-print
   "T",
+  # flake8-pytest-style
+  "PT003", "PT014",
   # isort
   "I",
   # pydocstyle
