@@ -15,7 +15,7 @@ from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
 
-class ReportPayload(BaseModel, Generic[Report], ABC):
+class ReportPayload(BaseModel, ABC, Generic[Report]):
     """
     Payload used to send a report to ``hub``.
 
