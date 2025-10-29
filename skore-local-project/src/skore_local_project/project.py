@@ -208,7 +208,7 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        Metadata: type[EstimatorReportMetadata] | type[CrossValidationReportMetadata]
+        Metadata: type[EstimatorReportMetadata | CrossValidationReportMetadata]
 
         if isinstance(report, EstimatorReport):
             Metadata = EstimatorReportMetadata
