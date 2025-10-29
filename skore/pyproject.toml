@@ -135,30 +135,7 @@ exclude_also = [
 ]
 
 [tool.ruff.lint]
-select = [
-  # pycodestyle
-  "E",
-  # Pyflakes
-  "F",
-  # pyupgrade
-  "UP",
-  # flake8-bugbear
-  "B",
-  # flake8-comprehensions
-  "C4",
-  # flake8-simplify
-  "SIM",
-  # flake8-print
-  "T",
-  # flake8-pytest-style
-  "PT003", "PT014",
-  # isort
-  "I",
-  # pydocstyle
-  "D",
-  # Ruff-specific rules
-  "RUF010", "RUF015",
-]
+select = ["E", "F", "UP", "B", "C4", "SIM", "T", "PT003", "PT014", "I", "D", "RUF010", "RUF015"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
