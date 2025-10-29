@@ -345,13 +345,15 @@ def test_not_fitted(regression_data):
 
 class TestAtStep:
     @pytest.fixture
-    def pipeline_report(self) -> EstimatorReport:
+    def data(self):
         X, y = make_regression(n_features=3, random_state=0)
 
+    @pytest.fixture
+    def pipeline_report(self, data) -> EstimatorReport:
+        X, y = data
         pipeline = make_pipeline(
             StandardScaler(), PCA(n_components=2), LinearRegression()
         )
-
         return EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
 
     @pytest.mark.parametrize("at_step", [0, -1, 1])
@@ -380,15 +382,14 @@ class TestAtStep:
         assert result.index.names == ["Metric", "Feature"]
         assert result.shape[0] > 0
 
-    def test_non_pipeline(self):
+    def test_non_pipeline(self, data):
         """
         For non-pipeline estimators, changing at_step should not change the results.
         """
-        X, y = make_regression(n_features=3, random_state=0)
-
-        linear = LinearRegression()
-
-        report = EstimatorReport(linear, X_train=X, y_train=y, X_test=X, y_test=y)
+        X, y = data
+        report = EstimatorReport(
+            LinearRegression(), X_train=X, y_train=y, X_test=X, y_test=y
+        )
 
         result_start = report.feature_importance.permutation(seed=42, at_step=0)
         result_end = report.feature_importance.permutation(seed=42, at_step=-1)
@@ -414,23 +415,20 @@ class TestAtStep:
         with pytest.raises(ValueError, match=err_msg):
             pipeline_report.feature_importance.permutation(seed=42, at_step=at_step)
 
-    def test_sparse_array(self):
+    def test_sparse_array(self, data):
         """If one of the steps outputs a sparse array, `permutation` still works."""
-        X, y = make_regression(n_features=3, random_state=0)
-
+        X, y = data
         pipeline = make_pipeline(
-            SplineTransformer(sparse_output=True),
-            LinearRegression(),
+            SplineTransformer(sparse_output=True), LinearRegression()
         )
         report = EstimatorReport(pipeline, X_train=X, X_test=X, y_train=y, y_test=y)
 
         report.feature_importance.permutation(seed=42, at_step=-1)
 
-    def test_feature_names(self):
+    def test_feature_names(self, data):
         """If the requested pipeline step gives proper feature names,
         these names should appear in the output."""
-        X, y = make_regression(n_features=3, random_state=0)
-
+        X, y = data
         pipeline = make_pipeline(SplineTransformer(), LinearRegression())
         report = EstimatorReport(pipeline, X_train=X, X_test=X, y_train=y, y_test=y)
 
@@ -438,7 +436,7 @@ class TestAtStep:
         last_step_feature_names = list(report.estimator_[0].get_feature_names_out())
         assert list(result.index.get_level_values(1)) == last_step_feature_names
 
-    def test_non_sklearn_pipeline(self):
+    def test_non_sklearn_pipeline(self, data):
         """If the pipeline contains non-sklearn-compliant transformers,
         `permutation` still works."""
 
@@ -452,10 +450,8 @@ class TestAtStep:
                 X_ = X.copy()
                 return (X_ - self.mean_) / self.std_
 
-        X, y = make_regression(n_features=3, random_state=0)
-
+        X, y = data
         pipeline = make_pipeline(Scaler(), LinearRegression())
-
         report = EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
 
         report.feature_importance.permutation(seed=42, at_step=-1)
