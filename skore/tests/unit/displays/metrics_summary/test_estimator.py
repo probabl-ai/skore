@@ -200,11 +200,6 @@ def test_scoring_kwargs(
             ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
         ),
         (
-            "linear_regression_with_test",
-            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
-            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
-        ),
-        (
             "forest_multiclass_classification_with_test",
             ["Precision", "Recall", "ROC AUC", "Log Loss", "Fit Time", "Predict Time"],
             [

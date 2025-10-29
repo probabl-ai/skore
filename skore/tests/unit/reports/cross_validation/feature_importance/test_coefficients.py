@@ -71,7 +71,6 @@ def test_cross_validation_report_coefficient_frame(
             sklearn.compose.TransformedTargetRegressor(),
             id="TransformedTargetRegressor",
         ),
-        pytest.param(sklearn.linear_model.ElasticNet(), id="ElasticNet"),
         pytest.param(sklearn.linear_model.ARDRegression(), id="ARDRegression"),
         pytest.param(sklearn.linear_model.BayesianRidge(), id="BayesianRidge"),
         pytest.param(sklearn.linear_model.ElasticNet(), id="ElasticNet"),
