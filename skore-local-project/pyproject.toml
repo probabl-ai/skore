@@ -45,13 +45,18 @@ package = ["src/skore_local_project/"]
 
 [tool.pytest.ini_options]
 addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
   "--xdoctest",
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
   "--dist=loadscope",
 ]
+xfail_strict = true
 filterwarnings = ["error"]
+log_cli_level = "info"
 
 [tool.coverage.run]
 branch = true
