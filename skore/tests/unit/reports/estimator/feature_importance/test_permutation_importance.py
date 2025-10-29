@@ -442,7 +442,7 @@ class TestAtStep:
 
         result = report.feature_importance.permutation(seed=42, at_step=-1)
         last_step_feature_names = list(report.estimator_[0].get_feature_names_out())
-        assert list(result.index.get_level_values(1)) == last_step_feature_names
+        assert list(result.index.levels[1]) == last_step_feature_names
 
     def test_non_sklearn_pipeline(self, data):
         """If the pipeline contains non-sklearn-compliant transformers,
