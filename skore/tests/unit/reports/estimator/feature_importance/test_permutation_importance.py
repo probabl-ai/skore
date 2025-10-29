@@ -354,24 +354,6 @@ class TestAtStep:
 
         return EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
 
-    @pytest.fixture
-    def pipeline_report_non_sklearn_scaler(self) -> EstimatorReport:
-        class Scaler(TransformerMixin, BaseEstimator):
-            def fit(self, X, y=None):
-                self.mean_ = X.mean(axis=0)
-                self.std_ = X.std(axis=0)
-                return self
-
-            def transform(self, X, y=None):
-                X_ = X.copy()
-                return (X_ - self.mean_) / self.std_
-
-        X, y = make_regression(n_features=3, random_state=0)
-
-        pipeline = make_pipeline(Scaler(), LinearRegression())
-
-        return EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
-
     @pytest.mark.parametrize("at_step", [0, -1, 1])
     def test_int(self, pipeline_report, at_step):
         """
