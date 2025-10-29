@@ -60,6 +60,16 @@ def test_table_report_display_frame(cross_validation_report):
     )
 
 
+@pytest.mark.filterwarnings(
+    # ignore warning due to the data format used for user testing purpose, raised by
+    # `scikit-learn` and `skrub`
+    (
+        "ignore:"
+        "A column-vector y was passed when a 1d array was expected.*:"
+        "sklearn.exceptions.DataConversionWarning"
+    ),
+    "ignore:Only pandas and polars DataFrames are supported.*:UserWarning",
+)
 @pytest.mark.parametrize(
     "X",
     [

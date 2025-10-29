@@ -63,6 +63,17 @@ def test_constructor(display):
     assert isinstance(display.summary, dict)
 
 
+@pytest.mark.filterwarnings(
+    # ignore warning due to the data format used for user testing purpose, raised by
+    # `scikit-learn` and `skrub`
+    (
+        "ignore:"
+        "A column-vector y was passed when a 1d array was expected.*:"
+        "sklearn.exceptions.DataConversionWarning"
+    ),
+    "ignore:Some dataframe column names are not strings.*:UserWarning",
+    "ignore:Only pandas and polars DataFrames are supported.*:UserWarning",
+)
 @pytest.mark.parametrize(
     "X",
     [
