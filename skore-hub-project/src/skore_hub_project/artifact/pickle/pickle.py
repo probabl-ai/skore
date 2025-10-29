@@ -2,16 +2,37 @@
 
 from collections.abc import Generator
 from contextlib import contextmanager
+from functools import cached_property
 from io import BytesIO
-from typing import Literal
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+from typing import ClassVar, Literal
 
 from joblib import dump
 from pydantic import Field
 
 from skore_hub_project.artifact.artifact import Artifact
+from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 Report = EstimatorReport | CrossValidationReport
+
+
+class ReportSerializer(Serializer):
+    def __init__(self, report: Report):
+        self.report = report
+
+    @cached_property
+    def filepath(self) -> Path:
+        with NamedTemporaryFile(mode="w+b", delete=False) as file, BytesIO() as stream:
+            dump(self.report, stream)
+            file.write_bytes(stream.getvalue())
+
+        return Path(file.name)
+
+    @cached_property
+    def checksum(self) -> str:
+        return f"skore-{self.report.__class__.__name__}-{self.report._hash}"
 
 
 class Pickle(Artifact):
@@ -35,11 +56,12 @@ class Pickle(Artifact):
     The report is primarily pickled on disk to reduce RAM footprint.
     """
 
+    serializer: ClassVar[type[ReportSerializer]] = ReportSerializer
     report: Report = Field(repr=False, exclude=True)
     content_type: Literal["application/octet-stream"] = "application/octet-stream"
 
     @contextmanager
-    def content_to_upload(self) -> Generator[bytes, None, None]:
+    def content_to_upload(self) -> Generator[Report, None, None]:
         """
         Content of the pickled report.
 
@@ -53,12 +75,7 @@ class Pickle(Artifact):
         self.report.clear_cache()
 
         try:
-            with BytesIO() as stream:
-                dump(self.report, stream)
-
-                pickle_bytes = stream.getvalue()
-
-            yield pickle_bytes
+            yield self.report
         finally:
             for report, cache in zip(reports, caches, strict=True):
                 report._cache = cache
