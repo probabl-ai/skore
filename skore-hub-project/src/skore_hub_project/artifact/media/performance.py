@@ -9,10 +9,10 @@ from typing import ClassVar, Literal, cast
 from matplotlib import pyplot as plt
 
 from skore_hub_project import switch_mpl_backend
-from skore_hub_project.artifact.media.media import Media
+from skore_hub_project.artifact.media.media import Media, Report
 
 
-class Performance(Media, ABC):  # noqa: D101
+class Performance(Media[Report], ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["image/svg+xml"] = "image/svg+xml"
 
@@ -41,40 +41,40 @@ class Performance(Media, ABC):  # noqa: D101
         return figure_bytes
 
 
-class PrecisionRecall(Performance, ABC):  # noqa: D101
+class PrecisionRecall(Performance[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision_recall"
     name: Literal["precision_recall"] = "precision_recall"
 
 
-class PrecisionRecallTrain(PrecisionRecall):  # noqa: D101
+class PrecisionRecallTrain(PrecisionRecall[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PrecisionRecallTest(PrecisionRecall):  # noqa: D101
+class PrecisionRecallTest(PrecisionRecall[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class PredictionError(Performance, ABC):  # noqa: D101
+class PredictionError(Performance[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.prediction_error"
     name: Literal["prediction_error"] = "prediction_error"
 
 
-class PredictionErrorTrain(PredictionError):  # noqa: D101
+class PredictionErrorTrain(PredictionError[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PredictionErrorTest(PredictionError):  # noqa: D101
+class PredictionErrorTest(PredictionError[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class Roc(Performance, ABC):  # noqa: D101
+class Roc(Performance[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.roc"
     name: Literal["roc"] = "roc"
 
 
-class RocTrain(Roc):  # noqa: D101
+class RocTrain(Roc[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class RocTest(Roc):  # noqa: D101
+class RocTest(Roc[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"

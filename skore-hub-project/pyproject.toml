@@ -109,6 +109,7 @@ convention = "numpy"
 
 [tool.mypy]
 exclude = ["hatch/", "tests/"]
+strict = true
 
 [[tool.mypy.overrides]]
 follow_untyped_imports = true

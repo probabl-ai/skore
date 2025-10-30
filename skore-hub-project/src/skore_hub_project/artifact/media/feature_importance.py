@@ -77,7 +77,7 @@ class MeanDecreaseImpurity(FeatureImportance[EstimatorReport]):  # noqa: D101
     data_source: None = None
 
 
-class Coefficients(FeatureImportance):  # noqa: D101
+class Coefficients(FeatureImportance[Report]):  # noqa: D101
     accessor: ClassVar[str] = "feature_importance.coefficients"
     name: Literal["coefficients"] = "coefficients"
     data_source: None = None

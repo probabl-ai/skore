@@ -5,15 +5,14 @@ from __future__ import annotations
 from functools import cached_property
 from typing import ClassVar, Literal
 
-from pydantic import Field, computed_field
+from pydantic import computed_field
 
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 from .metric import Metric, cast_to_float
 
 
-class FitTime(Metric):  # noqa: D101
-    report: EstimatorReport = Field(repr=False, exclude=True)
+class FitTime(Metric[EstimatorReport]):  # noqa: D101
     name: str = "fit_time"
     verbose_name: str = "Fit time (s)"
     greater_is_better: bool = False
@@ -23,13 +22,13 @@ class FitTime(Metric):  # noqa: D101
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:  # noqa: D102
-        timings: dict = self.report.metrics.timings()
+        timings = self.report.metrics.timings()
         fit_time = timings.get("fit_time")
 
         return cast_to_float(fit_time)
 
 
-class FitTimeAggregate(Metric):  # noqa: D101
+class FitTimeAggregate(Metric[CrossValidationReport]):  # noqa: D101
     # ``report.metrics.timings()``
     #
     #                             mean       std
@@ -37,7 +36,6 @@ class FitTimeAggregate(Metric):  # noqa: D101
     # Predict time test (s)        ...       ...
     # Predict time train (s)       ...       ...
 
-    report: CrossValidationReport = Field(repr=False, exclude=True)
     aggregate: ClassVar[Literal["mean", "std"]]
     greater_is_better: bool = False
     data_source: None = None
@@ -69,8 +67,7 @@ class FitTimeStd(FitTimeAggregate):  # noqa: D101
     position: None = None
 
 
-class PredictTime(Metric):  # noqa: D101
-    report: EstimatorReport = Field(repr=False, exclude=True)
+class PredictTime(Metric[EstimatorReport]):  # noqa: D101
     name: str = "predict_time"
     verbose_name: str = "Predict time (s)"
     greater_is_better: bool = False
@@ -79,7 +76,7 @@ class PredictTime(Metric):  # noqa: D101
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def value(self) -> float | None:  # noqa: D102
-        timings: dict = self.report.metrics.timings()
+        timings = self.report.metrics.timings()
         predict_time = timings.get(f"predict_time_{self.data_source}")
 
         return cast_to_float(predict_time)
@@ -93,7 +90,7 @@ class PredictTimeTest(PredictTime):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class PredictTimeAggregate(Metric):  # noqa: D101
+class PredictTimeAggregate(Metric[CrossValidationReport]):  # noqa: D101
     # ``report.metrics.timings()``
     #
     #                             mean       std
@@ -101,7 +98,6 @@ class PredictTimeAggregate(Metric):  # noqa: D101
     # Predict time test (s)        ...       ...
     # Predict time train (s)       ...       ...
 
-    report: CrossValidationReport = Field(repr=False, exclude=True)
     aggregate: ClassVar[Literal["mean", "std"]]
     greater_is_better: bool = False
 

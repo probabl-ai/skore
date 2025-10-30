@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from functools import cached_property
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import numpy as np
 from pydantic import computed_field
@@ -124,9 +124,14 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         TableReport,
     )
 
-    def model_post_init(self, context):  # noqa: D102
+    def model_post_init(self, _: Any) -> None:  # noqa: D102
+        self.__sample_to_class_index: list[int] | None
+        self.__classes: list[str] | None
+
         if "classification" in self.ml_task:
-            class_to_class_indice = defaultdict(lambda: len(class_to_class_indice))
+            class_to_class_indice: defaultdict[Any, int] = defaultdict(
+                lambda: len(class_to_class_indice)
+            )
 
             self.__sample_to_class_index = [
                 class_to_class_indice[sample] for sample in self.report.y
