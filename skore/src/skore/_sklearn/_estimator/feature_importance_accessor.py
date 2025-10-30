@@ -72,6 +72,24 @@ def _function_call_succeeds(func: Callable) -> bool:
         return False
 
 
+def _get_feature_names(estimator, X, transformer=None) -> list[str]:
+    """Get the names of an estimator's input features.
+
+    The estimator may or may not be inside a sklearn.Pipeline.
+    """
+    if hasattr(estimator, "feature_names_in_"):
+        return estimator.feature_names_in_
+    elif transformer is not None and _function_call_succeeds(
+        transformer.get_feature_names_out
+    ):
+        # It can happen that `transformer` does have `get_feature_names_out`, but
+        # calling it fails because an underlying estimator does not have that method.
+        return transformer.get_feature_names_out()
+    elif hasattr(X, "columns"):
+        return X.columns.tolist()
+    return [f"Feature #{i}" for i in range(X.shape[1])]
+
+
 def _check_scoring(scoring: Any) -> Scoring | None:
     """Check that `scoring` is valid, and convert it to a suitable form as needed.
 
@@ -596,16 +614,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if not isinstance(self._parent.estimator_, Pipeline) or at_step == 0:
                 estimator = self._parent.estimator_
                 X_transformed = X_
-                if hasattr(estimator, "feature_names_in_"):
-                    feature_names = estimator.feature_names_in_
-                elif hasattr(X_transformed, "columns"):
-                    # Infer the column from the dataframe if it is one
-                    feature_names = X_transformed.columns.tolist()
-                else:
-                    feature_names = [
-                        f"Feature #{i}"
-                        for i in range(X_transformed.shape[1])  # type: ignore
-                    ]
+
+                feature_names = _get_feature_names(
+                    estimator,
+                    X=X_transformed,
+                    transformer=None,
+                )
 
             else:
                 pipeline = self._parent.estimator_
@@ -628,16 +642,11 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     feature_eng, estimator = pipeline[:at_step], pipeline[at_step:]
                     X_transformed = feature_eng.transform(X_)
 
-                if hasattr(estimator, "feature_names_in_"):
-                    feature_names = estimator.feature_names_in_
-                elif _function_call_succeeds(feature_eng.get_feature_names_out):
-                    feature_names = feature_eng.get_feature_names_out()
-                elif hasattr(X_transformed, "columns"):
-                    feature_names = X_transformed.columns.tolist()
-                else:
-                    feature_names = [
-                        f"Feature #{i}" for i in range(X_transformed.shape[1])
-                    ]
+                feature_names = _get_feature_names(
+                    estimator,
+                    X=X_transformed,
+                    transformer=feature_eng,
+                )
 
             if issparse(X_transformed):
                 X_transformed = X_transformed.todense()
