@@ -480,3 +480,28 @@ def test_indicator_favorability(forest_binary_classification_data, aggregate):
     assert indicator["Brier score"].tolist() == ["(↘︎)"]
     assert indicator["Fit time (s)"].tolist() == ["(↘︎)"]
     assert indicator["Predict time (s)"].tolist() == ["(↘︎)"]
+
+
+def test_overwrite_scoring_names_with_dict_cross_validation(forest_multiclass_classification_data):
+    """Test that we can overwrite the scoring names using dict scoring in CrossValidationReport."""
+    estimator, X, y = forest_multiclass_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+
+    scoring_dict = {
+        "Custom Precision": "_precision",
+        "Custom Recall": "_recall",
+        "Custom ROC AUC": "_roc_auc"
+    }
+
+    result = report.metrics.summarize(scoring=scoring_dict).frame()
+
+    # Check that custom names are used
+    result_index = (
+        result.index.get_level_values(0).tolist()
+        if isinstance(result.index, pd.MultiIndex)
+        else result.index.tolist()
+    )
+
+    assert "Custom Precision" in result_index
+    assert "Custom Recall" in result_index
+    assert "Custom ROC AUC" in result_index
