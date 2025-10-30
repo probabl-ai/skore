@@ -4,7 +4,7 @@ import copy
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
 from sklearn.datasets import make_regression
 from sklearn.decomposition import PCA
 from sklearn.exceptions import NotFittedError
@@ -458,8 +458,22 @@ class TestAtStep:
                 X_ = X.copy()
                 return (X_ - self.mean_) / self.std_
 
+        class Regressor(RegressorMixin, BaseEstimator):
+            _is_fitted = False
+
+            def fit(self, X, y):
+                self.y_mean = np.mean(y)
+                self._is_fitted = True
+                return self
+
+            def predict(self, X):
+                return np.full(X.shape[0], self.y_mean)
+
+            def __sklearn_is_fitted__(self):
+                return self._is_fitted
+
         X, y = data
-        pipeline = make_pipeline(Scaler(), LinearRegression())
+        pipeline = make_pipeline(Scaler(), Regressor())
         report = EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
 
         report.feature_importance.permutation(seed=42, at_step=-1)
