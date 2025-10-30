@@ -10,15 +10,15 @@ from typing import TYPE_CHECKING
 
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from ..client.client import Client, HUBClient
-from .serializer import Serializer
+from skore_hub_project.client.client import Client, HUBClient
 
 if TYPE_CHECKING:
-    from typing import Final
+    from typing import Any, Final
 
-    import httpx
+    from httpx import Client as httpx_Client
 
-    from ..project.project import Project
+    from skore_hub_project.artifact.serializer import Serializer
+    from skore_hub_project.project.project import Project
 
 
 SkinnedProgress = partial(
@@ -37,7 +37,7 @@ SkinnedProgress = partial(
 
 def upload_chunk(
     filepath: Path,
-    client: httpx.Client,
+    client: httpx_Client,
     url: str,
     offset: int,
     length: int,
@@ -89,7 +89,12 @@ def upload_chunk(
 CHUNK_SIZE: Final[int] = int(1e7)  # ~10mb
 
 
-def upload(project: Project, content: str | bytes, content_type: str) -> str:
+def upload(
+    project: Project,
+    serializer_cls: type[Serializer],
+    content: Any,
+    content_type: str,
+) -> str:
     """
     Upload content to the artifacts storage.
 
@@ -97,7 +102,9 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
     ----------
     project : ``Project``
         The project where to upload the content.
-    content : str | bytes
+    serializer_cls : type[Serializer]
+        The class of serializer to use for the content serialization.
+    content : Any
         The content to upload.
     content_type : str
         The type of content to upload.
@@ -113,26 +120,36 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
     A content that was already uploaded in its whole will be ignored.
     """
     with (
-        Serializer(content) as serializer,
+        serializer_cls(content) as serializer,
         HUBClient() as hub_client,
         Client() as standard_client,
         ThreadPoolExecutor() as pool,
     ):
-        # Ask for upload urls.
-        response = hub_client.post(
+        # Ask for the artifact.
+        #
+        # An non-empty response means that an artifact with the same checksum already
+        # exists. The content doesn't have to be re-uploaded.
+        response = hub_client.get(
             url=f"projects/{project.quoted_tenant}/{project.quoted_name}/artifacts",
-            json=[
-                {
-                    "checksum": serializer.checksum,
-                    "chunk_number": ceil(serializer.size / CHUNK_SIZE),
-                    "content_type": content_type,
-                }
-            ],
+            params={"artifact_checksum": serializer.checksum},
         )
 
-        # An empty response means that an artifact with the same checksum already
-        # exists. The content doesn't have to be re-uploaded.
-        if urls := response.json():
+        if not response.json():
+            serializer()
+
+            # Ask for upload urls.
+            response = hub_client.post(
+                url=f"projects/{project.quoted_tenant}/{project.quoted_name}/artifacts",
+                json=[
+                    {
+                        "checksum": serializer.checksum,
+                        "chunk_number": ceil(serializer.size / CHUNK_SIZE),
+                        "content_type": content_type,
+                    }
+                ],
+            )
+
+            urls = response.json()
             task_to_chunk_id = {}
 
             # Upload each chunk of the serialized content to the artifacts storage,

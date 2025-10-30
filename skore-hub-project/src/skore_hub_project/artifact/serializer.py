@@ -11,16 +11,25 @@ class Serializer:
     """Serialize a content directly on disk to reduce RAM footprint."""
 
     def __init__(self, content: str | bytes):
-        if isinstance(content, str):
-            self.filepath.write_text(content, encoding="utf-8")
-        else:
-            self.filepath.write_bytes(content)
+        self.content = content
+        self()
 
     def __enter__(self):  # noqa: D105
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):  # noqa: D105
         self.filepath.unlink(True)
+
+    def __call__(self):  # lazy // only after call of size or checksum
+        if hasattr(self, "__called__"):
+            return
+
+        self.__called__ = True
+
+        if isinstance(self.content, str):
+            self.filepath.write_text(self.content, encoding="utf-8")
+        else:
+            self.filepath.write_bytes(self.content)
 
     @cached_property
     def filepath(self) -> Path:
@@ -44,6 +53,10 @@ class Serializer:
         """
         from skore_hub_project import bytes_to_b64_str
 
+        if not hasattr(self, "__called__"):
+            raise Exception
+
+        # Compute checksum with the appropriate number of threads
         hasher = Blake3(max_threads=(1 if self.size < 1e6 else Blake3.AUTO))
         checksum = hasher.update_mmap(self.filepath).digest()
 
@@ -52,4 +65,7 @@ class Serializer:
     @cached_property
     def size(self) -> int:
         """The size of the serialized content, in bytes."""
+        if not hasattr(self, "__called__"):
+            raise Exception
+
         return self.filepath.stat().st_size
