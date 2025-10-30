@@ -149,10 +149,7 @@ def test_child_report_cleanup():
 
         @progress_decorator("Parent Process")
         def run(self):
-            results = []
-            for rpt in self.reports_.values():
-                results.append(rpt.process())
-            return results
+            return [rpt.process() for rpt in self.reports_.values()]
 
     parent = Parent()
     results = parent.run()

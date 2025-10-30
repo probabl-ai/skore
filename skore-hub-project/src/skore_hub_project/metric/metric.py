@@ -25,7 +25,7 @@ def cast_to_float(value: Any) -> float | None:
     return None
 
 
-class Metric(BaseModel, Generic[Report], ABC):
+class Metric(BaseModel, ABC, Generic[Report]):
     """
     Payload used to send a metric to ``hub``.
 

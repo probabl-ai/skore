@@ -83,7 +83,23 @@ exclude_also = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "UP", "B", "C4", "SIM", "T", "PT003", "PT014", "I", "D", "RUF010", "RUF015"]
+select = [
+    "B",
+    "C4",
+    "T10",
+    "T20",
+    "PYI055", "PYI059",
+    "PT003", "PT014",
+    "SIM",
+    "I",
+    "PERF",
+    "E",
+    "D",
+    "F",
+    "UP",
+    "RUF010", "RUF015",
+]
+ignore = ["PERF203"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
