@@ -10,21 +10,17 @@ from sklearn.decomposition import PCA
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import make_scorer, r2_score, root_mean_squared_error
-from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import SplineTransformer, StandardScaler
 
-from skore import EstimatorReport
+from skore import EstimatorReport, train_test_split
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
 
 
 def regression_data():
     X, y = make_regression(n_features=3, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-    data = {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
-    return data
+    split_data = train_test_split(X, y, test_size=0.2, random_state=42, as_dict=True)
+    return split_data
 
 
 def regression_data_dataframe():
@@ -345,7 +341,7 @@ def test_not_fitted(regression_data):
 
 class TestAtStep:
     @pytest.fixture(params=["numpy", "dataframe"])
-    def data(self, request):
+    def split_data(self, request):
         array_type = request.param
 
         X, y = make_regression(n_features=3, random_state=0)
@@ -354,15 +350,15 @@ class TestAtStep:
             X = pd.DataFrame(X, columns=["x0", "x1", "x2"])
             y = pd.Series(y)
 
-        return X, y
+        split_data = train_test_split(X, y, random_state=0, as_dict=True)
+        return split_data
 
     @pytest.fixture
-    def pipeline_report(self, data) -> EstimatorReport:
-        X, y = data
+    def pipeline_report(self, split_data) -> EstimatorReport:
         pipeline = make_pipeline(
             StandardScaler(), PCA(n_components=2), LinearRegression()
         )
-        return EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
+        return EstimatorReport(pipeline, **split_data)
 
     @pytest.mark.parametrize("at_step", [0, -1, 1])
     def test_int(self, pipeline_report, at_step):
@@ -390,14 +386,11 @@ class TestAtStep:
         assert result.index.names == ["Metric", "Feature"]
         assert result.shape[0] > 0
 
-    def test_non_pipeline(self, data):
+    def test_non_pipeline(self, split_data):
         """
         For non-pipeline estimators, changing at_step should not change the results.
         """
-        X, y = data
-        report = EstimatorReport(
-            LinearRegression(), X_train=X, y_train=y, X_test=X, y_test=y
-        )
+        report = EstimatorReport(LinearRegression(), **split_data)
 
         result_start = report.feature_importance.permutation(seed=42, at_step=0)
         result_end = report.feature_importance.permutation(seed=42, at_step=-1)
@@ -423,29 +416,27 @@ class TestAtStep:
         with pytest.raises(ValueError, match=err_msg):
             pipeline_report.feature_importance.permutation(seed=42, at_step=at_step)
 
-    def test_sparse_array(self, data):
+    def test_sparse_array(self, split_data):
         """If one of the steps outputs a sparse array, `permutation` still works."""
-        X, y = data
         pipeline = make_pipeline(
             SplineTransformer(sparse_output=True), LinearRegression()
         )
-        report = EstimatorReport(pipeline, X_train=X, X_test=X, y_train=y, y_test=y)
+        report = EstimatorReport(pipeline, **split_data)
 
         report.feature_importance.permutation(seed=42, at_step=-1)
 
-    def test_feature_names(self, data):
+    def test_feature_names(self, split_data):
         """If the requested pipeline step gives proper feature names,
         these names should appear in the output."""
-        X, y = data
         pipeline = make_pipeline(SplineTransformer(), LinearRegression())
-        report = EstimatorReport(pipeline, X_train=X, X_test=X, y_train=y, y_test=y)
+        report = EstimatorReport(pipeline, **split_data)
 
         result = report.feature_importance.permutation(seed=42, at_step=-1)
         last_step_feature_names = list(report.estimator_[0].get_feature_names_out())
         assert list(result.index.levels[1]) == last_step_feature_names
 
     @pytest.mark.parametrize("at_step", [0, -1])
-    def test_non_sklearn_pipeline(self, data, at_step):
+    def test_non_sklearn_pipeline(self, split_data, at_step):
         """If the pipeline contains non-sklearn-compliant transformers,
         `permutation` still works."""
 
@@ -473,8 +464,7 @@ class TestAtStep:
             def __sklearn_is_fitted__(self):
                 return self._is_fitted
 
-        X, y = data
         pipeline = make_pipeline(Scaler(), Regressor())
-        report = EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
+        report = EstimatorReport(pipeline, **split_data)
 
         report.feature_importance.permutation(seed=42, at_step=at_step)
