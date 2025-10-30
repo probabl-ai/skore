@@ -17,7 +17,7 @@ from skore import EstimatorReport, train_test_split
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
 
 
-def regression_data():
+def regression_data() -> dict:
     X, y = make_regression(n_features=3, random_state=42)
     split_data = train_test_split(X, y, test_size=0.2, random_state=42, as_dict=True)
     return split_data
@@ -25,12 +25,9 @@ def regression_data():
 
 def regression_data_dataframe():
     data = regression_data()
-    data["X_train"] = pd.DataFrame(
-        data["X_train"], columns=["my_feature_0", "my_feature_1", "my_feature_2"]
-    )
-    data["X_test"] = pd.DataFrame(
-        data["X_test"], columns=["my_feature_0", "my_feature_1", "my_feature_2"]
-    )
+    columns = ["my_feature_0", "my_feature_1", "my_feature_2"]
+    data["X_train"] = pd.DataFrame(data["X_train"], columns=columns)
+    data["X_test"] = pd.DataFrame(data["X_test"], columns=columns)
     return data
 
 
@@ -344,14 +341,10 @@ class TestAtStep:
     def split_data(self, request):
         array_type = request.param
 
-        X, y = make_regression(n_features=3, random_state=0)
-
-        if array_type == "dataframe":
-            X = pd.DataFrame(X, columns=["x0", "x1", "x2"])
-            y = pd.Series(y)
-
-        split_data = train_test_split(X, y, random_state=0, as_dict=True)
-        return split_data
+        if array_type == "numpy":
+            return regression_data()
+        elif array_type == "dataframe":
+            return regression_data_dataframe()
 
     @pytest.fixture
     def pipeline_report(self, split_data) -> EstimatorReport:
@@ -365,7 +358,6 @@ class TestAtStep:
         """
         Test the `at_step` integer parameter for permutation importance with a pipeline.
         """
-
         result = pipeline_report.feature_importance.permutation(
             seed=42, at_step=at_step
         )
