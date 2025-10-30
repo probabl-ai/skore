@@ -991,9 +991,10 @@ ridge_report.help()
 ridge_report.feature_importance.permutation(seed=0)
 
 # %%
-# Since the permutation importance involves permuting values of a feature at random, by default it is computed
-# several times, each time with different permutations of the feature.
-# For this reason, if `seed` is not passed, skore does not cache the permutation importance results.
+# Since the permutation importance involves permuting values of a feature at random,
+# by default it is computed several times, each time with different permutations of
+# the feature. For this reason, if `seed` is not passed, skore does not cache the
+# permutation importance results.
 
 # %%
 # Now, we plot the permutation feature importance on the train and test sets using boxplots:
