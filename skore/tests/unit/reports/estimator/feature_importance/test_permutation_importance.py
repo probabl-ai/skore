@@ -444,7 +444,8 @@ class TestAtStep:
         last_step_feature_names = list(report.estimator_[0].get_feature_names_out())
         assert list(result.index.levels[1]) == last_step_feature_names
 
-    def test_non_sklearn_pipeline(self, data):
+    @pytest.mark.parametrize("at_step", [0, -1])
+    def test_non_sklearn_pipeline(self, data, at_step):
         """If the pipeline contains non-sklearn-compliant transformers,
         `permutation` still works."""
 
@@ -476,4 +477,4 @@ class TestAtStep:
         pipeline = make_pipeline(Scaler(), Regressor())
         report = EstimatorReport(pipeline, X_train=X, y_train=y, X_test=X, y_test=y)
 
-        report.feature_importance.permutation(seed=42, at_step=-1)
+        report.feature_importance.permutation(seed=42, at_step=at_step)
