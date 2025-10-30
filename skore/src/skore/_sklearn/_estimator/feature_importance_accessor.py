@@ -68,7 +68,7 @@ def _function_call_succeeds(func: Callable) -> bool:
     try:
         func()
         return True
-    except Exception:
+    except AttributeError:
         return False
 
 
