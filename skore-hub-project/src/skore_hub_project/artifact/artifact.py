@@ -2,7 +2,6 @@
 
 from abc import ABC, abstractmethod
 from contextlib import AbstractContextManager, nullcontext
-from functools import cached_property
 from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
@@ -32,7 +31,7 @@ class Artifact(BaseModel, ABC):
     as a file to the ``hub`` artifacts storage.
     """
 
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     project: Project = Field(repr=False, exclude=True)
     serializer_cls: ClassVar[type[Serializer]] = Serializer
@@ -60,9 +59,26 @@ class Artifact(BaseModel, ABC):
         """
 
     @computed_field  # type: ignore[prop-decorator]
-    @cached_property
+    @property
     def checksum(self) -> str | None:
         """Checksum used to identify the content of the artifact."""
+        try:
+            return self.__checksum
+        except AttributeError:
+            message = (
+                "You cannot access the checksum of an artifact "
+                "without explicitly uploading it. "
+                "Please use `artifact.upload()` before."
+            )
+
+            raise RuntimeError(message) from None
+
+    @checksum.setter
+    def checksum(self, checksum: str | None):
+        self.__checksum = checksum
+
+    def upload(self):
+        """Upload artifact."""
         contextmanager = self.content_to_upload()
 
         if not isinstance(contextmanager, AbstractContextManager):
@@ -70,11 +86,11 @@ class Artifact(BaseModel, ABC):
 
         with contextmanager as content:
             if content is not None:
-                return upload(
+                self.checksum = upload(
                     project=self.project,
                     serializer_cls=self.serializer_cls,
                     content=content,
                     content_type=self.content_type,
                 )
-
-        return None
+            else:
+                self.checksum = None

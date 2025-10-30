@@ -87,10 +87,11 @@ class ReportPayload(BaseModel, Generic[Report], ABC):
         payloads = []
 
         for metric_cls in self.METRICS:
-            payload = metric_cls(report=self.report)
+            metric = metric_cls(report=self.report)
+            metric.compute()
 
-            if payload.value is not None:
-                payloads.append(payload)
+            if metric.value is not None:
+                payloads.append(metric)
 
         return payloads
 
@@ -109,10 +110,11 @@ class ReportPayload(BaseModel, Generic[Report], ABC):
         payloads = []
 
         for media_cls in self.MEDIAS:
-            payload = media_cls(project=self.project, report=self.report)
+            media = media_cls(project=self.project, report=self.report)
+            media.upload()
 
-            if payload.checksum is not None:
-                payloads.append(payload)
+            if media.checksum is not None:
+                payloads.append(media)
 
         return payloads
 
@@ -126,4 +128,7 @@ class ReportPayload(BaseModel, Generic[Report], ABC):
         artifact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artifacts storage.
         """
-        return Pickle(project=self.project, report=self.report)
+        pickle = Pickle(project=self.project, report=self.report)
+        pickle.upload()
+
+        return pickle

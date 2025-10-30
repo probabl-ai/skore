@@ -4,8 +4,6 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from functools import cached_property
 from io import BytesIO
-from pathlib import Path
-from tempfile import NamedTemporaryFile
 from typing import ClassVar, Literal
 
 from joblib import dump
@@ -16,9 +14,6 @@ from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 Report = EstimatorReport | CrossValidationReport
-
-
-
 
 
 class ReportSerializer(Serializer):
