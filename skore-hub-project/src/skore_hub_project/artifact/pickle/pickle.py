@@ -18,17 +18,22 @@ from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 Report = EstimatorReport | CrossValidationReport
 
 
+
+
+
 class ReportSerializer(Serializer):
     def __init__(self, report: Report):
         self.report = report
 
-    @cached_property
-    def filepath(self) -> Path:
-        with NamedTemporaryFile(mode="w+b", delete=False) as file, BytesIO() as stream:
-            dump(self.report, stream)
-            file.write_bytes(stream.getvalue())
+    def __call__(self):
+        if hasattr(self, "__called__"):
+            return
 
-        return Path(file.name)
+        self.__called__ = True
+
+        with BytesIO() as stream:
+            dump(self.report, stream)
+            self.filepath.write_bytes(stream.getvalue())
 
     @cached_property
     def checksum(self) -> str:
@@ -56,9 +61,9 @@ class Pickle(Artifact):
     The report is primarily pickled on disk to reduce RAM footprint.
     """
 
-    serializer: ClassVar[type[ReportSerializer]] = ReportSerializer
-    report: Report = Field(repr=False, exclude=True)
+    serializer_cls: ClassVar[type[ReportSerializer]] = ReportSerializer
     content_type: Literal["application/octet-stream"] = "application/octet-stream"
+    report: Report = Field(repr=False, exclude=True)
 
     @contextmanager
     def content_to_upload(self) -> Generator[Report, None, None]:
