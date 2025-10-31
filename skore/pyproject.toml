@@ -50,6 +50,7 @@ test-base = [
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
+  "scipy-stubs",
   "skrub",
   "xdoctest",
 ]

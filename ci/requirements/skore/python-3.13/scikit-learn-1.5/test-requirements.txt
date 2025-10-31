@@ -81,11 +81,17 @@ numpy==2.3.4
     #   skore (skore/pyproject.toml)
     #   contourpy
     #   matplotlib
+    #   numpy-typing-compat
+    #   optype
     #   pandas
     #   scikit-learn
     #   scipy
     #   seaborn
     #   skrub
+numpy-typing-compat==20250818.2.3
+    # via optype
+optype[numpy]==0.14.0
+    # via scipy-stubs
 packaging==25.0
     # via
     #   matplotlib
@@ -178,6 +184,8 @@ scipy==1.16.3
     # via
     #   scikit-learn
     #   skrub
+scipy-stubs==1.16.3.0
+    # via skore (skore/pyproject.toml)
 seaborn==0.13.2
     # via skore (skore/pyproject.toml)
 six==1.17.0
