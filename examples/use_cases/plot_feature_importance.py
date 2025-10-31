@@ -448,23 +448,23 @@ print("Number of features after feature engineering:", n_features_engineered)
 # Let us display the 15 largest absolute coefficients:
 
 # %%
-engineered_rigde_report_feature_importance = (
+engineered_ridge_report_feature_importance = (
     engineered_ridge_report.feature_importance.coefficients()
     .frame()
     .sort_values(by="Coefficient", key=abs, ascending=True)
     .tail(15)
 )
 
-engineered_rigde_report_feature_importance.index = (
-    engineered_rigde_report_feature_importance.index.str.replace("remainder__", "")
+engineered_ridge_report_feature_importance.index = (
+    engineered_ridge_report_feature_importance.index.str.replace("remainder__", "")
 )
-engineered_rigde_report_feature_importance.index = (
-    engineered_rigde_report_feature_importance.index.str.replace(
+engineered_ridge_report_feature_importance.index = (
+    engineered_ridge_report_feature_importance.index.str.replace(
         "kmeans__", "geospatial__"
     )
 )
 
-engineered_rigde_report_feature_importance.plot.barh(
+engineered_ridge_report_feature_importance.plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
@@ -572,7 +572,7 @@ X_y_plot.sample(10)
 # We visualize the distributions of the prediction errors on both train and test sets:
 
 # %%
-sns.histplot(data=X_y_plot, x="squared_error", hue="split", bins=30)
+sns.histplot(data=X_y_plot, x="squared_error", hue="split", multiple="dodge", bins=30)
 plt.title("Train and test sets")
 plt.show()
 
@@ -948,7 +948,7 @@ plt.tight_layout()
 # models and the MDI that is specific to tree-based models.
 # In this section, we look into the
 # `permutation importance <https://scikit-learn.org/stable/modules/permutation_importance.html>`_
-# which is model agnostic, meaning that it can be applied to any fitted estimator.
+# which is model-agnostic, meaning that it can be applied to any fitted estimator.
 # In particular, it works for linear models and tree-based ones.
 
 # %%
@@ -991,62 +991,59 @@ ridge_report.help()
 ridge_report.feature_importance.permutation(seed=0)
 
 # %%
-# The permutation importance is often calculated several times, each time
-# with different permutations of the feature.
-# Hence, we can have measure its variance (or standard deviation).
+# Since the permutation importance involves permuting values of a feature at random,
+# by default it is computed several times, each time with different permutations of
+# the feature. For this reason, if `seed` is not passed, skore does not cache the
+# permutation importance results.
+
+# %%
 # Now, we plot the permutation feature importance on the train and test sets using boxplots:
 
 
-# %%
-
-
-def plot_permutation_train_test(est_report):
+def plot_permutation_train_test(importances):
     _, ax = plt.subplots(figsize=(8, 6))
 
-    train_color = "blue"
-    test_color = "orange"
+    # create a long format required by seaborn
+    importances = importances.stack().reset_index()
+    importances.columns = ["Dataset", "Feature", "Repeats", "Importance"]
 
-    est_report.feature_importance.permutation(data_source="train", seed=0).T.boxplot(
+    sns.boxplot(
+        data=importances,
+        x="Importance",
+        y="Feature",
+        hue="Dataset",
+        orient="h",
+        order=importances["Feature"].unique()[::-1],
         ax=ax,
-        vert=False,
-        widths=0.35,
-        patch_artist=True,
-        boxprops={"facecolor": train_color, "alpha": 0.7},
-        medianprops={"color": "black"},
-        positions=[x + 0.4 for x in range(len(est_report.X_train.columns))],
     )
-    est_report.feature_importance.permutation(data_source="test", seed=0).T.boxplot(
-        ax=ax,
-        vert=False,
-        widths=0.35,
-        patch_artist=True,
-        boxprops={"facecolor": test_color, "alpha": 0.7},
-        medianprops={"color": "black"},
-        positions=range(len(est_report.X_test.columns)),
-    )
-
-    ax.legend(
-        handles=[
-            plt.Line2D([0], [0], color=train_color, lw=5, label="Train"),
-            plt.Line2D([0], [0], color=test_color, lw=5, label="Test"),
-        ],
-        loc="best",
-        title="Dataset",
-    )
-
-    ax.set_title(
-        f"Permutation feature importance of {est_report.estimator_name_} (Train vs Test)"
-    )
-    ax.set_xlabel("$R^2$")
-    ax.set_yticks([x + 0.2 for x in range(len(est_report.X_train.columns))])
-    ax.set_yticklabels(est_report.X_train.columns)
+    ax.set_xlabel("Decrease of $R^2$ score")
+    ax.set_title("Permutation feature importance (Train vs Test)")
 
     plt.tight_layout()
     plt.show()
 
 
 # %%
-plot_permutation_train_test(ridge_report)
+
+
+def compute_permutation_importances(report, at_step=0):
+    train_importance = report.feature_importance.permutation(
+        data_source="train", seed=0, at_step=at_step
+    )
+    test_importance = report.feature_importance.permutation(
+        data_source="test", seed=0, at_step=at_step
+    )
+    print(train_importance)
+
+    return pd.concat(
+        {"train": train_importance, "test": test_importance},
+        axis=0,
+        names=["Dataset"],
+    ).droplevel(level=1, axis=0)
+
+
+# %%
+plot_permutation_train_test(compute_permutation_importances(ridge_report))
 
 # %%
 # The standard deviation seems quite low.
@@ -1062,19 +1059,53 @@ plot_permutation_train_test(ridge_report)
 # pipeline (with regards to the original features):
 
 # %%
-plot_permutation_train_test(selectk_ridge_report)
+plot_permutation_train_test(compute_permutation_importances(selectk_ridge_report))
+
+# %%
+# Since this estimator involves complex feature engineering, it is interesting to look
+# at the impact of the *engineered* features rather than the original input features.
+# For instance, we can check whether features with a low importance rating have indeed
+# been selected out of the engineered features.
+
+# %%
+importances = compute_permutation_importances(selectk_ridge_report, at_step=-1)
+
+# Rename some features for clarity
+importances = importances.reset_index()
+importances["Feature"] = (
+    importances["Feature"]
+    .str.replace("remainder__", "")
+    .str.replace("kmeans__", "geospatial__")
+)
+
+# Take only the 15 most important train features
+importances = importances.set_index(["Dataset", "Feature"])
+best_15_features = (
+    importances.loc[("test", slice(None))]
+    .aggregate("mean", axis=1)
+    .sort_values(key=abs)
+    .tail(15)
+    .index
+)
+importances = importances[importances.index.isin(best_15_features, level=1)]
+
+plot_permutation_train_test(importances)
 
 # %%
 # Hence, contrary to coefficients, although we have created many features in our
 # preprocessing, the interpretability is easier.
 # We notice that, due to our preprocessing using a clustering on the geospatial data,
 # these features are of great importance to our model.
+#
+# Also, Average Bedrooms and Average Rooms appear often in the plot, whereas they were
+# not considered as important when looking at the coefficients. It means that once
+# combined with other features, they become more relevant.
 
 # %%
 # For our decision tree, here is our permutation importance on the train and test sets:
 
 # %%
-plot_permutation_train_test(tree_report)
+plot_permutation_train_test(compute_permutation_importances(tree_report))
 
 # %%
 # The result of the inspection is the same as with the MDI:

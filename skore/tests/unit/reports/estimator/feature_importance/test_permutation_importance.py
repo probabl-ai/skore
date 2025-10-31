@@ -4,35 +4,30 @@ import copy
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
 from sklearn.datasets import make_regression
+from sklearn.decomposition import PCA
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import make_scorer, r2_score, root_mean_squared_error
-from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import SplineTransformer, StandardScaler
 
-from skore import EstimatorReport
+from skore import EstimatorReport, train_test_split
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
 
 
-def regression_data():
+def regression_data() -> dict:
     X, y = make_regression(n_features=3, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-    data = {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
-    return data
+    split_data = train_test_split(X, y, test_size=0.2, random_state=42, as_dict=True)
+    return split_data
 
 
 def regression_data_dataframe():
     data = regression_data()
-    data["X_train"] = pd.DataFrame(
-        data["X_train"], columns=["my_feature_0", "my_feature_1", "my_feature_2"]
-    )
-    data["X_test"] = pd.DataFrame(
-        data["X_test"], columns=["my_feature_0", "my_feature_1", "my_feature_2"]
-    )
+    columns = ["my_feature_0", "my_feature_1", "my_feature_2"]
+    data["X_train"] = pd.DataFrame(data["X_train"], columns=columns)
+    data["X_test"] = pd.DataFrame(data["X_test"], columns=columns)
     return data
 
 
@@ -339,3 +334,129 @@ def test_not_fitted(regression_data):
     error_msg = "This LinearRegression instance is not fitted yet"
     with pytest.raises(NotFittedError, match=error_msg):
         report.feature_importance.permutation()
+
+
+class TestAtStep:
+    @pytest.fixture(params=["numpy", "dataframe"])
+    def split_data(self, request):
+        array_type = request.param
+
+        if array_type == "numpy":
+            return regression_data()
+        elif array_type == "dataframe":
+            return regression_data_dataframe()
+
+    @pytest.fixture
+    def pipeline_report(self, split_data) -> EstimatorReport:
+        pipeline = make_pipeline(
+            StandardScaler(), PCA(n_components=2), LinearRegression()
+        )
+        return EstimatorReport(pipeline, **split_data)
+
+    @pytest.mark.parametrize("at_step", [0, -1, 1])
+    def test_int(self, pipeline_report, at_step):
+        """
+        Test the `at_step` integer parameter for permutation importance with a pipeline.
+        """
+        result = pipeline_report.feature_importance.permutation(
+            seed=42, at_step=at_step
+        )
+
+        assert isinstance(result.index, pd.MultiIndex)
+        assert result.index.nlevels == 2
+        assert result.index.names == ["Metric", "Feature"]
+        assert result.shape[0] > 0
+
+    def test_str(self, pipeline_report):
+        """
+        Test the `at_step` string parameter for permutation importance with a pipeline.
+        """
+        result = pipeline_report.feature_importance.permutation(seed=42, at_step="pca")
+
+        assert isinstance(result.index, pd.MultiIndex)
+        assert result.index.nlevels == 2
+        assert result.index.names == ["Metric", "Feature"]
+        assert result.shape[0] > 0
+
+    def test_non_pipeline(self, split_data):
+        """
+        For non-pipeline estimators, changing at_step should not change the results.
+        """
+        report = EstimatorReport(LinearRegression(), **split_data)
+
+        result_start = report.feature_importance.permutation(seed=42, at_step=0)
+        result_end = report.feature_importance.permutation(seed=42, at_step=-1)
+
+        pd.testing.assert_frame_equal(result_start, result_end)
+
+    AT_STEP_TOO_LARGE = (
+        "at_step must be strictly smaller in magnitude than "
+        "the number of steps in the Pipeline"
+    )
+
+    @pytest.mark.parametrize(
+        "at_step, err_msg",
+        [
+            (8, AT_STEP_TOO_LARGE),
+            (-8, AT_STEP_TOO_LARGE),
+            ("hello", "'hello' is not in list"),
+            (0.5, "at_step must be an integer or a string"),
+        ],
+    )
+    def test_value_error(self, pipeline_report, at_step, err_msg):
+        """If `at_step` value is not appropriate, a ValueError is raised."""
+        with pytest.raises(ValueError, match=err_msg):
+            pipeline_report.feature_importance.permutation(seed=42, at_step=at_step)
+
+    def test_sparse_array(self, split_data):
+        """If one of the steps outputs a sparse array, `permutation` still works."""
+        pipeline = make_pipeline(
+            SplineTransformer(sparse_output=True), LinearRegression()
+        )
+        report = EstimatorReport(pipeline, **split_data)
+
+        report.feature_importance.permutation(seed=42, at_step=-1)
+
+    def test_feature_names(self, split_data):
+        """If the requested pipeline step gives proper feature names,
+        these names should appear in the output."""
+        pipeline = make_pipeline(SplineTransformer(), LinearRegression())
+        report = EstimatorReport(pipeline, **split_data)
+
+        result = report.feature_importance.permutation(seed=42, at_step=-1)
+        last_step_feature_names = list(report.estimator_[0].get_feature_names_out())
+        assert list(result.index.levels[1]) == last_step_feature_names
+
+    @pytest.mark.parametrize("at_step", [0, -1])
+    def test_non_sklearn_pipeline(self, split_data, at_step):
+        """If the pipeline contains non-sklearn-compliant transformers,
+        `permutation` still works."""
+
+        class Scaler(TransformerMixin, BaseEstimator):
+            def fit(self, X, y=None):
+                self.mean_ = X.mean(axis=0)
+                self.std_ = X.std(axis=0)
+                return self
+
+            def transform(self, X, y=None):
+                X_ = X.copy()
+                return (X_ - self.mean_) / self.std_
+
+        class Regressor(RegressorMixin, BaseEstimator):
+            _is_fitted = False
+
+            def fit(self, X, y):
+                self.y_mean = np.mean(y)
+                self._is_fitted = True
+                return self
+
+            def predict(self, X):
+                return np.full(X.shape[0], self.y_mean)
+
+            def __sklearn_is_fitted__(self):
+                return self._is_fitted
+
+        pipeline = make_pipeline(Scaler(), Regressor())
+        report = EstimatorReport(pipeline, **split_data)
+
+        report.feature_importance.permutation(seed=42, at_step=at_step)
