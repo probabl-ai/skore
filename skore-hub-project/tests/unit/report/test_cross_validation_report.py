@@ -1,4 +1,5 @@
 import numpy as np
+from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from sklearn.datasets import make_classification, make_regression
@@ -268,7 +269,7 @@ class TestCrossValidationReportPayload:
         assert payload_dict == {
             "key": "<key>",
             "estimator_class_name": "RandomForestClassifier",
-            "dataset_fingerprint": "cffe9686d06a56d0afe0c3a29d3ac6bf",
+            "dataset_fingerprint": hash(small_cv_binary_classification.y),
             "ml_task": "binary-classification",
             "groups": None,
             "pickle": {

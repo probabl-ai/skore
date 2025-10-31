@@ -1,3 +1,4 @@
+from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from skore import CrossValidationReport, EstimatorReport
@@ -150,7 +151,7 @@ class TestEstimatorReportPayload:
         assert payload_dict == {
             "key": "<key>",
             "estimator_class_name": "RandomForestClassifier",
-            "dataset_fingerprint": "35806b458ab1a6d0c675fd226d7fc34a",
+            "dataset_fingerprint": hash(binary_classification.y_test),
             "ml_task": "binary-classification",
             "pickle": {
                 "checksum": checksum,
