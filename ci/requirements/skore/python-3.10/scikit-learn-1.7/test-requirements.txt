@@ -88,6 +88,8 @@ numpy==2.2.6
     #   scipy
     #   seaborn
     #   skrub
+optype==0.9.3
+    # via scipy-stubs
 packaging==25.0
     # via
     #   matplotlib
@@ -179,6 +181,8 @@ scipy==1.15.3
     # via
     #   scikit-learn
     #   skrub
+scipy-stubs==1.15.3.0
+    # via skore (skore/pyproject.toml)
 seaborn==0.13.2
     # via skore (skore/pyproject.toml)
 six==1.17.0
@@ -205,6 +209,7 @@ typing-extensions==4.15.0
     #   anywidget
     #   exceptiongroup
     #   ipython
+    #   optype
     #   virtualenv
 tzdata==2025.2
     # via pandas
