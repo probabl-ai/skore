@@ -612,14 +612,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             score = self._parent._cache[cache_key]
         else:
             if not isinstance(self._parent.estimator_, Pipeline) or at_step == 0:
-                estimator = self._parent.estimator_
+                feature_engineering, estimator = None, self._parent.estimator_
                 X_transformed = X_
-
-                feature_names = _get_feature_names(
-                    estimator,
-                    X=X_transformed,
-                    transformer=None,
-                )
 
             else:
                 pipeline = self._parent.estimator_
@@ -639,14 +633,17 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                             "number of steps in the Pipeline, which is "
                             f"{len(pipeline.steps)}; got {at_step}"
                         )
-                    feature_eng, estimator = pipeline[:at_step], pipeline[at_step:]
-                    X_transformed = feature_eng.transform(X_)
+                    feature_engineering, estimator = (
+                        pipeline[:at_step],
+                        pipeline[at_step:],
+                    )
+                    X_transformed = feature_engineering.transform(X_)
 
-                feature_names = _get_feature_names(
-                    estimator,
-                    X=X_transformed,
-                    transformer=feature_eng,
-                )
+            feature_names = _get_feature_names(
+                estimator,
+                X=X_transformed,
+                transformer=feature_engineering,
+            )
 
             if issparse(X_transformed):
                 X_transformed = X_transformed.todense()
