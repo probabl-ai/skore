@@ -1,5 +1,6 @@
 """Client exchanging with ``skore hub``."""
 
+import importlib
 import logging
 from contextlib import suppress
 from http import HTTPStatus
@@ -132,6 +133,13 @@ class Client(HTTPXClient):
         raise HTTPStatusError(message, request=response.request, response=response)
 
 
+PACKAGE_VERSION = (
+    version
+    if ((version := importlib.metadata.version("skore-hub-project")) != "0.0.0+unknown")
+    else None
+)
+
+
 class HUBClient(Client):
     """
     Client exchanging with ``skore hub``.
@@ -157,10 +165,14 @@ class HUBClient(Client):
         """Execute request with authorization."""
         headers = Headers(headers)
 
-        # Overload headers with our custom headers (API key or token)
+        # Overload headers with package version
+        if PACKAGE_VERSION:
+            headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_VERSION}"})
+
+        # Overload headers with credentials
         if self.authenticated:
             if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
-                headers.update({"X-API-Key": f"{apikey}"})
+                headers.update({"X-API-Key": apikey})
             else:
                 headers.update({"Authorization": f"Bearer {Token.access()}"})
 
