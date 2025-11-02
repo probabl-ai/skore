@@ -10,6 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
@@ -255,3 +256,21 @@ def test_no_y():
     instance"""
     report = CrossValidationReport(KMeans(), X=np.random.rand(100, 5))
     assert isinstance(report, CrossValidationReport)
+
+
+@pytest.mark.parametrize("SearchCV", [GridSearchCV, RandomizedSearchCV])
+def test_params_search_reports(logistic_binary_classification_data, SearchCV):
+    """Check that the `params_search_reports_` attribute is correctly created."""
+    estimator, X, y = logistic_binary_classification_data
+    grid = {"C": [0.1, 0.5, 1.0]}
+    search = SearchCV(estimator, grid, cv=3)
+
+    report = CrossValidationReport(search, X=X, y=y, splitter=3)
+    for estimator_report in report.estimator_reports_:
+        assert estimator_report.params_search_reports_ is not None
+        for item in estimator_report.params_search_reports_:
+            assert isinstance(item, CrossValidationReport)
+
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=3)
+    for estimator_report in report.estimator_reports_:
+        assert estimator_report.params_search_reports_ is None
