@@ -14,7 +14,7 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
-from skore import CrossValidationReport, EstimatorReport
+from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 from skore._sklearn._cross_validation.report import _generate_estimator_report
 from skore._utils._testing import MockEstimator
 
@@ -267,8 +267,8 @@ def test_params_search_reports(logistic_binary_classification_data, SearchCV):
 
     report = CrossValidationReport(search, X=X, y=y, splitter=3)
     for estimator_report in report.estimator_reports_:
-        assert estimator_report.params_search_reports_ is not None
-        for item in estimator_report.params_search_reports_:
+        assert isinstance(estimator_report.params_search_reports_, ComparisonReport)
+        for item in estimator_report.params_search_reports_.reports_.values():
             assert isinstance(item, CrossValidationReport)
 
     report = CrossValidationReport(estimator, X=X, y=y, splitter=3)

@@ -82,9 +82,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         The time taken to fit the estimator, in seconds. If the estimator is not
         internally fitted, the value is `None`.
 
-    params_search_reports_ : list of CrossValidationReport or None
+    params_search_reports_ : ComparisonReport of CrossValidationReport or None
         When `estimator` is a `GridSearchCV` or `RandomizedSearchCV`, this attribute
-        stores the reports for each parameter combination.
+        stores the the reports for each parameter combination.
 
     See Also
     --------
@@ -204,20 +204,21 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "The training data is required to create the `params_search_reports_` "
             "attribute."
         )
-        self.params_search_reports_: list[CrossValidationReport] | None = None
+        self.params_search_reports_: ComparisonReport | None = None
         if isinstance(self._estimator, _search.BaseSearchCV):
             # lazy import to avoid circular import
+            from skore._sklearn._comparison.report import ComparisonReport
             from skore._sklearn._cross_validation.report import CrossValidationReport
 
             n_candidates = len(self.estimator_.cv_results_["params"])
             n_splits = len(self.estimator_.cv_results_["estimator"]) // n_candidates
             cv_results = self.estimator_.cv_results_
-            self.params_search_reports_ = []
+            params_search_reports_ = []
             for param_index in range(n_candidates):
                 candidates_indices = slice(
                     param_index * n_splits, (param_index + 1) * n_splits
                 )
-                self.params_search_reports_.append(
+                params_search_reports_.append(
                     CrossValidationReport._from_search_cv_results(
                         # parameters that do not depend on the split
                         X=self.X_train,
@@ -231,6 +232,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                         test_indices=cv_results["test_indices"][candidates_indices],
                     )
                 )
+            self.params_search_reports_ = ComparisonReport(params_search_reports_)
 
     @classmethod
     def _from_search_cv_results(

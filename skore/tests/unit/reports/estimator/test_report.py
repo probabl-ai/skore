@@ -14,7 +14,7 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
-from skore import CrossValidationReport, EstimatorReport
+from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 
 
 def test_report_can_be_rebuilt_using_parameters(linear_regression_with_test):
@@ -361,8 +361,8 @@ def test_params_search_reports(
     report = EstimatorReport(
         search, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    assert report.params_search_reports_ is not None
-    for item in report.params_search_reports_:
+    assert isinstance(report.params_search_reports_, ComparisonReport)
+    for item in report.params_search_reports_.reports_.values():
         assert isinstance(item, CrossValidationReport)
 
     report = EstimatorReport(
