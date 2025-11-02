@@ -200,12 +200,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def _set_params_search_reports(self) -> None:
         """Create `params_search_report_` attribute based on `estimator`."""
-        assert self.X_train is not None, (
-            "The training data is required to create the `params_search_reports_` "
-            "attribute."
-        )
         self.params_search_reports_: ComparisonReport | None = None
-        if isinstance(self._estimator, _search.BaseSearchCV):
+        if self.X_train is not None and isinstance(
+            self._estimator, _search.BaseSearchCV
+        ):
             # lazy import to avoid circular import
             from skore._sklearn._comparison.report import ComparisonReport
             from skore._sklearn._cross_validation.report import CrossValidationReport
