@@ -10,6 +10,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone
 from sklearn.exceptions import NotFittedError
+from sklearn.model_selection import _search
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
@@ -17,10 +18,12 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
 from skore._sklearn.find_ml_task import _find_ml_task
+from skore._sklearn.search_cv import patched_fit_and_score, patched_format_results
 from skore._sklearn.types import _DEFAULT, PositiveLabel
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import Parallel, delayed
+from skore._utils._patch import patch_function, patch_instance_method
 from skore._utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
@@ -79,6 +82,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         The time taken to fit the estimator, in seconds. If the estimator is not
         internally fitted, the value is `None`.
 
+    params_search_reports_ : list of CrossValidationReport or None
+        When `estimator` is a `GridSearchCV` or `RandomizedSearchCV`, this attribute
+        stores the reports for each parameter combination.
+
     See Also
     --------
     skore.CrossValidationReport
@@ -121,7 +128,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "Please provide both X_train and y_train."
             )
         estimator_ = clone(estimator)
-        with MeasureTime() as fit_time:
+
+        # patching the SearchCV such that we store estimator, train indices and test
+        # indices to create a list of CrossValidationReport
+        with (
+            patch_function(_search, "_fit_and_score", patched_fit_and_score),
+            patch_instance_method(
+                estimator_, "_format_results", patched_format_results
+            ),
+            MeasureTime() as fit_time,
+        ):
             estimator_.fit(X_train, y_train)
         return estimator_, fit_time()
 
@@ -178,7 +194,65 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._pos_label = pos_label
         self.fit_time_ = fit_time
 
+        self._set_params_search_reports()
+
         self._initialize_state()
+
+    def _set_params_search_reports(self) -> None:
+        """Create `params_search_report_` attribute based on `estimator`."""
+        assert self.X_train is not None, (
+            "The training data is required to create the `params_search_reports_` "
+            "attribute."
+        )
+        self.params_search_reports_: list[CrossValidationReport] | None = None
+        if isinstance(self._estimator, _search.BaseSearchCV):
+            # lazy import to avoid circular import
+            from skore._sklearn._cross_validation.report import CrossValidationReport
+
+            n_candidates = len(self.estimator_.cv_results_["params"])
+            n_splits = len(self.estimator_.cv_results_["estimator"]) // n_candidates
+            cv_results = self.estimator_.cv_results_
+            self.params_search_reports_ = []
+            for param_index in range(n_candidates):
+                candidates_indices = slice(
+                    param_index * n_splits, (param_index + 1) * n_splits
+                )
+                self.params_search_reports_.append(
+                    CrossValidationReport._from_search_cv_results(
+                        # parameters that do not depend on the split
+                        X=self.X_train,
+                        y=self.y_train,
+                        pos_label=self.pos_label,
+                        splitter=self._estimator.cv,
+                        # parameters that depend on the split
+                        fitted_estimators=cv_results["estimator"][candidates_indices],
+                        fit_time=cv_results["mean_fit_time"][param_index],
+                        train_indices=cv_results["train_indices"][candidates_indices],
+                        test_indices=cv_results["test_indices"][candidates_indices],
+                    )
+                )
+
+    @classmethod
+    def _from_search_cv_results(
+        cls,
+        fitted_estimator: BaseEstimator,
+        fit_time: float,
+        X_train: ArrayLike,
+        y_train: ArrayLike,
+        X_test: ArrayLike,
+        y_test: ArrayLike,
+        pos_label: PositiveLabel | None,
+    ) -> EstimatorReport:
+        report = cls(
+            fitted_estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+            pos_label=pos_label,
+        )
+        report.fit_time_ = fit_time
+        return report
 
     def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""

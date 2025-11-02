@@ -172,13 +172,61 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
 
+        self._initialize_state()
+
+    @classmethod
+    def _from_search_cv_results(
+        cls,
+        X: ArrayLike,
+        y: ArrayLike | None,
+        pos_label: PositiveLabel | None,
+        splitter: int | SKLearnCrossValidator | Generator | None,
+        fitted_estimators: list[BaseEstimator],
+        fit_time: float,
+        train_indices: list[ArrayLike],
+        test_indices: list[ArrayLike],
+    ) -> CrossValidationReport:
+        """Create a report by reusing the fitted estimators from a SearchCV."""
+        report = cls.__new__(cls)  # bypass the initialization process
+        report._progress_info = None
+        report._estimator = clone(fitted_estimators[0])
+        report._X = X
+        report._y = y
+        report._pos_label = pos_label
+        report._splitter = check_cv(
+            splitter, y, classifier=is_classifier(report._estimator)
+        )
+        report._split_indices = tuple(zip(train_indices, test_indices, strict=True))
+        report.n_jobs = None
+
+        report.estimator_reports_ = []
+        for estimator, train_idx, test_idx in zip(
+            fitted_estimators, train_indices, test_indices, strict=True
+        ):
+            report.estimator_reports_.append(
+                EstimatorReport(
+                    estimator=estimator,
+                    fit=True,
+                    X_train=_safe_indexing(X, train_idx),
+                    y_train=_safe_indexing(y, train_idx),
+                    X_test=_safe_indexing(X, test_idx),
+                    y_test=_safe_indexing(y, test_idx),
+                    pos_label=pos_label,
+                )
+            )
+            report.estimator_reports_[-1].fit_time_ = fit_time
+
+        report._initialize_state()
+        return report
+
+    def _initialize_state(self) -> None:
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache: dict[tuple[Any, ...], Any] = {}
         self._ml_task = _find_ml_task(
-            y, estimator=self.estimator_reports_[0]._estimator
+            self._y, estimator=self.estimator_reports_[0]._estimator
         )
 
     @progress_decorator(
