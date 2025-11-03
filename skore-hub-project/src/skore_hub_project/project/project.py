@@ -8,7 +8,15 @@ from collections.abc import Callable
 from functools import cached_property, wraps
 from operator import itemgetter
 from tempfile import TemporaryFile
-from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypedDict, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ParamSpec,
+    Protocol,
+    TypedDict,
+    TypeVar,
+    runtime_checkable,
+)
 from urllib.parse import quote
 
 import joblib
@@ -44,13 +52,21 @@ if TYPE_CHECKING:
         predict_time_mean: float | None
 
 
-def ensure_project_is_created(
-    method: Callable[Concatenate[Project, P], R],
-) -> Callable[Concatenate[Project, P], R]:
+def ensure_project_is_created(method: Callable[P, R]) -> Callable[P, R]:
     """Ensure project is created before executing any other operation."""
 
+    @runtime_checkable
+    class Project(Protocol):
+        created: bool
+        quoted_tenant: str
+        quoted_name: str
+
     @wraps(method)
-    def wrapper(project: Project, *args: P.args, **kwargs: P.kwargs) -> R:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        project = args[0]
+
+        assert isinstance(project, Project), "You can only wrap `Project` methods"
+
         if not project.created:
             with HUBClient() as hub_client:
                 hub_client.post(
@@ -59,9 +75,9 @@ def ensure_project_is_created(
 
             project.created = True
 
-        return method(project, *args, **kwargs)
+        return method(*args, **kwargs)
 
-    return cast(Callable[Concatenate[Project, P], R], wrapper)
+    return wrapper
 
 
 class Project:
