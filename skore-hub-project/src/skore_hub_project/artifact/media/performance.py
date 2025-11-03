@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 
 from skore_hub_project import switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media, Report
+from skore_hub_project.protocol import Display
 
 
 class Performance(Media[Report], ABC):  # noqa: D101
@@ -19,7 +20,7 @@ class Performance(Media[Report], ABC):  # noqa: D101
     def content_to_upload(self) -> bytes | None:  # noqa: D102
         try:
             function = cast(
-                Callable,
+                Callable[..., Display],
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:

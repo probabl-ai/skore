@@ -5,10 +5,11 @@ from collections.abc import Callable
 from functools import reduce
 from typing import ClassVar, Literal, cast
 
-import orjson
+from orjson import dumps, OPT_NON_STR_KEYS, OPT_SERIALIZE_NUMPY
+from pandas import DataFrame
 
 from skore_hub_project.artifact.media.media import Media, Report
-from skore_hub_project.protocol import EstimatorReport
+from skore_hub_project.protocol import EstimatorReport, Display
 
 
 class FeatureImportance(Media[Report], ABC):  # noqa: D101
@@ -18,7 +19,7 @@ class FeatureImportance(Media[Report], ABC):  # noqa: D101
     def content_to_upload(self) -> bytes | None:  # noqa: D102
         try:
             function = cast(
-                Callable,
+                Callable[..., Display | DataFrame],
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:
@@ -26,12 +27,12 @@ class FeatureImportance(Media[Report], ABC):  # noqa: D101
 
         result = function()
 
-        if hasattr(result, "frame"):
+        if isinstance(result, Display):
             result = result.frame()
 
-        return orjson.dumps(
+        return dumps(
             result.fillna("NaN").to_dict(orient="tight"),
-            option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
+            option=(OPT_NON_STR_KEYS | OPT_SERIALIZE_NUMPY),
         )
 
 
@@ -55,9 +56,9 @@ class Permutation(FeatureImportance[EstimatorReport], ABC):  # noqa: D101
                 and data_source == self.data_source
                 and scoring is None
             ):
-                return orjson.dumps(
+                return dumps(
                     obj.fillna("NaN").to_dict(orient="tight"),
-                    option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
+                    option=(OPT_NON_STR_KEYS | OPT_SERIALIZE_NUMPY),
                 )
 
         return None

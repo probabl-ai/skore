@@ -6,16 +6,12 @@ from abc import ABC, abstractmethod
 from contextlib import suppress
 from functools import cached_property, reduce
 from math import isfinite
-from typing import Any, ClassVar, Generic, Literal, TypeVar, cast
+from typing import Any, ClassVar, Generic, Literal, TypeVar, cast, Callable
 
+from pandas import DataFrame
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from skore_hub_project.protocol import (
-    CrossValidationReport,
-    CrossValidationReportMetricFunction,
-    EstimatorReport,
-    EstimatorReportMetricFunction,
-)
+from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
@@ -99,7 +95,7 @@ class EstimatorReportMetric(Metric[EstimatorReport]):
         """The value of the metric."""
         try:
             function = cast(
-                EstimatorReportMetricFunction,
+                Callable[..., float | None],
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:
@@ -142,7 +138,7 @@ class CrossValidationReportMetric(Metric[CrossValidationReport]):
         """The value of the metric."""
         try:
             function = cast(
-                CrossValidationReportMetricFunction,
+                Callable[..., DataFrame],
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:
