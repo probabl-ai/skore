@@ -3,15 +3,26 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from contextlib import suppress
 from functools import cached_property, reduce
 from math import isfinite
-from typing import Any, ClassVar, Generic, Literal, TypeVar, cast, Callable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Generic,
+    Literal,
+    TypeVar,
+    cast,
+)
 
-from pandas import DataFrame
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 

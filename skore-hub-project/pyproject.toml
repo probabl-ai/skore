@@ -18,6 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+  "pandas-stubs",
   "pre-commit",
   "pytest",
   "pytest-cov",

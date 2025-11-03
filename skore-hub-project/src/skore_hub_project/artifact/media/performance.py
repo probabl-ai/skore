@@ -1,5 +1,7 @@
 """Definition of the payload used to associate a performance media with report."""
 
+from __future__ import annotations
+
 from abc import ABC
 from collections.abc import Callable
 from functools import reduce

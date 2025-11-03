@@ -1,15 +1,19 @@
 """Definition of the payload used to associate feature importance media with report."""
 
+from __future__ import annotations
+
 from abc import ABC
 from collections.abc import Callable
 from functools import reduce
-from typing import ClassVar, Literal, cast
+from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
-from orjson import dumps, OPT_NON_STR_KEYS, OPT_SERIALIZE_NUMPY
-from pandas import DataFrame
+from orjson import OPT_NON_STR_KEYS, OPT_SERIALIZE_NUMPY, dumps
 
 from skore_hub_project.artifact.media.media import Media, Report
-from skore_hub_project.protocol import EstimatorReport, Display
+from skore_hub_project.protocol import Display, EstimatorReport
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 
 
 class FeatureImportance(Media[Report], ABC):  # noqa: D101

@@ -1,8 +1,12 @@
 """Protocols definition used to remove adherence to ``skore`` for type checking."""
 
-from typing import Any, Literal, Protocol, runtime_checkable, Callable
+from __future__ import annotations
 
-from pandas import DataFrame
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 
 DataSource = Literal["train", "test"] | None
 Aggregate = Literal["mean", "std"]
@@ -10,6 +14,8 @@ Aggregate = Literal["mean", "std"]
 
 @runtime_checkable
 class Display(Protocol):
+    """Protocol equivalent to ``skore.Display``."""
+
     frame: Callable[..., DataFrame]
     plot: Callable[..., None]
     figure_: Any
