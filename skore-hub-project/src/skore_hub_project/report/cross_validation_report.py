@@ -51,13 +51,10 @@ from skore_hub_project.metric import (
     RocAucTrainMean,
     RocAucTrainStd,
 )
-from skore_hub_project.metric.metric import CrossValidationReportMetric
-from skore_hub_project.metric.timing import FitTimeAggregate, PredictTimeAggregate
+from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport
 from skore_hub_project.report.estimator_report import EstimatorReportPayload
 from skore_hub_project.report.report import ReportPayload
-
-Metric = CrossValidationReportMetric | FitTimeAggregate | PredictTimeAggregate
 
 
 class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
@@ -78,7 +75,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         The key to associate to the report.
     """
 
-    METRICS: ClassVar[tuple[type[Metric], ...]] = (
+    METRICS: ClassVar[tuple[type[Metric[CrossValidationReport]], ...]] = (
         AccuracyTestMean,
         AccuracyTestStd,
         AccuracyTrainMean,
@@ -119,7 +116,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         PredictTimeTrainMean,
         PredictTimeTrainStd,
     )
-    MEDIAS: ClassVar[tuple[type[Media], ...]] = (
+    MEDIAS: ClassVar[tuple[type[Media[CrossValidationReport]], ...]] = (
         EstimatorHtmlRepr,
         TableReport,
     )
