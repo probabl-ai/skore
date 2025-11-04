@@ -1,5 +1,4 @@
 from io import BytesIO
-from types import SimpleNamespace
 
 import joblib
 from pandas import DataFrame
@@ -297,19 +296,12 @@ class TestProject:
         assert len(project._Project__artifacts_storage) == 1
         assert len(project._Project__metadata_storage) == 2
 
-    def test_reports(self, tmp_path):
-        project = Project("<project>", workspace=tmp_path)
-
-        assert isinstance(project.reports, SimpleNamespace)
-        assert hasattr(project.reports, "get")
-        assert hasattr(project.reports, "metadata")
-
-    def test_reports_get(self, tmp_path, regression):
+    def test_get(self, tmp_path, regression):
         project = Project("<project>", workspace=tmp_path)
         project.put("<key>", regression)
         project.put("<key>", regression)
 
-        report = project.reports.get(next(project._Project__artifacts_storage.keys()))
+        report = project.get(next(project._Project__artifacts_storage.keys()))
 
         assert len(project._Project__artifacts_storage) == 1
         assert len(project._Project__metadata_storage) == 2
@@ -317,7 +309,7 @@ class TestProject:
         assert report.estimator_name_ == regression.estimator_name_
         assert report._ml_task == regression._ml_task
 
-    def test_reports_get_exception(self, tmp_path, regression):
+    def test_get_exception(self, tmp_path, regression):
         import re
 
         project = Project("<project>", workspace=tmp_path)
@@ -331,9 +323,9 @@ class TestProject:
                 f"does not exist anymore."
             ),
         ):
-            project.reports.get(None)
+            project.get(None)
 
-    def test_reports_metadata(self, tmp_path, Datetime, regression, cv_regression):
+    def test_summarize(self, tmp_path, Datetime, regression, cv_regression):
         project = Project("<project>", workspace=tmp_path)
 
         project.put("<key1>", regression)
@@ -344,7 +336,7 @@ class TestProject:
 
         assert len(project._Project__artifacts_storage) == 2
         assert len(project._Project__metadata_storage) == 3
-        assert project.reports.metadata() == [
+        assert project.summarize() == [
             {
                 "id": artifact_ids[0],
                 "key": "<key1>",
@@ -404,7 +396,7 @@ class TestProject:
             },
         ]
 
-    def test_reports_metadata_exception(self, tmp_path, regression):
+    def test_summarize_exception(self, tmp_path, regression):
         import re
 
         project = Project("<project>", workspace=tmp_path)
@@ -418,7 +410,7 @@ class TestProject:
                 f"does not exist anymore."
             ),
         ):
-            project.reports.metadata()
+            project.summarize()
 
     def test_delete(self, tmp_path, binary_classification, regression):
         project1 = Project("<project1>", workspace=tmp_path)

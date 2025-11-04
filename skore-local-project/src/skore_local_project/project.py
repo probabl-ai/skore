@@ -6,7 +6,6 @@ import io
 import os
 from functools import wraps
 from pathlib import Path
-from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -269,32 +268,6 @@ class Project:
             for value in self.__metadata_storage.values()
             if value["project_name"] == self.name
         ]
-
-    @property
-    def reports(self):
-        """Accessor for interaction with the persisted reports."""
-
-        def get(id: str) -> EstimatorReport | CrossValidationReport:
-            """
-            Get a persisted report by its id.
-
-            .. deprecated
-              The ``Project.reports.get`` function will be removed in favor of
-              ``Project.get`` in a near future.
-            """
-            return self.get(id)
-
-        def metadata() -> list[Metadata]:
-            """
-            Obtain metadata/metrics for all persisted reports in insertion order.
-
-            .. deprecated
-              The ``Project.reports.metadata`` function will be removed in favor of
-              ``Project.summarize`` in a near future.
-            """
-            return self.summarize()
-
-        return SimpleNamespace(get=get, metadata=metadata)
 
     def __repr__(self) -> str:  # noqa: D105
         return (
