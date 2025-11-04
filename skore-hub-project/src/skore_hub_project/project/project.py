@@ -8,6 +8,7 @@ from collections.abc import Callable
 from functools import cached_property, wraps
 from operator import itemgetter
 from tempfile import TemporaryFile
+from types import SimpleNamespace
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -302,6 +303,33 @@ class Project:
             )
 
         return sorted(map(dto, responses), key=itemgetter("date"))
+
+    @property
+    @ensure_project_is_created
+    def reports(self) -> SimpleNamespace:
+        """Accessor for interaction with the persisted reports."""
+
+        def get(urn: str) -> EstimatorReport | CrossValidationReport:
+            """
+            Get a persisted report by its URN.
+
+            .. deprecated
+              The ``Project.reports.get`` function will be removed in favor of
+              ``Project.get`` in a near future.
+            """
+            return self.get(urn)
+
+        def metadata() -> list[Metadata]:
+            """
+            Obtain metadata/metrics for all persisted reports in insertion order.
+
+            .. deprecated
+              The ``Project.reports.metadata`` function will be removed in favor of
+              ``Project.summarize`` in a near future.
+            """
+            return self.summarize()
+
+        return SimpleNamespace(get=get, metadata=metadata)
 
     def __repr__(self) -> str:  # noqa: D105
         return f"Project(mode='hub', name='{self.name}', tenant='{self.tenant}')"
