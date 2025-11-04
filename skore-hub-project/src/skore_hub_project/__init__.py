@@ -2,6 +2,7 @@
 
 import logging
 from base64 import b64decode, b64encode
+from collections.abc import Iterator
 from contextlib import contextmanager
 
 from rich.console import Console
@@ -45,7 +46,7 @@ def bytes_to_b64_str(literal: bytes) -> str:
 
 
 @contextmanager
-def switch_mpl_backend():
+def switch_mpl_backend() -> Iterator[None]:
     """
     Context-manager for switching ``matplotlib.backend`` to ``agg``.
 

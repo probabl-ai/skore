@@ -4,21 +4,34 @@ from __future__ import annotations
 
 import itertools
 import re
+from collections.abc import Callable
 from functools import cached_property, wraps
 from operator import itemgetter
 from tempfile import TemporaryFile
 from types import SimpleNamespace
-from typing import TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ParamSpec,
+    Protocol,
+    TypedDict,
+    TypeVar,
+    runtime_checkable,
+)
 from urllib.parse import quote
 
 import joblib
 import orjson
+from httpx import HTTPStatusError
 
-from skore_hub_project.client.client import Client, HTTPStatusError, HUBClient
+from skore_hub_project.client.client import Client, HUBClient
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
 if TYPE_CHECKING:
-    from typing import TypedDict
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -40,11 +53,21 @@ if TYPE_CHECKING:
         predict_time_mean: float | None
 
 
-def ensure_project_is_created(method):
+def ensure_project_is_created(method: Callable[P, R]) -> Callable[P, R]:
     """Ensure project is created before executing any other operation."""
 
+    @runtime_checkable
+    class Project(Protocol):
+        created: bool
+        quoted_tenant: str
+        quoted_name: str
+
     @wraps(method)
-    def wrapper(project: Project, *args, **kwargs):
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        project = args[0]
+
+        assert isinstance(project, Project), "You can only wrap `Project` methods"
+
         if not project.created:
             with HUBClient() as hub_client:
                 hub_client.post(
@@ -53,7 +76,7 @@ def ensure_project_is_created(method):
 
             project.created = True
 
-        return method(project, *args, **kwargs)
+        return method(*args, **kwargs)
 
     return wrapper
 
@@ -140,7 +163,7 @@ class Project:
         return quote(self.__name, safe="")
 
     @ensure_project_is_created
-    def put(self, key: str, report: EstimatorReport | CrossValidationReport):
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
         Put a key-report pair to the hub project.
 
@@ -211,6 +234,8 @@ class Project:
             metadata = response.json()
             presigned_url = metadata["pickle"]["presigned_url"]
 
+        report: EstimatorReport | CrossValidationReport
+
         # Download pickled report before unpickling it.
         #
         # It uses streaming responses that do not load the entire response body into
@@ -225,13 +250,15 @@ class Project:
 
             tmpfile.seek(0)
 
-            return joblib.load(tmpfile)
+            report = joblib.load(tmpfile)
+
+        return report
 
     @ensure_project_is_created
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted reports in insertion order."""
 
-        def dto(response):
+        def dto(response: Any) -> Metadata:
             report_type, summary = response
             metrics = {
                 metric["name"]: metric["value"]
@@ -279,7 +306,7 @@ class Project:
 
     @property
     @ensure_project_is_created
-    def reports(self):
+    def reports(self) -> SimpleNamespace:
         """Accessor for interaction with the persisted reports."""
 
         def get(urn: str) -> EstimatorReport | CrossValidationReport:
@@ -308,7 +335,7 @@ class Project:
         return f"Project(mode='hub', name='{self.name}', tenant='{self.tenant}')"
 
     @staticmethod
-    def delete(tenant: str, name: str):
+    def delete(tenant: str, name: str) -> None:
         """
         Delete a hub project.
 
