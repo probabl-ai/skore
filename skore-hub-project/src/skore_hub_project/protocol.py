@@ -18,7 +18,6 @@ class Display(Protocol):
 
     frame: Callable[..., DataFrame]
     plot: Callable[..., None]
-    figure_: Any
 
 
 @runtime_checkable

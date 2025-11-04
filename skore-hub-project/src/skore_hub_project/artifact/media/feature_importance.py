@@ -23,7 +23,7 @@ class FeatureImportance(Media[Report], ABC):  # noqa: D101
     def content_to_upload(self) -> bytes | None:  # noqa: D102
         try:
             function = cast(
-                Callable[..., Display | DataFrame],
+                "Callable[..., Display | DataFrame]",
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:

@@ -22,7 +22,7 @@ class Performance(Media[Report], ABC):  # noqa: D101
     def content_to_upload(self) -> bytes | None:  # noqa: D102
         try:
             function = cast(
-                Callable[..., Display],
+                "Callable[..., Display]",
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:
@@ -36,8 +36,8 @@ class Performance(Media[Report], ABC):  # noqa: D101
 
         with switch_mpl_backend(), BytesIO() as stream:
             display.plot()
-            display.figure_.savefig(stream, format="svg", bbox_inches="tight")
-            plt.close(display.figure_)
+            display.figure_.savefig(stream, format="svg", bbox_inches="tight")  # type: ignore[attr-defined]
+            plt.close(display.figure_)  # type: ignore[attr-defined]
 
             figure_bytes = stream.getvalue()
 

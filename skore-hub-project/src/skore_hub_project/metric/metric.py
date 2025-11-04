@@ -149,7 +149,7 @@ class CrossValidationReportMetric(Metric[CrossValidationReport]):
         """The value of the metric."""
         try:
             function = cast(
-                Callable[..., DataFrame],
+                "Callable[..., DataFrame]",
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:
