@@ -60,10 +60,10 @@ class _MetricsAccessor(
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    def _summarize(
+    def summarize(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: Literal["test", "train", "X_y", "all"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         scoring: Scoring | list[Scoring] | None = None,
@@ -77,12 +77,13 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "all"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "all" : use both the train and test sets to compute the metrics.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -145,7 +146,7 @@ class _MetricsAccessor(
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
-        >>> report.metrics._summarize(indicator_favorability=True).frame()
+        >>> report.metrics.summarize(indicator_favorability=True).frame()
                     LogisticRegression Favorability
         Metric
         Precision              0.98...         (↗︎)
@@ -153,7 +154,25 @@ class _MetricsAccessor(
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
-        >>> report.metrics._summarize(
+        >>> report.metrics.summarize(
+        ...     scoring=["f1"],
+        ...     indicator_favorability=True,
+        ... ).frame()
+                                  LogisticRegression Favorability
+        Metric   Label / Average
+        F1 Score               1             0.96...          (↗︎)
+        >>> report.metrics.summarize(
+        ...    indicator_favorability=True,
+        ...    data_source="all"
+        ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
+                          LogisticRegression (train)  ...  Favorability
+        Metric                                        ...
+        Precision                           0.962963  ...          (↗︎)
+        Recall                              0.973783  ...          (↗︎)
+        ROC AUC                             0.994300  ...          (↗︎)
+        Brier score                         0.027365  ...          (↘︎)
+        >>> # Using scikit-learn metrics
+        >>> report.metrics.summarize(
         ...     scoring=["f1"],
         ...     indicator_favorability=True,
         ... ).frame()
@@ -161,6 +180,47 @@ class _MetricsAccessor(
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
         """
+        if data_source == "all":
+            train_summary = self.summarize(
+                data_source="train",
+                X=X,
+                y=y,
+                scoring=scoring,
+                scoring_names=scoring_names,
+                scoring_kwargs=scoring_kwargs,
+                pos_label=pos_label,
+                indicator_favorability=indicator_favorability,
+                flat_index=flat_index,
+            )
+            test_summary = self.summarize(
+                data_source="test",
+                X=X,
+                y=y,
+                scoring=scoring,
+                scoring_names=scoring_names,
+                scoring_kwargs=scoring_kwargs,
+                pos_label=pos_label,
+                indicator_favorability=indicator_favorability,
+                flat_index=flat_index,
+            )
+            # Add suffix to the dataframes to distinguish train and test.
+            train_df = train_summary.frame().add_suffix(" (train)")
+            test_df = test_summary.frame().add_suffix(" (test)")
+            combined = pd.concat(
+                [
+                    train_df,
+                    test_df,
+                ],
+                axis=1,
+            )
+            if indicator_favorability:
+                combined["Favorability"] = train_df["Favorability (train)"]
+                combined.drop(
+                    columns=["Favorability (train)", "Favorability (test)"],
+                    inplace=True,
+                )
+            return MetricsSummaryDisplay(summarize_data=combined)
+
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
@@ -429,158 +489,6 @@ class _MetricsAccessor(
                 )
         return MetricsSummaryDisplay(summarize_data=results)
 
-    def summarize(
-        self,
-        *,
-        data_source: Literal["test", "train", "X_y", "all"] = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-        scoring: Scoring | list[Scoring] | None = None,
-        scoring_names: ScoringName | list[ScoringName] | None = None,
-        scoring_kwargs: dict[str, Any] | None = None,
-        pos_label: PositiveLabel | None = _DEFAULT,
-        indicator_favorability: bool = False,
-        flat_index: bool = False,
-    ) -> MetricsSummaryDisplay:
-        """Report a set of metrics for our estimator.
-
-        Parameters
-        ----------
-        data_source : {"test", "train", "X_y", "all"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-            - "all" : use both the train and test sets to compute the metrics.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
-
-        scoring : str, callable, scorer or list of such instances, default=None
-            The metrics to report. The possible values (whether or not in a list) are:
-
-            - if a string, either one of the built-in metrics or a scikit-learn scorer
-              name. You can get the possible list of string using
-              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
-              the built-in metrics or the scikit-learn scorers, respectively.
-            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
-              first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `scoring_kwargs`. No favorability indicator can
-              be displayed in this case.
-            - if the callable API is too restrictive (e.g. need to pass
-              same parameter name with different values), you can use scikit-learn
-              scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
-              the metric favorability will only be displayed if it is given explicitly
-              via `make_scorer`'s `greater_is_better` parameter.
-
-        scoring_names : str, None or list of such instances, default=None
-            Used to overwrite the default scoring names in the report. It should be of
-            the same length as the `scoring` parameter.
-
-        scoring_kwargs : dict, default=None
-            The keyword arguments to pass to the scoring functions.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing the metric. Use
-            this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report. If `None`,
-            the metric is computed considering each class as a positive class.
-
-        indicator_favorability : bool, default=False
-            Whether or not to add an indicator of the favorability of the metric as
-            an extra column in the returned DataFrame.
-
-        flat_index : bool, default=False
-            Whether to flatten the multi-index columns. Flat index will always be lower
-            case, do not include spaces and remove the hash symbol to ease indexing.
-
-        Returns
-        -------
-        MetricsSummaryDisplay
-            A display containing the statistics for the metrics.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
-        >>> report.metrics.summarize(indicator_favorability=True).frame()
-                    LogisticRegression Favorability
-        Metric
-        Precision              0.98...         (↗︎)
-        Recall                 0.93...         (↗︎)
-        ROC AUC                0.99...         (↗︎)
-        Brier score            0.03...         (↘︎)
-        >>> report.metrics.summarize(
-        ...    indicator_favorability=True,
-        ...    data_source="all"
-        ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
-                          LogisticRegression (train)  ...  Favorability
-        Metric                                        ...
-        Precision                           0.962963  ...          (↗︎)
-        Recall                              0.973783  ...          (↗︎)
-        ROC AUC                             0.994300  ...          (↗︎)
-        Brier score                         0.027365  ...          (↘︎)
-        >>> # Using scikit-learn metrics
-        >>> report.metrics.summarize(
-        ...     scoring=["f1"],
-        ...     indicator_favorability=True,
-        ... ).frame()
-                                  LogisticRegression Favorability
-        Metric   Label / Average
-        F1 Score               1             0.96...          (↗︎)
-        """
-        if data_source == "all":
-            train_summary = self._summarize(
-                data_source="train",
-                X=X,
-                y=y,
-                scoring=scoring,
-                scoring_names=scoring_names,
-                scoring_kwargs=scoring_kwargs,
-                pos_label=pos_label,
-                indicator_favorability=indicator_favorability,
-                flat_index=flat_index,
-            )
-            test_summary = self._summarize(
-                data_source="test",
-                X=X,
-                y=y,
-                scoring=scoring,
-                scoring_names=scoring_names,
-                scoring_kwargs=scoring_kwargs,
-                pos_label=pos_label,
-                indicator_favorability=indicator_favorability,
-                flat_index=flat_index,
-            )
-            # Add suffix to the dataframes to distinguish train and test.
-            train_df = train_summary.frame().add_suffix(" (train)")
-            test_df = test_summary.frame().add_suffix(" (test)")
-            combined = pd.concat(
-                [
-                    train_df,
-                    test_df,
-                ],
-                axis=1,
-            )
-            if indicator_favorability:
-                combined["Favorability"] = train_df["Favorability (train)"]
-                combined.drop(
-                    columns=["Favorability (train)", "Favorability (test)"],
-                    inplace=True,
-                )
-            return MetricsSummaryDisplay(summarize_data=combined)
         return self._summarize(
             data_source=data_source,
             X=X,
