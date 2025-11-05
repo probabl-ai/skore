@@ -313,16 +313,28 @@ def test_scoring_kwargs_multi_class(
 
 
 @pytest.mark.parametrize(
-    "fixture_name, scoring_names, expected_index",
+    "fixture_name, scoring, expected_index",
     [
         (
             "linear_regression_data",
-            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
+            {
+                "R2": "r2",
+                "RMSE": "rmse",
+                "FIT_TIME": "_fit_time",
+                "PREDICT_TIME": "_predict_time",
+            },
             ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
         ),
         (
             "forest_multiclass_classification_data",
-            ["Precision", "Recall", "ROC AUC", "Log Loss", "Fit Time", "Predict Time"],
+            {
+                "Precision": "_precision",
+                "Recall": "_recall",
+                "ROC AUC": "_roc_auc",
+                "Log Loss": "_log_loss",
+                "Fit Time": "_fit_time",
+                "Predict Time": "_predict_time",
+            },
             [
                 "Precision",
                 "Precision",
@@ -340,11 +352,11 @@ def test_scoring_kwargs_multi_class(
         ),
     ],
 )
-def test_overwrite_scoring_names(request, fixture_name, scoring_names, expected_index):
+def test_overwrite_scoring_names(request, fixture_name, scoring, expected_index):
     """Test that we can overwrite the scoring names in `MetricsSummaryDisplay`."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    result = report.metrics.summarize(scoring_names=scoring_names).frame()
+    result = report.metrics.summarize(scoring=scoring).frame()
     assert result.shape == (len(expected_index), 2)
 
     # Get level 0 names if MultiIndex, otherwise get column names
@@ -480,3 +492,31 @@ def test_indicator_favorability(forest_binary_classification_data, aggregate):
     assert indicator["Brier score"].tolist() == ["(↘︎)"]
     assert indicator["Fit time (s)"].tolist() == ["(↘︎)"]
     assert indicator["Predict time (s)"].tolist() == ["(↘︎)"]
+
+
+def test_overwrite_scoring_names_with_dict_cross_validation(
+    forest_multiclass_classification_data,
+):
+    """Test that we can overwrite the scoring names using dict scoring in
+    CrossValidationReport."""
+    estimator, X, y = forest_multiclass_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+
+    scoring_dict = {
+        "Custom Precision": "_precision",
+        "Custom Recall": "_recall",
+        "Custom ROC AUC": "_roc_auc",
+    }
+
+    result = report.metrics.summarize(scoring=scoring_dict).frame()
+
+    # Check that custom names are used
+    result_index = (
+        result.index.get_level_values(0).tolist()
+        if isinstance(result.index, pd.MultiIndex)
+        else result.index.tolist()
+    )
+
+    assert "Custom Precision" in result_index
+    assert "Custom Recall" in result_index
+    assert "Custom ROC AUC" in result_index
