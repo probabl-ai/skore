@@ -82,8 +82,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : str, callable, scorer, or list of such instances or dict of such
-                  instances, default=None
+        scoring : str, callable, scorer, or list of such instances or dict of such \
+            instances, default=None
             The metrics to report. The possible values (whether or not in a list) are:
 
             - if a string, either one of the built-in metrics or a scikit-learn scorer
