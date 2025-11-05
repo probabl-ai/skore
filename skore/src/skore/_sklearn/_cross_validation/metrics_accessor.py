@@ -150,12 +150,6 @@ class _MetricsAccessor(
         if pos_label == _DEFAULT:
             pos_label = self._parent.pos_label
 
-        # Handle dictionary scoring
-        scoring_names = None
-        if isinstance(scoring, dict):
-            scoring_names = list(scoring.keys())
-            scoring = list(scoring.values())
-
         results = self._compute_metric_scores(
             report_metric_name="summarize",
             data_source=data_source,
@@ -165,7 +159,6 @@ class _MetricsAccessor(
             scoring=scoring,
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
-            scoring_names=scoring_names,
             indicator_favorability=indicator_favorability,
         )
         if flat_index:
@@ -1039,13 +1032,13 @@ class _MetricsAccessor(
             response_method=response_method,
             **kwargs,
         )
+        scoring = {metric_name: scorer} if metric_name is not None else [scorer]
         return self.summarize(
-            scoring=[scorer],
+            scoring=scoring,
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
-            scoring_names=[metric_name] if metric_name is not None else None,
             pos_label=pos_label,
         ).frame()
 

@@ -265,28 +265,27 @@ def test_indicator_favorability(
 
 
 @pytest.mark.parametrize(
-    "scoring, scoring_names, scoring_kwargs",
+    "scoring, scoring_kwargs",
     [
-        ("accuracy", "this_is_a_test", None),
-        ("neg_log_loss", "this_is_a_test", None),
-        (accuracy_score, "this_is_a_test", {"response_method": "predict"}),
-        (get_scorer("accuracy"), "this_is_a_test", None),
+        ("accuracy", None),
+        ("neg_log_loss", None),
+        (accuracy_score, {"response_method": "predict"}),
+        (get_scorer("accuracy"), None),
     ],
 )
 def test_scoring_single_list_equivalence(
-    forest_binary_classification_with_test, scoring, scoring_names, scoring_kwargs
+    forest_binary_classification_with_test, scoring, scoring_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
-    list with a single element, and it's possible to overwrite col name."""
+    list with a single element."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result_single = report.metrics.summarize(
-        scoring=scoring, scoring_names=scoring_names, scoring_kwargs=scoring_kwargs
+        scoring=scoring, scoring_kwargs=scoring_kwargs
     ).frame()
     result_list = report.metrics.summarize(
-        scoring=[scoring], scoring_names=scoring_names, scoring_kwargs=scoring_kwargs
+        scoring=[scoring], scoring_kwargs=scoring_kwargs
     ).frame()
-    assert result_single.index[0] == "this_is_a_test"
     assert result_single.equals(result_list)
 
 
