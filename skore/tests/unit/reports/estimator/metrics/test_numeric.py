@@ -528,7 +528,7 @@ def test_summarize_scoring_dict(forest_binary_classification_with_test):
     scoring_dict = {
         "Custom Accuracy": "accuracy",
         "Custom Precision": "precision",
-        "Custom R2": get_scorer("neg_mean_absolute_error")
+        "Custom R2": get_scorer("neg_mean_absolute_error"),
     }
 
     result = report.metrics.summarize(scoring=scoring_dict).frame()
@@ -551,14 +551,10 @@ def test_summarize_scoring_dict_with_callables(linear_regression_with_test):
     def custom_metric(y_true, y_pred):
         return np.mean(np.abs(y_true - y_pred))
 
-    scoring_dict = {
-        "R Squared": "r2",
-        "Custom MAE": custom_metric
-    }
+    scoring_dict = {"R Squared": "r2", "Custom MAE": custom_metric}
 
     result = report.metrics.summarize(
-        scoring=scoring_dict,
-        scoring_kwargs={"response_method": "predict"}
+        scoring=scoring_dict, scoring_kwargs={"response_method": "predict"}
     ).frame()
 
     # Check that custom names are used

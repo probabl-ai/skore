@@ -196,7 +196,12 @@ def test_scoring_kwargs(
     [
         (
             "linear_regression_with_test",
-            {"R2": "r2", "RMSE": "rmse", "FIT_TIME": "_fit_time", "PREDICT_TIME": "_predict_time"},
+            {
+                "R2": "r2",
+                "RMSE": "rmse",
+                "FIT_TIME": "_fit_time",
+                "PREDICT_TIME": "_predict_time",
+            },
             ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
         ),
         (
@@ -207,7 +212,7 @@ def test_scoring_kwargs(
                 "ROC AUC": "_roc_auc",
                 "Log Loss": "_log_loss",
                 "Fit Time": "_fit_time",
-                "Predict Time": "_predict_time"
+                "Predict Time": "_predict_time",
             },
             [
                 "Precision",
