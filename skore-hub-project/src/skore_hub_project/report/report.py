@@ -107,16 +107,37 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         -----
         Unavailable medias have been filtered out.
         """
-        payloads = []
+        import asyncio
 
-        for media_cls in self.MEDIAS:
-            media = media_cls(project=self.project, report=self.report)
+        async def upload(media):
             media.upload()
 
-            if media.checksum is not None:
-                payloads.append(media)
+        medias = [
+            media_cls(project=self.project, report=self.report)
+            for media_cls in self.MEDIAS
+        ]
 
-        return payloads
+        # Saving a reference to the tasks, to avoid a task disappearing mid-execution
+        # https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
+        tasks = [upload(media) for media in medias]
+
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+
+            # Set `loop` as the default event loop for the current thread
+            asyncio.set_event_loop(loop)
+
+            try:
+                loop.run_until_complete(asyncio.gather(*tasks))
+            finally:
+                loop.close()
+                asyncio.set_event_loop(None)
+        else:
+            await asyncio.gather(*map(loop.create_task, tasks))
+
+        return [media for media in medias if media.checksum is not None]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
