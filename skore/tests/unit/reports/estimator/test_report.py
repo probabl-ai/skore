@@ -10,11 +10,11 @@ import pytest
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
-from skore import EstimatorReport
+from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 
 
 def test_report_can_be_rebuilt_using_parameters(linear_regression_with_test):
@@ -345,3 +345,27 @@ def test_get_predictions_error():
 
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid")
+
+
+@pytest.mark.parametrize("SearchCV", [GridSearchCV, RandomizedSearchCV])
+def test_params_search_reports(
+    logistic_binary_classification_with_train_test, SearchCV
+):
+    """Check that the `params_search_reports_` attribute is correctly created."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    grid = {"C": [0.1, 0.5, 1.0]}
+    search = SearchCV(estimator, grid, cv=3)
+
+    report = EstimatorReport(
+        search, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    assert isinstance(report.params_search_reports_, ComparisonReport)
+    for item in report.params_search_reports_.reports_.values():
+        assert isinstance(item, CrossValidationReport)
+
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    assert report.params_search_reports_ is None
