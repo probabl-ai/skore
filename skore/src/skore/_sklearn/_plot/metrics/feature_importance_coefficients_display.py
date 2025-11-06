@@ -121,8 +121,12 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
             return self._plot_estimator_report()
         elif self.report_type == "cross-validation":
             return self._plot_cross_validation_report()
+        elif self.report_type == "comparison-estimator":
+            return self._plot_comparison_report_estimator()
+        elif self.report_type == "comparison-cross-validation":
+            return self._plot_comparison_report_cross_validation()
         else:
-            return self._plot_comparison_report()
+            raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
     def _plot_estimator_report(self):
         self.figure_, self.ax_ = plt.subplots()
@@ -140,7 +144,7 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
         self.figure_.tight_layout()
         plt.show()
 
-    def _plot_comparison_report(self):
+    def _plot_comparison_report_estimator(self):
         self.figure_, self.ax_ = plt.subplots(
             nrows=1,
             ncols=len(self.coefficients),
@@ -148,24 +152,28 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
             squeeze=False,
         )
         self.ax_ = self.ax_.flatten()
+        self.figure_.suptitle("Coefficients")
+        for ax, coef_frame in zip(self.ax_, self.coefficients, strict=False):
+            coef_frame.plot.barh(ax=ax)
+            self._style_plot_matplotlib(ax, title=None)
+        self.figure_.tight_layout()
+        plt.show()
 
-        if self.report_type == "comparison-estimator":
-            self.figure_.suptitle("Coefficients")
-            for ax, coef_frame in zip(self.ax_, self.coefficients, strict=False):
-                coef_frame.plot.barh(ax=ax)
-                self._style_plot_matplotlib(ax, title=None)
-
-        elif self.report_type == "comparison-cross-validation":
-            for ax, coef_frame in zip(self.ax_, self.coefficients, strict=False):
-                coef_frame.boxplot(ax=ax, vert=False)
-                model_name = coef_frame.columns[0].split("__")[0]
-                self._style_plot_matplotlib(
-                    ax,
-                    title=f"{model_name} Coefficients across splits",
-                    legend=None,
-                )
-        else:
-            raise TypeError(f"Unexpected report type: {self.report_type}")
-
+    def _plot_comparison_report_cross_validation(self):
+        self.figure_, self.ax_ = plt.subplots(
+            nrows=1,
+            ncols=len(self.coefficients),
+            figsize=(5 * len(self.coefficients), 6),
+            squeeze=False,
+        )
+        self.ax_ = self.ax_.flatten()
+        for ax, coef_frame in zip(self.ax_, self.coefficients, strict=False):
+            coef_frame.boxplot(ax=ax, vert=False)
+            model_name = coef_frame.columns[0].split("__")[0]
+            self._style_plot_matplotlib(
+                ax,
+                title=f"{model_name} Coefficients across splits",
+                legend=None,
+            )
         self.figure_.tight_layout()
         plt.show()
