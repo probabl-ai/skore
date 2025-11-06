@@ -27,7 +27,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
 
         Returns
         -------
-        FeatureImportanceCoefficientsDisplay
+        :class:`FeatureImportanceCoefficientsDisplay`
             The feature importance display containing model coefficients and
             intercept.
 

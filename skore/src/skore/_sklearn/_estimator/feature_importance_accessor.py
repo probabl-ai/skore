@@ -163,7 +163,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Returns
         -------
-        FeatureImportanceCoefficientsDisplay
+        :class:`FeatureImportanceCoefficientsDisplay`
             The feature importance display containing model coefficients and
             intercept.
 

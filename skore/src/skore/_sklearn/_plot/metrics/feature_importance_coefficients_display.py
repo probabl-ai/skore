@@ -10,12 +10,12 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
 
     Parameters
     ----------
-    report_type : {"estimator", "cross-validation", "comparison-estimator",
+    report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
         Report type from which the display is created.
 
     coefficients : DataFrame | list[DataFrame]
-        The ROC AUC data to display. The columns are
+        The coefficients data to display.
 
     Attributes
     ----------
@@ -69,13 +69,13 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
             The structure of the returned frame depends on the underlying report type:
 
             - If an :class:`EstimatorReport`, a single column "Coefficient", with the
-            index being the feature names.
+              index being the feature names.
 
             - If a :class:`CrossValidationReport`, the columns are the feature names,
-            and the index is the respective split number.
+              and the index is the respective split number.
 
             - If a :class:`ComparisonReport`, the columns are the models passed in the
-            report, with the index being the feature names.
+              report, with the index being the feature names.
         """
         if self.report_type == "estimator":
             return self._frame_estimator_report()

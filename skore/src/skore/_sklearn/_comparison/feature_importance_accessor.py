@@ -45,7 +45,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
 
         Returns
         -------
-        FeatureImportanceCoefficientsDisplay
+        :class:`FeatureImportanceCoefficientsDisplay`
             The feature importance display containing model coefficients and
             intercept.
         """
