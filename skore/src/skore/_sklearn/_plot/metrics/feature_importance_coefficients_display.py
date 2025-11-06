@@ -68,14 +68,14 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
         pd.DataFrame
             The structure of the returned frame depends on the underlying report type:
 
-            - If an ``EstimatorReport``, a single column
-            "Coefficient", with the index being the feature names.
+            - If an :class:`EstimatorReport`, a single column "Coefficient", with the
+            index being the feature names.
 
-            - If a ``CrossValidationReport``, the columns are
-            the feature names, and the index is the respective split number.
+            - If a :class:`CrossValidationReport`, the columns are the feature names,
+            and the index is the respective split number.
 
-            - If a ``ComparisonReport``, the columns are the
-            models passed in the report, with the index being the feature names.
+            - If a :class:`ComparisonReport`, the columns are the models passed in the
+            report, with the index being the feature names.
         """
         if self._parent == "estimator":
             return self._frame_estimator_report()

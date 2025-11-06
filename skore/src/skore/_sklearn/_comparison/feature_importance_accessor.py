@@ -32,24 +32,23 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
     def coefficients(self) -> FeatureImportanceCoefficientsDisplay:
         """Retrieve the coefficients for each report, including the intercepts.
 
-        If the compared reports are ``EstimatorReport``\s, the coefficients from each
-        report's estimator are returned as a single-column DataFrame.
+        If the compared reports are :class:`EstimatorReport` instances, the coefficients
+        from each report's estimator are returned as a single-column DataFrame.
 
-        If the compared reports are ``CrossValidationReport``\s, the coefficients
-        across all cross-validation splits are retained and the columns are prefixed
-        with the corresponding estimator name to distinguish them.
+        If the compared reports are :class:`CrossValidationReport` instances, the
+        coefficients across all cross-validation splits are retained and the columns are
+        prefixed with the corresponding estimator name to distinguish them.
 
         Comparison reports with the same features are put under one key and are plotted
-        together.
-        When some reports share the same features and others do not, those with the same
-        features are plotted together.
+        together. When some reports share the same features and others do not, those
+        with the same features are plotted together.
 
         Returns
         -------
         FeatureImportanceCoefficientsDisplay
             The feature importance display containing model coefficients and
             intercept.
-        """  # noqa: D301
+        """
         similar_reports = defaultdict(list)
 
         for name, report in self._parent.reports_.items():
