@@ -10,11 +10,11 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
 
     Parameters
     ----------
-    parent : {"estimator", "cross-validation", "comparison-estimator",
+    report_type : {"estimator", "cross-validation", "comparison-estimator",
             "comparison-cross-validation"}
         Report type from which the display is created.
 
-    coefficient_data : DataFrame | list[DataFrame]
+    coefficients : DataFrame | list[DataFrame]
         The ROC AUC data to display. The columns are
 
     Attributes
@@ -56,9 +56,9 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
     ...         ...
     """
 
-    def __init__(self, parent, coefficient_data):
-        self._parent = parent
-        self._coefficient_data = coefficient_data
+    def __init__(self, report_type, coefficients):
+        self.report_type = report_type
+        self.coefficients = coefficients
 
     def frame(self):
         """Return coefficients as a DataFrame.
@@ -77,23 +77,23 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
             - If a :class:`ComparisonReport`, the columns are the models passed in the
             report, with the index being the feature names.
         """
-        if self._parent == "estimator":
+        if self.report_type == "estimator":
             return self._frame_estimator_report()
-        elif self._parent == "cross-validation":
+        elif self.report_type == "cross-validation":
             return self._frame_cross_validation_report()
         else:
             return self._frame_comparison_report()
 
     def _frame_estimator_report(self):
-        return self._coefficient_data
+        return self.coefficients
 
     def _frame_cross_validation_report(self):
-        return self._coefficient_data
+        return self.coefficients
 
     def _frame_comparison_report(self):
         import pandas as pd
 
-        return pd.concat(self._coefficient_data, axis=1)
+        return pd.concat(self.coefficients, axis=1)
 
     @DisplayMixin.style_plot
     def plot(self, **kwargs) -> None:
@@ -117,23 +117,23 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
         ax.tick_params(axis="y", length=0)
 
     def _plot_matplotlib(self, **kwargs):
-        if self._parent == "estimator":
+        if self.report_type == "estimator":
             return self._plot_estimator_report()
-        elif self._parent == "cross-validation":
+        elif self.report_type == "cross-validation":
             return self._plot_cross_validation_report()
         else:
             return self._plot_comparison_report()
 
     def _plot_estimator_report(self):
         self.figure_, self.ax_ = plt.subplots()
-        self._coefficient_data.plot.barh(ax=self.ax_)
+        self.coefficients.plot.barh(ax=self.ax_)
         self._style_plot_matplotlib(self.ax_, title="Coefficients")
         self.figure_.tight_layout()
         plt.show()
 
     def _plot_cross_validation_report(self):
         self.figure_, self.ax_ = plt.subplots()
-        self._coefficient_data.boxplot(ax=self.ax_, vert=False)
+        self.coefficients.boxplot(ax=self.ax_, vert=False)
         self._style_plot_matplotlib(
             self.ax_, title="Coefficient variance across CV splits", legend=None
         )
@@ -143,20 +143,20 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
     def _plot_comparison_report(self):
         self.figure_, self.ax_ = plt.subplots(
             nrows=1,
-            ncols=len(self._coefficient_data),
-            figsize=(5 * len(self._coefficient_data), 6),
+            ncols=len(self.coefficients),
+            figsize=(5 * len(self.coefficients), 6),
             squeeze=False,
         )
         self.ax_ = self.ax_.flatten()
 
-        if self._parent == "comparison-estimator":
+        if self.report_type == "comparison-estimator":
             self.figure_.suptitle("Coefficients")
-            for ax, coef_frame in zip(self.ax_, self._coefficient_data, strict=False):
+            for ax, coef_frame in zip(self.ax_, self.coefficients, strict=False):
                 coef_frame.plot.barh(ax=ax)
                 self._style_plot_matplotlib(ax, title=None)
 
-        elif self._parent == "comparison-cross-validation":
-            for ax, coef_frame in zip(self.ax_, self._coefficient_data, strict=False):
+        elif self.report_type == "comparison-cross-validation":
+            for ax, coef_frame in zip(self.ax_, self.coefficients, strict=False):
                 coef_frame.boxplot(ax=ax, vert=False)
                 model_name = coef_frame.columns[0].split("__")[0]
                 self._style_plot_matplotlib(
@@ -165,7 +165,7 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
                     legend=None,
                 )
         else:
-            raise TypeError(f"Unexpected report type: {self._parent}")
+            raise TypeError(f"Unexpected report type: {self.report_type}")
 
         self.figure_.tight_layout()
         plt.show()
