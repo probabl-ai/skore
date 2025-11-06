@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from contextlib import AbstractContextManager, nullcontext
 from typing import ClassVar
+from concurrent.futures import ThreadPoolExecutor
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -77,7 +78,7 @@ class Artifact(BaseModel, ABC):
     def checksum(self, checksum: str | None):
         self.__checksum = checksum
 
-    def upload(self):
+    def upload(self, *, pool: ThreadPoolExecutor):
         """Upload artifact."""
         contextmanager = self.content_to_upload()
 
@@ -91,6 +92,7 @@ class Artifact(BaseModel, ABC):
                     serializer_cls=self.serializer_cls,
                     content=content,
                     content_type=self.content_type,
+                    pool=pool,
                 )
             else:
                 self.checksum = None

@@ -78,6 +78,7 @@ def upload(
     serializer_cls: type[Serializer],
     content: Any,
     content_type: str,
+    pool: ThreadPoolExecutor,
 ) -> str:
     """
     Upload content to the artifacts storage.
@@ -92,6 +93,8 @@ def upload(
         The content to upload.
     content_type : str
         The type of content to upload.
+    pool : TheadPoolExecutor
+        The pool used to execute the `upload_chunk` threads.
 
     Returns
     -------
@@ -107,7 +110,6 @@ def upload(
         serializer_cls(content) as serializer,
         HUBClient() as hub_client,
         Client() as standard_client,
-        ThreadPoolExecutor() as pool,
     ):
         # Ask for the artifact.
         #

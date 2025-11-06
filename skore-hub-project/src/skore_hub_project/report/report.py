@@ -1,6 +1,8 @@
 """Class definition of the payload used to send a report to ``hub``."""
 
 from abc import ABC
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cached_property, partial
 from typing import ClassVar, Generic, TypeVar
 
@@ -12,10 +14,11 @@ from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
+from skore_hub_project import switch_mpl_backend
 
 SkinnedProgress = partial(
     Progress,
-    # TextColumn("[bold cyan blink]Uploading..."),
+    TextColumn("[bold cyan blink]Uploading media..."),
     BarColumn(
         complete_style="dark_orange",
         finished_style="dark_orange",
@@ -135,37 +138,30 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         -----
         Unavailable medias have been filtered out.
         """
-        import asyncio
-
-        async def upload(media):
-            media.upload()
-
         medias = [
             media_cls(project=self.project, report=self.report)
             for media_cls in self.MEDIAS
         ]
 
-        # Saving a reference to the tasks, to avoid a task disappearing mid-execution
-        # https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
-        tasks = [upload(media) for media in medias]
-
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-
-            # Set `loop` as the default event loop for the current thread
-            asyncio.set_event_loop(loop)
+        with (
+            switch_mpl_backend(),
+            SkinnedProgress() as progress,
+            ThreadPoolExecutor() as compute_pool,
+            ThreadPoolExecutor(max_workers=6) as upload_pool,
+        ):
+            tasks = [
+                compute_pool.submit((lambda m: m.upload(pool=upload_pool)), media)
+                for media in medias
+            ]
 
             try:
-                print("STARTING")
-                loop.run_until_complete(asyncio.gather(*tasks))
-                print("FINISHING")
-            finally:
-                loop.close()
-                asyncio.set_event_loop(None)
-        else:
-            await asyncio.gather(*map(loop.create_task, tasks))
+                deque(progress.track(as_completed(tasks), total=len(tasks)))
+            except BaseException:
+                # Cancel all remaining tasks, especially on `KeyboardInterrupt`.
+                for task in tasks:
+                    task.cancel()
+
+                raise
 
         return [media for media in medias if media.checksum is not None]
 
@@ -179,7 +175,8 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         artifact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artifacts storage.
         """
-        pickle = Pickle(project=self.project, report=self.report)
-        pickle.upload()
+        with ThreadPoolExecutor(max_workers=6) as upload_pool:
+            pickle = Pickle(project=self.project, report=self.report)
+            pickle.upload(pool=upload_pool)
 
         return pickle
