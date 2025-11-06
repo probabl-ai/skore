@@ -10,8 +10,8 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._cross_validation import CrossValidationReport
 from skore._sklearn._estimator import EstimatorReport
-from skore._sklearn._plot.metrics.feature_importance_display import (
-    FeatureImportanceDisplay,
+from skore._sklearn._plot.metrics.feature_importance_coefficients_display import (
+    FeatureImportanceCoefficientsDisplay,
 )
 from skore._utils._accessor import _check_comparison_report_sub_estimators_have_coef
 
@@ -29,20 +29,25 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         super().__init__(parent)
 
     @available_if(_check_comparison_report_sub_estimators_have_coef())
-    def coefficients(self) -> FeatureImportanceDisplay:
+    def coefficients(self) -> FeatureImportanceCoefficientsDisplay:
         """Retrieve the coefficients for each report, including the intercepts.
 
-        If the compared reports are `EstimatorReport`s, the coefficients from each
-        report's estimator are returned as a single-column DataFrame.
+        If the compared reports are :class:`EstimatorReport` instances, the coefficients
+        from each report's estimator are returned as a single-column DataFrame.
 
-        If the compared reports are `CrossValidationReport`s, the coefficients
-        across all cross-validation splits are retained and the columns are prefixed
-        with the corresponding estimator name to distinguish them.
+        If the compared reports are :class:`CrossValidationReport` instances, the
+        coefficients across all cross-validation splits are retained and the columns are
+        prefixed with the corresponding estimator name to distinguish them.
 
         Comparison reports with the same features are put under one key and are plotted
-        together.
-        When some reports share the same features and others do not, those with the same
-        features are plotted together.
+        together. When some reports share the same features and others do not, those
+        with the same features are plotted together.
+
+        Returns
+        -------
+        :class:`FeatureImportanceCoefficientsDisplay`
+            The feature importance display containing model coefficients and
+            intercept.
         """
         similar_reports = defaultdict(list)
 
@@ -87,7 +92,12 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         else:
             raise TypeError(f"Unexpected report type: {self._parent._reports_type}")
 
-        return FeatureImportanceDisplay(self._parent, coef_frames)
+        return FeatureImportanceCoefficientsDisplay(
+            "comparison-estimator"
+            if self._parent._reports_type == "EstimatorReport"
+            else "comparison-cross-validation",
+            coef_frames,
+        )
 
     ####################################################################################
     # Methods related to the help tree
