@@ -25,14 +25,6 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
     figure_ : matplotlib Figure
         Figure containing the plot.
 
-    Methods
-    -------
-    frame() -> DataFrame
-        The coefficients as a dataframe.
-
-    plot() -> NoneType
-        A plot of the coefficients.
-
     Examples
     --------
     >>> from sklearn.datasets import load_diabetes
