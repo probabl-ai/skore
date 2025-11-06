@@ -165,12 +165,12 @@ class _MetricsAccessor(
         ...    indicator_favorability=True,
         ...    data_source="all"
         ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
-                          LogisticRegression (train)  ...  Favorability
-        Metric                                        ...
-        Precision                           0.962963  ...          (↗︎)
-        Recall                              0.973783  ...          (↗︎)
-        ROC AUC                             0.994300  ...          (↗︎)
-        Brier score                         0.027365  ...          (↘︎)
+                     LogisticRegression (train)  LogisticRegression (test)  Favorability
+        Metric                                                    
+        Precision                       0.96...                     0.98...          (↗︎)
+        Recall                          0.97...                     0.93...          (↗︎)
+        ROC AUC                         0.99...                     0.99...          (↗︎)
+        Brier score                     0.02...                     0.03...          (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
         ...     scoring=["f1"],
