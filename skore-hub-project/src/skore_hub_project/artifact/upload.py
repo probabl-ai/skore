@@ -8,8 +8,6 @@ from math import ceil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
-
 from skore_hub_project.client.client import Client, HUBClient
 
 if TYPE_CHECKING:
@@ -19,20 +17,6 @@ if TYPE_CHECKING:
 
     from skore_hub_project.artifact.serializer import Serializer
     from skore_hub_project.project.project import Project
-
-
-SkinnedProgress = partial(
-    Progress,
-    TextColumn("[bold cyan blink]Uploading..."),
-    BarColumn(
-        complete_style="dark_orange",
-        finished_style="dark_orange",
-        pulse_style="orange1",
-    ),
-    TextColumn("[orange1]{task.percentage:>3.0f}%"),
-    TimeElapsedColumn(),
-    transient=True,
-)
 
 
 def upload_chunk(
@@ -177,18 +161,10 @@ def upload(
                 task_to_chunk_id[task] = chunk_id
 
             try:
-                with SkinnedProgress() as progress:
-                    tasks = as_completed(task_to_chunk_id)
-                    total = len(task_to_chunk_id)
-                    etags = dict(
-                        sorted(
-                            (
-                                task_to_chunk_id[task],
-                                task.result(),
-                            )
-                            for task in progress.track(tasks, total=total)
-                        )
-                    )
+                tasks = as_completed(task_to_chunk_id)
+                etags = dict(
+                    sorted((task_to_chunk_id[task], task.result()) for task in tasks)
+                )
             except BaseException:
                 # Cancel all remaining tasks, especially on `KeyboardInterrupt`.
                 for task in task_to_chunk_id:

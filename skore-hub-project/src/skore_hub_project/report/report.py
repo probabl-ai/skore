@@ -1,16 +1,44 @@
 """Class definition of the payload used to send a report to ``hub``."""
 
 from abc import ABC
-from functools import cached_property
+from functools import cached_property, partial
 from typing import ClassVar, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
+from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
 from skore_hub_project import Project
 from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
+
+SkinnedProgress = partial(
+    Progress,
+    # TextColumn("[bold cyan blink]Uploading..."),
+    BarColumn(
+        complete_style="dark_orange",
+        finished_style="dark_orange",
+        pulse_style="orange1",
+    ),
+    TextColumn("[orange1]{task.percentage:>3.0f}%"),
+    TimeElapsedColumn(),
+    transient=True,
+)
+
+# with SkinnedProgress() as progress:
+#     tasks = as_completed(task_to_chunk_id)
+#     total = len(task_to_chunk_id)
+#     etags = dict(
+#         sorted(
+#             (
+#                 task_to_chunk_id[task],
+#                 task.result(),
+#             )
+#             for task in progress.track(tasks, total=total)
+#         )
+#     )
+
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
@@ -130,7 +158,9 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
             asyncio.set_event_loop(loop)
 
             try:
+                print("STARTING")
                 loop.run_until_complete(asyncio.gather(*tasks))
+                print("FINISHING")
             finally:
                 loop.close()
                 asyncio.set_event_loop(None)
