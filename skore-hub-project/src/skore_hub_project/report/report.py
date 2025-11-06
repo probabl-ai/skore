@@ -18,7 +18,7 @@ from skore_hub_project import switch_mpl_backend
 
 SkinnedProgress = partial(
     Progress,
-    TextColumn("[bold cyan blink]Uploading media..."),
+    TextColumn("[bold cyan blink][progress.description]..."),
     BarColumn(
         complete_style="dark_orange",
         finished_style="dark_orange",
@@ -145,7 +145,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
         with (
             switch_mpl_backend(),
-            SkinnedProgress() as progress,
+            SkinnedProgress(description=f"Uploading {self.report.__class__.__name__} media") as progress,
             ThreadPoolExecutor() as compute_pool,
             ThreadPoolExecutor(max_workers=6) as upload_pool,
         ):
