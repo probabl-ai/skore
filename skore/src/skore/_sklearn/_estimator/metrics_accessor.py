@@ -206,13 +206,7 @@ class _MetricsAccessor(
             # Add suffix to the dataframes to distinguish train and test.
             train_df = train_summary.frame().add_suffix(" (train)")
             test_df = test_summary.frame().add_suffix(" (test)")
-            combined = pd.concat(
-                [
-                    train_df,
-                    test_df,
-                ],
-                axis=1,
-            )
+            combined = pd.concat([train_df, test_df], axis=1)
             if indicator_favorability:
                 combined["Favorability"] = train_df["Favorability (train)"]
                 combined.drop(
