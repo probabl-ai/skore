@@ -106,6 +106,16 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
         """
         return self._plot(**kwargs)
 
+    def _style_plot_matplotlib(self, ax, title=None, legend=True):
+        if title:
+            ax.set_title(title)
+        if legend:
+            ax.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
+        ax.grid(False)
+        for spine in ["top", "right", "left"]:
+            ax.spines[spine].set_visible(False)
+        ax.tick_params(axis="y", length=0)
+
     def _plot_matplotlib(self, **kwargs):
         if self._parent == "estimator":
             return self._plot_estimator_report()
@@ -117,23 +127,16 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
     def _plot_estimator_report(self):
         self.figure_, self.ax_ = plt.subplots()
         self._coefficient_data.plot.barh(ax=self.ax_)
-        self.ax_.set_title("Coefficients")
-        self.ax_.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
-        self.ax_.grid(False)
-        for spine in ["top", "right", "left"]:
-            self.ax_.spines[spine].set_visible(False)
-        self.ax_.tick_params(axis="y", length=0)
+        self._style_plot_matplotlib(self.ax_, title="Coefficients")
         self.figure_.tight_layout()
         plt.show()
 
     def _plot_cross_validation_report(self):
         self.figure_, self.ax_ = plt.subplots()
         self._coefficient_data.boxplot(ax=self.ax_, vert=False)
-        self.ax_.set_title("Coefficient variance across CV splits")
-        self.ax_.grid(False)
-        for spine in ["top", "right", "left"]:
-            self.ax_.spines[spine].set_visible(False)
-        self.ax_.tick_params(axis="y", length=0)
+        self._style_plot_matplotlib(
+            self.ax_, title="Coefficient variance across CV splits", legend=None
+        )
         self.figure_.tight_layout()
         plt.show()
 
@@ -150,22 +153,17 @@ class FeatureImportanceCoefficientsDisplay(DisplayMixin):
             self.figure_.suptitle("Coefficients")
             for ax, coef_frame in zip(self.ax_, self._coefficient_data, strict=False):
                 coef_frame.plot.barh(ax=ax)
-                ax.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
-                ax.grid(False)
-                for spine in ["top", "right", "left"]:
-                    ax.spines[spine].set_visible(False)
-                ax.tick_params(axis="y", length=0)
+                self._style_plot_matplotlib(ax, title=None)
 
         elif self._parent == "comparison-cross-validation":
             for ax, coef_frame in zip(self.ax_, self._coefficient_data, strict=False):
                 coef_frame.boxplot(ax=ax, vert=False)
-                ax.set_title(
-                    f"{coef_frame.columns[0].split('__')[0]} Coefficients across splits"
+                model_name = coef_frame.columns[0].split("__")[0]
+                self._style_plot_matplotlib(
+                    ax,
+                    title=f"{model_name} Coefficients across splits",
+                    legend=None,
                 )
-                ax.grid(False)
-                for spine in ["top", "right", "left"]:
-                    ax.spines[spine].set_visible(False)
-                ax.tick_params(axis="y", length=0)
         else:
             raise TypeError(f"Unexpected report type: {self._parent}")
 
