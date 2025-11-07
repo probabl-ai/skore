@@ -5,6 +5,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.testing import assert_series_equal
 from sklearn.base import BaseEstimator
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification
@@ -125,6 +126,45 @@ def test_summarize_regression(linear_regression_with_test, metric):
     assert isinstance(result_external_data, float)
     assert result == pytest.approx(result_external_data)
     assert report._cache != {}
+
+
+def test_summarize_data_source_all(forest_binary_classification_data):
+    """Check the behaviour of `summarize` with `data_source="all"`."""
+    estimator, X, y = forest_binary_classification_data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    result_train = report.metrics.summarize(data_source="train").frame()
+    result_test = report.metrics.summarize(data_source="test").frame()
+    result_all = report.metrics.summarize(data_source="all").frame()
+
+    assert result_all.columns.tolist() == [
+        "RandomForestClassifier (train)",
+        "RandomForestClassifier (test)",
+    ]
+    assert_series_equal(
+        result_all["RandomForestClassifier (train)"],
+        result_train["RandomForestClassifier"],
+        check_names=False,
+    )
+    assert_series_equal(
+        result_all["RandomForestClassifier (test)"],
+        result_test["RandomForestClassifier"],
+        check_names=False,
+    )
+
+    # By default,
+    result_all = report.metrics.summarize(
+        data_source="all", indicator_favorability=True
+    ).frame()
+    assert result_all.columns.tolist() == [
+        "RandomForestClassifier (train)",
+        "RandomForestClassifier (test)",
+        "Favorability",
+    ]
 
 
 def test_interaction_cache_metrics(

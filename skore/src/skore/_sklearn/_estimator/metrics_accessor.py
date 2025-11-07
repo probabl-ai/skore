@@ -62,7 +62,7 @@ class _MetricsAccessor(
     def summarize(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["all"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         scoring: Scoring | list[Scoring] | dict[str, Scoring] | None = None,
@@ -75,12 +75,14 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "all"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "all" : use both the train and test sets to compute the metrics and
+              present them side-by-side.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -159,7 +161,50 @@ class _MetricsAccessor(
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
+        >>> report.metrics.summarize(
+        ...    indicator_favorability=True,
+        ...    data_source="all"
+        ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
+                     LogisticRegression (train)  LogisticRegression (test)  Favorability
+        Metric
+        Precision                       0.96...                     0.98...          (↗︎)
+        Recall                          0.97...                     0.93...          (↗︎)
+        ROC AUC                         0.99...                     0.99...          (↗︎)
+        Brier score                     0.02...                     0.03...          (↘︎)
+        >>> # Using scikit-learn metrics
+        >>> report.metrics.summarize(
+        ...     scoring=["f1"],
+        ...     indicator_favorability=True,
+        ... ).frame()
+                                  LogisticRegression Favorability
+        Metric   Label / Average
+        F1 Score               1             0.96...          (↗︎)
         """
+        if data_source == "all":
+            train_summary = self.summarize(
+                data_source="train",
+                scoring=scoring,
+                scoring_kwargs=scoring_kwargs,
+                pos_label=pos_label,
+                indicator_favorability=False,
+                flat_index=flat_index,
+            )
+            test_summary = self.summarize(
+                data_source="test",
+                scoring=scoring,
+                scoring_kwargs=scoring_kwargs,
+                pos_label=pos_label,
+                indicator_favorability=indicator_favorability,
+                flat_index=flat_index,
+            )
+            # Add suffix to the dataframes to distinguish train and test.
+            train_df = train_summary.frame().add_suffix(" (train)")
+            test_df = test_summary.frame().add_suffix(" (test)")
+            combined = pd.concat([train_df, test_df], axis=1).rename(
+                columns={"Favorability (test)": "Favorability"}
+            )
+            return MetricsSummaryDisplay(summarize_data=combined)
+
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
