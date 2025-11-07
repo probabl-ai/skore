@@ -111,13 +111,19 @@ def upload(
         HUBClient() as hub_client,
         Client() as standard_client,
     ):
-        # Ask for the artifact.
+        # Ask for the artifact, regardless of his status pending or uploaded.
         #
         # An non-empty response means that an artifact with the same checksum already
         # exists. The content doesn't have to be re-uploaded.
+        #
+        # Note that if the artifact is pending, it means that a parallel upload is in
+        # progress and we can rely on it.
         response = hub_client.get(
             url=f"projects/{project.quoted_tenant}/{project.quoted_name}/artifacts",
-            params={"artifact_checksum": serializer.checksum},
+            params={
+                "artifact_checksum": serializer.checksum,
+                "status": None,
+            },
         )
 
         if not response.json():

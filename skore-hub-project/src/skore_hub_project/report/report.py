@@ -18,7 +18,7 @@ from skore_hub_project import switch_mpl_backend
 
 SkinnedProgress = partial(
     Progress,
-    TextColumn("[bold cyan blink][progress.description]..."),
+    TextColumn("[bold cyan blink]{task.description}..."),
     BarColumn(
         complete_style="dark_orange",
         finished_style="dark_orange",
@@ -28,20 +28,6 @@ SkinnedProgress = partial(
     TimeElapsedColumn(),
     transient=True,
 )
-
-# with SkinnedProgress() as progress:
-#     tasks = as_completed(task_to_chunk_id)
-#     total = len(task_to_chunk_id)
-#     etags = dict(
-#         sorted(
-#             (
-#                 task_to_chunk_id[task],
-#                 task.result(),
-#             )
-#             for task in progress.track(tasks, total=total)
-#         )
-#     )
-
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
@@ -145,7 +131,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
         with (
             switch_mpl_backend(),
-            SkinnedProgress(description=f"Uploading {self.report.__class__.__name__} media") as progress,
+            SkinnedProgress() as progress,
             ThreadPoolExecutor() as compute_pool,
             ThreadPoolExecutor(max_workers=6) as upload_pool,
         ):
@@ -155,7 +141,15 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
             ]
 
             try:
-                deque(progress.track(as_completed(tasks), total=len(tasks)))
+                # expliquer pourquoi ça fonctionne
+                # même en cas de media avec les memes checksum + rajouter un test
+                deque(
+                    progress.track(
+                        as_completed(tasks),
+                        description=f"Uploading {self.report.__class__.__name__} media",
+                        total=len(tasks),
+                    )
+                )
             except BaseException:
                 # Cancel all remaining tasks, especially on `KeyboardInterrupt`.
                 for task in tasks:
