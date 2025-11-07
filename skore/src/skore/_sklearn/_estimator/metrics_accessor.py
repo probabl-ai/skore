@@ -83,7 +83,8 @@ class _MetricsAccessor(
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
-            - "all" : use both the train and test sets to compute the metrics.
+            - "all" : use both the train and test sets to compute the metrics and
+              present them side-by-side.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -166,7 +167,7 @@ class _MetricsAccessor(
         ...    data_source="all"
         ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
-        Metric                                                    
+        Metric
         Precision                       0.96...                     0.98...          (↗︎)
         Recall                          0.97...                     0.93...          (↗︎)
         ROC AUC                         0.99...                     0.99...          (↗︎)
