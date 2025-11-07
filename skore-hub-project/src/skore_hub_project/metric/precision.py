@@ -15,6 +15,7 @@ class Precision(EstimatorReportMetric):  # noqa: D101
     name: str = "precision"
     verbose_name: str = "Precision (macro)"
     greater_is_better: bool = True
+    position: None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -37,10 +38,10 @@ class PrecisionTest(Precision):  # noqa: D101
 
 class PrecisionMean(CrossValidationReportMetric):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision"
-    aggregate: ClassVar[Literal["mean"]] = "mean"
     name: str = "precision_mean"
     verbose_name: str = "Precision (macro) - MEAN"
     greater_is_better: bool = True
+    position: None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -51,7 +52,7 @@ class PrecisionMean(CrossValidationReportMetric):  # noqa: D101
             return None
 
         dataframe = function(
-            data_source=self.data_source, aggregate=self.aggregate, average="macro"
+            data_source=self.data_source, aggregate="mean", average="macro"
         )
 
         return cast_to_float(dataframe.iloc[0, 0])
@@ -67,10 +68,10 @@ class PrecisionTestMean(PrecisionMean):  # noqa: D101
 
 class PrecisionStd(CrossValidationReportMetric):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision"
-    aggregate: ClassVar[Literal["std"]] = "std"
     name: str = "precision_std"
     verbose_name: str = "Precision (macro) - STD"
     greater_is_better: bool = False
+    position: None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -81,7 +82,7 @@ class PrecisionStd(CrossValidationReportMetric):  # noqa: D101
             return None
 
         dataframe = function(
-            data_source=self.data_source, aggregate=self.aggregate, average="macro"
+            data_source=self.data_source, aggregate="std", average="macro"
         )
 
         return cast_to_float(dataframe.iloc[0, 0])

@@ -7,6 +7,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
+
 from skore import CrossValidationReport
 from skore._externals._sklearn_compat import get_tags
 
@@ -41,7 +42,7 @@ def test_cross_validation_report_coefficient_frame(
     cv_report_coefs = cv_report.feature_importance.coefficients().frame()
     assert cv_report_coefs.shape == expected_shape
 
-    expected_index = [i for i in range(expected_shape[0])]
+    expected_index = list(range(expected_shape[0]))
     assert cv_report_coefs.index.tolist() == expected_index
 
     expected_columns = (
@@ -70,7 +71,6 @@ def test_cross_validation_report_coefficient_frame(
             sklearn.compose.TransformedTargetRegressor(),
             id="TransformedTargetRegressor",
         ),
-        pytest.param(sklearn.linear_model.ElasticNet(), id="ElasticNet"),
         pytest.param(sklearn.linear_model.ARDRegression(), id="ARDRegression"),
         pytest.param(sklearn.linear_model.BayesianRidge(), id="BayesianRidge"),
         pytest.param(sklearn.linear_model.ElasticNet(), id="ElasticNet"),

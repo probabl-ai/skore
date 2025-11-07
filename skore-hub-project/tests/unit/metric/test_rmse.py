@@ -3,6 +3,7 @@ from __future__ import annotations
 from numpy.testing import assert_almost_equal
 from pydantic import ValidationError
 from pytest import mark, param, raises
+
 from skore_hub_project.metric import (
     RmseTest,
     RmseTestMean,
@@ -124,5 +125,8 @@ def test_rmse(
     }
 
     # wrong type
-    with raises(ValidationError):
+    with raises(
+        ValidationError,
+        match=f"Input should be an instance of {report.__class__.__name__}",
+    ):
         Metric(report=None)

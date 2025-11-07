@@ -6,8 +6,7 @@ import io
 import os
 from functools import wraps
 from pathlib import Path
-from types import SimpleNamespace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ParamSpec, Protocol, TypeVar, cast, runtime_checkable
 from uuid import uuid4
 
 import joblib
@@ -16,14 +15,18 @@ import platformdirs
 from .metadata import CrossValidationReportMetadata, EstimatorReportMetadata
 from .storage import DiskCacheStorage
 
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from typing import TypedDict
 
     from skore import CrossValidationReport, EstimatorReport
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
-        run_id: str
         key: str
         date: str
         learner: str
@@ -42,17 +45,26 @@ if TYPE_CHECKING:
         predict_time_mean: float | None
 
 
-def ensure_project_is_not_deleted(method):
+def ensure_project_is_not_deleted(method: Callable[P, R]) -> Callable[P, R]:
     """Ensure project is not deleted, before executing any other operation."""
 
+    @runtime_checkable
+    class Project(Protocol):
+        name: str
+        _Project__projects_storage: DiskCacheStorage
+
     @wraps(method)
-    def wrapper(self, *args, **kwargs):
-        if self.name not in self._Project__projects_storage:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        project = args[0]
+
+        assert isinstance(project, Project), "You can only wrap `Project` methods"
+
+        if project.name not in project._Project__projects_storage:
             raise RuntimeError(
-                f"Skore could not proceed because {repr(self)} does not exist anymore."
+                f"Skore could not proceed because {project!r} does not exist anymore."
             )
 
-        return method(self, *args, **kwargs)
+        return method(*args, **kwargs)
 
     return wrapper
 
@@ -80,14 +92,12 @@ class Project:
         | The workspace can be shared between all the projects.
         | The workspace can be set using kwargs or the environment variable
           ``SKORE_WORKSPACE``.
-        | If not, it will be by default set to a ``skore/`` directory in the USER
+        | If not, it will be by default set to a ``skore/`` directory in the user
           cache directory:
 
         - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-        - on Linux, usually ``${HOME}/.cache/skore``,
-        - on macOS, usually ``${HOME}/Library/Caches/skore``.
-    run_id : str
-        The current run identifier of the project.
+        - on Linux, usually ``${HOME}/.local/share/skore``,
+        - on macOS, usually ``${HOME}/Library/Application Support/skore``.
     """
 
     @staticmethod
@@ -103,7 +113,7 @@ class Project:
             if "SKORE_WORKSPACE" in os.environ:
                 workspace = Path(os.environ["SKORE_WORKSPACE"])
             else:
-                workspace = Path(platformdirs.user_cache_dir()) / "skore"
+                workspace = Path(platformdirs.user_data_dir()) / "skore"
 
         for directory in ("projects", "metadata", "artifacts"):
             (workspace / directory).mkdir(parents=True, exist_ok=True)
@@ -142,7 +152,6 @@ class Project:
         workspace, projects, metadata, artifacts = Project.__setup_diskcache(workspace)
 
         self.__name = name
-        self.__run_id = uuid4().hex
         self.__workspace = workspace
         self.__projects_storage = projects
         self.__metadata_storage = metadata
@@ -155,11 +164,6 @@ class Project:
     def name(self) -> str:
         """The name of the project."""
         return self.__name
-
-    @property
-    def run_id(self) -> str:
-        """The run identifier of the project."""
-        return self.__run_id
 
     @property
     def workspace(self) -> Path:
@@ -193,7 +197,7 @@ class Project:
         return pickle_hash, pickle_bytes
 
     @ensure_project_is_not_deleted
-    def put(self, key: str, report: EstimatorReport | CrossValidationReport):
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
         Put a key-report pair to the local project.
 
@@ -217,7 +221,7 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        Metadata: type[EstimatorReportMetadata] | type[CrossValidationReportMetadata]
+        Metadata: type[EstimatorReportMetadata | CrossValidationReportMetadata]
 
         if isinstance(report, EstimatorReport):
             Metadata = EstimatorReportMetadata
@@ -239,7 +243,6 @@ class Project:
                 report=report,
                 artifact_id=pickle_hash,
                 project_name=self.name,
-                run_id=self.run_id,
                 key=key,
             )
         )
@@ -249,7 +252,9 @@ class Project:
         """Get a persisted report by its id."""
         if id in self.__artifacts_storage:
             with io.BytesIO(self.__artifacts_storage[id]) as stream:
-                return joblib.load(stream)
+                return cast(
+                    "EstimatorReport | CrossValidationReport", joblib.load(stream)
+                )
 
         raise KeyError(id)
 
@@ -259,7 +264,6 @@ class Project:
         return [
             {
                 "id": value["artifact_id"],
-                "run_id": value["run_id"],
                 "key": value["key"],
                 "date": value["date"],
                 "learner": value["learner"],
@@ -281,39 +285,13 @@ class Project:
             if value["project_name"] == self.name
         ]
 
-    @property
-    def reports(self):
-        """Accessor for interaction with the persisted reports."""
-
-        def get(id: str) -> EstimatorReport | CrossValidationReport:
-            """
-            Get a persisted report by its id.
-
-            .. deprecated
-              The ``Project.reports.get`` function will be removed in favor of
-              ``Project.get`` in a near future.
-            """
-            return self.get(id)
-
-        def metadata() -> list[Metadata]:
-            """
-            Obtain metadata/metrics for all persisted reports in insertion order.
-
-            .. deprecated
-              The ``Project.reports.metadata`` function will be removed in favor of
-              ``Project.summarize`` in a near future.
-            """
-            return self.summarize()
-
-        return SimpleNamespace(get=get, metadata=metadata)
-
     def __repr__(self) -> str:  # noqa: D105
         return (
             f"Project(mode='local', name='{self.name}', workspace='{self.workspace}')"
         )
 
     @staticmethod
-    def delete(name: str, *, workspace: Path | None = None):
+    def delete(name: str, *, workspace: Path | None = None) -> None:
         r"""
         Delete a local project.
 

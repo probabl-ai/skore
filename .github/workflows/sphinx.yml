@@ -129,7 +129,7 @@ jobs:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
           SPHINX_DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: sphinx-html-artifact
           path: sphinx/build/html/
@@ -147,7 +147,7 @@ jobs:
           sparse-checkout: .github
 
       - name: Download HTML artifacts
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: sphinx-html-artifact
           path: html/
@@ -238,7 +238,7 @@ jobs:
     #
     # Using `if: ${{ (! cancelled()) && contains(needs.*.result, 'success') }}` at
     # __job level__ doesn't work as expected. It always returns true if one of the needs
-    # , or unfortunately one of their **transitive** needs, satistfies the condition.
+    # , or unfortunately one of their **transitive** needs, satisfies the condition.
     #
     # https://github.com/actions/runner/issues/1540
     #

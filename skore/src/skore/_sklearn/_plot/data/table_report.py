@@ -111,8 +111,8 @@ def _compute_contingency_table(
     cols = sbd.concat(sbd.to_frame(x), sbd.to_frame(y), axis=1)
     top_pairs = cols.value_counts().nlargest(k).index
 
-    top_x_values = sorted(set(pair[0] for pair in top_pairs))
-    top_y_values = sorted(set(pair[1] for pair in top_pairs))
+    top_x_values = sorted({pair[0] for pair in top_pairs})
+    top_y_values = sorted({pair[1] for pair in top_pairs})
 
     # As stated by a pandas warning, we call explicitly `infer_objects` to downcast
     # the contingency table and silence the warning using the context manager.
@@ -429,13 +429,13 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         )
 
         if x is not None:
-            histplot_params = dict(x=column)
-            despine_params = dict(bottom=is_categorical)
+            histplot_params = {"x": column}
+            despine_params = {"bottom": is_categorical}
             if duration_unit is not None:
                 self.ax_.set(xlabel=f"{duration_unit.capitalize()}s")
         else:  # y is not None
-            histplot_params = dict(y=column)
-            despine_params = dict(left=is_categorical)
+            histplot_params = {"y": column}
+            despine_params = {"left": is_categorical}
             if duration_unit is not None:
                 self.ax_.set(ylabel=f"{duration_unit.capitalize()}s")
 
@@ -511,7 +511,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         hue = sbd.col(self.summary["dataframe"], hue) if hue is not None else None
         x, y = hue if x is None else x, y if y is not None else hue
 
-        despine_params = dict(top=True, right=True, trim=True, offset=10)
+        despine_params = {"top": True, "right": True, "trim": True, "offset": 10}
         is_x_num, is_y_num = sbd.is_numeric(x), sbd.is_numeric(y)
         hue = _truncate_top_k_categories(hue, k)
 
@@ -588,7 +588,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 ellide_string(s) for s in contingency_table.columns
             ]
 
-            if max_value := contingency_table.max(axis=None) < 100_000:  # noqa: SIM108
+            if max_value := contingency_table.max(axis=None) < 100_000:
                 # avoid scientific notation for small numbers
                 annotation_format = (
                     ".0f"

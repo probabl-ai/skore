@@ -7,6 +7,7 @@ from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
+
 from skore._sklearn import ComparisonReport, CrossValidationReport, EstimatorReport
 from skore.project.summary import Summary
 
@@ -60,7 +61,6 @@ class FakeProject:
     def make_report_metadata(self, index, report):
         return {
             "id": index,
-            "run_id": None,
             "key": None,
             "date": None,
             "learner": None,
@@ -131,7 +131,6 @@ class TestSummary:
             ),
         )
         assert list(summary.columns) == [
-            "run_id",
             "key",
             "date",
             "learner",

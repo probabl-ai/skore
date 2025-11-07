@@ -1,13 +1,10 @@
-from json import loads
-from urllib.parse import urljoin
-
-from httpx import Client, Response
+from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
-from skore import EstimatorReport
+from skore import CrossValidationReport, EstimatorReport
+
 from skore_hub_project import Project
-from skore_hub_project.artefact.serializer import Serializer
-from skore_hub_project.media import (
+from skore_hub_project.artifact.media import (
     EstimatorHtmlRepr,
     MeanDecreaseImpurity,
     PermutationTest,
@@ -19,6 +16,7 @@ from skore_hub_project.media import (
     TableReportTest,
     TableReportTrain,
 )
+from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.metric import (
     AccuracyTest,
     AccuracyTrain,
@@ -39,85 +37,71 @@ from skore_hub_project.metric import (
 from skore_hub_project.report import EstimatorReportPayload
 
 
-class FakeClient(Client):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
+def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
+    import io
 
-    def request(self, method, url, **kwargs):
-        response = super().request(method, urljoin("http://localhost", url), **kwargs)
-        response.raise_for_status()
+    import joblib
 
-        return response
+    reports = [object] + getattr(object, "estimator_reports_", [])
+    caches = [report_to_clear._cache for report_to_clear in reports]
 
-
-@fixture(autouse=True)
-def monkeypatch_client(monkeypatch):
-    monkeypatch.setattr("skore_hub_project.project.project.HUBClient", FakeClient)
-    monkeypatch.setattr("skore_hub_project.artefact.upload.HUBClient", FakeClient)
-
-
-def serialize(object: EstimatorReport) -> tuple[bytes, str]:
-    cache = object._cache
-    object._cache = {}
+    object.clear_cache()
 
     try:
-        with Serializer(object) as serializer:
-            pickle = serializer.filepath.read_bytes()
-            checksum = serializer.checksum
+        with io.BytesIO() as stream:
+            joblib.dump(object, stream)
+            pickle_bytes = stream.getvalue()
     finally:
-        object._cache = cache
+        for report, cache in zip(reports, caches, strict=True):
+            report._cache = cache
 
-    return pickle, checksum
+    with Serializer(pickle_bytes) as serializer:
+        checksum = serializer.checksum
+
+    return pickle_bytes, checksum
 
 
 @fixture
-def payload(binary_classification):
+def project():
+    return Project("<tenant>", "<name>")
+
+
+@fixture
+def payload(project, binary_classification):
+    # Force the compute of the permutations
+    binary_classification.feature_importance.permutation(data_source="train", seed=42)
+    binary_classification.feature_importance.permutation(data_source="test", seed=42)
+
     return EstimatorReportPayload(
-        project=Project("<tenant>", "<name>"), report=binary_classification, key="<key>"
+        project=project,
+        report=binary_classification,
+        key="<key>",
     )
-
-
-@fixture
-def monkeypatch_routes(respx_mock):
-    respx_mock.post("projects/<tenant>/<name>/runs").mock(Response(200, json={"id": 0}))
-    respx_mock.post("projects/<tenant>/<name>/artefacts").mock(
-        Response(200, json=[{"upload_url": "http://chunk1.com/", "chunk_id": 1}])
-    )
-    respx_mock.put("http://chunk1.com").mock(
-        Response(200, headers={"etag": '"<etag1>"'})
-    )
-    respx_mock.post("projects/<tenant>/<name>/artefacts/complete")
 
 
 class TestEstimatorReportPayload:
-    @mark.usefixtures("monkeypatch_routes")
-    def test_parameters(self, binary_classification, payload, respx_mock):
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.usefixtures("monkeypatch_upload_with_mock")
+    def test_pickle(
+        self, binary_classification, project, payload, upload_mock, respx_mock
+    ):
         pickle, checksum = serialize(binary_classification)
 
-        # Ensure payload dict is well constructed
-        assert payload.parameters.checksum == checksum
+        # Ensure payload is well constructed
+        assert payload.pickle.checksum == checksum
 
-        # Ensure upload is well done
-        requests = [call.request for call in respx_mock.calls]
+        # Ensure payload is well constructed
+        assert payload.pickle.checksum == checksum
 
-        assert len(requests) == 3
-        assert requests[0].url.path == "/projects/<tenant>/<name>/artefacts"
-        assert loads(requests[0].content.decode()) == [
-            {
-                "checksum": checksum,
-                "chunk_number": 1,
-                "content_type": "estimator-report",
-            }
-        ]
-        assert requests[1].url == "http://chunk1.com/"
-        assert requests[1].content == pickle
-        assert requests[2].url.path == "/projects/<tenant>/<name>/artefacts/complete"
-        assert loads(requests[2].content.decode()) == [
-            {
-                "checksum": checksum,
-                "etags": {"1": '"<etag1>"'},
-            }
-        ]
+        # ensure `upload` is well called
+        assert upload_mock.called
+        assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs == {
+            "project": project,
+            "content": pickle,
+            "content_type": "application/octet-stream",
+        }
 
     def test_metrics(self, payload):
         assert list(map(type, payload.metrics)) == [
@@ -138,8 +122,10 @@ class TestEstimatorReportPayload:
             PredictTimeTrain,
         ]
 
-    def test_related_items(self, payload):
-        assert list(map(type, payload.related_items)) == [
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    def test_medias(self, payload):
+        assert list(map(type, payload.medias)) == [
             EstimatorHtmlRepr,
             MeanDecreaseImpurity,
             PermutationTest,
@@ -152,22 +138,25 @@ class TestEstimatorReportPayload:
             TableReportTrain,
         ]
 
-    @mark.usefixtures("monkeypatch_routes")
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
     def test_model_dump(self, binary_classification, payload):
         _, checksum = serialize(binary_classification)
 
         payload_dict = payload.model_dump()
 
         payload_dict.pop("metrics")
-        payload_dict.pop("related_items")
+        payload_dict.pop("medias")
 
         assert payload_dict == {
             "key": "<key>",
-            "run_id": 0,
             "estimator_class_name": "RandomForestClassifier",
-            "dataset_fingerprint": "35806b458ab1a6d0c675fd226d7fc34a",
+            "dataset_fingerprint": hash(binary_classification.y_test),
             "ml_task": "binary-classification",
-            "parameters": {"checksum": checksum},
+            "pickle": {
+                "checksum": checksum,
+                "content_type": "application/octet-stream",
+            },
         }
 
     def test_exception(self):

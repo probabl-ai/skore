@@ -2,6 +2,7 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
+
 from skore import CrossValidationReport
 from skore._sklearn._plot import PredictionErrorDisplay
 from skore._sklearn._plot.metrics.prediction_error import RangeData

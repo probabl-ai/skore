@@ -103,6 +103,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
+        "feature_importance": {"name": "feature_importance"},
     }
     metrics: _MetricsAccessor
     feature_importance: _FeatureImportanceAccessor
@@ -185,7 +186,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 f"or list of dict of {CrossValidationReport.__name__}"
             )
 
-        if len(set(id(report) for report in reports_list)) < len(reports_list):
+        if len({id(report) for report in reports_list}) < len(reports_list):
             raise ValueError("Expected reports to be distinct objects")
 
         ml_tasks = {report._ml_task for report in reports_list}
@@ -251,7 +252,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache: dict[tuple[Any, ...], Any] = {}
-        self._ml_task = list(self.reports_.values())[0]._ml_task  # type: ignore
+        self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -342,7 +343,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ] = "predict",
         X: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
-    ) -> list[ArrayLike]:
+    ) -> list[ArrayLike] | list[list[ArrayLike]]:
         """Get predictions from the underlying reports.
 
         This method has the advantage to reload from the cache if the predictions
@@ -406,7 +407,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(25,), (25,)]
         """
-        return [
+        return [  # type: ignore
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,

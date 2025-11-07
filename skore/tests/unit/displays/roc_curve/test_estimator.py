@@ -4,6 +4,7 @@ import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+
 from skore import EstimatorReport
 from skore._sklearn._plot import RocCurveDisplay
 from skore._sklearn._plot.utils import sample_mpl_colormap
@@ -260,7 +261,7 @@ def test_roc_curve_kwargs_multiclass_classification(
     )
     display = report.metrics.roc()
     display.plot(
-        roc_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")],
+        roc_curve_kwargs=[{"color": "red"}, {"color": "blue"}, {"color": "green"}],
         chance_level_kwargs={"color": "blue"},
     )
     assert display.lines_[0].get_color() == "red"

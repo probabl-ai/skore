@@ -1,11 +1,58 @@
 from datetime import datetime, timezone
+from unittest.mock import Mock
+from urllib.parse import urljoin
 
+from httpx import Client, Response
 from pytest import fixture
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
 from skore import CrossValidationReport, EstimatorReport
+
+
+@fixture
+def upload_mock():
+    from skore_hub_project.artifact.upload import upload
+
+    return Mock(spec=upload, wraps=upload)
+
+
+@fixture
+def monkeypatch_upload_with_mock(monkeypatch, upload_mock):
+    monkeypatch.setattr("skore_hub_project.artifact.artifact.upload", upload_mock)
+
+
+@fixture
+def monkeypatch_upload_routes(respx_mock):
+    respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
+        Response(201, json=[{"upload_url": "http://chunk1.com/", "chunk_id": 1}])
+    )
+    respx_mock.put("http://chunk1.com").mock(
+        Response(200, headers={"etag": '"<etag1>"'})
+    )
+    respx_mock.post("projects/<tenant>/<name>/artifacts/complete")
+
+
+class FakeClient(Client):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    def request(self, method, url, **kwargs):
+        response = super().request(method, urljoin("http://localhost", url), **kwargs)
+        response.raise_for_status()
+
+        return response
+
+
+@fixture
+def monkeypatch_project_hub_client(monkeypatch):
+    monkeypatch.setattr("skore_hub_project.project.project.HUBClient", FakeClient)
+
+
+@fixture
+def monkeypatch_artifact_hub_client(monkeypatch):
+    monkeypatch.setattr("skore_hub_project.artifact.upload.HUBClient", FakeClient)
 
 
 @fixture(scope="module")
@@ -136,11 +183,12 @@ def monkeypatch_matplotlib(monkeypatch):
 
 
 @fixture
-def monkeypatch_skore_hub_api_key(monkeypatch):
+def monkeypatch_skore_hub_envars(monkeypatch):
     """
-    Delete `SKORE_HUB_API_KEY` from the environment, to avoid biasing the tests.
+    Delete environment variables that can bias the tests.
     """
     monkeypatch.delenv("SKORE_HUB_API_KEY", raising=False)
+    monkeypatch.delenv("SKORE_HUB_URI", raising=False)
 
 
 @fixture
@@ -167,6 +215,6 @@ def setup(
     monkeypatch_tmpdir,
     monkeypatch_matplotlib,
     monkeypatch_skrub,
-    monkeypatch_skore_hub_api_key,
+    monkeypatch_skore_hub_envars,
     monkeypatch_sklearn_estimator_html_repr,
 ): ...

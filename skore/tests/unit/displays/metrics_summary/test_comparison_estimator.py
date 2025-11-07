@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.metrics import accuracy_score, get_scorer
+
 from skore import ComparisonReport, MetricsSummaryDisplay
 
 
@@ -37,7 +38,7 @@ def test_data_source_external(
     pd.testing.assert_index_equal(result.columns, expected_columns)
 
     assert len(report._cache) == 1
-    cached_result = list(report._cache.values())[0]
+    cached_result = next(iter(report._cache.values()))
     pd.testing.assert_index_equal(cached_result.index, expected_index)
     pd.testing.assert_index_equal(cached_result.columns, expected_columns)
 

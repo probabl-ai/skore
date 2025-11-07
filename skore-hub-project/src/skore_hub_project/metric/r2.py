@@ -12,6 +12,7 @@ class R2(EstimatorReportMetric):  # noqa: D101
     name: str = "r2"
     verbose_name: str = "R²"
     greater_is_better: bool = True
+    position: None = None
 
 
 class R2Train(R2):  # noqa: D101
@@ -28,6 +29,7 @@ class R2Mean(CrossValidationReportMetric):  # noqa: D101
     name: str = "r2_mean"
     verbose_name: str = "R² - MEAN"
     greater_is_better: bool = True
+    position: None = None
 
 
 class R2TrainMean(R2Mean):  # noqa: D101
@@ -44,6 +46,7 @@ class R2Std(CrossValidationReportMetric):  # noqa: D101
     name: str = "r2_std"
     verbose_name: str = "R² - STD"
     greater_is_better: bool = False
+    position: None = None
 
 
 class R2TrainStd(R2Std):  # noqa: D101

@@ -4,6 +4,7 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from matplotlib.lines import Line2D
+
 from skore import ComparisonReport, CrossValidationReport
 from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
@@ -28,7 +29,7 @@ def test_binary_classification(
 
     pos_label = 1
     n_reports = len(report.reports_)
-    n_splits = len(list(report.reports_.values())[0].estimator_reports_)
+    n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
 
     display.plot()
     assert isinstance(display.lines_, list)
@@ -76,7 +77,7 @@ def test_multiclass_classification(
 
     labels = display.precision_recall["label"].cat.categories
     n_reports = len(report.reports_)
-    n_splits = len(list(report.reports_.values())[0].estimator_reports_)
+    n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
 
     display.plot()
     assert isinstance(display.lines_, list)

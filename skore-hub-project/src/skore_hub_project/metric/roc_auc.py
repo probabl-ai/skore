@@ -46,6 +46,7 @@ class RocAucStd(CrossValidationReportMetric):  # noqa: D101
     name: Literal["roc_auc_std"] = "roc_auc_std"
     verbose_name: Literal["ROC AUC - STD"] = "ROC AUC - STD"
     greater_is_better: Literal[False] = False
+    position: None = None
 
 
 class RocAucTrainStd(RocAucStd):  # noqa: D101

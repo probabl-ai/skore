@@ -11,6 +11,7 @@ import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
+
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 
 
@@ -66,7 +67,7 @@ def test_cross_validation_report_cleaned_up(report):
     https://github.com/probabl-ai/skore/pull/1512
     """
     report.metrics.summarize()
-    sub_report = list(report.reports_.values())[0]
+    sub_report = next(iter(report.reports_.values()))
 
     with BytesIO() as stream:
         joblib.dump(sub_report, stream)

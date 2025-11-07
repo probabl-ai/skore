@@ -5,13 +5,13 @@ description = """\
 Skore's open-source Python library accelerates ML model development with automated evaluation reports, \
 smart methodological guidance, and comprehensive cross-validation analysis.\
 """
-dynamic = ["license", "readme", "version"]
+dynamic = ["license-files", "readme", "version"]
 requires-python = ">=3.10"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
+license = "MIT"
 classifiers = [
   "Intended Audience :: Science/Research",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python",
   "Topic :: Software Development",
   "Topic :: Scientific/Engineering",
@@ -50,6 +50,7 @@ test-base = [
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
+  "scipy-stubs",
   "skrub",
   "xdoctest",
 ]
@@ -107,12 +108,17 @@ package = ["src/skore/"]
 
 [tool.pytest.ini_options]
 addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
   "--xdoctest",
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
   "--dist=loadscope",
 ]
+xfail_strict = true
+log_cli_level = "info"
 
 [tool.coverage.run]
 branch = true
@@ -129,28 +135,24 @@ exclude_also = [
     "if TYPE_CHECKING:",
 ]
 
-[tool.ruff]
-src = ["skore"]
-
 [tool.ruff.lint]
 select = [
-  # pycodestyle
-  "E",
-  # Pyflakes
-  "F",
-  # pyupgrade
-  "UP",
-  # flake8-bugbear
-  "B",
-  # flake8-simplify
-  "SIM",
-  # flake8-print
-  "T",
-  # isort
-  "I",
-  # pydocstyle
-  "D",
+    "B",
+    "C4",
+    "T10",
+    "T20",
+    "PYI055", "PYI059",
+    "PT003", "PT014",
+    "SIM",
+    "I",
+    "PERF",
+    "E",
+    "D",
+    "F",
+    "UP",
+    "RUF010", "RUF015",
 ]
+ignore = ["PERF203"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
@@ -159,9 +161,16 @@ convention = "numpy"
 "tests/*" = ["D"]
 
 [tool.mypy]
-ignore_missing_imports = true
-exclude = ["src/skore/_externals/.*", "hatch/*", "tests/*"]
+exclude = ["src/skore/_externals/", "hatch/", "tests/"]
 
 [[tool.mypy.overrides]]
-module = ["sklearn.*"]
 ignore_missing_imports = true
+module = [
+  "ipywidgets.*",
+  "joblib.*",
+  "pandas.*",
+  "plotly.*",
+  "seaborn.*",
+  "sklearn.*",
+  "skrub.*",
+]

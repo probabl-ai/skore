@@ -1,4 +1,5 @@
 from pytest import mark, param
+
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 

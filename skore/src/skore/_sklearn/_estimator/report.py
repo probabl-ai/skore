@@ -294,11 +294,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         progress.update(task, total=total_iterations)
 
         # do not mutate directly `self._cache` during the execution of Parallel
-        results_to_cache = {}
+        results_to_cache: dict[tuple[Any, ...], Any] = {}
         for results in generator:
-            for key, value, is_cached in results:
-                if not is_cached:
-                    results_to_cache[key] = value
+            results_to_cache.update(
+                (key, value) for key, value, is_cached in results if not is_cached
+            )
             progress.update(task, advance=1, refresh=True)
 
         if results_to_cache:
@@ -389,7 +389,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         results = _get_cached_response_values(
             cache=self._cache,
-            estimator_hash=self._hash,
+            estimator_hash=int(self._hash),
             estimator=self._estimator,
             X=X_,
             response_method=response_method,

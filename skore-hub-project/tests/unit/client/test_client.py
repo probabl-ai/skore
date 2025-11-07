@@ -9,13 +9,14 @@ from httpx import (
     TimeoutException,
 )
 from pytest import mark, raises
-from skore_hub_project.authentication import token as Token
-from skore_hub_project.client.client import AuthenticationError, Client, HUBClient
+
+from skore_hub_project.authentication import token, uri
+from skore_hub_project.authentication.uri import DEFAULT as URI
+from skore_hub_project.client.client import Client, HUBClient
 
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
 
-URI = HUBClient.URI
 REFRESH_URL = "identity/oauth/token/refresh"
 
 
@@ -130,32 +131,65 @@ class TestHUBClient:
         assert "authorization" not in respx_mock.calls.last.request.headers
         assert respx_mock.calls.last.request.headers["X-API-Key"] == "<api-key>"
 
-    def test_request_with_token(self, tmp_path, respx_mock):
+    def test_request_with_token(self, respx_mock):
         respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
 
-        assert not Token.exists()
+        assert not token.Filepath().exists()
 
-        Token.save("A", "B", DATETIME_MAX)
+        token.persist("A", "B", DATETIME_MAX)
 
-        assert Token.exists()
-        assert Token.access() == "A"
+        assert token.Filepath().exists()
+        assert token.access(refresh=False) == "A"
 
         with HUBClient() as client:
             client.get("foo")
 
-        assert Token.exists()
-        assert Token.access() == "A"
+        assert token.Filepath().exists()
+        assert token.access(refresh=False) == "A"
+        assert "X-API-Key" not in respx_mock.calls.last.request.headers
+        assert respx_mock.calls.last.request.headers["authorization"] == "Bearer A"
+
+    def test_request_with_token_and_uri(self, respx_mock):
+        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+
+        assert not token.Filepath().exists()
+
+        token.persist("A", "B", DATETIME_MAX)
+        uri.persist(URI)
+
+        assert token.Filepath().exists()
+        assert token.access(refresh=False) == "A"
+
+        with HUBClient() as client:
+            client.get("foo")
+
+        assert token.Filepath().exists()
+        assert token.access(refresh=False) == "A"
+        assert uri.URI() == URI
         assert "X-API-Key" not in respx_mock.calls.last.request.headers
         assert respx_mock.calls.last.request.headers["authorization"] == "Bearer A"
 
     @mark.respx(assert_all_mocked=False)
     def test_request_with_invalid_token_raises(self, respx_mock):
+        with raises(token.TokenError, match="not logged in"), HUBClient() as client:
+            client.get("foo")
+
+        assert not respx_mock.calls
+
+    @mark.respx(assert_all_mocked=False)
+    def test_request_with_conflicting_uri_raises(self, respx_mock, monkeypatch):
+        token.persist("A", "B", DATETIME_MAX)
+        uri.persist(URI)
+        monkeypatch.setenv(uri.ENVARNAME, "https://my-conflicting-uri")
+
         with (
-            raises(AuthenticationError, match="not logged in"),
+            raises(uri.URIError, match="the persisted URI is conflicting"),
             HUBClient() as client,
         ):
             client.get("foo")
 
+        assert token.Filepath().exists()
+        assert token.access(refresh=False) == "A"
         assert not respx_mock.calls
 
     def test_request_with_expired_token(self, tmp_path, respx_mock):
@@ -171,33 +205,60 @@ class TestHUBClient:
             )
         )
 
-        assert not Token.exists()
+        assert not token.Filepath().exists()
 
-        Token.save("A", "B", DATETIME_MIN)
+        token.persist("A", "B", DATETIME_MIN)
 
-        assert Token.exists()
-        assert Token.access(refresh=False) == "A"
+        assert token.Filepath().exists()
+        assert token.access(refresh=False) == "A"
 
         with HUBClient() as client:
             client.get("foo")
 
-        assert Token.exists()
-        assert Token.access() == "D"
+        assert token.Filepath().exists()
+        assert token.access(refresh=False) == "D"
         assert "X-API-Key" not in respx_mock.calls.last.request.headers
         assert respx_mock.calls.last.request.headers["authorization"] == "Bearer D"
 
     def test_request_raises(self, tmp_path, respx_mock):
         respx_mock.get(urljoin(URI, "foo")).mock(Response(404))
 
-        assert not Token.exists()
+        assert not token.Filepath().exists()
 
-        Token.save("A", "B", DATETIME_MAX)
+        token.persist("A", "B", DATETIME_MAX)
 
-        assert Token.exists()
-        assert Token.access() == "A"
+        assert token.Filepath().exists()
+        assert token.access(refresh=False) == "A"
 
         with raises(HTTPStatusError), HUBClient() as client:
             client.get("foo")
 
-        assert Token.exists()
-        assert Token.access() == "A"
+        assert token.Filepath().exists()
+        assert token.access(refresh=False) == "A"
+
+    def test_request_without_package_version(self, respx_mock):
+        from importlib.metadata import version
+
+        from skore_hub_project.client.client import PACKAGE_VERSION
+
+        assert version("skore-hub-project") == "0.0.0+unknown"
+        assert PACKAGE_VERSION is None
+
+        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+
+        with HUBClient(authenticated=False) as client:
+            client.get("foo")
+
+        assert "X-Skore-Client" not in respx_mock.calls.last.request.headers
+
+    def test_request_with_package_version(self, monkeypatch, respx_mock):
+        monkeypatch.setattr("skore_hub_project.client.client.PACKAGE_VERSION", "1.0.0")
+        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+
+        with HUBClient(authenticated=False) as client:
+            client.get("foo")
+
+        assert (
+            respx_mock.calls.last.request.headers["X-Skore-Client"]
+            == "skore-hub-project/1.0.0"
+        )
