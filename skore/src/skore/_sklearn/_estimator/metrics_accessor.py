@@ -476,18 +476,6 @@ class _MetricsAccessor(
                 )
         return MetricsSummaryDisplay(summarize_data=results)
 
-        return self._summarize(
-            data_source=data_source,
-            X=X,
-            y=y,
-            scoring=scoring,
-            scoring_names=scoring_names,
-            scoring_kwargs=scoring_kwargs,
-            pos_label=pos_label,
-            indicator_favorability=indicator_favorability,
-            flat_index=flat_index,
-        )
-
     def _compute_metric_scores(
         self,
         metric_fn: Callable,
