@@ -21,9 +21,7 @@ from skore._sklearn import (
     train_test_split,
 )
 from skore._sklearn._plot.base import Display
-from skore._sklearn._plot.metrics.feature_importance_coefficients_display import (
-    FeatureImportanceCoefficientsDisplay,
-)
+from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
 from skore._utils._patch import setup_jupyter_display
 from skore._utils._show_versions import show_versions
 from skore.project import Project
@@ -44,7 +42,7 @@ __all__ = [
     "get_config",
     "set_config",
     "TableReportDisplay",
-    "FeatureImportanceCoefficientsDisplay",
+    "CoefficientsDisplay",
 ]
 
 logger = logging.getLogger(__name__)

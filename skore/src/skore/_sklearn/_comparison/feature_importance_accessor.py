@@ -10,9 +10,7 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._cross_validation import CrossValidationReport
 from skore._sklearn._estimator import EstimatorReport
-from skore._sklearn._plot.metrics.feature_importance_coefficients_display import (
-    FeatureImportanceCoefficientsDisplay,
-)
+from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
 from skore._utils._accessor import _check_comparison_report_sub_estimators_have_coef
 
 if TYPE_CHECKING:
@@ -29,7 +27,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         super().__init__(parent)
 
     @available_if(_check_comparison_report_sub_estimators_have_coef())
-    def coefficients(self) -> FeatureImportanceCoefficientsDisplay:
+    def coefficients(self) -> CoefficientsDisplay:
         """Retrieve the coefficients for each report, including the intercepts.
 
         If the compared reports are :class:`EstimatorReport` instances, the coefficients
@@ -45,7 +43,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
 
         Returns
         -------
-        :class:`FeatureImportanceCoefficientsDisplay`
+        :class:`CoefficientsDisplay`
             The feature importance display containing model coefficients and
             intercept.
         """
@@ -92,7 +90,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         else:
             raise TypeError(f"Unexpected report type: {self._parent._reports_type}")
 
-        return FeatureImportanceCoefficientsDisplay(
+        return CoefficientsDisplay(
             "comparison-estimator"
             if self._parent._reports_type == "EstimatorReport"
             else "comparison-cross-validation",

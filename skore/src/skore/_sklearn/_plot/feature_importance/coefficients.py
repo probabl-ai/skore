@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from skore._sklearn._plot.base import DisplayMixin
 
 
-class FeatureImportanceCoefficientsDisplay(DisplayMixin):
+class CoefficientsDisplay(DisplayMixin):
     """Feature importance display.
 
     Each report type produces its own output frame and plot.

@@ -18,9 +18,7 @@ from sklearn.utils.metaestimators import available_if
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn._plot.metrics.feature_importance_coefficients_display import (
-    FeatureImportanceCoefficientsDisplay,
-)
+from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
 from skore._sklearn.types import Aggregate
 from skore._utils._accessor import (
     _check_estimator_has_coef,
@@ -186,12 +184,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         super().__init__(parent)
 
     @available_if(_check_estimator_has_coef())
-    def coefficients(self) -> FeatureImportanceCoefficientsDisplay:
+    def coefficients(self) -> CoefficientsDisplay:
         """Retrieve the coefficients of a linear model, including the intercept.
 
         Returns
         -------
-        :class:`FeatureImportanceCoefficientsDisplay`
+        :class:`CoefficientsDisplay`
             The feature importance display containing model coefficients and
             intercept.
 
@@ -274,7 +272,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             columns=columns,
         )
 
-        return FeatureImportanceCoefficientsDisplay("estimator", df)
+        return CoefficientsDisplay("estimator", df)
 
     @available_if(_check_has_feature_importances())
     def mean_decrease_impurity(self):
