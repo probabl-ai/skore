@@ -184,8 +184,6 @@ class _MetricsAccessor(
         if data_source == "all":
             train_summary = self.summarize(
                 data_source="train",
-                X=X,
-                y=y,
                 scoring=scoring,
                 scoring_names=scoring_names,
                 scoring_kwargs=scoring_kwargs,
@@ -195,8 +193,6 @@ class _MetricsAccessor(
             )
             test_summary = self.summarize(
                 data_source="test",
-                X=X,
-                y=y,
                 scoring=scoring,
                 scoring_names=scoring_names,
                 scoring_kwargs=scoring_kwargs,
