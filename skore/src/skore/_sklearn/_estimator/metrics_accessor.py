@@ -190,7 +190,7 @@ class _MetricsAccessor(
                 scoring_names=scoring_names,
                 scoring_kwargs=scoring_kwargs,
                 pos_label=pos_label,
-                indicator_favorability=indicator_favorability,
+                indicator_favorability=False,
                 flat_index=flat_index,
             )
             test_summary = self.summarize(
@@ -207,13 +207,9 @@ class _MetricsAccessor(
             # Add suffix to the dataframes to distinguish train and test.
             train_df = train_summary.frame().add_suffix(" (train)")
             test_df = test_summary.frame().add_suffix(" (test)")
-            combined = pd.concat([train_df, test_df], axis=1)
-            if indicator_favorability:
-                combined["Favorability"] = train_df["Favorability (train)"]
-                combined.drop(
-                    columns=["Favorability (train)", "Favorability (test)"],
-                    inplace=True,
-                )
+            combined = pd.concat([train_df, test_df], axis=1).rename(
+                columns={"Favorability (test)": "Favorability"}
+            )
             return MetricsSummaryDisplay(summarize_data=combined)
 
         if pos_label is _DEFAULT:
