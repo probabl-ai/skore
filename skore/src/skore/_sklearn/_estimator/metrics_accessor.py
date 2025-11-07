@@ -63,7 +63,7 @@ class _MetricsAccessor(
     def summarize(
         self,
         *,
-        data_source: Literal["test", "train", "X_y", "all"] = "test",
+        data_source: DataSource | Literal["all"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         scoring: Scoring | list[Scoring] | None = None,
