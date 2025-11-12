@@ -5,7 +5,6 @@ from typing import Any, Literal, TypedDict
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from IPython.display import HTML, clear_output, display
 from ipywidgets import widgets
 from rich.panel import Panel
 
@@ -413,13 +412,63 @@ class ModelExplorerWidget:
                 checkbox.observe(self._update_plot, names="value")
             self._color_metric_dropdown[task].observe(self._update_plot, names="value")
 
-        self.output = widgets.Output(layout=widgets.Layout(width="100%"))
+        self.plot_area = widgets.Box(layout=widgets.Layout(width="100%"))
+        self._css_html = widgets.HTML(
+            value="""
+<style>
+    /* Text-based widgets */
+    .widget-text input,
+    .widget-textarea textarea,
+    .widget-password input {
+        font-size: 16px !important;
+    }
 
-        self._update_task_widgets(ml_task=self._task_dropdown.value)
+    /* Labels and descriptions */
+    .widget-label,
+    .widget-label-basic {
+        font-size: 16px !important;
+        min-width: fit-content !important;
+    }
+
+    /* Buttons */
+    .widget-button,
+    .widget-toggle-button {
+        font-size: 16px !important;
+    }
+
+    /* Dropdowns and select widgets */
+    .widget-dropdown select,
+    .widget-select select {
+        font-size: 16px !important;
+    }
+
+    /* Slider readouts */
+    .widget-readout {
+        font-size: 16px !important;
+    }
+
+    /* HTML widgets */
+    .widget-html,
+    .widget-html-content {
+        font-size: 16px !important;
+    }
+
+    /* Custom SelectMultiple Dropdown */
+    .jupyter-widget-Collapse-header {
+        font-size: 16px !important;
+        font-weight: normal !important;
+    }
+</style>
+"""
+        )
+
         self._layout = widgets.VBox(
-            [controls, self.output],
+            [self._css_html, controls, self.plot_area],
             layout=widgets.Layout(width="100%", overflow="hidden"),
         )
+        self._update_plot()
+        self.update_selection()
+        self._update_task_widgets(ml_task=self._task_dropdown.value)
 
     def _update_dataset_dropdown(self, datasets: list[str]) -> None:
         """Update the dataset dropdown options.
@@ -543,95 +592,91 @@ class ModelExplorerWidget:
             dictionary containing information about a widget change event.
             Not used directly but required for widget callback compatibility.
         """
-        with self.output:
-            clear_output(wait=True)
+        ml_task = self._task_dropdown.value
+        report_type = self._report_type_dropdown.value
 
-            ml_task = self._task_dropdown.value
-            report_type = self._report_type_dropdown.value
-
-            if (
-                not hasattr(self._dataset_dropdown, "value")
-                or not self._dataset_dropdown.value
-            ):
-                display(widgets.HTML("No dataset available for selected task."))
-                return
-
-            df_dataset = self._filter_dataframe(ml_task, report_type).query(
-                "dataset == @self._dataset_dropdown.value"
-            )
-            for col in df_dataset.select_dtypes(include=["category"]).columns:
-                df_dataset[col] = df_dataset[col].cat.remove_unused_categories()
-
-            # Get selected metrics from both dropdowns
-            selected_computation_metrics = self._computation_metrics_dropdown[
-                ml_task
-            ]._get_selected_values()
-            selected_statistical_metrics = self._statistical_metrics_dropdown[
-                ml_task
-            ]._get_selected_values()
-            selected_metrics = (
-                selected_computation_metrics + selected_statistical_metrics
-            )
-            color_metric = self._dimension_to_column[
-                self._color_metric_dropdown[ml_task].value
+        if (
+            not hasattr(self._dataset_dropdown, "value")
+            or not self._dataset_dropdown.value
+        ):
+            self.plot_area.children = [
+                widgets.HTML("No dataset available for selected task.")
             ]
+            self.current_fig = None
+            return
 
-            dimensions = []
+        df_dataset = self._filter_dataframe(ml_task, report_type).query(
+            "dataset == @self._dataset_dropdown.value"
+        )
+        for col in df_dataset.select_dtypes(include=["category"]).columns:
+            df_dataset[col] = df_dataset[col].cat.remove_unused_categories()
+
+        # Get selected metrics from both dropdowns
+        selected_computation_metrics = self._computation_metrics_dropdown[
+            ml_task
+        ]._get_selected_values()
+        selected_statistical_metrics = self._statistical_metrics_dropdown[
+            ml_task
+        ]._get_selected_values()
+        selected_metrics = selected_computation_metrics + selected_statistical_metrics
+        color_metric = self._dimension_to_column[
+            self._color_metric_dropdown[ml_task].value
+        ]
+
+        dimensions = []
+        dimensions.append(
+            dict(
+                label="Learner",
+                values=self._add_jitter_to_categorical(
+                    self.seed, df_dataset["learner"]
+                ),
+                ticktext=df_dataset["learner"].cat.categories,
+                tickvals=np.arange(len(df_dataset["learner"].cat.categories)),
+            )
+        )
+
+        for col in selected_metrics:  # use the order defined in the constructor
             dimensions.append(
                 dict(
-                    label="Learner",
-                    values=self._add_jitter_to_categorical(
-                        self.seed, df_dataset["learner"]
-                    ),
-                    ticktext=df_dataset["learner"].cat.categories,
-                    tickvals=np.arange(len(df_dataset["learner"].cat.categories)),
+                    label=self._metrics[col]["name"],
+                    # convert to float in case that the column has None values and
+                    # thus is object type
+                    values=df_dataset[col].astype(float).fillna(0),
                 )
             )
 
-            for col in selected_metrics:  # use the order defined in the constructor
-                dimensions.append(
-                    dict(
-                        label=self._metrics[col]["name"],
-                        # convert to float in case that the column has None values and
-                        # thus is object type
-                        values=df_dataset[col].astype(float).fillna(0),
-                    )
-                )
-
-            colorscale = (
-                "Viridis"
-                if self._metrics[color_metric]["greater_is_better"]
-                else "Viridis_r"
+        colorscale = (
+            "Viridis"
+            if self._metrics[color_metric]["greater_is_better"]
+            else "Viridis_r"
+        )
+        fig = go.FigureWidget(
+            data=go.Parcoords(
+                line=dict(
+                    color=df_dataset[color_metric].fillna(0),
+                    colorscale=colorscale,
+                    showscale=True,
+                    colorbar=dict(title=self._metrics[color_metric]["name"]),
+                ),
+                dimensions=dimensions,
+                labelangle=-30,
             )
-            fig = go.FigureWidget(
-                data=go.Parcoords(
-                    line=dict(
-                        color=df_dataset[color_metric].fillna(0),
-                        colorscale=colorscale,
-                        showscale=True,
-                        colorbar=dict(title=self._metrics[color_metric]["name"]),
-                    ),
-                    dimensions=dimensions,
-                    labelangle=-30,
-                )
-            )
+        )
 
-            fig.update_layout(
-                font=dict(size=18),
-                height=500,
-                margin=dict(l=250, r=0, t=120, b=30),
-            )
+        fig.update_layout(
+            font=dict(size=18),
+            height=500,
+            margin=dict(l=250, r=0, t=120, b=30),
+        )
 
-            fig.data[0].on_selection(self.update_selection)  # callback
+        fig.data[0].on_selection(self.update_selection)
 
-            self.current_fig = fig
-            # It is important to set autosize after the figure is displayed so that the
-            # width matches the parent container. However, it is not responsive to width
-            # resizing, but this is the only way to achieve the correct width. This
-            # issue can be tracked in the following bug report:
-            # https://github.com/plotly/plotly.py/issues/5208
-            display(fig)
-            fig.layout.autosize = True
+        self.current_fig = fig
+        self.plot_area.children = [fig]
+        # The width of the plot does not match the parent container. This
+        # issue can be tracked in the following bug report:
+        # https://github.com/plotly/plotly.py/issues/5208
+        # The previous workaround was to set autosize after calling display.
 
     def update_selection(
         self, trace=None, points=None, selector=None
@@ -670,8 +715,7 @@ class ModelExplorerWidget:
 
         return self
 
-    def display(self) -> None:
-        """Display the widget interface and initialize the plot."""
+    def _repr_mimebundle_(self, include=None, exclude=None):
         if self.dataframe.empty:
             from skore import console  # avoid circular import
 
@@ -687,58 +731,4 @@ class ModelExplorerWidget:
                 )
             )
             return None
-
-        display(
-            HTML(
-                """
-<style>
-    /* Text-based widgets */
-    .widget-text input,
-    .widget-textarea textarea,
-    .widget-password input {
-        font-size: 16px !important;
-    }
-
-    /* Labels and descriptions */
-    .widget-label,
-    .widget-label-basic {
-        font-size: 16px !important;
-        min-width: fit-content !important;
-    }
-
-    /* Buttons */
-    .widget-button,
-    .widget-toggle-button {
-        font-size: 16px !important;
-    }
-
-    /* Dropdowns and select widgets */
-    .widget-dropdown select,
-    .widget-select select {
-        font-size: 16px !important;
-    }
-
-    /* Slider readouts */
-    .widget-readout {
-        font-size: 16px !important;
-    }
-
-    /* HTML widgets */
-    .widget-html,
-    .widget-html-content {
-        font-size: 16px !important;
-    }
-
-    /* Custom SelectMultiple Dropdown */
-    .jupyter-widget-Collapse-header {
-        font-size: 16px !important;
-        font-weight: normal !important;
-    }
-</style>
-"""
-            )
-        )
-
-        display(self._layout)
-        self._update_plot()
-        self.update_selection()
+        return self._layout._repr_mimebundle_(include=include, exclude=exclude)

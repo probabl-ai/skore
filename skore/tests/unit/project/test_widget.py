@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pytest
+from ipywidgets.embed import embed_snippet
 from skore.project.widget import ModelExplorerWidget
 
 
@@ -86,7 +87,7 @@ def test_model_explorer_widget_empty_dataframe(capsys):
     assert widget.dataframe.empty
     assert widget.seed == 0
 
-    widget.display()
+    widget._repr_mimebundle_()
 
     captured = capsys.readouterr()
     assert "No report found in the project. Use the `put` method to add reports." in (
@@ -222,6 +223,7 @@ def test_model_explorer_widget_controls(metadata):
     assert len(statistical_checkboxes_regression) == 1
     assert statistical_checkboxes_regression[0].description == "RMSE"
 
+    # TODO: fix this assert
     assert widget.current_fig is None
     assert widget.current_selection == {}
 
@@ -358,7 +360,7 @@ def test_model_explorer_widget_on_task_change(metadata):
     }
 
 
-def test_model_explorer_widget_no_dataset_for_task(metadata, capsys):
+def test_model_explorer_widget_no_dataset_for_task(metadata):
     """Check the behaviour when there's no dataset available for a selected task."""
     metadata = metadata.copy()
     # select a small subset of the original metadata to be able to switch task
@@ -375,5 +377,6 @@ def test_model_explorer_widget_no_dataset_for_task(metadata, capsys):
 
     widget._update_plot()
 
-    captured = capsys.readouterr()
-    assert "No dataset available for selected task." in captured.out
+    html = embed_snippet(widget._layout)
+
+    assert "No dataset available for selected task." in html
