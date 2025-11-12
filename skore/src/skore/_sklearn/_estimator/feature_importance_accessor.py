@@ -19,6 +19,7 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
+from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import Aggregate
 from skore._utils._accessor import (
     _check_estimator_has_coef,
@@ -60,32 +61,6 @@ metric_to_scorer: dict[Metric, Callable] = {
     "r2": make_scorer(metrics.r2_score),
     "rmse": make_scorer(metrics.root_mean_squared_error),
 }
-
-
-def _function_call_succeeds(func: Callable) -> bool:
-    try:
-        func()
-        return True
-    except AttributeError:
-        return False
-
-
-def _get_feature_names(estimator, X, transformer=None) -> list[str]:
-    """Get the names of an estimator's input features.
-
-    The estimator may or may not be inside a sklearn.Pipeline.
-    """
-    if hasattr(estimator, "feature_names_in_"):
-        return estimator.feature_names_in_
-    elif transformer is not None and _function_call_succeeds(
-        transformer.get_feature_names_out
-    ):
-        # It can happen that `transformer` does have `get_feature_names_out`, but
-        # calling it fails because an underlying estimator does not have that method.
-        return transformer.get_feature_names_out()
-    elif hasattr(X, "columns"):
-        return X.columns.tolist()
-    return [f"Feature #{i}" for i in range(X.shape[1])]
 
 
 def _check_scoring(scoring: Any) -> Scoring | None:
@@ -219,60 +194,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Feature #9     99.5...
         >>> display.plot() # shows plot
         """
-        parent_estimator = self._parent.estimator_
-
-        if isinstance(parent_estimator, Pipeline):
-            feature_names = parent_estimator[:-1].get_feature_names_out()
-        else:
-            if hasattr(parent_estimator, "feature_names_in_"):
-                feature_names = parent_estimator.feature_names_in_
-            else:
-                feature_names = [
-                    f"Feature #{i}" for i in range(parent_estimator.n_features_in_)
-                ]
-
-        estimator = (
-            parent_estimator[-1]
-            if isinstance(parent_estimator, Pipeline)
-            else parent_estimator
+        return CoefficientsDisplay._compute_data_for_display(
+            estimators=[self._parent.estimator_],
+            names=[self._parent.estimator_name_],
+            splits=[None],
+            report_type="estimator",
         )
-        try:
-            intercept = np.atleast_2d(estimator.intercept_)
-        except AttributeError:
-            # TransformedTargetRegressor() does not expose `intercept_`
-            intercept = np.atleast_2d(estimator.regressor_.intercept_)
-            # Uncomment when SGDOneClassSVM is fully supported by EstimatorReport
-            # except AttributeError:
-            # SGDOneClassSVM does not expose `intercept_`
-            # intercept = None
-
-        try:
-            coef = np.atleast_2d(estimator.coef_)
-        except AttributeError:
-            # TransformedTargetRegressor() does not expose `coef_`
-            coef = np.atleast_2d(estimator.regressor_.coef_)
-
-        if intercept is None:
-            data = coef.T
-            index = list(feature_names)
-        else:
-            data = np.concatenate([intercept, coef.T])
-            index = ["Intercept"] + list(feature_names)
-
-        if data.shape[1] == 1:
-            columns = ["Coefficient"]
-        elif is_classifier(parent_estimator):
-            columns = [f"Class #{i}" for i in range(data.shape[1])]
-        else:
-            columns = [f"Target #{i}" for i in range(data.shape[1])]
-
-        df = pd.DataFrame(
-            data=data,
-            index=index,
-            columns=columns,
-        )
-
-        return CoefficientsDisplay("estimator", df)
 
     @available_if(_check_has_feature_importances())
     def mean_decrease_impurity(self):
@@ -646,6 +573,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             feature_names = _get_feature_names(
                 estimator,
+                n_features=X_transformed.shape[1],
                 X=X_transformed,
                 transformer=feature_engineering,
             )

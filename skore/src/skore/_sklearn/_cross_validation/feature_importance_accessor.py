@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pandas as pd
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -49,19 +48,16 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         4       	0.033695	74.259575	27.599610	17.390481
         >>> display.plot() # shows plot
         """
-        combined = pd.concat(
-            {
-                split: df["Coefficient"]
-                for split, df in enumerate(
-                    report.feature_importance.coefficients().frame()
-                    for report in self._parent.estimator_reports_
-                )
-            },
-            axis=1,
-        ).T
-        combined.index.name = "Split index"
-
-        return CoefficientsDisplay("cross-validation", combined)
+        return CoefficientsDisplay._compute_data_for_display(
+            estimators=[
+                report.estimator_ for report in self._parent.estimator_reports_
+            ],
+            names=[
+                report.estimator_name_ for report in self._parent.estimator_reports_
+            ],
+            splits=range(len(self._parent.estimator_reports_)),
+            report_type="cross-validation",
+        )
 
     ####################################################################################
     # Methods related to the help tree

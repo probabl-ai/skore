@@ -1,6 +1,16 @@
-import matplotlib.pyplot as plt
+from collections.abc import Sequence
 
-from skore._sklearn._plot.base import DisplayMixin
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from matplotlib.legend import Legend
+from sklearn.base import BaseEstimator, is_classifier
+
+from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
+from skore._sklearn._plot.utils import _despine_matplotlib_axis
+from skore._sklearn.feature_names import _get_feature_names
+from skore._sklearn.types import ReportType
 
 
 class CoefficientsDisplay(DisplayMixin):
@@ -48,65 +58,43 @@ class CoefficientsDisplay(DisplayMixin):
     ...         ...
     """
 
-    def __init__(self, report_type, coefficients):
-        self.report_type = report_type
+    def __init__(self, *, coefficients: pd.DataFrame, report_type: ReportType):
         self.coefficients = coefficients
+        self.report_type = report_type
 
     def frame(self):
-        """Return coefficients as a DataFrame.
-
-        Returns
-        -------
-        pd.DataFrame
-            The structure of the returned frame depends on the underlying report type:
-
-            - If an :class:`EstimatorReport`, a single column "Coefficient", with the
-              index being the feature names.
-
-            - If a :class:`CrossValidationReport`, the columns are the feature names,
-              and the index is the respective split number.
-
-            - If a :class:`ComparisonReport`, the columns are the models passed in the
-              report, with the index being the feature names.
-        """
         if self.report_type == "estimator":
-            return self._frame_estimator_report()
+            columns_to_drop = ["estimator_name", "split"]
         elif self.report_type == "cross-validation":
-            return self._frame_cross_validation_report()
+            columns_to_drop = ["estimator_name"]
+        elif self.report_type == "comparison-estimator":
+            columns_to_drop = ["split"]
+        elif self.report_type == "comparison-cross-validation":
+            columns_to_drop = []
         else:
-            return self._frame_comparison_report()
+            raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
-    def _frame_estimator_report(self):
-        return self.coefficients
-
-    def _frame_cross_validation_report(self):
-        return self.coefficients
-
-    def _frame_comparison_report(self):
-        import pandas as pd
-
-        return pd.concat(self.coefficients, axis=1)
+        return self.coefficients.drop(columns=columns_to_drop)
 
     @DisplayMixin.style_plot
     def plot(self, **kwargs) -> None:
-        """Plot the coefficients of linear models.
-
-        Parameters
-        ----------
-        **kwargs : dict
-            Additional keyword arguments to be passed to the plot method.
-        """
         return self._plot(**kwargs)
 
-    def _style_plot_matplotlib(self, ax, title=None, legend=True):
-        if title:
-            ax.set_title(title)
-        if legend:
-            ax.legend(loc="best", bbox_to_anchor=(1, 1), borderaxespad=1)
-        ax.grid(False)
-        for spine in ["top", "right", "left"]:
-            ax.spines[spine].set_visible(False)
-        ax.tick_params(axis="y", length=0)
+    def _decorate_matplotlib_axis(self):
+        self.ax_.axvline(x=0, color=".5", linestyle="--")
+        self.ax_.set(xlabel="Magnitude of coefficient", ylabel="")
+        _despine_matplotlib_axis(
+            self.ax_,
+            axis_to_despine=("top", "right", "left"),
+            remove_ticks=True,
+            x_range=None,
+            y_range=None,
+        )
+
+    @staticmethod
+    def _set_legend(legend: Legend):
+        legend.set_title("Estimator")
+        legend.set_loc("upper right")
 
     def _plot_matplotlib(self, **kwargs):
         if self.report_type == "estimator":
@@ -122,50 +110,98 @@ class CoefficientsDisplay(DisplayMixin):
 
     def _plot_estimator_report(self):
         self.figure_, self.ax_ = plt.subplots()
-        self.coefficients.plot.barh(ax=self.ax_)
-        self._style_plot_matplotlib(self.ax_, title="Coefficients")
-        self.figure_.tight_layout()
-        plt.show()
+        sns.barplot(data=self.frame(), x="coefficients", y="feature_name", ax=self.ax_)
+        self._decorate_matplotlib_axis()
 
     def _plot_cross_validation_report(self):
         self.figure_, self.ax_ = plt.subplots()
-        self.coefficients.boxplot(ax=self.ax_, vert=False)
-        self._style_plot_matplotlib(
-            self.ax_, title="Coefficient variance across CV splits", legend=None
+        sns.boxplot(
+            data=self.frame(),
+            x="coefficients",
+            y="feature_name",
+            ax=self.ax_,
+            vert=False,
+            whis=100_000,
+            **BOXPLOT_STYLE,
         )
-        self.figure_.tight_layout()
-        plt.show()
+        self._decorate_matplotlib_axis()
 
     def _plot_comparison_report_estimator(self):
-        self.figure_, self.ax_ = plt.subplots(
-            nrows=1,
-            ncols=len(self.coefficients),
-            figsize=(5 * len(self.coefficients), 6),
-            squeeze=False,
+        self.figure_, self.ax_ = plt.subplots()
+        sns.barplot(
+            data=self.frame(),
+            x="coefficients",
+            y="feature_name",
+            hue="estimator_name",
+            ax=self.ax_,
         )
-        self.ax_ = self.ax_.flatten()
-        self.figure_.suptitle("Coefficients")
-        for ax, coef_frame in zip(self.ax_, self.coefficients, strict=False):
-            coef_frame.plot.barh(ax=ax)
-            self._style_plot_matplotlib(ax, title=None)
-        self.figure_.tight_layout()
-        plt.show()
+        self._decorate_matplotlib_axis()
+        self._set_legend(self.ax_.get_legend())
 
     def _plot_comparison_report_cross_validation(self):
-        self.figure_, self.ax_ = plt.subplots(
-            nrows=1,
-            ncols=len(self.coefficients),
-            figsize=(5 * len(self.coefficients), 6),
-            squeeze=False,
+        self.figure_, self.ax_ = plt.subplots()
+        sns.boxplot(
+            data=self.frame(),
+            x="coefficients",
+            y="feature_name",
+            hue="estimator_name",
+            ax=self.ax_,
+            vert=False,
+            whis=100_000,
+            **BOXPLOT_STYLE,
         )
-        self.ax_ = self.ax_.flatten()
-        for ax, coef_frame in zip(self.ax_, self.coefficients, strict=False):
-            coef_frame.boxplot(ax=ax, vert=False)
-            model_name = coef_frame.columns[0].split("__")[0]
-            self._style_plot_matplotlib(
-                ax,
-                title=f"{model_name} Coefficients across splits",
-                legend=None,
-            )
-        self.figure_.tight_layout()
-        plt.show()
+        self._decorate_matplotlib_axis()
+        self._set_legend(self.ax_.get_legend())
+
+    @classmethod
+    def _compute_data_for_display(
+        cls,
+        *,
+        estimators: Sequence[BaseEstimator],
+        names: list[str],
+        splits: list[int | None],
+        report_type: ReportType,
+    ):
+        feature_names, est_names, coefficients, split_indices = [], [], [], []
+        for estimator, name, split in zip(estimators, names, splits, strict=True):
+            try:
+                coef = np.atleast_2d(estimator.coef_).T
+                intercept = np.atleast_2d(estimator.intercept_)
+            except AttributeError:
+                # TransformedTargetRegressor() is a meta-estimator exposing `regressor_`
+                # instead of exposing directly the coefficients
+                coef = np.atleast_2d(estimator.regressor_.coef_).T
+                intercept = np.atleast_2d(estimator.regressor_.intercept_)
+
+            feat_names = _get_feature_names(estimator, n_features=coef.shape[0])
+            if intercept is None:
+                coefficients.append(coef)
+                feature_names.extend(feat_names)
+            else:
+                coefficients.append(np.concatenate([intercept, coef]))
+                feat_names.insert(0, "Intercept")
+                feature_names.extend(feat_names)
+            est_names.extend([name] * len(feat_names))
+            split_indices.extend([split] * len(feat_names))
+
+        if coef.shape[1] == 1:
+            columns = ["coefficients"]
+        elif is_classifier(estimator):
+            columns = [f"class_{i}" for i in range(coef.shape[1])]
+        else:
+            columns = [f"target_{i}" for i in range(coef.shape[1])]
+
+        info = pd.DataFrame(
+            {
+                "estimator_name": est_names,
+                "split": split_indices,
+                "feature_name": feature_names,
+            }
+        )
+        coefficients = pd.DataFrame(
+            np.concatenate(coefficients, axis=0), columns=columns
+        )
+        return cls(
+            coefficients=pd.concat([info, coefficients], axis=1),
+            report_type=report_type,
+        )
