@@ -84,11 +84,11 @@ class Metric(BaseModel, ABC, Generic[Report]):
             raise RuntimeError(message) from None
 
     @value.setter
-    def value(self, value: float | None):
+    def value(self, value: float | None) -> None:
         self.__value = value
 
     @abstractmethod
-    def compute(self):
+    def compute(self) -> None:
         """Compute the value of the metric."""
 
 
@@ -117,7 +117,7 @@ class EstimatorReportMetric(Metric[EstimatorReport]):
 
     accessor: ClassVar[str]
 
-    def compute(self):
+    def compute(self) -> None:
         """Compute the value of the metric."""
         try:
             function = cast(
@@ -158,7 +158,7 @@ class CrossValidationReportMetric(Metric[CrossValidationReport]):
     accessor: ClassVar[str]
     aggregate: ClassVar[Literal["mean", "std"]]
 
-    def compute(self):
+    def compute(self) -> None:
         """Compute the value of the metric."""
         try:
             function = cast(

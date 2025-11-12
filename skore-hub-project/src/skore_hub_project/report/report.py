@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC
-from concurrent.futures import ThreadPoolExecutor
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cached_property, partial
 from typing import ClassVar, Generic, TypeVar, cast
 
@@ -11,7 +12,6 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
 from skore_hub_project import Project, switch_mpl_backend
-from skore_hub_project.artifact.artifact import upload as upload_artifact
 from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
@@ -140,20 +140,24 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
             ThreadPoolExecutor() as compute_pool,
             ThreadPoolExecutor(max_workers=6) as upload_pool,
         ):
-            function = partial(
-                upload_artifact,
-                pool=upload_pool,
-                checksums_being_uploaded=checksums_being_uploaded,
-            )
-
-            for i, checksum in enumerate(
-                progress.track(
-                    compute_pool.map(function, medias),
-                    description=f"Uploading {self.report.__class__.__name__} media",
-                    total=len(medias),
+            tasks = [
+                compute_pool.submit(
+                    lambda media: media.upload(
+                        pool=upload_pool,
+                        checksums_being_uploaded=checksums_being_uploaded,
+                    ),
+                    media,
                 )
-            ):
-                medias[i].checksum = checksum
+                for media in medias
+            ]
+
+            deque(
+                progress.track(
+                    as_completed(tasks),
+                    description=f"Uploading {self.report.__class__.__name__} media",
+                    total=len(tasks),
+                )
+            )
 
         return [media for media in medias if media.checksum is not None]
 
@@ -168,6 +172,6 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         retrieve it from the artifacts storage.
         """
         pickle = Pickle(project=self.project, report=self.report)
-        pickle.checksum = upload_artifact(pickle)
+        pickle.upload()
 
         return pickle
