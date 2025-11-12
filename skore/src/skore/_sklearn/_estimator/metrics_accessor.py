@@ -1725,9 +1725,10 @@ class _MetricsAccessor(
                 data_source_hash=data_source_hash,
             )
             for key, value, is_cached in results:
+                key = cast(tuple[Any, ...], key)
                 if not is_cached:
-                    self._parent._cache[cast(tuple[Any, ...], key)] = value
-                if cast(tuple[Any, ...], key)[-1] != "predict_time":
+                    self._parent._cache[key] = value
+                if key[-1] != "predict_time":
                     y_pred = value
 
             display = display_class._compute_data_for_display(
