@@ -128,8 +128,8 @@ def test_summarize_regression(linear_regression_with_test, metric):
     assert report._cache != {}
 
 
-def test_summarize_data_source_all(forest_binary_classification_data):
-    """Check the behaviour of `summarize` with `data_source="all"`."""
+def test_summarize_data_source_both(forest_binary_classification_data):
+    """Check the behaviour of `summarize` with `data_source="both"`."""
     estimator, X, y = forest_binary_classification_data
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
@@ -139,28 +139,28 @@ def test_summarize_data_source_all(forest_binary_classification_data):
 
     result_train = report.metrics.summarize(data_source="train").frame()
     result_test = report.metrics.summarize(data_source="test").frame()
-    result_all = report.metrics.summarize(data_source="all").frame()
+    result_both = report.metrics.summarize(data_source="both").frame()
 
-    assert result_all.columns.tolist() == [
+    assert result_both.columns.tolist() == [
         "RandomForestClassifier (train)",
         "RandomForestClassifier (test)",
     ]
     assert_series_equal(
-        result_all["RandomForestClassifier (train)"],
+        result_both["RandomForestClassifier (train)"],
         result_train["RandomForestClassifier"],
         check_names=False,
     )
     assert_series_equal(
-        result_all["RandomForestClassifier (test)"],
+        result_both["RandomForestClassifier (test)"],
         result_test["RandomForestClassifier"],
         check_names=False,
     )
 
     # By default,
-    result_all = report.metrics.summarize(
-        data_source="all", indicator_favorability=True
+    result_both = report.metrics.summarize(
+        data_source="both", indicator_favorability=True
     ).frame()
-    assert result_all.columns.tolist() == [
+    assert result_both.columns.tolist() == [
         "RandomForestClassifier (train)",
         "RandomForestClassifier (test)",
         "Favorability",

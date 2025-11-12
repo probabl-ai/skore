@@ -62,7 +62,7 @@ class _MetricsAccessor(
     def summarize(
         self,
         *,
-        data_source: DataSource | Literal["all"] = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         scoring: Scoring | list[Scoring] | dict[str, Scoring] | None = None,
@@ -75,13 +75,13 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y", "all"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
-            - "all" : use both the train and test sets to compute the metrics and
+            - "both" : use both the train and test sets to compute the metrics and
               present them side-by-side.
 
         X : array-like of shape (n_samples, n_features), default=None
@@ -163,7 +163,7 @@ class _MetricsAccessor(
         F1 Score               1             0.96...          (↗︎)
         >>> report.metrics.summarize(
         ...    indicator_favorability=True,
-        ...    data_source="all"
+        ...    data_source="both"
         ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
         Metric
@@ -180,7 +180,7 @@ class _MetricsAccessor(
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
         """
-        if data_source == "all":
+        if data_source == "both":
             train_summary = self.summarize(
                 data_source="train",
                 scoring=scoring,
@@ -1987,7 +1987,7 @@ class _MetricsAccessor(
         sample_weight: ArrayLike | None = None,
         display_labels: list | None = None,
         include_values: bool = True,
-        normalize: Literal["true", "pred", "all"] | None = None,
+        normalize: Literal["true", "pred", "both"] | None = None,
         values_format: str | None = None,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
