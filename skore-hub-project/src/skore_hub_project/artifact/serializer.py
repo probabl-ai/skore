@@ -1,8 +1,11 @@
 """Function definition of the content ``Serializer``."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import Any
 
 from blake3 import blake3 as Blake3
 
@@ -16,10 +19,10 @@ class Serializer:
         else:
             self.filepath.write_bytes(content)
 
-    def __enter__(self):  # noqa: D105
+    def __enter__(self) -> Serializer:  # noqa: D105
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):  # noqa: D105
+    def __exit__(self, *args: Any) -> None:  # noqa: D105
         self.filepath.unlink(True)
 
     @cached_property

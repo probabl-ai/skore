@@ -2,10 +2,11 @@ import numpy as np
 import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
+from skrub.datasets import fetch_employee_salaries
+
 from skore import Display, EstimatorReport, train_test_split
 from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._plot.data.table_report import TableReportDisplay
-from skrub.datasets import fetch_employee_salaries
 
 
 @pytest.fixture
@@ -31,19 +32,19 @@ def display(estimator_report):
     "params, err_msg",
     [
         (
-            dict(kind="dist"),
+            {"kind": "dist"},
             "When kind='dist', at least one of x, y must be provided and",
         ),
         (
-            dict(kind="dist", hue="current_annual_salary"),
+            {"kind": "dist", "hue": "current_annual_salary"},
             "When kind='dist', at least one of x, y must be provided and",
         ),
         (
-            dict(kind="corr", x="current_annual_salary"),
+            {"kind": "corr", "x": "current_annual_salary"},
             "When kind='corr', 'x' argument must be None.",
         ),
         (
-            dict(kind="unknown"),
+            {"kind": "unknown"},
             "'kind' options are 'dist', 'corr', got 'unknown'.",
         ),
     ],
@@ -195,11 +196,11 @@ def test_hue_plots_1d(pyplot, estimator_report):
 
 def test_plot_duration_data_1d(pyplot, display):
     """Check the plot output with duration data in 1-d."""
-    ## 1D - timedelta as x
+    ## 1D - timedelta as x
     display.plot(x="timedelta_hired")
     assert display.ax_.get_xlabel() == "Years"
 
-    ## 1D - timedelta as y
+    ## 1D - timedelta as y
     display.plot(y="timedelta_hired")
     assert display.ax_.get_ylabel() == "Years"
 

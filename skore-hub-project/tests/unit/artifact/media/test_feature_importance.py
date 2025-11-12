@@ -2,6 +2,7 @@ from functools import partialmethod
 
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
+
 from skore_hub_project import Project
 from skore_hub_project.artifact.media import (
     Coefficients,
@@ -118,6 +119,7 @@ def test_feature_importance(
     }
 
     # unavailable accessor
+    report.clear_cache()
     monkeypatch.delattr(report.feature_importance.__class__, accessor)
     upload_mock.reset_mock()
 

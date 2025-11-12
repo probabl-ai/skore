@@ -3,18 +3,22 @@ from numbers import Real
 
 import joblib
 import numpy as np
+import pandas as pd
 import pytest
+from pandas.testing import assert_series_equal
 from sklearn.base import BaseEstimator
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
+    get_scorer,
     precision_score,
     rand_score,
     recall_score,
 )
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
+
 from skore import EstimatorReport
 
 
@@ -122,6 +126,45 @@ def test_summarize_regression(linear_regression_with_test, metric):
     assert isinstance(result_external_data, float)
     assert result == pytest.approx(result_external_data)
     assert report._cache != {}
+
+
+def test_summarize_data_source_all(forest_binary_classification_data):
+    """Check the behaviour of `summarize` with `data_source="all"`."""
+    estimator, X, y = forest_binary_classification_data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    result_train = report.metrics.summarize(data_source="train").frame()
+    result_test = report.metrics.summarize(data_source="test").frame()
+    result_all = report.metrics.summarize(data_source="all").frame()
+
+    assert result_all.columns.tolist() == [
+        "RandomForestClassifier (train)",
+        "RandomForestClassifier (test)",
+    ]
+    assert_series_equal(
+        result_all["RandomForestClassifier (train)"],
+        result_train["RandomForestClassifier"],
+        check_names=False,
+    )
+    assert_series_equal(
+        result_all["RandomForestClassifier (test)"],
+        result_test["RandomForestClassifier"],
+        check_names=False,
+    )
+
+    # By default,
+    result_all = report.metrics.summarize(
+        data_source="all", indicator_favorability=True
+    ).frame()
+    assert result_all.columns.tolist() == [
+        "RandomForestClassifier (train)",
+        "RandomForestClassifier (test)",
+        "Favorability",
+    ]
 
 
 def test_interaction_cache_metrics(
@@ -514,3 +557,50 @@ def test_roc_multiclass_requires_predict_proba(
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "roc_auc")
     report.metrics.roc_auc()
+
+
+def test_summarize_scoring_dict(forest_binary_classification_with_test):
+    """Test that scoring can be passed as a dictionary with custom names."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    # Test with dictionary scoring
+    scoring_dict = {
+        "Custom Accuracy": "accuracy",
+        "Custom Precision": "precision",
+        "Custom R2": get_scorer("neg_mean_absolute_error"),
+    }
+
+    result = report.metrics.summarize(scoring=scoring_dict).frame()
+
+    # Check that custom names are used
+    assert "Custom Accuracy" in result.index
+    assert "Custom Precision" in result.index
+    assert "Custom R2" in result.index
+
+    # Verify the result structure
+    assert isinstance(result, pd.DataFrame)
+    assert len(result.index) >= 3  # At least our 3 custom metrics
+
+
+def test_summarize_scoring_dict_with_callables(linear_regression_with_test):
+    """Test that scoring dict works with callable functions."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def custom_metric(y_true, y_pred):
+        return np.mean(np.abs(y_true - y_pred))
+
+    scoring_dict = {"R Squared": "r2", "Custom MAE": custom_metric}
+
+    result = report.metrics.summarize(
+        scoring=scoring_dict, scoring_kwargs={"response_method": "predict"}
+    ).frame()
+
+    # Check that custom names are used
+    assert "R Squared" in result.index
+    assert "Custom MAE" in result.index
+
+    # Verify the result structure
+    assert isinstance(result, pd.DataFrame)
+    assert len(result.index) == 2

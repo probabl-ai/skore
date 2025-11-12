@@ -194,11 +194,11 @@ class HelpDisplayMixin:
 
     def _get_attributes_for_help(self) -> list[str]:
         """Get the attributes ending with '_' to display in help."""
-        attributes = []
-        for name in dir(self):
-            if name.endswith("_") and not name.startswith("_"):
-                attributes.append(f".{name}")
-        return sorted(attributes)
+        return sorted(
+            f".{name}"
+            for name in dir(self)
+            if name.endswith("_") and not name.startswith("_")
+        )
 
     def _get_methods_for_help(self) -> list[tuple[str, Any]]:
         """Get the public methods to display in help."""

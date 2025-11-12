@@ -1,6 +1,7 @@
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
+
 from skore import ComparisonReport, EstimatorReport
 
 

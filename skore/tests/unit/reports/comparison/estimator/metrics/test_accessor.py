@@ -1,5 +1,6 @@
 import pytest
 from sklearn.dummy import DummyClassifier
+
 from skore import ComparisonReport, EstimatorReport
 
 

@@ -8,6 +8,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
+
 from skore import EstimatorReport
 from skore._externals._sklearn_compat import get_tags
 
@@ -133,7 +134,6 @@ def test_coefficients_pandas_dataframe(estimator):
             sklearn.compose.TransformedTargetRegressor(),
             id="TransformedTargetRegressor",
         ),
-        pytest.param(sklearn.linear_model.ElasticNet(), id="ElasticNet"),
         pytest.param(sklearn.linear_model.ARDRegression(), id="ARDRegression"),
         pytest.param(sklearn.linear_model.BayesianRidge(), id="BayesianRidge"),
         pytest.param(sklearn.linear_model.ElasticNet(), id="ElasticNet"),

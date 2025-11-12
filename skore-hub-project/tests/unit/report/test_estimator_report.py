@@ -1,6 +1,8 @@
+from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from skore import CrossValidationReport, EstimatorReport
+
 from skore_hub_project import Project
 from skore_hub_project.artifact.media import (
     EstimatorHtmlRepr,
@@ -66,6 +68,10 @@ def project():
 
 @fixture
 def payload(project, binary_classification):
+    # Force the compute of the permutations
+    binary_classification.feature_importance.permutation(data_source="train", seed=42)
+    binary_classification.feature_importance.permutation(data_source="test", seed=42)
+
     return EstimatorReportPayload(
         project=project,
         report=binary_classification,
@@ -145,7 +151,7 @@ class TestEstimatorReportPayload:
         assert payload_dict == {
             "key": "<key>",
             "estimator_class_name": "RandomForestClassifier",
-            "dataset_fingerprint": "35806b458ab1a6d0c675fd226d7fc34a",
+            "dataset_fingerprint": hash(binary_classification.y_test),
             "ml_task": "binary-classification",
             "pickle": {
                 "checksum": checksum,

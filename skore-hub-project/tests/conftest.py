@@ -183,11 +183,12 @@ def monkeypatch_matplotlib(monkeypatch):
 
 
 @fixture
-def monkeypatch_skore_hub_api_key(monkeypatch):
+def monkeypatch_skore_hub_envars(monkeypatch):
     """
-    Delete `SKORE_HUB_API_KEY` from the environment, to avoid biasing the tests.
+    Delete environment variables that can bias the tests.
     """
     monkeypatch.delenv("SKORE_HUB_API_KEY", raising=False)
+    monkeypatch.delenv("SKORE_HUB_URI", raising=False)
 
 
 @fixture
@@ -214,6 +215,6 @@ def setup(
     monkeypatch_tmpdir,
     monkeypatch_matplotlib,
     monkeypatch_skrub,
-    monkeypatch_skore_hub_api_key,
+    monkeypatch_skore_hub_envars,
     monkeypatch_sklearn_estimator_html_repr,
 ): ...

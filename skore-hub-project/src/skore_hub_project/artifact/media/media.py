@@ -11,7 +11,7 @@ from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
 
-class Media(Artifact, Generic[Report], ABC):
+class Media(Artifact, ABC, Generic[Report]):
     """
     Payload used to associate a media with the report.
 

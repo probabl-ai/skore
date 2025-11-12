@@ -7,17 +7,13 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
+
 from skore import EstimatorReport
 
 
 @pytest.mark.parametrize(
     "data, estimator, expected_shape",
     [
-        (
-            make_classification(n_features=5, random_state=42),
-            RandomForestClassifier(n_estimators=2, random_state=0),
-            (5, 1),
-        ),
         (
             make_classification(n_features=5, random_state=42),
             RandomForestClassifier(n_estimators=2, random_state=0),

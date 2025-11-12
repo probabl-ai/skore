@@ -47,12 +47,12 @@ class Project:
     | The workspace can be shared between all the projects.
     | The workspace can be set using kwargs or the environment variable
       ``SKORE_WORKSPACE``.
-    | If not, it will be by default set to a ``skore/`` directory in the USER
+    | If not, it will be by default set to a ``skore/`` directory in the user
       cache directory:
 
     - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-    - on Linux, usually ``${HOME}/.cache/skore``,
-    - on macOS, usually ``${HOME}/Library/Caches/skore``.
+    - on Linux, usually ``${HOME}/.local/share/skore``,
+    - on macOS, usually ``${HOME}/Library/Application Support/skore``.
 
     Refer to the :ref:`project` section of the user guide for more details.
 
@@ -70,16 +70,6 @@ class Project:
 
         workspace : Path, mode:local only.
             The directory where the local project is persisted.
-
-            | The workspace can be shared between all the projects.
-            | The workspace can be set using kwargs or the environment variable
-              ``SKORE_WORKSPACE``.
-            | If not, it will be by default set to a ``skore/`` directory in the USER
-              cache directory:
-
-            - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-            - on Linux, usually ``${HOME}/.cache/skore``,
-            - on macOS, usually ``${HOME}/Library/Caches/skore``.
 
     Attributes
     ----------

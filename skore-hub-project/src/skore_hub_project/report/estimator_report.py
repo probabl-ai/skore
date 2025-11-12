@@ -39,12 +39,9 @@ from skore_hub_project.metric import (
     RocAucTest,
     RocAucTrain,
 )
-from skore_hub_project.metric.metric import EstimatorReportMetric
-from skore_hub_project.metric.timing import PredictTime
+from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import EstimatorReport
 from skore_hub_project.report.report import ReportPayload
-
-Metric = EstimatorReportMetric | FitTime | PredictTime
 
 
 class EstimatorReportPayload(ReportPayload[EstimatorReport]):
@@ -65,7 +62,7 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         The key to associate to the report.
     """
 
-    METRICS: ClassVar[tuple[type[Metric], ...]] = (
+    METRICS: ClassVar[tuple[type[Metric[EstimatorReport]], ...]] = (
         AccuracyTest,
         AccuracyTrain,
         BrierScoreTest,
@@ -87,7 +84,7 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         PredictTimeTest,
         PredictTimeTrain,
     )
-    MEDIAS: ClassVar[tuple[type[Media], ...]] = (
+    MEDIAS: ClassVar[tuple[type[Media[EstimatorReport]], ...]] = (
         Coefficients,
         EstimatorHtmlRepr,
         MeanDecreaseImpurity,

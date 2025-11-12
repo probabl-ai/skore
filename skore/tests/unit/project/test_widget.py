@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import pytest
 from ipywidgets.embed import embed_snippet
+
 from skore.project.widget import ModelExplorerWidget
 
 

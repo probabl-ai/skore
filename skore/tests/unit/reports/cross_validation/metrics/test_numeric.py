@@ -8,6 +8,7 @@ from sklearn.metrics import (
     accuracy_score,
 )
 from sklearn.svm import SVC
+
 from skore import CrossValidationReport
 
 

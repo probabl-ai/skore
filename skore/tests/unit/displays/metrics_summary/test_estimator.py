@@ -16,6 +16,7 @@ from sklearn.metrics import (
     r2_score,
     recall_score,
 )
+
 from skore import EstimatorReport
 
 
@@ -191,21 +192,28 @@ def test_scoring_kwargs(
 
 
 @pytest.mark.parametrize(
-    "fixture_name, scoring_names, expected_columns",
+    "fixture_name, scoring_dict, expected_columns",
     [
         (
             "linear_regression_with_test",
-            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
-            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
-        ),
-        (
-            "linear_regression_with_test",
-            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
+            {
+                "R2": "r2",
+                "RMSE": "rmse",
+                "FIT_TIME": "_fit_time",
+                "PREDICT_TIME": "_predict_time",
+            },
             ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
         ),
         (
             "forest_multiclass_classification_with_test",
-            ["Precision", "Recall", "ROC AUC", "Log Loss", "Fit Time", "Predict Time"],
+            {
+                "Precision": "_precision",
+                "Recall": "_recall",
+                "ROC AUC": "_roc_auc",
+                "Log Loss": "_log_loss",
+                "Fit Time": "_fit_time",
+                "Predict Time": "_predict_time",
+            },
             [
                 "Precision",
                 "Precision",
@@ -223,13 +231,13 @@ def test_scoring_kwargs(
         ),
     ],
 )
-def test_overwrite_scoring_names(
-    request, fixture_name, scoring_names, expected_columns
+def test_overwrite_scoring_names_with_dict(
+    request, fixture_name, scoring_dict, expected_columns
 ):
-    """Test that we can overwrite the scoring names."""
+    """Test that we can overwrite the scoring names using dict scoring."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(scoring_names=scoring_names).frame()
+    result = report.metrics.summarize(scoring=scoring_dict).frame()
     assert result.shape == (len(expected_columns), 1)
 
     # Get level 0 names if MultiIndex, otherwise get column names
@@ -257,28 +265,27 @@ def test_indicator_favorability(
 
 
 @pytest.mark.parametrize(
-    "scoring, scoring_names, scoring_kwargs",
+    "scoring, scoring_kwargs",
     [
-        ("accuracy", "this_is_a_test", None),
-        ("neg_log_loss", "this_is_a_test", None),
-        (accuracy_score, "this_is_a_test", {"response_method": "predict"}),
-        (get_scorer("accuracy"), "this_is_a_test", None),
+        ("accuracy", None),
+        ("neg_log_loss", None),
+        (accuracy_score, {"response_method": "predict"}),
+        (get_scorer("accuracy"), None),
     ],
 )
 def test_scoring_single_list_equivalence(
-    forest_binary_classification_with_test, scoring, scoring_names, scoring_kwargs
+    forest_binary_classification_with_test, scoring, scoring_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
-    list with a single element, and it's possible to overwrite col name."""
+    list with a single element."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result_single = report.metrics.summarize(
-        scoring=scoring, scoring_names=scoring_names, scoring_kwargs=scoring_kwargs
+        scoring=scoring, scoring_kwargs=scoring_kwargs
     ).frame()
     result_list = report.metrics.summarize(
-        scoring=[scoring], scoring_names=scoring_names, scoring_kwargs=scoring_kwargs
+        scoring=[scoring], scoring_kwargs=scoring_kwargs
     ).frame()
-    assert result_single.index[0] == "this_is_a_test"
     assert result_single.equals(result_list)
 
 

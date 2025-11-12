@@ -1,13 +1,12 @@
 """Client exchanging with ``skore hub``."""
 
-from __future__ import annotations
-
+import importlib
 import logging
 from contextlib import suppress
 from http import HTTPStatus
 from os import environ
 from time import sleep
-from typing import Final
+from typing import Any, Final
 from urllib.parse import urljoin
 
 from httpx import (
@@ -20,12 +19,11 @@ from httpx import (
     Response,
     TimeoutException,
 )
-from httpx import (
-    Client as HTTPXClient,
-)
+from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
 from ..authentication import token as Token
+from ..authentication.uri import URI
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +84,7 @@ class Client(HTTPXClient):
         self.retry_backoff_factor = retry_backoff_factor
         self.retry_backoff_max = retry_backoff_max
 
-    def request(self, *args, **kwargs) -> Response:
+    def request(self, *args: Any, **kwargs: Any) -> Response:
         """Execute request with retry strategy."""
         retries = 0
 
@@ -111,7 +109,7 @@ class Client(HTTPXClient):
 
             sleep_duration = min(timeout, self.retry_backoff_max)
 
-            logger.warn(
+            logger.warning(
                 "Request failed to reach server. "
                 f"Trying again in {sleep_duration} seconds."
             )
@@ -135,8 +133,11 @@ class Client(HTTPXClient):
         raise HTTPStatusError(message, request=response.request, response=response)
 
 
-class AuthenticationError(Exception):
-    """An exception dedicated to authentication."""
+PACKAGE_VERSION = (
+    version
+    if ((version := importlib.metadata.version("skore-hub-project")) != "0.0.0+unknown")
+    else None
+)
 
 
 class HUBClient(Client):
@@ -149,14 +150,7 @@ class HUBClient(Client):
         Use headers with API key or token, default True.
     """
 
-    URI: Final[str] = environ.get("SKORE_HUB_URI", "https://api.skore.probabl.ai")
-
-    def __init__(
-        self,
-        *,
-        authenticated=True,
-        **kwargs,
-    ):
+    def __init__(self, *, authenticated: bool = True, **kwargs: Any):
         super().__init__(**kwargs)
 
         self.authenticated = authenticated
@@ -166,24 +160,23 @@ class HUBClient(Client):
         method: str,
         url: URL | str,
         headers: HeaderTypes | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Response:
         """Execute request with authorization."""
         headers = Headers(headers)
 
-        # Overload headers with our custom headers (API key or token)
+        # Overload headers with package version
+        if PACKAGE_VERSION:
+            headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_VERSION}"})
+
+        # Overload headers with credentials
         if self.authenticated:
             if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
-                headers.update({"X-API-Key": f"{apikey}"})
+                headers.update({"X-API-Key": apikey})
             else:
-                if not Token.exists():
-                    raise AuthenticationError(
-                        "You are not logged in. Please run `skore-hub-login`"
-                    )
-
                 headers.update({"Authorization": f"Bearer {Token.access()}"})
 
-        # Prefix ``url`` by the hub URI when it's possible
-        url = urljoin(self.URI, str(url))
+        # Prefix the request by the hub URI when ``url`` is not absolute
+        url = urljoin(URI(), str(url))
 
         return super().request(method=method, url=url, headers=headers, **kwargs)

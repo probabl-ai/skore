@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+
 from skore import EstimatorReport
 from skore._sklearn._plot import ConfusionMatrixDisplay
 

@@ -1,4 +1,5 @@
 import pytest
+
 from skore._sklearn._plot.base import StyleDisplayMixin
 
 

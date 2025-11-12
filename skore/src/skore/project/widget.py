@@ -206,7 +206,7 @@ class ModelExplorerWidget:
             df.columns = [col.removesuffix("_mean") for col in df.columns]
         return df
 
-    def _get_datasets(self, ml_task: str, report_type: str) -> np.ndarray:
+    def _get_datasets(self, ml_task: str, report_type: str) -> list[str]:
         """Get the unique datasets from the filtered dataframe.
 
         Parameters
@@ -218,7 +218,7 @@ class ModelExplorerWidget:
 
         Returns
         -------
-        np.ndarray
+        list[str]
             The unique datasets.
         """
         return self._filter_dataframe(ml_task, report_type)["dataset"].unique()
@@ -623,27 +623,26 @@ class ModelExplorerWidget:
             self._color_metric_dropdown[ml_task].value
         ]
 
-        dimensions = []
-        dimensions.append(
-            dict(
-                label="Learner",
-                values=self._add_jitter_to_categorical(
+        dimensions = [
+            {
+                "label": "Learner",
+                "values": self._add_jitter_to_categorical(
                     self.seed, df_dataset["learner"]
                 ),
-                ticktext=df_dataset["learner"].cat.categories,
-                tickvals=np.arange(len(df_dataset["learner"].cat.categories)),
-            )
-        )
+                "ticktext": df_dataset["learner"].cat.categories,
+                "tickvals": np.arange(len(df_dataset["learner"].cat.categories)),
+            }
+        ]
 
-        for col in selected_metrics:  # use the order defined in the constructor
-            dimensions.append(
-                dict(
-                    label=self._metrics[col]["name"],
-                    # convert to float in case that the column has None values and
-                    # thus is object type
-                    values=df_dataset[col].astype(float).fillna(0),
-                )
-            )
+        dimensions.extend(
+            {
+                "label": self._metrics[col]["name"],
+                # convert to float in case that the column has None values and
+                # thus is object type
+                "values": df_dataset[col].astype(float).fillna(0),
+            }
+            for col in selected_metrics  # use the order defined in the constructor
+        )
 
         colorscale = (
             "Viridis"
@@ -652,21 +651,21 @@ class ModelExplorerWidget:
         )
         fig = go.FigureWidget(
             data=go.Parcoords(
-                line=dict(
-                    color=df_dataset[color_metric].fillna(0),
-                    colorscale=colorscale,
-                    showscale=True,
-                    colorbar=dict(title=self._metrics[color_metric]["name"]),
-                ),
+                line={
+                    "color": df_dataset[color_metric].fillna(0),
+                    "colorscale": colorscale,
+                    "showscale": True,
+                    "colorbar": {"title": self._metrics[color_metric]["name"]},
+                },
                 dimensions=dimensions,
                 labelangle=-30,
             )
         )
 
         fig.update_layout(
-            font=dict(size=18),
+            font={"size": 18},
             height=500,
-            margin=dict(l=250, r=0, t=120, b=30),
+            margin={"l": 250, "r": 0, "t": 120, "b": 30},
         )
 
         fig.data[0].on_selection(self.update_selection)

@@ -30,7 +30,6 @@ from skore._sklearn.types import (
     _DEFAULT,
     PositiveLabel,
     Scoring,
-    ScoringName,
     YPlotData,
 )
 from skore._utils._accessor import (
@@ -63,11 +62,10 @@ class _MetricsAccessor(
     def summarize(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["all"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        scoring: Scoring | list[Scoring] | None = None,
-        scoring_names: ScoringName | list[ScoringName] | None = None,
+        scoring: Scoring | list[Scoring] | dict[str, Scoring] | None = None,
         scoring_kwargs: dict[str, Any] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
@@ -77,12 +75,14 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "all"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "all" : use both the train and test sets to compute the metrics and
+              present them side-by-side.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -92,8 +92,9 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : str, callable, scorer or list of such instances, default=None
-            The metrics to report. The possible values (whether or not in a list) are:
+        scoring : str, callable, scorer, or list of such instances or dict of such \
+            instances, default=None
+            The metrics to report. The possible values are:
 
             - if a string, either one of the built-in metrics or a scikit-learn scorer
               name. You can get the possible list of string using
@@ -108,10 +109,10 @@ class _MetricsAccessor(
               scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
               the metric favorability will only be displayed if it is given explicitly
               via `make_scorer`'s `greater_is_better` parameter.
-
-        scoring_names : str, None or list of such instances, default=None
-            Used to overwrite the default scoring names in the report. It should be of
-            the same length as the `scoring` parameter.
+            - if a dict, the keys are used as metric names and the values are the
+              scoring functions (strings, callables, or scorers as described above).
+            - if a list, each element can be any of the above types (strings, callables,
+              scorers).
 
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
@@ -160,15 +161,60 @@ class _MetricsAccessor(
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
+        >>> report.metrics.summarize(
+        ...    indicator_favorability=True,
+        ...    data_source="all"
+        ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
+                     LogisticRegression (train)  LogisticRegression (test)  Favorability
+        Metric
+        Precision                       0.96...                     0.98...          (↗︎)
+        Recall                          0.97...                     0.93...          (↗︎)
+        ROC AUC                         0.99...                     0.99...          (↗︎)
+        Brier score                     0.02...                     0.03...          (↘︎)
+        >>> # Using scikit-learn metrics
+        >>> report.metrics.summarize(
+        ...     scoring=["f1"],
+        ...     indicator_favorability=True,
+        ... ).frame()
+                                  LogisticRegression Favorability
+        Metric   Label / Average
+        F1 Score               1             0.96...          (↗︎)
         """
+        if data_source == "all":
+            train_summary = self.summarize(
+                data_source="train",
+                scoring=scoring,
+                scoring_kwargs=scoring_kwargs,
+                pos_label=pos_label,
+                indicator_favorability=False,
+                flat_index=flat_index,
+            )
+            test_summary = self.summarize(
+                data_source="test",
+                scoring=scoring,
+                scoring_kwargs=scoring_kwargs,
+                pos_label=pos_label,
+                indicator_favorability=indicator_favorability,
+                flat_index=flat_index,
+            )
+            # Add suffix to the dataframes to distinguish train and test.
+            train_df = train_summary.frame().add_suffix(" (train)")
+            test_df = test_summary.frame().add_suffix(" (test)")
+            combined = pd.concat([train_df, test_df], axis=1).rename(
+                columns={"Favorability (test)": "Favorability"}
+            )
+            return MetricsSummaryDisplay(summarize_data=combined)
+
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
-        if scoring is not None and not isinstance(scoring, list):
+        # Handle dictionary scoring
+        scoring_names = None
+        if isinstance(scoring, dict):
+            scoring_names = list(scoring.keys())
+            scoring = list(scoring.values())
+        elif scoring is not None and not isinstance(scoring, list):
             scoring = [scoring]
-
-        if scoring_names is not None and not isinstance(scoring_names, list):
-            scoring_names = [scoring_names]
 
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
@@ -181,7 +227,6 @@ class _MetricsAccessor(
         else:
             data_source_hash = None
 
-        scoring_was_none = scoring is None
         if scoring is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
@@ -196,23 +241,8 @@ class _MetricsAccessor(
                 scoring = ["_r2", "_rmse"]
             scoring += ["_fit_time", "_predict_time"]
 
-        if scoring_names is not None and len(scoring_names) != len(scoring):
-            if scoring_was_none:
-                # we raise a better error message since we decide the default scores
-                raise ValueError(
-                    "The `scoring_names` parameter should be of the same length as "
-                    "the `scoring` parameter. In your case, `scoring` was set to None "
-                    f"and you are using our default scores that are {len(scoring)}. "
-                    f"The list is the following: {scoring}."
-                )
-            else:
-                raise ValueError(
-                    "The `scoring_names` parameter should be of the same length as "
-                    f"the `scoring` parameter. Got {len(scoring_names)} names for "
-                    f"{len(scoring)} scoring functions."
-                )
-        elif scoring_names is None:
-            scoring_names = [None] * len(scoring)
+        if scoring_names is None:
+            scoring_names = [None] * len(scoring)  # type: ignore
 
         scores = []
         favorability_indicator = []
@@ -482,7 +512,7 @@ class _MetricsAccessor(
 
             results = _get_cached_response_values(
                 cache=self._parent._cache,
-                estimator_hash=self._parent._hash,
+                estimator_hash=int(self._parent._hash),
                 estimator=self._parent.estimator_,
                 X=X,
                 response_method=response_method,
@@ -1674,7 +1704,7 @@ class _MetricsAccessor(
         else:
             results = _get_cached_response_values(
                 cache=self._parent._cache,
-                estimator_hash=self._parent._hash,
+                estimator_hash=int(self._parent._hash),
                 estimator=self._parent.estimator_,
                 X=X,
                 response_method=response_method,

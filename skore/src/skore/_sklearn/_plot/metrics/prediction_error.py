@@ -1,6 +1,6 @@
 import numbers
 from collections import namedtuple
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -265,7 +265,7 @@ class PredictionErrorDisplay(DisplayMixin):
         self.ax_.legend(handles, labels, loc="lower right")
         self.ax_.set_title(f"Prediction Error for {estimator_name}")
 
-        return scatter
+        return cast(list[Artist], scatter)
 
     def _plot_cross_validated_estimator(
         self,
@@ -352,7 +352,7 @@ class PredictionErrorDisplay(DisplayMixin):
             self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
         self.ax_.set_title(f"Prediction Error for {estimator_name}")
 
-        return scatter
+        return cast(list[Artist], scatter)
 
     def _plot_comparison_estimator(
         self,
@@ -435,7 +435,7 @@ class PredictionErrorDisplay(DisplayMixin):
             self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
         self.ax_.set_title("Prediction Error")
 
-        return scatter
+        return cast(list[Artist], scatter)
 
     def _plot_comparison_cross_validation(
         self,
@@ -518,7 +518,7 @@ class PredictionErrorDisplay(DisplayMixin):
             self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
         self.ax_.set_title("Prediction Error")
 
-        return scatter
+        return cast(list[Artist], scatter)
 
     @DisplayMixin.style_plot
     def plot(
@@ -824,9 +824,9 @@ class PredictionErrorDisplay(DisplayMixin):
                         }
                     )
             else:
-                y_true_sample = y_true_i.y
-                y_pred_sample = y_pred_i.y
-                residuals_sample = y_true_i.y - y_pred_i.y
+                y_true_sample = cast(np.typing.NDArray, y_true_i.y)
+                y_pred_sample = cast(np.typing.NDArray, y_pred_i.y)
+                residuals_sample = y_true_sample - y_pred_sample
 
                 for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
                     y_true_sample, y_pred_sample, residuals_sample, strict=False

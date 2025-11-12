@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+
 from skore._utils._logger import Handler, logger_context
 
 

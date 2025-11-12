@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.base import clone
+
 from skore import ComparisonReport, EstimatorReport
 from skore._sklearn._plot import PredictionErrorDisplay
 from skore._sklearn._plot.metrics.prediction_error import RangeData

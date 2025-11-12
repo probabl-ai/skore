@@ -2,6 +2,7 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from sklearn.base import clone
+
 from skore import ComparisonReport, EstimatorReport
 from skore._sklearn._plot import PrecisionRecallCurveDisplay
 from skore._sklearn._plot.utils import sample_mpl_colormap
@@ -96,7 +97,7 @@ def test_multiclass_classification(
     assert isinstance(display, PrecisionRecallCurveDisplay)
     check_display_data(display)
 
-    class_labels = list(report.reports_.values())[0].estimator_.classes_
+    class_labels = next(iter(report.reports_.values())).estimator_.classes_
 
     display.plot()
     assert isinstance(display.lines_, list)

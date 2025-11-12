@@ -1,6 +1,7 @@
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
+
 from skore import ComparisonReport, CrossValidationReport
 
 
@@ -20,7 +21,7 @@ def test_coefficients_frame():
     result = est_comparison_report.feature_importance.coefficients().frame()
     assert result.shape == (5, 22)
 
-    expected_index = [i for i in range(splitter)]
+    expected_index = list(range(splitter))
     assert result.index.tolist() == expected_index
 
     base_columns = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
