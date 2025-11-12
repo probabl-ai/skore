@@ -4,22 +4,19 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
-from pydantic import Field
-
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 from .metric import Metric, cast_to_float
 
 
-class FitTime(Metric):  # noqa: D101
-    report: EstimatorReport = Field(repr=False, exclude=True)
+class FitTime(Metric[EstimatorReport]):  # noqa: D101
     name: str = "fit_time"
     verbose_name: str = "Fit time (s)"
     greater_is_better: bool = False
     position: int = 1
     data_source: None = None
 
-    def compute(self):
+    def compute(self) -> None:
         """Compute the value of the metric."""
         timings = self.report.metrics.timings()
         fit_time = timings.get("fit_time")
@@ -27,7 +24,7 @@ class FitTime(Metric):  # noqa: D101
         self.value = cast_to_float(fit_time)
 
 
-class FitTimeAggregate(Metric):  # noqa: D101
+class FitTimeAggregate(Metric[CrossValidationReport]):  # noqa: D101
     # ``report.metrics.timings()``
     #
     #                             mean       std
@@ -35,12 +32,11 @@ class FitTimeAggregate(Metric):  # noqa: D101
     # Predict time test (s)        ...       ...
     # Predict time train (s)       ...       ...
 
-    report: CrossValidationReport = Field(repr=False, exclude=True)
     aggregate: ClassVar[Literal["mean", "std"]]
     greater_is_better: bool = False
     data_source: None = None
 
-    def compute(self):
+    def compute(self) -> None:
         """Compute the value of the metric."""
         timings = self.report.metrics.timings(aggregate=self.aggregate)
 
@@ -66,14 +62,13 @@ class FitTimeStd(FitTimeAggregate):  # noqa: D101
     position: None = None
 
 
-class PredictTime(Metric):  # noqa: D101
-    report: EstimatorReport = Field(repr=False, exclude=True)
+class PredictTime(Metric[EstimatorReport]):  # noqa: D101
     name: str = "predict_time"
     verbose_name: str = "Predict time (s)"
     greater_is_better: bool = False
     position: int = 2
 
-    def compute(self):
+    def compute(self) -> None:
         """Compute the value of the metric."""
         timings = self.report.metrics.timings()
         predict_time = timings.get(f"predict_time_{self.data_source}")
@@ -89,7 +84,7 @@ class PredictTimeTest(PredictTime):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class PredictTimeAggregate(Metric):  # noqa: D101
+class PredictTimeAggregate(Metric[CrossValidationReport]):  # noqa: D101
     # ``report.metrics.timings()``
     #
     #                             mean       std
@@ -97,11 +92,10 @@ class PredictTimeAggregate(Metric):  # noqa: D101
     # Predict time test (s)        ...       ...
     # Predict time train (s)       ...       ...
 
-    report: CrossValidationReport = Field(repr=False, exclude=True)
     aggregate: ClassVar[Literal["mean", "std"]]
     greater_is_better: bool = False
 
-    def compute(self):
+    def compute(self) -> None:
         """Compute the value of the metric."""
         timings = self.report.metrics.timings(aggregate=self.aggregate)
 
