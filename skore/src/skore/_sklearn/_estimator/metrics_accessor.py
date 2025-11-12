@@ -1645,7 +1645,7 @@ class _MetricsAccessor(
         *,
         X: ArrayLike | None,
         y: ArrayLike | None,
-        data_source: DataSource,
+        data_source: DataSource | Literal["both"],
         response_method: str | list[str] | tuple[str, ...],
         display_class: type[
             RocCurveDisplay
@@ -1670,12 +1670,13 @@ class _MetricsAccessor(
         y : array-like of shape (n_samples,)
             The target.
 
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train set and the test set to compute the metric.
 
         response_method : str, list of str or tuple of str
             The response method.

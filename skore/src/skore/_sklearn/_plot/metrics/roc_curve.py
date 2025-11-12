@@ -90,7 +90,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     pos_label : int, float, bool, str or None
         The class considered as positive. Only meaningful for binary classification.
 
-    data_source : {"train", "test", "X_y"}
+    data_source : {"train", "test", "X_y", "both"}
         The data source used to compute the ROC curve.
 
     ml_task : {"binary-classification", "multiclass-classification"}
@@ -137,7 +137,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         roc_curve: DataFrame,
         roc_auc: DataFrame,
         pos_label: PositiveLabel | None,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: Literal["train", "test", "X_y", "both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
@@ -198,6 +198,8 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     f"{self.data_source.title()} set "
                     f"(AUC = {self.roc_auc['roc_auc'].item():0.2f})"
                 )
+            elif self.data_source == "both":
+                raise NotImplementedError()
             else:  # data_source in (None, "X_y")
                 line_kwargs["label"] = f"AUC = {self.roc_auc['roc_auc'].item():0.2f}"
 
@@ -859,7 +861,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         report_type: ReportType,
         estimators: Sequence[BaseEstimator],
         ml_task: MLTask,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: Literal["train", "test", "X_y", "both"],
         pos_label: PositiveLabel | None,
         drop_intermediate: bool = True,
     ) -> "RocCurveDisplay":
@@ -885,7 +887,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y"}
+        data_source : {"train", "test", "X_y", "both"}
             The data source used to compute the ROC curve.
 
         pos_label : int, float, bool or str, default=None
