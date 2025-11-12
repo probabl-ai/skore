@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 from math import ceil
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from skore_hub_project.client.client import Client, HUBClient
 
@@ -79,6 +79,7 @@ def upload(
     content: Any,
     content_type: str,
     pool: ThreadPoolExecutor,
+    checksums_being_uploaded: set[str],
 ) -> str:
     """
     Upload content to the artifacts storage.
@@ -95,6 +96,8 @@ def upload(
         The type of content to upload.
     pool : TheadPoolExecutor
         The pool used to execute the `upload_chunk` threads.
+    checksums_being_uploaded : set[str]
+        The checksums that are being uploaded by threads.
 
     Returns
     -------
@@ -111,22 +114,24 @@ def upload(
         HUBClient() as hub_client,
         Client() as standard_client,
     ):
-        # Ask for the artifact, regardless of his status pending or uploaded.
+        # Ask for the artifact if it is not already being uploaded by another thread.
         #
         # An non-empty response means that an artifact with the same checksum already
         # exists. The content doesn't have to be re-uploaded.
-        #
-        # Note that if the artifact is pending, it means that a parallel upload is in
-        # progress and we can rely on it.
-        response = hub_client.get(
-            url=f"projects/{project.quoted_tenant}/{project.quoted_name}/artifacts",
-            params={
-                "artifact_checksum": serializer.checksum,
-                "status": None,
-            },
-        )
-
-        if not response.json():
+        if (
+            (serializer.checksum not in checksums_being_uploaded)
+            and (
+                response := hub_client.get(
+                    url=f"projects/{project.quoted_tenant}/{project.quoted_name}/artifacts",
+                    params={
+                        "artifact_checksum": serializer.checksum,
+                        "status": "uploaded",
+                    },
+                )
+            )
+            and (not response.json())
+        ):
+            checksums_being_uploaded.add(serializer.checksum)
             serializer()
 
             # Ask for upload urls.
@@ -191,4 +196,4 @@ def upload(
                 ],
             )
 
-    return serializer.checksum
+        return serializer.checksum

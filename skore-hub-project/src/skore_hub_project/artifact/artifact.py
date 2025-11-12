@@ -1,5 +1,7 @@
 """Interface definition of the payload used to associate an artifact with a project."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from contextlib import AbstractContextManager, nullcontext
 from typing import ClassVar
@@ -9,10 +11,47 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project import Project
 from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.artifact.upload import upload
+from skore_hub_project.artifact.upload import upload as upload_content
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 Content = EstimatorReport | CrossValidationReport | str | bytes | None
+
+
+def upload(
+    artifact: Artifact,
+    *,
+    pool: ThreadPoolExecutor | None = None,
+    checksums_being_uploaded: set[str] | None = None,
+) -> str | None:
+    """
+    Upload artifact.
+
+    Returns
+    -------
+    checksum : str
+        The checksum of the artifact after upload.
+    """
+    contextmanager = artifact.content_to_upload()
+    pool = ThreadPoolExecutor(max_workers=6) if pool is None else pool
+    checksums_being_uploaded = (
+        set() if checksums_being_uploaded is None else checksums_being_uploaded
+    )
+
+    if not isinstance(contextmanager, AbstractContextManager):
+        contextmanager = nullcontext(contextmanager)
+
+    with contextmanager as content:
+        if content is None:
+            return None
+
+        return upload_content(
+            project=artifact.project,
+            serializer_cls=artifact.serializer_cls,
+            content=content,
+            content_type=artifact.content_type,
+            pool=pool,
+            checksums_being_uploaded=checksums_being_uploaded,
+        )
 
 
 class Artifact(BaseModel, ABC):
@@ -77,22 +116,3 @@ class Artifact(BaseModel, ABC):
     @checksum.setter
     def checksum(self, checksum: str | None):
         self.__checksum = checksum
-
-    def upload(self, *, pool: ThreadPoolExecutor):
-        """Upload artifact."""
-        contextmanager = self.content_to_upload()
-
-        if not isinstance(contextmanager, AbstractContextManager):
-            contextmanager = nullcontext(contextmanager)
-
-        with contextmanager as content:
-            if content is not None:
-                self.checksum = upload(
-                    project=self.project,
-                    serializer_cls=self.serializer_cls,
-                    content=content,
-                    content_type=self.content_type,
-                    pool=pool,
-                )
-            else:
-                self.checksum = None

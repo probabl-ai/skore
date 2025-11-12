@@ -15,6 +15,8 @@ from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 from skore_hub_project import switch_mpl_backend
+from skore_hub_project.artifact.artifact import upload as upload_artifact
+
 
 SkinnedProgress = partial(
     Progress,
@@ -124,6 +126,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         -----
         Unavailable medias have been filtered out.
         """
+        checksums_being_uploaded: set[str] = set()
         medias = [
             media_cls(project=self.project, report=self.report)
             for media_cls in self.MEDIAS
@@ -135,27 +138,20 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
             ThreadPoolExecutor() as compute_pool,
             ThreadPoolExecutor(max_workers=6) as upload_pool,
         ):
-            tasks = [
-                compute_pool.submit((lambda m: m.upload(pool=upload_pool)), media)
-                for media in medias
-            ]
+            function = partial(
+                upload_artifact,
+                pool=upload_pool,
+                checksums_being_uploaded=checksums_being_uploaded,
+            )
 
-            try:
-                # expliquer pourquoi ça fonctionne
-                # même en cas de media avec les memes checksum + rajouter un test
-                deque(
-                    progress.track(
-                        as_completed(tasks),
-                        description=f"Uploading {self.report.__class__.__name__} media",
-                        total=len(tasks),
-                    )
+            for i, checksum in enumerate(
+                progress.track(
+                    compute_pool.map(function, medias),
+                    description=f"Uploading {self.report.__class__.__name__} media",
+                    total=len(medias),
                 )
-            except BaseException:
-                # Cancel all remaining tasks, especially on `KeyboardInterrupt`.
-                for task in tasks:
-                    task.cancel()
-
-                raise
+            ):
+                medias[i].checksum = checksum
 
         return [media for media in medias if media.checksum is not None]
 
@@ -169,8 +165,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         artifact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artifacts storage.
         """
-        with ThreadPoolExecutor(max_workers=6) as upload_pool:
-            pickle = Pickle(project=self.project, report=self.report)
-            pickle.upload(pool=upload_pool)
+        pickle = Pickle(project=self.project, report=self.report)
+        pickle.checksum = upload_artifact(pickle)
 
         return pickle
