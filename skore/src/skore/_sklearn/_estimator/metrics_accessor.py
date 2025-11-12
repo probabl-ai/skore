@@ -1692,9 +1692,13 @@ class _MetricsAccessor(
         display : display_class
             The display.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
+        if data_source == "both":
+            data_source_hash = None
+        else:
+            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
+
         assert y is not None, "y must be provided"
 
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
@@ -1769,7 +1773,7 @@ class _MetricsAccessor(
     def roc(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,

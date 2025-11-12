@@ -117,7 +117,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         precision_recall: DataFrame,
         average_precision: DataFrame,
         pos_label: PositiveLabel | None,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: Literal["train", "test", "X_y"] | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
