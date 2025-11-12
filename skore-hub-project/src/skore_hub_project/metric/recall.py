@@ -14,7 +14,7 @@ class Recall(EstimatorReportMetric):  # noqa: D101
     greater_is_better: bool = True
     position: None = None
 
-    def compute(self):
+    def compute(self) -> None:
         """Compute the value of the metric."""
         try:
             function = self.report.metrics.recall
@@ -42,7 +42,7 @@ class RecallMean(CrossValidationReportMetric):  # noqa: D101
     greater_is_better: bool = True
     position: None = None
 
-    def compute(self):
+    def compute(self) -> None:
         """Compute the value of the metric."""
         try:
             function = self.report.metrics.recall
@@ -71,7 +71,7 @@ class RecallStd(CrossValidationReportMetric):  # noqa: D101
     greater_is_better: bool = False
     position: None = None
 
-    def compute(self):
+    def compute(self) -> None:
         """Compute the value of the metric."""
         try:
             function = self.report.metrics.recall

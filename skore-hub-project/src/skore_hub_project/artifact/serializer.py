@@ -23,7 +23,8 @@ class Serializer:
     def __exit__(self, *args: Any) -> None:  # noqa: D105
         self.filepath.unlink(True)
 
-    def __call__(self):  # lazy // only after call of size or checksum
+    def __call__(self) -> None:
+        """"""
         if hasattr(self, "__called__"):
             return
 

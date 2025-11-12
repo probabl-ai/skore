@@ -17,10 +17,13 @@ Report = EstimatorReport | CrossValidationReport
 
 
 class ReportSerializer(Serializer):
+    """"""
+
     def __init__(self, report: Report):
         self.report = report
 
-    def __call__(self):
+    def __call__(self) -> None:
+        """"""
         if hasattr(self, "__called__"):
             return
 
@@ -32,6 +35,7 @@ class ReportSerializer(Serializer):
 
     @cached_property
     def checksum(self) -> str:
+        """The checksum of the report."""
         return f"skore-{self.report.__class__.__name__}-{self.report._hash}"
 
 
