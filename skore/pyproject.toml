@@ -1,13 +1,17 @@
 [project]
 name = "skore"
-description = "Own Your Data Science"
-dynamic = ["license", "readme", "version"]
+description = """\
+𝗢𝘄𝗻 𝗬𝗼𝘂𝗿 𝗗𝗮𝘁𝗮 𝗦𝗰𝗶𝗲𝗻𝗰𝗲. \
+Skore's open-source Python library accelerates ML model development with automated evaluation reports, \
+smart methodological guidance, and comprehensive cross-validation analysis.\
+"""
+dynamic = ["license-files", "readme", "version"]
 requires-python = ">=3.10"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
+license = "MIT"
 classifiers = [
   "Intended Audience :: Science/Research",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python",
   "Topic :: Software Development",
   "Topic :: Scientific/Engineering",
@@ -33,7 +37,9 @@ dependencies = [
   "plotly",
   "rich",
   "scikit-learn",
-  "skore-local-project",
+  "skore[local]",
+  "skrub",
+  "seaborn",
 ]
 
 [project.optional-dependencies]
@@ -44,16 +50,17 @@ test-base = [
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
+  "scipy-stubs",
   "skrub",
   "xdoctest",
 ]
-test = ["skore[test-base]", "polars"]
+test = ["skore[test-base]", "polars", "pyarrow"]
 test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
 sphinx-base = [
   "altair",
   "kaleido",
   "numpydoc",
-  "plotly>=5,<6",
+  "plotly>=6,<7", # plotly <6 conflicting with kaleido
   "pydata-sphinx-theme",
   "seaborn",
   "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
@@ -65,6 +72,7 @@ sphinx-base = [
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
   "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
+  "xgboost",
 ]
 sphinx = ["skore[sphinx-base]", "polars"]
 sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]
@@ -72,7 +80,8 @@ dev = [
   "nbformat",
   "ipykernel",
 ]
-hub = ["skore-hub-project"]
+local = ["skore-local-project>=0.0.4"]
+hub = ["skore-hub-project>=0.0.10"]
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -99,12 +108,17 @@ package = ["src/skore/"]
 
 [tool.pytest.ini_options]
 addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
   "--xdoctest",
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
   "--dist=loadscope",
 ]
+xfail_strict = true
+log_cli_level = "info"
 
 [tool.coverage.run]
 branch = true
@@ -113,7 +127,7 @@ concurrency = ["thread", "multiprocessing"]
 parallel = true
 
 [tool.coverage.report]
-omit = ["*/externals/*", "src/*", "tests/*"]
+omit = ["*/_externals/*", "src/*", "tests/*"]
 show_missing = true
 exclude_also = [
     "raise NotImplementedError",
@@ -121,28 +135,24 @@ exclude_also = [
     "if TYPE_CHECKING:",
 ]
 
-[tool.ruff]
-src = ["skore"]
-
 [tool.ruff.lint]
 select = [
-  # pycodestyle
-  "E",
-  # Pyflakes
-  "F",
-  # pyupgrade
-  "UP",
-  # flake8-bugbear
-  "B",
-  # flake8-simplify
-  "SIM",
-  # flake8-print
-  "T",
-  # isort
-  "I",
-  # pydocstyle
-  "D",
+    "B",
+    "C4",
+    "T10",
+    "T20",
+    "PYI055", "PYI059",
+    "PT003", "PT014",
+    "SIM",
+    "I",
+    "PERF",
+    "E",
+    "D",
+    "F",
+    "UP",
+    "RUF010", "RUF015",
 ]
+ignore = ["PERF203"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
@@ -151,9 +161,16 @@ convention = "numpy"
 "tests/*" = ["D"]
 
 [tool.mypy]
-ignore_missing_imports = true
-exclude = ["src/skore/externals/.*", "hatch/*", "tests/*"]
+exclude = ["src/skore/_externals/", "hatch/", "tests/"]
 
 [[tool.mypy.overrides]]
-module = ["sklearn.*"]
 ignore_missing_imports = true
+module = [
+  "ipywidgets.*",
+  "joblib.*",
+  "pandas.*",
+  "plotly.*",
+  "seaborn.*",
+  "sklearn.*",
+  "skrub.*",
+]

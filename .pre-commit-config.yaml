@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
       - id: check-toml
@@ -11,7 +11,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.30.2
+    rev: v1.38.1
     hooks:
       - id: typos
 
@@ -22,16 +22,35 @@ repos:
         args: [--keep-id]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.10
+    rev: v0.14.1
     hooks:
-      - id: ruff
+      - id: ruff-check
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
         args: [--fix]
       - id: ruff-format
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
+    rev: v1.18.2
     hooks:
       - id: mypy
-        files: ^(skore|skore-hub-project|skore-local-project)/src/
+        pass_filenames: false
+        alias: mypy-skore
+        name: mypy skore/
+        files: ^skore/
+        args: [--config-file=skore/pyproject.toml, skore]
+        additional_dependencies: [IPython, matplotlib, numpy, polars, rich, scipy-stubs]
+      - id: mypy
+        pass_filenames: false
+        alias: mypy-skore-hub-project
+        name: mypy skore-hub-project/
+        files: ^skore-hub-project/
+        args: [--config-file=skore-hub-project/pyproject.toml, skore-hub-project]
+        additional_dependencies: [skore, blake3, httpx, orjson, pandas-stubs, pydantic]
+      - id: mypy
+        pass_filenames: false
+        alias: mypy-skore-local-project
+        name: mypy skore-local-project/
+        files: ^skore-local-project/
+        args: [--config-file=skore-local-project/pyproject.toml, skore-local-project]
+        additional_dependencies: [skore]

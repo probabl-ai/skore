@@ -40,28 +40,34 @@ Skore: getting started
 # In order to assist its users when programming, skore has implemented a
 # :class:`skore.EstimatorReport` class.
 #
-# Let us load a binary classification dataset and get the estimator report for a
+# Let us create a challenging synthetic binary classification dataset and get the estimator report for a
 # :class:`~sklearn.ensemble.RandomForestClassifier`:
 
 # %%
-from sklearn.datasets import load_breast_cancer
+from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
 from skore import EstimatorReport
 
-X, y = load_breast_cancer(return_X_y=True, as_frame=True)
+X, y = make_classification(
+    n_samples=10_000,
+    n_classes=3,
+    class_sep=0.3,
+    n_clusters_per_class=1,
+    random_state=42,
+)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 rf = RandomForestClassifier(random_state=0)
 
 rf_report = EstimatorReport(
-    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, pos_label=1
+    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
 )
 
 # %%
 # Now, we can display the helper to see all the insights that are available to us
-# (skore detected that we are doing binary classification):
+# (skore detected that we are doing multiclass classification):
 
 # %%
 rf_report.help()
@@ -81,7 +87,7 @@ rf_report.help()
 # fit and prediction times):
 
 # %%
-rf_report.metrics.summarize(indicator_favorability=True)
+rf_report.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # For inspection, we can also retrieve the predictions, on the train set for example
@@ -122,12 +128,12 @@ plt.tight_layout()
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # skore has also (re-)implemented a :class:`skore.CrossValidationReport` class that
-# contains several :class:`skore.EstimatorReport`, one for each fold.
+# contains several :class:`skore.EstimatorReport`, one for each split.
 
 # %%
 from skore import CrossValidationReport
 
-cv_report = CrossValidationReport(rf, X, y, cv_splitter=5)
+cv_report = CrossValidationReport(rf, X, y, splitter=5)
 
 # %%
 # We display the cross-validation report helper:
@@ -139,27 +145,27 @@ cv_report.help()
 # We display the mean and standard deviation for each metric:
 
 # %%
-cv_report.metrics.summarize()
+cv_report.metrics.summarize().frame()
 
 # %%
-# or by individual fold:
+# or by individual split:
 
 # %%
-cv_report.metrics.summarize(aggregate=None)
+cv_report.metrics.summarize(aggregate=None).frame()
 
 # %%
-# We display the ROC curves for each fold:
+# We display the ROC curves for each split:
 
 # %%
 roc_plot_cv = cv_report.metrics.roc()
 roc_plot_cv.plot()
 
 # %%
-# We can retrieve the estimator report of a specific fold to investigate further,
-# for example getting the report metrics for the first fold only:
+# We can retrieve the estimator report of a specific split to investigate further,
+# for example getting the report metrics for the first split only:
 
 # %%
-cv_report.estimator_reports_[0].metrics.summarize()
+cv_report.estimator_reports_[0].metrics.summarize().frame()
 
 # %%
 # .. seealso::
@@ -205,7 +211,7 @@ comparator.help()
 # Let us display the result of our benchmark:
 
 # %%
-comparator.metrics.summarize(indicator_favorability=True)
+comparator.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
 # Thus, we easily have the result of our benchmark for several recommended metrics.
@@ -280,7 +286,7 @@ _ = skore.train_test_split(
 import os
 import tempfile
 
-temp_dir = tempfile.TemporaryDirectory()
+temp_dir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 os.environ["SKORE_WORKSPACE"] = temp_dir.name
 # sphinx_gallery_end_ignore
 my_project = skore.Project("my_project")
@@ -326,7 +332,7 @@ pprint(reports_get)
 
 # %%
 comparator = ComparisonReport(reports=reports_get)
-comparator.metrics.summarize(pos_label=1, indicator_favorability=True)
+comparator.metrics.summarize(pos_label=1, indicator_favorability=True).frame()
 
 # %%
 # We can retrieve any accessor of our stored estimator reports, for example
@@ -396,7 +402,6 @@ pprint(report_search_clf)
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
-
 # %%
 # .. admonition:: Stay tuned!
 #

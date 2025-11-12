@@ -15,11 +15,22 @@ def nowstr(now):
 
 @fixture
 def Datetime(now):
+    now_from_fixture = now
+
     class Datetime:
+        nows = []
+        nows_isoformat = []
+
         def __init__(self, *args, **kwargs): ...
 
         @staticmethod
         def now(*args, **kwargs):
+            now = datetime.now(tz=timezone.utc) if Datetime.nows else now_from_fixture
+            now_isoformat = now.isoformat()
+
+            Datetime.nows.append(now)
+            Datetime.nows_isoformat.append(now_isoformat)
+
             return now
 
     return Datetime

@@ -2,33 +2,82 @@
 
 from __future__ import annotations
 
-from functools import cached_property
+import itertools
+import re
+from collections.abc import Callable
+from functools import cached_property, wraps
 from operator import itemgetter
-from types import SimpleNamespace
-from typing import TYPE_CHECKING
+from tempfile import TemporaryFile
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ParamSpec,
+    Protocol,
+    TypedDict,
+    TypeVar,
+    runtime_checkable,
+)
+from urllib.parse import quote
 
-from .. import item as item_module
-from ..client.client import AuthenticatedClient, HTTPStatusError
-from ..item.item import lazy_is_instance
+import joblib
+import orjson
+from httpx import HTTPStatusError
+
+from skore_hub_project.client.client import Client, HUBClient
+from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
 
 if TYPE_CHECKING:
-    from typing import TypedDict
-
-    from skore.sklearn import EstimatorReport
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
-        run_id: str
         key: str
         date: str
         learner: str
-        dataset: str
         ml_task: str
+        report_type: str
+        dataset: str
         rmse: float | None
         log_loss: float | None
         roc_auc: float | None
-        fit_time: float
-        predict_time: float
+        fit_time: float | None
+        predict_time: float | None
+        rmse_mean: float | None
+        log_loss_mean: float | None
+        roc_auc_mean: float | None
+        fit_time_mean: float | None
+        predict_time_mean: float | None
+
+
+def ensure_project_is_created(method: Callable[P, R]) -> Callable[P, R]:
+    """Ensure project is created before executing any other operation."""
+
+    @runtime_checkable
+    class Project(Protocol):
+        created: bool
+        quoted_tenant: str
+        quoted_name: str
+
+    @wraps(method)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        project = args[0]
+
+        assert isinstance(project, Project), "You can only wrap `Project` methods"
+
+        if not project.created:
+            with HUBClient() as hub_client:
+                hub_client.post(
+                    f"projects/{project.quoted_tenant}/{project.quoted_name}"
+                )
+
+            project.created = True
+
+        return method(*args, **kwargs)
+
+    return wrapper
 
 
 class Project:
@@ -62,9 +111,11 @@ class Project:
         The tenant of the project.
     name : str
         The name of the project.
-    run_id : str
-        The current run identifier of the project.
     """
+
+    __REPORT_URN_PATTERN = re.compile(
+        r"skore:report:(?P<type>(estimator|cross-validation)):(?P<id>.+)"
+    )
 
     def __init__(self, tenant: str, name: str):
         """
@@ -85,6 +136,8 @@ class Project:
         name : str
             The name of the project.
         """
+        self.created = False
+
         self.__tenant = tenant
         self.__name = name
 
@@ -99,15 +152,17 @@ class Project:
         return self.__name
 
     @cached_property
-    def run_id(self) -> str:
-        """The current run identifier of the project."""
-        with AuthenticatedClient(raises=True) as client:
-            request = client.post(f"projects/{self.tenant}/{self.name}/runs")
-            run = request.json()
+    def quoted_tenant(self) -> str:
+        """The quoted tenant of the project."""
+        return quote(self.__tenant, safe="")
 
-            return run["id"]
+    @cached_property
+    def quoted_name(self) -> str:
+        """The quoted name of the project."""
+        return quote(self.__name, safe="")
 
-    def put(self, key: str, report: EstimatorReport):
+    @ensure_project_is_created
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
         Put a key-report pair to the hub project.
 
@@ -118,7 +173,7 @@ class Project:
         ----------
         key : str
             The key to associate with ``report`` in the hub project.
-        report : skore.EstimatorReport
+        report : skore.EstimatorReport | skore.CrossValidationReport
             The report to associate with ``key`` in the hub project.
 
         Raises
@@ -126,91 +181,133 @@ class Project:
         TypeError
             If the combination of parameters are not valid.
         """
+        from ..report import CrossValidationReportPayload, EstimatorReportPayload
+
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        if not lazy_is_instance(
-            report, "skore.sklearn._estimator.report.EstimatorReport"
-        ):
+        payload: EstimatorReportPayload | CrossValidationReportPayload
+
+        if isinstance(report, EstimatorReport):
+            payload = EstimatorReportPayload(project=self, key=key, report=report)
+            endpoint = "estimator-reports"
+        elif isinstance(report, CrossValidationReport):
+            payload = CrossValidationReportPayload(project=self, key=key, report=report)
+            endpoint = "cross-validation-reports"
+        else:
             raise TypeError(
-                f"Report must be a `skore.EstimatorReport` (found '{type(report)}')"
+                f"Report must be a `skore.EstimatorReport` or "
+                f"`skore.CrossValidationReport` (found '{type(report)}')"
             )
 
-        item = item_module.object_to_item(report)
+        payload_dict = payload.model_dump()
+        payload_json_bytes = orjson.dumps(payload_dict, option=orjson.OPT_NON_STR_KEYS)
 
-        with AuthenticatedClient(raises=True) as client:
-            client.post(
-                f"projects/{self.tenant}/{self.name}/items",
-                json={
-                    **item.__metadata__,
-                    **item.__representation__,
-                    **item.__parameters__,
-                    "key": key,
-                    "run_id": self.run_id,
+        with HUBClient() as hub_client:
+            hub_client.post(
+                url=f"projects/{self.quoted_tenant}/{self.quoted_name}/{endpoint}",
+                content=payload_json_bytes,
+                headers={
+                    "Content-Length": str(len(payload_json_bytes)),
+                    "Content-Type": "application/json",
                 },
             )
 
-    @property
-    def reports(self):
-        """Accessor for interaction with the persisted reports."""
+    @ensure_project_is_created
+    def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
+        """Get a persisted report by its URN."""
+        if m := re.match(Project.__REPORT_URN_PATTERN, urn):
+            tenant = self.quoted_tenant
+            name = self.quoted_name
+            type = m["type"]
+            id = m["id"]
+            url = f"projects/{tenant}/{name}/{type}-reports/{id}"
+        else:
+            raise ValueError(
+                f"URN '{urn}' format does not match '{Project.__REPORT_URN_PATTERN}'"
+            )
 
-        def get(id: str) -> EstimatorReport:
-            """Get a persisted report by its id."""
+        # Retrieve presigned URL
+        with HUBClient() as hub_client:
+            response = hub_client.get(url=url)
+            metadata = response.json()
+            presigned_url = metadata["pickle"]["presigned_url"]
 
-            def dto(report):
-                item_class_name = report["raw"]["class"]
-                item_class = getattr(item_module, item_class_name)
-                item_parameters = report["raw"]["parameters"]
-                item = item_class(**item_parameters)
-                return item.__raw__
+        report: EstimatorReport | CrossValidationReport
 
-            with AuthenticatedClient(raises=True) as client:
-                response = client.get(
-                    f"projects/{self.tenant}/{self.name}/experiments/estimator-reports/{id}"
-                )
+        # Download pickled report before unpickling it.
+        #
+        # It uses streaming responses that do not load the entire response body into
+        # memory at once.
+        with (
+            TemporaryFile(mode="w+b") as tmpfile,
+            Client() as client,
+            client.stream(method="GET", url=presigned_url, timeout=30) as response,
+        ):
+            for data in response.iter_bytes():
+                tmpfile.write(data)
 
-            return dto(response.json())
+            tmpfile.seek(0)
 
-        def metadata() -> list[Metadata]:
-            """Obtain metadata for all persisted reports regardless of their run."""
+            report = joblib.load(tmpfile)
 
-            def dto(summary):
-                metrics = {
-                    metric["name"]: metric["value"]
-                    for metric in summary["metrics"]
-                    if metric["data_source"] in (None, "test")
-                }
+        return report
 
-                return {
-                    "id": summary["id"],
-                    "run_id": summary["run_id"],
-                    "key": summary["key"],
-                    "date": summary["created_at"],
-                    "learner": summary["estimator_class_name"],
-                    "dataset": summary["dataset_fingerprint"],
-                    "ml_task": summary["ml_task"],
-                    "rmse": metrics.get("rmse"),
-                    "log_loss": metrics.get("log_loss"),
-                    "roc_auc": metrics.get("roc_auc"),
-                    "fit_time": metrics.get("fit_time"),
-                    "predict_time": metrics.get("predict_time"),
-                }
+    @ensure_project_is_created
+    def summarize(self) -> list[Metadata]:
+        """Obtain metadata/metrics for all persisted reports in insertion order."""
 
-            with AuthenticatedClient(raises=True) as client:
-                response = client.get(
-                    f"projects/{self.tenant}/{self.name}/experiments/estimator-reports"
-                )
+        def dto(response: Any) -> Metadata:
+            report_type, summary = response
+            metrics = {
+                metric["name"]: metric["value"]
+                for metric in summary["metrics"]
+                if metric["data_source"] in (None, "test")
+            }
 
-            return sorted(map(dto, response.json()), key=itemgetter("date"))
+            return {
+                "id": summary["urn"],
+                "key": summary["key"],
+                "date": summary["created_at"],
+                "learner": summary["estimator_class_name"],
+                "ml_task": summary["ml_task"],
+                "report_type": report_type,
+                "dataset": summary["dataset_fingerprint"],
+                "rmse": metrics.get("rmse"),
+                "log_loss": metrics.get("log_loss"),
+                "roc_auc": metrics.get("roc_auc"),
+                "fit_time": metrics.get("fit_time"),
+                "predict_time": metrics.get("predict_time"),
+                "rmse_mean": metrics.get("rmse_mean"),
+                "log_loss_mean": metrics.get("log_loss_mean"),
+                "roc_auc_mean": metrics.get("roc_auc_mean"),
+                "fit_time_mean": metrics.get("fit_time_mean"),
+                "predict_time_mean": metrics.get("predict_time_mean"),
+            }
 
-        # Ensure project is created by calling `self.run_id`
-        return self.run_id and SimpleNamespace(get=get, metadata=metadata)
+        with HUBClient() as hub_client:
+            responses = itertools.chain(
+                zip(
+                    itertools.repeat("estimator"),
+                    hub_client.get(
+                        f"projects/{self.quoted_tenant}/{self.quoted_name}/estimator-reports/"
+                    ).json(),
+                ),
+                zip(
+                    itertools.repeat("cross-validation"),
+                    hub_client.get(
+                        f"projects/{self.quoted_tenant}/{self.quoted_name}/cross-validation-reports/"
+                    ).json(),
+                ),
+            )
+
+        return sorted(map(dto, responses), key=itemgetter("date"))
 
     def __repr__(self) -> str:  # noqa: D105
         return f"Project(mode='hub', name='{self.name}', tenant='{self.tenant}')"
 
     @staticmethod
-    def delete(tenant: str, name: str):
+    def delete(tenant: str, name: str) -> None:
         """
         Delete a hub project.
 
@@ -226,13 +323,15 @@ class Project:
         name : str
             The name of the project.
         """
-        with AuthenticatedClient(raises=True) as client:
+        with HUBClient() as hub_client:
             try:
-                client.delete(f"projects/{tenant}/{name}")
+                hub_client.delete(
+                    f"projects/{quote(tenant, safe='')}/{quote(name, safe='')}"
+                )
             except HTTPStatusError as e:
                 if e.response.status_code == 403:
                     raise PermissionError(
-                        f"Failed to delete the project; "
+                        f"Failed to delete the project '{name}'; "
                         f"please contact the '{tenant}' owner"
                     ) from e
                 raise

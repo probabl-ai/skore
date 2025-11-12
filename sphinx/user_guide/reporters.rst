@@ -33,13 +33,28 @@ gives full control over the fitting process. Omitting part of the data reduces t
 number of available methods when inspecting the model. For instance, you cannot inspect
 the metrics of the model on the test data if you do not provide the test data.
 
+Data insights
+^^^^^^^^^^^^^
+
+:obj:`EstimatorReport.data` is the entry point to get insights on the dataset used to
+train and test the predictive model. It provides a :meth:`EstimatorReport.data.analyze`
+method that returns a :class:`~skore.TableReportDisplay` display. This display makes
+essential analysis of the dataset. The parameter `data_source` specifies which portion
+of the dataset to analyze, whether the train or test data or both. This display is
+particularly useful to see feature distributions and correlation between features as
+well as general statistics of the dataset such as type of data, missing values, etc.
+
+Refer to :ref:`estimator_data` for more details regarding the API.
+
 Model evaluation
 ^^^^^^^^^^^^^^^^
 
 :obj:`EstimatorReport.metrics` is the entry point that provides methods to evaluate the
 statistical and performance metrics of the predictive model. This accessor provides two
-types of methods: (i) methods that return some metrics and (ii) methods that return a
-`skore` :class:`Display` object.
+types of methods:
+
+1. Methods that return some metrics,
+2. Methods that return a :class:`skore.Display` object.
 
 Before diving into the details of these methods, we first discuss the parameters they
 share. `data_source` is a parameter that specifies the data to use to compute the
@@ -53,29 +68,45 @@ They return usual python objects such as floats, integers, or dictionaries.
 The second type of methods provided by :obj:`EstimatorReport.metrics` are methods that
 return a :class:`~skore.Display` object. They have a common API as well. They expose
 three methods:
-(i) `plot` that plots graphically the information contained in the display,
-(ii) `set_style` that sets some graphical settings instead of passing them to the `plot`
-method at each call.
-(iii) `frame` that returns a `pandas.DataFrame` with the information contained in the
-display.
+
+1. `plot` that plots graphically the information contained in the display,
+
+2. `set_style` that sets some graphical settings instead of passing them to the `plot`
+   method at each call,
+
+3. `frame` that returns a `pandas.DataFrame` with the information contained in the
+   display.
 
 We provide the :class:`EstimatorReport.metrics.summarize` method that aggregates metrics
 in a single dataframe, available through a :class:`~skore.Display`. By default, a set of
 metrics is computed based on the type of target variable (e.g. classification or
 regression). Nevertheless, you can specify the metrics you want to compute thanks to the
-`scoring` parameter. We accept different types: (i) some strings that correspond to
-scikit-learn scorer names or a built-in `skore` metric name, (ii) a callable or a (iii)
-scikit-learn scorer constructed with :func:`sklearn.metrics.make_scorer`.
+`scoring` parameter. We accept different types:
+
+1. A string that corresponds to a scikit-learn scorer name or a built-in `skore`
+   metric name,
+
+2. A callable,
+
+3. A scikit-learn scorer constructed with :func:`sklearn.metrics.make_scorer`.
 
 Refer to the :ref:`displays` section for more details regarding the `skore` display
 API. Refer to the :ref:`estimator_metrics` section for more details on all the
 available metrics in `skore`.
 
+Model interpretability
+^^^^^^^^^^^^^^^^^^^^^^
+
+:obj:`EstimatorReport.feature_importance` is the entry point to interpret and explain a
+predictive model. This accessor provides methods that return a :class:`skore.Display`
+object. As with other display objects, they expose three methods: `plot`, `set_style`
+and `frame`.
+
 Caching mechanism
 ^^^^^^^^^^^^^^^^^
 
 :class:`EstimatorReport` comes together with a caching mechanism that stores
-intermediate information that is expensive to compute such as predictions. It
+intermediate information that is expensive to compute, such as predictions. It
 efficiently re-uses this information when recomputing the same metric or a metric
 requiring the same intermediate information.
 
@@ -123,14 +154,20 @@ metrics available in `skore` for cross-validation.
 Comparison report
 -----------------
 
-:class:`CrossValidationReport` is a great tool to compare the performance of the same
-predictive model architecture with a variation of the dataset. However, it is not
-intended to compare different families of predictive models. For this purpose,
-use :class:`ComparisonReport`.
+To compare the performance of different predictive models, `skore` provides the
+:class:`ComparisonReport`.
 
 :class:`ComparisonReport` takes a list (or a dictionary) of :class:`EstimatorReport` or
 :class:`CrossValidationReport` instances. It then provides methods to compare the
 performance of the different models.
+
+In order for the comparison to make sense, the reports must all have the same test
+target. However, they may have different training data or target; this might be the case
+when comparing a new model with the current production model, for example. They may also
+have different testing data (:math:`X_{test}`), which means the compared model pipelines
+do not necessarily need to be the same. The comparison of test targets is done by
+computing a hash of the arrays. Therefore, if the y_test are functionally equal, but
+have different data types, they will be considered as different.
 
 The caching mechanism is also available and exposes the same methods.
 

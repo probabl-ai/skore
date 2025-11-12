@@ -2,6 +2,7 @@ import os
 import shutil
 
 import pytest
+
 from skore_local_project.storage import DiskCacheStorage
 
 
@@ -56,16 +57,16 @@ class TestDiskCacheStorage:
         assert len(storage) == 0
 
     def test_keys(self, storage):
-        storage["<key1>"] = "<value1>"
         storage["<key2>"] = "<value2>"
+        storage["<key1>"] = "<value1>"
 
-        assert list(storage.keys()) == ["<key1>", "<key2>"]
+        assert list(storage.keys()) == ["<key2>", "<key1>"]
 
     def test_values(self, storage):
-        storage["<key1>"] = "<value1>"
         storage["<key2>"] = "<value2>"
+        storage["<key1>"] = "<value1>"
 
-        assert list(storage.values()) == ["<value1>", "<value2>"]
+        assert list(storage.values()) == ["<value2>", "<value1>"]
 
     def test_items(self, storage):
         storage["<key1>"] = "<value1>"

@@ -1,8 +1,9 @@
 [project]
 name = "skore-local-project"
-dynamic = ["license", "readme", "version"]
+dynamic = ["license-files", "readme", "version"]
 requires-python = ">=3.10"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
+license = "MIT"
 dependencies = [
   "diskcache",
   "joblib",
@@ -12,6 +13,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+  "pandas",
   "pre-commit",
   "pytest",
   "pytest-cov",
@@ -43,12 +45,18 @@ package = ["src/skore_local_project/"]
 
 [tool.pytest.ini_options]
 addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
   "--xdoctest",
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
   "--dist=loadscope",
 ]
+xfail_strict = true
+filterwarnings = ["error"]
+log_cli_level = "info"
 
 [tool.coverage.run]
 branch = true
@@ -65,11 +73,24 @@ exclude_also = [
     "if TYPE_CHECKING:",
 ]
 
-[tool.ruff]
-src = ["skore_local_project"]
-
 [tool.ruff.lint]
-select = ["E", "F", "UP", "B", "SIM", "T", "I", "D"]
+select = [
+    "B",
+    "C4",
+    "T10",
+    "T20",
+    "PYI055", "PYI059",
+    "PT003", "PT014",
+    "SIM",
+    "I",
+    "PERF",
+    "E",
+    "D",
+    "F",
+    "UP",
+    "RUF010", "RUF015",
+]
+ignore = ["PERF203"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
@@ -78,5 +99,16 @@ convention = "numpy"
 "tests/*" = ["D"]
 
 [tool.mypy]
+exclude = ["hatch/", "tests/"]
+strict = true
+
+[[tool.mypy.overrides]]
+follow_untyped_imports = true
+module = ["skore.*"]
+
+[[tool.mypy.overrides]]
 ignore_missing_imports = true
-exclude = ["hatch/*", "tests/*"]
+module = [
+  "diskcache.*",
+  "joblib.*",
+]

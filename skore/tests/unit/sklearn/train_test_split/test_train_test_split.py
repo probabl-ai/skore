@@ -4,10 +4,11 @@ from datetime import datetime
 import pandas
 import polars
 import pytest
-from skore.sklearn.train_test_split.train_test_split import (
+
+from skore._sklearn.train_test_split.train_test_split import (
     train_test_split,
 )
-from skore.sklearn.train_test_split.warning import (
+from skore._sklearn.train_test_split.warning import (
     HighClassImbalanceTooFewExamplesWarning,
     HighClassImbalanceWarning,
     RandomStateUnsetWarning,
@@ -31,19 +32,19 @@ def case_high_class_imbalance_too_few_examples():
 
 def case_high_class_imbalance_too_few_examples_kwargs():
     args = ()
-    kwargs = dict(X=[[1]] * 4, y=[0, 1, 1, 1])
+    kwargs = {"X": [[1]] * 4, "y": [0, 1, 1, 1]}
     return args, kwargs, HighClassImbalanceTooFewExamplesWarning
 
 
 def case_high_class_imbalance_too_few_examples_kwargs_mixed():
     args = ([[1]] * 4,)
-    kwargs = dict(y=[0, 1, 1, 1])
+    kwargs = {"y": [0, 1, 1, 1]}
     return args, kwargs, HighClassImbalanceTooFewExamplesWarning
 
 
 def case_stratify():
     args = ([0] * 10 + [1] * 10,)
-    kwargs = dict(stratify=[0] * 10 + [1] * 10)
+    kwargs = {"stratify": [0] * 10 + [1] * 10}
     return args, kwargs, StratifyWarning
 
 
@@ -56,7 +57,7 @@ def case_random_state_unset():
 
 def case_shuffle_true():
     args = ([[1]] * 4, [0, 1, 1, 1])
-    kwargs = dict(shuffle=True)
+    kwargs = {"shuffle": True}
     return args, kwargs, ShuffleTrueWarning
 
 

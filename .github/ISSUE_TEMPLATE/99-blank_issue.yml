@@ -1,6 +1,6 @@
 name: Blank issue
 description: Any kind of issue that doesn't fit the other templates.
-labels: ['needs-triage', 'user-reported']
+labels: ['needs-triage']
 
 body:
 - type: textarea
