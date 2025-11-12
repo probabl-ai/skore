@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.base import BaseEstimator
 
-from skore._sklearn._plot.base import HelpDisplayMixin, StyleDisplayMixin
+from skore._sklearn._plot.base import DisplayMixin, StyleDisplayMixin
 from skore._sklearn.types import MLTask, ReportType, YPlotData
 
 
-class ConfusionMatrixDisplay(StyleDisplayMixin, HelpDisplayMixin):
+class ConfusionMatrixDisplay(DisplayMixin):
     """Display for confusion matrix.
 
     Parameters
