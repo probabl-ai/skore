@@ -46,7 +46,7 @@ repos:
         name: mypy skore-hub-project/
         files: ^skore-hub-project/
         args: [--config-file=skore-hub-project/pyproject.toml, skore-hub-project]
-        additional_dependencies: [skore, blake3, httpx, orjson, pydantic]
+        additional_dependencies: [skore, blake3, httpx, orjson, pandas-stubs, pydantic]
       - id: mypy
         pass_filenames: false
         alias: mypy-skore-local-project

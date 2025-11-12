@@ -103,6 +103,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
+        "feature_importance": {"name": "feature_importance"},
     }
     metrics: _MetricsAccessor
     feature_importance: _FeatureImportanceAccessor

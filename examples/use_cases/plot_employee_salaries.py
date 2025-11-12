@@ -308,15 +308,10 @@ comparator.metrics.summarize(indicator_favorability=True).frame()
 # %%
 from sklearn.metrics import get_scorer
 
-scoring = ["r2", "rmse", get_scorer("neg_mean_absolute_error")]
+scoring = {"R²": "r2", "RMSE": "rmse", "MAE": get_scorer("neg_mean_absolute_error")}
 scoring_kwargs = {"response_method": "predict"}
-scoring_names = ["R²", "RMSE", "MAE"]
 
-comparator.metrics.summarize(
-    scoring=scoring,
-    scoring_kwargs=scoring_kwargs,
-    scoring_names=scoring_names,
-).frame()
+comparator.metrics.summarize(scoring=scoring, scoring_kwargs=scoring_kwargs).frame()
 
 # %%
 # Finally, we can even get a deeper understanding by analyzing each split in the

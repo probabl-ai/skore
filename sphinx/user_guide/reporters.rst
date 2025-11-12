@@ -51,8 +51,10 @@ Model evaluation
 
 :obj:`EstimatorReport.metrics` is the entry point that provides methods to evaluate the
 statistical and performance metrics of the predictive model. This accessor provides two
-types of methods: (i) methods that return some metrics and (ii) methods that return a
-`skore` :class:`Display` object.
+types of methods:
+
+1. Methods that return some metrics,
+2. Methods that return a :class:`skore.Display` object.
 
 Before diving into the details of these methods, we first discuss the parameters they
 share. `data_source` is a parameter that specifies the data to use to compute the
@@ -66,29 +68,45 @@ They return usual python objects such as floats, integers, or dictionaries.
 The second type of methods provided by :obj:`EstimatorReport.metrics` are methods that
 return a :class:`~skore.Display` object. They have a common API as well. They expose
 three methods:
-(i) `plot` that plots graphically the information contained in the display,
-(ii) `set_style` that sets some graphical settings instead of passing them to the `plot`
-method at each call.
-(iii) `frame` that returns a `pandas.DataFrame` with the information contained in the
-display.
+
+1. `plot` that plots graphically the information contained in the display,
+
+2. `set_style` that sets some graphical settings instead of passing them to the `plot`
+   method at each call,
+
+3. `frame` that returns a `pandas.DataFrame` with the information contained in the
+   display.
 
 We provide the :class:`EstimatorReport.metrics.summarize` method that aggregates metrics
 in a single dataframe, available through a :class:`~skore.Display`. By default, a set of
 metrics is computed based on the type of target variable (e.g. classification or
 regression). Nevertheless, you can specify the metrics you want to compute thanks to the
-`scoring` parameter. We accept different types: (i) some strings that correspond to
-scikit-learn scorer names or a built-in `skore` metric name, (ii) a callable or a (iii)
-scikit-learn scorer constructed with :func:`sklearn.metrics.make_scorer`.
+`scoring` parameter. We accept different types:
+
+1. A string that corresponds to a scikit-learn scorer name or a built-in `skore`
+   metric name,
+
+2. A callable,
+
+3. A scikit-learn scorer constructed with :func:`sklearn.metrics.make_scorer`.
 
 Refer to the :ref:`displays` section for more details regarding the `skore` display
 API. Refer to the :ref:`estimator_metrics` section for more details on all the
 available metrics in `skore`.
 
+Model interpretability
+^^^^^^^^^^^^^^^^^^^^^^
+
+:obj:`EstimatorReport.feature_importance` is the entry point to interpret and explain a
+predictive model. This accessor provides methods that return a :class:`skore.Display`
+object. As with other display objects, they expose three methods: `plot`, `set_style`
+and `frame`.
+
 Caching mechanism
 ^^^^^^^^^^^^^^^^^
 
 :class:`EstimatorReport` comes together with a caching mechanism that stores
-intermediate information that is expensive to compute such as predictions. It
+intermediate information that is expensive to compute, such as predictions. It
 efficiently re-uses this information when recomputing the same metric or a metric
 requiring the same intermediate information.
 

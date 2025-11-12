@@ -7,11 +7,22 @@ from collections.abc import Callable
 from contextlib import suppress
 from functools import reduce
 from math import isfinite
-from typing import Any, ClassVar, Generic, Literal, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Generic,
+    Literal,
+    TypeVar,
+    cast,
+)
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
@@ -19,8 +30,10 @@ Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 def cast_to_float(value: Any) -> float | None:
     """Cast value to float."""
     with suppress(TypeError):
-        if isfinite(value := float(value)):
-            return value
+        float_value = float(value)
+
+        if isfinite(float_value):
+            return float_value
 
     return None
 
@@ -108,7 +121,7 @@ class EstimatorReportMetric(Metric[EstimatorReport]):
         """Compute the value of the metric."""
         try:
             function = cast(
-                Callable,
+                Callable[..., float | None],
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:
@@ -149,7 +162,7 @@ class CrossValidationReportMetric(Metric[CrossValidationReport]):
         """Compute the value of the metric."""
         try:
             function = cast(
-                Callable,
+                "Callable[..., DataFrame]",
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:

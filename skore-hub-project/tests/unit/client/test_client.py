@@ -235,3 +235,30 @@ class TestHUBClient:
 
         assert token.Filepath().exists()
         assert token.access(refresh=False) == "A"
+
+    def test_request_without_package_version(self, respx_mock):
+        from importlib.metadata import version
+
+        from skore_hub_project.client.client import PACKAGE_VERSION
+
+        assert version("skore-hub-project") == "0.0.0+unknown"
+        assert PACKAGE_VERSION is None
+
+        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+
+        with HUBClient(authenticated=False) as client:
+            client.get("foo")
+
+        assert "X-Skore-Client" not in respx_mock.calls.last.request.headers
+
+    def test_request_with_package_version(self, monkeypatch, respx_mock):
+        monkeypatch.setattr("skore_hub_project.client.client.PACKAGE_VERSION", "1.0.0")
+        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+
+        with HUBClient(authenticated=False) as client:
+            client.get("foo")
+
+        assert (
+            respx_mock.calls.last.request.headers["X-Skore-Client"]
+            == "skore-hub-project/1.0.0"
+        )

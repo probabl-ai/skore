@@ -26,7 +26,6 @@ from skore._sklearn.types import (
     Aggregate,
     PositiveLabel,
     Scoring,
-    ScoringName,
     YPlotData,
 )
 from skore._utils._accessor import _check_estimator_report_has_method
@@ -55,8 +54,7 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        scoring: Scoring | list[Scoring] | None = None,
-        scoring_names: ScoringName | list[ScoringName] | None = None,
+        scoring: Scoring | list[Scoring] | dict[str, Scoring] | None = None,
         scoring_kwargs: dict[str, Any] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
@@ -83,8 +81,9 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : str, callable, scorer or list of such instances, default=None
-            The metrics to report. The possible values (whether or not in a list) are:
+        scoring : str, callable, scorer, or list of such instances or dict of such \
+            instances, default=None
+            The metrics to report. The possible values are:
 
             - if a string, either one of the built-in metrics or a scikit-learn scorer
               name. You can get the possible list of string using
@@ -99,10 +98,10 @@ class _MetricsAccessor(
               scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
               the metric favorability will only be displayed if it is given explicitly
               via `make_scorer`'s `greater_is_better` parameter.
-
-        scoring_names : str, None or list of such instances, default=None
-            Used to overwrite the default scoring names in the report. If a list,
-            it should be of the same length as the `scoring` parameter.
+            - if a dict, the keys are used as metric names and the values are the
+              scoring functions (strings, callables, or scorers as described above).
+            - if a list, each element can be any of the above types (strings, callables,
+              scorers).
 
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
@@ -161,7 +160,6 @@ class _MetricsAccessor(
             scoring=scoring,
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
-            scoring_names=scoring_names,
             indicator_favorability=indicator_favorability,
         )
         if flat_index:
@@ -1035,13 +1033,13 @@ class _MetricsAccessor(
             response_method=response_method,
             **kwargs,
         )
+        scoring = {metric_name: scorer} if metric_name is not None else [scorer]
         return self.summarize(
-            scoring=[scorer],
+            scoring=scoring,
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
-            scoring_names=[metric_name] if metric_name is not None else None,
             pos_label=pos_label,
         ).frame()
 

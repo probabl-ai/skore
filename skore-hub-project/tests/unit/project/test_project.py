@@ -1,7 +1,6 @@
 from functools import partialmethod
 from io import BytesIO
 from json import dumps, loads
-from types import SimpleNamespace
 from urllib.parse import urljoin
 
 import joblib
@@ -161,16 +160,7 @@ class TestProject:
         # Compare content with the desired output
         assert content == desired
 
-    def test_reports(self, respx_mock):
-        respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
-
-        project = Project("<tenant>", "<name>")
-
-        assert isinstance(project.reports, SimpleNamespace)
-        assert hasattr(project.reports, "get")
-        assert hasattr(project.reports, "metadata")
-
-    def test_reports_get_estimator_report(self, respx_mock, regression):
+    def test_get_estimator_report(self, respx_mock, regression):
         # Mock hub routes that will be called
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
 
@@ -187,7 +177,7 @@ class TestProject:
 
         # Test
         project = Project("<tenant>", "<name>")
-        report = project.reports.get("skore:report:estimator:<report_id>")
+        report = project.get("skore:report:estimator:<report_id>")
 
         assert isinstance(report, EstimatorReport)
         assert report.estimator_name_ == regression.estimator_name_
@@ -210,13 +200,13 @@ class TestProject:
 
         # Test
         project = Project("<tenant>", "<name>")
-        report = project.reports.get("skore:report:cross-validation:<report_id>")
+        report = project.get("skore:report:cross-validation:<report_id>")
 
         assert isinstance(report, CrossValidationReport)
         assert report.estimator_name_ == cv_regression.estimator_name_
         assert report.ml_task == cv_regression.ml_task
 
-    def test_reports_metadata(self, nowstr, respx_mock):
+    def test_summarize(self, nowstr, respx_mock):
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
 
         url = "projects/<tenant>/<name>/estimator-reports/"
@@ -277,9 +267,9 @@ class TestProject:
         )
 
         project = Project("<tenant>", "<name>")
-        metadata = project.reports.metadata()
+        summary = project.summarize()
 
-        assert metadata == [
+        assert summary == [
             {
                 "id": "skore:report:estimator:<report_id_0>",
                 "key": "<key>",

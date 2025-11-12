@@ -77,3 +77,16 @@ estimator across cross-validation splits.
     CrossValidationReport.metrics.roc
     CrossValidationReport.metrics.roc_auc
     CrossValidationReport.metrics.timings
+
+Feature importance
+------------------
+
+The `feature_importance` accessor helps you evaluate the importance
+used to train your estimator.
+
+.. autosummary::
+    :toctree: ../api/
+    :template: autosummary/accessor_method.rst
+
+    CrossValidationReport.feature_importance.help
+    CrossValidationReport.feature_importance.coefficients

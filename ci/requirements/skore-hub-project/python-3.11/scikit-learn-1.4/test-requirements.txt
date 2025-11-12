@@ -104,6 +104,7 @@ numpy==2.3.4
     #   contourpy
     #   matplotlib
     #   pandas
+    #   pandas-stubs
     #   scikit-learn
     #   scipy
     #   seaborn
@@ -121,6 +122,8 @@ pandas==2.3.3
     #   seaborn
     #   skore
     #   skrub
+pandas-stubs==2.3.2.250926
+    # via skore-hub-project (skore-hub-project/pyproject.toml)
 parso==0.8.5
     # via jedi
 pexpect==4.9.0
@@ -228,6 +231,8 @@ traitlets==5.14.3
     #   ipython
     #   ipywidgets
     #   matplotlib-inline
+types-pytz==2025.2.0.20250809
+    # via pandas-stubs
 typing-extensions==4.15.0
     # via
     #   anyio

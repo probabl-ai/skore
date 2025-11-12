@@ -18,6 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+  "pandas-stubs",
   "pre-commit",
   "pytest",
   "pytest-cov",
@@ -109,6 +110,7 @@ convention = "numpy"
 
 [tool.mypy]
 exclude = ["hatch/", "tests/"]
+strict = true
 
 [[tool.mypy.overrides]]
 follow_untyped_imports = true
