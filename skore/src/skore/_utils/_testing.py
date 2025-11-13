@@ -53,6 +53,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
     """Check the structure of the display's internal data."""
     assert list(display.roc_curve.columns) == [
         "estimator_name",
+        "data_source",
         "split",
         "label",
         "threshold",
@@ -61,6 +62,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
     ]
     assert list(display.roc_auc.columns) == [
         "estimator_name",
+        "data_source",
         "split",
         "label",
         "roc_auc",

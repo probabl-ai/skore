@@ -927,6 +927,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     roc_curve_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
+                            "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "label": pos_label_validated,
                             "threshold": threshold,
@@ -938,6 +939,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 roc_auc_records.append(
                     {
                         "estimator_name": y_true_i.estimator_name,
+                        "data_source": y_true_i.data_source,
                         "split": y_true_i.split,
                         "label": pos_label_validated,
                         "roc_auc": roc_auc_i,
@@ -968,6 +970,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                         roc_curve_records.append(
                             {
                                 "estimator_name": y_true_i.estimator_name,
+                                "data_source": y_true_i.data_source,
                                 "split": y_true_i.split,
                                 "label": class_,
                                 "threshold": threshold,
@@ -979,6 +982,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     roc_auc_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
+                            "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "label": class_,
                             "roc_auc": roc_auc_class_i,
@@ -987,6 +991,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         dtypes = {
             "estimator_name": "category",
+            "data_source": "category",
             "split": "category",
             "label": "category",
         }

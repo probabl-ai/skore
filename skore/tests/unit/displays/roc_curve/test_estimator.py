@@ -136,6 +136,13 @@ def test_data_source_binary_classification(
         == f"Train set (AUC = {display.roc_auc['roc_auc'].item():0.2f})"
     )
 
+    display = report.metrics.roc(data_source="both")
+    display.plot()
+    assert (
+        display.lines_[0].get_label()
+        == f"AUC = {display.roc_auc['roc_auc'].item():0.2f}"
+    )
+
     display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
     display.plot()
     assert (
