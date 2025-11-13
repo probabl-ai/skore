@@ -1700,7 +1700,10 @@ class _MetricsAccessor(
             cache_key = None
         else:
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            cache_key_parts.extend(display_kwargs.values())
+            for kwarg in display_kwargs.values():
+                if isinstance(kwarg, list):
+                    kwarg = tuple(kwarg)
+                cache_key_parts.append(kwarg)
             if data_source_hash is not None:
                 cache_key_parts.append(data_source_hash)
             else:
@@ -1993,9 +1996,7 @@ class _MetricsAccessor(
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         display_labels: list | None = None,
-        include_values: bool = True,
         normalize: Literal["true", "pred", "all"] | None = None,
-        values_format: str | None = None,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -2023,17 +2024,10 @@ class _MetricsAccessor(
             Display labels for plot. If None, display labels are set from 0 to
             ``n_classes - 1``.
 
-        include_values : bool, default=True
-            Includes values in confusion matrix.
-
         normalize : {'true', 'pred', 'all'}, default=None
             Normalizes confusion matrix over the true (rows), predicted (columns)
             conditions or all the population. If None, confusion matrix will not be
             normalized.
-
-        values_format : str, default=None
-            Format specification for values in confusion matrix. If None, the format
-            specification is 'd' or '.2g' whichever is shorter.
 
         Returns
         -------
@@ -2052,9 +2046,7 @@ class _MetricsAccessor(
         >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.confusion_matrix()
         """
-        display_kwargs = {
-            "normalize": normalize,
-        }
+        display_kwargs = {"display_labels": display_labels, "normalize": normalize}
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(

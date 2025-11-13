@@ -18,6 +18,10 @@ class ConfusionMatrixDisplay(DisplayMixin):
     confusion_matrix : ndarray of shape (n_classes, n_classes)
         Confusion matrix.
 
+    display_labels : list of str, default=None
+        Display labels for plot. If None, display labels are set from 0 to
+        ``n_classes - 1``.
+
     normalize : {'true', 'pred', 'all'}, default=None
         Normalizes confusion matrix over the true (rows), predicted (columns)
         conditions or all the population. If None, confusion matrix will not be
@@ -41,9 +45,11 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self,
         confusion_matrix,
         *,
+        display_labels=None,
         normalize=None,
     ):
         self.confusion_matrix = confusion_matrix
+        self.display_labels = display_labels
         self.normalize = normalize
         self.figure_ = None
         self.ax_ = None
@@ -53,7 +59,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
     def plot(
         self,
         *,
-        display_labels: list[str] | None = None,
         include_values: bool = True,
         values_format: str | None = None,
         cmap: str | Colormap = "Blues",
@@ -64,10 +69,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
         Parameters
         ----------
-        display_labels : list of str, default=None
-            Display labels for plot. If None, display labels are set from 0 to
-            ``n_classes - 1``.
-
         include_values : bool, default=True
             Includes values in confusion matrix.
 
@@ -91,7 +92,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
             Configured with the confusion matrix.
         """
         return self._plot(
-            display_labels=display_labels,
             include_values=include_values,
             values_format=values_format,
             cmap=cmap,
@@ -101,7 +101,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
     def _plot_matplotlib(
         self,
         *,
-        display_labels: list[str] | None = None,
         include_values: bool = True,
         values_format: str | None = None,
         cmap: str | Colormap = "Blues",
@@ -109,7 +108,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
         **kwargs,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
-        self.display_labels = display_labels
         self.include_values = include_values
         self.values_format = values_format
 
@@ -122,13 +120,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
         if colorbar:
             self.figure_.colorbar(im, ax=self.ax_)
 
-        if self.display_labels is None:
-            self.display_labels = np.arange(n_classes).astype(str).tolist()
-        elif len(self.display_labels) != n_classes:
-            raise ValueError(
-                f"display_labels must have length equal to number of classes "
-                f"({n_classes}), got {len(self.display_labels)}"
-            )
         self.ax_.set(
             xticks=np.arange(n_classes),
             yticks=np.arange(n_classes),
@@ -159,6 +150,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         cls,
         y_true: Sequence[YPlotData],
         y_pred: Sequence[YPlotData],
+        display_labels: list[str] | None = None,
         normalize: Literal["true", "pred", "all"] | None = None,
         **kwargs,
     ) -> "ConfusionMatrixDisplay":
@@ -185,6 +177,10 @@ class ConfusionMatrixDisplay(DisplayMixin):
         data_source : {"train", "test", "X_y"}
             The data source used to compute the ROC curve.
 
+        display_labels : list of str, default=None
+            Display labels for plot. If None, display labels are set from 0 to
+            ``n_classes - 1``.
+
         normalize : {'true', 'pred', 'all'}, default=None
             Normalizes confusion matrix over the true (rows), predicted (columns)
             conditions or all the population. If None, confusion matrix will not be
@@ -208,8 +204,19 @@ class ConfusionMatrixDisplay(DisplayMixin):
             y_pred=y_pred_values,
             normalize=normalize,
         )
+
+        n_classes = cm.shape[0]
+        if display_labels is None:
+            display_labels = [f"Class {i}" for i in range(cm.shape[0])]
+        elif len(display_labels) != n_classes:
+            raise ValueError(
+                f"display_labels must have length equal to number of classes "
+                f"({n_classes}), got {len(display_labels)}"
+            )
+
         disp = cls(
             confusion_matrix=cm,
+            display_labels=display_labels,
             normalize=normalize,
         )
 
@@ -227,8 +234,5 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
         cm = self.confusion_matrix
         display_labels = getattr(self, "display_labels", None)
-
-        if display_labels is None:
-            display_labels = [f"Class {i}" for i in range(cm.shape[0])]
 
         return pd.DataFrame(cm, index=display_labels, columns=display_labels)
