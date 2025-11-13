@@ -19,7 +19,7 @@ from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 SkinnedProgress = partial(
     Progress,
-    TextColumn("[bold cyan blink]{task.description}..."),
+    TextColumn("[bold cyan]{task.description}..."),
     BarColumn(
         complete_style="dark_orange",
         finished_style="dark_orange",
