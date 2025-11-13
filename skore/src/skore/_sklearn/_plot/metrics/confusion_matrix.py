@@ -18,6 +18,11 @@ class ConfusionMatrixDisplay(DisplayMixin):
     confusion_matrix : ndarray of shape (n_classes, n_classes)
         Confusion matrix.
 
+    normalize : {'true', 'pred', 'all'}, default=None
+        Normalizes confusion matrix over the true (rows), predicted (columns)
+        conditions or all the population. If None, confusion matrix will not be
+        normalized.
+
     Attributes
     ----------
     figure_ : matplotlib Figure
@@ -35,7 +40,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
     def __init__(
         self,
         confusion_matrix,
-        normalize,
+        *,
+        normalize=None,
     ):
         self.confusion_matrix = confusion_matrix
         self.normalize = normalize
@@ -112,8 +118,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
         cm = self.confusion_matrix
         n_classes = cm.shape[0]
 
-        self.confusion_matrix = cm
-
         im = self.ax_.imshow(cm, interpolation="nearest", cmap=cmap, **kwargs)
         if colorbar:
             self.figure_.colorbar(im, ax=self.ax_)
@@ -163,12 +167,10 @@ class ConfusionMatrixDisplay(DisplayMixin):
         Parameters
         ----------
         y_true : list of array-like of shape (n_samples,)
-            True binary labels in binary classification.
+            True labels.
 
         y_pred : list of ndarray of shape (n_samples,)
-            Target scores, can either be probability estimates of the positive class,
-            confidence values, or non-thresholded measure of decisions (as returned by
-            "decision_function" on some classifiers).
+            Predicted labels, as returned by a classifier.
 
         report_type : {"comparison-cross-validation", "comparison-estimator", \
                 "cross-validation", "estimator"}
