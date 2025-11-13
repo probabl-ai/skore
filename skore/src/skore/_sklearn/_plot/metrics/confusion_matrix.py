@@ -3,10 +3,11 @@ from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.base import BaseEstimator
+from matplotlib.colors import Colormap
+from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 
-from skore._sklearn._plot.base import DisplayMixin, StyleDisplayMixin
-from skore._sklearn.types import MLTask, ReportType, YPlotData
+from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn.types import YPlotData
 
 
 class ConfusionMatrixDisplay(DisplayMixin):
@@ -34,43 +35,35 @@ class ConfusionMatrixDisplay(DisplayMixin):
     def __init__(
         self,
         confusion_matrix,
+        normalize,
     ):
         self.confusion_matrix = confusion_matrix
+        self.normalize = normalize
         self.figure_ = None
         self.ax_ = None
         self.text_ = None
 
-    @StyleDisplayMixin.style_plot
+    @DisplayMixin.style_plot
     def plot(
         self,
-        ax=None,
         *,
-        display_labels=None,
-        include_values=True,
-        normalize=None,
-        values_format=None,
-        cmap="Blues",
-        colorbar=True,
+        display_labels: list[str] | None = None,
+        include_values: bool = True,
+        values_format: str | None = None,
+        cmap: str | Colormap = "Blues",
+        colorbar: bool = True,
         **kwargs,
     ):
         """Plot the confusion matrix.
 
         Parameters
         ----------
-        ax : matplotlib axes, default=None
-            Axes object to plot on. If None, a new figure and axes is created.
-
         display_labels : list of str, default=None
             Display labels for plot. If None, display labels are set from 0 to
             ``n_classes - 1``.
 
         include_values : bool, default=True
             Includes values in confusion matrix.
-
-        normalize : {'true', 'pred', 'all'}, default=None
-            Normalizes confusion matrix over the true (rows), predicted (columns)
-            conditions or all the population. If None, confusion matrix will not be
-            normalized.
 
         values_format : str, default=None
             Format specification for values in confusion matrix. If None, the format
@@ -91,145 +84,134 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self : ConfusionMatrixDisplay
             Configured with the confusion matrix.
         """
-        if display_labels is not None:
-            self.display_labels = display_labels
+        return self._plot(
+            display_labels=display_labels,
+            include_values=include_values,
+            values_format=values_format,
+            cmap=cmap,
+            colorbar=colorbar,
+        )
+
+    def _plot_matplotlib(
+        self,
+        *,
+        display_labels: list[str] | None = None,
+        include_values: bool = True,
+        values_format: str | None = None,
+        cmap: str | Colormap = "Blues",
+        colorbar: bool = True,
+        **kwargs,
+    ) -> None:
+        """Matplotlib implementation of the `plot` method."""
+        self.display_labels = display_labels
         self.include_values = include_values
-        self.normalize = normalize
         self.values_format = values_format
 
-        if normalize not in (None, "true", "pred", "all"):
-            raise ValueError(
-                "normalize must be one of None, 'true', 'pred', 'all'; "
-                f"got {normalize!r}"
-            )
-
-        if ax is None:
-            fig, ax = plt.subplots()
-        else:
-            fig = ax.figure
+        self.figure_, self.ax_ = plt.subplots()
 
         cm = self.confusion_matrix
         n_classes = cm.shape[0]
 
-        with np.errstate(all="ignore"):
-            if normalize == "true":
-                cm = cm / cm.sum(axis=1, keepdims=True)
-            elif normalize == "pred":
-                cm = cm / cm.sum(axis=0, keepdims=True)
-            elif normalize == "all":
-                cm = cm / cm.sum()
-            else:  # None
-                pass
-
         self.confusion_matrix = cm
 
-        im = ax.imshow(cm, interpolation="nearest", cmap=cmap, **kwargs)
+        im = self.ax_.imshow(cm, interpolation="nearest", cmap=cmap, **kwargs)
         if colorbar:
-            fig.colorbar(im, ax=ax)
+            self.figure_.colorbar(im, ax=self.ax_)
 
-        display_labels_to_use = (
-            display_labels if display_labels is not None else self.display_labels
-        )
-
-        if display_labels_to_use is None:
-            display_labels_to_use = np.arange(n_classes)
-        elif len(display_labels_to_use) != n_classes:
+        if self.display_labels is None:
+            self.display_labels = np.arange(n_classes).astype(str).tolist()
+        elif len(self.display_labels) != n_classes:
             raise ValueError(
                 f"display_labels must have length equal to number of classes "
-                f"({n_classes}), got {len(display_labels_to_use)}"
+                f"({n_classes}), got {len(self.display_labels)}"
             )
-        ax.set(
+        self.ax_.set(
             xticks=np.arange(n_classes),
             yticks=np.arange(n_classes),
-            xticklabels=display_labels_to_use,
-            yticklabels=display_labels_to_use,
+            xticklabels=self.display_labels,
+            yticklabels=self.display_labels,
             ylabel="True label",
             xlabel="Predicted label",
         )
-        plt.setp(ax.get_xticklabels(), rotation=0, ha="center")
+        plt.setp(self.ax_.get_xticklabels(), rotation=0, ha="center")
 
         self.text_ = np.empty_like(cm, dtype=object)
-        if include_values:
-            is_normalized = (
-                np.issubdtype(cm.dtype, np.floating) or normalize is not None
-            )
-
-            fmt = values_format or ".2f" if is_normalized else values_format or "d"
-
+        if self.include_values:
+            fmt = self.values_format or (".2f" if self.normalize else "d")
             thresh = cm.max() / 2.0
             for i in range(n_classes):
                 for j in range(n_classes):
                     txt = format(cm[i, j], fmt)
                     color = "white" if cm[i, j] > thresh else "black"
-                    self.text_[i, j] = ax.text(
+                    self.text_[i, j] = self.ax_.text(
                         j, i, txt, ha="center", va="center", color=color
                     )
 
-        ax.set_title("Confusion Matrix")
-        fig.tight_layout()
-        self.figure_, self.ax_ = fig, ax
-        return self
+        self.ax_.set_title("Confusion Matrix")
+        self.figure_.tight_layout()
 
     @classmethod
     def _compute_data_for_display(
         cls,
         y_true: Sequence[YPlotData],
         y_pred: Sequence[YPlotData],
-        *,
-        report_type: ReportType,
-        estimators: Sequence[BaseEstimator],
-        ml_task: MLTask,
-        data_source: Literal["train", "test", "X_y"],
-        drop_intermediate: bool = True,
+        normalize: Literal["true", "pred", "all"] | None = None,
+        **kwargs,
     ) -> "ConfusionMatrixDisplay":
         """Compute the confusion matrix for display.
 
         Parameters
         ----------
-        y_true : list of YPlotData
-            True labels.
+        y_true : list of array-like of shape (n_samples,)
+            True binary labels in binary classification.
 
-        y_pred : list of YPlotData
-            Predicted labels.
+        y_pred : list of ndarray of shape (n_samples,)
+            Target scores, can either be probability estimates of the positive class,
+            confidence values, or non-thresholded measure of decisions (as returned by
+            "decision_function" on some classifiers).
 
-        report_type : str
-            Type of report.
+        report_type : {"comparison-cross-validation", "comparison-estimator", \
+                "cross-validation", "estimator"}
+            The type of report.
 
-        estimators : list of estimators
-            List of estimators.
+        estimators : list of estimator instances
+            The estimators from which `y_pred` is obtained.
 
-        ml_task : str
-            Machine learning task.
+        ml_task : {"binary-classification", "multiclass-classification"}
+            The machine learning task.
 
-        data_source : str
-            Data source.
+        data_source : {"train", "test", "X_y"}
+            The data source used to compute the ROC curve.
+
+        normalize : {'true', 'pred', 'all'}, default=None
+            Normalizes confusion matrix over the true (rows), predicted (columns)
+            conditions or all the population. If None, confusion matrix will not be
+            normalized.
 
         **kwargs : dict
-            Additional keyword arguments.
+            Additional keyword arguments that are ignored for compatibility with
+            other metrics displays. Here, `report_type`, `estimators`, `ml_task` and
+            `data_source` are ignored.
 
         Returns
         -------
-        display : ConfusionMatrixDisplay
-            Object that stores computed values.
+        display : :class:`~sklearn.metrics.ConfusionMatrixDisplay`
+            The confusion matrix display.
         """
-        import numpy as np
-        from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
-
-        assert len(y_true) == 1 and len(y_pred) == 1, (
-            "Only single estimator is supported"
-        )
         y_true_values = y_true[0].y
         y_pred_values = y_pred[0].y
 
-        cm = sklearn_confusion_matrix(y_true=y_true_values, y_pred=y_pred_values)
-
-        display = cls(confusion_matrix=cm)
-
-        display.display_labels = np.unique(
-            np.concatenate([y_true_values, y_pred_values])
+        cm = sklearn_confusion_matrix(
+            y_true=y_true_values,
+            y_pred=y_pred_values,
+            normalize=normalize,
+        )
+        disp = cls(
+            confusion_matrix=cm,
+            normalize=normalize,
         )
 
-        return display
+        return disp
 
     def frame(self):
         """Return the confusion matrix as a dataframe.

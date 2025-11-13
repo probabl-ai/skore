@@ -5,7 +5,6 @@ from operator import attrgetter
 from typing import Any, Literal, cast
 
 import joblib
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
@@ -1649,10 +1648,18 @@ class _MetricsAccessor(
         data_source: DataSource,
         response_method: str | list[str] | tuple[str, ...],
         display_class: type[
-            RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay
+            RocCurveDisplay
+            | PrecisionRecallCurveDisplay
+            | PredictionErrorDisplay
+            | ConfusionMatrixDisplay
         ],
         display_kwargs: dict[str, Any],
-    ) -> RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay:
+    ) -> (
+        RocCurveDisplay
+        | PrecisionRecallCurveDisplay
+        | PredictionErrorDisplay
+        | ConfusionMatrixDisplay
+    ):
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1677,7 +1684,7 @@ class _MetricsAccessor(
             The display class.
 
         display_kwargs : dict
-            The display kwargs used by `display_class._from_predictions`.
+            The display kwargs used by `display_class._compute_data_for_display`.
 
         Returns
         -------
@@ -2045,51 +2052,18 @@ class _MetricsAccessor(
         >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.confusion_matrix()
         """
-        X, y, _ = self._get_X_y_and_data_source_hash(data_source=data_source, X=X, y=y)
-
-        assert y is not None, "y must be provided"
-
-        y_pred = self._parent.get_predictions(
-            data_source=data_source,
-            response_method="predict",
-            X=X,
-            pos_label=None,
+        display_kwargs = {
+            "normalize": normalize,
+        }
+        display = cast(
+            ConfusionMatrixDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method="predict",
+                display_class=ConfusionMatrixDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-
-        if display_labels is None:
-            display_labels = np.unique(np.concatenate([y, y_pred])).tolist()
-
-        display = ConfusionMatrixDisplay._compute_data_for_display(
-            y_true=[
-                YPlotData(
-                    estimator_name=self._parent.estimator_name_,
-                    split=None,
-                    y=y,
-                )
-            ],
-            y_pred=[
-                YPlotData(
-                    estimator_name=self._parent.estimator_name_,
-                    split=None,
-                    y=y_pred,
-                )
-            ],
-            report_type="estimator",
-            estimators=[self._parent.estimator_],
-            ml_task=self._parent._ml_task,
-            data_source=data_source,
-        )
-
-        display.display_labels = display_labels
-
-        n_classes = display.confusion_matrix.shape[0]
-        if display_labels is None or len(display_labels) == n_classes:
-            display.plot(
-                display_labels=display_labels,
-                include_values=include_values,
-                normalize=normalize,
-                values_format=values_format,
-            )
-            plt.close(display.figure_)
-
         return display

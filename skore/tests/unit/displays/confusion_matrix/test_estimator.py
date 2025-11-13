@@ -58,6 +58,7 @@ def test_multiclass_classification(
     assert isinstance(display, ConfusionMatrixDisplay)
     n_classes = len(np.unique(y_test))
     assert display.confusion_matrix.shape == (n_classes, n_classes)
+    display.plot()
     assert len(display.display_labels) == n_classes
 
     frame = display.frame()
@@ -105,7 +106,8 @@ def test_custom_labels(pyplot, forest_binary_classification_with_train_test):
         y_test=y_test,
     )
     custom_labels = ["Negative", "Positive"]
-    display = report.metrics.confusion_matrix(display_labels=custom_labels)
+    display = report.metrics.confusion_matrix()
+    display.plot(display_labels=custom_labels)
 
     assert display.display_labels == custom_labels
     frame = display.frame()
@@ -181,9 +183,8 @@ def test_single_label(pyplot, forest_binary_classification_with_train_test):
         y_test=y_test,
     )
 
-    display = report.metrics.confusion_matrix(display_labels=["Only One Label"])
+    display = report.metrics.confusion_matrix()
     assert isinstance(display, ConfusionMatrixDisplay)
-    assert display.display_labels == ["Only One Label"]
 
     with pytest.raises(ValueError):
-        display.plot()
+        display.plot(display_labels=["Only One Label"])
