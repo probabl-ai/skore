@@ -3,6 +3,7 @@ from __future__ import annotations
 from itertools import chain
 from typing import TYPE_CHECKING
 
+import numpy as np
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -50,7 +51,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
                     report.estimator_ for report in self._parent.reports_.values()
                 ],
                 names=[name for name in self._parent.reports_.keys()],
-                splits=[None] * len(self._parent.reports_),
+                splits=[np.nan] * len(self._parent.reports_),
                 report_type="comparison-estimator",
             )
         else:

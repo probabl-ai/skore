@@ -173,14 +173,13 @@ class CoefficientsDisplay(DisplayMixin):
                 coef = np.atleast_2d(estimator.regressor_.coef_).T
                 intercept = np.atleast_2d(estimator.regressor_.intercept_)
 
-            feat_names = _get_feature_names(estimator, n_features=coef.shape[0])
             if intercept is None:
-                coefficients.append(coef)
-                feature_names.extend(feat_names)
-            else:
-                coefficients.append(np.concatenate([intercept, coef]))
-                feat_names.insert(0, "Intercept")
-                feature_names.extend(feat_names)
+                intercept = np.atleast_2d(0)
+
+            coefficients.append(np.concatenate([intercept, coef]))
+
+            feat_names = ["Intercept"] + _get_feature_names(estimator, n_features=coef.shape[0])
+            feature_names.extend(feat_names)
             est_names.extend([name] * len(feat_names))
             split_indices.extend([split] * len(feat_names))
 

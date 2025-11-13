@@ -197,7 +197,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         return CoefficientsDisplay._compute_data_for_display(
             estimators=[self._parent.estimator_],
             names=[self._parent.estimator_name_],
-            splits=[None],
+            splits=[np.nan],
             report_type="estimator",
         )
 
