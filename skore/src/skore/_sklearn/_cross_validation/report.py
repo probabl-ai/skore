@@ -17,6 +17,7 @@ from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import _DEFAULT, PositiveLabel, SKLearnCrossValidator
+from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import Parallel, delayed
 from skore._utils._progress_bar import progress_decorator
@@ -177,7 +178,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
-        self._cache: dict[tuple[Any, ...], Any] = {}
+        self._cache: dict[tuple[Any, ...], Any] = Cache()
         self._ml_task = _find_ml_task(
             y, estimator=self.estimator_reports_[0]._estimator
         )
@@ -296,7 +297,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         """
         for report in self.estimator_reports_:
             report.clear_cache()
-        self._cache = {}
+
+        self._cache = Cache()
 
     @progress_decorator(description="Cross-validation predictions")
     def cache_predictions(
