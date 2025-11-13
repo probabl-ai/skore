@@ -19,7 +19,7 @@ class Cache(UserDict):
     """Thread-safe cache based on ``dict``, with an explicit lock on write/delete."""
 
     __setitem__ = method_with_explicit_lock(UserDict.__setitem__)
-    __delitem__ = method_with_explicit_lock(UserDict.__setitem__)
+    __delitem__ = method_with_explicit_lock(UserDict.__delitem__)
     clear = method_with_explicit_lock(UserDict.clear)
     pop = method_with_explicit_lock(UserDict.pop)
     popitem = method_with_explicit_lock(UserDict.popitem)
