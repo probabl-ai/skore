@@ -1987,7 +1987,7 @@ class _MetricsAccessor(
         sample_weight: ArrayLike | None = None,
         display_labels: list | None = None,
         include_values: bool = True,
-        normalize: Literal["true", "pred", "both"] | None = None,
+        normalize: Literal["true", "pred", "all"] | None = None,
         values_format: str | None = None,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
