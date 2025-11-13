@@ -105,16 +105,27 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         - int [0, inf[, to be displayed at the position,
         - None, not to be displayed.
         """
-        payloads = []
+        metrics = [metric_cls(report=self.report) for metric_cls in self.METRICS]
 
-        for metric_cls in self.METRICS:
-            metric = metric_cls(report=self.report)
-            metric.compute()
+        with (
+            switch_mpl_backend(),
+            SkinnedProgress() as progress,
+            ThreadPoolExecutor() as pool,
+        ):
+            tasks = [
+                pool.submit(lambda metric: metric.compute(), metric)
+                for metric in metrics
+            ]
 
-            if metric.value is not None:
-                payloads.append(metric)
+            deque(
+                progress.track(
+                    as_completed(tasks),
+                    description=f"Computing {self.report.__class__.__name__} metrics",
+                    total=len(tasks),
+                )
+            )
 
-        return payloads
+        return [metric for metric in metrics if metric.value is not None]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
