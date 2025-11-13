@@ -240,6 +240,7 @@ def _despine_matplotlib_axis(
     ax: Axes,
     *,
     axis_to_despine: tuple = ("top", "right"),
+    remove_ticks: bool = False,
     x_range: tuple[float, float] = (0, 1),
     y_range: tuple[float, float] = (0, 1),
     offset: float = 10,
@@ -250,6 +251,11 @@ def _despine_matplotlib_axis(
     ----------
     ax : matplotlib.axes.Axes
         The matplotlib axis to despine.
+    axis_to_despine : tuple of str, default=("top", "right")
+        The axes to despine.
+    remove_ticks : bool, default=True
+        Whether to remove the ticks when adding "left" and "bottom" to the axis to
+        despine.
     x_range : tuple of float, default=(0, 1)
         The range of the x-axis.
     y_range : tuple of float, default=(0, 1)
@@ -257,12 +263,17 @@ def _despine_matplotlib_axis(
     offset : float, default=10
         The offset to add to the x-axis and y-axis.
     """
-    ax.spines["bottom"].set_bounds(x_range[0], x_range[1])
-    ax.spines["left"].set_bounds(y_range[0], y_range[1])
+    if x_range is not None:
+        ax.spines["bottom"].set_bounds(x_range[0], x_range[1])
+    if y_range is not None:
+        ax.spines["left"].set_bounds(y_range[0], y_range[1])
     ax.spines["left"].set_position(("outward", offset))
     ax.spines["bottom"].set_position(("outward", offset))
     for s in axis_to_despine:
         ax.spines[s].set_visible(False)
+        if remove_ticks and s in ("left", "bottom"):
+            axis = "x" if s == "bottom" else "y"
+            ax.tick_params(axis=axis, length=0)
 
 
 def _validate_style_kwargs(

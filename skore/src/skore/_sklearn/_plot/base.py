@@ -95,6 +95,23 @@ DEFAULT_STYLE = {
     "ytick.minor.size": 5,
     "legend.loc": "upper left",
     "legend.borderaxespad": 0,
+    "boxplot.patchartist": True,
+    "boxplot.boxprops.color": "black",
+    "boxplot.capprops.color": "black",
+    "boxplot.medianprops.color": "black",
+    "boxplot.whiskerprops.color": "black",
+    "boxplot.boxprops.linewidth": 2.0,
+    "boxplot.capprops.linewidth": 2.0,
+    "boxplot.medianprops.linewidth": 1.5,
+    "boxplot.whiskerprops.linewidth": 2.0,
+}
+
+BOXPLOT_STYLE = {
+    "patch_artist": True,
+    "boxprops": {"edgecolor": "black"},
+    "whiskerprops": {"color": "black"},
+    "capprops": {"color": "black"},
+    "medianprops": {"color": "black"},
 }
 
 
