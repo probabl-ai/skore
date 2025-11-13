@@ -41,6 +41,7 @@ class YPlotData:
     """
 
     estimator_name: str
+    data_source: Literal["train", "test"]
     split: int | None
     y: ArrayLike
 

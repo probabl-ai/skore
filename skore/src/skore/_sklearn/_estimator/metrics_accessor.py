@@ -1692,15 +1692,97 @@ class _MetricsAccessor(
         display : display_class
             The display.
         """
+        pos_label = display_kwargs.get("pos_label")
+
+        def get_ys(
+            *,
+            X,
+            y_true,
+            data_source,
+            data_source_hash,
+            cache=self._parent._cache,
+            estimator_hash=int(self._parent._hash),
+            estimator=self._parent.estimator_,
+            response_method=response_method,
+            pos_label=pos_label,
+        ) -> tuple[list[YPlotData], list[YPlotData]]:
+            """Get predictions and format y_true and y_pred using YPlotData."""
+            results = _get_cached_response_values(
+                cache=cache,
+                estimator_hash=estimator_hash,
+                estimator=estimator,
+                X=X,
+                response_method=response_method,
+                pos_label=pos_label,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
+            for key, value, is_cached in results:
+                key = cast(tuple[Any, ...], key)
+                if not is_cached:
+                    cache[key] = value
+                if key[-1] != "predict_time":
+                    y_pred = value
+
+            y_true = [
+                YPlotData(
+                    estimator_name=self._parent.estimator_name_,
+                    data_source=data_source,
+                    split=None,
+                    y=y_true,
+                )
+            ]
+            y_pred = [
+                YPlotData(
+                    estimator_name=self._parent.estimator_name_,
+                    data_source=data_source,
+                    split=None,
+                    y=y_pred,
+                )
+            ]
+            return y_true, y_pred
+
         if data_source == "both":
+            X_train, y_train_true, train_data_source_hash = (
+                self._get_X_y_and_data_source_hash(data_source="train", X=X, y=y)
+            )
+            y_train_true, y_train_pred = get_ys(
+                X=X_train,
+                y_true=y_train_true,
+                data_source="train",
+                data_source_hash=train_data_source_hash,
+            )
+            assert y_train_true is not None, "y must be provided"
+
+            X_test, y_test_true, test_data_source_hash = (
+                self._get_X_y_and_data_source_hash(data_source="test", X=X, y=y)
+            )
+            y_test_true, y_test_pred = get_ys(
+                X=X_test,
+                y_true=y_test_true,
+                data_source="test",
+                data_source_hash=test_data_source_hash,
+            )
+            assert y_test_true is not None, "y must be provided"
+
+            y_true = y_train_true + y_test_true
+            y_pred = y_train_pred + y_test_pred
             data_source_hash = None
         else:
-            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
 
-        assert y is not None, "y must be provided"
+            y_true, y_pred = get_ys(
+                X=X,
+                y_true=y_true,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
 
+            assert y_true is not None, "y must be provided"
+
+        # Compute cache key
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
@@ -1719,38 +1801,9 @@ class _MetricsAccessor(
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
-            results = _get_cached_response_values(
-                cache=self._parent._cache,
-                estimator_hash=int(self._parent._hash),
-                estimator=self._parent.estimator_,
-                X=X,
-                response_method=response_method,
-                pos_label=display_kwargs.get("pos_label"),
-                data_source=data_source,
-                data_source_hash=data_source_hash,
-            )
-            for key, value, is_cached in results:
-                key = cast(tuple[Any, ...], key)
-                if not is_cached:
-                    self._parent._cache[key] = value
-                if key[-1] != "predict_time":
-                    y_pred = value
-
             display = display_class._compute_data_for_display(
-                y_true=[
-                    YPlotData(
-                        estimator_name=self._parent.estimator_name_,
-                        split=None,
-                        y=y,
-                    )
-                ],
-                y_pred=[
-                    YPlotData(
-                        estimator_name=self._parent.estimator_name_,
-                        split=None,
-                        y=y_pred,
-                    )
-                ],
+                y_true=y_true,
+                y_pred=y_pred,
                 report_type="estimator",
                 estimators=[self._parent.estimator_],
                 ml_task=self._parent._ml_task,
