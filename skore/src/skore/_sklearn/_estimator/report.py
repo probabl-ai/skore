@@ -18,6 +18,7 @@ from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import _DEFAULT, PositiveLabel
+from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import Parallel, delayed
@@ -186,7 +187,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
-        self._cache: dict[tuple[Any, ...], Any] = {}
+        self._cache = Cache()
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
 
     # NOTE:
@@ -214,7 +215,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> report._cache
         {}
         """
-        self._cache = {}
+        self._cache = Cache()
 
     @progress_decorator(description="Caching predictions")
     def cache_predictions(
