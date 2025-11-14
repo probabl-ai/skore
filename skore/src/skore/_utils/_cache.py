@@ -24,3 +24,9 @@ class Cache(UserDict):
     pop = method_with_explicit_lock(UserDict.pop)
     popitem = method_with_explicit_lock(UserDict.popitem)
     update = method_with_explicit_lock(UserDict.update)
+
+    def __getstate__(self):
+        return self.data.copy()
+
+    def __setstate__(self, state):
+        self.data = state
