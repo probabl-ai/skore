@@ -208,7 +208,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         y_true : list of array-like of shape (n_samples,)
             True labels.
 
-        y_pred : list of ndarray of shape (n_samples,)
+        y_pred : list of array-like of shape (n_samples,)
             Predicted labels, as returned by a classifier.
 
         report_type : {"comparison-cross-validation", "comparison-estimator", \
