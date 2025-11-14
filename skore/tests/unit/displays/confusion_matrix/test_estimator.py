@@ -160,8 +160,10 @@ def test_values_format(pyplot, forest_binary_classification_with_train_test):
         y_test=y_test,
     )
 
-    display_int = report.metrics.confusion_matrix(values_format="d")
-    display_float = report.metrics.confusion_matrix(values_format=".2f")
+    display_int = report.metrics.confusion_matrix()
+    display_int.plot(values_format="d")
+    display_float = report.metrics.confusion_matrix()
+    display_float.plot(values_format=".2f")
     assert np.array_equal(
         display_int.confusion_matrix,
         display_float.confusion_matrix,
@@ -172,7 +174,7 @@ def test_single_label(pyplot, forest_binary_classification_with_train_test):
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
-    """Check that we can pass a single label to the confusion matrix display."""
+    """Check that we can't pass a single label to the confusion matrix display."""
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -180,10 +182,5 @@ def test_single_label(pyplot, forest_binary_classification_with_train_test):
         X_test=X_test,
         y_test=y_test,
     )
-
-    display = report.metrics.confusion_matrix(display_labels=["Only One Label"])
-    assert isinstance(display, ConfusionMatrixDisplay)
-    assert display.display_labels == ["Only One Label"]
-
     with pytest.raises(ValueError):
-        display.plot()
+        report.metrics.confusion_matrix(display_labels=["Only One Label"])
