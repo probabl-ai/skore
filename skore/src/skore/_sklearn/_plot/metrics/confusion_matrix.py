@@ -4,10 +4,11 @@ from typing import Literal
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import Colormap
+from numpy.typing import NDArray
 from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn.types import YPlotData
+from skore._sklearn.types import ReportType, YPlotData
 
 
 class ConfusionMatrixDisplay(DisplayMixin):
@@ -43,17 +44,16 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
     def __init__(
         self,
-        confusion_matrix,
         *,
-        display_labels=None,
-        normalize=None,
+        confusion_matrix: NDArray,
+        display_labels: list[str] | None = None,
+        normalize: Literal["true", "pred", "all"] | None = None,
+        report_type: ReportType,
     ):
         self.confusion_matrix = confusion_matrix
         self.display_labels = display_labels
         self.normalize = normalize
-        self.figure_ = None
-        self.ax_ = None
-        self.text_ = None
+        self.report_type = report_type
 
     @DisplayMixin.style_plot
     def plot(
@@ -65,7 +65,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         colorbar: bool = True,
         **kwargs,
     ):
-        """Plot the confusion matrix.
+        """Plot visualization.
 
         Parameters
         ----------
@@ -108,6 +108,51 @@ class ConfusionMatrixDisplay(DisplayMixin):
         **kwargs,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
+        if self.report_type == "estimator":
+            self._plot_single_estimator(
+                include_values=include_values,
+                values_format=values_format,
+                cmap=cmap,
+                colorbar=colorbar,
+                **kwargs,
+            )
+        else:
+            raise NotImplementedError(
+                "`ConfusionMatrixDisplay` is only implemented for"
+                "`EstimatorReport` for now."
+            )
+
+    def _plot_single_estimator(
+        self,
+        *,
+        include_values: bool = True,
+        values_format: str | None = None,
+        cmap: str | Colormap = "Blues",
+        colorbar: bool = True,
+        **kwargs,
+    ) -> None:
+        """
+        Plot the confusion matrix for a single estimator.
+
+        Parameters
+        ----------
+        include_values : bool, default=True
+            Includes values in confusion matrix.
+
+        values_format : str, default=None
+            Format specification for values in confusion matrix. If None, the format
+            specification is 'd' or '.2g' whichever is shorter.
+
+        cmap : str or matplotlib Colormap, default='Blues'
+            Colormap used for confusion matrix.
+
+        colorbar : bool, default=True
+            Whether or not to add a colorbar to the plot.
+
+        **kwargs : dict
+            Additional keyword arguments to be passed to matplotlib's
+            `ax.imshow`.
+        """
         self.include_values = include_values
         self.values_format = values_format
 
@@ -150,6 +195,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
         cls,
         y_true: Sequence[YPlotData],
         y_pred: Sequence[YPlotData],
+        *,
+        report_type: ReportType,
         display_labels: list[str] | None = None,
         normalize: Literal["true", "pred", "all"] | None = None,
         **kwargs,
@@ -188,7 +235,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
         **kwargs : dict
             Additional keyword arguments that are ignored for compatibility with
-            other metrics displays. Here, `report_type`, `estimators`, `ml_task` and
+            other metrics displays. Here, `estimators`, `ml_task` and
             `data_source` are ignored.
 
         Returns
@@ -207,7 +254,11 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
         n_classes = cm.shape[0]
         if display_labels is None:
-            display_labels = [f"Class {i}" for i in range(cm.shape[0])]
+            display_labels = (
+                np.unique(np.concat([y_true_values, y_pred_values]))
+                .astype(str)
+                .tolist()
+            )
         elif len(display_labels) != n_classes:
             raise ValueError(
                 f"display_labels must have length equal to number of classes "
@@ -216,6 +267,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
         disp = cls(
             confusion_matrix=cm,
+            report_type=report_type,
             display_labels=display_labels,
             normalize=normalize,
         )
