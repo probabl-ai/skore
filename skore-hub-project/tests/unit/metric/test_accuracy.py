@@ -100,11 +100,13 @@ def test_accuracy(
     report = request.getfixturevalue(report)
 
     # available accessor
-    metric = Metric(report=report).model_dump()
-    metric_value = metric.pop("value")
+    metric = Metric(report=report)
+    metric.compute()
 
-    assert_almost_equal(metric_value, value)
-    assert metric == {
+    metric_payload = metric.model_dump()
+
+    assert_almost_equal(metric_payload.pop("value"), value)
+    assert metric_payload == {
         "name": name,
         "verbose_name": verbose_name,
         "greater_is_better": greater_is_better,
@@ -115,7 +117,12 @@ def test_accuracy(
     # unavailable accessor
     monkeypatch.delattr(report.metrics.__class__, "accuracy")
 
-    assert Metric(report=report).model_dump() == {
+    metric = Metric(report=report)
+    metric.compute()
+
+    metric_payload = metric.model_dump()
+
+    assert metric_payload == {
         "name": name,
         "verbose_name": verbose_name,
         "greater_is_better": greater_is_better,
