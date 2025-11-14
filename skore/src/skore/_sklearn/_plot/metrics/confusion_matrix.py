@@ -118,7 +118,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
             )
         else:
             raise NotImplementedError(
-                "`ConfusionMatrixDisplay` is only implemented for"
+                "`ConfusionMatrixDisplay` is only implemented for "
                 "`EstimatorReport` for now."
             )
 
