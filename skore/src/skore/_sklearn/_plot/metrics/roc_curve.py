@@ -232,15 +232,12 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 roc_curve = self.roc_curve.query(query)
                 roc_auc = self.roc_auc.query(query)["roc_auc"].item()
 
-                roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
-
-                default_line_kwargs: dict[str, Any] = {"color": class_colors[class_idx]}
-                default_line_kwargs["label"] = (
-                    f"{str(class_label).title()} (AUC = {roc_auc:0.2f})"
-                )
-
                 line_kwargs = _validate_style_kwargs(
-                    default_line_kwargs, roc_curve_kwargs_class
+                    default_style_kwargs={
+                        "color": class_colors[class_idx],
+                        "label": f"{str(class_label).title()} (AUC = {roc_auc:0.2f})",
+                    },
+                    user_style_kwargs=roc_curve_kwargs[class_idx],
                 )
 
                 (line,) = self.ax_.plot(
