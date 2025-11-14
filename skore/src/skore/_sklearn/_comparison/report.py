@@ -252,7 +252,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
-        self._cache: dict[tuple[Any, ...], Any] = Cache()
+        self._cache = Cache()
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
 
     def clear_cache(self) -> None:

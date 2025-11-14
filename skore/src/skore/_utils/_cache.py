@@ -1,6 +1,7 @@
 from collections import UserDict
 from functools import wraps
 from threading import RLock
+from typing import Any
 
 
 def method_with_explicit_lock(method):
@@ -15,7 +16,7 @@ def method_with_explicit_lock(method):
     return wrapper
 
 
-class Cache(UserDict):
+class Cache(UserDict[tuple[Any, ...], Any]):
     """Thread-safe cache based on ``dict``, with an explicit lock on write/delete."""
 
     __setitem__ = method_with_explicit_lock(UserDict.__setitem__)
