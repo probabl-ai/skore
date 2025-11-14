@@ -193,26 +193,40 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         line_kwargs: dict[str, Any] = {}
 
         if self.ml_task == "binary-classification":
-            if self.data_source in ("train", "test"):
-                line_kwargs["label"] = (
-                    f"{self.data_source.title()} set "
-                    f"(AUC = {self.roc_auc['roc_auc'].item():0.2f})"
-                )
-            elif self.data_source == "both":
-                raise NotImplementedError()
-            else:  # data_source in (None, "X_y")
-                line_kwargs["label"] = f"AUC = {self.roc_auc['roc_auc'].item():0.2f}"
-
             line_kwargs_validated = _validate_style_kwargs(
                 line_kwargs, roc_curve_kwargs[0]
             )
 
-            (line,) = self.ax_.plot(
-                self.roc_curve["fpr"],
-                self.roc_curve["tpr"],
-                **line_kwargs_validated,
-            )
-            lines.append(line)
+            def add_line(ax, lines, *, data_source, line_kwargs=line_kwargs_validated):
+                roc_curve = self.roc_curve.query(f"data_source == {data_source!r}")
+                roc_auc = self.roc_auc.query(f"data_source == {data_source!r}")
+                label = (
+                    f"{data_source.title()} set "
+                    f"(AUC = {roc_auc['roc_auc'].item():0.2f})"
+                )
+
+                (line,) = ax.plot(
+                    roc_curve["fpr"],
+                    roc_curve["tpr"],
+                    **(line_kwargs | {"label": label}),
+                )
+                lines.append(line)
+
+            if self.data_source in ("train", "test"):
+                add_line(self.ax_, lines, data_source=self.data_source)
+            elif self.data_source == "both":
+                add_line(self.ax_, lines, data_source="train")
+                add_line(self.ax_, lines, data_source="test")
+            else:  # if self.data_source in (None, "X_y")
+                (line,) = self.ax_.plot(
+                    self.roc_curve["fpr"],
+                    self.roc_curve["tpr"],
+                    **(
+                        line_kwargs_validated
+                        | {"label": f"AUC = {self.roc_auc['roc_auc'].item():0.2f}"}
+                    ),
+                )
+                lines.append(line)
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
