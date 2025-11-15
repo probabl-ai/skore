@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from itertools import chain
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 from sklearn.utils.metaestimators import available_if
@@ -13,6 +12,7 @@ from skore._utils._accessor import _check_comparison_report_sub_estimators_have_
 
 if TYPE_CHECKING:
     from skore import ComparisonReport
+    from skore._sklearn._cross_validation.report import CrossValidationReport
 
 
 class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
@@ -50,31 +50,23 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
                 estimators=[
                     report.estimator_ for report in self._parent.reports_.values()
                 ],
-                names=[name for name in self._parent.reports_.keys()],
+                names=list(self._parent.reports_.keys()),
                 splits=[np.nan] * len(self._parent.reports_),
                 report_type="comparison-estimator",
             )
-        else:
+        else:  # self._parent._reports_type == "CrossValidationReport":
+            estimators, names = [], []
+            splits: list[int | float] = []
+            for split_idx, (name, report) in enumerate(self._parent.reports_.items()):
+                cross_validation_report = cast("CrossValidationReport", report)
+                for estimator_report in cross_validation_report.estimator_reports_:
+                    estimators.append(estimator_report.estimator_)
+                    names.append(name)
+                    splits.append(split_idx)
             return CoefficientsDisplay._compute_data_for_display(
-                estimators=[
-                    estimator_report.estimator_
-                    for cross_validation_report in self._parent.reports_.values()
-                    for estimator_report in cross_validation_report.estimator_reports_
-                ],
-                names=list(
-                    chain.from_iterable(
-                        [
-                            [name] * len(report.estimator_reports_)
-                            for name, report in self._parent.reports_.items()
-                        ]
-                    )
-                ),
-                splits=list(
-                    chain.from_iterable(
-                        [i] * len(report.estimator_reports_)
-                        for i, report in enumerate(self._parent.reports_.values())
-                    )
-                ),
+                estimators=estimators,
+                names=names,
+                splits=splits,
                 report_type="comparison-cross-validation",
             )
 

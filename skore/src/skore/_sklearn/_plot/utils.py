@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -241,8 +241,8 @@ def _despine_matplotlib_axis(
     *,
     axis_to_despine: tuple = ("top", "right"),
     remove_ticks: bool = False,
-    x_range: tuple[float, float] = (0, 1),
-    y_range: tuple[float, float] = (0, 1),
+    x_range: tuple[float, float] | None = (0, 1),
+    y_range: tuple[float, float] | None = (0, 1),
     offset: float = 10,
 ) -> None:
     """Despine the matplotlib axis.
@@ -272,7 +272,7 @@ def _despine_matplotlib_axis(
     for s in axis_to_despine:
         ax.spines[s].set_visible(False)
         if remove_ticks and s in ("left", "bottom"):
-            axis = "x" if s == "bottom" else "y"
+            axis: Literal["x", "y"] = "x" if s == "bottom" else "y"
             ax.tick_params(axis=axis, length=0)
 
 

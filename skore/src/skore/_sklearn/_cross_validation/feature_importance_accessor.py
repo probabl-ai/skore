@@ -55,7 +55,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
             names=[
                 report.estimator_name_ for report in self._parent.estimator_reports_
             ],
-            splits=range(len(self._parent.estimator_reports_)),
+            splits=list(range(len(self._parent.estimator_reports_))),
             report_type="cross-validation",
         )
 

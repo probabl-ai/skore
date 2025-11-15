@@ -14,6 +14,7 @@ from sklearn.inspection import permutation_importance
 from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
+from sklearn.utils.validation import _num_features
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
@@ -573,7 +574,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             feature_names = _get_feature_names(
                 estimator,
-                n_features=X_transformed.shape[1],
+                n_features=_num_features(X_transformed),
                 X=X_transformed,
                 transformer=feature_engineering,
             )

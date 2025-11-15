@@ -3,6 +3,7 @@ from collections.abc import Callable
 import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator
+from sklearn.utils.validation import _num_features
 
 
 def _function_call_succeeds(func: Callable) -> bool:
@@ -36,7 +37,7 @@ def _get_feature_names(
         if hasattr(X, "columns"):
             return X.columns.tolist()
         else:
-            return [f"Feature #{i}" for i in range(X.shape[1])]
+            return [f"Feature #{i}" for i in range(_num_features(X))]
 
     if n_features is None:
         raise ValueError(

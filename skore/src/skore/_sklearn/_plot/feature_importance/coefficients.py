@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,9 +16,7 @@ from skore._sklearn.types import ReportType
 
 
 class CoefficientsDisplay(DisplayMixin):
-    """Feature importance display.
-
-    Each report type produces its own output frame and plot.
+    """Display to inspect the coefficients of linear models.
 
     Parameters
     ----------
@@ -43,6 +41,13 @@ class CoefficientsDisplay(DisplayMixin):
         self.report_type = report_type
 
     def frame(self):
+        """Get the coefficients in a dataframe format.
+
+        Returns
+        -------
+        DataFrame
+            Dataframe containing the coefficients of the linear model.
+        """
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
         elif self.report_type == "cross-validation":
@@ -111,11 +116,10 @@ class CoefficientsDisplay(DisplayMixin):
     def _plot_homogeneous_estimator(
         self,
         *,
+        plot_function: Callable,
+        plot_function_kwargs: dict,
         subplots_by: str | None = None,
-        plot_function: callable,
-        plot_function_kwargs: dict = {},
     ):
-
         frame, name = self.frame(), self.coefficients["estimator"].unique()[0]
 
         # {"label"} or {"output"} or {}
@@ -146,8 +150,8 @@ class CoefficientsDisplay(DisplayMixin):
             )
             self._decorate_matplotlib_axis(ax=self.ax_)
             self.ax_.set_title(f"{name}")
-            if legend := self.ax_.get_legend():
-                self._set_legend(legend=legend, title=hue.capitalize())
+            if hue is not None:
+                self._set_legend(legend=self.ax_.get_legend(), title=hue.capitalize())
         else:
             ncols, sharex, sharey = frame[subplots_by].nunique(), True, True
             figsize = (6.4 * ncols, 4.8)
@@ -194,18 +198,21 @@ class CoefficientsDisplay(DisplayMixin):
         }
         _, reference_features = grouped.popitem()
         for group_features in grouped.values():
-            if not (group_features == reference_features):
+            if group_features != reference_features:
                 return False
         return True
 
     def _plot_heterogeneous_estimator(
         self,
         *,
+        plot_function: Callable,
+        plot_function_kwargs: dict,
         subplots_by: str | None = None,
-        plot_function: callable,
-        plot_function_kwargs: dict = {},
     ):
         frame = self.frame()
+        # help mypy to understand the following variable types
+        hue: str | None = None
+        palette: str | None = None
 
         # {"estimator", "label"} or {"estimator", "output"} or {"estimator"}
         columns_to_groupby = self._get_columns_to_groupby(frame=frame)
@@ -243,8 +250,8 @@ class CoefficientsDisplay(DisplayMixin):
                 **plot_function_kwargs,
             )
             self._decorate_matplotlib_axis(ax=self.ax_)
-            if legend := self.ax_.get_legend():
-                self._set_legend(legend=legend, title=hue.capitalize())
+            if hue is not None:
+                self._set_legend(legend=self.ax_.get_legend(), title=hue.capitalize())
         else:
             ncols, sharex, sharey = (
                 frame[subplots_by].nunique(),
@@ -279,8 +286,8 @@ class CoefficientsDisplay(DisplayMixin):
                     **plot_function_kwargs,
                 )
                 self._decorate_matplotlib_axis(ax=ax)
-                if legend := ax.get_legend():
-                    self._set_legend(legend=legend, title=hue.capitalize())
+                if hue is not None:
+                    self._set_legend(legend=ax.get_legend(), title=hue.capitalize())
                 ax.set_title(f"{subplots_by.capitalize()}: {group}")
 
     def _plot_comparison_report_estimator(self, *, subplots_by: str | None = None):
@@ -309,12 +316,11 @@ class CoefficientsDisplay(DisplayMixin):
         *,
         estimators: Sequence[BaseEstimator],
         names: list[str],
-        splits: list[int | None],
+        splits: list[int | float],
         report_type: ReportType,
     ):
         feature_names, est_names, coefficients, split_indices = [], [], [], []
         for estimator, name, split in zip(estimators, names, splits, strict=True):
-
             if isinstance(estimator, Pipeline):
                 preprocessor, predictor = estimator[:-1], estimator[-1]
             else:
@@ -354,7 +360,7 @@ class CoefficientsDisplay(DisplayMixin):
                 index["output"] = np.nan
             else:
                 # multi-output regression
-                columns, var_name = list(range(coef.shape[1])), "output"
+                columns, var_name = [f"{i}" for i in range(coef.shape[1])], "output"
                 index["label"] = np.nan
             id_vars, value_name = index.columns.tolist(), "coefficients"
 
