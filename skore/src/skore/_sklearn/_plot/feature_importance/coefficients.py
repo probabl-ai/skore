@@ -1,4 +1,5 @@
 from collections.abc import Callable, Sequence
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -69,10 +70,14 @@ class CoefficientsDisplay(DisplayMixin):
         return self.coefficients.drop(columns=columns_to_drop)
 
     @DisplayMixin.style_plot
-    def plot(self, *, subplots_by: str | None = None) -> None:
+    def plot(
+        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
+    ) -> None:
         return self._plot(subplots_by=subplots_by)
 
-    def _plot_matplotlib(self, *, subplots_by: str | None = None):
+    def _plot_matplotlib(
+        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
+    ):
         if self.report_type == "estimator":
             return self._plot_estimator_report(subplots_by=subplots_by)
         elif self.report_type == "cross-validation":
@@ -118,7 +123,7 @@ class CoefficientsDisplay(DisplayMixin):
         *,
         plot_function: Callable,
         plot_function_kwargs: dict,
-        subplots_by: str | None = None,
+        subplots_by: Literal["estimator", "label", "output"] | None = None,
     ):
         frame, name = self.frame(), self.coefficients["estimator"].unique()[0]
 
@@ -172,14 +177,18 @@ class CoefficientsDisplay(DisplayMixin):
                 self._decorate_matplotlib_axis(ax=ax)
                 ax.set_title(f"{name} - {subplots_by.capitalize()}: {group}")
 
-    def _plot_estimator_report(self, *, subplots_by: str | None = None):
+    def _plot_estimator_report(
+        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
+    ):
         self._plot_homogeneous_estimator(
             subplots_by=subplots_by,
             plot_function=sns.barplot,
             plot_function_kwargs={},
         )
 
-    def _plot_cross_validation_report(self, *, subplots_by: str | None = None):
+    def _plot_cross_validation_report(
+        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
+    ):
         self._plot_homogeneous_estimator(
             subplots_by=subplots_by,
             plot_function=sns.boxplot,
@@ -207,7 +216,7 @@ class CoefficientsDisplay(DisplayMixin):
         *,
         plot_function: Callable,
         plot_function_kwargs: dict,
-        subplots_by: str | None = None,
+        subplots_by: Literal["estimator", "label", "output"] | None = None,
     ):
         frame = self.frame()
         # help mypy to understand the following variable types
@@ -290,7 +299,9 @@ class CoefficientsDisplay(DisplayMixin):
                     self._set_legend(legend=ax.get_legend(), title=hue.capitalize())
                 ax.set_title(f"{subplots_by.capitalize()}: {group}")
 
-    def _plot_comparison_report_estimator(self, *, subplots_by: str | None = None):
+    def _plot_comparison_report_estimator(
+        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
+    ):
         self._plot_heterogeneous_estimator(
             subplots_by=subplots_by,
             plot_function=sns.barplot,
@@ -298,7 +309,7 @@ class CoefficientsDisplay(DisplayMixin):
         )
 
     def _plot_comparison_report_cross_validation(
-        self, *, subplots_by: str | None = None
+        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
     ):
         self._plot_heterogeneous_estimator(
             subplots_by=subplots_by,
