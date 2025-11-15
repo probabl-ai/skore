@@ -11,6 +11,7 @@ from skore._config import config_context, get_config, set_config
 from skore._externals._sklearn_compat import parse_version
 from skore._sklearn import (
     ComparisonReport,
+    ConfusionMatrixDisplay,
     CrossValidationReport,
     EstimatorReport,
     MetricsSummaryDisplay,
@@ -29,6 +30,7 @@ from skore.project import Project
 __all__ = [
     "CrossValidationReport",
     "ComparisonReport",
+    "ConfusionMatrixDisplay",
     "Display",
     "EstimatorReport",
     "PrecisionRecallCurveDisplay",

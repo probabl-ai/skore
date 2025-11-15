@@ -62,7 +62,7 @@ class _MetricsAccessor(
     def summarize(
         self,
         *,
-        data_source: DataSource | Literal["all"] = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         scoring: Scoring | list[Scoring] | dict[str, Scoring] | None = None,
@@ -75,13 +75,13 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y", "all"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
-            - "all" : use both the train and test sets to compute the metrics and
+            - "both" : use both the train and test sets to compute the metrics and
               present them side-by-side.
 
         X : array-like of shape (n_samples, n_features), default=None
@@ -163,7 +163,7 @@ class _MetricsAccessor(
         F1 Score               1             0.96...          (↗︎)
         >>> report.metrics.summarize(
         ...    indicator_favorability=True,
-        ...    data_source="all"
+        ...    data_source="both"
         ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
         Metric
@@ -180,7 +180,7 @@ class _MetricsAccessor(
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
         """
-        if data_source == "all":
+        if data_source == "both":
             train_summary = self.summarize(
                 data_source="train",
                 scoring=scoring,
@@ -1648,10 +1648,18 @@ class _MetricsAccessor(
         data_source: DataSource,
         response_method: str | list[str] | tuple[str, ...],
         display_class: type[
-            RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay
+            RocCurveDisplay
+            | PrecisionRecallCurveDisplay
+            | PredictionErrorDisplay
+            | ConfusionMatrixDisplay
         ],
         display_kwargs: dict[str, Any],
-    ) -> RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay:
+    ) -> (
+        RocCurveDisplay
+        | PrecisionRecallCurveDisplay
+        | PredictionErrorDisplay
+        | ConfusionMatrixDisplay
+    ):
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1676,7 +1684,7 @@ class _MetricsAccessor(
             The display class.
 
         display_kwargs : dict
-            The display kwargs used by `display_class._from_predictions`.
+            The display kwargs used by `display_class._compute_data_for_display`.
 
         Returns
         -------
@@ -1692,7 +1700,11 @@ class _MetricsAccessor(
             cache_key = None
         else:
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            cache_key_parts.extend(display_kwargs.values())
+            for kwarg in display_kwargs.values():
+				# NOTE: We cannot use lists in cache keys because they are not hashable
+                if isinstance(kwarg, list):
+                    kwarg = tuple(kwarg)
+                cache_key_parts.append(kwarg)
             if data_source_hash is not None:
                 cache_key_parts.append(data_source_hash)
             else:
@@ -1984,11 +1996,8 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        sample_weight: ArrayLike | None = None,
         display_labels: list | None = None,
-        include_values: bool = True,
         normalize: Literal["true", "pred", "all"] | None = None,
-        values_format: str | None = None,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -2012,24 +2021,14 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        sample_weight : array-like of shape (n_samples,), default=None
-            Sample weights.
-
         display_labels : list of str, default=None
             Display labels for plot. If None, display labels are set from 0 to
             ``n_classes - 1``.
-
-        include_values : bool, default=True
-            Includes values in confusion matrix.
 
         normalize : {'true', 'pred', 'all'}, default=None
             Normalizes confusion matrix over the true (rows), predicted (columns)
             conditions or all the population. If None, confusion matrix will not be
             normalized.
-
-        values_format : str, default=None
-            Format specification for values in confusion matrix. If None, the format
-            specification is 'd' or '.2g' whichever is shorter.
 
         Returns
         -------
@@ -2048,21 +2047,16 @@ class _MetricsAccessor(
         >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.confusion_matrix()
         """
-        X, y, _ = self._get_X_y_and_data_source_hash(data_source=data_source, X=X, y=y)
-
-        y_pred = self._parent.get_predictions(
-            data_source=data_source,
-            response_method="predict",
-            X=X,
-            pos_label=None,
+        display_kwargs = {"display_labels": display_labels, "normalize": normalize}
+        display = cast(
+            ConfusionMatrixDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method="predict",
+                display_class=ConfusionMatrixDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-
-        return ConfusionMatrixDisplay.from_predictions(
-            y_true=y,
-            y_pred=y_pred,
-            sample_weight=sample_weight,
-            display_labels=display_labels,
-            include_values=include_values,
-            normalize=normalize,
-            values_format=values_format,
-        )
+        return display

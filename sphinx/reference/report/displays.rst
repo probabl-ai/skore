@@ -21,6 +21,7 @@ the API of each display.
    :template: base.rst
 
    MetricsSummaryDisplay
+   ConfusionMatrixDisplay
    RocCurveDisplay
    PrecisionRecallCurveDisplay
    PredictionErrorDisplay
