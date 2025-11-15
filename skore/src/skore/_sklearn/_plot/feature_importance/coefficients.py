@@ -1,5 +1,5 @@
 from collections.abc import Callable, Sequence
-from typing import Literal
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -43,6 +43,14 @@ class CoefficientsDisplay(DisplayMixin):
         Figure containing the plot.
     """
 
+    _default_barplot_kwargs: dict[str, Any] = {"palette": "tab10"}
+    _default_boxplot_kwargs: dict[str, Any] = {
+        "palette": "tab10",
+        "vert": False,
+        "whis": 100_000,
+        **BOXPLOT_STYLE,
+    }
+
     def __init__(self, *, coefficients: pd.DataFrame, report_type: ReportType):
         self.coefficients = coefficients
         self.report_type = report_type
@@ -80,7 +88,11 @@ class CoefficientsDisplay(DisplayMixin):
 
     @DisplayMixin.style_plot
     def plot(
-        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
+        self,
+        *,
+        subplots_by: Literal["estimator", "label", "output"] | None = None,
+        barplot_kwargs: dict[str, Any] | None = None,
+        boxplot_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """Plot the coefficients for the different features.
 
@@ -90,44 +102,64 @@ class CoefficientsDisplay(DisplayMixin):
             The column to use for subplotting and dividing the coefficients into
             subplots. If `None`, an automatic choice is made depending on the type of
             reports at hand.
+
+        barplot_kwargs : dict, default=None
+            Keyword arguments to be passed to seaborn's :func:`seaborn.barplot` for
+            rendering the coefficients with an :class:`~skore.EstimatorReport` or
+            :class:`~skore.ComparisonReport` of :class:`~skore.EstimatorReport`.
+
+        boxplot_kwargs : dict, default=None
+            Keyword arguments to be passed to seaborn's :func:`seaborn.boxplot` for
+            rendering the coefficients with a :class:`~skore.CrossValidationReport` or
+            :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
         """
-        return self._plot(subplots_by=subplots_by)
+        return self._plot(
+            subplots_by=subplots_by,
+            barplot_kwargs=barplot_kwargs,
+            boxplot_kwargs=boxplot_kwargs,
+        )
 
     def _plot_matplotlib(
-        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
+        self,
+        *,
+        subplots_by: Literal["estimator", "label", "output"] | None = None,
+        barplot_kwargs: dict[str, Any] | None = None,
+        boxplot_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
+        # make copy of the dictionary since we are going to pop some keys later
+        if barplot_kwargs is None:
+            barplot_kwargs = self._default_barplot_kwargs.copy()
+        else:
+            barplot_kwargs = {**self._default_barplot_kwargs, **barplot_kwargs}
+        if boxplot_kwargs is None:
+            boxplot_kwargs = self._default_boxplot_kwargs.copy()
+        else:
+            boxplot_kwargs = {**self._default_boxplot_kwargs, **boxplot_kwargs}
+
         if self.report_type == "estimator":
             return self._plot_single_estimator(
                 subplots_by=subplots_by,
                 plot_function=sns.barplot,
-                plot_function_kwargs={},
+                plot_function_kwargs=barplot_kwargs,
             )
         elif self.report_type == "cross-validation":
             return self._plot_single_estimator(
                 subplots_by=subplots_by,
                 plot_function=sns.boxplot,
-                plot_function_kwargs={
-                    "vert": False,
-                    "whis": 100_000,
-                    **BOXPLOT_STYLE,
-                },
+                plot_function_kwargs=boxplot_kwargs,
             )
         elif self.report_type == "comparison-estimator":
             return self._plot_comparison(
                 subplots_by=subplots_by,
                 plot_function=sns.barplot,
-                plot_function_kwargs={},
+                plot_function_kwargs=barplot_kwargs,
             )
         elif self.report_type == "comparison-cross-validation":
             return self._plot_comparison(
                 subplots_by=subplots_by,
                 plot_function=sns.boxplot,
-                plot_function_kwargs={
-                    "vert": False,
-                    "whis": 100_000,
-                    **BOXPLOT_STYLE,
-                },
+                plot_function_kwargs=boxplot_kwargs,
             )
         else:
             raise TypeError(f"Unexpected report type: {self.report_type!r}")
@@ -200,7 +232,7 @@ class CoefficientsDisplay(DisplayMixin):
 
         if subplots_by is None:
             hue = None if not len(columns_to_groupby) else columns_to_groupby[0]
-            palette = "tab10" if hue is not None else None
+            palette = plot_function_kwargs.pop("palette") if hue is not None else None
             ncols, sharex, figsize = 1, False, (6.4, 4.8)
             self.figure_, self.ax_ = plt.subplots(
                 ncols=ncols, sharex=sharex, figsize=figsize
@@ -224,6 +256,9 @@ class CoefficientsDisplay(DisplayMixin):
             self.figure_, self.ax_ = plt.subplots(
                 ncols=ncols, sharex=sharex, sharey=sharey, figsize=figsize
             )
+            # we don't need the palette and we are at risk of raising an error or
+            # deprecation warning if passing palette without a hue
+            plot_function_kwargs.pop("palette", None)
 
             for ax, (group, group_frame) in zip(
                 self.ax_.flatten(), frame.groupby(by=subplots_by), strict=True
@@ -297,7 +332,7 @@ class CoefficientsDisplay(DisplayMixin):
             subplots_by = "estimator"
 
         if subplots_by is None:
-            hue, palette = columns_to_groupby[0], "tab10"
+            hue, palette = columns_to_groupby[0], plot_function_kwargs.pop("palette")
             ncols, sharex, figsize = 1, False, (6.4, 4.8)
             self.figure_, self.ax_ = plt.subplots(
                 ncols=ncols, sharex=sharex, figsize=figsize
@@ -328,7 +363,7 @@ class CoefficientsDisplay(DisplayMixin):
             # infer if we should group by another column using hue
             hue_groupby = [col for col in columns_to_groupby if col != subplots_by]
             hue = hue_groupby[0] if len(hue_groupby) else None
-            palette = "tab10" if hue is not None else None
+            palette = plot_function_kwargs.pop("palette") if hue is not None else None
             if not has_same_features and hue == "estimator":
                 raise ValueError(
                     "The estimators have different features and should be plotted on "
