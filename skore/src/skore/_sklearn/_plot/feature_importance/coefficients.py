@@ -232,7 +232,8 @@ class CoefficientsDisplay(DisplayMixin):
 
         if subplots_by is None:
             hue = None if not len(columns_to_groupby) else columns_to_groupby[0]
-            palette = plot_function_kwargs.pop("palette") if hue is not None else None
+            palette = plot_function_kwargs.pop("palette")
+            palette = palette if hue is not None else None
             ncols, sharex, figsize = 1, False, (6.4, 4.8)
             self.figure_, self.ax_ = plt.subplots(
                 ncols=ncols, sharex=sharex, figsize=figsize
@@ -363,7 +364,8 @@ class CoefficientsDisplay(DisplayMixin):
             # infer if we should group by another column using hue
             hue_groupby = [col for col in columns_to_groupby if col != subplots_by]
             hue = hue_groupby[0] if len(hue_groupby) else None
-            palette = plot_function_kwargs.pop("palette") if hue is not None else None
+            palette = plot_function_kwargs.pop("palette")
+            palette = palette if hue is not None else None
             if not has_same_features and hue == "estimator":
                 raise ValueError(
                     "The estimators have different features and should be plotted on "
