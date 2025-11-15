@@ -22,7 +22,13 @@ class CoefficientsDisplay(DisplayMixin):
     Parameters
     ----------
     coefficients : DataFrame | list[DataFrame]
-        The coefficients data to display.
+        The coefficients data to display. The columns are:
+
+        - `estimator`
+        - `split`
+        - `feature`
+        - `label` or `output` (classification vs. regression)
+        - `coefficients`
 
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
@@ -43,6 +49,9 @@ class CoefficientsDisplay(DisplayMixin):
 
     def frame(self):
         """Get the coefficients in a dataframe format.
+
+        The returned dataframe is not going to contain constant columns or columns
+        containing only NaN values.
 
         Returns
         -------
@@ -73,26 +82,59 @@ class CoefficientsDisplay(DisplayMixin):
     def plot(
         self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
     ) -> None:
+        """Plot the coefficients for the different features.
+
+        Parameters
+        ----------
+        subplots_by : {"estimator", "label", "output"}, default=None
+            The column to use for subplotting and dividing the coefficients into
+            subplots. If `None`, an automatic choice is made depending on the type of
+            reports at hand.
+        """
         return self._plot(subplots_by=subplots_by)
 
     def _plot_matplotlib(
         self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
-    ):
+    ) -> None:
+        """Dispatch the plotting function for matplotlib backend."""
         if self.report_type == "estimator":
-            return self._plot_estimator_report(subplots_by=subplots_by)
+            return self._plot_single_estimator(
+                subplots_by=subplots_by,
+                plot_function=sns.barplot,
+                plot_function_kwargs={},
+            )
         elif self.report_type == "cross-validation":
-            return self._plot_cross_validation_report(subplots_by=subplots_by)
+            return self._plot_single_estimator(
+                subplots_by=subplots_by,
+                plot_function=sns.boxplot,
+                plot_function_kwargs={
+                    "vert": False,
+                    "whis": 100_000,
+                    **BOXPLOT_STYLE,
+                },
+            )
         elif self.report_type == "comparison-estimator":
-            return self._plot_comparison_report_estimator(subplots_by=subplots_by)
+            return self._plot_comparison(
+                subplots_by=subplots_by,
+                plot_function=sns.barplot,
+                plot_function_kwargs={},
+            )
         elif self.report_type == "comparison-cross-validation":
-            return self._plot_comparison_report_cross_validation(
-                subplots_by=subplots_by
+            return self._plot_comparison(
+                subplots_by=subplots_by,
+                plot_function=sns.boxplot,
+                plot_function_kwargs={
+                    "vert": False,
+                    "whis": 100_000,
+                    **BOXPLOT_STYLE,
+                },
             )
         else:
             raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
     @staticmethod
-    def _decorate_matplotlib_axis(*, ax: plt.Axes):
+    def _decorate_matplotlib_axis(*, ax: plt.Axes) -> None:
+        """Decorate the matplotlib axis."""
         ax.axvline(x=0, color=".5", linestyle="--")
         ax.set(xlabel="Magnitude of coefficient", ylabel="")
         _despine_matplotlib_axis(
@@ -104,11 +146,14 @@ class CoefficientsDisplay(DisplayMixin):
         )
 
     @staticmethod
-    def _set_legend(*, legend: Legend, title: str):
+    def _set_legend(*, legend: Legend, title: str) -> None:
+        """Set the legend title and location."""
         legend.set_title(title)
         legend.set_loc("best")
 
-    def _get_columns_to_groupby(self, *, frame: pd.DataFrame) -> list[str]:
+    @staticmethod
+    def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
+        """Get the available columns from which to group by."""
         columns_to_groupby = list[str]()
         if "estimator" in frame.columns:
             columns_to_groupby.append("estimator")
@@ -118,13 +163,29 @@ class CoefficientsDisplay(DisplayMixin):
             columns_to_groupby.append("output")
         return columns_to_groupby
 
-    def _plot_homogeneous_estimator(
+    def _plot_single_estimator(
         self,
         *,
         plot_function: Callable,
         plot_function_kwargs: dict,
         subplots_by: Literal["estimator", "label", "output"] | None = None,
-    ):
+    ) -> None:
+        """Plot the coefficients for an `EstimatorReport` or a `CrossValidationReport`.
+
+        An `EstimatorReport` will use a bar plot while a `CrossValidationReport` will
+        use a box plot.
+
+        Parameters
+        ----------
+        plot_function : Callable
+            The function to use to plot the coefficients.
+        plot_function_kwargs : dict
+            The keyword arguments to pass to the plot function.
+        subplots_by : {"estimator", "label", "output"}, default=None
+            The column to use for subplotting and dividing the coefficients into
+            subplots. If `None`, an automatic choice is made depending on the type of
+            reports at hand.
+        """
         frame, name = self.frame(), self.coefficients["estimator"].unique()[0]
 
         # {"label"} or {"output"} or {}
@@ -177,30 +238,9 @@ class CoefficientsDisplay(DisplayMixin):
                 self._decorate_matplotlib_axis(ax=ax)
                 ax.set_title(f"{name} - {subplots_by.capitalize()}: {group}")
 
-    def _plot_estimator_report(
-        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
-    ):
-        self._plot_homogeneous_estimator(
-            subplots_by=subplots_by,
-            plot_function=sns.barplot,
-            plot_function_kwargs={},
-        )
-
-    def _plot_cross_validation_report(
-        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
-    ):
-        self._plot_homogeneous_estimator(
-            subplots_by=subplots_by,
-            plot_function=sns.boxplot,
-            plot_function_kwargs={
-                "vert": False,
-                "whis": 100_000,
-                **BOXPLOT_STYLE,
-            },
-        )
-
     @staticmethod
     def _has_same_features(*, frame: pd.DataFrame) -> bool:
+        """Check if the features are the same across all estimators."""
         grouped = {
             name: group["feature"].sort_values().tolist()
             for name, group in frame.groupby("estimator")
@@ -211,13 +251,26 @@ class CoefficientsDisplay(DisplayMixin):
                 return False
         return True
 
-    def _plot_heterogeneous_estimator(
+    def _plot_comparison(
         self,
         *,
         plot_function: Callable,
         plot_function_kwargs: dict,
         subplots_by: Literal["estimator", "label", "output"] | None = None,
-    ):
+    ) -> None:
+        """Plot the coefficients for a `ComparisonReport`.
+
+        Parameters
+        ----------
+        plot_function : Callable
+            The function to use to plot the coefficients.
+        plot_function_kwargs : dict
+            The keyword arguments to pass to the plot function.
+        subplots_by : {"estimator", "label", "output"}, default=None
+            The column to use for subplotting and dividing the coefficients into
+            subplots. If `None`, an automatic choice is made depending on the type of
+            reports at hand.
+        """
         frame = self.frame()
         # help mypy to understand the following variable types
         hue: str | None = None
@@ -299,28 +352,6 @@ class CoefficientsDisplay(DisplayMixin):
                     self._set_legend(legend=ax.get_legend(), title=hue.capitalize())
                 ax.set_title(f"{subplots_by.capitalize()}: {group}")
 
-    def _plot_comparison_report_estimator(
-        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
-    ):
-        self._plot_heterogeneous_estimator(
-            subplots_by=subplots_by,
-            plot_function=sns.barplot,
-            plot_function_kwargs={},
-        )
-
-    def _plot_comparison_report_cross_validation(
-        self, *, subplots_by: Literal["estimator", "label", "output"] | None = None
-    ):
-        self._plot_heterogeneous_estimator(
-            subplots_by=subplots_by,
-            plot_function=sns.boxplot,
-            plot_function_kwargs={
-                "vert": False,
-                "whis": 100_000,
-                **BOXPLOT_STYLE,
-            },
-        )
-
     @classmethod
     def _compute_data_for_display(
         cls,
@@ -329,7 +360,26 @@ class CoefficientsDisplay(DisplayMixin):
         names: list[str],
         splits: list[int | float],
         report_type: ReportType,
-    ):
+    ) -> "CoefficientsDisplay":
+        """Compute the data for the display.
+
+        Parameters
+        ----------
+        estimators : list of estimator
+            The estimators to compute the data for.
+        names : list of str
+            The names of the estimators.
+        splits : list of int or np.nan
+            The splits to compute the data for.
+        report_type : {"estimator", "cross-validation", "comparison-estimator", \
+                "comparison-cross-validation"}
+            The type of report to compute the data for.
+
+        Returns
+        -------
+        CoefficientsDisplay
+            The data for the display.
+        """
         feature_names, est_names, coefficients, split_indices = [], [], [], []
         for estimator, name, split in zip(estimators, names, splits, strict=True):
             if isinstance(estimator, Pipeline):
