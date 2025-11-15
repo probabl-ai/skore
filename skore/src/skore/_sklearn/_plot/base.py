@@ -171,6 +171,7 @@ class StyleDisplayMixin:
         This decorator:
         1. Applies default style settings
         2. Executes `plot_func`
+        3. Calls `plt.tight_layout()` to make sure axis does not overlap
 
         Parameters
         ----------
@@ -193,6 +194,7 @@ class StyleDisplayMixin:
             try:
                 result = plot_func(self, *args, **kwargs)
             finally:
+                plt.tight_layout()
                 plt.rcParams.update(original_params)
             return result
 
