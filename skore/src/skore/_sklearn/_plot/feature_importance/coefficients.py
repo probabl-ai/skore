@@ -1,11 +1,10 @@
 from collections.abc import Callable, Sequence
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib.legend import Legend
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
@@ -165,8 +164,78 @@ class CoefficientsDisplay(DisplayMixin):
             raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
     @staticmethod
-    def _decorate_matplotlib_axis(*, ax: plt.Axes) -> None:
-        """Decorate the matplotlib axis."""
+    def _get_figsize(
+        *,
+        frame: pd.DataFrame,
+        subplots_by: Literal["estimator", "label", "output"] | None = None,
+        hue: str | None = None,
+        has_same_features: bool = True,
+    ) -> tuple[float, float]:
+        """Get the figure size for the plot based on what we try to plot.
+
+        In short, `subplots_by` will indicate that we need several columns. The height
+        will depend on the max number of features across all estimators and the number
+        of groups of hue.
+
+        Parameters
+        ----------
+        frame : DataFrame
+            The frame containing the data to plot.
+        subplots_by : {"estimator", "label", "output"} or None, default=None
+            The column to use for subplotting and dividing the coefficients into
+            subplots. If `None`, there is a single axis.
+        hue : str or None, default=None
+            The column used to group by for the color.
+        has_same_features : bool, default=True
+            Whether the features are the same across all estimators. If `False`, we need
+            to find the largest number of features across all estimators.
+
+        Returns
+        -------
+        tuple[float, float]
+            The figure size.
+        """
+        min_width, min_height, min_height_per_item = 6.4, 4.8, 0.3
+
+        # for comparison reports where we don't have the same features, we need to
+        # find the largest number of features across all estimators
+        if has_same_features:
+            n_features = frame["feature"].nunique()
+        else:
+            n_features = max(
+                [
+                    group_frame["feature"].nunique()
+                    for _, group_frame in frame.groupby("estimator")
+                ]
+            )
+        # with hue, it means that we will have several bars of boxes for a single
+        # feature: we need to find this number of groups
+        n_hue_groups = 1 if hue is None else frame[hue].nunique()
+        height = max(min_height, min_height_per_item * n_features * n_hue_groups)
+
+        if subplots_by is None:
+            width = min_width
+        else:
+            ncols = frame[subplots_by].nunique()
+            width = min_width * ncols
+
+        return (width, height)
+
+    @staticmethod
+    def _decorate_matplotlib_axis(
+        *, ax: plt.Axes, add_background_features: bool = False, n_features: int
+    ) -> None:
+        """Decorate the matplotlib axis.
+
+        Parameters
+        ----------
+        ax : plt.Axes
+            The matplotlib axis to decorate.
+        add_background_features : bool, default=False
+            Whether to add a background color for each group of features.
+        n_features : int
+            The number of features to displayed.
+        """
         ax.axvline(x=0, color=".5", linestyle="--")
         ax.set(xlabel="Magnitude of coefficient", ylabel="")
         _despine_matplotlib_axis(
@@ -176,12 +245,24 @@ class CoefficientsDisplay(DisplayMixin):
             x_range=None,
             y_range=None,
         )
+        if add_background_features:
+            for feature_idx in range(n_features):
+                if feature_idx % 2 == 0:
+                    ax.axhspan(
+                        feature_idx - 0.5,
+                        feature_idx + 0.5,
+                        color="lightgray",
+                        alpha=0.1,
+                        zorder=0,
+                    )
 
     @staticmethod
-    def _set_legend(*, legend: Legend, title: str) -> None:
+    def _set_legend(*, ax: plt.Axes, title: str) -> None:
         """Set the legend title and location."""
-        legend.set_title(title)
-        legend.set_loc("best")
+        legend = ax.get_legend()
+        if legend:
+            legend.set_title(title)
+            legend.set_loc("best")
 
     @staticmethod
     def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
@@ -234,10 +315,15 @@ class CoefficientsDisplay(DisplayMixin):
             hue = None if not len(columns_to_groupby) else columns_to_groupby[0]
             palette = plot_function_kwargs.pop("palette")
             palette = palette if hue is not None else None
-            ncols, sharex, figsize = 1, False, (6.4, 4.8)
             self.figure_, self.ax_ = plt.subplots(
-                ncols=ncols, sharex=sharex, figsize=figsize
+                figsize=self._get_figsize(
+                    frame=frame,
+                    subplots_by=subplots_by,
+                    hue=hue,
+                    has_same_features=True,
+                )
             )
+
             plot_function(
                 data=frame,
                 x="coefficients",
@@ -247,22 +333,36 @@ class CoefficientsDisplay(DisplayMixin):
                 ax=self.ax_,
                 **plot_function_kwargs,
             )
-            self._decorate_matplotlib_axis(ax=self.ax_)
+            add_background_features = hue is not None and plot_function == sns.boxplot
+            self._decorate_matplotlib_axis(
+                ax=self.ax_,
+                add_background_features=add_background_features,
+                n_features=frame["feature"].nunique(),
+            )
             self.ax_.set_title(f"{name}")
             if hue is not None:
-                self._set_legend(legend=self.ax_.get_legend(), title=hue.capitalize())
+                self._set_legend(ax=self.ax_, title=hue.capitalize())
         else:
-            ncols, sharex, sharey = frame[subplots_by].nunique(), True, True
-            figsize = (6.4 * ncols, 4.8)
-            self.figure_, self.ax_ = plt.subplots(
-                ncols=ncols, sharex=sharex, sharey=sharey, figsize=figsize
-            )
+            hue = None
             # we don't need the palette and we are at risk of raising an error or
             # deprecation warning if passing palette without a hue
             plot_function_kwargs.pop("palette", None)
 
+            self.figure_, self.ax_ = plt.subplots(
+                ncols=frame[subplots_by].nunique(),
+                sharex=True,
+                sharey=True,
+                figsize=self._get_figsize(
+                    frame=frame,
+                    subplots_by=subplots_by,
+                    hue=hue,
+                    has_same_features=True,
+                ),
+            )
+
+            axes = cast(np.ndarray, self.ax_)
             for ax, (group, group_frame) in zip(
-                self.ax_.flatten(), frame.groupby(by=subplots_by), strict=True
+                axes.flatten(), frame.groupby(by=subplots_by), strict=True
             ):
                 plot_function(
                     data=group_frame,
@@ -271,7 +371,11 @@ class CoefficientsDisplay(DisplayMixin):
                     ax=ax,
                     **plot_function_kwargs,
                 )
-                self._decorate_matplotlib_axis(ax=ax)
+                self._decorate_matplotlib_axis(
+                    ax=ax,
+                    add_background_features=False,
+                    n_features=group_frame["feature"].nunique(),
+                )
                 ax.set_title(f"{name} - {subplots_by.capitalize()}: {group}")
 
     @staticmethod
@@ -334,10 +438,15 @@ class CoefficientsDisplay(DisplayMixin):
 
         if subplots_by is None:
             hue, palette = columns_to_groupby[0], plot_function_kwargs.pop("palette")
-            ncols, sharex, figsize = 1, False, (6.4, 4.8)
             self.figure_, self.ax_ = plt.subplots(
-                ncols=ncols, sharex=sharex, figsize=figsize
+                figsize=self._get_figsize(
+                    frame=frame,
+                    subplots_by=subplots_by,
+                    hue=hue,
+                    has_same_features=True,
+                )
             )
+
             plot_function(
                 data=frame,
                 x="coefficients",
@@ -347,33 +456,41 @@ class CoefficientsDisplay(DisplayMixin):
                 ax=self.ax_,
                 **plot_function_kwargs,
             )
-            self._decorate_matplotlib_axis(ax=self.ax_)
+            self._decorate_matplotlib_axis(
+                ax=self.ax_,
+                add_background_features=plot_function == sns.boxplot,
+                n_features=frame["feature"].nunique(),
+            )
             if hue is not None:
-                self._set_legend(legend=self.ax_.get_legend(), title=hue.capitalize())
+                self._set_legend(ax=self.ax_, title=hue.capitalize())
         else:
-            ncols, sharex, sharey = (
-                frame[subplots_by].nunique(),
-                True,
-                has_same_features,
-            )
-            figsize = (6.4 * ncols, 4.8)
-            self.figure_, self.ax_ = plt.subplots(
-                ncols=ncols, sharex=sharex, sharey=sharey, figsize=figsize
-            )
-
             # infer if we should group by another column using hue
             hue_groupby = [col for col in columns_to_groupby if col != subplots_by]
             hue = hue_groupby[0] if len(hue_groupby) else None
             palette = plot_function_kwargs.pop("palette")
             palette = palette if hue is not None else None
+
             if not has_same_features and hue == "estimator":
                 raise ValueError(
                     "The estimators have different features and should be plotted on "
                     "different axis using `subplots_by='estimator'`."
                 )
 
+            self.figure_, self.ax_ = plt.subplots(
+                ncols=frame[subplots_by].nunique(),
+                sharex=True,
+                sharey=has_same_features,
+                figsize=self._get_figsize(
+                    frame=frame,
+                    subplots_by=subplots_by,
+                    hue=hue,
+                    has_same_features=has_same_features,
+                ),
+            )
+
+            axes = cast(np.ndarray, self.ax_)
             for ax, (group, group_frame) in zip(
-                self.ax_.flatten(), frame.groupby(by=subplots_by), strict=True
+                axes.flatten(), frame.groupby(by=subplots_by), strict=True
             ):
                 plot_function(
                     data=group_frame,
@@ -384,9 +501,13 @@ class CoefficientsDisplay(DisplayMixin):
                     ax=ax,
                     **plot_function_kwargs,
                 )
-                self._decorate_matplotlib_axis(ax=ax)
+                self._decorate_matplotlib_axis(
+                    ax=ax,
+                    add_background_features=plot_function == sns.boxplot,
+                    n_features=group_frame["feature"].nunique(),
+                )
                 if hue is not None:
-                    self._set_legend(legend=ax.get_legend(), title=hue.capitalize())
+                    self._set_legend(ax=ax, title=hue.capitalize())
                 ax.set_title(f"{subplots_by.capitalize()}: {group}")
 
     @classmethod

@@ -100,10 +100,10 @@ DEFAULT_STYLE = {
     "boxplot.capprops.color": "black",
     "boxplot.medianprops.color": "black",
     "boxplot.whiskerprops.color": "black",
-    "boxplot.boxprops.linewidth": 2.0,
-    "boxplot.capprops.linewidth": 2.0,
-    "boxplot.medianprops.linewidth": 1.5,
-    "boxplot.whiskerprops.linewidth": 2.0,
+    "boxplot.boxprops.linewidth": 1.0,
+    "boxplot.capprops.linewidth": 1.0,
+    "boxplot.medianprops.linewidth": 0.5,
+    "boxplot.whiskerprops.linewidth": 1.0,
 }
 
 BOXPLOT_STYLE = {
