@@ -719,11 +719,7 @@ print(selectk_features)
     .set_index("feature")
     .sort_values(by="coefficients", key=abs, ascending=True)
     .tail(15)
-    .plot.barh(
-        title="Model weights",
-        xlabel="Coefficient",
-        ylabel="Feature",
-    )
+    .plot.barh(title="Model weights", xlabel="Coefficient", ylabel="Feature")
 )
 plt.tight_layout()
 
@@ -1023,6 +1019,7 @@ def plot_permutation_train_test(importances):
         orient="h",
         order=importances["Feature"].unique()[::-1],
         ax=ax,
+        whis=10_000,
     )
     ax.set_xlabel("Decrease of $R^2$ score")
     ax.set_title("Permutation feature importance (Train vs Test)")
