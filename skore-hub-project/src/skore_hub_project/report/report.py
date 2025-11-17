@@ -6,7 +6,8 @@ from abc import ABC
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cached_property, partial
-from typing import ClassVar, Generic, TypeVar, cast
+from threading import RLock
+from typing import Any, ClassVar, Generic, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
@@ -139,7 +140,16 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         -----
         Unavailable medias have been filtered out.
         """
-        checksums_being_uploaded: set[str] = set()
+
+        class ThreadSafeSet(set[str]):
+            def __init__(self) -> None:
+                self.__lock = RLock()
+
+            def add(self, item: str) -> None:
+                with self.__lock:
+                    super().add(item)
+
+        checksums_being_uploaded = ThreadSafeSet()
         medias = [
             media_cls(project=self.project, report=self.report)
             for media_cls in self.MEDIAS
