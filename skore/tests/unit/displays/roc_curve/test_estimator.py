@@ -177,6 +177,26 @@ def test_data_source_multiclass_classification(
             f"{str(class_label).title()} (AUC = {roc_auc_class:0.2f})"
         )
 
+    display = report.metrics.roc(data_source="both")
+    display.plot()
+    for class_label in estimator.classes_:
+        train_auc = display.roc_auc.query(
+            f"label == {class_label} & data_source == 'train'"
+        )["roc_auc"].item()
+        test_auc = display.roc_auc.query(
+            f"label == {class_label} & data_source == 'test'"
+        )["roc_auc"].item()
+
+        line_labels = {line.get_label() for line in display.lines_}
+        assert (
+            f"Train set - {str(class_label).title()} (AUC = {train_auc:0.2f})"
+            in line_labels
+        )
+        assert (
+            f"Test set - {str(class_label).title()} (AUC = {test_auc:0.2f})"
+            in line_labels
+        )
+
 
 def test_plot_error_wrong_roc_curve_kwargs(
     pyplot,

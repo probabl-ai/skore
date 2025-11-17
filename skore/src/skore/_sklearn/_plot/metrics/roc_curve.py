@@ -241,15 +241,34 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 colormaps.get_cmap("tab10"), 10 if len(labels) < 10 else len(labels)
             )
 
-            for class_idx, class_label in enumerate(labels):
-                query = f"label == {class_label}"
+            def add_line(
+                *,
+                class_idx: int,
+                class_label: Any,
+                data_source: str | None,
+            ) -> None:
+                if data_source is None:
+                    query = f"label == {class_label}"
+                else:
+                    query = f"label == {class_label} & data_source == {data_source!r}"
+
                 roc_curve = self.roc_curve.query(query)
-                roc_auc = self.roc_auc.query(query)["roc_auc"].item()
+                roc_auc = self.roc_auc.query(query)["roc_auc"].squeeze().item()
+
+                if data_source is None:
+                    label = f"{str(class_label).title()} (AUC = {roc_auc:0.2f})"
+                else:
+                    label = (
+                        f"{data_source.title()} set - "
+                        f"{str(class_label).title()} "
+                        f"(AUC = {roc_auc:0.2f})"
+                    )
 
                 line_kwargs = _validate_style_kwargs(
                     default_style_kwargs={
                         "color": class_colors[class_idx],
-                        "label": f"{str(class_label).title()} (AUC = {roc_auc:0.2f})",
+                        "label": label,
+                        "linestyle": "solid" if data_source=="test" else "dashed",
                     },
                     user_style_kwargs=roc_curve_kwargs[class_idx],
                 )
@@ -261,10 +280,34 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 )
                 lines.append(line)
 
-            if self.data_source in ("train", "test"):
-                legend_title = f"{self.data_source.capitalize()} set"
-            else:
+            if self.data_source == "both":
+                # Plot both train and test curves for each class.
+                for class_idx, class_label in enumerate(labels):
+                    add_line(
+                        class_idx=class_idx,
+                        class_label=class_label,
+                        data_source="train",
+                    )
+                    add_line(
+                        class_idx=class_idx,
+                        class_label=class_label,
+                        data_source="test",
+                    )
                 legend_title = None
+            else:
+                # Single data source (train, test or X_y): one curve per class.
+                for class_idx, class_label in enumerate(labels):
+                    add_line(
+                        class_idx=class_idx,
+                        class_label=class_label,
+                        data_source=None,
+                    )
+
+                if self.data_source in ("train", "test"):
+                    legend_title = f"{self.data_source.capitalize()} set"
+                else:
+                    legend_title = None
+
             info_pos_label = None  # irrelevant for multiclass
 
         if plot_chance_level:
