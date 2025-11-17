@@ -958,15 +958,14 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 )
 
         else:  # multiclass-classification
+            classes = estimators[0].classes_
             # OvR fashion to collect fpr, tpr, and roc_auc
-            for y_true_i, y_pred_i, est in zip(
-                y_true, y_pred, estimators, strict=False
-            ):
-                label_binarizer = LabelBinarizer().fit(est.classes_)
+            for y_true_i, y_pred_i in zip(y_true, y_pred, strict=True):
+                label_binarizer = LabelBinarizer().fit(classes)
                 y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)
                 y_pred_i_y = cast(NDArray, y_pred_i.y)
 
-                for class_idx, class_ in enumerate(est.classes_):
+                for class_idx, class_ in enumerate(classes):
                     fpr_class_i, tpr_class_i, thresholds_class_i = roc_curve(
                         y_true_onehot_i[:, class_idx],
                         y_pred_i_y[:, class_idx],
