@@ -40,6 +40,37 @@ class CoefficientsDisplay(DisplayMixin):
 
     figure_ : matplotlib Figure
         Figure containing the plot.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_iris
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import EstimatorReport, train_test_split
+    >>> iris = load_iris(as_frame=True)
+    >>> X, y = iris.data, iris.target
+    >>> y = iris.target_names[y]
+    >>> split_data = train_test_split(
+    ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
+    ... )
+    >>> report = EstimatorReport(LogisticRegression(), **split_data)
+    >>> display = report.feature_importance.coefficients()
+    >>> display.frame()
+                  feature       label  coefficients
+    0           Intercept      setosa      9.2...
+    1   sepal length (cm)      setosa     -0.4...
+    2    sepal width (cm)      setosa      0.8...
+    3   petal length (cm)      setosa     -2.3...
+    4    petal width (cm)      setosa     -0.9...
+    5           Intercept  versicolor      1.7...
+    6   sepal length (cm)  versicolor      0.5...
+    7    sepal width (cm)  versicolor     -0.2...
+    8   petal length (cm)  versicolor     -0.2...
+    9    petal width (cm)  versicolor     -0.7...
+    10          Intercept   virginica    -11.0...
+    11  sepal length (cm)   virginica     -0.1...
+    12   sepal width (cm)   virginica     -0.5...
+    13  petal length (cm)   virginica      2.5...
+    14   petal width (cm)   virginica      1.7...
     """
 
     _default_barplot_kwargs: dict[str, Any] = {"palette": "tab10"}
@@ -64,6 +95,37 @@ class CoefficientsDisplay(DisplayMixin):
         -------
         DataFrame
             Dataframe containing the coefficients of the linear model.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_iris
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import EstimatorReport, train_test_split
+        >>> iris = load_iris(as_frame=True)
+        >>> X, y = iris.data, iris.target
+        >>> y = iris.target_names[y]
+        >>> split_data = train_test_split(
+        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
+        ... )
+        >>> report = EstimatorReport(LogisticRegression(), **split_data)
+        >>> display = report.feature_importance.coefficients()
+        >>> display.frame()
+                    feature       label  coefficients
+        0           Intercept      setosa      9.2...
+        1   sepal length (cm)      setosa     -0.4...
+        2    sepal width (cm)      setosa      0.8...
+        3   petal length (cm)      setosa     -2.3...
+        4    petal width (cm)      setosa     -0.9...
+        5           Intercept  versicolor      1.7...
+        6   sepal length (cm)  versicolor      0.5...
+        7    sepal width (cm)  versicolor     -0.2...
+        8   petal length (cm)  versicolor     -0.2...
+        9    petal width (cm)  versicolor     -0.7...
+        10          Intercept   virginica    -11.0...
+        11  sepal length (cm)   virginica     -0.1...
+        12   sepal width (cm)   virginica     -0.5...
+        13  petal length (cm)   virginica      2.5...
+        14   petal width (cm)   virginica      1.7...
         """
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
@@ -95,6 +157,9 @@ class CoefficientsDisplay(DisplayMixin):
     ) -> None:
         """Plot the coefficients for the different features.
 
+        An instance of this class should be created by
+        `report.feature_importance.coefficients()`.
+
         Parameters
         ----------
         subplots_by : {"estimator", "label", "output"}, default=None
@@ -111,6 +176,21 @@ class CoefficientsDisplay(DisplayMixin):
             Keyword arguments to be passed to seaborn's :func:`seaborn.boxplot` for
             rendering the coefficients with a :class:`~skore.CrossValidationReport` or
             :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_iris
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import EstimatorReport, train_test_split
+        >>> iris = load_iris(as_frame=True)
+        >>> X, y = iris.data, iris.target
+        >>> y = iris.target_names[y]
+        >>> split_data = train_test_split(
+        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
+        ... )
+        >>> report = EstimatorReport(LogisticRegression(), **split_data)
+        >>> display = report.feature_importance.coefficients()
+        >>> display.plot()
         """
         return self._plot(
             subplots_by=subplots_by,

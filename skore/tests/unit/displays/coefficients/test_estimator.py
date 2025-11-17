@@ -1,3 +1,5 @@
+import matplotlib as mpl
+import numpy as np
 import pytest
 from sklearn.base import clone
 from sklearn.utils._testing import _convert_container
@@ -27,10 +29,36 @@ def test_binary_classification_single_estimator(
     display = report.feature_importance.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
-    expected_columns = ["estimator_name", "split", "feature_name", "coefficients"]
-    assert display.coefficients.columns.tolist() == expected_columns
+    expected_columns = [
+        "estimator",
+        "split",
+        "feature",
+        "label",
+        "output",
+        "coefficients",
+    ]
+    df = display.coefficients
+    assert df.columns.tolist() == expected_columns
+    for col in ("split", "output", "label"):
+        assert df[col].isna().all()
+    assert df["estimator"].nunique() == 1
+    coef = np.concatenate([report.estimator_.intercept_, report.estimator_.coef_[0, :]])
+    np.testing.assert_allclose(df["coefficients"], coef)
 
     df = display.frame()
-    expected_columns = ["feature_name", "coefficients"]
+    expected_columns = ["feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
-    assert df["feature_name"].tolist() == ["Intercept"] + columns_names
+    assert df["feature"].tolist() == ["Intercept"] + columns_names
+    if not fit_intercept:
+        mask = df["feature"] == "Intercept"
+        assert df.loc[mask, "coefficients"].item() == pytest.approx(0)
+
+    display.plot()
+    assert hasattr(display, "figure_")
+    assert hasattr(display, "ax_")
+    assert isinstance(display.ax_, mpl.axes.Axes)
+
+    assert display.ax_.get_legend() is None
+    assert display.ax_.get_title() == report.estimator_name_
+    assert display.ax_.get_xlabel() == "Magnitude of coefficient"
+    assert display.ax_.get_ylabel() == ""
