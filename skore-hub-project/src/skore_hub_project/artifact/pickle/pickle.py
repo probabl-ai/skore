@@ -17,13 +17,13 @@ Report = EstimatorReport | CrossValidationReport
 
 
 class ReportSerializer(Serializer):
-    """"""
+    """Serialize a report using joblib, directly on disk to reduce RAM footprint."""
 
     def __init__(self, report: Report):
         self.report = report
 
     def __call__(self) -> None:
-        """"""
+        """Serialize a report using joblib, directly on disk to reduce RAM footprint."""
         if hasattr(self, "__called__"):
             return
 
@@ -35,7 +35,7 @@ class ReportSerializer(Serializer):
 
     @cached_property
     def checksum(self) -> str:
-        """The checksum of the report."""
+        """The checksum of the serialized report."""
         return f"skore-{self.report.__class__.__name__}-{self.report._hash}"
 
 

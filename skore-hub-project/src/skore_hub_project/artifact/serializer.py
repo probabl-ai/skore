@@ -24,7 +24,7 @@ class Serializer:
         self.filepath.unlink(True)
 
     def __call__(self) -> None:
-        """"""
+        """Serialize the content directly on disk to reduce RAM footprint."""
         if hasattr(self, "__called__"):
             return
 
@@ -58,7 +58,10 @@ class Serializer:
         from skore_hub_project import bytes_to_b64_str
 
         if not hasattr(self, "__called__"):
-            raise Exception
+            raise RuntimeError(
+                "You cannot access the checksum of a serializer without explicitly "
+                "called it. Please use `serializer()` before."
+            )
 
         # Compute checksum with the appropriate number of threads
         hasher = Blake3(max_threads=(1 if self.size < 1e6 else Blake3.AUTO))
@@ -70,6 +73,9 @@ class Serializer:
     def size(self) -> int:
         """The size of the serialized content, in bytes."""
         if not hasattr(self, "__called__"):
-            raise Exception
+            raise RuntimeError(
+                "You cannot access the size of a serializer without explicitly "
+                "called it. Please use `serializer()` before."
+            )
 
         return self.filepath.stat().st_size
