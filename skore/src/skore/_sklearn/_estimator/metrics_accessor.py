@@ -1743,25 +1743,25 @@ class _MetricsAccessor(
             return y_true, y_pred
 
         if data_source == "both":
-            X_train, y_train_true, train_data_source_hash = (
+            X_train, y_train, data_source_hash_train = (
                 self._get_X_y_and_data_source_hash(data_source="train", X=X, y=y)
             )
             y_train_true, y_train_pred = get_ys(
                 X=X_train,
-                y_true=y_train_true,
+                y_true=y_train,
                 data_source="train",
-                data_source_hash=train_data_source_hash,
+                data_source_hash=data_source_hash_train,
             )
             assert y_train_true is not None, "y must be provided"
 
-            X_test, y_test_true, test_data_source_hash = (
-                self._get_X_y_and_data_source_hash(data_source="test", X=X, y=y)
+            X_test, y_test, data_source_hash_test = self._get_X_y_and_data_source_hash(
+                data_source="test", X=X, y=y
             )
             y_test_true, y_test_pred = get_ys(
                 X=X_test,
-                y_true=y_test_true,
+                y_true=y_test,
                 data_source="test",
-                data_source_hash=test_data_source_hash,
+                data_source_hash=data_source_hash_test,
             )
             assert y_test_true is not None, "y must be provided"
 
@@ -1769,13 +1769,13 @@ class _MetricsAccessor(
             y_pred = y_train_pred + y_test_pred
             data_source_hash = None
         else:
-            X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
+            X, y_data_source, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
 
             y_true, y_pred = get_ys(
                 X=X,
-                y_true=y_true,
+                y_true=y_data_source,
                 data_source=data_source,
                 data_source_hash=data_source_hash,
             )
