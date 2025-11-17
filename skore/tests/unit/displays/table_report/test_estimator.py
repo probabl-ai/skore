@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
+from sklearn.dummy import DummyRegressor
 from skrub.datasets import fetch_employee_salaries
 
 from skore import Display, EstimatorReport, train_test_split
@@ -9,7 +10,7 @@ from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._plot.data.table_report import TableReportDisplay
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def estimator_report():
     data = fetch_employee_salaries()
     X, y = data.X, data.y
@@ -20,10 +21,10 @@ def estimator_report():
     ).dt.to_pytimedelta()
     X["cents"] = 100 * y
     split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    return EstimatorReport(tabular_pipeline("regressor"), **split_data)
+    return EstimatorReport(tabular_pipeline(DummyRegressor()), **split_data)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def display(estimator_report):
     return estimator_report.data.analyze()
 
@@ -86,7 +87,7 @@ def test_constructor(display):
 )
 def test_X_y(X, y):
     split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    report = EstimatorReport(tabular_pipeline("regressor"), **split_data)
+    report = EstimatorReport(tabular_pipeline(DummyRegressor()), **split_data)
     display = report.data.analyze()
     assert isinstance(display, TableReportDisplay)
 
@@ -114,9 +115,8 @@ def test_frame(estimator_report, data_source):
     )
 
 
-def test_categorical_plots_1d(pyplot, estimator_report):
+def test_categorical_plots_1d(pyplot, display):
     """Check the plot output with categorical data in 1-d."""
-    display = estimator_report.data.analyze(data_source="train")
     display.plot(x="gender")
     assert hasattr(display, "ax_")
     assert hasattr(display, "figure_")
@@ -124,7 +124,7 @@ def test_categorical_plots_1d(pyplot, estimator_report):
     assert [label.get_text() for label in display.ax_.get_xticklabels()] == ["M", "F"]
     labels = display.ax_.get_yticklabels()
     assert labels[0].get_text() == "0"
-    assert labels[-1].get_text() == "4000"
+    assert labels[-1].get_text() == "5000"
     assert display.ax_.get_ylabel() == "Count"
     # orange
     assert display.ax_.containers[0].patches[0].get_facecolor() == (
@@ -162,18 +162,16 @@ def test_numeric_plots_1d(pyplot, estimator_report):
     assert display.ax_.get_ylabel() == "year_first_hired"
 
 
-def test_top_k_categorical_plots_1d(pyplot, estimator_report):
+def test_top_k_categorical_plots_1d(pyplot, display):
     """Check the plot output with categorical data in 1-d and top k categories."""
-    display = estimator_report.data.analyze(data_source="train")
     display.plot(x="division")
     assert len(display.ax_.get_xticklabels()) == 20
     display.plot(x="division", top_k_categories=30)
     assert len(display.ax_.get_xticklabels()) == 30
 
 
-def test_hue_plots_1d(pyplot, estimator_report):
+def test_hue_plots_1d(pyplot, display):
     """Check the plot output with hue in 1-d."""
-    display = estimator_report.data.analyze(data_source="train")
     display.plot(x="gender", hue="current_annual_salary")
     assert "BoxPlotContainer" in display.ax_.containers[0].__class__.__name__
     legend_labels = display.ax_.legend_.texts
@@ -205,9 +203,8 @@ def test_plot_duration_data_1d(pyplot, display):
     assert display.ax_.get_ylabel() == "Years"
 
 
-def test_plots_2d(pyplot, estimator_report):
+def test_plots_2d(pyplot, display):
     """Check the general behaviour of the 2-d plots."""
-    display = estimator_report.data.analyze(data_source="train")
     # scatter plot
     display.plot(y="current_annual_salary", x="year_first_hired")
     assert display.ax_.get_xlabel() == "year_first_hired"
@@ -233,7 +230,7 @@ def test_plots_2d(pyplot, estimator_report):
 
     # heatmap
     display.plot(x="gender", y="division")
-    assert len(display.ax_.get_yticklabels()) == 19
+    assert len(display.ax_.get_yticklabels()) == 20
     assert display.ax_.get_ylabel() == "division"
     assert display.ax_.get_xlabel() == "gender"
     assert isinstance(display.ax_.collections[0], QuadMesh)
@@ -247,9 +244,8 @@ def test_plots_2d(pyplot, estimator_report):
     assert any("e+" in annotation for annotation in annotations)
 
 
-def test_hue_plots_2d(pyplot, estimator_report):
+def test_hue_plots_2d(pyplot, display):
     """Check the plot output with hue parameter in 2-d."""
-    display = estimator_report.data.analyze(data_source="train")
     display.plot(x="year_first_hired", y="current_annual_salary", hue="division")
     assert len(display.ax_.legend_.texts) == 21
     assert display.ax_.legend_.get_title().get_text() == "division"
