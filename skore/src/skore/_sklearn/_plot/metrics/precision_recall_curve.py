@@ -776,7 +776,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         report_type: ReportType,
         estimators: Sequence[BaseEstimator],
         ml_task: MLTask,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: Literal["train", "test", "X_y", "both"],
         pos_label: PositiveLabel | None,
         drop_intermediate: bool = True,
     ) -> "PrecisionRecallCurveDisplay":
@@ -802,7 +802,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y"}
+        data_source : {"train", "test", "X_y", "both"}
             The data source used to compute the precision recall curve.
 
         pos_label : int, float, bool, str or none
@@ -818,6 +818,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         -------
         display : PrecisionRecallCurveDisplay
         """
+        if data_source == "both":
+            raise NotImplementedError()
+
         pos_label_validated = cls._validate_from_predictions_params(
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )

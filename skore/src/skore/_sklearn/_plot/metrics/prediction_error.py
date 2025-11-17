@@ -720,7 +720,7 @@ class PredictionErrorDisplay(DisplayMixin):
         *,
         report_type: ReportType,
         ml_task: MLTask,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: Literal["train", "test", "X_y", "both"],
         subsample: float | int | None = 1_000,
         seed: int | None = None,
         **kwargs,
@@ -745,7 +745,7 @@ class PredictionErrorDisplay(DisplayMixin):
         ml_task : {"regression", "multioutput-regression"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y"}
+        data_source : {"train", "test", "X_y", "both"}
             The data source used to compute the prediction error curve.
 
         subsample : float, int or None, default=1_000
@@ -767,6 +767,9 @@ class PredictionErrorDisplay(DisplayMixin):
         -------
         display : PredictionErrorDisplay
         """
+        if data_source == "both":
+            raise NotImplementedError()
+
         rng = np.random.default_rng(seed)
         if isinstance(subsample, numbers.Integral):
             if subsample <= 0:
