@@ -250,6 +250,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 class_idx: int,
                 class_label: Any,
                 data_source: str | None,
+                linestyle="solid",
             ) -> None:
                 if data_source is None:
                     query = f"label == {class_label}"
@@ -272,7 +273,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     default_style_kwargs={
                         "color": class_colors[class_idx],
                         "label": label,
-                        "linestyle": "solid" if data_source == "test" else "dashed",
+                        "linestyle": linestyle,
                     },
                     user_style_kwargs=roc_curve_kwargs[class_idx],
                 )
@@ -285,7 +286,6 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 lines.append(line)
 
             if self.data_source == "both":
-                # Plot both train and test curves for each class.
                 for class_idx, class_label in enumerate(labels):
                     add_line_multiclass(
                         ax=self.ax_,
@@ -293,6 +293,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                         class_idx=class_idx,
                         class_label=class_label,
                         data_source="train",
+                        linestyle="dashed",
                     )
                     add_line_multiclass(
                         ax=self.ax_,
@@ -300,17 +301,17 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                         class_idx=class_idx,
                         class_label=class_label,
                         data_source="test",
+                        linestyle="solid",
                     )
                 legend_title = None
             else:
-                # Single data source (train, test or X_y): one curve per class.
                 for class_idx, class_label in enumerate(labels):
                     add_line_multiclass(
                         ax=self.ax_,
                         lines=lines,
                         class_idx=class_idx,
                         class_label=class_label,
-                        data_source=None,
+                        data_source=self.data_source,
                     )
 
                 if self.data_source in ("train", "test"):
