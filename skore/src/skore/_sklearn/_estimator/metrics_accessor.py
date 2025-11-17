@@ -2059,6 +2059,7 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
+        threshold: bool = False,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -2082,6 +2083,14 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
+        threshold : bool, default=False
+            Whether to enable decision threshold support for binary classification.
+            When True, the display will precompute confusion matrices at all possible
+            decision thresholds, allowing you to specify a threshold in `.plot()` or
+            `.frame()` methods. This is only applicable for binary classification and
+            requires the estimator to have `predict_proba` or `decision_function`
+            methods.
+
         Returns
         -------
         display : :class:`~skore._sklearn._plot.ConfusionMatrixDisplay`
@@ -2097,16 +2106,32 @@ class _MetricsAccessor(
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
-        >>> report.metrics.confusion_matrix()
+        >>> display = report.metrics.confusion_matrix()
+        >>> display.plot()
+
+        With decision threshold support for binary classification:
+
+        >>> display = report.metrics.confusion_matrix(threshold=True)
+        >>> display.plot(threshold=0.7)
         """
-        display_kwargs = {"display_labels": self._parent.estimator_.classes_.tolist()}
+        display_kwargs = {
+            "display_labels": self._parent.estimator_.classes_.tolist(),
+            "pos_label": self._parent.pos_label,
+            "threshold": threshold,
+        }
+
+        response_method: str | list[str] | tuple[str, ...]
+        if threshold and self._parent._ml_task == "binary-classification":
+            response_method = ("predict_proba", "decision_function")
+        else:
+            response_method = "predict"
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(
                 X=X,
                 y=y,
                 data_source=data_source,
-                response_method="predict",
+                response_method=response_method,
                 display_class=ConfusionMatrixDisplay,
                 display_kwargs=display_kwargs,
             ),
