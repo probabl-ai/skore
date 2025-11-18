@@ -260,14 +260,14 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 roc_curve = self.roc_curve.query(query)
                 roc_auc = self.roc_auc.query(query)["roc_auc"].squeeze().item()
 
-                if data_source is None:
-                    label = f"{str(class_label).title()} (AUC = {roc_auc:0.2f})"
-                else:
+                if self.data_source == "both" and data_source is not None:
                     label = (
                         f"{data_source.title()} set - "
                         f"{str(class_label).title()} "
                         f"(AUC = {roc_auc:0.2f})"
                     )
+                else:
+                    label = f"{str(class_label).title()} (AUC = {roc_auc:0.2f})"
 
                 line_kwargs = _validate_style_kwargs(
                     default_style_kwargs={
