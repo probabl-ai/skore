@@ -3,11 +3,13 @@ from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from matplotlib.colors import Colormap
 from numpy.typing import NDArray
 from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 
 from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn._plot.utils import _validate_style_kwargs
 from skore._sklearn.types import ReportType, YPlotData
 
 
@@ -28,8 +30,28 @@ class ConfusionMatrixDisplay(DisplayMixin):
         conditions or all the population. If None, confusion matrix will not be
         normalized.
 
+    report_type : {"comparison-cross-validation", "comparison-estimator", \
+            "cross-validation", "estimator"}
+        The type of report.
+
     Attributes
     ----------
+    confusion_matrix : ndarray of shape (n_classes, n_classes)
+        Confusion matrix.
+
+    display_labels : list of str or None
+        Display labels for plot. If None, display labels are set from 0 to
+        ``n_classes - 1``.
+
+    normalize : {'true', 'pred', 'all'} or None
+        Normalizes confusion matrix over the true (rows), predicted (columns)
+        conditions or all the population. If None, confusion matrix will not be
+        normalized.
+
+    report_type : {"comparison-cross-validation", "comparison-estimator", \
+            "cross-validation", "estimator"}
+        The type of report.
+
     figure_ : matplotlib Figure
         Figure containing the confusion matrix.
 
@@ -55,6 +77,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self.normalize = normalize
         self.report_type = report_type
 
+    _default_imshow_kwargs: dict | None = None
+
     @DisplayMixin.style_plot
     def plot(
         self,
@@ -63,7 +87,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         values_format: str | None = None,
         cmap: str | Colormap = "Blues",
         colorbar: bool = True,
-        **kwargs,
+        imshow_kwargs: dict | None = None,
     ):
         """Plot visualization.
 
@@ -82,7 +106,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         colorbar : bool, default=True
             Whether or not to add a colorbar to the plot.
 
-        **kwargs : dict
+        imshow_kwargs : dict, default=None
             Additional keyword arguments to be passed to matplotlib's
             `ax.imshow`.
 
@@ -96,6 +120,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
             values_format=values_format,
             cmap=cmap,
             colorbar=colorbar,
+            imshow_kwargs=imshow_kwargs,
         )
 
     def _plot_matplotlib(
@@ -105,7 +130,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         values_format: str | None = None,
         cmap: str | Colormap = "Blues",
         colorbar: bool = True,
-        **kwargs,
+        imshow_kwargs: dict | None = None,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
         if self.report_type == "estimator":
@@ -114,7 +139,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 values_format=values_format,
                 cmap=cmap,
                 colorbar=colorbar,
-                **kwargs,
+                imshow_kwargs=imshow_kwargs,
             )
         else:
             raise NotImplementedError(
@@ -129,7 +154,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         values_format: str | None = None,
         cmap: str | Colormap = "Blues",
         colorbar: bool = True,
-        **kwargs,
+        imshow_kwargs: dict | None = None,
     ) -> None:
         """
         Plot the confusion matrix for a single estimator.
@@ -149,19 +174,25 @@ class ConfusionMatrixDisplay(DisplayMixin):
         colorbar : bool, default=True
             Whether or not to add a colorbar to the plot.
 
-        **kwargs : dict
+        imshow_kwargs : dict, default=None
             Additional keyword arguments to be passed to matplotlib's
             `ax.imshow`.
         """
-        self.include_values = include_values
-        self.values_format = values_format
-
         self.figure_, self.ax_ = plt.subplots()
 
         cm = self.confusion_matrix
         n_classes = cm.shape[0]
 
-        im = self.ax_.imshow(cm, interpolation="nearest", cmap=cmap, **kwargs)
+        # No hardcoded defaults for imshow; specific parameters like cmap
+        # are passed separately
+        imshow_kwargs_validated = _validate_style_kwargs(
+            {},
+            imshow_kwargs or self._default_imshow_kwargs or {},
+        )
+
+        im = self.ax_.imshow(
+            cm, interpolation="nearest", cmap=cmap, **imshow_kwargs_validated
+        )
         if colorbar:
             self.figure_.colorbar(im, ax=self.ax_)
 
@@ -176,8 +207,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
         plt.setp(self.ax_.get_xticklabels(), rotation=0, ha="center")
 
         self.text_ = np.empty_like(cm, dtype=object)
-        if self.include_values:
-            fmt = self.values_format or (".2f" if self.normalize else "d")
+        if include_values:
+            fmt = values_format or (".2f" if self.normalize else "d")
             thresh = cm.max() / 2.0
             for i in range(n_classes):
                 for j in range(n_classes):
@@ -282,9 +313,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         frame : pandas.DataFrame
             The confusion matrix as a dataframe.
         """
-        import pandas as pd
-
         cm = self.confusion_matrix
-        display_labels = getattr(self, "display_labels", None)
+        display_labels = self.display_labels
 
         return pd.DataFrame(cm, index=display_labels, columns=display_labels)

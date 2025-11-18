@@ -1,3 +1,4 @@
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
@@ -182,5 +183,246 @@ def test_single_label(pyplot, forest_binary_classification_with_train_test):
         X_test=X_test,
         y_test=y_test,
     )
-    with pytest.raises(ValueError):
+    err_msg = "display_labels must have length equal to number of classes"
+    with pytest.raises(ValueError, match=err_msg):
         report.metrics.confusion_matrix(display_labels=["Only One Label"])
+
+
+def test_imshow_kwargs(pyplot, forest_binary_classification_with_train_test):
+    """Check that we can pass keyword arguments to the imshow call."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.metrics.confusion_matrix()
+    display.plot(imshow_kwargs={"alpha": 0.5, "vmin": 0, "vmax": 100})
+
+    assert len(display.ax_.images) == 1
+    imshow = display.ax_.images[0]
+    assert imshow.get_alpha() == 0.5
+    assert imshow.get_clim() == (0, 100)
+
+
+def test_set_style(pyplot, forest_binary_classification_with_train_test):
+    """Check that the set_style method works with imshow_kwargs."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.metrics.confusion_matrix()
+
+    display.set_style(imshow_kwargs={"alpha": 0.5})
+    display.plot()
+
+    assert display.ax_.images[0].get_alpha() == 0.5
+
+    display.plot(imshow_kwargs={"alpha": 0.8})
+    assert display.ax_.images[0].get_alpha() == 0.8
+
+
+def test_colorbar(pyplot, forest_binary_classification_with_train_test):
+    """Check that we can control the colorbar."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    display = report.metrics.confusion_matrix()
+    display.plot(colorbar=True)
+    assert len(display.figure_.axes) == 2
+
+    display = report.metrics.confusion_matrix()
+    display.plot(colorbar=False)
+    assert len(display.figure_.axes) == 1
+
+
+def test_include_values(pyplot, forest_binary_classification_with_train_test):
+    """Check that we can control whether values are displayed in cells."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    display = report.metrics.confusion_matrix()
+    display.plot(include_values=True)
+    assert display.text_.size > 0
+    assert any(text is not None for text in display.text_.flat)
+
+    display = report.metrics.confusion_matrix()
+    display.plot(include_values=False)
+    assert display.text_.size == 0
+
+
+def test_plot_attributes(pyplot, forest_binary_classification_with_train_test):
+    """Check that the plot has correct attributes and labels."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.metrics.confusion_matrix()
+    display.plot()
+
+    assert display.ax_.get_xlabel() == "Predicted label"
+    assert display.ax_.get_ylabel() == "True label"
+    assert display.ax_.get_title() == "Confusion Matrix"
+
+    n_classes = len(display.display_labels)
+    assert len(display.ax_.get_xticks()) == n_classes
+    assert len(display.ax_.get_yticks()) == n_classes
+
+    xticklabels = [label.get_text() for label in display.ax_.get_xticklabels()]
+    yticklabels = [label.get_text() for label in display.ax_.get_yticklabels()]
+    assert xticklabels == display.display_labels
+    assert yticklabels == display.display_labels
+
+
+def test_cmap(pyplot, forest_binary_classification_with_train_test):
+    """Check that we can change the colormap."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    display = report.metrics.confusion_matrix()
+    assert display.ax_.images[0].get_cmap().name == "Blues"
+
+    display.plot(cmap="Reds")
+    assert display.ax_.images[0].get_cmap().name == "Reds"
+
+
+def test_frame_structure(forest_binary_classification_with_train_test):
+    """Check that the frame method returns a properly structured dataframe."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.metrics.confusion_matrix()
+
+    frame = display.frame()
+    assert isinstance(frame, pd.DataFrame)
+    assert frame.shape == display.confusion_matrix.shape
+
+    assert list(frame.index) == display.display_labels
+    assert list(frame.columns) == display.display_labels
+
+    np.testing.assert_array_equal(frame.values, display.confusion_matrix)
+
+
+def test_frame_with_normalization(forest_binary_classification_with_train_test):
+    """Check that the frame method works correctly with normalization."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    display_true = report.metrics.confusion_matrix(normalize="true")
+    frame_true = display_true.frame()
+    row_sums = frame_true.sum(axis=1)
+    np.testing.assert_allclose(row_sums, np.ones(len(row_sums)))
+
+    display_pred = report.metrics.confusion_matrix(normalize="pred")
+    frame_pred = display_pred.frame()
+    col_sums = frame_pred.sum(axis=0)
+    np.testing.assert_allclose(col_sums, np.ones(len(col_sums)))
+
+    display_all = report.metrics.confusion_matrix(normalize="all")
+    frame_all = display_all.frame()
+    total_sum = frame_all.sum().sum()
+    np.testing.assert_allclose(total_sum, 1.0)
+
+
+def test_text_formatting(pyplot, forest_binary_classification_with_train_test):
+    """Check that text values are formatted correctly."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    display = report.metrics.confusion_matrix()
+    display.plot(values_format="d")
+
+    for text in display.text_.flat:
+        if text is not None:
+            assert isinstance(text, mpl.text.Text)
+            assert "." not in text.get_text() or text.get_text().endswith(".0")
+
+    display = report.metrics.confusion_matrix(normalize="true")
+    display.plot(values_format=".3f")
+
+    for text in display.text_.flat:
+        if text is not None:
+            assert isinstance(text, mpl.text.Text)
+            assert "." in text.get_text()
+
+
+def test_not_implemented_error_for_non_estimator_report(
+    pyplot, forest_binary_classification_with_train_test
+):
+    """Check that we raise NotImplementedError for non-estimator report types."""
+    cm = np.array([[10, 5], [2, 20]])
+    display = ConfusionMatrixDisplay(
+        confusion_matrix=cm,
+        display_labels=["0", "1"],
+        normalize=None,
+        report_type="cross-validation",
+    )
+
+    err_msg = (
+        "`ConfusionMatrixDisplay` is only implemented for `EstimatorReport` for now."
+    )
+    with pytest.raises(NotImplementedError, match=err_msg):
+        display.plot()
