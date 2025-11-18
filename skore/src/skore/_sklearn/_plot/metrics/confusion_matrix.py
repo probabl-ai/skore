@@ -300,7 +300,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
         frame : pandas.DataFrame
             The confusion matrix as a dataframe.
         """
-        cm = self.confusion_matrix
-        display_labels = self.display_labels
-
-        return pd.DataFrame(cm, index=display_labels, columns=display_labels)
+        return pd.DataFrame(
+            self.confusion_matrix,
+            index=self.display_labels,
+            columns=self.display_labels,
+        )

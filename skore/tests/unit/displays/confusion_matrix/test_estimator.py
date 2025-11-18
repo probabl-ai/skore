@@ -325,7 +325,7 @@ def test_cmap(pyplot, forest_binary_classification_with_train_test):
     display.plot()
     assert display.ax_.images[0].get_cmap().name == "Blues"
 
-    display.plot(cmap="Reds")
+    display.plot(imshow_kwargs={"cmap": "Reds"})
     assert display.ax_.images[0].get_cmap().name == "Reds"
 
 
