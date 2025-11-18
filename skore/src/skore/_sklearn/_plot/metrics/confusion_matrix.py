@@ -50,14 +50,12 @@ class ConfusionMatrixDisplay(DisplayMixin):
     def __init__(
         self,
         *,
-        confusion_matrix: NDArray,
+        confusion_matrix_data: pd.DataFrame,
         display_labels: list[str] | None = None,
-        normalize: Literal["true", "pred", "all"] | None = None,
         report_type: ReportType,
     ):
-        self.confusion_matrix = confusion_matrix
+        self.confusion_matrix_data = confusion_matrix_data
         self.display_labels = display_labels
-        self.normalize = normalize
         self.report_type = report_type
 
     _default_imshow_kwargs: dict | None = None
@@ -69,6 +67,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         *,
         include_values: bool = True,
         colorbar: bool = True,
+        normalize: Literal["true", "pred", "all"] | None = None,
         imshow_kwargs: dict | None = None,
         text_kwargs: dict | None = None,
     ):
@@ -81,6 +80,11 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
         colorbar : bool, default=True
             Whether or not to add a colorbar to the plot.
+
+        normalize : {'true', 'pred', 'all'}, default=None
+            Normalizes confusion matrix over the true (rows), predicted (columns)
+            conditions or all the population. If None, the confusion matrix will not be
+            normalized.
 
         imshow_kwargs : dict, default=None
             Additional keyword arguments to be passed to matplotlib's
@@ -100,6 +104,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         return self._plot(
             include_values=include_values,
             colorbar=colorbar,
+            normalize=normalize,
             imshow_kwargs=imshow_kwargs,
             text_kwargs=text_kwargs,
         )
@@ -109,6 +114,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         *,
         include_values: bool = True,
         colorbar: bool = True,
+        normalize: Literal["true", "pred", "all"] | None = None,
         imshow_kwargs: dict | None = None,
         text_kwargs: dict | None = None,
     ) -> None:
@@ -117,6 +123,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
             self._plot_single_estimator(
                 include_values=include_values,
                 colorbar=colorbar,
+                normalize=normalize,
                 imshow_kwargs=imshow_kwargs,
                 text_kwargs=text_kwargs,
             )
@@ -131,6 +138,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         *,
         include_values: bool = True,
         colorbar: bool = True,
+        normalize: Literal["true", "pred", "all"] | None = None,
         imshow_kwargs: dict | None = None,
         text_kwargs: dict | None = None,
     ) -> None:
@@ -144,6 +152,11 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
         colorbar : bool, default=True
             Whether or not to add a colorbar to the plot.
+
+        normalize : {'true', 'pred', 'all'}, default=None
+            Normalizes confusion matrix over the true (rows), predicted (columns)
+            conditions or all the population. If None, the confusion matrix will not be
+            normalized.
 
         imshow_kwargs : dict, default=None
             Additional keyword arguments to be passed to matplotlib's
@@ -159,15 +172,25 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self.text_: NDArray | None = None
         self.figure_, self.ax_ = plt.subplots()
 
-        cm = self.confusion_matrix
-        n_classes = cm.shape[0]
+        n_classes = np.sqrt(len(self.confusion_matrix_data))
+        cm = self.confusion_matrix_data.value.values
+        if normalize == "true":
+            cm = cm / self.confusion_matrix_data.true_sum.values
+        elif normalize == "pred":
+            cm = cm / self.confusion_matrix_data.pred_sum.values
+        elif normalize == "all":
+            cm = cm / self.confusion_matrix_data.total_sum.values
 
         imshow_kwargs_validated = _validate_style_kwargs(
             {"cmap": "Blues"},
             imshow_kwargs or self._default_imshow_kwargs or {},
         )
 
-        im = self.ax_.imshow(cm, interpolation="nearest", **imshow_kwargs_validated)
+        im = self.ax_.imshow(
+            cm.reshape(n_classes, n_classes),
+            interpolation="nearest",
+            **imshow_kwargs_validated,
+        )
         if colorbar:
             self.figure_.colorbar(im, ax=self.ax_)
 
@@ -182,14 +205,15 @@ class ConfusionMatrixDisplay(DisplayMixin):
         plt.setp(self.ax_.get_xticklabels(), rotation=0, ha="center")
 
         if include_values:
+            cm = cm.reshape(n_classes, n_classes)
             text_kwargs_validated = _validate_style_kwargs(
                 {},
                 text_kwargs or self._default_text_kwargs or {},
             )
             values_format = text_kwargs_validated.pop("values_format", None)
 
-            self.text_ = np.empty_like(cm, dtype=object)
-            fmt = values_format or (".2f" if self.normalize else "d")
+            self.text_ = np.empty((n_classes, n_classes), dtype=object)
+            fmt = values_format or (".2f" if normalize else "d")
             thresh = cm.max() / 2.0
             for i in range(n_classes):
                 for j in range(n_classes):
@@ -216,7 +240,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
         *,
         report_type: ReportType,
         display_labels: list[str] | None = None,
-        normalize: Literal["true", "pred", "all"] | None = None,
         **kwargs,
     ) -> "ConfusionMatrixDisplay":
         """Compute the confusion matrix for display.
@@ -246,11 +269,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
             Display labels for plot. If None, display labels are set from 0 to
             ``n_classes - 1``.
 
-        normalize : {'true', 'pred', 'all'}, default=None
-            Normalizes confusion matrix over the true (rows), predicted (columns)
-            conditions or all the population. If None, confusion matrix will not be
-            normalized.
-
         **kwargs : dict
             Additional keyword arguments that are ignored for compatibility with
             other metrics displays. Here, `estimators`, `ml_task` and
@@ -267,7 +285,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
         cm = sklearn_confusion_matrix(
             y_true=y_true_values,
             y_pred=y_pred_values,
-            normalize=normalize,
         )
 
         n_classes = cm.shape[0]
@@ -283,25 +300,51 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 f"({n_classes}), got {len(display_labels)}"
             )
 
+        confusion_matrix_data = pd.DataFrame(
+            {
+                "true_label": np.repeat(display_labels, n_classes),
+                "predicted_label": np.tile(display_labels, n_classes),
+                "value": cm.ravel(),
+                "true_sum": np.repeat(cm.sum(axis=1), n_classes),
+                "pred_sum": np.tile(cm.sum(axis=0), n_classes),
+                "total_sum": np.full(n_classes * n_classes, cm.sum()),
+            }
+        )
+
         disp = cls(
-            confusion_matrix=cm,
+            confusion_matrix_data=confusion_matrix_data,
             report_type=report_type,
             display_labels=display_labels,
-            normalize=normalize,
         )
 
         return disp
 
-    def frame(self):
+    def frame(self, normalize: Literal["true", "pred", "all"] | None = None):
         """Return the confusion matrix as a dataframe.
+
+        Parameters
+        ----------
+        normalize : {'true', 'pred', 'all'}, default=None
+            Normalizes confusion matrix over the true (rows), predicted (columns)
+            conditions or all the population. If None, the confusion matrix will not be
+            normalized.
 
         Returns
         -------
         frame : pandas.DataFrame
             The confusion matrix as a dataframe.
         """
+        n_classes = np.sqrt(len(self.confusion_matrix_data))
+        cm = self.confusion_matrix_data.value.values
+        if normalize == "true":
+            cm = cm / self.confusion_matrix_data.true_sum.values
+        elif normalize == "pred":
+            cm = cm / self.confusion_matrix_data.pred_sum.values
+        elif normalize == "all":
+            cm = cm / self.confusion_matrix_data.total_sum.values
+
         return pd.DataFrame(
-            self.confusion_matrix,
+            cm.reshape(n_classes, n_classes),
             index=self.display_labels,
             columns=self.display_labels,
         )
