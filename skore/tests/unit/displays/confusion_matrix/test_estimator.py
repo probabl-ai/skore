@@ -162,9 +162,9 @@ def test_values_format(pyplot, forest_binary_classification_with_train_test):
     )
 
     display_int = report.metrics.confusion_matrix()
-    display_int.plot(values_format="d")
+    display_int.plot(text_kwargs={"values_format": "d"})
     display_float = report.metrics.confusion_matrix()
-    display_float.plot(values_format=".2f")
+    display_float.plot(text_kwargs={"values_format": ".2f"})
     assert np.array_equal(
         display_int.confusion_matrix,
         display_float.confusion_matrix,
@@ -396,7 +396,7 @@ def test_text_formatting(pyplot, forest_binary_classification_with_train_test):
     )
 
     display = report.metrics.confusion_matrix()
-    display.plot(values_format="d")
+    display.plot(text_kwargs={"values_format": "d"})
 
     for text in display.text_.flat:
         if text is not None:
@@ -404,7 +404,7 @@ def test_text_formatting(pyplot, forest_binary_classification_with_train_test):
             assert "." not in text.get_text() or text.get_text().endswith(".0")
 
     display = report.metrics.confusion_matrix(normalize="true")
-    display.plot(values_format=".3f")
+    display.plot(text_kwargs={"values_format": ".3f"})
 
     for text in display.text_.flat:
         if text is not None:
