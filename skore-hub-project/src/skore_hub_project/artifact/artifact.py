@@ -10,7 +10,7 @@ from typing import ClassVar
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project import Project
-from skore_hub_project.artifact.serializer import Serializer
+from skore_hub_project.artifact.serializer import Serializer, TxtSerializer
 from skore_hub_project.artifact.upload import upload as upload_content
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
@@ -37,7 +37,7 @@ class Artifact(BaseModel, ABC):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     project: Project = Field(repr=False, exclude=True)
-    serializer_cls: ClassVar[type[Serializer]] = Serializer
+    serializer_cls: ClassVar[type[Serializer]] = TxtSerializer
     content_type: str = Field(init=False)
 
     @abstractmethod
