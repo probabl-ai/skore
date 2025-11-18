@@ -20,7 +20,13 @@ from skore._sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore._sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
+from skore._sklearn.types import (
+    DataSource,
+    MLTask,
+    PositiveLabel,
+    ReportType,
+    YPlotData,
+)
 
 
 def _set_axis_labels(ax: Axes, info_pos_label: str | None) -> None:
@@ -74,7 +80,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         The class considered as the positive class. If None, the class will not
         be shown in the legend.
 
-    data_source : {"train", "test", "X_y"}
+    data_source : {"train", "test", "X_y", "both"}
         The data source used to compute the precision recall curve.
 
     ml_task : {"binary-classification", "multiclass-classification"}
@@ -117,7 +123,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         precision_recall: DataFrame,
         average_precision: DataFrame,
         pos_label: PositiveLabel | None,
-        data_source: Literal["train", "test", "X_y"] | Literal["both"],
+        data_source: DataSource | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
@@ -776,7 +782,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         report_type: ReportType,
         estimators: Sequence[BaseEstimator],
         ml_task: MLTask,
-        data_source: Literal["train", "test", "X_y", "both"],
+        data_source: DataSource | Literal["both"],
         pos_label: PositiveLabel | None,
         drop_intermediate: bool = True,
     ) -> "PrecisionRecallCurveDisplay":

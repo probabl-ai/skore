@@ -19,7 +19,13 @@ from skore._sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore._sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
+from skore._sklearn.types import (
+    DataSource,
+    MLTask,
+    PositiveLabel,
+    ReportType,
+    YPlotData,
+)
 
 MAX_N_LABELS = 6  # 5 + 1 for the chance level line
 
@@ -137,7 +143,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         roc_curve: DataFrame,
         roc_auc: DataFrame,
         pos_label: PositiveLabel | None,
-        data_source: Literal["train", "test", "X_y", "both"],
+        data_source: DataSource | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
@@ -926,7 +932,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         report_type: ReportType,
         estimators: Sequence[BaseEstimator],
         ml_task: MLTask,
-        data_source: Literal["train", "test", "X_y", "both"],
+        data_source: DataSource | Literal["both"],
         pos_label: PositiveLabel | None,
         drop_intermediate: bool = True,
     ) -> "RocCurveDisplay":

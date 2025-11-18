@@ -28,6 +28,7 @@ from skore._sklearn._plot import (
 )
 from skore._sklearn.types import (
     _DEFAULT,
+    DataSource,
     PositiveLabel,
     Scoring,
     YPlotData,
@@ -39,8 +40,6 @@ from skore._utils._accessor import (
     _check_supported_ml_task,
 )
 from skore._utils._index import flatten_multi_index
-
-DataSource = Literal["test", "train", "X_y"]
 
 
 class _MetricsAccessor(
