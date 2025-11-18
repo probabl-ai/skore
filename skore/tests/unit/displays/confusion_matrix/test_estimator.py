@@ -269,12 +269,14 @@ def test_include_values(pyplot, forest_binary_classification_with_train_test):
 
     display = report.metrics.confusion_matrix()
     display.plot(include_values=True)
+    assert display.text_ is not None
+    assert isinstance(display.text_, np.ndarray)
     assert display.text_.size > 0
-    assert any(text is not None for text in display.text_.flat)
+    assert all(isinstance(text, mpl.text.Text) for text in display.text_.flat)
 
     display = report.metrics.confusion_matrix()
     display.plot(include_values=False)
-    assert display.text_.size == 0
+    assert display.text_ is None
 
 
 def test_plot_attributes(pyplot, forest_binary_classification_with_train_test):
@@ -320,6 +322,7 @@ def test_cmap(pyplot, forest_binary_classification_with_train_test):
     )
 
     display = report.metrics.confusion_matrix()
+    display.plot()
     assert display.ax_.images[0].get_cmap().name == "Blues"
 
     display.plot(cmap="Reds")

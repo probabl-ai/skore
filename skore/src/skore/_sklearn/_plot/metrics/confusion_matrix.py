@@ -58,10 +58,10 @@ class ConfusionMatrixDisplay(DisplayMixin):
     ax_ : matplotlib Axes
         Axes with confusion matrix.
 
-    text_ : ndarray of shape (n_classes, n_classes), dtype=matplotlib Text or \
-            None
-        Array of matplotlib text elements containing the values in the
-        confusion matrix.
+    text_ : ndarray of shape (n_classes, n_classes), dtype=object or None
+        Array of matplotlib Text objects containing the values in the confusion
+        matrix when `include_values=True` in the `plot()` method. Set to None
+        when `include_values=False`.
     """
 
     def __init__(
@@ -179,6 +179,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
             `ax.imshow`.
         """
         self.figure_, self.ax_ = plt.subplots()
+        self.text_: NDArray | None = None
 
         cm = self.confusion_matrix
         n_classes = cm.shape[0]
@@ -206,8 +207,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
         )
         plt.setp(self.ax_.get_xticklabels(), rotation=0, ha="center")
 
-        self.text_ = np.empty_like(cm, dtype=object)
         if include_values:
+            self.text_ = np.empty_like(cm, dtype=object)
             fmt = values_format or (".2f" if self.normalize else "d")
             thresh = cm.max() / 2.0
             for i in range(n_classes):
