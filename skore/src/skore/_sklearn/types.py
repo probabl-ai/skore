@@ -35,14 +35,24 @@ Aggregate = Literal["mean", "std"] | Sequence[Literal["mean", "std"]]
 
 @dataclass
 class YPlotData:
-    """Response values, either `y_true` or `y_pred`.
+    """
+    Container for response values for display classes.
 
-    Used for passing to Display classes.
+    Parameters
+    ----------
+    y : ArrayLike
+        The response values (y_true or y_pred).
+
+    split : int | None, default=None
+        CV split index for cross-validation reports.
+
+    estimator_name : str | None, default=None
+        Name of the estimator (for comparison reports).
     """
 
-    estimator_name: str
-    split: int | None
     y: ArrayLike
+    split: int | None = None
+    estimator_name: str | None = None
 
 
 ReportType = Literal[
