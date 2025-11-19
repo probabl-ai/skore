@@ -14,6 +14,7 @@ from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn.types import PositiveLabel
+from skore._utils._cache import Cache
 from skore._utils._measure_time import MeasureTime
 
 
@@ -120,7 +121,7 @@ class _BaseReport(_HelpMixin):
     _X_test: ArrayLike | None
     _y_train: ArrayLike | None
     _y_test: ArrayLike | None
-    _cache: dict[tuple[Any, ...], Any]
+    _cache: Cache
     estimator_: BaseEstimator
 
     def _get_help_panel_title(self) -> str:
@@ -323,7 +324,7 @@ class _BaseAccessor(_HelpMixin, Generic[ParentT]):
 
 def _get_cached_response_values(
     *,
-    cache: dict[tuple[Any, ...], Any],
+    cache: Cache,
     estimator_hash: int,
     estimator: BaseEstimator,
     X: ArrayLike | None,

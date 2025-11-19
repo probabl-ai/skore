@@ -1798,7 +1798,7 @@ class _MetricsAccessor(
                 cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
-        if cache_key in self._parent._cache:
+        if cache_key and cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
             display = display_class._compute_data_for_display(
