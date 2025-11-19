@@ -2,6 +2,8 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from sklearn.base import clone
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.utils._testing import _convert_container
 
 from skore import EstimatorReport
@@ -9,8 +11,12 @@ from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDis
 
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
+@pytest.mark.parametrize("with_preprocessing", [True, False])
 def test_binary_classification_single_estimator(
-    pyplot, logistic_binary_classification_with_train_test, fit_intercept
+    pyplot,
+    logistic_binary_classification_with_train_test,
+    fit_intercept,
+    with_preprocessing,
 ):
     """Check the attributes and default plotting behaviour of the coefficients plot with
     binary data."""
@@ -21,9 +27,14 @@ def test_binary_classification_single_estimator(
     X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
     X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
 
-    estimator = clone(estimator).set_params(fit_intercept=fit_intercept)
+    predictor = clone(estimator).set_params(fit_intercept=fit_intercept)
+    if with_preprocessing:
+        model = Pipeline([("scaler", StandardScaler()), ("predictor", predictor)])
+    else:
+        model = predictor
+
     report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
     display = report.feature_importance.coefficients()
@@ -42,7 +53,11 @@ def test_binary_classification_single_estimator(
     for col in ("split", "output", "label"):
         assert df[col].isna().all()
     assert df["estimator"].nunique() == 1
-    coef = np.concatenate([report.estimator_.intercept_, report.estimator_.coef_[0, :]])
+
+    fitted_predictor = report.estimator_
+    if with_preprocessing:
+        fitted_predictor = fitted_predictor.named_steps["predictor"]
+    coef = np.concatenate([fitted_predictor.intercept_, fitted_predictor.coef_[0, :]])
     np.testing.assert_allclose(df["coefficients"], coef)
 
     df = display.frame()
