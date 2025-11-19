@@ -630,6 +630,11 @@ class CoefficientsDisplay(DisplayMixin):
 
             coef = np.atleast_2d(predictor.coef_).T
             intercept = np.atleast_2d(predictor.intercept_)
+            if coef.shape[1] != intercept.shape[1]:
+                # it happens that with `fit_intercept=False` and a multi-output
+                # regression problem, intercept is a single float. Thus, we need to
+                # repeat it for each output
+                intercept = np.repeat(intercept, coef.shape[1], axis=1)
             coefficients.append(np.concatenate([intercept, coef]))
 
             feat_names = ["Intercept"] + _get_feature_names(
