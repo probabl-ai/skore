@@ -1,8 +1,9 @@
 from collections.abc import Sequence
-from typing import Literal
+from typing import Literal, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from matplotlib.colors import Colormap
 from numpy.typing import NDArray
 from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
@@ -45,11 +46,19 @@ class ConfusionMatrixDisplay(DisplayMixin):
     def __init__(
         self,
         *,
-        confusion_matrix: NDArray,
+        confusion_matrix,
         display_labels: list[str] | None = None,
         normalize: Literal["true", "pred", "all"] | None = None,
         report_type: ReportType,
     ):
+        """
+        Confusion matrix formats.
+
+        confusion_matrix:
+            - ndarray → estimator
+            - list[ndarray] → cross-validation
+            - dict[str, ndarray] → comparison report
+        """
         self.confusion_matrix = confusion_matrix
         self.display_labels = display_labels
         self.normalize = normalize
@@ -116,11 +125,120 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 colorbar=colorbar,
                 **kwargs,
             )
+        elif self.report_type == "cross-validation":
+            self._plot_cross_validation(
+                include_values=include_values,
+                values_format=values_format,
+                cmap=cmap,
+                colorbar=colorbar,
+                **kwargs,
+            )
+
+        elif self.report_type.startswith("comparison"):
+            self._plot_comparison(
+                include_values=include_values,
+                values_format=values_format,
+                cmap=cmap,
+                colorbar=colorbar,
+                **kwargs,
+            )
+
         else:
             raise NotImplementedError(
-                "`ConfusionMatrixDisplay` is only implemented for "
-                "`EstimatorReport` for now."
+                "`ConfusionMatrixDisplay` does not support"
+                f" report_type={self.report_type}"
             )
+
+    def _plot_cross_validation(
+        self,
+        *,
+        include_values=True,
+        values_format=None,
+        cmap="Blues",
+        colorbar=True,
+        **kwargs,
+    ):
+        """Plot mean ± std confusion matrix for cross-validation."""
+        cms: npt.NDArray[np.float64] = np.asarray(self.confusion_matrix, dtype=float)
+        cm_mean = cms.mean(axis=0)
+        cm_std = cms.std(axis=0)
+
+        self.figure_, self.ax_ = plt.subplots()
+
+        im = self.ax_.imshow(cm_mean, cmap=cmap, **kwargs)
+        if colorbar:
+            self.figure_.colorbar(im, ax=self.ax_)
+
+        n_classes = cm_mean.shape[0]
+
+        # Draw mean ± std inside each cell
+        self.text_ = np.empty_like(cm_mean, dtype=object)
+        if include_values:
+            for i in range(n_classes):
+                for j in range(n_classes):
+                    txt = f"{cm_mean[i, j]:.2f} ± {cm_std[i, j]:.2f}"
+                    self.text_[i, j] = self.ax_.text(
+                        j, i, txt, ha="center", va="center", color="black"
+                    )
+
+        self.ax_.set_title("Mean ± Std Confusion Matrix (Cross-Validation)")
+        self.ax_.set(
+            xticks=np.arange(n_classes),
+            yticks=np.arange(n_classes),
+            xticklabels=self.display_labels,
+            yticklabels=self.display_labels,
+            ylabel="True label",
+            xlabel="Predicted label",
+        )
+
+        self.figure_.tight_layout()
+
+    def _plot_comparison(
+        self,
+        *,
+        include_values=True,
+        values_format=None,
+        cmap="Blues",
+        colorbar=True,
+        **kwargs,
+    ):
+        """Plot subplots for each estimator in a ComparisonReport."""
+        cm_dict = self.confusion_matrix
+        estimators = list(cm_dict.keys())
+        n = len(estimators)
+
+        cols = min(3, n)
+        rows = int(np.ceil(n / cols))
+
+        self.figure_, axes = plt.subplots(rows, cols, figsize=(5 * cols, 4 * rows))
+        axes = np.array(axes).reshape(-1)
+
+        for ax, est in zip(axes, estimators, strict=False):
+            cm = cm_dict[est]
+            im = ax.imshow(cm, cmap=cmap, **kwargs)
+
+            if include_values:
+                n_classes = cm.shape[0]
+                for i in range(n_classes):
+                    for j in range(n_classes):
+                        ax.text(j, i, f"{cm[i, j]:.2f}", ha="center", va="center")
+
+            ax.set_title(est)
+            ax.set(
+                xticks=np.arange(cm.shape[0]),
+                yticks=np.arange(cm.shape[0]),
+                xticklabels=self.display_labels,
+                yticklabels=self.display_labels,
+            )
+
+        # Turn off empty axes
+        for ax in axes[len(estimators) :]:
+            ax.axis("off")
+
+        if colorbar:
+            self.figure_.colorbar(im, ax=axes.tolist())
+
+        self.figure_.tight_layout()
 
     def _plot_single_estimator(
         self,
@@ -243,28 +361,61 @@ class ConfusionMatrixDisplay(DisplayMixin):
         display : :class:`~sklearn.metrics.ConfusionMatrixDisplay`
             The confusion matrix display.
         """
-        y_true_values = y_true[0].y
-        y_pred_values = y_pred[0].y
-
-        cm = sklearn_confusion_matrix(
-            y_true=y_true_values,
-            y_pred=y_pred_values,
-            normalize=normalize,
-        )
-
-        n_classes = cm.shape[0]
-        if display_labels is None:
-            display_labels = (
-                np.unique(np.concat([y_true_values, y_pred_values]))
-                .astype(str)
-                .tolist()
+        # 1. Compute confusion matrices depending on report type
+        if report_type == "estimator":
+            cm = sklearn_confusion_matrix(
+                y_true=y_true[0].y,
+                y_pred=y_pred[0].y,
+                normalize=normalize,
             )
+
+        elif report_type == "cross-validation":
+            cm = [
+                sklearn_confusion_matrix(
+                    y_true=y_true[i].y,
+                    y_pred=y_pred[i].y,
+                    normalize=normalize,
+                )
+                for i in range(len(y_true))
+            ]
+
+        elif report_type.startswith("comparison"):
+            estimators = kwargs.get("estimators", [])
+            cm = {
+                est.name: sklearn_confusion_matrix(
+                    y_true=y_true[i].y,
+                    y_pred=y_pred[i].y,
+                    normalize=normalize,
+                )
+                for i, est in enumerate(estimators)
+            }
+
+        else:
+            raise NotImplementedError(report_type)
+        # 2. Infer number of classes
+        if report_type == "estimator":
+            n_classes = cm.shape[0]
+        elif report_type == "cross-validation":
+            n_classes = cm[0].shape[0]
+        else:
+            cm_dict = cast(dict[str, NDArray[np.float64]], cm)
+            n_classes = next(iter(cm_dict.values())).shape[0]
+
+        # 3. Compute display labels from YPlotData if needed
+        if display_labels is None:
+            all_true = np.concatenate([y.y for y in y_true])
+            all_pred = np.concatenate([y.y for y in y_pred])
+            display_labels = (
+                np.unique(np.concatenate([all_true, all_pred])).astype(str).tolist()
+            )
+
         elif len(display_labels) != n_classes:
             raise ValueError(
                 f"display_labels must have length equal to number of classes "
                 f"({n_classes}), got {len(display_labels)}"
             )
 
+        # 4. Return display object
         disp = cls(
             confusion_matrix=cm,
             report_type=report_type,
