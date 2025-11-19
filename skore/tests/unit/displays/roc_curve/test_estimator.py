@@ -179,6 +179,7 @@ def test_data_source_multiclass_classification(
 
     display = report.metrics.roc(data_source="both")
     display.plot()
+    line_labels = {line.get_label() for line in display.lines_}
     for class_label in estimator.classes_:
         train_auc = display.roc_auc.query(
             f"label == {class_label} & data_source == 'train'"
@@ -187,7 +188,6 @@ def test_data_source_multiclass_classification(
             f"label == {class_label} & data_source == 'test'"
         )["roc_auc"].item()
 
-        line_labels = {line.get_label() for line in display.lines_}
         assert (
             f"Train set - {str(class_label).title()} (AUC = {train_auc:0.2f})"
             in line_labels

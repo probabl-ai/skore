@@ -1702,6 +1702,7 @@ class _MetricsAccessor(
             cache=self._parent._cache,
             estimator_hash=int(self._parent._hash),
             estimator=self._parent.estimator_,
+            estimator_name=self._parent.estimator_name_,
             response_method=response_method,
             pos_label=pos_label,
         ) -> tuple[list[YPlotData], list[YPlotData]]:
@@ -1725,7 +1726,7 @@ class _MetricsAccessor(
 
             y_true = [
                 YPlotData(
-                    estimator_name=self._parent.estimator_name_,
+                    estimator_name=estimator_name,
                     data_source=data_source,
                     split=None,
                     y=y_true,
@@ -1733,7 +1734,7 @@ class _MetricsAccessor(
             ]
             y_pred = [
                 YPlotData(
-                    estimator_name=self._parent.estimator_name_,
+                    estimator_name=estimator_name,
                     data_source=data_source,
                     split=None,
                     y=y_pred,
