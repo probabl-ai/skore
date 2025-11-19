@@ -204,8 +204,9 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             )
 
             def add_line_binary(
-                ax, lines, *, data_source, line_kwargs=line_kwargs_validated
-            ):
+                data_source: Literal["train", "test"],
+                line_kwargs: dict = line_kwargs_validated,
+            ) -> None:
                 roc_curve = self.roc_curve.query(f"data_source == {data_source!r}")
                 roc_auc = self.roc_auc.query(f"data_source == {data_source!r}")
                 label = (
@@ -213,7 +214,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     f"(AUC = {roc_auc['roc_auc'].item():0.2f})"
                 )
 
-                (line,) = ax.plot(
+                (line,) = self.ax_.plot(
                     roc_curve["fpr"],
                     roc_curve["tpr"],
                     **(line_kwargs | {"label": label}),
@@ -221,10 +222,13 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 lines.append(line)
 
             if self.data_source in ("train", "test"):
-                add_line_binary(self.ax_, lines, data_source=self.data_source)
+                # NOTE: Seriously, mypy?
+                add_line_binary(
+                    data_source=cast(Literal["train", "test"], self.data_source)
+                )
             elif self.data_source == "both":
-                add_line_binary(self.ax_, lines, data_source="train")
-                add_line_binary(self.ax_, lines, data_source="test")
+                add_line_binary(data_source="train")
+                add_line_binary(data_source="test")
             else:  # if self.data_source in (None, "X_y")
                 (line,) = self.ax_.plot(
                     self.roc_curve["fpr"],
@@ -250,13 +254,10 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             )
 
             def add_line_multiclass(
-                ax,
-                lines,
-                *,
                 class_idx: int,
                 class_label: Any,
-                data_source: str | None,
-                linestyle="solid",
+                data_source: DataSource | None,
+                linestyle: str = "solid",
             ) -> None:
                 if data_source is None:
                     query = f"label == {class_label}"
@@ -284,7 +285,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     user_style_kwargs=roc_curve_kwargs[class_idx],
                 )
 
-                (line,) = ax.plot(
+                (line,) = self.ax_.plot(
                     roc_curve["fpr"],
                     roc_curve["tpr"],
                     **line_kwargs,
@@ -294,16 +295,12 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             if self.data_source == "both":
                 for class_idx, class_label in enumerate(labels):
                     add_line_multiclass(
-                        ax=self.ax_,
-                        lines=lines,
                         class_idx=class_idx,
                         class_label=class_label,
                         data_source="train",
                         linestyle="dashed",
                     )
                     add_line_multiclass(
-                        ax=self.ax_,
-                        lines=lines,
                         class_idx=class_idx,
                         class_label=class_label,
                         data_source="test",
@@ -313,8 +310,6 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             else:
                 for class_idx, class_label in enumerate(labels):
                     add_line_multiclass(
-                        ax=self.ax_,
-                        lines=lines,
                         class_idx=class_idx,
                         class_label=class_label,
                         data_source=self.data_source,
