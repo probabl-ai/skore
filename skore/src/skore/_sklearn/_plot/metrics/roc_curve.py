@@ -19,7 +19,13 @@ from skore._sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore._sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
+from skore._sklearn.types import (
+    DataSource,
+    MLTask,
+    PositiveLabel,
+    ReportType,
+    YPlotData,
+)
 
 MAX_N_LABELS = 6  # 5 + 1 for the chance level line
 
@@ -90,7 +96,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     pos_label : int, float, bool, str or None
         The class considered as positive. Only meaningful for binary classification.
 
-    data_source : {"train", "test", "X_y"}
+    data_source : {"train", "test", "X_y", "both"}
         The data source used to compute the ROC curve.
 
     ml_task : {"binary-classification", "multiclass-classification"}
@@ -137,7 +143,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         roc_curve: DataFrame,
         roc_auc: DataFrame,
         pos_label: PositiveLabel | None,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: DataSource | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
@@ -193,24 +199,46 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         line_kwargs: dict[str, Any] = {}
 
         if self.ml_task == "binary-classification":
-            if self.data_source in ("train", "test"):
-                line_kwargs["label"] = (
-                    f"{self.data_source.title()} set "
-                    f"(AUC = {self.roc_auc['roc_auc'].item():0.2f})"
-                )
-            else:  # data_source in (None, "X_y")
-                line_kwargs["label"] = f"AUC = {self.roc_auc['roc_auc'].item():0.2f}"
-
             line_kwargs_validated = _validate_style_kwargs(
                 line_kwargs, roc_curve_kwargs[0]
             )
 
-            (line,) = self.ax_.plot(
-                self.roc_curve["fpr"],
-                self.roc_curve["tpr"],
-                **line_kwargs_validated,
-            )
-            lines.append(line)
+            def add_line_binary(
+                data_source: Literal["train", "test"],
+                line_kwargs: dict = line_kwargs_validated,
+            ) -> None:
+                roc_curve = self.roc_curve.query(f"data_source == {data_source!r}")
+                roc_auc = self.roc_auc.query(f"data_source == {data_source!r}")
+                label = (
+                    f"{data_source.title()} set "
+                    f"(AUC = {roc_auc['roc_auc'].item():0.2f})"
+                )
+
+                (line,) = self.ax_.plot(
+                    roc_curve["fpr"],
+                    roc_curve["tpr"],
+                    **(line_kwargs | {"label": label}),
+                )
+                lines.append(line)
+
+            if self.data_source in ("train", "test"):
+                # NOTE: Seriously, mypy?
+                add_line_binary(
+                    data_source=cast(Literal["train", "test"], self.data_source)
+                )
+            elif self.data_source == "both":
+                add_line_binary(data_source="train")
+                add_line_binary(data_source="test")
+            else:  # if self.data_source in (None, "X_y")
+                (line,) = self.ax_.plot(
+                    self.roc_curve["fpr"],
+                    self.roc_curve["tpr"],
+                    **(
+                        line_kwargs_validated
+                        | {"label": f"AUC = {self.roc_auc['roc_auc'].item():0.2f}"}
+                    ),
+                )
+                lines.append(line)
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
@@ -225,20 +253,36 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 colormaps.get_cmap("tab10"), 10 if len(labels) < 10 else len(labels)
             )
 
-            for class_idx, class_label in enumerate(labels):
-                query = f"label == {class_label}"
+            def add_line_multiclass(
+                class_idx: int,
+                class_label: Any,
+                data_source: DataSource | None,
+                linestyle: str = "solid",
+            ) -> None:
+                if data_source is None:
+                    query = f"label == {class_label}"
+                else:
+                    query = f"label == {class_label} & data_source == {data_source!r}"
+
                 roc_curve = self.roc_curve.query(query)
-                roc_auc = self.roc_auc.query(query)["roc_auc"].item()
+                roc_auc = self.roc_auc.query(query)["roc_auc"].squeeze().item()
 
-                roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
-
-                default_line_kwargs: dict[str, Any] = {"color": class_colors[class_idx]}
-                default_line_kwargs["label"] = (
-                    f"{str(class_label).title()} (AUC = {roc_auc:0.2f})"
-                )
+                if self.data_source == "both" and data_source is not None:
+                    label = (
+                        f"{data_source.title()} set - "
+                        f"{str(class_label).title()} "
+                        f"(AUC = {roc_auc:0.2f})"
+                    )
+                else:
+                    label = f"{str(class_label).title()} (AUC = {roc_auc:0.2f})"
 
                 line_kwargs = _validate_style_kwargs(
-                    default_line_kwargs, roc_curve_kwargs_class
+                    default_style_kwargs={
+                        "color": class_colors[class_idx],
+                        "label": label,
+                        "linestyle": linestyle,
+                    },
+                    user_style_kwargs=roc_curve_kwargs[class_idx],
                 )
 
                 (line,) = self.ax_.plot(
@@ -248,10 +292,34 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 )
                 lines.append(line)
 
-            if self.data_source in ("train", "test"):
-                legend_title = f"{self.data_source.capitalize()} set"
-            else:
+            if self.data_source == "both":
+                for class_idx, class_label in enumerate(labels):
+                    add_line_multiclass(
+                        class_idx=class_idx,
+                        class_label=class_label,
+                        data_source="train",
+                        linestyle="dashed",
+                    )
+                    add_line_multiclass(
+                        class_idx=class_idx,
+                        class_label=class_label,
+                        data_source="test",
+                        linestyle="solid",
+                    )
                 legend_title = None
+            else:
+                for class_idx, class_label in enumerate(labels):
+                    add_line_multiclass(
+                        class_idx=class_idx,
+                        class_label=class_label,
+                        data_source=self.data_source,
+                    )
+
+                if self.data_source in ("train", "test"):
+                    legend_title = f"{self.data_source.capitalize()} set"
+                else:
+                    legend_title = None
+
             info_pos_label = None  # irrelevant for multiclass
 
         if plot_chance_level:
@@ -859,7 +927,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         report_type: ReportType,
         estimators: Sequence[BaseEstimator],
         ml_task: MLTask,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: DataSource | Literal["both"],
         pos_label: PositiveLabel | None,
         drop_intermediate: bool = True,
     ) -> "RocCurveDisplay":
@@ -885,7 +953,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y"}
+        data_source : {"train", "test", "X_y", "both"}
             The data source used to compute the ROC curve.
 
         pos_label : int, float, bool or str, default=None
@@ -925,6 +993,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     roc_curve_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
+                            "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "label": pos_label_validated,
                             "threshold": threshold,
@@ -936,6 +1005,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 roc_auc_records.append(
                     {
                         "estimator_name": y_true_i.estimator_name,
+                        "data_source": y_true_i.data_source,
                         "split": y_true_i.split,
                         "label": pos_label_validated,
                         "roc_auc": roc_auc_i,
@@ -943,15 +1013,14 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 )
 
         else:  # multiclass-classification
+            classes = estimators[0].classes_
             # OvR fashion to collect fpr, tpr, and roc_auc
-            for y_true_i, y_pred_i, est in zip(
-                y_true, y_pred, estimators, strict=False
-            ):
-                label_binarizer = LabelBinarizer().fit(est.classes_)
+            for y_true_i, y_pred_i in zip(y_true, y_pred, strict=True):
+                label_binarizer = LabelBinarizer().fit(classes)
                 y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)
                 y_pred_i_y = cast(NDArray, y_pred_i.y)
 
-                for class_idx, class_ in enumerate(est.classes_):
+                for class_idx, class_ in enumerate(classes):
                     fpr_class_i, tpr_class_i, thresholds_class_i = roc_curve(
                         y_true_onehot_i[:, class_idx],
                         y_pred_i_y[:, class_idx],
@@ -966,6 +1035,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                         roc_curve_records.append(
                             {
                                 "estimator_name": y_true_i.estimator_name,
+                                "data_source": y_true_i.data_source,
                                 "split": y_true_i.split,
                                 "label": class_,
                                 "threshold": threshold,
@@ -977,6 +1047,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     roc_auc_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
+                            "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "label": class_,
                             "roc_auc": roc_auc_class_i,
@@ -985,6 +1056,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         dtypes = {
             "estimator_name": "category",
+            "data_source": "category",
             "split": "category",
             "label": "category",
         }

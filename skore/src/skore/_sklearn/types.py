@@ -20,6 +20,8 @@ MLTask = Literal[
     "unknown",
 ]
 
+DataSource = Literal["test", "train", "X_y"]
+
 
 class _DefaultType:
     """Sentinel class for default values."""
@@ -41,6 +43,7 @@ class YPlotData:
     """
 
     estimator_name: str
+    data_source: DataSource
     split: int | None
     y: ArrayLike
 
