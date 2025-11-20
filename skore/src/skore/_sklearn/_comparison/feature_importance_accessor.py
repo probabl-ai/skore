@@ -1,22 +1,18 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import TYPE_CHECKING, cast
 
-import pandas as pd
+import numpy as np
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
-from skore._sklearn._cross_validation import CrossValidationReport
-from skore._sklearn._estimator import EstimatorReport
-from skore._sklearn._plot.metrics.feature_importance_coefficients_display import (
-    FeatureImportanceCoefficientsDisplay,
-)
+from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
 from skore._utils._accessor import _check_comparison_report_sub_estimators_have_coef
 
 if TYPE_CHECKING:
     from skore import ComparisonReport
+    from skore._sklearn._cross_validation.report import CrossValidationReport
 
 
 class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
@@ -29,7 +25,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         super().__init__(parent)
 
     @available_if(_check_comparison_report_sub_estimators_have_coef())
-    def coefficients(self) -> FeatureImportanceCoefficientsDisplay:
+    def coefficients(self) -> CoefficientsDisplay:
         """Retrieve the coefficients for each report, including the intercepts.
 
         If the compared reports are :class:`EstimatorReport` instances, the coefficients
@@ -45,59 +41,34 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
 
         Returns
         -------
-        :class:`FeatureImportanceCoefficientsDisplay`
+        :class:`CoefficientsDisplay`
             The feature importance display containing model coefficients and
             intercept.
         """
-        similar_reports = defaultdict(list)
-
-        for name, report in self._parent.reports_.items():
-            report = cast(CrossValidationReport | EstimatorReport, report)
-            feature_names = (
-                report.feature_importance.coefficients().frame().index.tolist()
-            )
-            similar_reports[tuple(sorted(feature_names))].append(
-                {
-                    "report_obj": report,
-                    "estimator_name": name,
-                    "feature_names": feature_names,
-                }
-            )
-
         if self._parent._reports_type == "EstimatorReport":
-            coef_frames = [
-                pd.DataFrame(
-                    {
-                        report_data["estimator_name"]: (
-                            report_data["report_obj"]
-                            .feature_importance.coefficients()
-                            .frame()
-                            .iloc[:, 0]
-                        )
-                        for report_data in reports_with_same_features
-                    },
-                    index=reports_with_same_features[-1]["feature_names"],
-                )
-                for reports_with_same_features in similar_reports.values()
-            ]
-        elif self._parent._reports_type == "CrossValidationReport":
-            coef_frames = [
-                report_data["report_obj"]
-                .feature_importance.coefficients()
-                .frame()
-                .add_prefix(f"{report_data['estimator_name']}__")
-                for reports_with_same_features in similar_reports.values()
-                for report_data in reports_with_same_features
-            ]
-        else:
-            raise TypeError(f"Unexpected report type: {self._parent._reports_type}")
-
-        return FeatureImportanceCoefficientsDisplay(
-            "comparison-estimator"
-            if self._parent._reports_type == "EstimatorReport"
-            else "comparison-cross-validation",
-            coef_frames,
-        )
+            return CoefficientsDisplay._compute_data_for_display(
+                estimators=[
+                    report.estimator_ for report in self._parent.reports_.values()
+                ],
+                names=list(self._parent.reports_.keys()),
+                splits=[np.nan] * len(self._parent.reports_),
+                report_type="comparison-estimator",
+            )
+        else:  # self._parent._reports_type == "CrossValidationReport":
+            estimators, names = [], []
+            splits: list[int | float] = []
+            for split_idx, (name, report) in enumerate(self._parent.reports_.items()):
+                cross_validation_report = cast("CrossValidationReport", report)
+                for estimator_report in cross_validation_report.estimator_reports_:
+                    estimators.append(estimator_report.estimator_)
+                    names.append(name)
+                    splits.append(split_idx)
+            return CoefficientsDisplay._compute_data_for_display(
+                estimators=estimators,
+                names=names,
+                splits=splits,
+                report_type="comparison-cross-validation",
+            )
 
     ####################################################################################
     # Methods related to the help tree

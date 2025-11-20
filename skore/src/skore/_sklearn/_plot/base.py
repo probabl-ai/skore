@@ -2,7 +2,7 @@ import inspect
 from collections.abc import Callable
 from functools import wraps
 from io import StringIO
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -95,6 +95,23 @@ DEFAULT_STYLE = {
     "ytick.minor.size": 5,
     "legend.loc": "upper left",
     "legend.borderaxespad": 0,
+    "boxplot.patchartist": True,
+    "boxplot.boxprops.color": "black",
+    "boxplot.capprops.color": "black",
+    "boxplot.medianprops.color": "black",
+    "boxplot.whiskerprops.color": "black",
+    "boxplot.boxprops.linewidth": 1.0,
+    "boxplot.capprops.linewidth": 1.0,
+    "boxplot.medianprops.linewidth": 0.5,
+    "boxplot.whiskerprops.linewidth": 1.0,
+}
+
+BOXPLOT_STYLE = {
+    "patch_artist": True,
+    "boxprops": {"edgecolor": "black"},
+    "whiskerprops": {"color": "black"},
+    "capprops": {"color": "black"},
+    "medianprops": {"color": "black"},
 }
 
 
@@ -118,11 +135,18 @@ class StyleDisplayMixin:
             if attr.startswith(prefix) and attr.endswith(suffix)
         ]
 
-    def set_style(self, **kwargs: Any):
+    def set_style(
+        self, *, policy: Literal["override", "update"] = "override", **kwargs: Any
+    ):
         """Set the style parameters for the display.
 
         Parameters
         ----------
+        policy : {"override", "update"}, default="override"
+            Policy to use when setting the style parameters. If "override", the style
+            parameters will be set to the values provided. If "update", the style
+            parameters will be updated with the values provided.
+
         **kwargs : dict
             Style parameters to set. Each parameter name should correspond to a
             a style attribute passed to the plot method of the display.
@@ -144,7 +168,19 @@ class StyleDisplayMixin:
                     f"Unknown style parameter: {param_name}. "
                     f"The parameter name should be one of {self._style_params}."
                 )
-            setattr(self, default_attr, param_value)
+            if policy == "override":
+                setattr(self, default_attr, param_value)
+            elif policy == "update":
+                current_value = getattr(self, default_attr)
+                if current_value is None:
+                    setattr(self, default_attr, param_value)
+                else:
+                    setattr(self, default_attr, {**current_value, **param_value})
+            else:
+                raise ValueError(
+                    f"Invalid policy: {policy}. "
+                    f"Valid policies are 'override' and 'update'."
+                )
         return self
 
     @staticmethod
@@ -154,6 +190,7 @@ class StyleDisplayMixin:
         This decorator:
         1. Applies default style settings
         2. Executes `plot_func`
+        3. Calls `plt.tight_layout()` to make sure axis does not overlap
 
         Parameters
         ----------
@@ -176,6 +213,7 @@ class StyleDisplayMixin:
             try:
                 result = plot_func(self, *args, **kwargs)
             finally:
+                plt.tight_layout()
                 plt.rcParams.update(original_params)
             return result
 
