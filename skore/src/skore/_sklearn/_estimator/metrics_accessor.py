@@ -1745,7 +1745,6 @@ class _MetricsAccessor(
                 data_source_hash=data_source_hash,
             )
             for key, value, is_cached in results:
-                key = cast(tuple[Any, ...], key)
                 if not is_cached:
                     cache[key] = value
                 if key[-1] != "predict_time":
