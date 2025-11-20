@@ -326,15 +326,14 @@ class CoefficientsDisplay(DisplayMixin):
             y_range=None,
         )
         if add_background_features:
-            for feature_idx in range(n_features):
-                if feature_idx % 2 == 0:
-                    ax.axhspan(
-                        feature_idx - 0.5,
-                        feature_idx + 0.5,
-                        color="lightgray",
-                        alpha=0.1,
-                        zorder=0,
-                    )
+            for feature_idx in range(n_features, 2):
+                ax.axhspan(
+                    feature_idx - 0.5,
+                    feature_idx + 0.5,
+                    color="lightgray",
+                    alpha=0.1,
+                    zorder=0,
+                )
 
     @staticmethod
     def _set_legend(*, ax: plt.Axes, title: str) -> None:
