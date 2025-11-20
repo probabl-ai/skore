@@ -2,6 +2,7 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from sklearn.base import clone
+from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils._testing import _convert_container
@@ -164,11 +165,13 @@ def test_multiclass_classification(
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
 @pytest.mark.parametrize("with_preprocessing", [True, False])
+@pytest.mark.parametrize("with_transformed_target", [True, False])
 def test_single_output_regression(
     pyplot,
     linear_regression_with_train_test,
     fit_intercept,
     with_preprocessing,
+    with_transformed_target,
 ):
     """Check the attributes and default plotting behaviour of the coefficients plot with
     binary data."""
@@ -178,6 +181,8 @@ def test_single_output_regression(
     X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
 
     predictor = clone(estimator).set_params(fit_intercept=fit_intercept)
+    if with_transformed_target:
+        predictor = TransformedTargetRegressor(predictor)
     if with_preprocessing:
         model = Pipeline([("scaler", StandardScaler()), ("predictor", predictor)])
     else:
@@ -207,6 +212,8 @@ def test_single_output_regression(
     fitted_predictor = report.estimator_
     if with_preprocessing:
         fitted_predictor = fitted_predictor.named_steps["predictor"]
+    if with_transformed_target:
+        fitted_predictor = fitted_predictor.regressor_
     coef = np.concatenate(
         [
             np.atleast_2d(fitted_predictor.intercept_).T,
@@ -237,11 +244,13 @@ def test_single_output_regression(
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
 @pytest.mark.parametrize("with_preprocessing", [True, False])
+@pytest.mark.parametrize("with_transformed_target", [True, False])
 def test_multi_output_regression(
     pyplot,
     linear_regression_multioutput_with_train_test,
     fit_intercept,
     with_preprocessing,
+    with_transformed_target,
 ):
     """Check the attributes and default plotting behaviour of the coefficients plot with
     binary data."""
@@ -254,6 +263,8 @@ def test_multi_output_regression(
     n_outputs = y_train.shape[1]
 
     predictor = clone(estimator).set_params(fit_intercept=fit_intercept)
+    if with_transformed_target:
+        predictor = TransformedTargetRegressor(predictor)
     if with_preprocessing:
         model = Pipeline([("scaler", StandardScaler()), ("predictor", predictor)])
     else:
@@ -284,6 +295,8 @@ def test_multi_output_regression(
     fitted_predictor = report.estimator_
     if with_preprocessing:
         fitted_predictor = fitted_predictor.named_steps["predictor"]
+    if with_transformed_target:
+        fitted_predictor = fitted_predictor.regressor_
 
     if fit_intercept:
         intercept = np.atleast_2d(fitted_predictor.intercept_).T
