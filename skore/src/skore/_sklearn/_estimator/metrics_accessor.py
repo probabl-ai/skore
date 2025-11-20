@@ -459,7 +459,7 @@ class _MetricsAccessor(
         ):
             # Convert single-level dataframes to multi-level
             for i, df in enumerate(scores):
-                if hasattr(df, "index") and not isinstance(df.index, pd.MultiIndex):
+                if not isinstance(df.index, pd.MultiIndex):
                     if "regression" in self._parent._ml_task:
                         name_index = ["Metric", "Output"]
                     else:
