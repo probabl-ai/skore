@@ -220,16 +220,6 @@ class _MetricsAccessor(
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
-        # Handle dictionary metrics
-        metric_names = None
-        if isinstance(metric, dict):
-            metric_names = list(metric.keys())
-            metrics = list(metric.values())
-        elif metric is not None and not isinstance(metric, list):
-            metrics = [metric]
-        elif isinstance(metric, list):
-            metrics = metric
-
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
             # FIXME: we are still recomputing the hash for all the metrics that we
@@ -240,6 +230,16 @@ class _MetricsAccessor(
             )
         else:
             data_source_hash = None
+
+        # Handle dictionary metrics
+        metric_names = None
+        if isinstance(metric, dict):
+            metric_names = list(metric.keys())
+            metrics = list(metric.values())
+        elif metric is not None and not isinstance(metric, list):
+            metrics = [metric]
+        elif isinstance(metric, list):
+            metrics = metric
 
         if metric is None:
             # Equivalent to _get_scorers_to_add
