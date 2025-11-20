@@ -23,12 +23,11 @@ def test_binary_classification(pyplot, forest_binary_classification_with_train_t
     display.plot()
 
     assert isinstance(display, ConfusionMatrixDisplay)
-    assert hasattr(display, "confusion_matrix")
+    assert hasattr(display, "confusion_matrix_data")
     assert hasattr(display, "display_labels")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert hasattr(display, "text_")
-    assert display.confusion_matrix.shape == (2, 2)
     assert len(display.display_labels) == 2
     assert display.ax_.get_xlabel() == "Predicted label"
     assert display.ax_.get_ylabel() == "True label"
@@ -58,7 +57,6 @@ def test_multiclass_classification(
 
     assert isinstance(display, ConfusionMatrixDisplay)
     n_classes = len(np.unique(y_test))
-    assert display.confusion_matrix.shape == (n_classes, n_classes)
     assert len(display.display_labels) == n_classes
 
     frame = display.frame()
@@ -66,8 +64,24 @@ def test_multiclass_classification(
     assert frame.shape == (n_classes, n_classes)
 
 
+def test_confusion_matrix_data(pyplot, forest_binary_classification_with_train_test):
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.metrics.confusion_matrix()
+
+    assert isinstance(display.confusion_matrix_data, pd.DataFrame)
+
+
 def test_normalization(pyplot, forest_binary_classification_with_train_test):
-    """Check the behaviour of the `normalize` parameter."""
+    """Check the behaviour of the `normalize` parameter for frame and plot"""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
@@ -79,17 +93,20 @@ def test_normalization(pyplot, forest_binary_classification_with_train_test):
         y_test=y_test,
     )
 
-    display_true = report.metrics.confusion_matrix(normalize="true")
-    display_true.plot()
-    assert np.allclose(display_true.confusion_matrix.sum(axis=1), np.ones(2))
+    display_true = report.metrics.confusion_matrix()
+    display_true.plot(normalize="true")
+    assert np.allclose(display_true.ax_.images[0].get_array().sum(axis=1), np.ones(2))
+    assert np.allclose(display_true.frame(normalize="true").sum(axis=1), np.ones(2))
 
-    display_pred = report.metrics.confusion_matrix(normalize="pred")
-    display_pred.plot()
-    assert np.allclose(display_pred.confusion_matrix.sum(axis=0), np.ones(2))
+    display_pred = report.metrics.confusion_matrix()
+    display_pred.plot(normalize="pred")
+    assert np.allclose(display_pred.ax_.images[0].get_array().sum(axis=0), np.ones(2))
+    assert np.allclose(display_pred.frame(normalize="pred").sum(axis=0), np.ones(2))
 
-    display_all = report.metrics.confusion_matrix(normalize="all")
-    display_all.plot()
-    assert np.isclose(display_all.confusion_matrix.sum(), 1.0)
+    display_all = report.metrics.confusion_matrix()
+    display_all.plot(normalize="all")
+    assert np.isclose(display_all.ax_.images[0].get_array().sum(), 1.0)
+    assert np.isclose(display_all.frame(normalize="all").sum().sum(), 1.0)
 
 
 def test_custom_labels(pyplot, forest_binary_classification_with_train_test):
@@ -137,14 +154,14 @@ def test_data_source(pyplot, forest_binary_classification_with_train_test):
         y=y_train,
     )
 
-    assert display_test.confusion_matrix is not None  # Simple existence check
+    assert display_test.confusion_matrix_data is not None  # Simple existence check
     assert not np.array_equal(  # Verify test vs train are different
-        display_test.confusion_matrix,
-        display_train.confusion_matrix,
+        display_test.confusion_matrix_data,
+        display_train.confusion_matrix_data,
     )
     assert np.array_equal(
-        display_train.confusion_matrix,
-        display_custom.confusion_matrix,
+        display_train.confusion_matrix_data,
+        display_custom.confusion_matrix_data,
     )
 
 
@@ -166,8 +183,8 @@ def test_values_format(pyplot, forest_binary_classification_with_train_test):
     display_float = report.metrics.confusion_matrix()
     display_float.plot(text_kwargs={"values_format": ".2f"})
     assert np.array_equal(
-        display_int.confusion_matrix,
-        display_float.confusion_matrix,
+        display_int.confusion_matrix_data,
+        display_float.confusion_matrix_data,
     )
 
 
@@ -342,44 +359,17 @@ def test_frame_structure(forest_binary_classification_with_train_test):
         y_test=y_test,
     )
     display = report.metrics.confusion_matrix()
-
+    n_classes = len(display.display_labels)
     frame = display.frame()
     assert isinstance(frame, pd.DataFrame)
-    assert frame.shape == display.confusion_matrix.shape
+    assert frame.shape == (n_classes, n_classes)
 
     assert list(frame.index) == display.display_labels
     assert list(frame.columns) == display.display_labels
 
-    np.testing.assert_array_equal(frame.values, display.confusion_matrix)
-
-
-def test_frame_with_normalization(forest_binary_classification_with_train_test):
-    """Check that the frame method works correctly with normalization."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
+    np.testing.assert_array_equal(
+        frame.values, display.confusion_matrix_data.values.reshape(n_classes, n_classes)
     )
-    report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    display_true = report.metrics.confusion_matrix(normalize="true")
-    frame_true = display_true.frame()
-    row_sums = frame_true.sum(axis=1)
-    np.testing.assert_allclose(row_sums, np.ones(len(row_sums)))
-
-    display_pred = report.metrics.confusion_matrix(normalize="pred")
-    frame_pred = display_pred.frame()
-    col_sums = frame_pred.sum(axis=0)
-    np.testing.assert_allclose(col_sums, np.ones(len(col_sums)))
-
-    display_all = report.metrics.confusion_matrix(normalize="all")
-    frame_all = display_all.frame()
-    total_sum = frame_all.sum().sum()
-    np.testing.assert_allclose(total_sum, 1.0)
 
 
 def test_text_formatting(pyplot, forest_binary_classification_with_train_test):
@@ -416,14 +406,11 @@ def test_not_implemented_error_for_non_estimator_report(
     pyplot, forest_binary_classification_with_train_test
 ):
     """Check that we raise NotImplementedError for non-estimator report types."""
-    cm = np.array([[10, 5], [2, 20]])
     display = ConfusionMatrixDisplay(
-        confusion_matrix=cm,
+        confusion_matrix_data=pd.DataFrame([[10, 5], [2, 20]]),
         display_labels=["0", "1"],
-        normalize=None,
         report_type="cross-validation",
     )
-
     err_msg = (
         "`ConfusionMatrixDisplay` is only implemented for `EstimatorReport` for now."
     )

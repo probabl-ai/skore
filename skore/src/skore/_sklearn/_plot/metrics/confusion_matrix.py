@@ -1,3 +1,4 @@
+import itertools
 from collections.abc import Sequence
 from typing import Literal
 
@@ -17,17 +18,12 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
     Parameters
     ----------
-    confusion_matrix : ndarray of shape (n_classes, n_classes)
-        Confusion matrix.
+    confusion_matrix_data : pd.DataFrame
+        Confusion matrix data. Each row contains a confusion matrix.
 
-    display_labels : list of str, default=None
+    display_labels : list of str
         Display labels for plot. If None, display labels are set from 0 to
         ``n_classes - 1``.
-
-    normalize : {'true', 'pred', 'all'}, default=None
-        Normalizes confusion matrix over the true (rows), predicted (columns)
-        conditions or all the population. If None, confusion matrix will not be
-        normalized.
 
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
@@ -51,7 +47,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self,
         *,
         confusion_matrix_data: pd.DataFrame,
-        display_labels: list[str] | None = None,
+        display_labels: list[str],
         report_type: ReportType,
     ):
         self.confusion_matrix_data = confusion_matrix_data
@@ -172,14 +168,14 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self.text_: NDArray | None = None
         self.figure_, self.ax_ = plt.subplots()
 
-        n_classes = np.sqrt(len(self.confusion_matrix_data))
-        cm = self.confusion_matrix_data.value.values
+        n_classes = len(self.display_labels)
+        cm = self.confusion_matrix_data.values.reshape(n_classes, n_classes)
         if normalize == "true":
-            cm = cm / self.confusion_matrix_data.true_sum.values
+            cm = cm / cm.sum(axis=1, keepdims=True)
         elif normalize == "pred":
-            cm = cm / self.confusion_matrix_data.pred_sum.values
+            cm = cm / cm.sum(axis=0, keepdims=True)
         elif normalize == "all":
-            cm = cm / self.confusion_matrix_data.total_sum.values
+            cm = cm / cm.sum()
 
         imshow_kwargs_validated = _validate_style_kwargs(
             {"cmap": "Blues"},
@@ -187,7 +183,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         )
 
         im = self.ax_.imshow(
-            cm.reshape(n_classes, n_classes),
+            cm,
             interpolation="nearest",
             **imshow_kwargs_validated,
         )
@@ -205,7 +201,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
         plt.setp(self.ax_.get_xticklabels(), rotation=0, ha="center")
 
         if include_values:
-            cm = cm.reshape(n_classes, n_classes)
             text_kwargs_validated = _validate_style_kwargs(
                 {},
                 text_kwargs or self._default_text_kwargs or {},
@@ -287,6 +282,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
             y_pred=y_pred_values,
         )
 
+        confusion_matrices = cm.flatten()
+
         n_classes = cm.shape[0]
         if display_labels is None:
             display_labels = (
@@ -300,21 +297,13 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 f"({n_classes}), got {len(display_labels)}"
             )
 
-        confusion_matrix_data = pd.DataFrame(
-            {
-                "true_label": np.repeat(display_labels, n_classes),
-                "predicted_label": np.tile(display_labels, n_classes),
-                "value": cm.ravel(),
-                "true_sum": np.repeat(cm.sum(axis=1), n_classes),
-                "pred_sum": np.tile(cm.sum(axis=0), n_classes),
-                "total_sum": np.full(n_classes * n_classes, cm.sum()),
-            }
-        )
-
-        disp = cls(
-            confusion_matrix_data=confusion_matrix_data,
-            report_type=report_type,
+        disp = cls(  # We will have multiple rows in the future (1 per threshold)
+            confusion_matrix_data=pd.DataFrame.from_records(
+                [confusion_matrices],
+                columns=itertools.product(display_labels, display_labels),
+            ),
             display_labels=display_labels,
+            report_type=report_type,
         )
 
         return disp
@@ -334,17 +323,16 @@ class ConfusionMatrixDisplay(DisplayMixin):
         frame : pandas.DataFrame
             The confusion matrix as a dataframe.
         """
-        n_classes = np.sqrt(len(self.confusion_matrix_data))
-        cm = self.confusion_matrix_data.value.values
+        n_classes = len(self.display_labels)
+        cm = self.confusion_matrix_data.values.reshape(n_classes, n_classes)
         if normalize == "true":
-            cm = cm / self.confusion_matrix_data.true_sum.values
+            cm = cm / cm.sum(axis=1, keepdims=True)
         elif normalize == "pred":
-            cm = cm / self.confusion_matrix_data.pred_sum.values
+            cm = cm / cm.sum(axis=0, keepdims=True)
         elif normalize == "all":
-            cm = cm / self.confusion_matrix_data.total_sum.values
-
+            cm = cm / cm.sum()
         return pd.DataFrame(
-            cm.reshape(n_classes, n_classes),
+            cm,
             index=self.display_labels,
             columns=self.display_labels,
         )
