@@ -453,12 +453,10 @@ class _MetricsAccessor(
 
             scores.append(score_df)
 
-        has_multilevel = any(
+        if any(
             isinstance(df, pd.DataFrame) and isinstance(df.index, pd.MultiIndex)
             for df in scores
-        )
-
-        if has_multilevel:
+        ):
             # Convert single-level dataframes to multi-level
             for i, df in enumerate(scores):
                 if hasattr(df, "index") and not isinstance(df.index, pd.MultiIndex):
