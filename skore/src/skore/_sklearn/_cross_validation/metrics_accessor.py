@@ -1129,7 +1129,7 @@ class _MetricsAccessor(
         total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
-        if cache_key in self._parent._cache:
+        if cache_key and cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
             y_true: list[YPlotData] = []
@@ -1145,6 +1145,7 @@ class _MetricsAccessor(
                 y_true.append(
                     YPlotData(
                         estimator_name=self._parent.estimator_name_,
+                        data_source=data_source,
                         split=report_idx,
                         y=cast(ArrayLike, y),
                     )
@@ -1166,6 +1167,7 @@ class _MetricsAccessor(
                         y_pred.append(
                             YPlotData(
                                 estimator_name=self._parent.estimator_name_,
+                                data_source=data_source,
                                 split=report_idx,
                                 y=value,
                             )

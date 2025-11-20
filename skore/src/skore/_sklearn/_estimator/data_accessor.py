@@ -23,21 +23,21 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         dataset: Literal["train", "test"],
         with_y: bool,
-        data_source: Literal["train", "test", "all"],
+        data_source: Literal["train", "test", "both"],
     ):
         """Retrieve data as DataFrame.
 
         Parameters
         ----------
-        dataset : {'train', 'test'}
+        dataset : {"train", "test"}
             The dataset to retrieve.
 
         with_y : bool
             Whether we should check that `y` is not None.
 
-        data_source : {'train', 'test', 'all'}
-            The dataset to analyze. If 'train', only the training set is used.
-            If 'test', only the test set is used. If 'all', both sets are concatenated
+        data_source : {"train", "test", "both"}
+            The dataset to analyze. If "train", only the training set is used.
+            If "test", only the test set is used. If "both", both sets are concatenated
             vertically.
 
         Returns
@@ -48,7 +48,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         y : DataFrame or None
             The target data.
         """
-        err_msg = "{} is required when `data_source={}`."
+        err_msg = "{} is required when `data_source={!r}`."
         X = getattr(self._parent, f"_X_{dataset}")
         y = getattr(self._parent, f"_y_{dataset}")
 
@@ -85,7 +85,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def analyze(
         self,
-        data_source: Literal["train", "test", "all"] = "all",
+        data_source: Literal["train", "test", "both"] = "both",
         with_y: bool = True,
         subsample: int | None = None,
         subsample_strategy: Literal["head", "random"] = "head",
@@ -95,9 +95,9 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {'train', 'test', 'all'}, default='all'
-            The dataset to analyze. If 'train', only the training set is used.
-            If 'test', only the test set is used. If 'all', both sets are concatenated
+        data_source : {"train", "test", "both"}, default="both"
+            The dataset to analyze. If "train", only the training set is used.
+            If "test", only the test set is used. If "both", both sets are concatenated
             vertically.
 
         with_y : bool, default=True
@@ -139,7 +139,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
         >>> report.data.analyze().frame()
         """
-        if data_source not in (data_source_options := ("train", "test", "all")):
+        if data_source not in (data_source_options := ("train", "test", "both")):
             raise ValueError(
                 f"'data_source' options are {data_source_options!r}, got {data_source}."
             )

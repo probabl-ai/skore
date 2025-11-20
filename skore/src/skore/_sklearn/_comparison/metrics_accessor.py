@@ -1224,6 +1224,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     y_true.append(
                         YPlotData(
                             estimator_name=report_name,
+                            data_source=data_source,
                             split=None,
                             y=report_y,
                         )
@@ -1245,6 +1246,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                             y_pred.append(
                                 YPlotData(
                                     estimator_name=report_name,
+                                    data_source=data_source,
                                     split=None,
                                     y=value,
                                 )
@@ -1278,6 +1280,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                         y_true.append(
                             YPlotData(
                                 estimator_name=report_name,
+                                data_source=data_source,
                                 split=split,
                                 y=report_y,
                             )
@@ -1300,6 +1303,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                                 y_pred.append(
                                     YPlotData(
                                         estimator_name=report_name,
+                                        data_source=data_source,
                                         split=split,
                                         y=value,
                                     )

@@ -131,17 +131,20 @@ def test_data_source_binary_classification(
     )
     display = report.metrics.roc(data_source="train")
     display.plot()
-    assert (
-        display.lines_[0].get_label()
-        == f"Train set (AUC = {display.roc_auc['roc_auc'].item():0.2f})"
-    )
+    auc = display.roc_auc["roc_auc"].item()
+    assert display.lines_[0].get_label() == f"Train set (AUC = {auc:0.2f})"
+
+    display = report.metrics.roc(data_source="both")
+    display.plot()
+    train_auc = display.roc_auc.iloc[0]["roc_auc"].item()
+    assert display.lines_[0].get_label() == f"Train set (AUC = {train_auc:0.2f})"
+    test_auc = display.roc_auc.iloc[1]["roc_auc"].item()
+    assert display.lines_[1].get_label() == f"Test set (AUC = {test_auc:0.2f})"
 
     display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
     display.plot()
-    assert (
-        display.lines_[0].get_label()
-        == f"AUC = {display.roc_auc['roc_auc'].item():0.2f}"
-    )
+    auc = display.roc_auc["roc_auc"].item()
+    assert display.lines_[0].get_label() == f"AUC = {auc:0.2f}"
 
 
 def test_data_source_multiclass_classification(
@@ -172,6 +175,26 @@ def test_data_source_multiclass_classification(
         ].item()
         assert display.lines_[class_label].get_label() == (
             f"{str(class_label).title()} (AUC = {roc_auc_class:0.2f})"
+        )
+
+    display = report.metrics.roc(data_source="both")
+    display.plot()
+    line_labels = {line.get_label() for line in display.lines_}
+    for class_label in estimator.classes_:
+        train_auc = display.roc_auc.query(
+            f"label == {class_label} & data_source == 'train'"
+        )["roc_auc"].item()
+        test_auc = display.roc_auc.query(
+            f"label == {class_label} & data_source == 'test'"
+        )["roc_auc"].item()
+
+        assert (
+            f"Train set - {str(class_label).title()} (AUC = {train_auc:0.2f})"
+            in line_labels
+        )
+        assert (
+            f"Test set - {str(class_label).title()} (AUC = {test_auc:0.2f})"
+            in line_labels
         )
 
 

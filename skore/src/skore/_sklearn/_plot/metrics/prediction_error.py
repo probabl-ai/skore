@@ -16,7 +16,7 @@ from skore._sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore._sklearn.types import MLTask, ReportType, YPlotData
+from skore._sklearn.types import DataSource, MLTask, ReportType, YPlotData
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
@@ -54,7 +54,7 @@ class PredictionErrorDisplay(DisplayMixin):
     range_residuals : RangeData
         Global range of the residuals.
 
-    data_source : {"train", "test", "X_y"}
+    data_source : {"train", "test", "X_y", "both"}
         The data source used to display the prediction error.
 
     ml_task : {"regression", "multioutput-regression"}
@@ -107,7 +107,7 @@ class PredictionErrorDisplay(DisplayMixin):
         range_y_true: RangeData,
         range_y_pred: RangeData,
         range_residuals: RangeData,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: DataSource | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
@@ -720,7 +720,7 @@ class PredictionErrorDisplay(DisplayMixin):
         *,
         report_type: ReportType,
         ml_task: MLTask,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: DataSource | Literal["both"],
         subsample: float | int | None = 1_000,
         seed: int | None = None,
         **kwargs,
@@ -745,7 +745,7 @@ class PredictionErrorDisplay(DisplayMixin):
         ml_task : {"regression", "multioutput-regression"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y"}
+        data_source : {"train", "test", "X_y", "both"}
             The data source used to compute the prediction error curve.
 
         subsample : float, int or None, default=1_000
@@ -767,6 +767,9 @@ class PredictionErrorDisplay(DisplayMixin):
         -------
         display : PredictionErrorDisplay
         """
+        if data_source == "both":
+            raise NotImplementedError()
+
         rng = np.random.default_rng(seed)
         if isinstance(subsample, numbers.Integral):
             if subsample <= 0:

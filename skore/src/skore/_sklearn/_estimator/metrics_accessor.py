@@ -28,6 +28,7 @@ from skore._sklearn._plot import (
 )
 from skore._sklearn.types import (
     _DEFAULT,
+    DataSource,
     PositiveLabel,
     Scoring,
     YPlotData,
@@ -39,8 +40,6 @@ from skore._utils._accessor import (
     _check_supported_ml_task,
 )
 from skore._utils._index import flatten_multi_index
-
-DataSource = Literal["test", "train", "X_y"]
 
 
 class _MetricsAccessor(
@@ -62,7 +61,7 @@ class _MetricsAccessor(
     def summarize(
         self,
         *,
-        data_source: DataSource | Literal["all"] = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         scoring: Scoring | list[Scoring] | dict[str, Scoring] | None = None,
@@ -75,13 +74,13 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y", "all"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
-            - "all" : use both the train and test sets to compute the metrics and
+            - "both" : use both the train and test sets to compute the metrics and
               present them side-by-side.
 
         X : array-like of shape (n_samples, n_features), default=None
@@ -163,7 +162,7 @@ class _MetricsAccessor(
         F1 Score               1             0.96...          (↗︎)
         >>> report.metrics.summarize(
         ...    indicator_favorability=True,
-        ...    data_source="all"
+        ...    data_source="both"
         ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
         Metric
@@ -180,7 +179,7 @@ class _MetricsAccessor(
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
         """
-        if data_source == "all":
+        if data_source == "both":
             train_summary = self.summarize(
                 data_source="train",
                 scoring=scoring,
@@ -1645,13 +1644,21 @@ class _MetricsAccessor(
         *,
         X: ArrayLike | None,
         y: ArrayLike | None,
-        data_source: DataSource,
+        data_source: DataSource | Literal["both"],
         response_method: str | list[str] | tuple[str, ...],
         display_class: type[
-            RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay
+            RocCurveDisplay
+            | PrecisionRecallCurveDisplay
+            | PredictionErrorDisplay
+            | ConfusionMatrixDisplay
         ],
         display_kwargs: dict[str, Any],
-    ) -> RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay:
+    ) -> (
+        RocCurveDisplay
+        | PrecisionRecallCurveDisplay
+        | PredictionErrorDisplay
+        | ConfusionMatrixDisplay
+    ):
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1662,12 +1669,13 @@ class _MetricsAccessor(
         y : array-like of shape (n_samples,)
             The target.
 
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train set and the test set to compute the metric.
 
         response_method : str, list of str or tuple of str
             The response method.
@@ -1676,63 +1684,126 @@ class _MetricsAccessor(
             The display class.
 
         display_kwargs : dict
-            The display kwargs used by `display_class._from_predictions`.
+            The display kwargs used by `display_class._compute_data_for_display`.
 
         Returns
         -------
         display : display_class
             The display.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-        assert y is not None, "y must be provided"
+        pos_label = display_kwargs.get("pos_label")
 
+        def get_ys(
+            *,
+            X,
+            y_true,
+            data_source,
+            data_source_hash,
+            cache=self._parent._cache,
+            estimator_hash=int(self._parent._hash),
+            estimator=self._parent.estimator_,
+            estimator_name=self._parent.estimator_name_,
+            response_method=response_method,
+            pos_label=pos_label,
+        ) -> tuple[list[YPlotData], list[YPlotData]]:
+            """Get predictions and format y_true and y_pred using YPlotData."""
+            results = _get_cached_response_values(
+                cache=cache,
+                estimator_hash=estimator_hash,
+                estimator=estimator,
+                X=X,
+                response_method=response_method,
+                pos_label=pos_label,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
+            for key, value, is_cached in results:
+                key = cast(tuple[Any, ...], key)
+                if not is_cached:
+                    cache[key] = value
+                if key[-1] != "predict_time":
+                    y_pred = value
+
+            y_true = [
+                YPlotData(
+                    estimator_name=estimator_name,
+                    data_source=data_source,
+                    split=None,
+                    y=y_true,
+                )
+            ]
+            y_pred = [
+                YPlotData(
+                    estimator_name=estimator_name,
+                    data_source=data_source,
+                    split=None,
+                    y=y_pred,
+                )
+            ]
+            return y_true, y_pred
+
+        if data_source == "both":
+            X_train, y_train, data_source_hash_train = (
+                self._get_X_y_and_data_source_hash(data_source="train", X=X, y=y)
+            )
+            y_train_true, y_train_pred = get_ys(
+                X=X_train,
+                y_true=y_train,
+                data_source="train",
+                data_source_hash=data_source_hash_train,
+            )
+            assert y_train_true is not None, "y must be provided"
+
+            X_test, y_test, data_source_hash_test = self._get_X_y_and_data_source_hash(
+                data_source="test", X=X, y=y
+            )
+            y_test_true, y_test_pred = get_ys(
+                X=X_test,
+                y_true=y_test,
+                data_source="test",
+                data_source_hash=data_source_hash_test,
+            )
+            assert y_test_true is not None, "y must be provided"
+
+            y_true = y_train_true + y_test_true
+            y_pred = y_train_pred + y_test_pred
+            data_source_hash = None
+        else:
+            X, y_data_source, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
+
+            y_true, y_pred = get_ys(
+                X=X,
+                y_true=y_data_source,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
+
+            assert y_true is not None, "y must be provided"
+
+        # Compute cache key
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            cache_key_parts.extend(display_kwargs.values())
+            for kwarg in display_kwargs.values():
+                # NOTE: We cannot use lists in cache keys because they are not hashable
+                if isinstance(kwarg, list):
+                    kwarg = tuple(kwarg)
+                cache_key_parts.append(kwarg)
             if data_source_hash is not None:
                 cache_key_parts.append(data_source_hash)
             else:
                 cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
-        if cache_key in self._parent._cache:
+        if cache_key and cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
-            results = _get_cached_response_values(
-                cache=self._parent._cache,
-                estimator_hash=int(self._parent._hash),
-                estimator=self._parent.estimator_,
-                X=X,
-                response_method=response_method,
-                pos_label=display_kwargs.get("pos_label"),
-                data_source=data_source,
-                data_source_hash=data_source_hash,
-            )
-            for key, value, is_cached in results:
-                if not is_cached:
-                    self._parent._cache[cast(tuple[Any, ...], key)] = value
-                if cast(tuple[Any, ...], key)[-1] != "predict_time":
-                    y_pred = value
-
             display = display_class._compute_data_for_display(
-                y_true=[
-                    YPlotData(
-                        estimator_name=self._parent.estimator_name_,
-                        split=None,
-                        y=y,
-                    )
-                ],
-                y_pred=[
-                    YPlotData(
-                        estimator_name=self._parent.estimator_name_,
-                        split=None,
-                        y=y_pred,
-                    )
-                ],
+                y_true=y_true,
+                y_pred=y_pred,
                 report_type="estimator",
                 estimators=[self._parent.estimator_],
                 ml_task=self._parent._ml_task,
@@ -1755,7 +1826,7 @@ class _MetricsAccessor(
     def roc(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
@@ -1764,12 +1835,14 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metrics and
+              present them side-by-side.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -1984,11 +2057,8 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        sample_weight: ArrayLike | None = None,
         display_labels: list | None = None,
-        include_values: bool = True,
         normalize: Literal["true", "pred", "all"] | None = None,
-        values_format: str | None = None,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -2012,24 +2082,14 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        sample_weight : array-like of shape (n_samples,), default=None
-            Sample weights.
-
         display_labels : list of str, default=None
             Display labels for plot. If None, display labels are set from 0 to
             ``n_classes - 1``.
-
-        include_values : bool, default=True
-            Includes values in confusion matrix.
 
         normalize : {'true', 'pred', 'all'}, default=None
             Normalizes confusion matrix over the true (rows), predicted (columns)
             conditions or all the population. If None, confusion matrix will not be
             normalized.
-
-        values_format : str, default=None
-            Format specification for values in confusion matrix. If None, the format
-            specification is 'd' or '.2g' whichever is shorter.
 
         Returns
         -------
@@ -2048,21 +2108,16 @@ class _MetricsAccessor(
         >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.confusion_matrix()
         """
-        X, y, _ = self._get_X_y_and_data_source_hash(data_source=data_source, X=X, y=y)
-
-        y_pred = self._parent.get_predictions(
-            data_source=data_source,
-            response_method="predict",
-            X=X,
-            pos_label=None,
+        display_kwargs = {"display_labels": display_labels, "normalize": normalize}
+        display = cast(
+            ConfusionMatrixDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method="predict",
+                display_class=ConfusionMatrixDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-
-        return ConfusionMatrixDisplay.from_predictions(
-            y_true=y,
-            y_pred=y_pred,
-            sample_weight=sample_weight,
-            display_labels=display_labels,
-            include_values=include_values,
-            normalize=normalize,
-            values_format=values_format,
-        )
+        return display
