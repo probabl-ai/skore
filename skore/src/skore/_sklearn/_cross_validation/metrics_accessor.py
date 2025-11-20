@@ -1160,9 +1160,7 @@ class _MetricsAccessor(
                     data_source_hash=data_source_hash,
                     pos_label=display_kwargs.get("pos_label"),
                 )
-                for key, value, is_cached in results:
-                    if not is_cached:
-                        report._cache[key] = value
+                for key, value in results:
                     if key[-1] != "predict_time":
                         y_pred.append(
                             YPlotData(
