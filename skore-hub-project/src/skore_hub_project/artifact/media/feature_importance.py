@@ -45,7 +45,7 @@ class Permutation(FeatureImportance[EstimatorReport], ABC):  # noqa: D101
     name: Literal["permutation"] = "permutation"
 
     def content_to_upload(self) -> bytes | None:  # noqa: D102
-        for key, obj in reversed(self.report._cache.items()):
+        for key, obj in reversed(list(self.report._cache.items())):
             if len(key) < 7:
                 continue
 
