@@ -1,27 +1,81 @@
-from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import LinearSVC
+import pytest
+from sklearn.compose import TransformedTargetRegressor
+from sklearn.linear_model import Ridge
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeRegressor
 
-from skore import ComparisonReport, EstimatorReport
+from skore import CoefficientsDisplay, ComparisonReport, EstimatorReport
 
 
-def test_coefficients_frame():
-    X, y = make_classification(n_features=10, random_state=0)
-    estimators = {
-        "LinearSVC": LinearSVC(C=2),
-        "LogisticRegression": LogisticRegression(),
-    }
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        Ridge(),
+        TransformedTargetRegressor(Ridge()),
+        Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())]),
+        Pipeline(
+            [
+                ("scaler", StandardScaler()),
+                ("transformed_ridge", TransformedTargetRegressor(Ridge())),
+            ]
+        ),
+    ],
+)
+def test_with_model_exposing_coef(regression_train_test_split, estimator):
+    """Check that we can create a coefficients display from model exposing a `coef_`
+    attribute."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+    assert hasattr(report.feature_importance, "coefficients")
+    display = report.feature_importance.coefficients()
+    assert isinstance(display, CoefficientsDisplay)
 
-    est_reports = {
-        name: EstimatorReport(est, X_train=X, X_test=X, y_train=y, y_test=y)
-        for name, est in estimators.items()
-    }
-    est_comparison_report = ComparisonReport(est_reports)
-    result = est_comparison_report.feature_importance.coefficients().frame()
-    assert result.shape == (11, 2)
 
-    expected_index = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
-    assert result.index.tolist() == expected_index
+def test_with_model_not_exposing_coef(regression_train_test_split):
+    """Check that we cannot create a coefficients display from model not exposing a
+    `coef_` attribute."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report_1 = EstimatorReport(
+        DecisionTreeRegressor(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report_2 = EstimatorReport(
+        DecisionTreeRegressor(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+    assert not hasattr(report.feature_importance, "coefficients")
 
-    expected_columns = list(estimators)
-    assert result.columns.tolist() == expected_columns
+
+def test_with_mixed_reports(regression_train_test_split):
+    """Check that we cannot create a coefficients display from mixed reports."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report_1 = EstimatorReport(
+        Ridge(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report_2 = EstimatorReport(
+        DecisionTreeRegressor(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+    assert not hasattr(report.feature_importance, "coefficients")
