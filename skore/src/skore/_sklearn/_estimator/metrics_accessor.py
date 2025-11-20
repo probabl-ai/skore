@@ -558,19 +558,17 @@ class _MetricsAccessor(
 
             if isinstance(score, np.ndarray):
                 score = score.tolist()
-            elif hasattr(score, "item"):
+            if hasattr(score, "item"):
                 score = score.item()
-
-            self._parent._cache[cache_key] = score
-
-        if isinstance(score, list):
-            if "classification" in self._parent._ml_task:
-                return dict(
+            if isinstance(score, list) and len(score) == 1:
+                score = score[0]
+            if isinstance(score, list) and "classification" in self._parent._ml_task:
+                score = dict(
                     zip(self._parent._estimator.classes_.tolist(), score, strict=False)
                 )
 
-            if len(score) == 1:
-                return score[0]
+            self._parent._cache[cache_key] = score
+
         return score
 
     def _fit_time(self, cast: bool = True, **kwargs) -> float | None:
