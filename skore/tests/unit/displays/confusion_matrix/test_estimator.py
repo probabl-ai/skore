@@ -1,3 +1,5 @@
+import itertools
+
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
@@ -78,6 +80,10 @@ def test_confusion_matrix_data(pyplot, forest_binary_classification_with_train_t
     display = report.metrics.confusion_matrix()
 
     assert isinstance(display.confusion_matrix_data, pd.DataFrame)
+    assert np.array_equal(
+        list(display.confusion_matrix_data.columns),
+        list(itertools.product(display.display_labels, display.display_labels)),
+    )
 
 
 def test_normalization(pyplot, forest_binary_classification_with_train_test):
