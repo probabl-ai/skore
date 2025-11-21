@@ -189,7 +189,7 @@ def test_default_heatmap_kwargs(pyplot, forest_binary_classification_with_train_
     assert len(display.ax_.texts) > 0
     assert all(isinstance(text, mpl.text.Text) for text in display.ax_.texts)
     for text in display.ax_.texts:
-        assert "." in text.get_text()
+        assert "." not in text.get_text()
     assert len(display.figure_.axes) == 2
 
 

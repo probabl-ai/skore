@@ -51,7 +51,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
     _default_heatmap_kwargs: dict = {
         "cmap": "Blues",
-        "fmt": ".2f",
         "annot": True,
         "cbar": True,
     }
@@ -126,7 +125,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self.figure_, self.ax_ = plt.subplots()
 
         heatmap_kwargs_validated = _validate_style_kwargs(
-            self._default_heatmap_kwargs,
+            {"fmt": ".2f" if normalize else "d", **self._default_heatmap_kwargs},
             heatmap_kwargs or {},
         )
 
