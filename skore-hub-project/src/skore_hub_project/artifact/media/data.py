@@ -1,5 +1,6 @@
 """Definition of the payload used to associate a data category media with report."""
 
+from functools import cached_property
 from typing import Literal
 
 from skore_hub_project import switch_mpl_backend
@@ -14,6 +15,7 @@ class TableReport(Media[Report]):  # noqa: D101
         "application/vnd.skrub.table-report.v1+json"
     )
 
+    @cached_property
     def content_to_upload(self) -> bytes:  # noqa: D102
         import orjson
 

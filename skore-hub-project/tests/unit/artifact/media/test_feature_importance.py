@@ -10,7 +10,7 @@ from skore_hub_project.artifact.media import (
     PermutationTest,
     PermutationTrain,
 )
-from skore_hub_project.artifact.serializer import Serializer
+from skore_hub_project.artifact.serializer import TxtSerializer
 
 
 def serialize(result) -> bytes:
@@ -98,11 +98,16 @@ def test_feature_importance(
     result = function(**function_kwargs)
     content = serialize(result)
 
-    with Serializer(content) as serializer:
+    with TxtSerializer(content) as serializer:
         checksum = serializer.checksum
 
     # available accessor
-    assert Media(project=project, report=report).model_dump() == {
+    media = Media(project=project, report=report)
+    media.upload()  # pool=ThreadPoolExecutor, checksums_being_uploaded={})
+
+    media_payload = media.model_dump()
+
+    assert media_payload == {
         "content_type": "application/vnd.dataframe",
         "name": accessor,
         "data_source": data_source,
@@ -114,8 +119,10 @@ def test_feature_importance(
     assert not upload_mock.call_args.args
     assert upload_mock.call_args.kwargs == {
         "project": project,
+        "serializer_cls": TxtSerializer,
         "content": content,
         "content_type": "application/vnd.dataframe",
+        "checksums_being_uploaded": {checksum},
     }
 
     # unavailable accessor

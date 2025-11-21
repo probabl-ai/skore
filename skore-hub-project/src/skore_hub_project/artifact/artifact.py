@@ -40,45 +40,16 @@ class Artifact(BaseModel, ABC):
     serializer_cls: ClassVar[type[Serializer]] = TxtSerializer
     content_type: str = Field(init=False)
 
+    @property
     @abstractmethod
-    def content_to_upload(self) -> Content | AbstractContextManager[Content]:
-        """
-        Content of the artifact to upload.
-
-        Example
-        -------
-        You can implement this ``abstractmethod`` to return directly the content:
-
-            def content_to_upload(self) -> str:
-                return "<str>"
-
-        or to yield the content, as a ``contextmanager`` would:
-
-            from contextlib import contextmanager
-
-            @contextmanager
-            def content_to_upload(self) -> Generator[str, None, None]:
-                yield "<str>"
-        """
+    def content_to_upload(self) -> bytes | None:
+        """Content of the artifact to upload."""
 
     @computed_field  # type: ignore[prop-decorator]
     @property
+    @abstractmethod
     def checksum(self) -> str | None:
         """Checksum used to identify the content of the artifact."""
-        try:
-            return self.__checksum
-        except AttributeError:
-            message = (
-                "You cannot access the checksum of an artifact "
-                "without explicitly uploading it. "
-                "Please use `artifact.upload()` before."
-            )
-
-            raise RuntimeError(message) from None
-
-    @checksum.setter
-    def checksum(self, checksum: str | None) -> None:
-        self.__checksum = checksum
 
     def upload(
         self,
@@ -88,7 +59,6 @@ class Artifact(BaseModel, ABC):
     ) -> None:
         """Upload the artifact and set its checksum."""
         contextmanager = self.content_to_upload()
-        pool = ThreadPoolExecutor(max_workers=6) if pool is None else pool
         checksums_being_uploaded = (
             set() if checksums_being_uploaded is None else checksums_being_uploaded
         )
@@ -97,15 +67,21 @@ class Artifact(BaseModel, ABC):
             contextmanager = nullcontext(contextmanager)
 
         with contextmanager as content:
-            self.checksum = (
-                None
-                if content is None
-                else upload_content(
-                    project=self.project,
-                    serializer_cls=self.serializer_cls,
-                    content=content,
-                    content_type=self.content_type,
-                    pool=pool,
-                    checksums_being_uploaded=checksums_being_uploaded,
-                )
-            )
+            if content is None:
+                self.checksum = None
+                return
+
+            with self.serializer_cls(content) as serializer:
+                if serializer.checksum not in checksums_being_uploaded:
+                    checksums_being_uploaded.add(serializer.checksum)
+                    upload_content(
+                        project=self.project,
+                        serializer=serializer,
+                        content=content,
+                        content_type=self.content_type,
+                        pool=(
+                            ThreadPoolExecutor(max_workers=6) if pool is None else pool
+                        ),
+                    )
+
+                self.checksum = serializer.checksum

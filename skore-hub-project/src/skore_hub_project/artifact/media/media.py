@@ -3,8 +3,10 @@
 from abc import ABC
 from typing import Generic, TypeVar
 
-from pydantic import Field
+from blake3 import blake3 as Blake3
+from pydantic import Field, computed_field
 
+from skore_hub_project import bytes_to_b64_str
 from skore_hub_project.artifact.artifact import Artifact
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
@@ -32,3 +34,28 @@ class Media(Artifact, ABC, Generic[Report]):
     report: Report = Field(repr=False, exclude=True)
     name: str = Field(init=False)
     data_source: str | None = Field(init=False)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def checksum(self) -> str | None:
+        """
+        Checksum used to identify the content of the media.
+
+        Notes
+        -----
+        Depending on the size of the serialized content, the checksum can be computed on
+        one or more threads:
+
+            Note that this can be slower for inputs shorter than ~1 MB
+
+        https://github.com/oconnor663/blake3-py
+        """
+        if self.content_to_upload is None:
+            return None
+
+        # Compute checksum with the appropriate number of threads
+        threads = (1 if len(self.content_to_upload) < 1e6 else Blake3.AUTO)
+        hasher = Blake3(max_threads=threads)
+        checksum = hasher.update(self.content_to_upload).digest()
+
+        return f"blake3-{bytes_to_b64_str(checksum)}"

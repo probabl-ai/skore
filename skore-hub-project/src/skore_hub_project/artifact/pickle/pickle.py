@@ -38,8 +38,8 @@ class Pickle(Artifact):
     content_type: Literal["application/octet-stream"] = "application/octet-stream"
     report: Report = Field(repr=False, exclude=True)
 
-    @contextmanager
-    def content_to_upload(self) -> Generator[Report, None, None]:
+    @cached_property
+    def content_to_upload(self) -> bytes:
         """
         Content of the pickled report.
 
@@ -53,6 +53,9 @@ class Pickle(Artifact):
         self.report.clear_cache()
 
         try:
+            with BytesIO() as stream:
+                dump(self.report, stream)
+
             yield self.report
         finally:
             for report, cache in zip(reports, caches, strict=True):
