@@ -397,15 +397,15 @@ plt.show()
 # %%
 # We can normalize the confusion matrix to get percentages instead of raw counts.
 # Here we normalize by true labels (rows):
-cm_display = report.metrics.confusion_matrix(normalize="true")
-cm_display.plot()
+cm_display = report.metrics.confusion_matrix()
+cm_display.plot(normalize="true")
 plt.show()
 
 # %%
-# More plotting options are available, check out the API on the confusion matrix for
-# more information. We can customize the display labels:
-cm_display = report.metrics.confusion_matrix(display_labels=["Disallowed", "Allowed"])
-cm_display.plot()
+# More plotting options are available via ``heatmap_kwargs``, which are passed to
+# seaborn's heatmap. For example, we can customize the colormap and number format:
+cm_display = report.metrics.confusion_matrix()
+cm_display.plot(heatmap_kwargs={"cmap": "Greens", "fmt": ".2e"})
 plt.show()
 
 # %%
