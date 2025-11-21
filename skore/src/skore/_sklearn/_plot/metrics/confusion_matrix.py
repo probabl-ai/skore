@@ -1,11 +1,10 @@
-import itertools
 from collections.abc import Sequence
 from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from numpy.typing import NDArray
+import seaborn as sns
 from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 
 from skore._sklearn._plot.base import DisplayMixin
@@ -18,7 +17,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
     Parameters
     ----------
-    confusion_matrix_data : pd.DataFrame
+    confusion_matrix : pd.DataFrame
         Confusion matrix data. Each row contains a confusion matrix.
 
     display_labels : list of str
@@ -36,61 +35,44 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
     ax_ : matplotlib Axes
         Axes with confusion matrix.
-
-    text_ : ndarray of shape (n_classes, n_classes) or None
-        Array of matplotlib Text objects containing the values in the confusion
-        matrix when `include_values=True` in the `plot()` method. Set to None
-        when `include_values=False`.
     """
 
     def __init__(
         self,
         *,
-        confusion_matrix_data: pd.DataFrame,
+        confusion_matrix: pd.DataFrame,
         display_labels: list[str],
         report_type: ReportType,
     ):
-        self.confusion_matrix_data = confusion_matrix_data
+        self.confusion_matrix = confusion_matrix
         self.display_labels = display_labels
         self.report_type = report_type
 
-    _default_imshow_kwargs: dict | None = None
-    _default_text_kwargs: dict | None = None
+    _default_heatmap_kwargs: dict = {
+        "cmap": "Blues",
+        "fmt": ".2f",
+        "annot": True,
+        "cbar": True,
+    }
 
     @DisplayMixin.style_plot
     def plot(
         self,
         *,
-        include_values: bool = True,
-        colorbar: bool = True,
         normalize: Literal["true", "pred", "all"] | None = None,
-        imshow_kwargs: dict | None = None,
-        text_kwargs: dict | None = None,
+        heatmap_kwargs: dict | None = None,
     ):
         """Plot visualization.
 
         Parameters
         ----------
-        include_values : bool, default=True
-            Includes values in confusion matrix.
-
-        colorbar : bool, default=True
-            Whether or not to add a colorbar to the plot.
-
         normalize : {'true', 'pred', 'all'}, default=None
             Normalizes confusion matrix over the true (rows), predicted (columns)
             conditions or all the population. If None, the confusion matrix will not be
             normalized.
 
-        imshow_kwargs : dict, default=None
-            Additional keyword arguments to be passed to matplotlib's
-            `ax.imshow`.
-
-        text_kwargs : dict, default=None
-            Additional keyword arguments to be passed to matplotlib's
-            `ax.text`. Can include a 'values_format' key to specify the
-            format specification for values in confusion matrix. If None,
-            the format specification is 'd' or '.2f' whichever is shorter.
+        heatmap_kwargs : dict, default=None
+            Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
 
         Returns
         -------
@@ -98,30 +80,21 @@ class ConfusionMatrixDisplay(DisplayMixin):
             Configured with the confusion matrix.
         """
         return self._plot(
-            include_values=include_values,
-            colorbar=colorbar,
             normalize=normalize,
-            imshow_kwargs=imshow_kwargs,
-            text_kwargs=text_kwargs,
+            heatmap_kwargs=heatmap_kwargs,
         )
 
     def _plot_matplotlib(
         self,
         *,
-        include_values: bool = True,
-        colorbar: bool = True,
         normalize: Literal["true", "pred", "all"] | None = None,
-        imshow_kwargs: dict | None = None,
-        text_kwargs: dict | None = None,
+        heatmap_kwargs: dict | None = None,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
         if self.report_type == "estimator":
             self._plot_single_estimator(
-                include_values=include_values,
-                colorbar=colorbar,
                 normalize=normalize,
-                imshow_kwargs=imshow_kwargs,
-                text_kwargs=text_kwargs,
+                heatmap_kwargs=heatmap_kwargs,
             )
         else:
             raise NotImplementedError(
@@ -132,97 +105,38 @@ class ConfusionMatrixDisplay(DisplayMixin):
     def _plot_single_estimator(
         self,
         *,
-        include_values: bool = True,
-        colorbar: bool = True,
         normalize: Literal["true", "pred", "all"] | None = None,
-        imshow_kwargs: dict | None = None,
-        text_kwargs: dict | None = None,
+        heatmap_kwargs: dict | None = None,
     ) -> None:
         """
         Plot the confusion matrix for a single estimator.
 
         Parameters
         ----------
-        include_values : bool, default=True
-            Includes values in confusion matrix.
-
-        colorbar : bool, default=True
-            Whether or not to add a colorbar to the plot.
-
         normalize : {'true', 'pred', 'all'}, default=None
             Normalizes confusion matrix over the true (rows), predicted (columns)
             conditions or all the population. If None, the confusion matrix will not be
             normalized.
 
-        imshow_kwargs : dict, default=None
-            Additional keyword arguments to be passed to matplotlib's
-            `ax.imshow`.
+        heatmap_kwargs : dict, default=None
+            Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
 
-        text_kwargs : dict, default=None
-            Additional keyword arguments to be passed to matplotlib's
-            `ax.text`. Can include a 'values_format' key to specify the
-            format specification for values in confusion matrix. If None,
-            the format specification is 'd' if `normalize` is None,
-            otherwise '.2f'.
         """
-        self.text_: NDArray | None = None
         self.figure_, self.ax_ = plt.subplots()
 
-        n_classes = len(self.display_labels)
-        cm = self.confusion_matrix_data.values.reshape(n_classes, n_classes)
-        if normalize == "true":
-            cm = cm / cm.sum(axis=1, keepdims=True)
-        elif normalize == "pred":
-            cm = cm / cm.sum(axis=0, keepdims=True)
-        elif normalize == "all":
-            cm = cm / cm.sum()
-
-        imshow_kwargs_validated = _validate_style_kwargs(
-            {"cmap": "Blues"},
-            imshow_kwargs or self._default_imshow_kwargs or {},
+        heatmap_kwargs_validated = _validate_style_kwargs(
+            self._default_heatmap_kwargs,
+            heatmap_kwargs or {},
         )
 
-        im = self.ax_.imshow(
-            cm,
-            interpolation="nearest",
-            **imshow_kwargs_validated,
+        normalize_by = "normalized_by_" + normalize if normalize else "count"
+        sns.heatmap(
+            self.confusion_matrix.pivot(
+                index="True label", columns="Predicted label", values=normalize_by
+            ),
+            ax=self.ax_,
+            **heatmap_kwargs_validated,
         )
-        if colorbar:
-            self.figure_.colorbar(im, ax=self.ax_)
-
-        self.ax_.set(
-            xticks=np.arange(n_classes),
-            yticks=np.arange(n_classes),
-            xticklabels=self.display_labels,
-            yticklabels=self.display_labels,
-            ylabel="True label",
-            xlabel="Predicted label",
-        )
-        plt.setp(self.ax_.get_xticklabels(), rotation=0, ha="center")
-
-        if include_values:
-            text_kwargs_validated = _validate_style_kwargs(
-                {},
-                text_kwargs or self._default_text_kwargs or {},
-            )
-            values_format = text_kwargs_validated.pop("values_format", None)
-
-            self.text_ = np.empty((n_classes, n_classes), dtype=object)
-            fmt = values_format or (".2f" if normalize else "d")
-            thresh = cm.max() / 2.0
-            for i in range(n_classes):
-                for j in range(n_classes):
-                    txt = format(cm[i, j], fmt)
-                    color = "white" if cm[i, j] > thresh else "black"
-                    self.text_[i, j] = self.ax_.text(
-                        j,
-                        i,
-                        txt,
-                        ha="center",
-                        va="center",
-                        color=color,
-                        **text_kwargs_validated,
-                    )
 
         self.ax_.set_title("Confusion Matrix")
         self.figure_.tight_layout()
@@ -234,7 +148,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         y_pred: Sequence[YPlotData],
         *,
         report_type: ReportType,
-        display_labels: list[str] | None = None,
+        display_labels: list[str],
         **kwargs,
     ) -> "ConfusionMatrixDisplay":
         """Compute the confusion matrix for display.
@@ -258,11 +172,10 @@ class ConfusionMatrixDisplay(DisplayMixin):
             The machine learning task.
 
         data_source : {"train", "test", "X_y"}
-            The data source used to compute the ROC curve.
+            The data source used to compute the confusion matrix.
 
-        display_labels : list of str, default=None
-            Display labels for plot. If None, display labels are set from 0 to
-            ``n_classes - 1``.
+        display_labels : list of str
+            Display labels for plot.
 
         **kwargs : dict
             Additional keyword arguments that are ignored for compatibility with
@@ -282,26 +195,24 @@ class ConfusionMatrixDisplay(DisplayMixin):
             y_pred=y_pred_values,
         )
 
-        confusion_matrices = cm.flatten()
+        cm_true = cm / cm.sum(axis=1, keepdims=True)
+        cm_pred = cm / cm.sum(axis=0, keepdims=True)
+        cm_all = cm / cm.sum()
+        n_classes = len(display_labels)
 
-        n_classes = cm.shape[0]
-        if display_labels is None:
-            display_labels = (
-                np.unique(np.concat([y_true_values, y_pred_values]))
-                .astype(str)
-                .tolist()
-            )
-        elif len(display_labels) != n_classes:
-            raise ValueError(
-                f"display_labels must have length equal to number of classes "
-                f"({n_classes}), got {len(display_labels)}"
-            )
+        confusion_matrix = pd.DataFrame(
+            {
+                "True label": np.repeat(display_labels, n_classes),
+                "Predicted label": np.tile(display_labels, n_classes),
+                "count": cm.flatten(),
+                "normalized_by_true": cm_true.flatten(),
+                "normalized_by_pred": cm_pred.flatten(),
+                "normalized_by_all": cm_all.flatten(),
+            }
+        )
 
-        disp = cls(  # We will have multiple rows in the future (1 per threshold)
-            confusion_matrix_data=pd.DataFrame.from_records(
-                [confusion_matrices],
-                columns=itertools.product(display_labels, display_labels),
-            ),
+        disp = cls(
+            confusion_matrix=confusion_matrix,
             display_labels=display_labels,
             report_type=report_type,
         )
@@ -323,16 +234,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         frame : pandas.DataFrame
             The confusion matrix as a dataframe.
         """
-        n_classes = len(self.display_labels)
-        cm = self.confusion_matrix_data.values.reshape(n_classes, n_classes)
-        if normalize == "true":
-            cm = cm / cm.sum(axis=1, keepdims=True)
-        elif normalize == "pred":
-            cm = cm / cm.sum(axis=0, keepdims=True)
-        elif normalize == "all":
-            cm = cm / cm.sum()
-        return pd.DataFrame(
-            cm,
-            index=self.display_labels,
-            columns=self.display_labels,
+        normalize_by = "normalized_by_" + normalize if normalize else "count"
+        return self.confusion_matrix.pivot(
+            index="True label", columns="Predicted label", values=normalize_by
         )
