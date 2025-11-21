@@ -20,6 +20,7 @@ class FeatureImportance(Media[Report], ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["application/vnd.dataframe"] = "application/vnd.dataframe"
 
+    @property
     def content_to_upload(self) -> bytes | None:  # noqa: D102
         try:
             function = cast(
@@ -44,8 +45,9 @@ class Permutation(FeatureImportance[EstimatorReport], ABC):  # noqa: D101
     accessor: ClassVar[str] = "feature_importance.permutation"
     name: Literal["permutation"] = "permutation"
 
+    @property
     def content_to_upload(self) -> bytes | None:  # noqa: D102
-        for key, obj in reversed(self.report._cache.items()):
+        for key, obj in reversed(list(self.report._cache.items())):
             if len(key) < 7:
                 continue
 

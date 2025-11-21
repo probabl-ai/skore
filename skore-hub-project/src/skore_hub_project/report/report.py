@@ -3,16 +3,33 @@
 from __future__ import annotations
 
 from abc import ABC
-from functools import cached_property
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import cached_property, partial
+from threading import RLock
 from typing import ClassVar, Generic, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
+from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from skore_hub_project import Project
+from skore_hub_project import Project, switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
+
+SkinnedProgress = partial(
+    Progress,
+    TextColumn("[bold cyan]{task.description}..."),
+    BarColumn(
+        complete_style="dark_orange",
+        finished_style="dark_orange",
+        pulse_style="orange1",
+    ),
+    TextColumn("[orange1]{task.percentage:>3.0f}%"),
+    TimeElapsedColumn(),
+    transient=True,
+)
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
@@ -89,15 +106,27 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         - int [0, inf[, to be displayed at the position,
         - None, not to be displayed.
         """
-        payloads = []
+        metrics = [metric_cls(report=self.report) for metric_cls in self.METRICS]
 
-        for metric_cls in self.METRICS:
-            payload = metric_cls(report=self.report)
+        with (
+            switch_mpl_backend(),
+            SkinnedProgress() as progress,
+            ThreadPoolExecutor() as pool,
+        ):
+            tasks = [
+                pool.submit(lambda metric: metric.compute(), metric)
+                for metric in metrics
+            ]
 
-            if payload.value is not None:
-                payloads.append(payload)
+            deque(
+                progress.track(
+                    as_completed(tasks),
+                    description=f"Computing {self.report.__class__.__name__} metrics",
+                    total=len(tasks),
+                )
+            )
 
-        return payloads
+        return [metric for metric in metrics if metric.value is not None]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -111,15 +140,47 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         -----
         Unavailable medias have been filtered out.
         """
-        payloads = []
 
-        for media_cls in self.MEDIAS:
-            payload = media_cls(project=self.project, report=self.report)
+        class ThreadSafeSet(set[str]):
+            def __init__(self) -> None:
+                self.__lock = RLock()
 
-            if payload.checksum is not None:
-                payloads.append(payload)
+            def add(self, item: str) -> None:
+                with self.__lock:
+                    super().add(item)
 
-        return payloads
+        checksums_being_uploaded = ThreadSafeSet()
+        medias = [
+            media_cls(project=self.project, report=self.report)
+            for media_cls in self.MEDIAS
+        ]
+
+        with (
+            switch_mpl_backend(),
+            SkinnedProgress() as progress,
+            ThreadPoolExecutor() as compute_pool,
+            ThreadPoolExecutor(max_workers=6) as upload_pool,
+        ):
+            tasks = [
+                compute_pool.submit(
+                    lambda media: media.upload(
+                        pool=upload_pool,
+                        checksums_being_uploaded=checksums_being_uploaded,
+                    ),
+                    media,
+                )
+                for media in medias
+            ]
+
+            deque(
+                progress.track(
+                    as_completed(tasks),
+                    description=f"Uploading {self.report.__class__.__name__} media",
+                    total=len(tasks),
+                )
+            )
+
+        return [media for media in medias if media.checksum is not None]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -131,4 +192,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         artifact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artifacts storage.
         """
-        return Pickle(project=self.project, report=self.report)
+        pickle = Pickle(project=self.project, report=self.report)
+        pickle.upload()
+
+        return pickle

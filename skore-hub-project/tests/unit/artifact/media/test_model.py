@@ -19,7 +19,9 @@ def test_estimator_html_repr(respx_mock, binary_classification, upload_mock):
     # create media
     project = Project("<tenant>", "<name>")
     media = EstimatorHtmlRepr(project=project, report=binary_classification)
-    media_dict = media.model_dump()
+    media.upload()
+
+    media_payload = media.model_dump()
 
     # ensure `upload` is well called
     assert upload_mock.called
@@ -31,7 +33,7 @@ def test_estimator_html_repr(respx_mock, binary_classification, upload_mock):
     }
 
     # ensure payload is well constructed
-    assert media_dict == {
+    assert media_payload == {
         "content_type": "text/html",
         "name": "estimator_html_repr",
         "data_source": None,

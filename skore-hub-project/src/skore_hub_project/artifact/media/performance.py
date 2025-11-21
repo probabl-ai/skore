@@ -19,6 +19,7 @@ class Performance(Media[Report], ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["image/svg+xml"] = "image/svg+xml"
 
+    @property
     def content_to_upload(self) -> bytes | None:  # noqa: D102
         try:
             function = cast(

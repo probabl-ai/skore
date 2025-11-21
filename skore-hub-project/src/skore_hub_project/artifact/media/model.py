@@ -10,11 +10,12 @@ class EstimatorHtmlRepr(Media[Report]):  # noqa: D101
     data_source: None = None
     content_type: Literal["text/html"] = "text/html"
 
-    def content_to_upload(self) -> str:  # noqa: D102
+    @property
+    def content_to_upload(self) -> bytes:  # noqa: D102
         import sklearn.utils
 
         estimator_html_repr: str = sklearn.utils.estimator_html_repr(
             self.report.estimator
         )
 
-        return estimator_html_repr
+        return estimator_html_repr.encode(encoding="utf-8")

@@ -1,15 +1,20 @@
 """Interface definition of the payload used to associate an artifact with a project."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import AbstractContextManager, nullcontext
-from functools import cached_property
+from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project import Project
-from skore_hub_project.artifact.upload import upload
+from skore_hub_project.artifact.serializer import Serializer, TxtSerializer
+from skore_hub_project.artifact.upload import upload as upload_content
+from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
-Content = str | bytes | None
+Content = EstimatorReport | CrossValidationReport | str | bytes | None
 
 
 class Artifact(BaseModel, ABC):
@@ -29,47 +34,54 @@ class Artifact(BaseModel, ABC):
     as a file to the ``hub`` artifacts storage.
     """
 
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     project: Project = Field(repr=False, exclude=True)
+    serializer_cls: ClassVar[type[Serializer]] = TxtSerializer
     content_type: str = Field(init=False)
 
+    @property
     @abstractmethod
-    def content_to_upload(self) -> Content | AbstractContextManager[Content]:
-        """
-        Content of the artifact to upload.
-
-        Example
-        -------
-        You can implement this ``abstractmethod`` to return directly the content:
-
-            def content_to_upload(self) -> str:
-                return "<str>"
-
-        or to yield the content, as a ``contextmanager`` would:
-
-            from contextlib import contextmanager
-
-            @contextmanager
-            def content_to_upload(self) -> Generator[str, None, None]:
-                yield "<str>"
-        """
+    def content_to_upload(self) -> bytes | None:
+        """Content of the artifact to upload."""
 
     @computed_field  # type: ignore[prop-decorator]
-    @cached_property
+    @property
+    @abstractmethod
     def checksum(self) -> str | None:
         """Checksum used to identify the content of the artifact."""
+
+    def upload(
+        self,
+        *,
+        pool: ThreadPoolExecutor | None = None,
+        checksums_being_uploaded: set[str] | None = None,
+    ) -> None:
+        """Upload the artifact and set its checksum."""
         contextmanager = self.content_to_upload()
+        checksums_being_uploaded = (
+            set() if checksums_being_uploaded is None else checksums_being_uploaded
+        )
 
         if not isinstance(contextmanager, AbstractContextManager):
             contextmanager = nullcontext(contextmanager)
 
         with contextmanager as content:
-            if content is not None:
-                return upload(
-                    project=self.project,
-                    content=content,
-                    content_type=self.content_type,
-                )
+            if content is None:
+                self.checksum = None
+                return
 
-        return None
+            with self.serializer_cls(content) as serializer:
+                if serializer.checksum not in checksums_being_uploaded:
+                    checksums_being_uploaded.add(serializer.checksum)
+                    upload_content(
+                        project=self.project,
+                        serializer=serializer,
+                        content=content,
+                        content_type=self.content_type,
+                        pool=(
+                            ThreadPoolExecutor(max_workers=6) if pool is None else pool
+                        ),
+                    )
+
+                self.checksum = serializer.checksum

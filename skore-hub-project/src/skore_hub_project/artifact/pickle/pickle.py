@@ -2,13 +2,12 @@
 
 from collections.abc import Generator
 from contextlib import contextmanager
-from io import BytesIO
-from typing import Literal
+from typing import ClassVar, Literal
 
-from joblib import dump
 from pydantic import Field
 
 from skore_hub_project.artifact.artifact import Artifact
+from skore_hub_project.artifact.serializer import ReportSerializer, Serializer
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 Report = EstimatorReport | CrossValidationReport
@@ -35,11 +34,12 @@ class Pickle(Artifact):
     The report is primarily pickled on disk to reduce RAM footprint.
     """
 
-    report: Report = Field(repr=False, exclude=True)
+    serializer_cls: ClassVar[type[Serializer]] = ReportSerializer
     content_type: Literal["application/octet-stream"] = "application/octet-stream"
+    report: Report = Field(repr=False, exclude=True)
 
-    @contextmanager
-    def content_to_upload(self) -> Generator[bytes, None, None]:
+    @cached_property
+    def content_to_upload(self) -> bytes:
         """
         Content of the pickled report.
 
@@ -56,9 +56,7 @@ class Pickle(Artifact):
             with BytesIO() as stream:
                 dump(self.report, stream)
 
-                pickle_bytes = stream.getvalue()
-
-            yield pickle_bytes
+            yield self.report
         finally:
             for report, cache in zip(reports, caches, strict=True):
                 report._cache = cache
