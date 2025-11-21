@@ -1996,8 +1996,6 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        display_labels: list | None = None,
-        normalize: Literal["true", "pred", "all"] | None = None,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 

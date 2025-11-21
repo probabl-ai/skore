@@ -18,11 +18,12 @@ class ConfusionMatrixDisplay(DisplayMixin):
     Parameters
     ----------
     confusion_matrix : pd.DataFrame
-        Confusion matrix data. Each row contains a confusion matrix.
+        Confusion matrix data in long format with columns: "True label",
+        "Predicted label", "count", "normalized_by_true", "normalized_by_pred",
+        and "normalized_by_all". Each row represents one cell of the confusion matrix.
 
     display_labels : list of str
-        Display labels for plot. If None, display labels are set from 0 to
-        ``n_classes - 1``.
+        Display labels for plot axes.
 
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
@@ -165,26 +166,17 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 "cross-validation", "estimator"}
             The type of report.
 
-        estimators : list of estimator instances
-            The estimators from which `y_pred` is obtained.
-
-        ml_task : {"binary-classification", "multiclass-classification"}
-            The machine learning task.
-
-        data_source : {"train", "test", "X_y"}
-            The data source used to compute the confusion matrix.
-
         display_labels : list of str
             Display labels for plot.
 
         **kwargs : dict
             Additional keyword arguments that are ignored for compatibility with
-            other metrics displays. Here, `estimators`, `ml_task` and
-            `data_source` are ignored.
+            other metrics displays. Accepts but ignores `estimators`, `ml_task`,
+            and `data_source`.
 
         Returns
         -------
-        display : :class:`~sklearn.metrics.ConfusionMatrixDisplay`
+        display : ConfusionMatrixDisplay
             The confusion matrix display.
         """
         y_true_values = y_true[0].y
@@ -232,7 +224,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
         Returns
         -------
         frame : pandas.DataFrame
-            The confusion matrix as a dataframe.
+            The confusion matrix as a dataframe in pivot format with true labels as
+            rows and predicted labels as columns. Values are counts or normalized
+            values depending on the `normalize` parameter.
         """
         normalize_by = "normalized_by_" + normalize if normalize else "count"
         return self.confusion_matrix.pivot(
