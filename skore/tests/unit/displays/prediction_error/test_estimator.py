@@ -289,6 +289,20 @@ def test_frame(linear_regression_with_train_test):
     check_frame_structure(df, expected_index, expected_columns)
 
 
+def test_frame_data_source_both(linear_regression_with_train_test):
+    """Test the frame method with `data_source="both"`."""
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    df = report.metrics.prediction_error(data_source="both").frame()
+
+    expected_index = ["data_source"]
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+
+
 def test_legend(pyplot, linear_regression_with_train_test):
     """Check the rendering of the legend for prediction error with an
     `EstimatorReport`."""

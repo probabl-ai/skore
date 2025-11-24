@@ -907,6 +907,10 @@ class PredictionErrorDisplay(DisplayMixin):
         >>> df = display.frame()
         """
         statistical_columns = ["y_true", "y_pred", "residuals"]
+
+        if self.data_source == "both":
+            statistical_columns = ["data_source"] + statistical_columns
+
         if self.report_type == "estimator":
             columns = statistical_columns
         elif self.report_type == "cross-validation":
