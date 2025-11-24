@@ -10,7 +10,6 @@ from skore import CrossValidationReport, EstimatorReport
 from skore_hub_project import Project
 from skore_hub_project.artifact.media.data import TableReport
 from skore_hub_project.artifact.media.model import EstimatorHtmlRepr
-from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.metric import (
     AccuracyTestMean,
     AccuracyTestStd,

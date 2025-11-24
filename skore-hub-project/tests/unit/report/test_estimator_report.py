@@ -16,7 +16,6 @@ from skore_hub_project.artifact.media import (
     TableReportTest,
     TableReportTrain,
 )
-from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.metric import (
     AccuracyTest,
     AccuracyTrain,

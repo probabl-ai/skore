@@ -13,7 +13,6 @@ from skore_hub_project.artifact.media import (
     RocTest,
     RocTrain,
 )
-from skore_hub_project.artifact.serializer import Serializer
 
 
 def serialize(display) -> bytes:
