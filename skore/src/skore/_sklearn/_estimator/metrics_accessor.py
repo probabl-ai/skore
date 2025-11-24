@@ -519,10 +519,8 @@ class _MetricsAccessor(
                 data_source=data_source,
                 data_source_hash=data_source_hash,
             )
-            for key_tuple, value, is_cached in results:
-                if not is_cached:
-                    self._parent._cache[key_tuple] = value
-                if key_tuple[-1] != "predict_time":
+            for key, value in results:
+                if key[-1] != "predict_time":
                     y_pred = value
 
             score = metric_fn(y_true, y_pred, **kwargs)
@@ -1717,10 +1715,7 @@ class _MetricsAccessor(
                 data_source=data_source,
                 data_source_hash=data_source_hash,
             )
-            for key, value, is_cached in results:
-                key = cast(tuple[Any, ...], key)
-                if not is_cached:
-                    cache[key] = value
+            for key, value in results:
                 if key[-1] != "predict_time":
                     y_pred = value
 
