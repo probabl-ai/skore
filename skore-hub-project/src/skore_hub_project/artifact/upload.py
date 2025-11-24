@@ -10,11 +10,10 @@ from typing import TYPE_CHECKING
 from skore_hub_project.client.client import Client, HUBClient
 
 if TYPE_CHECKING:
-    from typing import Any, Final
+    from typing import Final
 
     from httpx import Client as httpx_Client
 
-    from skore_hub_project.artifact.serializer import Serializer
     from skore_hub_project.project.project import Project
 
 
@@ -74,53 +73,36 @@ CHUNK_SIZE: Final[int] = int(1e7)  # ~10mb
 
 def upload(
     project: Project,
-    serializer: Serializer,
-    content: Any,
+    checksum: str,
+    filepath: Path,
     content_type: str,
     pool: ThreadPoolExecutor,
 ) -> None:
     """
-    Upload content to the artifacts storage.
+    Upload file to the artifacts storage.
 
     Parameters
     ----------
     project : ``Project``
-        The project where to upload the content.
-    serializer : Serializer
-        The serializer to use for the content serialization.
-    content : Any
-        The content to upload.
+        The project where to upload the file.
+    checksum : str
+        The checksum of the file.
+    filepath : Path
+        The file to upload.
     content_type : str
-        The type of content to upload.
+        The type of file to upload.
     pool : TheadPoolExecutor
         The pool used to execute the `upload_chunk` threads.
 
-    Notes
-    -----
-    A content that was already uploaded in its whole will be ignored.
     """
     with HUBClient() as hub_client, Client() as standard_client:
-        # Ask for the artifact.
-        #
-        # An non-empty response means that an artifact with the same checksum already
-        # exists. The content doesn't have to be re-uploaded.
-        response = hub_client.get(
-            url=f"projects/{project.quoted_tenant}/{project.quoted_name}/artifacts",
-            params={"artifact_checksum": serializer.checksum, "status": "uploaded"},
-        )
-
-        if response.json():
-            return None
-
-        serializer()
-
         # Ask for upload urls.
         response = hub_client.post(
             url=f"projects/{project.quoted_tenant}/{project.quoted_name}/artifacts",
             json=[
                 {
-                    "checksum": serializer.checksum,
-                    "chunk_number": ceil(serializer.size / CHUNK_SIZE),
+                    "checksum": checksum,
+                    "chunk_number": ceil(filepath.stat().st_size / CHUNK_SIZE),
                     "content_type": content_type,
                 }
             ],
@@ -129,8 +111,7 @@ def upload(
         urls = response.json()
         task_to_chunk_id = {}
 
-        # Upload each chunk of the serialized content to the artifacts storage,
-        # using a disk temporary file.
+        # Upload each chunk of the file to the artifacts storage.
         #
         # Each task is in charge of reading its own file chunk at runtime, to reduce
         # RAM footprint.
@@ -141,7 +122,7 @@ def upload(
             chunk_id = url["chunk_id"] or 1
             task = pool.submit(
                 upload_chunk,
-                filepath=serializer.filepath,
+                filepath=filepath,
                 client=standard_client,
                 url=url["upload_url"],
                 offset=((chunk_id - 1) * CHUNK_SIZE),
@@ -170,7 +151,7 @@ def upload(
             url=f"projects/{project.quoted_tenant}/{project.quoted_name}/artifacts/complete",
             json=[
                 {
-                    "checksum": serializer.checksum,
+                    "checksum": checksum,
                     "etags": etags,
                 }
             ],

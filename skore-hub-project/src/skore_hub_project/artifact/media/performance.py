@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from collections.abc import Callable
-from functools import reduce
+from functools import cached_property, reduce
 from io import BytesIO
 from typing import ClassVar, Literal, cast
 
@@ -19,7 +19,7 @@ class Performance(Media[Report], ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["image/svg+xml"] = "image/svg+xml"
 
-    @property
+    @cached_property
     def content_to_upload(self) -> bytes | None:  # noqa: D102
         try:
             function = cast(

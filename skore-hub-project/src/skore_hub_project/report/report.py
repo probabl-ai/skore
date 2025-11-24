@@ -192,7 +192,10 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         artifact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artifacts storage.
         """
+        checksums_being_uploaded: set[str] = set()
         pickle = Pickle(project=self.project, report=self.report)
-        pickle.upload()
+
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            pickle.upload(pool=pool, checksums_being_uploaded=checksums_being_uploaded)
 
         return pickle

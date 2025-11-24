@@ -1,13 +1,13 @@
 """Definition of the payload used to associate the pickled report with the report."""
 
-from collections.abc import Generator
-from contextlib import contextmanager
-from typing import ClassVar, Literal
+from functools import cached_property
+from io import BytesIO
+from typing import Literal
 
-from pydantic import Field
+from joblib import dump
+from pydantic import Field, computed_field
 
 from skore_hub_project.artifact.artifact import Artifact
-from skore_hub_project.artifact.serializer import ReportSerializer, Serializer
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 Report = EstimatorReport | CrossValidationReport
@@ -34,11 +34,10 @@ class Pickle(Artifact):
     The report is primarily pickled on disk to reduce RAM footprint.
     """
 
-    serializer_cls: ClassVar[type[Serializer]] = ReportSerializer
     content_type: Literal["application/octet-stream"] = "application/octet-stream"
     report: Report = Field(repr=False, exclude=True)
 
-    @cached_property
+    @property
     def content_to_upload(self) -> bytes:
         """
         Content of the pickled report.
@@ -55,8 +54,15 @@ class Pickle(Artifact):
         try:
             with BytesIO() as stream:
                 dump(self.report, stream)
-
-            yield self.report
+                report_dump_bytes = stream.getvalue()
         finally:
             for report, cache in zip(reports, caches, strict=True):
                 report._cache = cache
+
+        return report_dump_bytes
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def checksum(self) -> str:
+        """The checksum of the pickled report."""
+        return f"skore-{self.report.__class__.__name__}-{self.report._hash}"

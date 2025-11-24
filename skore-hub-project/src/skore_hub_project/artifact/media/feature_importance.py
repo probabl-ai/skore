@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from collections.abc import Callable
-from functools import reduce
+from functools import cached_property, reduce
 from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
 from orjson import OPT_NON_STR_KEYS, OPT_SERIALIZE_NUMPY, dumps
@@ -20,7 +20,7 @@ class FeatureImportance(Media[Report], ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["application/vnd.dataframe"] = "application/vnd.dataframe"
 
-    @property
+    @cached_property
     def content_to_upload(self) -> bytes | None:  # noqa: D102
         try:
             function = cast(
@@ -45,7 +45,7 @@ class Permutation(FeatureImportance[EstimatorReport], ABC):  # noqa: D101
     accessor: ClassVar[str] = "feature_importance.permutation"
     name: Literal["permutation"] = "permutation"
 
-    @property
+    @cached_property
     def content_to_upload(self) -> bytes | None:  # noqa: D102
         for key, obj in reversed(list(self.report._cache.items())):
             if len(key) < 7:

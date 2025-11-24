@@ -1,5 +1,6 @@
 """Definition of the payload used to associate a model category media with report."""
 
+from functools import cached_property
 from typing import Literal
 
 from skore_hub_project.artifact.media.media import Media, Report
@@ -10,7 +11,7 @@ class EstimatorHtmlRepr(Media[Report]):  # noqa: D101
     data_source: None = None
     content_type: Literal["text/html"] = "text/html"
 
-    @property
+    @cached_property
     def content_to_upload(self) -> bytes:  # noqa: D102
         import sklearn.utils
 

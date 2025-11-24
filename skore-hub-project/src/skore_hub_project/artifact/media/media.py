@@ -1,6 +1,7 @@
 """Class definition of the payload used to associate a media with the report."""
 
 from abc import ABC
+from functools import cached_property
 from typing import Generic, TypeVar
 
 from blake3 import blake3 as Blake3
@@ -36,7 +37,7 @@ class Media(Artifact, ABC, Generic[Report]):
     data_source: str | None = Field(init=False)
 
     @computed_field  # type: ignore[prop-decorator]
-    @property
+    @cached_property
     def checksum(self) -> str | None:
         """
         Checksum used to identify the content of the media.
@@ -54,7 +55,7 @@ class Media(Artifact, ABC, Generic[Report]):
             return None
 
         # Compute checksum with the appropriate number of threads
-        threads = (1 if len(self.content_to_upload) < 1e6 else Blake3.AUTO)
+        threads = 1 if len(self.content_to_upload) < 1e6 else Blake3.AUTO
         hasher = Blake3(max_threads=threads)
         checksum = hasher.update(self.content_to_upload).digest()
 

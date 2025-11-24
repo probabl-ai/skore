@@ -4,17 +4,14 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import AbstractContextManager, nullcontext
-from typing import ClassVar
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project import Project
-from skore_hub_project.artifact.serializer import Serializer, TxtSerializer
 from skore_hub_project.artifact.upload import upload as upload_content
-from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
-
-Content = EstimatorReport | CrossValidationReport | str | bytes | None
+from skore_hub_project.client.client import HUBClient
 
 
 class Artifact(BaseModel, ABC):
@@ -37,7 +34,6 @@ class Artifact(BaseModel, ABC):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     project: Project = Field(repr=False, exclude=True)
-    serializer_cls: ClassVar[type[Serializer]] = TxtSerializer
     content_type: str = Field(init=False)
 
     @property
@@ -54,34 +50,48 @@ class Artifact(BaseModel, ABC):
     def upload(
         self,
         *,
-        pool: ThreadPoolExecutor | None = None,
-        checksums_being_uploaded: set[str] | None = None,
+        pool: ThreadPoolExecutor,
+        checksums_being_uploaded: set[str],
     ) -> None:
-        """Upload the artifact and set its checksum."""
-        contextmanager = self.content_to_upload()
-        checksums_being_uploaded = (
-            set() if checksums_being_uploaded is None else checksums_being_uploaded
-        )
+        """
+        Upload the artifact.
 
-        if not isinstance(contextmanager, AbstractContextManager):
-            contextmanager = nullcontext(contextmanager)
+        Notes
+        -----
+        Artifact that was already uploaded in its whole will be ignored.
+        """
+        if (self.checksum is None) or (self.checksum in checksums_being_uploaded):
+            return None
 
-        with contextmanager as content:
-            if content is None:
-                self.checksum = None
-                return
+        checksums_being_uploaded.add(self.checksum)
 
-            with self.serializer_cls(content) as serializer:
-                if serializer.checksum not in checksums_being_uploaded:
-                    checksums_being_uploaded.add(serializer.checksum)
-                    upload_content(
-                        project=self.project,
-                        serializer=serializer,
-                        content=content,
-                        content_type=self.content_type,
-                        pool=(
-                            ThreadPoolExecutor(max_workers=6) if pool is None else pool
-                        ),
-                    )
+        with HUBClient() as hub_client:
+            # Ask for the artifact.
+            #
+            # An non-empty response means that an artifact with the same checksum
+            # already exists. The content doesn't have to be re-uploaded.
+            if (
+                response := hub_client.get(
+                    url=f"projects/{self.project.quoted_tenant}/{self.project.quoted_name}/artifacts",
+                    params={
+                        "artifact_checksum": self.checksum,
+                        "status": "uploaded",
+                    },
+                )
+            ) and (response.json()):
+                return None
 
-                self.checksum = serializer.checksum
+        content = self.content_to_upload
+
+        assert content is not None, "`content` can't be None when `checksum` isn't"
+
+        with NamedTemporaryFile(mode="w+b") as file:
+            filepath = Path(file.name)
+            filepath.write_bytes(content)
+            upload_content(
+                project=self.project,
+                checksum=self.checksum,
+                filepath=filepath,
+                content_type=self.content_type,
+                pool=pool,
+            )
