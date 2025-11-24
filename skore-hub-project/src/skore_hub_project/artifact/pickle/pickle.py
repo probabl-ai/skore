@@ -1,7 +1,6 @@
 """Definition of the payload used to associate the pickled report with the report."""
 
 from functools import cached_property
-from io import BytesIO
 from typing import Literal
 
 from joblib import dump
@@ -37,32 +36,25 @@ class Pickle(Artifact):
     content_type: Literal["application/octet-stream"] = "application/octet-stream"
     report: Report = Field(repr=False, exclude=True)
 
-    @property
-    def content_to_upload(self) -> bytes:
-        """
-        Content of the pickled report.
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def checksum(self) -> str:
+        """The checksum of the pickled report."""
+        return f"skore-{self.report.__class__.__name__}-{self.report._hash}"
 
-        Notes
-        -----
-        The report is pickled without its cache, to avoid salting the checksum.
-        """
+    def compute(self) -> None:  # noqa: D102
+        if self.computed:
+            return
+
+        self.computed = True
+
         reports = [self.report] + getattr(self.report, "estimator_reports_", [])
         caches = [report_to_clear._cache for report_to_clear in reports]
 
         self.report.clear_cache()
 
         try:
-            with BytesIO() as stream:
-                dump(self.report, stream)
-                report_dump_bytes = stream.getvalue()
+            dump(self.report, self.filepath)
         finally:
             for report, cache in zip(reports, caches, strict=True):
                 report._cache = cache
-
-        return report_dump_bytes
-
-    @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def checksum(self) -> str:
-        """The checksum of the pickled report."""
-        return f"skore-{self.report.__class__.__name__}-{self.report._hash}"

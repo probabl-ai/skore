@@ -1,7 +1,8 @@
 """Definition of the payload used to associate a data category media with report."""
 
-from functools import cached_property
 from typing import Literal
+
+from orjson import OPT_NON_STR_KEYS, OPT_SERIALIZE_NUMPY, dumps
 
 from skore_hub_project import switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media, Report
@@ -15,9 +16,11 @@ class TableReport(Media[Report]):  # noqa: D101
         "application/vnd.skrub.table-report.v1+json"
     )
 
-    @cached_property
-    def content_to_upload(self) -> bytes:  # noqa: D102
-        import orjson
+    def compute(self) -> None:  # noqa: D102
+        if self.computed:
+            return
+
+        self.computed = True
 
         with switch_mpl_backend():
             display = (
@@ -36,9 +39,11 @@ class TableReport(Media[Report]):  # noqa: D101
         # Remove irrelevant information
         del table_report["sample_table"]
 
-        return orjson.dumps(
-            table_report,
-            option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
+        self.filepath.write_bytes(
+            dumps(
+                table_report,
+                option=(OPT_NON_STR_KEYS | OPT_SERIALIZE_NUMPY),
+            )
         )
 
 

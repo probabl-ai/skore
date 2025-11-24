@@ -2,6 +2,7 @@ from functools import partialmethod
 
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
+from skore_hub_project.artifact.serializer import TxtSerializer
 
 from skore_hub_project import Project
 from skore_hub_project.artifact.media import (
@@ -10,7 +11,6 @@ from skore_hub_project.artifact.media import (
     PermutationTest,
     PermutationTrain,
 )
-from skore_hub_project.artifact.serializer import TxtSerializer
 
 
 def serialize(result) -> bytes:

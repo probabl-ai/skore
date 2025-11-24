@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
+from functools import cached_property
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -35,17 +36,25 @@ class Artifact(BaseModel, ABC):
 
     project: Project = Field(repr=False, exclude=True)
     content_type: str = Field(init=False)
-
-    @property
-    @abstractmethod
-    def content_to_upload(self) -> bytes | None:
-        """Content of the artifact to upload."""
+    computed: bool = Field(init=False, repr=False, exclude=True, default=False)
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     @abstractmethod
     def checksum(self) -> str | None:
-        """Checksum used to identify the content of the artifact."""
+        """The checksum used to identify the content of the artifact."""
+
+    def __del__(self) -> None:  # noqa: D105
+        self.filepath.unlink(True)
+
+    @cached_property
+    def filepath(self) -> Path:
+        """The filepath used to store the content."""
+        with NamedTemporaryFile(mode="w+b", delete=False) as file:
+            return Path(file.name)
+
+    @abstractmethod
+    def compute(self) -> None: ...
 
     def upload(
         self,
@@ -60,38 +69,36 @@ class Artifact(BaseModel, ABC):
         -----
         Artifact that was already uploaded in its whole will be ignored.
         """
-        if (self.checksum is None) or (self.checksum in checksums_being_uploaded):
-            return None
-
-        checksums_being_uploaded.add(self.checksum)
-
-        with HUBClient() as hub_client:
-            # Ask for the artifact.
-            #
-            # An non-empty response means that an artifact with the same checksum
-            # already exists. The content doesn't have to be re-uploaded.
-            if (
-                response := hub_client.get(
-                    url=f"projects/{self.project.quoted_tenant}/{self.project.quoted_name}/artifacts",
-                    params={
-                        "artifact_checksum": self.checksum,
-                        "status": "uploaded",
-                    },
-                )
-            ) and (response.json()):
+        try:
+            if (self.checksum is None) or (self.checksum in checksums_being_uploaded):
                 return None
 
-        content = self.content_to_upload
+            checksums_being_uploaded.add(self.checksum)
 
-        assert content is not None, "`content` can't be None when `checksum` isn't"
+            with HUBClient() as hub_client:
+                # Ask for the artifact.
+                #
+                # An non-empty response means that an artifact with the same checksum
+                # already exists. The content doesn't have to be re-uploaded.
+                if (
+                    response := hub_client.get(
+                        url=f"projects/{self.project.quoted_tenant}/{self.project.quoted_name}/artifacts",
+                        params={
+                            "artifact_checksum": self.checksum,
+                            "status": "uploaded",
+                        },
+                    )
+                ) and (response.json()):
+                    return None
 
-        with NamedTemporaryFile(mode="w+b") as file:
-            filepath = Path(file.name)
-            filepath.write_bytes(content)
+            self.compute()
+
             upload_content(
                 project=self.project,
                 checksum=self.checksum,
-                filepath=filepath,
+                filepath=self.filepath,
                 content_type=self.content_type,
                 pool=pool,
             )
+        finally:
+            self.filepath.unlink(missing_ok=True)

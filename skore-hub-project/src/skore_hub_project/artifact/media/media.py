@@ -51,12 +51,15 @@ class Media(Artifact, ABC, Generic[Report]):
 
         https://github.com/oconnor663/blake3-py
         """
-        if self.content_to_upload is None:
+        if not self.computed:
+            self.compute()
+
+        if not self.filepath.stat().st_size:
             return None
 
         # Compute checksum with the appropriate number of threads
-        threads = 1 if len(self.content_to_upload) < 1e6 else Blake3.AUTO
+        threads = 1 if (self.filepath.stat().st_size < 1e6) else Blake3.AUTO
         hasher = Blake3(max_threads=threads)
-        checksum = hasher.update(self.content_to_upload).digest()
+        checksum = hasher.update_mmap(self.filepath).digest()
 
         return f"blake3-{bytes_to_b64_str(checksum)}"
