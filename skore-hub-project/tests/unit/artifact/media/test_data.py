@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from json import loads
 
 from pydantic import ValidationError
@@ -7,6 +8,7 @@ from skore_hub_project import Project
 from skore_hub_project.artifact.media import TableReportTest, TableReportTrain
 
 
+@mark.usefixtures("monkeypatch_project_hub_client")
 @mark.usefixtures("monkeypatch_artifact_hub_client")
 @mark.usefixtures("monkeypatch_upload_routes")
 @mark.usefixtures("monkeypatch_upload_with_mock")
@@ -18,11 +20,16 @@ from skore_hub_project.artifact.media import TableReportTest, TableReportTrain
     ),
 )
 def test_table_report(
-    respx_mock, binary_classification, Media, data_source, upload_mock
+    tmp_path, respx_mock, binary_classification, Media, data_source, upload_mock
 ):
     project = Project("<tenant>", "<name>")
     media = Media(project=project, report=binary_classification)
-    media.model_dump()
+
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        media.upload(pool=pool, checksums_being_uploaded=set())
+
+    # ensure that there are no residual files
+    assert not len(tmp_path.iterdir())
 
     # ensure `upload` is well called
     assert upload_mock.called

@@ -6,6 +6,7 @@ from abc import ABC
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cached_property, partial
+from os import environ
 from threading import RLock
 from typing import ClassVar, Generic, TypeVar, cast
 
@@ -29,6 +30,7 @@ SkinnedProgress = partial(
     TextColumn("[orange1]{task.percentage:>3.0f}%"),
     TimeElapsedColumn(),
     transient=True,
+    disable=("PYTEST_CURRENT_TEST" in environ),
 )
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
@@ -192,10 +194,9 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         artifact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artifacts storage.
         """
-        checksums_being_uploaded: set[str] = set()
         pickle = Pickle(project=self.project, report=self.report)
 
         with ThreadPoolExecutor(max_workers=6) as pool:
-            pickle.upload(pool=pool, checksums_being_uploaded=checksums_being_uploaded)
+            pickle.upload(pool=pool, checksums_being_uploaded=set())
 
         return pickle

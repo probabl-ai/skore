@@ -37,6 +37,7 @@ class Artifact(BaseModel, ABC):
     project: Project = Field(repr=False, exclude=True)
     content_type: str = Field(init=False)
     computed: bool = Field(init=False, repr=False, exclude=True, default=False)
+    uploaded: bool = Field(init=False, repr=False, exclude=True, default=False)
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -69,6 +70,8 @@ class Artifact(BaseModel, ABC):
         -----
         Artifact that was already uploaded in its whole will be ignored.
         """
+        self.uploaded = True
+
         try:
             if (self.checksum is None) or (self.checksum in checksums_being_uploaded):
                 return None
@@ -102,3 +105,14 @@ class Artifact(BaseModel, ABC):
             )
         finally:
             self.filepath.unlink(missing_ok=True)
+
+
+    def model_dump(self, *args, **kwargs):
+        if not self.uploaded:
+            raise RuntimeError(
+                "You cannot access the dictionary representation of the model of an "
+                "artifact without explicitly uploading it. "
+                "Please use `artifact.upload()` before."
+            )
+
+        return super().model_dump(*args, **kwargs)
