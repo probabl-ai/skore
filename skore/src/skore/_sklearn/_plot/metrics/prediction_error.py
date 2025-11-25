@@ -229,7 +229,7 @@ class PredictionErrorDisplay(DisplayMixin):
             data_points_kwargs, samples_kwargs[0]
         )
 
-        def add_scatter(data_source: DataSource):
+        def add_scatter(data_source: DataSource, marker="o"):
             if data_source in ("train", "test"):
                 scatter_label = f"{data_source.title()} set"
             else:  # data_source == "X_y"
@@ -248,13 +248,13 @@ class PredictionErrorDisplay(DisplayMixin):
                         else prediction_error["residuals"]
                     ),
                     label=scatter_label,
-                    **data_points_kwargs_validated,
+                    **(data_points_kwargs_validated | {"marker": marker}),
                 )
             )
 
         if self.data_source == "both":
-            add_scatter(data_source="train")
             add_scatter(data_source="test")
+            add_scatter(data_source="train", marker="x")
         else:
             add_scatter(data_source=self.data_source)
 
