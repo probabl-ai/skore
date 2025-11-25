@@ -239,24 +239,18 @@ class PredictionErrorDisplay(DisplayMixin):
                 f"data_source == {data_source!r}"
             )
 
-            if kind == "actual_vs_predicted":
-                scatter.append(
-                    self.ax_.scatter(
-                        prediction_error["y_pred"],
-                        prediction_error["y_true"],
-                        label=scatter_label,
-                        **data_points_kwargs_validated,
-                    )
+            scatter.append(
+                self.ax_.scatter(
+                    x=prediction_error["y_pred"],
+                    y=(
+                        prediction_error["y_true"]
+                        if kind == "actual_vs_predicted"
+                        else prediction_error["residuals"]
+                    ),
+                    label=scatter_label,
+                    **data_points_kwargs_validated,
                 )
-            else:  # kind == "residual_vs_predicted"
-                scatter.append(
-                    self.ax_.scatter(
-                        prediction_error["y_pred"],
-                        prediction_error["residuals"],
-                        label=scatter_label,
-                        **data_points_kwargs_validated,
-                    )
-                )
+            )
 
         if self.data_source == "both":
             add_scatter(data_source="train")
