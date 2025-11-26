@@ -6,7 +6,6 @@ from abc import ABC
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cached_property, partial
-from os import environ
 from threading import RLock
 from typing import ClassVar, Generic, TypeVar, cast
 
@@ -30,7 +29,6 @@ SkinnedProgress = partial(
     TextColumn("[orange1]{task.percentage:>3.0f}%"),
     TimeElapsedColumn(),
     transient=True,
-    disable=("PYTEST_CURRENT_TEST" in environ),
 )
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
@@ -108,6 +106,8 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         - int [0, inf[, to be displayed at the position,
         - None, not to be displayed.
         """
+        self.report.cache_predictions()
+
         metrics = [metric_cls(report=self.report) for metric_cls in self.METRICS]
 
         with (

@@ -7,7 +7,6 @@ import re
 from collections.abc import Callable
 from functools import cached_property, wraps
 from operator import itemgetter
-from os import environ
 from tempfile import TemporaryFile
 from typing import (
     TYPE_CHECKING,
@@ -206,7 +205,6 @@ class Project:
             TextColumn("{task.description}"),
             TimeElapsedColumn(),
             transient=True,
-            disable=("PYTEST_CURRENT_TEST" in environ),
         )
 
         with progress:

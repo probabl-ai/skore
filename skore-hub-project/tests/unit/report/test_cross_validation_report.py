@@ -1,5 +1,8 @@
-import numpy as np
-from joblib import hash
+from io import BytesIO
+
+from joblib import dump, hash
+from numpy import sum as np_sum
+from numpy import unique as np_unique
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from sklearn.datasets import make_classification, make_regression
@@ -49,27 +52,20 @@ from skore_hub_project.report import (
 
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
-    import io
-
-    import joblib
-
     reports = [object] + getattr(object, "estimator_reports_", [])
     caches = [report_to_clear._cache for report_to_clear in reports]
 
     object.clear_cache()
 
     try:
-        with io.BytesIO() as stream:
-            joblib.dump(object, stream)
+        with BytesIO() as stream:
+            dump(object, stream)
             pickle_bytes = stream.getvalue()
     finally:
         for report, cache in zip(reports, caches, strict=True):
             report._cache = cache
 
-    with Serializer(pickle_bytes) as serializer:
-        checksum = serializer.checksum
-
-    return pickle_bytes, checksum
+    return pickle_bytes, f"skore-{object.__class__.__name__}-{object._hash}"
 
 
 @fixture
@@ -144,8 +140,8 @@ class TestCrossValidationReportPayload:
         )
         classes = payload.classes
         assert len(classes) == 200
-        assert np.unique(classes).tolist() == [0, 1]
-        assert np.sum(classes) == 93
+        assert np_unique(classes).tolist() == [0, 1]
+        assert np_sum(classes) == 93
 
     def test_classes_many_rows(self, payload):
         assert payload.classes == [0, 0, 1, 1, 1, 0, 0, 1, 0, 1]
@@ -168,15 +164,17 @@ class TestCrossValidationReportPayload:
             assert estimator.report == payload.report.estimator_reports_[i]
 
             # ensure `upload` is well called
-            pickle, checksum = serialize(payload.report.estimator_reports_[i])
+            _, checksum = serialize(payload.report.estimator_reports_[i])
 
             estimator.model_dump()
 
             assert upload_mock.called
             assert not upload_mock.call_args.args
+            assert upload_mock.call_args.kwargs.pop("pool")
             assert upload_mock.call_args.kwargs == {
                 "project": project,
-                "content": pickle,
+                "filepath": estimator.pickle.filepath,
+                "checksum": checksum,
                 "content_type": "application/octet-stream",
             }
 
@@ -188,17 +186,19 @@ class TestCrossValidationReportPayload:
     def test_pickle(
         self, small_cv_binary_classification, project, payload, upload_mock, respx_mock
     ):
-        pickle, checksum = serialize(small_cv_binary_classification)
+        _, checksum = serialize(small_cv_binary_classification)
 
-        # Ensure payload is well constructed
+        # Ensure checksum is well constructed
         assert payload.pickle.checksum == checksum
 
         # ensure `upload` is well called
         assert upload_mock.called
         assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs.pop("pool")
         assert upload_mock.call_args.kwargs == {
             "project": project,
-            "content": pickle,
+            "filepath": payload.pickle.filepath,
+            "checksum": checksum,
             "content_type": "application/octet-stream",
         }
 

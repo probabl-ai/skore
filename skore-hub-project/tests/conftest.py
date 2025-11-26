@@ -218,6 +218,16 @@ def monkeypatch_sklearn_estimator_html_repr(monkeypatch):
     monkeypatch.setattr(importpath, lambda self: "<id>")
 
 
+@fixture
+def monkeypatch_rich(monkeypatch):
+    """Make `rich` silent."""
+    from rich.console import Console
+    from rich.progress import Progress
+
+    monkeypatch.setattr("rich.console.Console", partial(Console, quiet=True))
+    monkeypatch.setattr("rich.progress.Progress", partial(Progress, disable=True))
+
+
 @fixture(autouse=True)
 def setup(
     monkeypatch_tmpdir,
@@ -225,4 +235,5 @@ def setup(
     monkeypatch_skrub,
     monkeypatch_skore_hub_envars,
     monkeypatch_sklearn_estimator_html_repr,
+    monkeypatch_rich,
 ): ...
