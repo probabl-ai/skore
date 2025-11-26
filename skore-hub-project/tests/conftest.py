@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from functools import partial
+from importlib import reload
 from unittest.mock import Mock
 from urllib.parse import urljoin
 
@@ -146,11 +147,10 @@ def monkeypatch_tmpdir(monkeypatch, tmp_path):
 
     https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
     """
-    import importlib
     import tempfile
 
     monkeypatch.setenv("TMPDIR", str(tmp_path))
-    importlib.reload(tempfile)
+    reload(tempfile)
 
 
 @fixture
@@ -222,10 +222,10 @@ def monkeypatch_sklearn_estimator_html_repr(monkeypatch):
 def monkeypatch_rich(monkeypatch):
     """Make `rich` silent."""
     from rich.console import Console
-    from rich.progress import Progress
 
     monkeypatch.setattr("rich.console.Console", partial(Console, quiet=True))
-    monkeypatch.setattr("rich.progress.Progress", partial(Progress, disable=True))
+    monkeypatch.setattr("skore.console.quiet", True)
+    monkeypatch.setattr("skore_hub_project.console.quiet", True)
 
 
 @fixture(autouse=True)
