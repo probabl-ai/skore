@@ -1127,6 +1127,9 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         else:  # self.report_type == "comparison-cross-validation"
             indexing_columns = ["estimator_name", "split"]
 
+        if self.data_source == "both":
+            indexing_columns += ["data_source"]
+
         if self.ml_task == "binary-classification":
             columns = indexing_columns + statistical_columns
         else:

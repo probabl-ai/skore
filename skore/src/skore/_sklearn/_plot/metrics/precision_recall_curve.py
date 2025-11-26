@@ -168,27 +168,55 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if self.ml_task == "binary-classification":
-            precision_recall = self.precision_recall.query(
-                f"label == {self.pos_label!r}"
-            )
-            average_precision = self.average_precision["average_precision"].item()
-
             line_kwargs_validated = _validate_style_kwargs(
                 line_kwargs, pr_curve_kwargs[0]
             )
-            if self.data_source in ("train", "test"):
-                line_kwargs_validated["label"] = (
-                    f"{self.data_source.title()} set (AP = {average_precision:0.2f})"
-                )
-            else:  # data_source in (None, "X_y")
-                line_kwargs_validated["label"] = f"AP = {average_precision:0.2f}"
 
-            (line,) = self.ax_.plot(
-                precision_recall["recall"],
-                precision_recall["precision"],
-                **line_kwargs_validated,
-            )
-            lines.append(line)
+            def add_line_binary(
+                data_source: Literal["train", "test"],
+                line_kwargs: dict = line_kwargs_validated,
+            ) -> None:
+                precision_recall = self.precision_recall.query(
+                    f"label == {self.pos_label!r} & data_source == {data_source!r}"
+                )
+                average_precision = self.average_precision.query(
+                    f"label == {self.pos_label!r} & data_source == {data_source!r}"
+                )["average_precision"].item()
+
+                label = f"{data_source.title()} set (AP = {average_precision:0.2f})"
+
+                (line,) = self.ax_.plot(
+                    precision_recall["recall"],
+                    precision_recall["precision"],
+                    **(line_kwargs | {"label": label}),
+                )
+                lines.append(line)
+
+            if self.data_source in ("train", "test"):
+                # NOTE: Seriously, mypy?
+                add_line_binary(
+                    data_source=cast(Literal["train", "test"], self.data_source)
+                )
+            elif self.data_source == "both":
+                add_line_binary(data_source="train")
+                add_line_binary(data_source="test")
+            else:  # if self.data_source in (None, "X_y")
+                precision_recall = self.precision_recall.query(
+                    f"label == {self.pos_label!r}"
+                )
+                average_precision = self.average_precision.query(
+                    f"label == {self.pos_label!r}"
+                )["average_precision"].item()
+
+                (line,) = self.ax_.plot(
+                    precision_recall["recall"],
+                    precision_recall["precision"],
+                    **(
+                        line_kwargs_validated
+                        | {"label": f"AP = {average_precision:0.2f}"}
+                    ),
+                )
+                lines.append(line)
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
@@ -204,20 +232,43 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 10 if len(labels) < 10 else len(labels),
             )
 
-            for class_idx, class_label in enumerate(labels):
-                query = f"label == {class_label!r}"
-                precision_recall = self.precision_recall.query(query)
-                average_precision = self.average_precision.query(query)[
-                    "average_precision"
-                ].item()
-                pr_curve_kwargs_class = pr_curve_kwargs[class_idx]
+            def add_line_multiclass(
+                class_idx: int,
+                class_label: Any,
+                data_source: DataSource | None,
+                linestyle: str = "solid",
+            ) -> None:
+                if data_source is None:
+                    query = f"label == {class_label}"
+                else:
+                    query = f"label == {class_label} & data_source == {data_source!r}"
 
-                line_kwargs["color"] = class_colors[class_idx]
-                line_kwargs_validated = _validate_style_kwargs(
-                    line_kwargs, pr_curve_kwargs_class
+                precision_recall = self.precision_recall.query(query)
+                average_precision = (
+                    self.average_precision.query(query)["average_precision"]
+                    .squeeze()
+                    .item()
                 )
-                line_kwargs_validated["label"] = (
-                    f"{str(class_label).title()} (AP = {average_precision:0.2f})"
+
+                if self.data_source == "both" and data_source is not None:
+                    label = (
+                        f"{data_source.title()} set - "
+                        f"{str(class_label).title()} "
+                        f"(AP = {average_precision:0.2f})"
+                    )
+                else:
+                    label = (
+                        f"{str(class_label).title()} (AP = {average_precision:0.2f})"
+                    )
+
+                line_kwargs_validated = _validate_style_kwargs(
+                    default_style_kwargs={
+                        "color": class_colors[class_idx],
+                        "label": label,
+                        "linestyle": linestyle,
+                        "drawstyle": "steps-post",
+                    },
+                    user_style_kwargs=pr_curve_kwargs[class_idx],
                 )
 
                 (line,) = self.ax_.plot(
@@ -227,10 +278,33 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 )
                 lines.append(line)
 
-            if self.data_source in ("train", "test"):
-                legend_title = f"{self.data_source.capitalize()} set"
-            else:
+            if self.data_source == "both":
+                for class_idx, class_label in enumerate(labels):
+                    add_line_multiclass(
+                        class_idx=class_idx,
+                        class_label=class_label,
+                        data_source="train",
+                        linestyle="dashed",
+                    )
+                    add_line_multiclass(
+                        class_idx=class_idx,
+                        class_label=class_label,
+                        data_source="test",
+                        linestyle="solid",
+                    )
                 legend_title = None
+            else:
+                for class_idx, class_label in enumerate(labels):
+                    add_line_multiclass(
+                        class_idx=class_idx,
+                        class_label=class_label,
+                        data_source=self.data_source,
+                    )
+
+                if self.data_source in ("train", "test"):
+                    legend_title = f"{self.data_source.capitalize()} set"
+                else:
+                    legend_title = None
             info_pos_label = None  # irrelevant for multiclass
 
         _, labels = self.ax_.get_legend_handles_labels()
@@ -824,9 +898,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         -------
         display : PrecisionRecallCurveDisplay
         """
-        if data_source == "both":
-            raise NotImplementedError()
-
         pos_label_validated = cls._validate_from_predictions_params(
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
@@ -853,6 +924,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     precision_recall_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
+                            "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "label": pos_label_validated,
                             "threshold": threshold,
@@ -863,20 +935,20 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 average_precision_records.append(
                     {
                         "estimator_name": y_true_i.estimator_name,
+                        "data_source": y_true_i.data_source,
                         "split": y_true_i.split,
                         "label": pos_label_validated,
                         "average_precision": average_precision_i,
                     }
                 )
         else:  # multiclass-classification
-            for y_true_i, y_pred_i, est in zip(
-                y_true, y_pred, estimators, strict=False
-            ):
-                label_binarizer = LabelBinarizer().fit(est.classes_)
+            classes = estimators[0].classes_
+            for y_true_i, y_pred_i in zip(y_true, y_pred, strict=True):
+                label_binarizer = LabelBinarizer().fit(classes)
                 y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)
                 y_pred_i_y = cast(NDArray, y_pred_i.y)
 
-                for class_idx, class_ in enumerate(est.classes_):
+                for class_idx, class_ in enumerate(classes):
                     precision_class_i, recall_class_i, thresholds_class_i = (
                         precision_recall_curve(
                             y_true_onehot_i[:, class_idx],
@@ -898,6 +970,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                         precision_recall_records.append(
                             {
                                 "estimator_name": y_true_i.estimator_name,
+                                "data_source": y_true_i.data_source,
                                 "split": y_true_i.split,
                                 "label": class_,
                                 "threshold": threshold,
@@ -908,6 +981,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     average_precision_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
+                            "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "label": class_,
                             "average_precision": average_precision_class_i,
@@ -916,6 +990,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         dtypes = {
             "estimator_name": "category",
+            "data_source": "category",
             "split": "category",
             "label": "category",
         }
@@ -990,6 +1065,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             indexing_columns = ["estimator_name"]
         else:  # self.report_type == "comparison-cross-validation"
             indexing_columns = ["estimator_name", "split"]
+
+        if self.data_source == "both":
+            indexing_columns += ["data_source"]
 
         if self.ml_task == "binary-classification":
             columns = indexing_columns + statistical_columns
