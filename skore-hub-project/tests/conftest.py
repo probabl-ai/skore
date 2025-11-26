@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from functools import partial
 from unittest.mock import Mock
 from urllib.parse import urljoin
 
@@ -55,6 +56,7 @@ def monkeypatch_project_hub_client(monkeypatch):
 
 @fixture
 def monkeypatch_artifact_hub_client(monkeypatch):
+    monkeypatch.setattr("skore_hub_project.artifact.artifact.HUBClient", FakeClient)
     monkeypatch.setattr("skore_hub_project.artifact.upload.HUBClient", FakeClient)
 
 
@@ -158,7 +160,10 @@ def monkeypatch_skrub(monkeypatch):
 
     https://github.com/skrub-data/skrub/blob/35f573ce586fe61ef2c72f4c0c4b188ebf2e664b/skrub/_reporting/_html.py#L153
     """
+    from skrub._dataframe import sample
+
     monkeypatch.setattr("secrets.token_hex", lambda: "<token>")
+    monkeypatch.setattr("skrub._dataframe.sample", partial(sample, seed=42))
 
 
 @fixture

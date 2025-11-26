@@ -93,7 +93,6 @@ def upload(
         The type of file to upload.
     pool : TheadPoolExecutor
         The pool used to execute the `upload_chunk` threads.
-
     """
     assert filepath.stat().st_size, "`filepath` must not be empty"
 

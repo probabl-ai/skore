@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from json import loads
+from json import load
 
 from pydantic import ValidationError
 from pytest import mark, param, raises
@@ -8,7 +8,6 @@ from skore_hub_project import Project
 from skore_hub_project.artifact.media import TableReportTest, TableReportTrain
 
 
-@mark.usefixtures("monkeypatch_project_hub_client")
 @mark.usefixtures("monkeypatch_artifact_hub_client")
 @mark.usefixtures("monkeypatch_upload_routes")
 @mark.usefixtures("monkeypatch_upload_with_mock")
@@ -19,55 +18,85 @@ from skore_hub_project.artifact.media import TableReportTest, TableReportTrain
         param(TableReportTrain, "train", id="TableReportTest"),
     ),
 )
-def test_table_report(
-    tmp_path, respx_mock, binary_classification, Media, data_source, upload_mock
-):
-    project = Project("<tenant>", "<name>")
-    media = Media(project=project, report=binary_classification)
+class TestTableReport:
+    def test_init_exception(self, Media, data_source):
+        project = Project("<tenant>", "<name>")
 
-    with ThreadPoolExecutor(max_workers=6) as pool:
-        media.upload(pool=pool, checksums_being_uploaded=set())
+        with raises(
+            ValidationError, match="Input should be an instance of EstimatorReport"
+        ):
+            Media(project=project, report=None)
 
-    # ensure that there are no residual files
-    assert not len(tmp_path.iterdir())
-
-    # ensure `upload` is well called
-    assert upload_mock.called
-    assert not upload_mock.call_args.args
-
-    content = upload_mock.call_args.kwargs.pop("content")
-
-    assert upload_mock.call_args.kwargs == {
-        "project": project,
-        "content_type": "application/vnd.skrub.table-report.v1+json",
-    }
-
-    with Serializer(content) as serializer:
-        checksum = serializer.checksum
-
-    # ensure content is well constructed
-    dataframe = loads(content)
-
-    assert {
-        "n_rows",
-        "n_columns",
-        "n_constant_columns",
-        "extract_head",
-        "extract_tail",
-        "columns",
-        "top_associations",
-    }.issubset(dataframe.keys())
-
-    # ensure payload is well constructed
-    assert media.model_dump() == {
-        "content_type": "application/vnd.skrub.table-report.v1+json",
-        "name": "table_report",
-        "data_source": data_source,
-        "checksum": checksum,
-    }
-
-    # wrong type
-    with raises(
-        ValidationError, match="Input should be an instance of EstimatorReport"
+    def test_compute(
+        self, tmp_path, binary_classification, Media, data_source, upload_mock
     ):
-        Media(project=project, report=None)
+        project = Project("<tenant>", "<name>")
+        media = Media(project=project, report=binary_classification)
+
+        media.compute()
+
+        assert media.computed is True
+
+        # ensure that media is well serialized in temporary file
+        with media.filepath.open() as file:
+            dataframe = load(file)
+
+        # ensure that media content is well formed
+        assert {
+            "n_rows",
+            "n_columns",
+            "n_constant_columns",
+            "extract_head",
+            "extract_tail",
+            "columns",
+            "top_associations",
+        }.issubset(dataframe.keys())
+
+    def test_upload(
+        self, tmp_path, binary_classification, Media, data_source, upload_mock
+    ):
+        project = Project("<tenant>", "<name>")
+        media = Media(project=project, report=binary_classification)
+
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            media.upload(pool=pool, checksums_being_uploaded=set())
+
+        assert media.computed is True
+        assert media.uploaded is True
+
+        # ensure that there is no residual file
+        assert not len(list(tmp_path.iterdir()))
+
+        # ensure `upload` is well called
+        assert upload_mock.called
+        assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs.pop("checksum")
+        assert upload_mock.call_args.kwargs == {
+            "project": project,
+            "filepath": media.filepath,
+            "content_type": "application/vnd.skrub.table-report.v1+json",
+            "pool": pool,
+        }
+
+    def test_model_dump(self, binary_classification, Media, data_source):
+        project = Project("<tenant>", "<name>")
+        media = Media(project=project, report=binary_classification)
+
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            media.upload(pool=pool, checksums_being_uploaded=set())
+
+        payload = media.model_dump()
+
+        assert payload.pop("checksum")
+        assert payload == {
+            "content_type": "application/vnd.skrub.table-report.v1+json",
+            "name": "table_report",
+            "data_source": data_source,
+        }
+
+    def test_model_dump_exception(self, binary_classification, Media, data_source):
+        project = Project("<tenant>", "<name>")
+        media = Media(project=project, report=binary_classification)
+
+        with raises(RuntimeError, match=r"Please use `artifact.upload\(\)` before"):
+            media.model_dump()

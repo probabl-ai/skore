@@ -25,6 +25,10 @@ class Artifact(BaseModel, ABC):
         The project to which the artifact's payload must be associated.
     content_type : str
         The content-type of the artifact content.
+    computed : bool
+        True when the artifact content is computed, False otherwise.
+    uploaded : bool
+        True when the artifact is uploaded, False otherwise.
 
     Notes
     -----
@@ -105,7 +109,6 @@ class Artifact(BaseModel, ABC):
             )
         finally:
             self.filepath.unlink(missing_ok=True)
-
 
     def model_dump(self, *args, **kwargs):
         if not self.uploaded:
