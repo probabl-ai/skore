@@ -83,11 +83,14 @@ class Artifact(BaseModel, ABC):
         Artifact that was already uploaded in its whole will be ignored.
         It triggers the compute of the content of the artifact, in a lazy way.
         """
+        if self.uploaded:
+            return
+
         self.uploaded = True
 
         try:
             if (self.checksum is None) or (self.checksum in checksums_being_uploaded):
-                return None
+                return
 
             checksums_being_uploaded.add(self.checksum)
 
@@ -105,7 +108,7 @@ class Artifact(BaseModel, ABC):
                         },
                     )
                 ) and (response.json()):
-                    return None
+                    return
 
             self.compute()
 
