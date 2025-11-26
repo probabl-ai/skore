@@ -31,17 +31,14 @@ class TestTableReport:
         self, tmp_path, binary_classification, Media, data_source, upload_mock
     ):
         project = Project("<tenant>", "<name>")
-        media = Media(project=project, report=binary_classification)
 
+        media = Media(project=project, report=binary_classification)
         media.compute()
 
-        assert media.computed is True
-
-        # ensure that media is well serialized in temporary file
         with media.filepath.open() as file:
             dataframe = load(file)
 
-        # ensure that media content is well formed
+        assert media.computed is True
         assert {
             "n_rows",
             "n_columns",
