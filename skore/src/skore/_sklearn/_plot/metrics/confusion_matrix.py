@@ -73,7 +73,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold: float | None = None,
+        threshold: float | list[float] | None = None,
         heatmap_kwargs: dict | None = None,
     ):
         """Plot visualization.
@@ -85,10 +85,11 @@ class ConfusionMatrixDisplay(DisplayMixin):
             conditions or all the population. If None, the confusion matrix will not be
             normalized.
 
-        threshold : float or None, default=None
-            The decision threshold to use for binary classification. If None,
+        threshold : float, list of float, or None, default=None
+            The decision threshold(s) to use for binary classification. If None,
             uses the default threshold (0.5 if thresholds are available, or the
-            predicted labels if not).
+            predicted labels if not). If a list of floats is provided, multiple
+            confusion matrices will be plotted side by side.
 
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
@@ -108,7 +109,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold: float | None = None,
+        threshold: float | list[float] | None = None,
         heatmap_kwargs: dict | None = None,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
@@ -128,7 +129,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold: float | None = None,
+        threshold: float | list[float] | None = None,
         heatmap_kwargs: dict | None = None,
     ) -> None:
         """
@@ -141,14 +142,29 @@ class ConfusionMatrixDisplay(DisplayMixin):
             conditions or all the population. If None, the confusion matrix will not be
             normalized.
 
-        threshold : float or None, default=None
-            The decision threshold to use for binary classification. If None,
+        threshold : float, list of float, or None, default=None
+            The decision threshold(s) to use for binary classification. If None,
             uses the default threshold (0.5 if thresholds are available, or the
-            predicted labels if not).
+            predicted labels if not). If a list of floats is provided, multiple
+            confusion matrices will be plotted side by side.
 
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
         """
+        # Handle multiple thresholds
+        if isinstance(threshold, (list, tuple)):
+            if not self.do_threshold:
+                raise ValueError(
+                    "threshold can only be used with binary classification and "
+                    "when `report.metrics.confusion_matrix(threshold=True)` is used."
+                )
+            self._plot_multiple_thresholds(
+                thresholds=threshold,
+                normalize=normalize,
+                heatmap_kwargs=heatmap_kwargs,
+            )
+            return
+
         if threshold is not None:
             if not self.do_threshold:
                 raise ValueError(
@@ -193,6 +209,67 @@ class ConfusionMatrixDisplay(DisplayMixin):
             title=title,
         )
 
+        self.figure_.tight_layout()
+
+    def _plot_multiple_thresholds(
+        self,
+        *,
+        thresholds: list[float],
+        normalize: Literal["true", "pred", "all"] | None = None,
+        heatmap_kwargs: dict | None = None,
+    ) -> None:
+        """
+        Plot multiple confusion matrices for different thresholds.
+
+        Parameters
+        ----------
+        thresholds : list of float
+            The decision thresholds to use.
+
+        normalize : {'true', 'pred', 'all'}, default=None
+            Normalizes confusion matrix over the true (rows), predicted (columns)
+            conditions or all the population. If None, the confusion matrix will not be
+            normalized.
+
+        heatmap_kwargs : dict, default=None
+            Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
+        """
+        n_thresholds = len(thresholds)
+        figsize = (5 * n_thresholds, 4)
+        self.figure_, axes = plt.subplots(1, n_thresholds, figsize=figsize)
+
+        # Handle single threshold case (axes won't be an array)
+        if n_thresholds == 1:
+            axes = [axes]
+
+        heatmap_kwargs_validated = _validate_style_kwargs(
+            {"fmt": ".2f" if normalize else "d", **self._default_heatmap_kwargs},
+            heatmap_kwargs or {},
+        )
+        # Disable colorbar for multi-threshold plots to avoid clutter
+        heatmap_kwargs_validated["cbar"] = False
+
+        normalize_by = "normalized_by_" + normalize if normalize else "count"
+
+        for ax, thresh in zip(axes, thresholds, strict=True):
+            # Find the existing threshold that is closest to the given threshold
+            closest_threshold = self.thresholds_[
+                np.argmin(np.abs(self.thresholds_ - thresh))
+            ]
+            cm = self.confusion_matrix[
+                self.confusion_matrix["threshold"] == closest_threshold
+            ]
+
+            sns.heatmap(
+                cm.pivot(
+                    index="True label", columns="Predicted label", values=normalize_by
+                ),
+                ax=ax,
+                **heatmap_kwargs_validated,
+            )
+            ax.set_title(f"threshold: {closest_threshold:.2f}")
+
+        self.ax_ = axes[-1]  # Set ax_ to the last axes for consistency
         self.figure_.tight_layout()
 
     @classmethod
@@ -265,9 +342,31 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
         confusion_matrix_records = []
         for cm, threshold_value in zip(cms, thresholds, strict=True):
-            cm_true = cm / cm.sum(axis=1, keepdims=True)
-            cm_pred = cm / cm.sum(axis=0, keepdims=True)
-            cm_all = cm / cm.sum()
+            # Compute normalized values with proper handling of zero division
+            with np.errstate(all="ignore"):
+                row_sums = cm.sum(axis=1, keepdims=True)
+                col_sums = cm.sum(axis=0, keepdims=True)
+                total_sum = cm.sum()
+
+                cm_true = np.divide(
+                    cm,
+                    row_sums,
+                    out=np.zeros_like(cm, dtype=float),
+                    where=row_sums != 0,
+                )
+                cm_pred = np.divide(
+                    cm,
+                    col_sums,
+                    out=np.zeros_like(cm, dtype=float),
+                    where=col_sums != 0,
+                )
+                cm_all = np.divide(
+                    cm,
+                    total_sum,
+                    out=np.zeros_like(cm, dtype=float),
+                    where=total_sum != 0,
+                )
+
             n_classes = len(display_labels)
             true_labels = np.repeat(display_labels, n_classes)
             pred_labels = np.tile(display_labels, n_classes)

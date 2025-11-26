@@ -413,6 +413,41 @@ cm_frame = cm_display.frame()
 cm_frame
 
 # %%
+# Decision threshold support
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# For binary classification, the confusion matrix can be computed at different
+# decision thresholds. This is useful for understanding how the model's predictions
+# change as the decision threshold varies.
+
+# %%
+# First, we create a display with threshold support enabled:
+cm_threshold_display = report.metrics.confusion_matrix(threshold=True)
+
+# %%
+# Now we can plot the confusion matrix at a specific threshold:
+cm_threshold_display.plot(threshold=0.3)
+plt.show()
+
+# %%
+# The title shows the threshold value used. By default, the threshold closest to
+# the requested value is selected from the available thresholds.
+#
+# We can also compare multiple thresholds side by side:
+cm_threshold_display.plot(threshold=[0.3, 0.5, 0.7])
+plt.show()
+
+# %%
+# The frame method also supports threshold selection:
+cm_threshold_display.frame(threshold=0.7)
+
+# %%
+# When no threshold is specified for a threshold-enabled display, we get all
+# confusion matrices for all available thresholds:
+cm_all_thresholds = cm_threshold_display.frame()
+cm_all_thresholds.head(10)
+
+# %%
 # .. seealso::
 #
 #   For using the :class:`~skore.EstimatorReport` to inspect your models,
