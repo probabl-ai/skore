@@ -140,8 +140,9 @@ class TestPerformance:
     ):
         project = Project("<tenant>", "<name>")
         report = request.getfixturevalue(report)
-        display = getattr(report.metrics, accessor)(data_source=data_source)
-        content, _ = serialize(display)
+        content, _ = serialize(
+            getattr(report.metrics, accessor)(data_source=data_source)
+        )
 
         media = Media(project=project, report=report)
         media.compute()
@@ -168,8 +169,9 @@ class TestPerformance:
     ):
         project = Project("<tenant>", "<name>")
         report = request.getfixturevalue(report)
-        display = getattr(report.metrics, accessor)(data_source=data_source)
-        _, checksum = serialize(display)
+        _, checksum = serialize(
+            getattr(report.metrics, accessor)(data_source=data_source)
+        )
 
         media = Media(project=project, report=report)
 
@@ -226,8 +228,9 @@ class TestPerformance:
     def test_model_dump(self, Media, report, accessor, data_source, request):
         project = Project("<tenant>", "<name>")
         report = request.getfixturevalue(report)
-        display = getattr(report.metrics, accessor)(data_source=data_source)
-        _, checksum = serialize(display)
+        _, checksum = serialize(
+            getattr(report.metrics, accessor)(data_source=data_source)
+        )
 
         media = Media(project=project, report=report)
 
