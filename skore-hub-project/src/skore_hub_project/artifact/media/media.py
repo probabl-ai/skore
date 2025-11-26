@@ -21,9 +21,13 @@ class Media(Artifact, ABC, Generic[Report]):
     Attributes
     ----------
     project : Project
-        The project to which the artifact's payload must be associated.
+        The project to which the media's payload must be associated.
     content_type : str
-        The content-type of the artifact content.
+        The content-type of the media content.
+    computed : bool
+        True when the media content is computed, False otherwise.
+    uploaded : bool
+        True when the media is uploaded, False otherwise.
     report : EstimatorReport | CrossValidationReport
         The report on which compute the media.
     name : str

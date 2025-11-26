@@ -19,11 +19,15 @@ class Pickle(Artifact):
     Attributes
     ----------
     project : Project
-        The project to which the artifact's payload must be associated.
+        The project to which the pickle's payload must be associated.
     content_type : str
-        The content-type of the artifact content.
+        The content-type of the pickle content.
+    computed : bool
+        True when the pickle content is computed, False otherwise.
+    uploaded : bool
+        True when the pickle is uploaded, False otherwise.
     report : EstimatorReport | CrossValidationReport
-        The report to pickled.
+        The report to pickle.
 
     Notes
     -----

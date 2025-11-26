@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import cached_property
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -54,12 +55,19 @@ class Artifact(BaseModel, ABC):
 
     @cached_property
     def filepath(self) -> Path:
-        """The filepath used to store the content."""
+        """The temporary filepath used to store the content of the artifact."""
         with NamedTemporaryFile(mode="w+b", delete=False) as file:
             return Path(file.name)
 
     @abstractmethod
-    def compute(self) -> None: ...
+    def compute(self) -> None:
+        """
+        Compute and write the content of the artifact in ``artifact.filepath``.
+
+        Notes
+        -----
+        It is triggered when ``artifact.upload`` is called, in a lazy way.
+        """
 
     def upload(
         self,
@@ -73,6 +81,7 @@ class Artifact(BaseModel, ABC):
         Notes
         -----
         Artifact that was already uploaded in its whole will be ignored.
+        It triggers the compute of the content of the artifact, in a lazy way.
         """
         self.uploaded = True
 
@@ -110,7 +119,7 @@ class Artifact(BaseModel, ABC):
         finally:
             self.filepath.unlink(missing_ok=True)
 
-    def model_dump(self, *args, **kwargs):
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:  # noqa: D102
         if not self.uploaded:
             raise RuntimeError(
                 "You cannot access the dictionary representation of the model of an "
@@ -118,4 +127,4 @@ class Artifact(BaseModel, ABC):
                 "Please use `artifact.upload()` before."
             )
 
-        return super().model_dump(*args, **kwargs)
+        return super().model_dump(**kwargs)
