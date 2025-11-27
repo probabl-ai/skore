@@ -76,7 +76,6 @@ class CoefficientsDisplay(DisplayMixin):
     _default_barplot_kwargs: dict[str, Any] = {"palette": "tab10"}
     _default_boxplot_kwargs: dict[str, Any] = {
         "palette": "tab10",
-        "vert": False,
         "whis": 100_000,
         **BOXPLOT_STYLE,
     }
@@ -634,6 +633,7 @@ class CoefficientsDisplay(DisplayMixin):
                 # regression problem, intercept is a single float. Thus, we need to
                 # repeat it for each output
                 intercept = np.repeat(intercept, coef.shape[1], axis=1)
+
             coefficients.append(np.concatenate([intercept, coef]))
 
             feat_names = ["Intercept"] + _get_feature_names(
