@@ -430,14 +430,9 @@ cm_threshold_display.plot(threshold=0.3)
 plt.show()
 
 # %%
-# The title shows the threshold value used. By default, the threshold closest to
-# the requested value is selected from the available thresholds.
+# Since there are a finite number of threshold where the predictions change,
+# we plot the decision matrix associated with the threshold closest to the one provided.
 #
-# We can also compare multiple thresholds side by side:
-cm_threshold_display.plot(threshold=[0.3, 0.5, 0.7])
-plt.show()
-
-# %%
 # The frame method also supports threshold selection:
 cm_threshold_display.frame(threshold=0.7)
 

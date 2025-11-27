@@ -341,7 +341,8 @@ def test_threshold_display_creation(
 def test_threshold_display_without_threshold(
     pyplot, logistic_binary_classification_with_train_test
 ):
-    """Check that do_threshold is False when threshold=False."""
+    """Check that do_threshold is False when threshold=False and that we raise an error
+    when frame or plot is called with threshold."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -356,6 +357,18 @@ def test_threshold_display_without_threshold(
 
     assert display.do_threshold is False
     assert display.thresholds_ is None
+
+    display = report.metrics.confusion_matrix(threshold=False)
+
+    err_msg = (
+        "threshold can only be used with binary classification and "
+        "when `report.metrics.confusion_matrix\\(threshold=True\\)` is used."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.frame(threshold=0.5)
+
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(threshold=0.5)
 
 
 def test_plot_with_threshold(pyplot, logistic_binary_classification_with_train_test):
@@ -375,9 +388,6 @@ def test_plot_with_threshold(pyplot, logistic_binary_classification_with_train_t
     display.plot(threshold=0.3)
     assert "threshold" in display.ax_.get_title().lower()
 
-    display.plot(threshold=0.7)
-    assert "threshold" in display.ax_.get_title().lower()
-
 
 def test_plot_with_default_threshold(
     pyplot, logistic_binary_classification_with_train_test
@@ -394,34 +404,15 @@ def test_plot_with_default_threshold(
         y_test=y_test,
     )
     display = report.metrics.confusion_matrix(threshold=True)
-    display.plot()  # Should use default threshold (0.5)
+    display.plot()
 
-    # The title should include the threshold
-    assert "threshold" in display.ax_.get_title().lower()
-
-
-def test_threshold_error_without_threshold_support(
-    pyplot, forest_binary_classification_with_train_test
-):
-    """Check that we raise an error when threshold is used without threshold support."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
+    closest_threshold = display.thresholds_[
+        np.argmin(np.abs(display.thresholds_ - 0.5))
+    ]
+    assert (
+        display.ax_.get_title()
+        == f"Confusion Matrix (threshold: {closest_threshold:.2f})"
     )
-    report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    display = report.metrics.confusion_matrix(threshold=False)
-
-    err_msg = (
-        "threshold can only be used with binary classification and "
-        "when `report.metrics.confusion_matrix\\(threshold=True\\)` is used."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(threshold=0.5)
 
 
 def test_frame_with_threshold(logistic_binary_classification_with_train_test):
@@ -463,30 +454,6 @@ def test_frame_all_thresholds(logistic_binary_classification_with_train_test):
     assert len(frame) == len(display.thresholds_)
 
 
-def test_frame_threshold_error_without_threshold_support(
-    forest_binary_classification_with_train_test,
-):
-    """Check that we raise an error when threshold is used without threshold support."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    display = report.metrics.confusion_matrix(threshold=False)
-
-    err_msg = (
-        "threshold can only be used with binary classification "
-        "when `report.metrics.confusion_matrix\\(threshold=True\\)` is used."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.frame(threshold=0.5)
-
-
 def test_threshold_normalization(
     pyplot, logistic_binary_classification_with_train_test
 ):
@@ -503,43 +470,17 @@ def test_threshold_normalization(
     )
     display = report.metrics.confusion_matrix(threshold=True)
 
-    # Test with normalize="true"
     display.plot(threshold=0.5, normalize="true")
     frame = display.frame(threshold=0.5, normalize="true")
     assert np.allclose(frame.sum(axis=1), np.ones(2))
 
-    # Test with normalize="pred"
     display.plot(threshold=0.5, normalize="pred")
     frame = display.frame(threshold=0.5, normalize="pred")
     assert np.allclose(frame.sum(axis=0), np.ones(2))
 
-    # Test with normalize="all"
     display.plot(threshold=0.5, normalize="all")
     frame = display.frame(threshold=0.5, normalize="all")
     assert np.isclose(frame.sum().sum(), 1.0)
-
-
-def test_plot_with_multiple_thresholds(
-    pyplot, logistic_binary_classification_with_train_test
-):
-    """Check that we can plot with multiple thresholds."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    display = report.metrics.confusion_matrix(threshold=True)
-
-    # Plot with multiple thresholds
-    display.plot(threshold=[0.3, 0.5, 0.7])
-
-    # Should have 3 subplots
-    assert len(display.figure_.axes) >= 3
 
 
 def test_threshold_closest_match(
@@ -558,6 +499,37 @@ def test_threshold_closest_match(
     )
     display = report.metrics.confusion_matrix(threshold=True)
 
-    # Even with a threshold not in the list, it should work
-    display.plot(threshold=0.12345)
-    assert display.ax_ is not None
+    # Create a threshold that is not in the list to test the closest match
+    middle_index = len(display.thresholds_) // 2
+    threshold = (
+        display.thresholds_[middle_index] + display.thresholds_[middle_index + 1]
+    ) / 2 - 1e-6
+    closest_threshold = display.thresholds_[middle_index]
+    assert threshold not in display.thresholds_
+    display.plot(threshold=threshold)
+    assert (
+        display.ax_.get_title()
+        == f"Confusion Matrix (threshold: {closest_threshold:.2f})"
+    )
+
+
+def test_frame_plot_coincidence_with_threshold(
+    pyplot, logistic_binary_classification_with_train_test
+):
+    """Check that the values in the frame and plot coincide when threshold is
+    provided."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.metrics.confusion_matrix(threshold=True)
+    frame = display.frame(threshold=0.5)
+    frame_values = frame.values.flatten()
+    display.plot(threshold=0.5)
+    assert np.allclose(frame_values, display.ax_.collections[0].get_array().flatten())
