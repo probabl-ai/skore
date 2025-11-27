@@ -177,6 +177,18 @@ def test_multiclass_classification(
         f"{i}" for i in range(n_classes)
     ]
 
+    display.plot(subplots_by="label")
+    assert hasattr(display, "figure_")
+    assert hasattr(display, "ax_")
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_) == n_classes
+    for label, ax in enumerate(display.ax_):
+        assert isinstance(ax, mpl.axes.Axes)
+        assert ax.get_title() == f"{report.estimator_name_} - Label: {label}"
+        assert ax.get_xlabel() == "Magnitude of coefficient"
+        assert ax.get_ylabel() == ""
+        assert ax.get_legend() is None
+
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
 @pytest.mark.parametrize("with_preprocessing", [True, False])
@@ -364,3 +376,15 @@ def test_multi_output_regression(
     assert [t.get_text() for t in legend.get_texts()] == [
         f"{i}" for i in range(n_outputs)
     ]
+
+    display.plot(subplots_by="output")
+    assert hasattr(display, "figure_")
+    assert hasattr(display, "ax_")
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_) == n_outputs
+    for output, ax in enumerate(display.ax_):
+        assert isinstance(ax, mpl.axes.Axes)
+        assert ax.get_title() == f"{report.estimator_name_} - Output: {output}"
+        assert ax.get_xlabel() == "Magnitude of coefficient"
+        assert ax.get_ylabel() == ""
+        assert ax.get_legend() is None
