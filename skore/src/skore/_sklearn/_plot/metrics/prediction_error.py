@@ -253,8 +253,8 @@ class PredictionErrorDisplay(DisplayMixin):
             )
 
         if self.data_source == "both":
-            add_scatter(data_source="test")
-            add_scatter(data_source="train", marker="x")
+            add_scatter(data_source="test", marker="x")
+            add_scatter(data_source="train")
         else:
             add_scatter(data_source=self.data_source)
 
