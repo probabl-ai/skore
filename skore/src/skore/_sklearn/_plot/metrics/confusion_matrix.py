@@ -132,13 +132,17 @@ class ConfusionMatrixDisplay(DisplayMixin):
         normalize_by = "normalized_by_" + normalize if normalize else "count"
         sns.heatmap(
             self.confusion_matrix.pivot(
-                index="True label", columns="Predicted label", values=normalize_by
+                index="true_label", columns="predicted_label", values=normalize_by
             ),
             ax=self.ax_,
             **heatmap_kwargs_validated,
         )
+        self.ax_.set(
+            xlabel="Predicted label",
+            ylabel="True label",
+            title="Confusion Matrix",
+        )
 
-        self.ax_.set_title("Confusion Matrix")
         self.figure_.tight_layout()
 
     @classmethod
@@ -184,6 +188,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         cm = sklearn_confusion_matrix(
             y_true=y_true_values,
             y_pred=y_pred_values,
+            normalize=None,  # we will normalize later
         )
 
         cm_true = cm / cm.sum(axis=1, keepdims=True)
@@ -193,8 +198,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
         confusion_matrix = pd.DataFrame(
             {
-                "True label": np.repeat(display_labels, n_classes),
-                "Predicted label": np.tile(display_labels, n_classes),
+                "true_label": np.repeat(display_labels, n_classes),
+                "predicted_label": np.tile(display_labels, n_classes),
                 "count": cm.flatten(),
                 "normalized_by_true": cm_true.flatten(),
                 "normalized_by_pred": cm_pred.flatten(),
@@ -229,5 +234,5 @@ class ConfusionMatrixDisplay(DisplayMixin):
         """
         normalize_by = "normalized_by_" + normalize if normalize else "count"
         return self.confusion_matrix.pivot(
-            index="True label", columns="Predicted label", values=normalize_by
+            index="true_label", columns="predicted_label", values=normalize_by
         )

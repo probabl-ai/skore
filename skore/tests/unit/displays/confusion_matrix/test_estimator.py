@@ -79,8 +79,8 @@ def test_confusion_matrix(pyplot, forest_binary_classification_with_train_test):
 
     assert isinstance(display.confusion_matrix, pd.DataFrame)
     assert display.confusion_matrix.columns.tolist() == [
-        "True label",
-        "Predicted label",
+        "true_label",
+        "predicted_label",
         "count",
         "normalized_by_true",
         "normalized_by_pred",
@@ -105,35 +105,30 @@ def test_normalization(pyplot, forest_binary_classification_with_train_test):
 
     display_true = report.metrics.confusion_matrix()
     display_true.plot(normalize="true")
-    assert np.allclose(
+    np.testing.assert_allclose(
         display_true.confusion_matrix.pivot(
-            index="True label", columns="Predicted label", values="normalized_by_true"
+            index="true_label", columns="predicted_label", values="normalized_by_true"
         ).sum(axis=1),
-        np.ones(2),
+        1.0,
     )
-    assert np.allclose(display_true.frame(normalize="true").sum(axis=1), np.ones(2))
+    np.testing.assert_allclose(display_true.frame(normalize="true").sum(axis=1), 1.0)
 
     display_pred = report.metrics.confusion_matrix()
     display_pred.plot(normalize="pred")
-    assert np.allclose(
+    np.testing.assert_allclose(
         display_pred.confusion_matrix.pivot(
-            index="True label", columns="Predicted label", values="normalized_by_pred"
+            index="true_label", columns="predicted_label", values="normalized_by_pred"
         ).sum(axis=0),
-        np.ones(2),
+        1.0,
     )
-    assert np.allclose(display_pred.frame(normalize="pred").sum(axis=0), np.ones(2))
+    np.testing.assert_allclose(display_pred.frame(normalize="pred").sum(axis=0), 1.0)
 
     display_all = report.metrics.confusion_matrix()
     display_all.plot(normalize="all")
-    assert np.isclose(
-        display_all.confusion_matrix.pivot(
-            index="True label", columns="Predicted label", values="normalized_by_all"
-        )
-        .sum()
-        .sum(),
-        1.0,
-    )
-    assert np.isclose(display_all.frame(normalize="all").sum().sum(), 1.0)
+    assert display_all.confusion_matrix.pivot(
+        index="true_label", columns="predicted_label", values="normalized_by_all"
+    ).sum().sum() == pytest.approx(1.0)
+    assert display_all.frame(normalize="all").sum().sum() == pytest.approx(1.0)
 
 
 def test_data_source(pyplot, forest_binary_classification_with_train_test):
@@ -298,7 +293,7 @@ def test_frame_structure(forest_binary_classification_with_train_test):
     assert list(frame.columns) == display.display_labels
 
     expected = display.confusion_matrix.pivot(
-        index="True label", columns="Predicted label", values="count"
+        index="true_label", columns="predicted_label", values="count"
     )
     pd.testing.assert_frame_equal(frame, expected)
 
