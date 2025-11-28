@@ -57,9 +57,11 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         else:  # self._parent._reports_type == "CrossValidationReport":
             estimators, names = [], []
             splits: list[int | float] = []
-            for split_idx, (name, report) in enumerate(self._parent.reports_.items()):
+            for name, report in self._parent.reports_.items():
                 cross_validation_report = cast("CrossValidationReport", report)
-                for estimator_report in cross_validation_report.estimator_reports_:
+                for split_idx, estimator_report in enumerate(
+                    cross_validation_report.estimator_reports_
+                ):
                     estimators.append(estimator_report.estimator_)
                     names.append(name)
                     splits.append(split_idx)
