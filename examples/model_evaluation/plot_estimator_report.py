@@ -397,14 +397,12 @@ plt.show()
 # %%
 # We can normalize the confusion matrix to get percentages instead of raw counts.
 # Here we normalize by true labels (rows):
-cm_display = report.metrics.confusion_matrix()
 cm_display.plot(normalize="true")
 plt.show()
 
 # %%
 # More plotting options are available via ``heatmap_kwargs``, which are passed to
 # seaborn's heatmap. For example, we can customize the colormap and number format:
-cm_display = report.metrics.confusion_matrix()
 cm_display.plot(heatmap_kwargs={"cmap": "Greens", "fmt": ".2e"})
 plt.show()
 
@@ -413,6 +411,36 @@ plt.show()
 # analysis:
 cm_frame = cm_display.frame()
 cm_frame
+
+# %%
+# Decision threshold support
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# For binary classification, the confusion matrix can be computed at different
+# decision thresholds. This is useful for understanding how the model's predictions
+# change as the decision threshold varies.
+
+# %%
+# First, we create a display with threshold support enabled:
+cm_threshold_display = report.metrics.confusion_matrix(threshold=True)
+
+# %%
+# Now we can plot the confusion matrix at a specific threshold:
+cm_threshold_display.plot(threshold=0.3)
+plt.show()
+
+# %%
+# Since there are a finite number of threshold where the predictions change,
+# we plot the decision matrix associated with the threshold closest to the one provided.
+#
+# The frame method also supports threshold selection:
+cm_threshold_display.frame(threshold=0.7)
+
+# %%
+# When no threshold is specified for a threshold-enabled display, we get all
+# confusion matrices for all available thresholds:
+cm_all_thresholds = cm_threshold_display.frame()
+cm_all_thresholds.head(10)
 
 # %%
 # .. seealso::
