@@ -399,7 +399,7 @@ class TestAtStep:
         [
             (8, AT_STEP_TOO_LARGE),
             (-8, AT_STEP_TOO_LARGE),
-            ("hello", r"list.index\(x\): x not in list"),
+            ("hello", "not in list"),
             (0.5, "at_step must be an integer or a string"),
         ],
     )
