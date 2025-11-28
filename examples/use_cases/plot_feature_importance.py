@@ -277,7 +277,6 @@ ridge_report.feature_importance.coefficients().frame()
 
 # %%
 ridge_report.feature_importance.coefficients().plot()
-plt.tight_layout()
 
 # %%
 # .. note::
@@ -322,14 +321,17 @@ feature_std = ridge_report.estimator_[0].scale_
 
 
 def unscale_coefficients(df, feature_mean, feature_std):
+    df = df.set_index("feature")
     mask_intercept_column = df.index == "Intercept"
-    df.loc["Intercept"] = df.loc["Intercept"] - np.sum(
-        df.loc[~mask_intercept_column, "Coefficient"] * feature_mean / feature_std
+    # rescale the intercept
+    df.loc[mask_intercept_column] = df.loc[mask_intercept_column] - np.sum(
+        df.loc[~mask_intercept_column, "coefficients"] * feature_mean / feature_std
     )
-    df.loc[~mask_intercept_column, "Coefficient"] = (
-        df.loc[~mask_intercept_column, "Coefficient"] / feature_std
+    # rescale the other coefficients
+    df.loc[~mask_intercept_column, "coefficients"] = (
+        df.loc[~mask_intercept_column, "coefficients"] / feature_std
     )
-    return df
+    return df.reset_index()
 
 
 df_ridge_report_coef_unscaled = unscale_coefficients(
@@ -451,7 +453,8 @@ print("Number of features after feature engineering:", n_features_engineered)
 engineered_ridge_report_feature_importance = (
     engineered_ridge_report.feature_importance.coefficients()
     .frame()
-    .sort_values(by="Coefficient", key=abs, ascending=True)
+    .set_index("feature")
+    .sort_values(by="coefficients", key=abs, ascending=True)
     .tail(15)
 )
 
@@ -469,7 +472,6 @@ engineered_ridge_report_feature_importance.plot.barh(
     xlabel="Coefficient",
     ylabel="Feature",
 )
-plt.tight_layout()
 
 # %%
 # We can observe that the most important features are interactions between features,
@@ -710,14 +712,14 @@ print(selectk_features)
 # And here is the feature importance based on our model (sorted by absolute values):
 
 # %%
-selectk_ridge_report.feature_importance.coefficients().frame().sort_values(
-    by="Coefficient", key=abs, ascending=True
-).tail(15).plot.barh(
-    title="Model weights",
-    xlabel="Coefficient",
-    ylabel="Feature",
+(
+    selectk_ridge_report.feature_importance.coefficients()
+    .frame()
+    .set_index("feature")
+    .sort_values(by="coefficients", key=abs, ascending=True)
+    .tail(15)
+    .plot.barh(title="Model weights", xlabel="Coefficient", ylabel="Feature")
 )
-plt.tight_layout()
 
 # %%
 # Tree-based models: mean decrease in impurity (MDI)
@@ -815,7 +817,6 @@ plot_tree(
     feature_names=tree_report.estimator_.feature_names_in_,
     max_depth=2,
 )
-plt.tight_layout()
 
 # %%
 # This tree explains how each sample is going to be predicted by our tree.
@@ -866,7 +867,6 @@ tree_report.feature_importance.mean_decrease_impurity().plot.barh(
     xlabel="MDI",
     ylabel="Feature",
 )
-plt.tight_layout()
 
 # %%
 # For a decision tree, for each feature, the MDI is averaged across all splits in the
@@ -929,7 +929,6 @@ rf_report.feature_importance.mean_decrease_impurity().plot.barh(
     xlabel="MDI",
     ylabel="Feature",
 )
-plt.tight_layout()
 
 # %%
 # In a random forest, the MDI is computed by averaging the MDI of each feature across
@@ -1015,11 +1014,10 @@ def plot_permutation_train_test(importances):
         orient="h",
         order=importances["Feature"].unique()[::-1],
         ax=ax,
+        whis=10_000,
     )
     ax.set_xlabel("Decrease of $R^2$ score")
     ax.set_title("Permutation feature importance (Train vs Test)")
-
-    plt.tight_layout()
     plt.show()
 
 
