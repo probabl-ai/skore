@@ -7,7 +7,6 @@ import pandas as pd
 from matplotlib.legend import Legend
 from sklearn.base import BaseEstimator, ClassifierMixin
 
-from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
 from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
@@ -84,6 +83,7 @@ def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDispl
         "label",
         "average_precision",
     ]
+
 
 def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"]):
     """Check the position of the legend in the axes."""

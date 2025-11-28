@@ -1,10 +1,8 @@
-import pytest
 import numpy as np
-import pandas as pd
-
+import pytest
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.utils._testing import _convert_container
 
 from skore._sklearn.feature_names import _get_feature_names
