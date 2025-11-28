@@ -382,7 +382,9 @@ class CoefficientsDisplay(DisplayMixin):
         # {"label"} or {"output"} or {}
         columns_to_groupby = self._get_columns_to_groupby(frame=frame)
         if subplots_by is not None and not len(columns_to_groupby):
-            raise ValueError("No columns to group by.")
+            raise ValueError(
+                "No columns to group by. `subplots_by` is expected to be None."
+            )
         elif subplots_by is not None and subplots_by not in columns_to_groupby:
             raise ValueError(
                 f"Column {subplots_by} not found in the frame. It should be one "

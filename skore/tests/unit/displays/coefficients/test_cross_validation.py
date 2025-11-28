@@ -7,8 +7,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils._testing import _convert_container
 
-from skore import CrossValidationReport
-from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
+from skore import CoefficientsDisplay, CrossValidationReport
 
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
@@ -90,6 +89,9 @@ def test_binary_classification(
     assert display.ax_.get_title() == report.estimator_name_
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
+
+    with pytest.raises(ValueError, match="No columns to group by."):
+        display.plot(subplots_by="label")
 
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
@@ -189,6 +191,9 @@ def test_multiclass_classification(
         assert ax.get_ylabel() == ""
         assert ax.get_legend() is None
 
+    with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
+        display.plot(subplots_by="incorrect")
+
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
 @pytest.mark.parametrize("with_preprocessing", [True, False])
@@ -277,6 +282,9 @@ def test_single_output_regression(
     assert display.ax_.get_title() == report.estimator_name_
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
+
+    with pytest.raises(ValueError, match="No columns to group by."):
+        display.plot(subplots_by="output")
 
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
@@ -388,3 +396,6 @@ def test_multi_output_regression(
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
         assert ax.get_legend() is None
+
+    with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
+        display.plot(subplots_by="incorrect")
