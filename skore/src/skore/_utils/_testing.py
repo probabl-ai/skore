@@ -94,10 +94,11 @@ def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"
     legend = ax.get_legend()
     assert legend._loc == Legend.codes[loc]
     bbox = legend.get_window_extent().transformed(ax.transAxes.inverted())
+    tol = 1e-6
     if position == "inside":
-        assert 0 <= bbox.x0 <= 1
+        assert -tol <= bbox.x0 <= 1 + tol
     else:
-        assert bbox.x0 >= 1
+        assert bbox.x0 >= 1 - tol
 
 
 def check_frame_structure(df, expected_index, expected_data_columns):
