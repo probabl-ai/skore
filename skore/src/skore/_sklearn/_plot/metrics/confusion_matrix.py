@@ -178,13 +178,10 @@ class ConfusionMatrixDisplay(DisplayMixin):
             heatmap_kwargs or {},
         )
         normalize_by = "normalized_by_" + normalize if normalize else "count"
-        cm_pivot = cm.pivot(
-            index="True label", columns="Predicted label", values=normalize_by
-        ).reindex(index=self.display_labels, columns=self.display_labels)
         sns.heatmap(
             cm.pivot(
                 index="true_label", columns="predicted_label", values=normalize_by
-            ),
+            ).reindex(index=self.display_labels, columns=self.display_labels),
             ax=self.ax_,
             **heatmap_kwargs_validated,
         )
@@ -240,7 +237,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
         **kwargs : dict
             Additional keyword arguments that are ignored for compatibility with
-            other metrics displays. Accepts but ignores `estimators` and `data_source`.
+            other metrics displays. Accepts but ignores `estimators`, `ml_task`,
+            and `data_source`.
 
         Returns
         -------
