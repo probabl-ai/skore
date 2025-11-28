@@ -43,6 +43,48 @@ def test_data_source_external(
     pd.testing.assert_index_equal(cached_result.columns, expected_columns)
 
 
+def test_data_source_both(
+    binary_classification_data, comparison_estimator_reports_binary_classification
+):
+    """Check that `MetricsSummaryDisplay` works with `data_source="both"`."""
+    X, y = binary_classification_data
+
+    report = comparison_estimator_reports_binary_classification
+    result = report.metrics.summarize(data_source="both", X=X[:10], y=y[:10]).frame()
+    assert "Favorability" not in result.columns
+
+    expected_index = pd.MultiIndex.from_tuples(
+        [
+            ("Precision", 0),
+            ("Precision", 1),
+            ("Recall", 0),
+            ("Recall", 1),
+            ("ROC AUC", ""),
+            ("Brier score", ""),
+            ("Fit time (s)", ""),
+            ("Predict time (s)", ""),
+        ],
+        names=["Metric", "Label / Average"],
+    )
+    expected_columns = pd.Index(
+        [
+            "DummyClassifier_1 (train)",
+            "DummyClassifier_1 (test)",
+            "DummyClassifier_2 (train)",
+            "DummyClassifier_2 (test)",
+        ],
+        name="Estimator",
+    )
+
+    pd.testing.assert_index_equal(result.index, expected_index)
+    pd.testing.assert_index_equal(result.columns, expected_columns)
+
+    assert len(report._cache) == 1
+    cached_result = next(iter(report._cache.values()))
+    pd.testing.assert_index_equal(cached_result.index, expected_index)
+    pd.testing.assert_index_equal(cached_result.columns, expected_columns)
+
+
 def test_flat_index(estimator_reports_binary_classification):
     """Check that the index is flattened when `flat_index` is True.
 
