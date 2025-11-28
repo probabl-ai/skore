@@ -284,7 +284,7 @@ class CoefficientsDisplay(DisplayMixin):
             n_features = max(
                 [
                     group_frame["feature"].nunique()
-                    for _, group_frame in frame.groupby("estimator")
+                    for _, group_frame in frame.groupby("estimator", sort=False)
                 ]
             )
         # with hue, it means that we will have several bars of boxes for a single
@@ -442,7 +442,7 @@ class CoefficientsDisplay(DisplayMixin):
 
             axes = cast(np.ndarray, self.ax_)
             for ax, (group, group_frame) in zip(
-                axes.flatten(), frame.groupby(by=subplots_by), strict=True
+                axes.flatten(), frame.groupby(by=subplots_by, sort=False), strict=True
             ):
                 plot_function(
                     data=group_frame,
@@ -463,7 +463,7 @@ class CoefficientsDisplay(DisplayMixin):
         """Check if the features are the same across all estimators."""
         grouped = {
             name: group["feature"].sort_values().tolist()
-            for name, group in frame.groupby("estimator")
+            for name, group in frame.groupby("estimator", sort=False)
         }
         _, reference_features = grouped.popitem()
         for group_features in grouped.values():
@@ -570,7 +570,7 @@ class CoefficientsDisplay(DisplayMixin):
 
             axes = cast(np.ndarray, self.ax_)
             for ax, (group, group_frame) in zip(
-                axes.flatten(), frame.groupby(by=subplots_by), strict=True
+                axes.flatten(), frame.groupby(by=subplots_by, sort=False), strict=True
             ):
                 plot_function(
                     data=group_frame,

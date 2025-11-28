@@ -4,7 +4,7 @@ import pytest
 from sklearn.base import clone
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.utils._testing import _convert_container
 
 from skore import CoefficientsDisplay, ComparisonReport, EstimatorReport
@@ -511,3 +511,78 @@ def test_multi_output_regression(
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
         display.plot(subplots_by="incorrect")
+
+
+def test_different_features(
+    pyplot,
+    logistic_multiclass_classification_with_train_test,
+):
+    """Check that we get a proper report even if the estimators do not have the same
+    input features."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+    n_classes = len(np.unique(y_train))
+
+    simple_model = clone(estimator)
+    complex_model = Pipeline(
+        [("poly", PolynomialFeatures()), ("predictor", clone(estimator))]
+    )
+
+    report_simple = EstimatorReport(
+        simple_model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_complex = EstimatorReport(
+        complex_model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"report_simple": report_simple, "report_complex": report_complex}
+    )
+
+    display = report.feature_importance.coefficients()
+    assert isinstance(display, CoefficientsDisplay)
+
+    df = display.frame()
+    expected_features = [
+        "Intercept"
+    ] + report_simple.estimator_.feature_names_in_.tolist()
+    assert (
+        df.query("estimator == 'report_simple'")["feature"].tolist()
+        == expected_features * n_classes
+    )
+
+    expected_features = ["Intercept"] + report_complex.estimator_[
+        :-1
+    ].get_feature_names_out().tolist()
+    assert (
+        df.query("estimator == 'report_complex'")["feature"].tolist()
+        == expected_features * n_classes
+    )
+
+    err_msg = (
+        "The estimators have different features and should be plotted on different "
+        "axis using `subplots_by='estimator'`."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplots_by="label")
+
+    for subplots_by in (None, "estimator"):
+        display.plot(subplots_by=subplots_by)
+        assert hasattr(display, "figure_")
+        assert hasattr(display, "ax_")
+        assert isinstance(display.ax_, np.ndarray)
+        assert len(display.ax_) == len(report.reports_)
+        for report_name, ax in zip(report.reports_, display.ax_, strict=True):
+            assert isinstance(ax, mpl.axes.Axes)
+            assert ax.get_title() == f"Estimator: {report_name}"
+            assert ax.get_xlabel() == "Magnitude of coefficient"
+            assert ax.get_ylabel() == ""
+
+            legend = ax.get_legend()
+            assert legend.get_title().get_text() == "Label"
+            assert [t.get_text() for t in legend.get_texts()] == [
+                f"{i}" for i in range(n_classes)
+            ]
