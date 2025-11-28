@@ -94,6 +94,7 @@ def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"
     legend = ax.get_legend()
     assert legend._loc == Legend.codes[loc]
     bbox = legend.get_window_extent().transformed(ax.transAxes.inverted())
+    print(bbox)
     if position == "inside":
         assert 0 <= bbox.x0 <= 1
     else:
