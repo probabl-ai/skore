@@ -2059,8 +2059,6 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        display_labels: list | None = None,
-        normalize: Literal["true", "pred", "all"] | None = None,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -2084,15 +2082,6 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        display_labels : list of str, default=None
-            Display labels for plot. If None, display labels are set from 0 to
-            ``n_classes - 1``.
-
-        normalize : {'true', 'pred', 'all'}, default=None
-            Normalizes confusion matrix over the true (rows), predicted (columns)
-            conditions or all the population. If None, confusion matrix will not be
-            normalized.
-
         Returns
         -------
         display : :class:`~skore._sklearn._plot.ConfusionMatrixDisplay`
@@ -2110,7 +2099,7 @@ class _MetricsAccessor(
         >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.confusion_matrix()
         """
-        display_kwargs = {"display_labels": display_labels, "normalize": normalize}
+        display_kwargs = {"display_labels": self._parent.estimator_.classes_.tolist()}
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(
