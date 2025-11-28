@@ -269,6 +269,68 @@ def test_multiclass_classification_data_source(
         )
 
 
+def test_binary_classification_data_source_both(
+    pyplot, logistic_binary_classification_with_train_test
+):
+    """Check the behavior of the precision-recall curve plot with binary data
+    when data_source='both'.
+    """
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.precision_recall(data_source="both")
+    display.plot()
+
+    assert len(display.lines_) == 2
+
+    assert "Train set (AP = " in display.lines_[0].get_label()
+    assert "Test set (AP = " in display.lines_[1].get_label()
+
+    legend = display.ax_.get_legend()
+    assert legend.get_title().get_text() == ""
+    assert len(legend.get_texts()) == 2
+
+
+def test_multiclass_classification_data_source_both(
+    pyplot, logistic_multiclass_classification_with_train_test
+):
+    """Check the behavior of the precision-recall curve plot with multiclass data
+    when data_source='both'.
+    """
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.precision_recall(data_source="both")
+    display.plot()
+
+    n_classes = len(estimator.classes_)
+    assert len(display.lines_) == 2 * n_classes
+
+    for i in range(n_classes):
+        train_line = display.lines_[i * 2]
+        assert train_line.get_linestyle() == "--"
+
+        test_line = display.lines_[i * 2 + 1]
+        assert test_line.get_linestyle() == "-"
+
+        assert train_line.get_color() == test_line.get_color()
+
+    train_labels = [line.get_label() for line in display.lines_[::2]]
+    test_labels = [line.get_label() for line in display.lines_[1::2]]
+    assert all("Train set -" in label for label in train_labels)
+    assert all("Test set -" in label for label in test_labels)
+
+    legend = display.ax_.get_legend()
+    assert legend.get_title().get_text() == ""
+    assert len(legend.get_texts()) == 2 * n_classes
+
+
 @pytest.mark.parametrize("with_average_precision", [False, True])
 def test_frame_binary_classification(
     logistic_binary_classification_with_train_test, with_average_precision
@@ -319,6 +381,36 @@ def test_frame_multiclass_classification(
     if with_average_precision:
         for (_), group in df.groupby(["label"], observed=True):
             assert group["average_precision"].nunique() == 1
+
+
+@pytest.mark.parametrize("with_average_precision", [False, True])
+def test_frame_multiclass_classification_data_source_both(
+    logistic_multiclass_classification_with_train_test, with_average_precision
+):
+    """
+    Test the frame method with multiclass classification data and data_source='both'.
+    """
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    df = report.metrics.precision_recall(data_source="both").frame(
+        with_average_precision=with_average_precision
+    )
+    expected_index = ["data_source", "label"]
+    expected_columns = ["threshold", "precision", "recall"]
+    if with_average_precision:
+        expected_columns.append("average_precision")
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["label"].nunique() == len(estimator.classes_)
+    assert set(df["data_source"].unique()) == {"train", "test"}
+
+    if with_average_precision:
+        for _, group in df.groupby(["label"], observed=True):
+            assert group["average_precision"].nunique() == 2
 
 
 def test_legend(

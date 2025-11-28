@@ -53,6 +53,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
     """Check the structure of the display's internal data."""
     assert list(display.roc_curve.columns) == [
         "estimator_name",
+        "data_source",
         "split",
         "label",
         "threshold",
@@ -61,6 +62,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
     ]
     assert list(display.roc_auc.columns) == [
         "estimator_name",
+        "data_source",
         "split",
         "label",
         "roc_auc",
@@ -71,6 +73,7 @@ def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDispl
     """Check the structure of the display's internal data."""
     assert list(display.precision_recall.columns) == [
         "estimator_name",
+        "data_source",
         "split",
         "label",
         "threshold",
@@ -79,6 +82,7 @@ def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDispl
     ]
     assert list(display.average_precision.columns) == [
         "estimator_name",
+        "data_source",
         "split",
         "label",
         "average_precision",

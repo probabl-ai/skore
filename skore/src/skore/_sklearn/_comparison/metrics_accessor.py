@@ -67,12 +67,14 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metrics and
+              present them side-by-side.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -254,6 +256,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     indicator_favorability=metric_kwargs.get(
                         "indicator_favorability", False
                     ),
+                    data_source=data_source,
                 )
             else:  # "CrossValidationReport"
                 results = _combine_cross_validation_results(
@@ -1224,6 +1227,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     y_true.append(
                         YPlotData(
                             estimator_name=report_name,
+                            data_source=data_source,
                             split=None,
                             y=report_y,
                         )
@@ -1245,6 +1249,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                             y_pred.append(
                                 YPlotData(
                                     estimator_name=report_name,
+                                    data_source=data_source,
                                     split=None,
                                     y=value,
                                 )
@@ -1278,6 +1283,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                         y_true.append(
                             YPlotData(
                                 estimator_name=report_name,
+                                data_source=data_source,
                                 split=split,
                                 y=report_y,
                             )
@@ -1300,6 +1306,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                                 y_pred.append(
                                     YPlotData(
                                         estimator_name=report_name,
+                                        data_source=data_source,
                                         split=split,
                                         y=value,
                                     )
