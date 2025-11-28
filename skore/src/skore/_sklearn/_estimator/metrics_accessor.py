@@ -2060,6 +2060,7 @@ class _MetricsAccessor(
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         threshold: bool = False,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -2091,6 +2092,12 @@ class _MetricsAccessor(
             requires the estimator to have `predict_proba` or `decision_function`
             methods.
 
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
+
         Returns
         -------
         display : :class:`~skore._sklearn._plot.ConfusionMatrixDisplay`
@@ -2114,9 +2121,12 @@ class _MetricsAccessor(
         >>> display = report.metrics.confusion_matrix(threshold=True)
         >>> display.plot(threshold=0.7)
         """
+        if pos_label is _DEFAULT:
+            pos_label = self._parent.pos_label
+
         display_kwargs = {
             "display_labels": self._parent.estimator_.classes_.tolist(),
-            "pos_label": self._parent.pos_label,
+            "pos_label": pos_label,
             "threshold": threshold,
         }
 

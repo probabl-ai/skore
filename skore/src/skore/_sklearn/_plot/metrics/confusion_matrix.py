@@ -10,7 +10,7 @@ from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import _validate_style_kwargs
-from skore._sklearn.types import ReportType, YPlotData
+from skore._sklearn.types import PositiveLabel, ReportType, YPlotData
 
 
 class ConfusionMatrixDisplay(DisplayMixin):
@@ -178,6 +178,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
             heatmap_kwargs or {},
         )
         normalize_by = "normalized_by_" + normalize if normalize else "count"
+        cm_pivot = cm.pivot(
+            index="True label", columns="Predicted label", values=normalize_by
+        ).reindex(index=self.display_labels, columns=self.display_labels)
         sns.heatmap(
             cm.pivot(
                 index="true_label", columns="predicted_label", values=normalize_by
@@ -205,8 +208,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
         *,
         report_type: ReportType,
         display_labels: list[str],
-        pos_label: str,
         threshold: bool = False,
+        pos_label: PositiveLabel | None,
         **kwargs,
     ) -> "ConfusionMatrixDisplay":
         """Compute the confusion matrix for display.
@@ -228,8 +231,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
         display_labels : list of str
             Display labels for plot.
 
-        pos_label : str
-            The positive label.
+        pos_label : int, float, bool, str or None
+            The class considered as the positive class when computing the
+            precision and recall metrics.
 
         threshold : bool, default=False
             Whether to compute the confusion matrix at different thresholds.
@@ -246,6 +250,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
         y_true_values = y_true[0].y
         y_pred_values = y_pred[0].y
         cms = []
+        if isinstance(pos_label, str):
+            neg_label = next(label for label in display_labels if label != pos_label)
+            display_labels = [neg_label, pos_label]
 
         if threshold:
             tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
@@ -260,7 +267,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 sklearn_confusion_matrix(
                     y_true=y_true_values,
                     y_pred=y_pred_values,
-            normalize=None,  # we will normalize later
+                    normalize=None,  # we will normalize later
+                    labels=display_labels,
                 )
             )
             thresholds = [None]
@@ -386,4 +394,4 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 cm = cm[cm["threshold"] == threshold]
             return cm.pivot(
                 index="true_label", columns="predicted_label", values=normalize_by
-            )
+            ).reindex(index=self.display_labels, columns=self.display_labels)
