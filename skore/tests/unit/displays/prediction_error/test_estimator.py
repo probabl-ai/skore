@@ -128,6 +128,34 @@ def test_data_source(pyplot, linear_regression_with_train_test):
     assert display.scatter_[0].get_label() == "External data set"
 
 
+def test_data_source_both(pyplot, linear_regression_with_train_test):
+    """Check that we can pass `data_source='both'` to the prediction error plot."""
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.prediction_error(data_source="both")
+    display.plot()
+
+    assert display.line_.get_label() == "Perfect predictions"
+
+    assert len(display.scatter_) == 2
+
+    scatter_labels = [scatter.get_label() for scatter in display.scatter_]
+    assert "Train set" in scatter_labels
+    assert "Test set" in scatter_labels
+
+    train_scatter = display.scatter_[scatter_labels.index("Train set")]
+    test_scatter = display.scatter_[scatter_labels.index("Test set")]
+    assert not np.allclose(train_scatter.get_facecolor(), test_scatter.get_facecolor())
+
+    display.plot(kind="actual_vs_predicted")
+    assert len(display.scatter_) == 2
+    scatter_labels = [scatter.get_label() for scatter in display.scatter_]
+    assert "Train set" in scatter_labels
+    assert "Test set" in scatter_labels
+
+
 def test_kwargs(pyplot, linear_regression_with_train_test):
     """Check that we can pass keyword arguments to the prediction error plot."""
     estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
@@ -256,6 +284,20 @@ def test_frame(linear_regression_with_train_test):
     df = report.metrics.prediction_error().frame()
 
     expected_index = []
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+
+
+def test_frame_data_source_both(linear_regression_with_train_test):
+    """Test the frame method with `data_source="both"`."""
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    df = report.metrics.prediction_error(data_source="both").frame()
+
+    expected_index = ["data_source"]
     expected_columns = ["y_true", "y_pred", "residuals"]
 
     check_frame_structure(df, expected_index, expected_columns)

@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+from functools import partial
+from importlib import reload
 from unittest.mock import Mock
 from urllib.parse import urljoin
 
@@ -141,11 +143,10 @@ def monkeypatch_tmpdir(monkeypatch, tmp_path):
 
     https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
     """
-    import importlib
     import tempfile
 
     monkeypatch.setenv("TMPDIR", str(tmp_path))
-    importlib.reload(tempfile)
+    reload(tempfile)
 
 
 @fixture
@@ -155,7 +156,10 @@ def monkeypatch_skrub(monkeypatch):
 
     https://github.com/skrub-data/skrub/blob/35f573ce586fe61ef2c72f4c0c4b188ebf2e664b/skrub/_reporting/_html.py#L153
     """
+    from skrub._dataframe import sample
+
     monkeypatch.setattr("secrets.token_hex", lambda: "<token>")
+    monkeypatch.setattr("skrub._dataframe.sample", partial(sample, seed=42))
 
 
 @fixture
@@ -210,6 +214,16 @@ def monkeypatch_sklearn_estimator_html_repr(monkeypatch):
     monkeypatch.setattr(importpath, lambda self: "<id>")
 
 
+@fixture
+def monkeypatch_rich(monkeypatch):
+    """Make `rich` silent."""
+    from rich.console import Console
+
+    monkeypatch.setattr("rich.console.Console", partial(Console, quiet=True))
+    monkeypatch.setattr("skore.console.quiet", True)
+    monkeypatch.setattr("skore_hub_project.console.quiet", True)
+
+
 @fixture(autouse=True)
 def setup(
     monkeypatch_tmpdir,
@@ -217,4 +231,5 @@ def setup(
     monkeypatch_skrub,
     monkeypatch_skore_hub_envars,
     monkeypatch_sklearn_estimator_html_repr,
+    monkeypatch_rich,
 ): ...
