@@ -213,7 +213,7 @@ class StyleDisplayMixin:
             try:
                 result = plot_func(self, *args, **kwargs)
             finally:
-                plt.tight_layout()
+                # plt.tight_layout()
                 plt.rcParams.update(original_params)
             return result
 
