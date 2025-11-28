@@ -2095,8 +2095,7 @@ class _MetricsAccessor(
         pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
             this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report. If `None`,
-            the metric is computed considering each class as a positive class.
+            class is set to the one provided when creating the report.
 
         Returns
         -------

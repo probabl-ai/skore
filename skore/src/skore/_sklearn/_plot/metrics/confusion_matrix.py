@@ -232,8 +232,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
             Display labels for plot.
 
         pos_label : int, float, bool, str or None
-            The class considered as the positive class when computing the
-            precision and recall metrics.
+            The class considered as the positive class when displaying the confusion
+            matrix.
 
         threshold : bool, default=False
             Whether to compute the confusion matrix at different thresholds.
