@@ -145,7 +145,6 @@ import matplotlib.pyplot as plt
 
 ax = metric_report.plot.barh()
 ax.set_title("Metrics report")
-plt.tight_layout()
 
 # %%
 #
