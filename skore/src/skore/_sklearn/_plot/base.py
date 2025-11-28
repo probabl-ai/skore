@@ -142,10 +142,11 @@ class StyleDisplayMixin:
 
         Parameters
         ----------
-        policy : {"override", "update"}, default="override"
-            Policy to use when setting the style parameters. If "override", the style
-            parameters will be set to the values provided. If "update", the style
-            parameters will be updated with the values provided.
+        policy : Literal["override", "update"], default="override"
+            Policy to use when setting the style parameters.
+            If "override", existing settings are set to the provided values.
+            If "update", existing settings are not changed; only settings that were
+            previously unset are changed.
 
         **kwargs : dict
             Style parameters to set. Each parameter name should correspond to a
