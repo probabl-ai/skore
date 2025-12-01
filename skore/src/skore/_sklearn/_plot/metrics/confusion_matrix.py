@@ -38,8 +38,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
     thresholds_ : list of float or None
         Thresholds of the decision function. Each threshold is associated with a
         confusion matrix. Only available for binary classification with decision scores.
-        If None, the confusion matrix is the single confusion matrix for the whole
-        population.
 
     figure_ : matplotlib Figure
         Figure containing the confusion matrix.
@@ -216,7 +214,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         report_type: ReportType,
         display_labels: list[str],
         threshold: bool = False,
-        pos_label: PositiveLabel | None,
+        pos_label: PositiveLabel,
         **kwargs,
     ) -> "ConfusionMatrixDisplay":
         """Compute the confusion matrix for display.
@@ -227,9 +225,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
             True labels.
 
         y_pred : list of array-like of shape (n_samples,)
-            Predicted labels or decision scores. For binary classification,
-            if these are decision scores, confusion matrices at all thresholds
-            will be precomputed.
+            Decision scores when binary classification with thresholds enabled.
+            Otherwise, predicted labels.
 
         report_type : {"comparison-cross-validation", "comparison-estimator", \
                 "cross-validation", "estimator"}
@@ -319,6 +316,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 cm_all.flatten(),
                 strict=True,
             ):
+                # Data is stored in a long format dataframe with one row per cell of
+                # each confusion matrix.
                 confusion_matrix_records.append(
                     {
                         "true_label": true_label,
@@ -357,15 +356,14 @@ class ConfusionMatrixDisplay(DisplayMixin):
         threshold_value : float or 'all' or None, default=None
             The decision threshold to use when applicable.
             If None and thresholds are available, returns the confusion matrix at the
-            default threshold (0.5). If 'all', returns all confusion matrices with their
-            thresholds.
+            default threshold (0.5). If 'all', returns all flattened confusion matrices
+            (one per threshold) as a single dataframe.
 
         Returns
         -------
         frame : pandas.DataFrame
             The confusion matrix as a dataframe.
         """
-        cm = self.confusion_matrix
         normalize_by = "normalized_by_" + normalize if normalize else "count"
         if threshold_value == "all":
             cm_columns = [
@@ -396,6 +394,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         elif threshold_value is None and self.threshold:
             return self.frame(normalize=normalize, threshold_value=0.5)
         else:
+            cm = self.confusion_matrix.copy()
             if threshold_value is not None:
                 # Find the existing threshold closest to given threshold_value
                 threshold_value = self.thresholds_[

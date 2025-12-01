@@ -437,10 +437,10 @@ plt.show()
 cm_threshold_display.frame(threshold_value=0.7)
 
 # %%
-# When no threshold is specified for a threshold-enabled display, we get all
-# confusion matrices for all available thresholds:
-cm_all_thresholds = cm_threshold_display.frame()
-cm_all_thresholds.head(10)
+# When `threshold_value` is set to `"all"`, we get all confusion matrices for all
+# available thresholds:
+cm_all_thresholds = cm_threshold_display.frame(threshold_value="all")
+cm_all_thresholds.head(5)
 
 # %%
 # .. seealso::

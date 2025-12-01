@@ -2093,7 +2093,7 @@ class _MetricsAccessor(
             methods.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing the matrix. Use
+            The label to consider as the positive class when displaying the matrix. Use
             this parameter to override the positive class. By default, the positive
             class is set to the one provided when creating the report.
 
