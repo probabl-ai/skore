@@ -325,7 +325,7 @@ class CoefficientsDisplay(DisplayMixin):
             y_range=None,
         )
         if add_background_features:
-            for feature_idx in range(n_features, 2):
+            for feature_idx in range(0, n_features, 2):
                 ax.axhspan(
                     feature_idx - 0.5,
                     feature_idx + 0.5,
@@ -419,7 +419,7 @@ class CoefficientsDisplay(DisplayMixin):
                 add_background_features=add_background_features,
                 n_features=frame["feature"].nunique(),
             )
-            self.ax_.set_title(f"{name}")
+            self.ax_.set_title(name)
             if hue is not None:
                 self._set_legend(ax=self.ax_, title=hue.capitalize())
         else:

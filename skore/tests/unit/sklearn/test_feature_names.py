@@ -68,7 +68,8 @@ def test_get_feature_names_minimal_model(container_type):
 
 @pytest.mark.parametrize("container_type", ["array", "dataframe"])
 def test_get_feature_names_sklearn_model(container_type):
-    X, y = np.random.randn(10, 10), np.random.randint(0, 2, size=10)
+    n_samples = 100
+    X, y = np.random.randn(n_samples, 10), np.random.randint(0, 2, size=n_samples)
     columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
     X = _convert_container(X, container_type, columns_name=columns_names)
     sklearn_model = make_pipeline(StandardScaler(), LogisticRegression()).fit(X, y)
