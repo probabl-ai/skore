@@ -456,7 +456,13 @@ class _MetricsAccessor(
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return MetricsSummaryDisplay(summarize_data=results)
+
+        return MetricsSummaryDisplay(
+            summarize_data=results,
+            report_type="estimator",
+            data_source=data_source,
+            default_verbose_metric_names=self._score_or_loss_info,
+        )
 
     def _compute_metric_scores(
         self,

@@ -348,3 +348,14 @@ def sample_mpl_colormap(
     """
     indices = np.linspace(0, 1, n)
     return [cmap(i) for i in indices]
+
+
+def _interval_max_min_ratio(data):
+    """Compute the ratio between the largest and smallest inter-point distances.
+
+    A value larger than 5 typically indicates that the parameter range would
+    better be displayed with a log scale while a linear scale would be more
+    suitable otherwise.
+    """
+    diff = np.diff(np.sort(data), axis=0)
+    return diff.max() / diff.min()
