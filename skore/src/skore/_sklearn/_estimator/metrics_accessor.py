@@ -2093,7 +2093,7 @@ class _MetricsAccessor(
             methods.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing the metric. Use
+            The label to consider as the positive class when computing the matrix. Use
             this parameter to override the positive class. By default, the positive
             class is set to the one provided when creating the report.
 
@@ -2118,7 +2118,7 @@ class _MetricsAccessor(
         With decision threshold support for binary classification:
 
         >>> display = report.metrics.confusion_matrix(threshold=True)
-        >>> display.plot(threshold=0.7)
+        >>> display.plot(threshold_value=0.7)
         """
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
@@ -2130,8 +2130,13 @@ class _MetricsAccessor(
         }
 
         response_method: str | list[str] | tuple[str, ...]
-        if threshold and self._parent._ml_task == "binary-classification":
-            response_method = ("predict_proba", "decision_function")
+        if threshold:
+            if self._parent._ml_task == "binary-classification":
+                response_method = ("predict_proba", "decision_function")
+            else:
+                raise ValueError(
+                    "Threshold support can only be set for binary classification."
+                )
         else:
             response_method = "predict"
         display = cast(

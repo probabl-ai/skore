@@ -426,7 +426,7 @@ cm_threshold_display = report.metrics.confusion_matrix(threshold=True)
 
 # %%
 # Now we can plot the confusion matrix at a specific threshold:
-cm_threshold_display.plot(threshold=0.3)
+cm_threshold_display.plot(threshold_value=0.3)
 plt.show()
 
 # %%
@@ -434,7 +434,7 @@ plt.show()
 # we plot the decision matrix associated with the threshold closest to the one provided.
 #
 # The frame method also supports threshold selection:
-cm_threshold_display.frame(threshold=0.7)
+cm_threshold_display.frame(threshold_value=0.7)
 
 # %%
 # When no threshold is specified for a threshold-enabled display, we get all

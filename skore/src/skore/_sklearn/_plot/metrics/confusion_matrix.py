@@ -30,6 +30,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
             "cross-validation", "estimator"}
         The type of report.
 
+    threshold : bool, default=False
+        Whether threshold support is enabled for binary classification.
+
     Attributes
     ----------
     thresholds_ : list of float or None
@@ -51,13 +54,13 @@ class ConfusionMatrixDisplay(DisplayMixin):
         confusion_matrix: pd.DataFrame,
         display_labels: list[str],
         report_type: ReportType,
-        do_threshold: bool = False,
+        threshold: bool = False,
     ):
         self.confusion_matrix = confusion_matrix
         self.display_labels = display_labels
         self.report_type = report_type
-        self.do_threshold = do_threshold
-        if do_threshold:
+        self.threshold = threshold
+        if threshold:
             self.thresholds_ = self.confusion_matrix["threshold"].unique()[::-1]
         else:
             self.thresholds_ = None
@@ -73,7 +76,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold: float | list[float] | None = None,
+        threshold_value: float | None = None,
         heatmap_kwargs: dict | None = None,
     ):
         """Plot visualization.
@@ -85,11 +88,10 @@ class ConfusionMatrixDisplay(DisplayMixin):
             conditions or all the population. If None, the confusion matrix will not be
             normalized.
 
-        threshold : float, list of float, or None, default=None
-            The decision threshold(s) to use for binary classification. If None,
-            uses the default threshold (0.5 if thresholds are available, or the
-            predicted labels if not). If a list of floats is provided, multiple
-            confusion matrices will be plotted side by side.
+        threshold_value : float or None, default=None
+            The decision threshold to use when applicable.
+            If None and thresholds are available, plots the confusion matrix at the
+            default threshold (0.5).
 
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
@@ -101,7 +103,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         """
         return self._plot(
             normalize=normalize,
-            threshold=threshold,
+            threshold_value=threshold_value,
             heatmap_kwargs=heatmap_kwargs,
         )
 
@@ -109,14 +111,14 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold: float | list[float] | None = None,
+        threshold_value: float | None = None,
         heatmap_kwargs: dict | None = None,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
         if self.report_type == "estimator":
             self._plot_single_estimator(
                 normalize=normalize,
-                threshold=threshold,
+                threshold_value=threshold_value,
                 heatmap_kwargs=heatmap_kwargs,
             )
         else:
@@ -129,7 +131,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold: float | list[float] | None = None,
+        threshold_value: float | None = None,
         heatmap_kwargs: dict | None = None,
     ) -> None:
         """
@@ -142,42 +144,49 @@ class ConfusionMatrixDisplay(DisplayMixin):
             conditions or all the population. If None, the confusion matrix will not be
             normalized.
 
-        threshold : float, list of float, or None, default=None
-            The decision threshold(s) to use for binary classification. If None,
-            uses the default threshold (0.5 if thresholds are available, or the
-            predicted labels if not). If a list of floats is provided, multiple
-            confusion matrices will be plotted side by side.
+        threshold_value : float or None, default=None
+            The decision threshold to use when applicable.
+            If None and thresholds are available, plots the confusion matrix at the
+            default threshold (0.5).
 
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
         """
-        if threshold is not None:
-            if not self.do_threshold:
+        if threshold_value is not None:
+            if not self.threshold:
                 raise ValueError(
-                    "threshold can only be used with binary classification and "
-                    "when `report.metrics.confusion_matrix(threshold=True)` is used."
+                    "Enable threshold support by passing `threshold=True` to "
+                    "`report.metrics.confusion_matrix()` before calling `plot()` with "
+                    "`threshold_value`. This is only applicable for binary "
+                    "classification."
                 )
-            # Find the existing threshold that is closest to the given threshold
-            threshold = self.thresholds_[
-                np.argmin(np.abs(self.thresholds_ - threshold))
+            # Find the existing threshold that is closest to the given threshold_value
+            threshold_value = self.thresholds_[
+                np.argmin(np.abs(self.thresholds_ - threshold_value))
             ]
-            cm = self.confusion_matrix[self.confusion_matrix["threshold"] == threshold]
+            cm = self.confusion_matrix[
+                self.confusion_matrix["threshold"] == threshold_value
+            ]
         else:
-            if self.do_threshold:
-                # Use the default threshold (0.5) if no threshold is provided
-                threshold = self.thresholds_[np.argmin(np.abs(self.thresholds_ - 0.5))]
+            if self.threshold:
+                # Use the default threshold (0.5) if no threshold_value is provided
+                threshold_value = self.thresholds_[
+                    np.argmin(np.abs(self.thresholds_ - 0.5))
+                ]
                 cm = self.confusion_matrix[
-                    self.confusion_matrix["threshold"] == threshold
+                    self.confusion_matrix["threshold"] == threshold_value
                 ]
             else:
                 cm = self.confusion_matrix
 
         self.figure_, self.ax_ = plt.subplots()
+
         heatmap_kwargs_validated = _validate_style_kwargs(
             {"fmt": ".2f" if normalize else "d", **self._default_heatmap_kwargs},
             heatmap_kwargs or {},
         )
         normalize_by = "normalized_by_" + normalize if normalize else "count"
+
         sns.heatmap(
             cm.pivot(
                 index="true_label", columns="predicted_label", values=normalize_by
@@ -185,8 +194,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
             ax=self.ax_,
             **heatmap_kwargs_validated,
         )
-        if threshold is not None:
-            title = f"Confusion Matrix (threshold: {threshold:.2f})"
+
+        if threshold_value is not None:
+            title = f"Confusion Matrix (threshold: {threshold_value:.2f})"
         else:
             title = "Confusion Matrix"
         self.ax_.set(
@@ -255,7 +265,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         if threshold:
             tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
                 y_true=y_true_values,
-                y_pred=y_pred_values,
+                y_score=y_pred_values,
                 pos_label=pos_label,
             )
             for tn, fp, fn, tp in zip(tns, fps, fns, tps, strict=True):
@@ -325,7 +335,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
             confusion_matrix=pd.DataFrame.from_records(confusion_matrix_records),
             display_labels=display_labels,
             report_type=report_type,
-            do_threshold=threshold,
+            threshold=threshold,
         )
 
         return disp
@@ -333,7 +343,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
     def frame(
         self,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold: float | None = None,
+        threshold_value: float | Literal["all"] | None = None,
     ):
         """Return the confusion matrix as a dataframe.
 
@@ -344,11 +354,11 @@ class ConfusionMatrixDisplay(DisplayMixin):
             conditions or all the population. If None, the confusion matrix will not be
             normalized.
 
-        threshold : float or None, default=None
-            The decision threshold to use for binary classification. If None and
-            no thresholds are available, returns the single confusion matrix. If
-            None and thresholds are available, returns all confusion matrices with
-            their thresholds.
+        threshold_value : float or 'all' or None, default=None
+            The decision threshold to use when applicable.
+            If None and thresholds are available, returns the confusion matrix at the
+            default threshold (0.5). If 'all', returns all confusion matrices with their
+            thresholds.
 
         Returns
         -------
@@ -357,23 +367,16 @@ class ConfusionMatrixDisplay(DisplayMixin):
         """
         cm = self.confusion_matrix
         normalize_by = "normalized_by_" + normalize if normalize else "count"
-
-        if threshold is not None and not self.do_threshold:
-            raise ValueError(
-                "threshold can only be used with binary classification and "
-                "when `report.metrics.confusion_matrix(threshold=True)` is used."
-            )
-        elif threshold is None and self.do_threshold:
+        if threshold_value == "all":
             cm_columns = [
                 f"{true_label}/{pred_label}"
                 for true_label in self.display_labels
                 for pred_label in self.display_labels
             ]
-
             rows = []
             for threshold_val in self.thresholds_:
                 cm_at_threshold = self.frame(
-                    normalize=normalize, threshold=threshold_val
+                    normalize=normalize, threshold_value=threshold_val
                 )
                 flattened_values = cm_at_threshold.values.flatten()
                 row = {
@@ -381,15 +384,24 @@ class ConfusionMatrixDisplay(DisplayMixin):
                     **dict(zip(cm_columns, flattened_values, strict=True)),
                 }
                 rows.append(row)
-
             return pd.DataFrame(rows)
+
+        elif threshold_value is not None and not self.threshold:
+            raise ValueError(
+                "Enable threshold support by passing `threshold=True` to "
+                "`report.metrics.confusion_matrix()` before calling `frame()` with "
+                "`threshold_value`. This is only applicable for binary "
+                "classification."
+            )
+        elif threshold_value is None and self.threshold:
+            return self.frame(normalize=normalize, threshold_value=0.5)
         else:
-            if threshold is not None:
-                # Find the existing threshold that is closest to the given threshold
-                threshold = self.thresholds_[
-                    np.argmin(np.abs(self.thresholds_ - threshold))
+            if threshold_value is not None:
+                # Find the existing threshold closest to given threshold_value
+                threshold_value = self.thresholds_[
+                    np.argmin(np.abs(self.thresholds_ - threshold_value))
                 ]
-                cm = cm[cm["threshold"] == threshold]
+                cm = cm[cm["threshold"] == threshold_value]
             return cm.pivot(
                 index="true_label", columns="predicted_label", values=normalize_by
             ).reindex(index=self.display_labels, columns=self.display_labels)
