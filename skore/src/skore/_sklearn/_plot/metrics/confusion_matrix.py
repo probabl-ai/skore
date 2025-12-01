@@ -21,7 +21,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
     confusion_matrix : pd.DataFrame
         Confusion matrix data in long format with columns: "True label",
         "Predicted label", "count", "normalized_by_true", "normalized_by_pred",
-        and "normalized_by_all". Each row represents one cell of the confusion matrix.
+        "normalized_by_all" and "threshold". Each row represents one cell of one
+        confusion matrix.
 
     display_labels : list of str
         Display labels for plot axes.
