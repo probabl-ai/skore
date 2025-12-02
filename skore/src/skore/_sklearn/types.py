@@ -64,8 +64,6 @@ class SKLearnScorer(Protocol):
     _kwargs: dict[str, Any]
 
 
-ScoringName = str | None
-
 Scoring = str | Callable | SKLearnScorer
 
 
