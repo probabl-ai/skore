@@ -63,9 +63,6 @@ class SKLearnScorer(Protocol):
     _response_method: str | list[str]
     _kwargs: dict[str, Any]
 
-
-ScoringName = str | None
-
 Metric = str | Callable | SKLearnScorer
 
 

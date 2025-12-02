@@ -46,7 +46,7 @@ jobs:
 
       - name: Display coverage reports
         if: ${{ steps.download-coverage-reports.outcome == 'success' }}
-        uses: MishaKav/pytest-coverage-comment@1bdbba85fb74a2fdc1ec66383acec1091610f82b # v1.1.57
+        uses: MishaKav/pytest-coverage-comment@ae0e8a539a3f310aefb3bfb6a2209778a21fa42b # v1.2.0
         with:
           issue-number: ${{ steps.acquire-pr-context.outputs.pr-number }}
           pytest-xml-coverage-path: coverage/pytest-coverage.xml
