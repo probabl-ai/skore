@@ -113,9 +113,9 @@ def test_scoring_single_list_equivalence(
     list with a single element."""
     report = comparison_estimator_reports_binary_classification
     result_single = report.metrics.summarize(
-        scoring=scoring, scoring_kwargs=scoring_kwargs
+        metric=scoring, metric_kwargs=scoring_kwargs
     ).frame()
     result_list = report.metrics.summarize(
-        scoring=[scoring], scoring_kwargs=scoring_kwargs
+        metric=[scoring], metric_kwargs=scoring_kwargs
     ).frame()
     assert result_single.equals(result_list)

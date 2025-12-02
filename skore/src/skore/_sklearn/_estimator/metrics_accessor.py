@@ -8,7 +8,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
-from sklearn import metrics
+from sklearn import metrics as sklearn_metrics
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
@@ -64,8 +64,8 @@ class _MetricsAccessor(
         data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        scoring: Scoring | list[Scoring] | dict[str, Scoring] | None = None,
-        scoring_kwargs: dict[str, Any] | None = None,
+        metric: Scoring | list[Scoring] | dict[str, Scoring] | None = None,
+        metric_kwargs: dict[str, Any] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
@@ -91,7 +91,7 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : str, callable, scorer, or list of such instances or dict of such \
+        metric : str, callable, scorer, or list of such instances or dict of such \
             instances, default=None
             The metrics to report. The possible values are:
 
@@ -101,7 +101,7 @@ class _MetricsAccessor(
               the built-in metrics or the scikit-learn scorers, respectively.
             - if a callable, it should take as arguments `y_true`, `y_pred` as the two
               first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `scoring_kwargs`. No favorability indicator can
+              and will be forwarded with `metric_kwargs`. No favorability indicator can
               be displayed in this case.
             - if the callable API is too restrictive (e.g. need to pass
               same parameter name with different values), you can use scikit-learn
@@ -109,12 +109,12 @@ class _MetricsAccessor(
               the metric favorability will only be displayed if it is given explicitly
               via `make_scorer`'s `greater_is_better` parameter.
             - if a dict, the keys are used as metric names and the values are the
-              scoring functions (strings, callables, or scorers as described above).
+              metric functions (strings, callables, or scorers as described above).
             - if a list, each element can be any of the above types (strings, callables,
               scorers).
 
-        scoring_kwargs : dict, default=None
-            The keyword arguments to pass to the scoring functions.
+        metric_kwargs : dict, default=None
+            The keyword arguments to pass to the metric functions.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
@@ -154,7 +154,7 @@ class _MetricsAccessor(
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
-        ...     scoring=["f1"],
+        ...     metric=["f1"],
         ...     indicator_favorability=True,
         ... ).frame()
                                   LogisticRegression Favorability
@@ -172,7 +172,7 @@ class _MetricsAccessor(
         Brier score                     0.02...                     0.03...          (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
-        ...     scoring=["f1"],
+        ...     metric=["f1"],
         ...     indicator_favorability=True,
         ... ).frame()
                                   LogisticRegression Favorability
@@ -182,16 +182,16 @@ class _MetricsAccessor(
         if data_source == "both":
             train_summary = self.summarize(
                 data_source="train",
-                scoring=scoring,
-                scoring_kwargs=scoring_kwargs,
+                metric=metric,
+                metric_kwargs=metric_kwargs,
                 pos_label=pos_label,
                 indicator_favorability=False,
                 flat_index=flat_index,
             )
             test_summary = self.summarize(
                 data_source="test",
-                scoring=scoring,
-                scoring_kwargs=scoring_kwargs,
+                metric=metric,
+                metric_kwargs=metric_kwargs,
                 pos_label=pos_label,
                 indicator_favorability=indicator_favorability,
                 flat_index=flat_index,
@@ -207,13 +207,15 @@ class _MetricsAccessor(
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
-        # Handle dictionary scoring
-        scoring_names = None
-        if isinstance(scoring, dict):
-            scoring_names = list(scoring.keys())
-            scoring = list(scoring.values())
-        elif scoring is not None and not isinstance(scoring, list):
-            scoring = [scoring]
+        # Handle dictionary metrics
+        metric_names = None
+        if isinstance(metric, dict):
+            metric_names = list(metric.keys())
+            metric_list = list(metric.values())
+        elif metric is not None and not isinstance(metric, list):
+            metric_list = [metric]
+        elif isinstance(metric, list):
+            metric_list = metric
 
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
@@ -226,63 +228,66 @@ class _MetricsAccessor(
         else:
             data_source_hash = None
 
-        if scoring is None:
+        if metric is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
-                scoring = ["_precision", "_recall", "_roc_auc"]
+                metric_list = ["_precision", "_recall", "_roc_auc"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    scoring.append("_brier_score")
+                    metric_list.append("_brier_score")
             elif self._parent._ml_task == "multiclass-classification":
-                scoring = ["_precision", "_recall"]
+                metric_list = ["_precision", "_recall"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    scoring += ["_roc_auc", "_log_loss"]
+                    metric_list += ["_roc_auc", "_log_loss"]
             else:
-                scoring = ["_r2", "_rmse"]
-            scoring += ["_fit_time", "_predict_time"]
+                metric_list = ["_r2", "_rmse"]
+            metric_list += ["_fit_time", "_predict_time"]
 
-        if scoring_names is None:
-            scoring_names = [None] * len(scoring)  # type: ignore
+        if metric_names is None:
+            metric_names = [None] * len(metric_list)  # type: ignore
 
         scores = []
         favorability_indicator = []
-        for metric_name, metric in zip(scoring_names, scoring, strict=False):
-            if isinstance(metric, str) and not (
-                (metric.startswith("_") and metric[1:] in self._score_or_loss_info)
-                or metric in self._score_or_loss_info
+        for metric_name, metric_item in zip(metric_names, metric_list, strict=False):
+            if isinstance(metric_item, str) and not (
+                (
+                    metric_item.startswith("_")
+                    and metric_item[1:] in self._score_or_loss_info
+                )
+                or metric_item in self._score_or_loss_info
             ):
                 try:
-                    metric = metrics.get_scorer(metric)
+                    metric_item = sklearn_metrics.get_scorer(metric_item)
                 except ValueError as err:
                     raise ValueError(
-                        f"Invalid metric: {metric!r}. "
+                        f"Invalid metric: {metric_item!r}. "
                         f"Please use a valid metric from the "
                         f"list of supported metrics: "
                         f"{list(self._score_or_loss_info.keys())} "
                         "or a valid scikit-learn scoring string."
                     ) from err
-                if scoring_kwargs is not None:
+                if metric_kwargs is not None:
                     raise ValueError(
-                        "The `scoring_kwargs` parameter is not supported when "
-                        "`scoring` is a scikit-learn scorer name. Use the function "
+                        "The `metric_kwargs` parameter is not supported when "
+                        "`metric` is a scikit-learn scorer name. Use the function "
                         "`sklearn.metrics.make_scorer` to create a scorer with "
                         "additional parameters."
                     )
 
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
-            if isinstance(metric, _BaseScorer):
+            if isinstance(metric_item, _BaseScorer):
                 # scorers have the advantage to have scoped defined kwargs
-                metric_function: Callable = metric._score_func
-                response_method: str | list[str] = metric._response_method
+                metric_function: Callable = metric_item._score_func
+                response_method: str | list[str] = metric_item._response_method
                 metric_fn = partial(
                     self._custom_metric,
                     metric_function=metric_function,
                     response_method=response_method,
                 )
                 # forward the additional parameters specific to the scorer
-                metrics_kwargs = {**metric._kwargs}
+                metrics_kwargs = {**metric_item._kwargs}
                 metrics_kwargs["data_source_hash"] = data_source_hash
-                metrics_params = inspect.signature(metric._score_func).parameters
+                metrics_params = inspect.signature(metric_item._score_func).parameters
                 if "pos_label" in metrics_params:
                     if pos_label is not None and "pos_label" in metrics_kwargs:
                         if pos_label != metrics_kwargs["pos_label"]:
@@ -295,63 +300,73 @@ class _MetricsAccessor(
                     elif pos_label is not None:
                         metrics_kwargs["pos_label"] = pos_label
                 if metric_name is None:
-                    metric_name = metric._score_func.__name__.replace("_", " ").title()
-                metric_favorability = "(↗︎)" if metric._sign == 1 else "(↘︎)"
+                    metric_name = metric_item._score_func.__name__.replace(
+                        "_", " "
+                    ).title()
+                metric_favorability = "(↗︎)" if metric_item._sign == 1 else "(↘︎)"
                 favorability_indicator.append(metric_favorability)
-            elif isinstance(metric, str) or callable(metric):
-                if isinstance(metric, str):
+            elif isinstance(metric_item, str) or callable(metric_item):
+                if isinstance(metric_item, str):
                     # Handle built-in metrics (with underscore prefix)
                     if (
-                        metric.startswith("_")
-                        and metric[1:] in self._score_or_loss_info
+                        metric_item.startswith("_")
+                        and metric_item[1:] in self._score_or_loss_info
                     ):
-                        metric_fn = getattr(self, metric)
+                        metric_fn = getattr(self, metric_item)
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                         if metric_name is None:
                             metric_name = (
-                                f"{self._score_or_loss_info[metric[1:]]['name']}"
+                                f"{self._score_or_loss_info[metric_item[1:]]['name']}"
                             )
-                        metric_favorability = self._score_or_loss_info[metric[1:]][
+                        metric_favorability = self._score_or_loss_info[metric_item[1:]][
                             "icon"
                         ]
 
                     # Handle built-in metrics (without underscore prefix)
-                    elif metric in self._score_or_loss_info:
-                        metric_fn = getattr(self, f"_{metric}")
+                    elif metric_item in self._score_or_loss_info:
+                        metric_fn = getattr(self, f"_{metric_item}")
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                         if metric_name is None:
-                            metric_name = f"{self._score_or_loss_info[metric]['name']}"
-                        metric_favorability = self._score_or_loss_info[metric]["icon"]
+                            metric_name = (
+                                f"{self._score_or_loss_info[metric_item]['name']}"
+                            )
+                        metric_favorability = self._score_or_loss_info[metric_item][
+                            "icon"
+                        ]
                 else:
                     # Handle callable metrics
-                    metric_fn = partial(self._custom_metric, metric_function=metric)
-                    if scoring_kwargs is None:
+                    metric_fn = partial(
+                        self._custom_metric, metric_function=metric_item
+                    )
+                    if metric_kwargs is None:
                         metrics_kwargs = {}
                     else:
                         # check if we should pass any parameters specific to the metric
                         # callable
-                        metric_callable_params = inspect.signature(metric).parameters
+                        metric_callable_params = inspect.signature(
+                            metric_item
+                        ).parameters
                         metrics_kwargs = {
-                            param: scoring_kwargs[param]
+                            param: metric_kwargs[param]
                             for param in metric_callable_params
-                            if param in scoring_kwargs
+                            if param in metric_kwargs
                         }
                     metrics_kwargs["data_source_hash"] = data_source_hash
                     if metric_name is None:
-                        metric_name = metric.__name__
+                        metric_name = metric_item.__name__
                     metric_favorability = ""
                     favorability_indicator.append(metric_favorability)
 
                 metrics_params = inspect.signature(metric_fn).parameters
-                if scoring_kwargs is not None:
+                if metric_kwargs is not None:
                     for param in metrics_params:
-                        if param in scoring_kwargs:
-                            metrics_kwargs[param] = scoring_kwargs[param]
+                        if param in metric_kwargs:
+                            metrics_kwargs[param] = metric_kwargs[param]
                 if "pos_label" in metrics_params:
                     metrics_kwargs["pos_label"] = pos_label
             else:
                 raise ValueError(
-                    f"Invalid type of metric: {type(metric)} for {metric!r}"
+                    f"Invalid type of metric: {type(metric_item)} for {metric_item!r}"
                 )
 
             score = metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
@@ -715,7 +730,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         score = self._compute_metric_scores(
-            metrics.accuracy_score,
+            sklearn_metrics.accuracy_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -845,7 +860,7 @@ class _MetricsAccessor(
             average = "binary"
 
         result = self._compute_metric_scores(
-            metrics.precision_score,
+            sklearn_metrics.precision_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -982,7 +997,7 @@ class _MetricsAccessor(
             average = "binary"
 
         result = self._compute_metric_scores(
-            metrics.recall_score,
+            sklearn_metrics.recall_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1076,7 +1091,7 @@ class _MetricsAccessor(
         # `pos_label`. Since we get the predictions with `get_response_method`, we
         # can pass any `pos_label`, they will lead to the same result.
         result = self._compute_metric_scores(
-            metrics.brier_score_loss,
+            sklearn_metrics.brier_score_loss,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1200,7 +1215,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            metrics.roc_auc_score,
+            sklearn_metrics.roc_auc_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1248,7 +1263,7 @@ class _MetricsAccessor(
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
-        >>> report.metrics.log_loss()
+        >>> report.sklearn_metrics.log_loss()
         0.10...
         """
         return self._log_loss(
@@ -1286,7 +1301,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            metrics.log_loss,
+            sklearn_metrics.log_loss,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1384,7 +1399,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            metrics.r2_score,
+            sklearn_metrics.r2_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1488,7 +1503,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            metrics.root_mean_squared_error,
+            sklearn_metrics.root_mean_squared_error,
             X=X,
             y_true=y,
             data_source=data_source,

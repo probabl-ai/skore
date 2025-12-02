@@ -259,7 +259,7 @@ def test_summarize_error_scoring_strings(linear_regression_with_test, scoring):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     err_msg = re.escape(f"Invalid metric: {scoring!r}.")
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(scoring=[scoring])
+        report.metrics.summarize(metric=[scoring])
 
 
 def test_custom_function_kwargs_numpy_array(
@@ -571,7 +571,7 @@ def test_summarize_scoring_dict(forest_binary_classification_with_test):
         "Custom R2": get_scorer("neg_mean_absolute_error"),
     }
 
-    result = report.metrics.summarize(scoring=scoring_dict).frame()
+    result = report.metrics.summarize(metric=scoring_dict).frame()
 
     # Check that custom names are used
     assert "Custom Accuracy" in result.index
@@ -594,7 +594,7 @@ def test_summarize_scoring_dict_with_callables(linear_regression_with_test):
     scoring_dict = {"R Squared": "r2", "Custom MAE": custom_metric}
 
     result = report.metrics.summarize(
-        scoring=scoring_dict, scoring_kwargs={"response_method": "predict"}
+        metric=scoring_dict, metric_kwargs={"response_method": "predict"}
     ).frame()
 
     # Check that custom names are used

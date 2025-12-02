@@ -110,7 +110,7 @@ def test_aggregate_is_used_in_cache(
 def test_scoring(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with the `scoring` parameter."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(scoring=["accuracy"], aggregate=None).frame()
+    result = report.metrics.summarize(metric=["accuracy"], aggregate=None).frame()
 
     assert_index_equal(result.columns, pd.Index(["Value"]))
     assert_index_equal(
@@ -252,9 +252,9 @@ def test_scoring_single_list_equivalence(
     list with a single element."""
     report = comparison_cross_validation_reports_binary_classification
     result_single = report.metrics.summarize(
-        scoring=scoring, scoring_kwargs=scoring_kwargs
+        metric=scoring, metric_kwargs=scoring_kwargs
     ).frame()
     result_list = report.metrics.summarize(
-        scoring=[scoring], scoring_kwargs=scoring_kwargs
+        metric=[scoring], metric_kwargs=scoring_kwargs
     ).frame()
     assert result_single.equals(result_list)

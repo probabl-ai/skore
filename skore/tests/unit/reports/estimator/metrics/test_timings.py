@@ -133,7 +133,7 @@ def test_summarize_fit_time(estimator_data):
     report = EstimatorReport(estimator, **data)
 
     assert isinstance(
-        report.metrics.summarize(scoring=["fit_time"]).frame(), pd.DataFrame
+        report.metrics.summarize(metric=["fit_time"]).frame(), pd.DataFrame
     )
 
 
@@ -146,7 +146,7 @@ def test_summarize_predict_time(data_source, estimator_data):
 
     assert isinstance(
         report.metrics.summarize(
-            scoring=["predict_time"], data_source=data_source, X=X_, y=y_
+            metric=["predict_time"], data_source=data_source, X=X_, y=y_
         ).frame(),
         pd.DataFrame,
     )
