@@ -2106,9 +2106,9 @@ class _MetricsAccessor(
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot()
 
-        With decision threshold support for binary classification:
+        With specific threshold for binary classification:
 
-        >>> display = report.metrics.confusion_matrix(threshold=True)
+        >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
         if pos_label is _DEFAULT:

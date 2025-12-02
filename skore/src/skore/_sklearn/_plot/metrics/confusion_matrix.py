@@ -156,8 +156,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
         """
-        cm = self.frame(threshold_value=threshold_value)
-
         self.figure_, self.ax_ = plt.subplots()
 
         heatmap_kwargs_validated = _validate_style_kwargs(
@@ -167,9 +165,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
         normalize_by = "normalized_by_" + normalize if normalize else "count"
 
         sns.heatmap(
-            cm.pivot(
-                index="true_label", columns="predicted_label", values=normalize_by
-            ).reindex(index=self.display_labels, columns=self.display_labels),
+            self.frame(threshold_value=threshold_value)
+            .pivot(index="true_label", columns="predicted_label", values=normalize_by)
+            .reindex(index=self.display_labels, columns=self.display_labels),
             ax=self.ax_,
             **heatmap_kwargs_validated,
         )
@@ -255,7 +253,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 normalize=None,  # we will normalize later
                 labels=display_labels,
             )[np.newaxis, ...]
-            thresholds = [np.nan]
+            thresholds = np.array([np.nan])
 
         row_sums = cms.sum(axis=2, keepdims=True)
         cm_true = np.divide(cms, row_sums, where=row_sums != 0)
