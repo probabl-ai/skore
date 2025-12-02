@@ -165,13 +165,13 @@ def _check_metric(metric: Any) -> Scoring | None:
                 result |= cast(dict[str, Callable], _check_metric(s))
             else:
                 raise TypeError(
-                    "If scoring is a list or tuple, it must contain only strings; "
+                    "If metric is a list or tuple, it must contain only strings; "
                     f"got {s} of type {type(s)}"
                 )
         return result
     else:
         raise TypeError(
-            "scoring must be a string, callable, list, tuple or dict; "
+            "metric must be a string, callable, list, tuple or dict; "
             f"got {type(metric)}"
         )
 
