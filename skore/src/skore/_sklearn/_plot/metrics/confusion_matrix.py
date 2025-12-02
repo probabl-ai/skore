@@ -156,19 +156,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
         """
-        if threshold_value is not None and self.ml_task != "binary-classification":
-            raise ValueError(
-                "Threshold support is only available for binary classification."
-            )
-        elif self.ml_task == "binary-classification":
-            if threshold_value is None:
-                threshold_value = 0.5
-            threshold = self.thresholds_[
-                np.searchsorted(self.thresholds_, threshold_value)
-            ]
-            cm = self.confusion_matrix[self.confusion_matrix["threshold"] == threshold]
-        else:
-            cm = self.confusion_matrix
+        cm = self.frame(threshold_value=threshold_value)
 
         self.figure_, self.ax_ = plt.subplots()
 
@@ -186,10 +174,11 @@ class ConfusionMatrixDisplay(DisplayMixin):
             **heatmap_kwargs_validated,
         )
 
+        title = "Confusion Matrix"
         if threshold_value is not None:
-            title = f"Confusion Matrix (threshold: {threshold_value:.2f})"
-        else:
-            title = "Confusion Matrix"
+            title = title + f" (threshold: {threshold_value:.2f})"
+        if self.pos_label is not None:
+            title = title + f" (pos label: {self.pos_label})"
         self.ax_.set(
             xlabel="Predicted label",
             ylabel="True label",
@@ -246,11 +235,13 @@ class ConfusionMatrixDisplay(DisplayMixin):
         """
         y_true_values = y_true[0].y
         y_pred_values = y_pred[0].y
-        if isinstance(pos_label, str):
-            neg_label = next(label for label in display_labels if label != pos_label)
-            display_labels = [neg_label, pos_label]
 
         if ml_task == "binary-classification":
+            if pos_label is not None:
+                neg_label = next(
+                    label for label in display_labels if label != pos_label
+                )
+                display_labels = [str(neg_label), str(pos_label)]
             tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
                 y_true=y_true_values,
                 y_score=y_pred_values,
@@ -267,25 +258,13 @@ class ConfusionMatrixDisplay(DisplayMixin):
             thresholds = [np.nan]
 
         row_sums = cms.sum(axis=2, keepdims=True)
-        cm_true = np.divide(
-            cms,
-            row_sums,
-            where=row_sums != 0,
-        )
+        cm_true = np.divide(cms, row_sums, where=row_sums != 0)
 
         col_sums = cms.sum(axis=1, keepdims=True)
-        cm_pred = np.divide(
-            cms,
-            col_sums,
-            where=col_sums != 0,
-        )
+        cm_pred = np.divide(cms, col_sums, where=col_sums != 0)
 
         total_sums = cms.sum(axis=(1, 2), keepdims=True)
-        cm_all = np.divide(
-            cms,
-            total_sums,
-            where=total_sums != 0,
-        )
+        cm_all = np.divide(cms, total_sums, where=total_sums != 0)
 
         n_thresholds = len(thresholds)
         n_classes = len(display_labels)
@@ -318,70 +297,38 @@ class ConfusionMatrixDisplay(DisplayMixin):
             report_type=report_type,
             ml_task=ml_task,
             pos_label=pos_label,
-            thresholds=np.unique(thresholds)[::-1],
+            thresholds=np.unique(thresholds),
         )
 
         return disp
 
     def frame(
         self,
-        normalize: Literal["true", "pred", "all"] | None = None,
-        threshold_value: float | Literal["all"] | None = None,
+        threshold_value: float | None = None,
     ):
         """Return the confusion matrix as a dataframe.
 
         Parameters
         ----------
-        normalize : {'true', 'pred', 'all'}, default=None
-            Normalizes confusion matrix over the true (rows), predicted (columns)
-            conditions or all the population. If None, the confusion matrix will not be
-            normalized.
-
-        threshold_value : float or 'all' or None, default=None
+        threshold_value : float or None, default=None
             The decision threshold to use when applicable.
             If None and thresholds are available, returns the confusion matrix at the
-            default threshold (0.5). If 'all', returns all flattened confusion matrices
-            (one per threshold) as a single dataframe.
+            default threshold (0.5).
 
         Returns
         -------
         frame : pandas.DataFrame
             The confusion matrix as a dataframe.
         """
-        normalize_by = "normalized_by_" + normalize if normalize else "count"
-        if threshold_value == "all":
-            cm_columns = [
-                f"{true_label}/{pred_label}"
-                for true_label in self.display_labels
-                for pred_label in self.display_labels
-            ]
-            rows = []
-            for threshold_val in self.thresholds_:
-                cm_at_threshold = self.frame(
-                    normalize=normalize, threshold_value=threshold_val
-                )
-                flattened_values = cm_at_threshold.values.flatten()
-                row = {
-                    "threshold": threshold_val,
-                    **dict(zip(cm_columns, flattened_values, strict=True)),
-                }
-                rows.append(row)
-            return pd.DataFrame(rows)
-
-        elif threshold_value is not None and self.ml_task != "binary-classification":
+        if threshold_value is not None and self.ml_task != "binary-classification":
             raise ValueError(
                 "Threshold support is only available for binary classification."
             )
-        elif threshold_value is None and self.ml_task == "binary-classification":
-            return self.frame(normalize=normalize, threshold_value=0.5)
-        else:
-            cm = self.confusion_matrix.copy()
-            if threshold_value is not None:
-                # Find the existing threshold closest to given threshold_value
-                threshold_value = self.thresholds_[
-                    np.argmin(np.abs(self.thresholds_ - threshold_value))
-                ]
-                cm = cm[cm["threshold"] == threshold_value]
-            return cm.pivot(
-                index="true_label", columns="predicted_label", values=normalize_by
-            ).reindex(index=self.display_labels, columns=self.display_labels)
+        if threshold_value is None:
+            if self.ml_task == "binary-classification":
+                threshold_value = 0.5
+            else:
+                return self.confusion_matrix
+        threshold_index = np.searchsorted(self.thresholds_, threshold_value)
+        threshold_value = self.thresholds_[threshold_index]
+        return self.confusion_matrix.query("threshold == @threshold_value")
