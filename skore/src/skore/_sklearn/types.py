@@ -66,7 +66,7 @@ class SKLearnScorer(Protocol):
 
 ScoringName = str | None
 
-Scoring = str | Callable | SKLearnScorer
+Metric = str | Callable | SKLearnScorer
 
 
 class SKLearnCrossValidator(Protocol):

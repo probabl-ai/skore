@@ -273,7 +273,7 @@ def test_cache_scoring(regression_data):
 
     report.feature_importance.permutation(data_source="train", metric="r2", seed=42)
 
-    # Scorings are different, so cache keys should be different
+    # Metrics are different, so cache keys should be different
     with check_cache_changed(report._cache):
         report.feature_importance.permutation(
             data_source="train", metric="rmse", seed=42

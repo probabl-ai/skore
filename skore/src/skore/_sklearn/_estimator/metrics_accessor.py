@@ -29,8 +29,8 @@ from skore._sklearn._plot import (
 from skore._sklearn.types import (
     _DEFAULT,
     DataSource,
+    Metric,
     PositiveLabel,
-    Scoring,
     YPlotData,
 )
 from skore._utils._accessor import (
@@ -64,7 +64,7 @@ class _MetricsAccessor(
         data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        metric: Scoring | list[Scoring] | dict[str, Scoring] | None = None,
+        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
