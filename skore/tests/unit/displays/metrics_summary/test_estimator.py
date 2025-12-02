@@ -168,10 +168,10 @@ def test_regression(linear_regression_with_test, data_source):
     _check_results_summarize(result, expected_metrics, len(expected_metrics))
 
 
-def test_scoring_kwargs(
+def test_metric_kwargs(
     linear_regression_multioutput_with_test, forest_multiclass_classification_with_test
 ):
-    """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
+    """Check the behaviour of the `MetricsSummaryDisplay` method with metric kwargs."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "summarize")
@@ -265,7 +265,7 @@ def test_indicator_favorability(
 
 
 @pytest.mark.parametrize(
-    "scoring, scoring_kwargs",
+    "metric, metric_kwargs",
     [
         ("accuracy", None),
         ("neg_log_loss", None),
@@ -273,23 +273,23 @@ def test_indicator_favorability(
         (get_scorer("accuracy"), None),
     ],
 )
-def test_scoring_single_list_equivalence(
-    forest_binary_classification_with_test, scoring, scoring_kwargs
+def test_metric_single_list_equivalence(
+    forest_binary_classification_with_test, metric, metric_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
     list with a single element."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result_single = report.metrics.summarize(
-        metric=scoring, metric_kwargs=scoring_kwargs
+        metric=metric, metric_kwargs=metric_kwargs
     ).frame()
     result_list = report.metrics.summarize(
-        metric=[scoring], metric_kwargs=scoring_kwargs
+        metric=[metric], metric_kwargs=metric_kwargs
     ).frame()
     assert result_single.equals(result_list)
 
 
-def test_scoring_custom_metric(linear_regression_with_test):
+def test_metric_custom_metric(linear_regression_with_test):
     """Check that we can pass a custom metric with specific kwargs into
     `MetricsSummaryDisplay`."""
     estimator, X_test, y_test = linear_regression_with_test
@@ -481,7 +481,7 @@ def test_sklearn_scoring_strings_regression(
     assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
 
 
-def test_scoring_strings_regression(linear_regression_with_test):
+def test_metric_strings_regression(linear_regression_with_test):
     """Test skore regression metric strings in `MetricsSummaryDisplay`."""
     regressor, X_test, y_test = linear_regression_with_test
     reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)

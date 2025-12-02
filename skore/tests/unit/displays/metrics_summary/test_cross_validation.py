@@ -126,7 +126,7 @@ def _check_results_summarize(
 
 
 @pytest.mark.parametrize(
-    "scoring, scoring_kwargs",
+    "metric, metric_kwargs",
     [
         ("accuracy", None),
         ("neg_log_loss", None),
@@ -134,18 +134,18 @@ def _check_results_summarize(
         (get_scorer("accuracy"), None),
     ],
 )
-def test_scoring_single_list_equivalence(
-    forest_binary_classification_data, scoring, scoring_kwargs
+def test_metric_single_list_equivalence(
+    forest_binary_classification_data, metric, metric_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
     list with a single element."""
     (estimator, X, y), cv = forest_binary_classification_data, 2
     report = CrossValidationReport(estimator, X, y, splitter=cv)
     result_single = report.metrics.summarize(
-        metric=scoring, metric_kwargs=scoring_kwargs
+        metric=metric, metric_kwargs=metric_kwargs
     ).frame()
     result_list = report.metrics.summarize(
-        metric=[scoring], metric_kwargs=scoring_kwargs
+        metric=[metric], metric_kwargs=metric_kwargs
     ).frame()
     assert result_single.equals(result_list)
 
@@ -284,7 +284,7 @@ def test_regression(linear_regression_data):
     )
 
 
-def test_scoring_kwargs_regression(
+def test_metric_kwargs_regression(
     linear_regression_multioutput_data,
 ):
     """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
@@ -299,7 +299,7 @@ def test_scoring_kwargs_regression(
     assert result.index.names == ["Metric", "Output"]
 
 
-def test_scoring_kwargs_multi_class(
+def test_metric_kwargs_multi_class(
     forest_multiclass_classification_data,
 ):
     """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
@@ -313,7 +313,7 @@ def test_scoring_kwargs_multi_class(
 
 
 @pytest.mark.parametrize(
-    "fixture_name, scoring, expected_index",
+    "fixture_name, metric, expected_index",
     [
         (
             "linear_regression_data",
@@ -352,11 +352,11 @@ def test_scoring_kwargs_multi_class(
         ),
     ],
 )
-def test_overwrite_scoring_names(request, fixture_name, scoring, expected_index):
+def test_overwrite_metric_names(request, fixture_name, metric, expected_index):
     """Test that we can overwrite the scoring names in `MetricsSummaryDisplay`."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    result = report.metrics.summarize(metric=scoring).frame()
+    result = report.metrics.summarize(metric=metric).frame()
     assert result.shape == (len(expected_index), 2)
 
     # Get level 0 names if MultiIndex, otherwise get column names
@@ -368,14 +368,14 @@ def test_overwrite_scoring_names(request, fixture_name, scoring, expected_index)
     assert result_index == expected_index
 
 
-@pytest.mark.parametrize("scoring", ["public_metric", "_private_metric"])
-def test_error_scoring_strings(linear_regression_data, scoring):
-    """Check that we raise an error if a scoring string is not a valid metric."""
+@pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
+def test_error_metric_strings(linear_regression_data, metric):
+    """Check that we raise an error if a metric string is not a valid metric."""
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    err_msg = re.escape(f"Invalid metric: {scoring!r}.")
+    err_msg = re.escape(f"Invalid metric: {metric!r}.")
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[scoring])
+        report.metrics.summarize(metric=[metric])
 
 
 def test_scorer(linear_regression_data):
