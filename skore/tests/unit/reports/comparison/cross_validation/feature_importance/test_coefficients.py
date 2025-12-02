@@ -1,31 +1,53 @@
-from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import LinearSVC
+import pytest
+from sklearn.compose import TransformedTargetRegressor
+from sklearn.linear_model import Ridge
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeRegressor
 
-from skore import ComparisonReport, CrossValidationReport
+from skore import CoefficientsDisplay, ComparisonReport, CrossValidationReport
 
 
-def test_coefficients_frame():
-    X, y = make_classification(n_features=10, random_state=0)
-    estimators = {
-        "LinearSVC": LinearSVC(C=2),
-        "LogisticRegression": LogisticRegression(),
-    }
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        Ridge(),
+        TransformedTargetRegressor(Ridge()),
+        Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())]),
+        Pipeline(
+            [
+                ("scaler", StandardScaler()),
+                ("transformed_ridge", TransformedTargetRegressor(Ridge())),
+            ]
+        ),
+    ],
+)
+def test_with_model_exposing_coef(regression_data, estimator):
+    """Check that we can create a coefficients display from model exposing a `coef_`
+    attribute."""
+    X, y = regression_data
+    report_1 = CrossValidationReport(estimator, X, y, splitter=2)
+    report_2 = CrossValidationReport(estimator, X, y, splitter=2)
+    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+    assert hasattr(report.feature_importance, "coefficients")
+    display = report.feature_importance.coefficients()
+    assert isinstance(display, CoefficientsDisplay)
 
-    splitter = 5
-    cv_reports = {
-        name: CrossValidationReport(est, X=X, y=y, splitter=splitter)
-        for name, est in estimators.items()
-    }
-    est_comparison_report = ComparisonReport(cv_reports)
-    result = est_comparison_report.feature_importance.coefficients().frame()
-    assert result.shape == (5, 22)
 
-    expected_index = list(range(splitter))
-    assert result.index.tolist() == expected_index
+def test_with_model_not_exposing_coef(regression_data):
+    """Check that we cannot create a coefficients display from model not exposing a
+    `coef_` attribute."""
+    X, y = regression_data
+    report_1 = CrossValidationReport(DecisionTreeRegressor(), X, y, splitter=2)
+    report_2 = CrossValidationReport(DecisionTreeRegressor(), X, y, splitter=2)
+    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+    assert not hasattr(report.feature_importance, "coefficients")
 
-    base_columns = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
-    expected_columns = [
-        f"{model}__{col}" for model in estimators for col in base_columns
-    ]
-    assert result.columns.tolist() == expected_columns
+
+def test_with_mixed_reports(regression_data):
+    """Check that we cannot create a coefficients display from mixed reports."""
+    X, y = regression_data
+    report_1 = CrossValidationReport(Ridge(), X, y, splitter=2)
+    report_2 = CrossValidationReport(DecisionTreeRegressor(), X, y, splitter=2)
+    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+    assert not hasattr(report.feature_importance, "coefficients")
