@@ -192,7 +192,7 @@ def test_metric_kwargs(
 
 
 @pytest.mark.parametrize(
-    "fixture_name, scoring_dict, expected_columns",
+    "fixture_name, metric_dict, expected_columns",
     [
         (
             "linear_regression_with_test",
@@ -232,12 +232,12 @@ def test_metric_kwargs(
     ],
 )
 def test_overwrite_scoring_names_with_dict(
-    request, fixture_name, scoring_dict, expected_columns
+    request, fixture_name, metric_dict, expected_columns
 ):
-    """Test that we can overwrite the scoring names using dict scoring."""
+    """Test that we can overwrite the scoring names using dict metric."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(metric=scoring_dict).frame()
+    result = report.metrics.summarize(metric=metric_dict).frame()
     assert result.shape == (len(expected_columns), 1)
 
     # Get level 0 names if MultiIndex, otherwise get column names
@@ -515,7 +515,7 @@ def test_scorer_names_pos_label(
     )
 
 
-def test_sklearn_scorer_names_scoring_kwargs(
+def test_sklearn_scorer_names_metric_kwargs(
     forest_binary_classification_with_test,
 ):
     """Check that `metric_kwargs` is not supported when `metric` is a scikit-learn
