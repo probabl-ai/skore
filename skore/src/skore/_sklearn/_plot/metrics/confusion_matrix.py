@@ -329,6 +329,12 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 threshold_value = 0.5
             else:
                 return self.confusion_matrix
-        threshold_index = np.searchsorted(self.thresholds_, threshold_value)
-        threshold_value = self.thresholds_[threshold_index]
+        index_right = np.searchsorted(self.thresholds_, threshold_value)
+        index_left = index_right - 1
+        diff_right = abs(self.thresholds_[index_right] - threshold_value)
+        diff_left = abs(self.thresholds_[index_left] - threshold_value)
+
+        threshold_value = self.thresholds_[
+            index_right if diff_right < diff_left else index_left
+        ]
         return self.confusion_matrix.query("threshold == @threshold_value")
