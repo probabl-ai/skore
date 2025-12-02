@@ -35,6 +35,10 @@ class ConfusionMatrixDisplay(DisplayMixin):
     ml_task : {"binary-classification", "multiclass-classification"}
         The machine learning task.
 
+    pos_label : int, float, bool, str or None
+        The class considered as the positive class when displaying the confusion
+        matrix.
+
     Attributes
     ----------
     thresholds_ : array-like of shape (n_thresholds,)
@@ -56,12 +60,14 @@ class ConfusionMatrixDisplay(DisplayMixin):
         report_type: ReportType,
         ml_task: MLTask,
         thresholds: NDArray,
+        pos_label: PositiveLabel,
     ):
         self.confusion_matrix = confusion_matrix
         self.display_labels = display_labels
         self.report_type = report_type
         self.thresholds_ = thresholds
         self.ml_task = ml_task
+        self.pos_label = pos_label
 
     _default_heatmap_kwargs: dict = {
         "cmap": "Blues",
@@ -240,7 +246,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
         """
         y_true_values = y_true[0].y
         y_pred_values = y_pred[0].y
-        cms = []
         if isinstance(pos_label, str):
             neg_label = next(label for label in display_labels if label != pos_label)
             display_labels = [neg_label, pos_label]
@@ -251,78 +256,69 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 y_score=y_pred_values,
                 pos_label=pos_label,
             )
-            for tn, fp, fn, tp in zip(tns, fps, fns, tps, strict=True):
-                cms.append(np.array([[tn, fp], [fn, tp]]).astype(int))
+            cms = np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
         else:
-            cms.append(
-                sklearn_confusion_matrix(
-                    y_true=y_true_values,
-                    y_pred=y_pred_values,
-                    normalize=None,  # we will normalize later
-                    labels=display_labels,
-                )
-            )
-            thresholds = [None]
+            cms = sklearn_confusion_matrix(
+                y_true=y_true_values,
+                y_pred=y_pred_values,
+                normalize=None,  # we will normalize later
+                labels=display_labels,
+            )[np.newaxis, ...]
+            thresholds = [np.nan]
 
-        confusion_matrix_records = []
-        for cm, threshold_value in zip(cms, thresholds, strict=True):
-            cm_true = np.divide(
-                cm,
-                cm.sum(axis=1, keepdims=True),
-                where=cm.sum(axis=1, keepdims=True) != 0,
-            )
-            cm_pred = np.divide(
-                cm,
-                cm.sum(axis=0, keepdims=True),
-                where=cm.sum(axis=0, keepdims=True) != 0,
-            )
-            cm_all = np.divide(
-                cm,
-                cm.sum(),
-                where=cm.sum() != 0,
-            )
+        row_sums = cms.sum(axis=2, keepdims=True)
+        cm_true = np.divide(
+            cms,
+            row_sums,
+            where=row_sums != 0,
+        )
 
-            n_classes = len(display_labels)
-            true_labels = np.repeat(display_labels, n_classes)
-            pred_labels = np.tile(display_labels, n_classes)
+        col_sums = cms.sum(axis=1, keepdims=True)
+        cm_pred = np.divide(
+            cms,
+            col_sums,
+            where=col_sums != 0,
+        )
 
-            for (
-                true_label,
-                pred_label,
-                count,
-                normalized_true,
-                normalized_pred,
-                normalized_all,
-            ) in zip(
-                true_labels,
-                pred_labels,
-                cm.flatten(),
-                cm_true.flatten(),
-                cm_pred.flatten(),
-                cm_all.flatten(),
-                strict=True,
-            ):
-                # Data is stored in a long format dataframe with one row per cell of
-                # each confusion matrix.
-                confusion_matrix_records.append(
-                    {
-                        "true_label": true_label,
-                        "predicted_label": pred_label,
-                        "count": count,
-                        "normalized_by_true": normalized_true,
-                        "normalized_by_pred": normalized_pred,
-                        "normalized_by_all": normalized_all,
-                        "threshold": threshold_value,
-                    }
-                )
+        total_sums = cms.sum(axis=(1, 2), keepdims=True)
+        cm_all = np.divide(
+            cms,
+            total_sums,
+            where=total_sums != 0,
+        )
 
-        cm = pd.DataFrame.from_records(confusion_matrix_records)
+        n_thresholds = len(thresholds)
+        n_classes = len(display_labels)
+        n_cells = n_classes * n_classes
+
+        true_labels = np.tile(np.repeat(display_labels, n_classes), n_thresholds)
+        pred_labels = np.tile(np.tile(display_labels, n_classes), n_thresholds)
+        threshold_values = np.repeat(thresholds, n_cells)
+
+        counts = cms.reshape(-1)
+        normalized_true_values = cm_true.reshape(-1)
+        normalized_pred_values = cm_pred.reshape(-1)
+        normalized_all_values = cm_all.reshape(-1)
+
+        confusion_matrix = pd.DataFrame(
+            {
+                "true_label": true_labels,
+                "predicted_label": pred_labels,
+                "count": counts,
+                "normalized_by_true": normalized_true_values,
+                "normalized_by_pred": normalized_pred_values,
+                "normalized_by_all": normalized_all_values,
+                "threshold": threshold_values,
+            }
+        )
+
         disp = cls(
-            confusion_matrix=cm,
+            confusion_matrix=confusion_matrix,
             display_labels=display_labels,
             report_type=report_type,
             ml_task=ml_task,
-            thresholds=cm["threshold"].unique()[::-1],
+            pos_label=pos_label,
+            thresholds=np.unique(thresholds)[::-1],
         )
 
         return disp
