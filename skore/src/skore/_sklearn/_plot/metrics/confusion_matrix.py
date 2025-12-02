@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from numpy._typing import NDArray
 from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 
 from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import _validate_style_kwargs
-from skore._sklearn.types import PositiveLabel, ReportType, YPlotData
+from skore._sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 
 class ConfusionMatrixDisplay(DisplayMixin):
@@ -31,14 +32,14 @@ class ConfusionMatrixDisplay(DisplayMixin):
             "cross-validation", "estimator"}
         The type of report.
 
-    threshold : bool, default=False
-        Whether threshold support is enabled for binary classification.
+    ml_task : {"binary-classification", "multiclass-classification"}
+        The machine learning task.
 
     Attributes
     ----------
-    thresholds_ : list of float or None
+    thresholds_ : array-like of shape (n_thresholds,)
         Thresholds of the decision function. Each threshold is associated with a
-        confusion matrix. Only available for binary classification with decision scores.
+        confusion matrix. Only available for binary classification.
 
     figure_ : matplotlib Figure
         Figure containing the confusion matrix.
@@ -53,16 +54,14 @@ class ConfusionMatrixDisplay(DisplayMixin):
         confusion_matrix: pd.DataFrame,
         display_labels: list[str],
         report_type: ReportType,
-        threshold: bool = False,
+        ml_task: MLTask,
+        thresholds: NDArray,
     ):
         self.confusion_matrix = confusion_matrix
         self.display_labels = display_labels
         self.report_type = report_type
-        self.threshold = threshold
-        if threshold:
-            self.thresholds_ = self.confusion_matrix["threshold"].unique()[::-1]
-        else:
-            self.thresholds_ = None
+        self.thresholds_ = thresholds
+        self.ml_task = ml_task
 
     _default_heatmap_kwargs: dict = {
         "cmap": "Blues",
@@ -151,32 +150,19 @@ class ConfusionMatrixDisplay(DisplayMixin):
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
         """
-        if threshold_value is not None:
-            if not self.threshold:
-                raise ValueError(
-                    "Enable threshold support by passing `threshold=True` to "
-                    "`report.metrics.confusion_matrix()` before calling `plot()` with "
-                    "`threshold_value`. This is only applicable for binary "
-                    "classification."
-                )
-            # Find the existing threshold that is closest to the given threshold_value
-            threshold_value = self.thresholds_[
-                np.argmin(np.abs(self.thresholds_ - threshold_value))
+        if threshold_value is not None and self.ml_task != "binary-classification":
+            raise ValueError(
+                "Threshold support is only available for binary classification."
+            )
+        elif self.ml_task == "binary-classification":
+            if threshold_value is None:
+                threshold_value = 0.5
+            threshold = self.thresholds_[
+                np.searchsorted(self.thresholds_, threshold_value)
             ]
-            cm = self.confusion_matrix[
-                self.confusion_matrix["threshold"] == threshold_value
-            ]
+            cm = self.confusion_matrix[self.confusion_matrix["threshold"] == threshold]
         else:
-            if self.threshold:
-                # Use the default threshold (0.5) if no threshold_value is provided
-                threshold_value = self.thresholds_[
-                    np.argmin(np.abs(self.thresholds_ - 0.5))
-                ]
-                cm = self.confusion_matrix[
-                    self.confusion_matrix["threshold"] == threshold_value
-                ]
-            else:
-                cm = self.confusion_matrix
+            cm = self.confusion_matrix
 
         self.figure_, self.ax_ = plt.subplots()
 
@@ -213,8 +199,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
         y_pred: Sequence[YPlotData],
         *,
         report_type: ReportType,
+        ml_task: MLTask,
         display_labels: list[str],
-        threshold: bool = False,
         pos_label: PositiveLabel,
         **kwargs,
     ) -> "ConfusionMatrixDisplay":
@@ -233,6 +219,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 "cross-validation", "estimator"}
             The type of report.
 
+        ml_task : {"binary-classification", "multiclass-classification"}
+            The machine learning task.
+
         display_labels : list of str
             Display labels for plot.
 
@@ -240,13 +229,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
             The class considered as the positive class when displaying the confusion
             matrix.
 
-        threshold : bool, default=False
-            Whether to compute the confusion matrix at different thresholds.
-
         **kwargs : dict
             Additional keyword arguments that are ignored for compatibility with
-            other metrics displays. Accepts but ignores `estimators`, `ml_task`,
-            and `data_source`.
+            other metrics displays. Accepts but ignores `estimators` and `data_source`.
 
         Returns
         -------
@@ -260,7 +245,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
             neg_label = next(label for label in display_labels if label != pos_label)
             display_labels = [neg_label, pos_label]
 
-        if threshold:
+        if ml_task == "binary-classification":
             tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
                 y_true=y_true_values,
                 y_score=y_pred_values,
@@ -331,11 +316,13 @@ class ConfusionMatrixDisplay(DisplayMixin):
                     }
                 )
 
+        cm = pd.DataFrame.from_records(confusion_matrix_records)
         disp = cls(
-            confusion_matrix=pd.DataFrame.from_records(confusion_matrix_records),
+            confusion_matrix=cm,
             display_labels=display_labels,
             report_type=report_type,
-            threshold=threshold,
+            ml_task=ml_task,
+            thresholds=cm["threshold"].unique()[::-1],
         )
 
         return disp
@@ -385,14 +372,11 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 rows.append(row)
             return pd.DataFrame(rows)
 
-        elif threshold_value is not None and not self.threshold:
+        elif threshold_value is not None and self.ml_task != "binary-classification":
             raise ValueError(
-                "Enable threshold support by passing `threshold=True` to "
-                "`report.metrics.confusion_matrix()` before calling `frame()` with "
-                "`threshold_value`. This is only applicable for binary "
-                "classification."
+                "Threshold support is only available for binary classification."
             )
-        elif threshold_value is None and self.threshold:
+        elif threshold_value is None and self.ml_task == "binary-classification":
             return self.frame(normalize=normalize, threshold_value=0.5)
         else:
             cm = self.confusion_matrix.copy()

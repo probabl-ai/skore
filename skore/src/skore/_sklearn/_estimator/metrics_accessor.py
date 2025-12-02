@@ -2059,7 +2059,6 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        threshold: bool = False,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
@@ -2083,14 +2082,6 @@ class _MetricsAccessor(
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
-
-        threshold : bool, default=False
-            Whether to enable decision threshold support for binary classification.
-            When True, the display will precompute confusion matrices at all possible
-            decision thresholds, allowing you to specify a threshold in `.plot()` or
-            `.frame()` methods. This is only applicable for binary classification and
-            requires the estimator to have `predict_proba` or `decision_function`
-            methods.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when displaying the matrix. Use
@@ -2126,19 +2117,14 @@ class _MetricsAccessor(
         display_kwargs = {
             "display_labels": self._parent.estimator_.classes_.tolist(),
             "pos_label": pos_label,
-            "threshold": threshold,
         }
 
         response_method: str | list[str] | tuple[str, ...]
-        if threshold:
-            if self._parent._ml_task == "binary-classification":
-                response_method = ("predict_proba", "decision_function")
-            else:
-                raise ValueError(
-                    "Threshold support can only be set for binary classification."
-                )
+        if self._parent._ml_task == "binary-classification":
+            response_method = ("predict_proba", "decision_function")
         else:
             response_method = "predict"
+
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(
