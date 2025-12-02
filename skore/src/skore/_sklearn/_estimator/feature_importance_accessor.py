@@ -155,7 +155,7 @@ def _check_metric(metric: Any) -> Scoring | None:
             # Convert to scorer
             return {metric: metric_to_scorer[cast(Metric, metric)]}
         raise TypeError(
-            "If scoring is a string, it must be one of "
+            "If metric is a string, it must be one of "
             f"{list(metric_to_scorer.keys())}; got '{metric}'"
         )
     elif isinstance(metric, list | tuple):
