@@ -31,7 +31,7 @@ from skore._utils._index import flatten_multi_index
 DataSource = Literal["test", "train", "X_y"]
 
 
-Metric = Literal[
+MetricStr = Literal[
     "accuracy",
     "precision",
     "recall",
@@ -42,17 +42,17 @@ Metric = Literal[
     "rmse",
 ]
 
-# If scoring represents a single score, one can use:
-#   - a single string (see The scoring parameter: defining model evaluation rules);
+# If the metric parameter represents a single metric, one can use:
+#   - a single string (see The metric parameter: defining model evaluation rules);
 #   - a callable (see Callable scorers) that returns a single value.
-# If scoring represents multiple scores, one can use:
+# If the metric parameter represents multiple metrics, one can use:
 #   - a list or tuple of unique strings;
 #   - a callable returning a dictionary where the keys are the metric names
 #   and the values are the metric scores;
 #   - a dictionary with metric names as keys and callables a values.
-Scoring = Metric | Callable | Iterable[Metric] | dict[str, Callable]
+Metric = MetricStr | Callable | Iterable[MetricStr] | dict[str, Callable]
 
-metric_to_scorer: dict[Metric, Callable] = {
+metric_to_scorer: dict[MetricStr, Callable] = {
     "accuracy": make_scorer(metrics.accuracy_score),
     "precision": make_scorer(metrics.precision_score),
     "recall": make_scorer(metrics.recall_score),
@@ -90,7 +90,7 @@ def _get_feature_names(estimator, X, transformer=None) -> list[str]:
     return [f"Feature #{i}" for i in range(X.shape[1])]
 
 
-def _check_metric(metric: Any) -> Scoring | None:
+def _check_metric(metric: Any) -> Metric | None:
     """Check that `metric` is valid, and convert it to a suitable form as needed.
 
     If `metric` is a list of strings, it is checked against our own metric names.
@@ -153,7 +153,7 @@ def _check_metric(metric: Any) -> Scoring | None:
     elif isinstance(metric, str):
         if metric in metric_to_scorer:
             # Convert to scorer
-            return {metric: metric_to_scorer[cast(Metric, metric)]}
+            return {metric: metric_to_scorer[cast(MetricStr, metric)]}
         raise TypeError(
             "If metric is a string, it must be one of "
             f"{list(metric_to_scorer.keys())}; got '{metric}'"
@@ -338,7 +338,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         aggregate: Aggregate | None = None,
-        metric: Scoring | None = None,
+        metric: Metric | None = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
         n_jobs: int | None = None,
@@ -554,7 +554,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         X: ArrayLike | None,
         y: ArrayLike | None,
         aggregate: Aggregate | None,
-        metric: Scoring | None,
+        metric: Metric | None,
         n_repeats: int,
         max_samples: float,
         n_jobs: int | None,
