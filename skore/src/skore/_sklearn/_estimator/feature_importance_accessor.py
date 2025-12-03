@@ -31,7 +31,7 @@ from skore._utils._index import flatten_multi_index
 DataSource = Literal["test", "train", "X_y"]
 
 
-MetricStr = Literal[
+MetricNames = Literal[
     "accuracy",
     "precision",
     "recall",
@@ -50,9 +50,9 @@ MetricStr = Literal[
 #   - a callable returning a dictionary where the keys are the metric names
 #   and the values are the metric scores;
 #   - a dictionary with metric names as keys and callables a values.
-Metric = MetricStr | Callable | Iterable[MetricStr] | dict[str, Callable]
+Metric = MetricNames | Callable | Iterable[MetricNames] | dict[str, Callable]
 
-metric_to_scorer: dict[MetricStr, Callable] = {
+metric_to_scorer: dict[MetricNames, Callable] = {
     "accuracy": make_scorer(metrics.accuracy_score),
     "precision": make_scorer(metrics.precision_score),
     "recall": make_scorer(metrics.recall_score),
@@ -153,7 +153,7 @@ def _check_metric(metric: Any) -> Metric | None:
     elif isinstance(metric, str):
         if metric in metric_to_scorer:
             # Convert to scorer
-            return {metric: metric_to_scorer[cast(MetricStr, metric)]}
+            return {metric: metric_to_scorer[cast(MetricNames, metric)]}
         raise TypeError(
             "If metric is a string, it must be one of "
             f"{list(metric_to_scorer.keys())}; got '{metric}'"
