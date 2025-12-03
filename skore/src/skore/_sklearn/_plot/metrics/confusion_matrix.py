@@ -83,7 +83,12 @@ class ConfusionMatrixDisplay(DisplayMixin):
         threshold_value: float | None = None,
         heatmap_kwargs: dict | None = None,
     ):
-        """Plot visualization.
+        """Plot the confusion matrix.
+
+        In binary classification, the confusion matrix can be displayed at various
+        decision thresholds. This is useful for understanding how the model's
+        predictions change as the decision threshold varies. If no threshold is
+        provided, the confusion matrix is displayed at the default threshold (0.5).
 
         Parameters
         ----------
@@ -173,15 +178,47 @@ class ConfusionMatrixDisplay(DisplayMixin):
         )
 
         title = "Confusion Matrix"
-        if threshold_value is not None:
-            title = title + f" (threshold: {threshold_value:.2f})"
-        if self.pos_label is not None:
-            title = title + f" (pos label: {self.pos_label})"
-        self.ax_.set(
-            xlabel="Predicted label",
-            ylabel="True label",
-            title=title,
-        )
+        if self.ml_task == "binary-classification":
+            if threshold_value is None:
+                threshold_value = 0.5
+            title = title + f"\nDecision threshold: {threshold_value:.2f}"
+
+        if self.ml_task == "binary-classification" and self.pos_label is not None:
+            ticklabels = [
+                f"{label}*" if label == str(self.pos_label) else label
+                for label in self.display_labels
+            ]
+
+            self.ax_.set(
+                xlabel="Predicted label",
+                ylabel="True label",
+                title=title,
+                xticklabels=ticklabels,
+                yticklabels=ticklabels,
+            )
+
+            self.ax_.text(
+                -0.15,
+                -0.15,
+                "*: the positive class",
+                fontsize=9,
+                style="italic",
+                verticalalignment="bottom",
+                horizontalalignment="left",
+                transform=self.ax_.transAxes,
+                bbox={
+                    "boxstyle": "round",
+                    "facecolor": "white",
+                    "alpha": 0.8,
+                    "edgecolor": "gray",
+                },
+            )
+        else:
+            self.ax_.set(
+                xlabel="Predicted label",
+                ylabel="True label",
+                title=title,
+            )
 
         self.figure_.tight_layout()
 
@@ -304,7 +341,16 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self,
         threshold_value: float | None = None,
     ):
-        """Return the confusion matrix as a dataframe.
+        """Return the confusion matrix as a long format dataframe.
+
+        In binary classification, the confusion matrix can be returned at various
+        decision thresholds. This is useful for understanding how the model's
+        predictions change as the decision threshold varies. If no threshold is
+        provided, the default threshold (0.5) is used.
+
+        The matrix is returned as a long format dataframe where each line represents one
+        cell of the matrix. The columns are "true_label", "predicted_label", "count",
+        "normalized_by_true", "normalized_by_pred", "normalized_by_all" and "threshold".
 
         Parameters
         ----------
@@ -327,6 +373,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 threshold_value = 0.5
             else:
                 return self.confusion_matrix
+
         index_right = np.searchsorted(self.thresholds_, threshold_value)
         index_left = index_right - 1
         diff_right = abs(self.thresholds_[index_right] - threshold_value)
