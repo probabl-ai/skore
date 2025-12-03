@@ -60,6 +60,7 @@ class _MetricsAccessor(
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
+        on_unavailable_metric: Literal["raise", "nan"] = "raise",
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -124,6 +125,11 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        on_unavailable_metric : {"raise", "nan"}, default="raise"
+            Whether to raise or return `numpy.nan` when the metric cannot be computed.
+            For example, "brier_score" cannot be computed for estimators without a
+            `predict_proba` method.
+
         Returns
         -------
         MetricsSummaryDisplay
@@ -161,6 +167,7 @@ class _MetricsAccessor(
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
             indicator_favorability=indicator_favorability,
+            on_unavailable_metric=on_unavailable_metric,
         )
         if flat_index:
             if isinstance(results.columns, pd.MultiIndex):
@@ -182,6 +189,7 @@ class _MetricsAccessor(
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         aggregate: Aggregate | None = None,
+        on_unavailable_metric: Literal["raise", "nan"] = "raise",
         **metric_kwargs: Any,
     ) -> pd.DataFrame:
         if data_source == "X_y":
@@ -229,7 +237,11 @@ class _MetricsAccessor(
             )
             generator = parallel(
                 delayed(getattr(report.metrics, report_metric_name))(
-                    data_source=data_source, X=X, y=y, **metric_kwargs
+                    data_source=data_source,
+                    X=X,
+                    y=y,
+                    on_unavailable_metric=on_unavailable_metric,
+                    **metric_kwargs,
                 )
                 for report in self._parent.estimator_reports_
             )

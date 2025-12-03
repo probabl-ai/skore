@@ -42,6 +42,14 @@ from skore._utils._accessor import (
 from skore._utils._index import flatten_multi_index
 
 
+def _nan(*args, **kwargs):
+    """Return NaN.
+
+    Used when metric is not known and on_unavailable_metric is set to "nan".
+    """
+    return np.nan
+
+
 class _MetricsAccessor(
     _BaseMetricsAccessor, _BaseAccessor["EstimatorReport"], DirNamesMixin
 ):
@@ -69,6 +77,7 @@ class _MetricsAccessor(
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
+        on_unavailable_metric: Literal["raise", "nan"] = "raise",
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -129,6 +138,11 @@ class _MetricsAccessor(
         flat_index : bool, default=False
             Whether to flatten the multi-index columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
+
+        on_unavailable_metric : {"raise", "nan"}, default="raise"
+            Whether to raise or return `numpy.nan` when the metric cannot be computed.
+            For example, "brier_score" cannot be computed for estimators without a
+            `predict_proba` method.
 
         Returns
         -------
@@ -317,7 +331,16 @@ class _MetricsAccessor(
 
                     # Handle built-in metrics (without underscore prefix)
                     elif metric in self._score_or_loss_info:
-                        metric_fn = getattr(self, f"_{metric}")
+                        try:
+                            metric_fn = getattr(self, f"_{metric}")
+                        except AttributeError as e:
+                            if on_unavailable_metric == "nan":
+                                metric_fn = _nan  # type: ignore
+                            else:
+                                raise AttributeError(
+                                    f"This estimator does not support metric '{metric}'"
+                                ) from e
+
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                         if metric_name is None:
                             metric_name = f"{self._score_or_loss_info[metric]['name']}"

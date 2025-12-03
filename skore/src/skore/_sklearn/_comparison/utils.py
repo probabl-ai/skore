@@ -344,7 +344,11 @@ def _combine_cross_validation_results(
             values="Value",
             aggfunc=aggregate,
             sort=False,
+            dropna=False,
         )
+
+        # Remove NaN rows
+        df = df.dropna(axis="index", how="all")
     else:
         df = sort_by_split(df)
         df = df.set_index(list(df.columns.drop("Value")))

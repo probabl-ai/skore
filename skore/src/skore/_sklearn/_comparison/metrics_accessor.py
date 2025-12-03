@@ -186,6 +186,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         aggregate: Aggregate | None = ("mean", "std"),
         **metric_kwargs: Any,
     ):
+        assert report_metric_name == "summarize"
+
         # build the cache key components to finally create a tuple that will be used
         # to check if the metric has already been computed
         cache_key_parts: list[Any] = [
@@ -231,10 +233,33 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 data_source=data_source,
                 X=X,
                 y=y,
+                # To avoid crashing if one of the sub-reports does not support a metric
+                on_unavailable_metric="nan",
                 **metric_kwargs,
             )
             if self._parent._reports_type == "CrossValidationReport":
                 kwargs["aggregate"] = None
+
+            # Check whether metrics are available in sub-reports
+            # FIXME: These checks are already done by the sub-reports
+
+            if isinstance(kwargs["scoring"], str):
+                scorings = [kwargs["scoring"]]
+            elif kwargs["scoring"] is None or callable(kwargs["scoring"]):
+                scorings = []  # No processing needed
+            else:
+                scorings = kwargs["scoring"]
+
+            for scoring in scorings:
+                if isinstance(scoring, str):
+                    if any(
+                        hasattr(report.metrics, scoring)
+                        for report in self._parent.reports_
+                    ):
+                        continue
+                    raise ValueError(
+                        f"None of the compared reports support metric '{scoring}'"
+                    )
 
             generator = parallel(
                 joblib.delayed(getattr(report.metrics, report_metric_name))(**kwargs)
