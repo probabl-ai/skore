@@ -64,7 +64,7 @@ class SKLearnScorer(Protocol):
     _kwargs: dict[str, Any]
 
 
-Scoring = str | Callable | SKLearnScorer
+Metric = str | Callable | SKLearnScorer
 
 
 class SKLearnCrossValidator(Protocol):
