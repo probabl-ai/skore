@@ -1,6 +1,6 @@
 """Client exchanging with ``skore hub``."""
 
-import importlib
+import importlib.metadata
 import logging
 from contextlib import suppress
 from http import HTTPStatus
