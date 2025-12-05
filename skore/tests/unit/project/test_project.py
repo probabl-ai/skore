@@ -4,8 +4,8 @@ from unittest.mock import Mock
 
 from pandas import DataFrame, MultiIndex, Series
 from pytest import fixture, mark, param, raises
-from sklearn.datasets import make_regression
-from sklearn.linear_model import LinearRegression
+from sklearn.datasets import make_classification, make_regression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 
 from skore import CrossValidationReport, EstimatorReport, Project
@@ -57,6 +57,22 @@ def regression() -> EstimatorReport:
 
     return EstimatorReport(
         LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+
+@fixture(scope="module")
+def classification() -> EstimatorReport:
+    X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    return EstimatorReport(
+        LogisticRegression(),
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
@@ -125,6 +141,18 @@ class TestProject:
             match=escape("Unknown mode `local`. Please install `skore[local]`."),
         ):
             Project("<name>")
+
+    def test_init_exception_wrong_ml_task(self, regression, classification):
+        project = Project("<name>", workspace="<workspace>")
+        project.put("classification", classification)
+        assert project.ml_task == "binary-classification"
+
+        err_msg = (
+            "Expected a report meant for ML task 'binary-classification' "
+            "but the given report is for ML task 'regression'"
+        )
+        with raises(ValueError, match=err_msg):
+            project.put("regression", regression)
 
     def test_mode(self):
         assert Project("<name>").mode == "local"
