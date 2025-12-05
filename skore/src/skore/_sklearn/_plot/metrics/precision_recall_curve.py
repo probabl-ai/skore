@@ -136,7 +136,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         self.report_type = report_type
 
     def _get_plot_columns(
-        self, plot_data: DataFrame, subplot_by: str | None
+        self, plot_data: DataFrame, subplot_by: str | Literal["auto"] | None
     ) -> tuple[str | None, str | None]:
         """Determine subplot (col) and hue columns based on data and user preference.
 
@@ -150,36 +150,37 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         has_multiple_labels = (
             "label" in plot_data.columns and plot_data["label"].nunique() > 1
         )
-        if has_multiple_data_sources:
-            varying_cols.append("data_source")
         if has_multiple_labels:
             varying_cols.append("label")
+        if has_multiple_data_sources:
+            varying_cols.append("data_source")
+
+        if subplot_by == "auto":
+            if self.ml_task == "multiclass-classification":
+                subplot_by = "label"
+            else:
+                subplot_by = None
+            return subplot_by, next((c for c in varying_cols if c != subplot_by), None)
 
         if subplot_by is not None:
-            hue_col = next((c for c in varying_cols if c != subplot_by), None)
-            return subplot_by, hue_col
+            hue = next((c for c in varying_cols if c != subplot_by), None)
+            return subplot_by, hue
 
-        if len(varying_cols) == 0:
-            return None, None
-        elif len(varying_cols) == 1:
-            return None, varying_cols[0]
-        else:
-            col = "label" if self.ml_task == "multiclass-classification" else None
-            hue = next((c for c in varying_cols if c != col), None)
-            return col, hue
+        hue = next((c for c in varying_cols if c is not None), None)
+        return None, hue
 
     def _plot_single_estimator(
         self,
         *,
         estimator_name: str,
         pr_curve_kwargs: list[dict[str, Any]],
-        subplot_by: str | None = None,
+        subplot_by: str | Literal["auto"] | None = "auto",
     ) -> tuple[Axes | NDArray, list[Line2D], str | None]:
         """Plot precision-recall curve for a single estimator using seaborn relplot."""
         lines: list[Line2D] = []
         plot_data = self.frame(with_average_precision=True)
 
-        col, hue_col = self._get_plot_columns(plot_data, subplot_by)
+        col, hue = self._get_plot_columns(plot_data, subplot_by)
 
         relplot_kwargs: dict[str, Any] = {
             "data": plot_data,
@@ -187,7 +188,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             "x": "recall",
             "y": "precision",
             "col": col,
-            "hue": hue_col,
+            "hue": hue,
             "estimator": None,
             "height": 6,
             "aspect": 1,
@@ -212,7 +213,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             if line_kws:
                 relplot_kwargs.setdefault("line_kws", {}).update(line_kws)
 
-        if hue_col == "data_source":
+        if col != "data_source":
             relplot_kwargs["style"] = "data_source"
         relplot_kwargs["dashes"] = {"train": (2, 2), "test": (1, 0)}
 
@@ -242,7 +243,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 ax_label = ax.get_title().split(" = ")[-1]
                 plot_data["label"] = plot_data["label"].astype(str)
                 ax_data = plot_data.query(f"label == '{ax_label}'")
-            self._build_legend_for_ax(ax=ax, stats_df=ax_data, hue_col=hue_col)
+            self._build_legend_for_ax(ax=ax, stats_df=ax_data, hue_col=hue)
 
         facet_grid.figure.suptitle(
             f"Precision-Recall Curve for {estimator_name}" + info_pos_label, y=1.02
@@ -256,42 +257,66 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         """Build custom legend with AP stats for a single axis."""
         handles = ax.get_lines()
 
-        if hue_col is None:
+        grouping_cols = [
+            c
+            for c in ["label", "data_source"]
+            if c in stats_df.columns and stats_df[c].nunique() > 1
+        ]
+
+        if not grouping_cols:
             stat_value = stats_df["average_precision"].iloc[0]
             new_labels = [f"AP = {stat_value:0.2f}"]
         else:
-            col = stats_df[hue_col]
-            hue_order = col.cat.categories
             new_labels = []
-            for hue_val in hue_order:
-                mask = col == hue_val
-                if mask.any():
-                    stat_value = stats_df.loc[mask, "average_precision"].iloc[0]
-                    new_labels.append(
-                        self._format_legend_label(hue_col, hue_val, stat_value)
-                    )
+            if len(grouping_cols) == 1:
+                col_name = grouping_cols[0]
+                col = stats_df[col_name]
+                order = col.cat.categories if hasattr(col, "cat") else col.unique()
+                for val in order:
+                    mask = col == val
+                    if mask.any():
+                        stat = stats_df.loc[mask, "average_precision"].iloc[0]
+                        lbl = self._format_legend_label(col_name, val, stat)
+                        new_labels.append(lbl)
+            else:
+                label_col = stats_df["label"]
+                ds_col = stats_df["data_source"]
+                label_order = (
+                    label_col.cat.categories
+                    if hasattr(label_col, "cat")
+                    else label_col.unique()
+                )
+                ds_order = (
+                    ds_col.cat.categories if hasattr(ds_col, "cat") else ds_col.unique()
+                )
+                for label_val in label_order:
+                    for ds_val in ds_order:
+                        mask = (label_col == label_val) & (ds_col == ds_val)
+                        if mask.any():
+                            stat = stats_df.loc[mask, "average_precision"].iloc[0]
+                            lbl = f"{label_val} - {ds_val} (AP = {stat:0.2f})"
+                            new_labels.append(lbl)
 
         if new_labels and handles:
             n_lines = len(new_labels)
+            ncol = min(n_lines, 3) if n_lines > 3 else n_lines
             ax.legend(
                 handles[:n_lines],
                 new_labels,
                 loc="upper center",
                 bbox_to_anchor=(0.5, -0.20),
-                ncol=n_lines,
+                ncol=ncol,
                 frameon=False,
             )
 
-    def _format_legend_label(
-        self, hue_col: str, hue_val: Any, stat_value: float
-    ) -> str:
-        """Format a legend label based on hue column type."""
-        if hue_col == "data_source":
-            return f"{str(hue_val).title()} set (AP = {stat_value:0.2f})"
-        elif hue_col == "label":
-            return f"Class {str(hue_val).title()} (AP = {stat_value:0.2f})"
+    def _format_legend_label(self, col_name: str, val: Any, stat_value: float) -> str:
+        """Format a legend label based on column type."""
+        if col_name == "data_source":
+            return f"{str(val).title()} set (AP = {stat_value:0.2f})"
+        elif col_name == "label":
+            return f"Class {str(val).title()} (AP = {stat_value:0.2f})"
         else:
-            return f"{hue_val} (AP = {stat_value:0.2f})"
+            return f"{val} (AP = {stat_value:0.2f})"
 
     def _plot_cross_validated_estimator(
         self,
@@ -690,7 +715,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         estimator_name: str | None = None,
         pr_curve_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
         despine: bool = True,
-        subplot_by: str | None = None,
+        subplot_by: str | Literal["auto"] | None = "auto",
     ) -> None:
         """Plot visualization.
 
@@ -744,7 +769,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         estimator_name: str | None = None,
         pr_curve_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
         despine: bool = True,
-        subplot_by: str | None = None,
+        subplot_by: str | Literal["auto"] | None = "auto",
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
         if pr_curve_kwargs is None:
