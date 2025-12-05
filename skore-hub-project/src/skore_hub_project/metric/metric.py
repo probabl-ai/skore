@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from contextlib import suppress
-from functools import cached_property, reduce
+from functools import reduce
 from math import isfinite
 from typing import (
     TYPE_CHECKING,
@@ -59,7 +59,7 @@ class Metric(BaseModel, ABC, Generic[Report]):
         default None to disable its display.
     """
 
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     report: Report = Field(repr=False, exclude=True)
     name: str = Field(init=False)
@@ -70,9 +70,26 @@ class Metric(BaseModel, ABC, Generic[Report]):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    @abstractmethod
     def value(self) -> float | None:
         """The value of the metric."""
+        try:
+            return self.__value
+        except AttributeError:
+            message = (
+                "You cannot access the value of a metric "
+                "without explicitly calculating it. "
+                "Please use `metric.compute()` before."
+            )
+
+            raise RuntimeError(message) from None
+
+    @value.setter
+    def value(self, value: float | None) -> None:
+        self.__value = value
+
+    @abstractmethod
+    def compute(self) -> None:
+        """Compute the value of the metric."""
 
 
 class EstimatorReportMetric(Metric[EstimatorReport]):
@@ -100,19 +117,17 @@ class EstimatorReportMetric(Metric[EstimatorReport]):
 
     accessor: ClassVar[str]
 
-    @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def value(self) -> float | None:
-        """The value of the metric."""
+    def compute(self) -> None:
+        """Compute the value of the metric."""
         try:
             function = cast(
                 Callable[..., float | None],
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:
-            return None
-
-        return cast_to_float(function(data_source=self.data_source))
+            self.value = None
+        else:
+            self.value = cast_to_float(function(data_source=self.data_source))
 
 
 class CrossValidationReportMetric(Metric[CrossValidationReport]):
@@ -143,18 +158,15 @@ class CrossValidationReportMetric(Metric[CrossValidationReport]):
     accessor: ClassVar[str]
     aggregate: ClassVar[Literal["mean", "std"]]
 
-    @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def value(self) -> float | None:
-        """The value of the metric."""
+    def compute(self) -> None:
+        """Compute the value of the metric."""
         try:
             function = cast(
                 "Callable[..., DataFrame]",
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:
-            return None
-
-        dataframe = function(data_source=self.data_source, aggregate=self.aggregate)
-
-        return cast_to_float(dataframe.iloc[0, 0])
+            self.value = None
+        else:
+            dataframe = function(data_source=self.data_source, aggregate=self.aggregate)
+            self.value = cast_to_float(dataframe.iloc[0, 0])
