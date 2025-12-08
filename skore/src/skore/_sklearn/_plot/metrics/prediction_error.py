@@ -202,6 +202,7 @@ class PredictionErrorDisplay(DisplayMixin):
                 f"`kind` must be one of {', '.join(expected_kind)}. "
                 f"Got {kind!r} instead."
             )
+
         if kind == "actual_vs_predicted":
             xlabel, ylabel = "Predicted values", "Actual values"
             y_plot = "y_true"
