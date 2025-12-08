@@ -278,3 +278,43 @@ def test_constructor(linear_regression_with_train_test):
     assert all(col in df.columns for col in index_columns)
     assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
     assert df["split"].isnull().all()
+
+
+def test_frame_regression_both_datasources(
+    linear_regression_with_train_test,
+):
+    """Test the frame method when using data_source='both' with regression data."""
+    estimator, X_train, X_test, y_train, y_test = (
+        linear_regression_with_train_test
+    )
+    estimator_2 = clone(estimator).fit(X_train, y_train)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+
+    display = report.metrics.prediction_error(data_source="both")
+    df = display.frame()
+
+    expected_index = ["estimator_name", "data_source"]
+    expected_columns = ["y_true", "y_pred", "residuals"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+
+    assert df["estimator_name"].nunique() == 2
+    assert set(df["data_source"].unique()) == {"train", "test"}
