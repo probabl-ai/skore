@@ -384,3 +384,56 @@ def test_multiclass_classification_constructor(
         np.testing.assert_array_equal(df["label"].unique(), np.unique(y_train))
 
     assert len(display.average_precision) == len(np.unique(y_train)) * 2
+
+
+def test_frame_binary_classification_both_datasources(
+    logistic_binary_classification_with_train_test,
+):
+    """Test the frame method when using data_source='both' with binary data."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+
+    display = report.metrics.precision_recall(data_source="both")
+
+    # 1) Sans average_precision
+    df = display.frame()
+    expected_index = ["estimator_name", "data_source"]
+    expected_columns = ["threshold", "precision", "recall"]
+
+    check_frame_structure(df, expected_index, expected_columns)
+    assert df["estimator_name"].nunique() == 2
+    assert set(df["data_source"].unique()) == {"train", "test"}
+
+    # 2) Avec average_precision
+    df_ap = display.frame(with_average_precision=True)
+    expected_columns_ap = ["threshold", "precision", "recall", "average_precision"]
+
+    check_frame_structure(df_ap, expected_index, expected_columns_ap)
+    assert df_ap["estimator_name"].nunique() == 2
+    assert set(df_ap["data_source"].unique()) == {"train", "test"}
+
+    for (_, _), group in df_ap.groupby(
+        ["estimator_name", "data_source"], observed=True
+    ):
+        assert group["average_precision"].nunique() == 1
