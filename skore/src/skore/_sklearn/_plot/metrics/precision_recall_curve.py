@@ -112,10 +112,27 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     >>> classifier = LogisticRegression(max_iter=10_000)
     >>> report = EstimatorReport(classifier, **split_data)
     >>> display = report.metrics.precision_recall()
-    >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
+    >>> display.plot(relplot_kwargs={"palette": "Set2"})
     """
 
     _default_pr_curve_kwargs: dict[str, Any] | None = None
+
+    _default_relplot_kwargs: dict[str, Any] = {
+        "kind": "line",
+        "estimator": None,
+        "x": "recall",
+        "y": "precision",
+        "height": 6,
+        "aspect": 1,
+        "legend": False,
+        "facet_kws": {
+            "sharex": False,
+            "sharey": False,
+            "xlim": (-0.01, 1.01),
+            "ylim": (-0.01, 1.01),
+        },
+        "drawstyle": "steps-post",
+    }
 
     def __init__(
         self,
@@ -177,92 +194,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         hue = next((c for c in varying_cols if c is not None), None)
         return None, hue
 
-    def _plot_single_estimator(
-        self,
-        *,
-        estimator_name: str,
-        pr_curve_kwargs: list[dict[str, Any]],
-        subplot_by: str | Literal["auto"] | None = "auto",
-    ) -> tuple[Axes | NDArray, list[Line2D], str | None]:
-        """Plot precision-recall curve for a single estimator using seaborn relplot."""
-        lines: list[Line2D] = []
-        plot_data = self.frame(with_average_precision=True)
-
-        # Convert categorical columns to avoid FutureWarning from pandas groupby
-        for c in ["label", "data_source"]:
-            if c in plot_data.columns and hasattr(plot_data[c], "cat"):
-                plot_data[c] = plot_data[c].astype(str)
-
-        col, hue = self._get_plot_columns(plot_data, subplot_by)
-
-        relplot_kwargs: dict[str, Any] = {
-            "data": plot_data,
-            "kind": "line",
-            "x": "recall",
-            "y": "precision",
-            "col": col,
-            "hue": hue,
-            "estimator": None,
-            "height": 6,
-            "aspect": 1,
-            "legend": False,
-            "facet_kws": {
-                "sharex": False,
-                "sharey": False,
-                "xlim": (-0.01, 1.01),
-                "ylim": (-0.01, 1.01),
-            },
-        }
-
-        if pr_curve_kwargs and pr_curve_kwargs[0]:
-            user_kwargs = pr_curve_kwargs[0]
-            if "color" in user_kwargs or "c" in user_kwargs:
-                relplot_kwargs["palette"] = None
-            line_kws = {
-                k: v
-                for k, v in user_kwargs.items()
-                if k in ("alpha", "linewidth", "lw", "linestyle", "ls")
-            }
-            if line_kws:
-                relplot_kwargs.setdefault("line_kws", {}).update(line_kws)
-
-        if col != "data_source":
-            relplot_kwargs["style"] = "data_source"
-        relplot_kwargs["dashes"] = {"train": (2, 2), "test": (1, 0)}
-
-        facet_grid = sns.relplot(**relplot_kwargs)
-        facet_grid.figure.subplots_adjust(bottom=0.2)
-
-        for ax in facet_grid.axes.flat:
-            for line in ax.get_lines():
-                line.set_drawstyle("steps-post")
-                lines.append(line)
-
-        self.figure_ = facet_grid.figure
-        self.ax_ = facet_grid.axes.flat
-
-        if self.ml_task == "binary-classification":
-            info_pos_label = (
-                f"\n(Positive label: {self.pos_label})"
-                if self.pos_label is not None
-                else ""
-            )
-        else:
-            info_pos_label = ""
-
-        for ax in facet_grid.axes.flat:
-            ax_data = plot_data
-            if col == "label":
-                ax_label = ax.get_title().split(" = ")[-1]
-                ax_data = plot_data.query(f"label == '{ax_label}'")
-            self._build_legend_for_ax(ax=ax, stats_df=ax_data)
-
-        facet_grid.figure.suptitle(
-            f"Precision-Recall Curve for {estimator_name}" + info_pos_label, y=1.02
-        )
-
-        return self.ax_, lines, info_pos_label
-
     def _build_legend_for_ax(
         self, *, ax: Axes, stats_df: DataFrame, aggregate: bool = False
     ) -> None:
@@ -277,6 +208,10 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         aggregate : bool, default=False
             If True, show mean±std over splits. If False, show single value.
         """
+        if " = " in ax.get_title():
+            ax_col, ax_col_value = ax.get_title().split(" = ")[-2:]
+            stats_df = stats_df.query(f"{ax_col} == '{ax_col_value}'")
+
         candidate_cols = ["label", "data_source"]
         if not aggregate:
             candidate_cols.append("split")
@@ -360,74 +295,44 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         )
         return [Line2D([0], [0], color=c, lw=2) for c in colors[:n_colors]]
 
-    def _plot_cross_validated_estimator(
+    def _plot_single_estimator(
         self,
         *,
         estimator_name: str,
-        pr_curve_kwargs: list[dict[str, Any]],
         subplot_by: str | Literal["auto"] | None = "auto",
-    ) -> tuple[Axes | NDArray, list[Line2D], str | None]:
-        """Plot precision-recall curve for a cross-validated estimator."""
-        lines: list[Line2D] = []
+        relplot_kwargs: dict[str, Any] | None = None,
+    ) -> None:
+        """Plot precision-recall curve for a single estimator using seaborn relplot."""
         plot_data = self.frame(with_average_precision=True)
 
-        col, hue = self._get_plot_columns(plot_data, subplot_by, allow_split_hue=True)
-
-        use_split_as_hue = hue == "split"
-        use_split_as_col = col == "split"
-
         # Convert categorical columns to avoid FutureWarning from pandas groupby
-        for c in ["label", "data_source", "split"]:
+        for c in ["label", "data_source"]:
             if c in plot_data.columns and hasattr(plot_data[c], "cat"):
                 plot_data[c] = plot_data[c].astype(str)
 
-        # Build relplot kwargs
-        relplot_kwargs: dict[str, Any] = {
+        col, hue = self._get_plot_columns(plot_data, subplot_by)
+
+        kwargs: dict[str, Any] = {
             "data": plot_data,
-            "kind": "line",
-            "x": "recall",
-            "y": "precision",
             "col": col,
             "hue": hue,
-            "estimator": None,
-            "height": 6,
-            "aspect": 1,
-            "legend": False,
-            "facet_kws": {
-                "sharex": False,
-                "sharey": False,
-                "xlim": (-0.01, 1.01),
-                "ylim": (-0.01, 1.01),
-            },
         }
 
-        # Use split as units to draw separate lines per fold (when not used for hue/col)
-        if not use_split_as_hue and not use_split_as_col:
-            relplot_kwargs["units"] = "split"
-            relplot_kwargs["alpha"] = 0.4
+        if col != "data_source":
+            kwargs["style"] = "data_source"
+            kwargs["dashes"] = {"train": (2, 2), "test": (1, 0)}
 
-        if pr_curve_kwargs and pr_curve_kwargs[0]:
-            user_kwargs = pr_curve_kwargs[0]
-            if "color" in user_kwargs or "c" in user_kwargs:
-                relplot_kwargs["palette"] = None
-            line_kws = {
-                k: v
-                for k, v in user_kwargs.items()
-                if k in ("alpha", "linewidth", "lw", "linestyle", "ls")
-            }
-            if line_kws:
-                relplot_kwargs.setdefault("line_kws", {}).update(line_kws)
+        kwargs = _validate_style_kwargs(
+            {**kwargs, **self._default_relplot_kwargs},
+            relplot_kwargs or {},
+        )
 
-        facet_grid = sns.relplot(**relplot_kwargs)
-        facet_grid.figure.subplots_adjust(bottom=0.25)
-
-        for ax in facet_grid.axes.flat:
-            for line in ax.get_lines():
-                line.set_drawstyle("steps-post")
-                lines.append(line)
+        facet_grid = sns.relplot(**kwargs)
+        facet_grid.figure.subplots_adjust(bottom=0.2)
 
         self.figure_ = facet_grid.figure
-        self.ax_ = facet_grid.axes.flat
+        self.ax_ = facet_grid.axes.flatten()
+        self.lines_ = [line for ax in self.ax_ for line in ax.get_lines()]
 
         if self.ml_task == "binary-classification":
             info_pos_label = (
@@ -438,22 +343,69 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         else:
             info_pos_label = ""
 
-        aggregate = not (use_split_as_hue or use_split_as_col)
-        for ax in facet_grid.axes.flat:
-            ax_data = plot_data
-            if col == "label":
-                ax_label = ax.get_title().split(" = ")[-1]
-                ax_data = plot_data.query(f"label == '{ax_label}'")
-            elif col == "split":
-                ax_split = ax.get_title().split(" = ")[-1]
-                ax_data = plot_data.query(f"split == '{ax_split}'")
-            self._build_legend_for_ax(ax=ax, stats_df=ax_data, aggregate=aggregate)
+        for ax in self.ax_:
+            self._build_legend_for_ax(ax=ax, stats_df=plot_data)
 
         facet_grid.figure.suptitle(
             f"Precision-Recall Curve for {estimator_name}" + info_pos_label, y=1.02
         )
 
-        return self.ax_, lines, info_pos_label
+    def _plot_cross_validated_estimator(
+        self,
+        *,
+        estimator_name: str,
+        subplot_by: str | Literal["auto"] | None = "auto",
+        relplot_kwargs: dict[str, Any] | None = None,
+    ) -> None:
+        """Plot precision-recall curve for a cross-validated estimator."""
+        plot_data = self.frame(with_average_precision=True)
+
+        col, hue = self._get_plot_columns(plot_data, subplot_by, allow_split_hue=True)
+
+        aggregate = hue != "split" and col != "split"
+
+        # Convert categorical columns to avoid FutureWarning from pandas groupby
+        for c in ["label", "data_source", "split"]:
+            if c in plot_data.columns and hasattr(plot_data[c], "cat"):
+                plot_data[c] = plot_data[c].astype(str)
+
+        kwargs: dict[str, Any] = {
+            "data": plot_data,
+            "col": col,
+            "hue": hue,
+        }
+
+        if aggregate:
+            kwargs["units"] = "split"
+            kwargs["alpha"] = 0.4
+
+        kwargs = _validate_style_kwargs(
+            {**kwargs, **self._default_relplot_kwargs},
+            relplot_kwargs or {},
+        )
+
+        facet_grid = sns.relplot(**kwargs)
+        facet_grid.figure.subplots_adjust(bottom=0.25)
+
+        self.figure_ = facet_grid.figure
+        self.ax_ = facet_grid.axes.flatten()
+        self.lines_ = [line for ax in self.ax_ for line in ax.get_lines()]
+
+        if self.ml_task == "binary-classification":
+            info_pos_label = (
+                f"\n(Positive label: {self.pos_label})"
+                if self.pos_label is not None
+                else ""
+            )
+        else:
+            info_pos_label = ""
+
+        for ax in self.ax_:
+            self._build_legend_for_ax(ax=ax, stats_df=plot_data, aggregate=aggregate)
+
+        facet_grid.figure.suptitle(
+            f"Precision-Recall Curve for {estimator_name}" + info_pos_label, y=1.02
+        )
 
     def _plot_comparison_estimator(
         self,
@@ -733,6 +685,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         self,
         *,
         estimator_name: str | None = None,
+        relplot_kwargs: dict[str, Any] | None = None,
         pr_curve_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
         despine: bool = True,
         subplot_by: str | Literal["auto"] | None = "auto",
@@ -745,12 +698,23 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             Name of the estimator used to plot the precision-recall curve. If
             `None`, we use the inferred name from the estimator.
 
+        relplot_kwargs : dict, default=None
+            Keyword arguments to be passed to seaborn's `relplot` for rendering
+            the precision-recall curve(s). Used for single estimator and
+            cross-validation reports. Common options include `palette`, `alpha`,
+            `linewidth`, etc.
+
         pr_curve_kwargs : dict or list of dict, default=None
             Keyword arguments to be passed to matplotlib's `plot` for rendering
-            the precision-recall curve(s).
+            the precision-recall curve(s). Used for comparison reports.
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
+
+        subplot_by : str, "auto", or None, default="auto"
+            Column to use for subplots. If "auto", defaults to "label" for
+            multiclass classification and None for binary. Can be set to
+            "label", "data_source", "split", or None.
 
         Notes
         -----
@@ -758,10 +722,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         in scikit-learn is computed without any interpolation. To be consistent
         with this metric, the precision-recall curve is plotted without any
         interpolation as well (step-wise style).
-
-        You can change this style by passing the keyword argument
-        `drawstyle="default"`. However, the curve will not be strictly
-        consistent with the reported average precision.
 
         Examples
         --------
@@ -774,10 +734,11 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.precision_recall()
-        >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
+        >>> display.plot(relplot_kwargs={"palette": "Set2", "alpha": 0.8})
         """
         return self._plot(
             estimator_name=estimator_name,
+            relplot_kwargs=relplot_kwargs,
             pr_curve_kwargs=pr_curve_kwargs,
             despine=despine,
             subplot_by=subplot_by,
@@ -787,11 +748,42 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         self,
         *,
         estimator_name: str | None = None,
+        relplot_kwargs: dict[str, Any] | None = None,
         pr_curve_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
         despine: bool = True,
         subplot_by: str | Literal["auto"] | None = "auto",
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
+        if self.report_type == "estimator":
+            self._plot_single_estimator(
+                estimator_name=(
+                    self.precision_recall["estimator_name"].cat.categories.item()
+                    if estimator_name is None
+                    else estimator_name
+                ),
+                relplot_kwargs=relplot_kwargs,
+                subplot_by=subplot_by,
+            )
+            if despine:
+                for ax in self.ax_:
+                    _despine_matplotlib_axis(ax)
+            return
+
+        elif self.report_type == "cross-validation":
+            self._plot_cross_validated_estimator(
+                estimator_name=(
+                    self.precision_recall["estimator_name"].cat.categories.item()
+                    if estimator_name is None
+                    else estimator_name
+                ),
+                relplot_kwargs=relplot_kwargs,
+                subplot_by=subplot_by,
+            )
+            if despine:
+                for ax in self.ax_:
+                    _despine_matplotlib_axis(ax)
+            return
+
         if pr_curve_kwargs is None:
             pr_curve_kwargs = self._default_pr_curve_kwargs
 
@@ -806,38 +798,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             n_curves=n_curves,
             report_type=self.report_type,
         )
-
-        if self.report_type == "estimator":
-            self.ax_, self.lines_, info_pos_label = self._plot_single_estimator(
-                estimator_name=(
-                    self.precision_recall["estimator_name"].cat.categories.item()
-                    if estimator_name is None
-                    else estimator_name
-                ),
-                pr_curve_kwargs=pr_curve_kwargs,
-                subplot_by=subplot_by,
-            )
-            if despine:
-                for ax in self.ax_:
-                    _despine_matplotlib_axis(ax)
-            return
-
-        elif self.report_type == "cross-validation":
-            self.ax_, self.lines_, info_pos_label = (
-                self._plot_cross_validated_estimator(
-                    estimator_name=(
-                        self.precision_recall["estimator_name"].cat.categories.item()
-                        if estimator_name is None
-                        else estimator_name
-                    ),
-                    pr_curve_kwargs=pr_curve_kwargs,
-                    subplot_by=subplot_by,
-                )
-            )
-            if despine:
-                for ax in self.ax_:
-                    _despine_matplotlib_axis(ax)
-            return
 
         # For other report types, use the original matplotlib-based approach
         if (
