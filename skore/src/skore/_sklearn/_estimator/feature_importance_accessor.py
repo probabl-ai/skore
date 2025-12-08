@@ -31,7 +31,7 @@ from skore._utils._index import flatten_multi_index
 DataSource = Literal["test", "train", "X_y"]
 
 
-Metric = Literal[
+MetricNames = Literal[
     "accuracy",
     "precision",
     "recall",
@@ -42,17 +42,17 @@ Metric = Literal[
     "rmse",
 ]
 
-# If scoring represents a single score, one can use:
-#   - a single string (see The scoring parameter: defining model evaluation rules);
+# If the metric parameter represents a single metric, one can use:
+#   - a single string (see The metric parameter: defining model evaluation rules);
 #   - a callable (see Callable scorers) that returns a single value.
-# If scoring represents multiple scores, one can use:
+# If the metric parameter represents multiple metrics, one can use:
 #   - a list or tuple of unique strings;
 #   - a callable returning a dictionary where the keys are the metric names
 #   and the values are the metric scores;
 #   - a dictionary with metric names as keys and callables a values.
-Scoring = Metric | Callable | Iterable[Metric] | dict[str, Callable]
+Metric = MetricNames | Callable | Iterable[MetricNames] | dict[str, Callable]
 
-metric_to_scorer: dict[Metric, Callable] = {
+metric_to_scorer: dict[MetricNames, Callable] = {
     "accuracy": make_scorer(metrics.accuracy_score),
     "precision": make_scorer(metrics.precision_score),
     "recall": make_scorer(metrics.recall_score),
@@ -64,89 +64,89 @@ metric_to_scorer: dict[Metric, Callable] = {
 }
 
 
-def _check_scoring(scoring: Any) -> Scoring | None:
-    """Check that `scoring` is valid, and convert it to a suitable form as needed.
+def _check_metric(metric: Any) -> Metric | None:
+    """Check that `metric` is valid, and convert it to a suitable form as needed.
 
-    If `scoring` is a list of strings, it is checked against our own metric names.
+    If `metric` is a list of strings, it is checked against our own metric names.
     For example, "rmse" is recognized as root-mean-square error, even though sklearn
     itself does not recognize this name.
     Similarly, "neg_root_mean_square_error" is not recognized, and leads to an error.
 
     Parameters
     ----------
-    scoring : str, callable, list, tuple, dict, or None
-        The scoring to check.
+    metric : str, callable, list, tuple, dict, or None
+        The metric to check.
 
     Returns
     -------
-    scoring
+    metric
         A scoring hopefully suitable for passing to `permutation_importance`.
-        Can be equal to the original scoring.
+        Can be equal to the original metric.
 
     Raises
     ------
     TypeError
-        If `scoring` does not type-check.
+        If `metric` does not type-check.
 
     Examples
     --------
     >>> from sklearn.metrics import make_scorer, root_mean_squared_error
-    >>> from skore._sklearn._estimator.feature_importance_accessor import _check_scoring
+    >>> from skore._sklearn._estimator.feature_importance_accessor import _check_metric
 
-    >>> _check_scoring(None)  # Returns None
+    >>> _check_metric(None)  # Returns None
 
-    >>> _check_scoring(make_scorer(root_mean_squared_error))
+    >>> _check_metric(make_scorer(root_mean_squared_error))
     make_scorer(root_mean_squared_error, ...)
 
-    >>> _check_scoring({"rmse": make_scorer(root_mean_squared_error)})
+    >>> _check_metric({"rmse": make_scorer(root_mean_squared_error)})
     {'rmse': make_scorer(root_mean_squared_error, ...)}
 
-    >>> _check_scoring("rmse")
+    >>> _check_metric("rmse")
     {'rmse': make_scorer(root_mean_squared_error, ...)}
 
-    >>> _check_scoring(["r2", "rmse"])
+    >>> _check_metric(["r2", "rmse"])
     {'r2': make_scorer(r2_score, ...),
     'rmse': make_scorer(root_mean_squared_error, ...)}
 
-    >>> _check_scoring("neg_root_mean_squared_error")
+    >>> _check_metric("neg_root_mean_squared_error")
     Traceback (most recent call last):
-    TypeError: If scoring is a string, it must be one of ...;
+    TypeError: If metric is a string, it must be one of ...;
     got 'neg_root_mean_squared_error'
 
-    >>> _check_scoring(["r2", make_scorer(root_mean_squared_error)])
+    >>> _check_metric(["r2", make_scorer(root_mean_squared_error)])
     Traceback (most recent call last):
-    TypeError: If scoring is a list or tuple, it must contain only strings; ...
+    TypeError: If metric is a list or tuple, it must contain only strings; ...
 
-    >>> _check_scoring(3)
+    >>> _check_metric(3)
     Traceback (most recent call last):
-    TypeError: scoring must be a string, callable, list, tuple or dict;
+    TypeError: metric must be a string, callable, list, tuple or dict;
     got <class 'int'>
     """
-    if scoring is None or callable(scoring) or isinstance(scoring, dict):
-        return scoring
-    elif isinstance(scoring, str):
-        if scoring in metric_to_scorer:
+    if metric is None or callable(metric) or isinstance(metric, dict):
+        return metric
+    elif isinstance(metric, str):
+        if metric in metric_to_scorer:
             # Convert to scorer
-            return {scoring: metric_to_scorer[cast(Metric, scoring)]}
+            return {metric: metric_to_scorer[cast(MetricNames, metric)]}
         raise TypeError(
-            "If scoring is a string, it must be one of "
-            f"{list(metric_to_scorer.keys())}; got '{scoring}'"
+            "If metric is a string, it must be one of "
+            f"{list(metric_to_scorer.keys())}; got '{metric}'"
         )
-    elif isinstance(scoring, list | tuple):
+    elif isinstance(metric, list | tuple):
         result: dict[str, Callable] = {}
-        for s in scoring:
+        for s in metric:
             if isinstance(s, str):
-                result |= cast(dict[str, Callable], _check_scoring(s))
+                result |= cast(dict[str, Callable], _check_metric(s))
             else:
                 raise TypeError(
-                    "If scoring is a list or tuple, it must contain only strings; "
+                    "If metric is a list or tuple, it must contain only strings; "
                     f"got {s} of type {type(s)}"
                 )
         return result
     else:
         raise TypeError(
-            "scoring must be a string, callable, list, tuple or dict; "
-            f"got {type(scoring)}"
+            "metric must be a string, callable, list, tuple or dict; "
+            f"got {type(metric)}"
         )
 
 
@@ -264,7 +264,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         aggregate: Aggregate | None = None,
-        scoring: Scoring | None = None,
+        metric: Metric | None = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
         n_jobs: int | None = None,
@@ -277,7 +277,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         This computes the permutation importance using sklearn's
         :func:`~sklearn.inspection.permutation_importance` function,
         which consists in permuting the values of one feature and comparing
-        the value of `scoring` between with and without the permutation, which gives an
+        the value of `metric` between with and without the permutation, which gives an
         indication on the impact of the feature.
 
         By default, `seed` is set to `None`, which means the function will
@@ -305,15 +305,15 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the scores across the repeats.
 
-        scoring : str, callable, list, tuple, or dict, default=None
-            The scorer to pass to :func:`~sklearn.inspection.permutation_importance`.
+        metric : str, callable, list, tuple, or dict, default=None
+            The metric to pass to :func:`~sklearn.inspection.permutation_importance`.
 
-            If `scoring` represents a single score, one can use:
+            If `metric` represents a single metric, one can use:
 
             - a single string, which must be one of the supported metrics;
             - a callable that returns a single value.
 
-            If `scoring` represents multiple scores, one can use:
+            If `metric` represents multiple metrics, one can use:
 
             - a list or tuple of unique strings, which must be one of the supported
               metrics;
@@ -391,7 +391,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 Feature #2   0.028...   0.022...
 
         >>> report.feature_importance.permutation(
-        ...    scoring=["r2", "rmse"],
+        ...    metric=["r2", "rmse"],
         ...    n_repeats=2,
         ...    seed=0,
         ... )
@@ -463,7 +463,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             X=X,
             y=y,
             aggregate=aggregate,
-            scoring=scoring,
+            metric=metric,
             n_repeats=n_repeats,
             max_samples=max_samples,
             n_jobs=n_jobs,
@@ -480,7 +480,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         X: ArrayLike | None,
         y: ArrayLike | None,
         aggregate: Aggregate | None,
-        scoring: Scoring | None,
+        metric: Metric | None,
         n_repeats: int,
         max_samples: float,
         n_jobs: int | None,
@@ -494,7 +494,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         and are able to pass it around, or `None` and thus trigger its computation
         in the underlying process.
         """
-        checked_scoring = _check_scoring(scoring)
+        checked_metric = _check_metric(metric)
 
         if data_source_hash is None:
             X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
@@ -522,10 +522,10 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ]
         cache_key_parts.append(data_source_hash)
 
-        if callable(scoring) or isinstance(scoring, list | dict):
-            cache_key_parts.append(joblib.hash(scoring))
+        if callable(metric) or isinstance(metric, list | dict):
+            cache_key_parts.append(joblib.hash(metric))
         else:
-            cache_key_parts.append(scoring)
+            cache_key_parts.append(metric)
 
         # aggregate is not included in the cache in order to trade off computation for
         # storage
@@ -586,7 +586,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 estimator=estimator,
                 X=X_transformed,
                 y=y_true,
-                scoring=checked_scoring,
+                scoring=checked_metric,
                 n_repeats=n_repeats,
                 n_jobs=n_jobs,
                 random_state=seed,
@@ -605,24 +605,24 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             else:
                 data = score
 
-                # Get score name
-                if scoring is None:
+                # Get metric name
+                if metric is None:
                     if is_classifier(estimator):
-                        scoring_name = "accuracy"
+                        metric_name = "accuracy"
                     elif is_regressor(estimator):
-                        scoring_name = "r2"
+                        metric_name = "r2"
                 else:
-                    # e.g. if scoring is a callable
-                    scoring_name = None
+                    # e.g. if metric is a callable
+                    metric_name = None
 
                     # no other cases to deal with explicitly, because
-                    # scoring cannot possibly be a string at this stage
+                    # metric cannot possibly be a string at this stage
 
-                if scoring_name is None:
+                if metric_name is None:
                     index = pd.Index(feature_names, name="Feature")
                 else:
                     index = pd.MultiIndex.from_product(
-                        [[scoring_name], feature_names], names=("Metric", "Feature")
+                        [[metric_name], feature_names], names=("Metric", "Feature")
                     )
 
             n_repeats = data.shape[1]

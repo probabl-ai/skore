@@ -162,12 +162,12 @@ def test_summarize_pos_label_overwrite(metric, logistic_binary_classification_da
     y = labels[y]
 
     report = CrossValidationReport(classifier, X, y)
-    result_both_labels = report.metrics.summarize(scoring=metric).frame().reset_index()
+    result_both_labels = report.metrics.summarize(metric=metric).frame().reset_index()
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
     result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
 
     report = CrossValidationReport(classifier, X, y, pos_label="B")
-    result = report.metrics.summarize(scoring=metric).frame().reset_index()
+    result = report.metrics.summarize(metric=metric).frame().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     assert (
@@ -178,7 +178,7 @@ def test_summarize_pos_label_overwrite(metric, logistic_binary_classification_da
     )
 
     result = (
-        report.metrics.summarize(scoring=metric, pos_label="A").frame().reset_index()
+        report.metrics.summarize(metric=metric, pos_label="A").frame().reset_index()
     )
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")

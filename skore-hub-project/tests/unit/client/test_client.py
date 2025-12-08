@@ -11,7 +11,6 @@ from httpx import (
 from pytest import mark, raises
 
 from skore_hub_project.authentication import token, uri
-from skore_hub_project.authentication.uri import DEFAULT as URI
 from skore_hub_project.client.client import Client, HUBClient
 
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
@@ -123,7 +122,7 @@ class TestClient:
 class TestHUBClient:
     def test_request_with_api_key(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
 
         with HUBClient() as client:
             client.get("foo")
@@ -132,7 +131,7 @@ class TestHUBClient:
         assert respx_mock.calls.last.request.headers["X-API-Key"] == "<api-key>"
 
     def test_request_with_token(self, respx_mock):
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
 
         assert not token.Filepath().exists()
 
@@ -150,12 +149,12 @@ class TestHUBClient:
         assert respx_mock.calls.last.request.headers["authorization"] == "Bearer A"
 
     def test_request_with_token_and_uri(self, respx_mock):
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
 
         assert not token.Filepath().exists()
 
         token.persist("A", "B", DATETIME_MAX)
-        uri.persist(URI)
+        uri.persist(uri.DEFAULT)
 
         assert token.Filepath().exists()
         assert token.access(refresh=False) == "A"
@@ -165,9 +164,47 @@ class TestHUBClient:
 
         assert token.Filepath().exists()
         assert token.access(refresh=False) == "A"
-        assert uri.URI() == URI
+        assert uri.URI() == uri.DEFAULT
         assert "X-API-Key" not in respx_mock.calls.last.request.headers
         assert respx_mock.calls.last.request.headers["authorization"] == "Bearer A"
+
+    def test_request_with_api_key_and_token_and_uri(self, monkeypatch, respx_mock):
+        TOKEN_URI = "https://token.com"
+        API_KEY_URI = "https://apikey.com"
+
+        assert not uri.Filepath().exists()
+
+        # simulate user with token
+        uri.persist(TOKEN_URI)
+
+        assert uri.URI() == TOKEN_URI
+
+        # simulate user with token and API key
+        monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
+        respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
+
+        assert uri.URI() == uri.DEFAULT
+
+        with HUBClient() as client:
+            client.get("foo")
+
+        assert respx_mock.calls.last.request.url == urljoin(uri.DEFAULT, "foo")
+        assert "authorization" not in respx_mock.calls.last.request.headers
+        assert respx_mock.calls.last.request.headers["X-API-Key"] == "<api-key>"
+
+        # simulate user with token, API key and URI in environment
+        monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
+        monkeypatch.setenv("SKORE_HUB_URI", API_KEY_URI)
+        respx_mock.get(urljoin(API_KEY_URI, "foo")).mock(Response(200))
+
+        assert uri.URI() == API_KEY_URI
+
+        with HUBClient() as client:
+            client.get("foo")
+
+        assert respx_mock.calls.last.request.url == urljoin(API_KEY_URI, "foo")
+        assert "authorization" not in respx_mock.calls.last.request.headers
+        assert respx_mock.calls.last.request.headers["X-API-Key"] == "<api-key>"
 
     @mark.respx(assert_all_mocked=False)
     def test_request_with_invalid_token_raises(self, respx_mock):
@@ -179,7 +216,7 @@ class TestHUBClient:
     @mark.respx(assert_all_mocked=False)
     def test_request_with_conflicting_uri_raises(self, respx_mock, monkeypatch):
         token.persist("A", "B", DATETIME_MAX)
-        uri.persist(URI)
+        uri.persist(uri.DEFAULT)
         monkeypatch.setenv(uri.ENVARNAME, "https://my-conflicting-uri")
 
         with (
@@ -193,7 +230,7 @@ class TestHUBClient:
         assert not respx_mock.calls
 
     def test_request_with_expired_token(self, tmp_path, respx_mock):
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
         respx_mock.post(REFRESH_URL).mock(
             Response(
                 200,
@@ -221,7 +258,7 @@ class TestHUBClient:
         assert respx_mock.calls.last.request.headers["authorization"] == "Bearer D"
 
     def test_request_raises(self, tmp_path, respx_mock):
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(404))
+        respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(404))
 
         assert not token.Filepath().exists()
 
@@ -244,7 +281,7 @@ class TestHUBClient:
         assert version("skore-hub-project") == "0.0.0+unknown"
         assert PACKAGE_VERSION is None
 
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
 
         with HUBClient(authenticated=False) as client:
             client.get("foo")
@@ -253,7 +290,7 @@ class TestHUBClient:
 
     def test_request_with_package_version(self, monkeypatch, respx_mock):
         monkeypatch.setattr("skore_hub_project.client.client.PACKAGE_VERSION", "1.0.0")
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
 
         with HUBClient(authenticated=False) as client:
             client.get("foo")

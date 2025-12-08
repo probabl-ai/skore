@@ -24,8 +24,8 @@ from skore._sklearn._plot.metrics import (
 from skore._sklearn.types import (
     _DEFAULT,
     Aggregate,
+    Metric,
     PositiveLabel,
-    Scoring,
     YPlotData,
 )
 from skore._utils._accessor import (
@@ -56,8 +56,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        scoring: Scoring | list[Scoring] | dict[str, Scoring] | None = None,
-        scoring_kwargs: dict[str, Any] | None = None,
+        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        metric_kwargs: dict[str, Any] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
@@ -84,7 +84,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : str, callable, scorer, or list of such instances or dict of such \
+        metric : str, callable, scorer, or list of such instances or dict of such \
             instances, default=None
             The metrics to report. The possible values (whether or not in a list) are:
 
@@ -94,7 +94,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
               the built-in metrics or the scikit-learn scorers, respectively.
             - if a callable, it should take as arguments `y_true`, `y_pred` as the two
               first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `scoring_kwargs`. No favorability indicator can
+              and will be forwarded with `metric_kwargs`. No favorability indicator can
               be displayed in this case.
             - if the callable API is too restrictive (e.g. need to pass
               same parameter name with different values), you can use scikit-learn
@@ -102,8 +102,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
               the metric favorability will only be displayed if it is given explicitly
               via `make_scorer`'s `greater_is_better` parameter.
 
-        scoring_kwargs : dict, default=None
-            The keyword arguments to pass to the scoring functions.
+        metric_kwargs : dict, default=None
+            The keyword arguments to pass to the metric functions.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
@@ -145,7 +145,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.summarize(
-        ...     scoring=["precision", "recall"],
+        ...     metric=["precision", "recall"],
         ...     pos_label=1,
         ... ).frame()
         Estimator       LogisticRegression_1  LogisticRegression_2
@@ -158,9 +158,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
-            scoring=scoring,
+            metric=metric,
             pos_label=pos_label,
-            scoring_kwargs=scoring_kwargs,
+            metric_kwargs=metric_kwargs,
             indicator_favorability=indicator_favorability,
             aggregate=aggregate,
         )
@@ -416,7 +416,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Accuracy                    0.96...               0.96...
         """
         return self.summarize(
-            scoring=["accuracy"],
+            metric=["accuracy"],
             data_source=data_source,
             X=X,
             y=y,
@@ -518,12 +518,12 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                                   1               0.96...               0.96...
         """
         return self.summarize(
-            scoring=["precision"],
+            metric=["precision"],
             data_source=data_source,
             X=X,
             y=y,
             pos_label=pos_label,
-            scoring_kwargs={"average": average},
+            metric_kwargs={"average": average},
             aggregate=aggregate,
         ).frame()
 
@@ -623,12 +623,12 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                                   1              0.977...              0.977...
         """
         return self.summarize(
-            scoring=["recall"],
+            metric=["recall"],
             data_source=data_source,
             X=X,
             y=y,
             pos_label=pos_label,
-            scoring_kwargs={"average": average},
+            metric_kwargs={"average": average},
             aggregate=aggregate,
         ).frame()
 
@@ -691,7 +691,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Brier score                   0.025...              0.025...
         """
         return self.summarize(
-            scoring=["brier_score"],
+            metric=["brier_score"],
             data_source=data_source,
             X=X,
             y=y,
@@ -793,11 +793,11 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         ROC AUC                     0.99...               0.99...
         """
         return self.summarize(
-            scoring=["roc_auc"],
+            metric=["roc_auc"],
             data_source=data_source,
             X=X,
             y=y,
-            scoring_kwargs={"average": average, "multi_class": multi_class},
+            metric_kwargs={"average": average, "multi_class": multi_class},
             aggregate=aggregate,
         ).frame()
 
@@ -860,7 +860,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Log loss                   0.082...              0.082...
         """
         return self.summarize(
-            scoring=["log_loss"],
+            metric=["log_loss"],
             data_source=data_source,
             X=X,
             y=y,
@@ -937,11 +937,11 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         R²            0.43...    0.43...
         """
         return self.summarize(
-            scoring=["r2"],
+            metric=["r2"],
             data_source=data_source,
             X=X,
             y=y,
-            scoring_kwargs={"multioutput": multioutput},
+            metric_kwargs={"multioutput": multioutput},
             aggregate=aggregate,
         ).frame()
 
@@ -1015,11 +1015,11 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         RMSE          55.726...     55.726...
         """
         return self.summarize(
-            scoring=["rmse"],
+            metric=["rmse"],
             data_source=data_source,
             X=X,
             y=y,
-            scoring_kwargs={"multioutput": multioutput},
+            metric_kwargs={"multioutput": multioutput},
             aggregate=aggregate,
         ).frame()
 
@@ -1124,7 +1124,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         )
         scoring = {metric_name: scorer} if metric_name is not None else [scorer]
         return self.summarize(
-            scoring=scoring,
+            metric=scoring,
             data_source=data_source,
             X=X,
             y=y,

@@ -252,14 +252,14 @@ def test_custom_metric(linear_regression_with_test):
     )
 
 
-@pytest.mark.parametrize("scoring", ["public_metric", "_private_metric"])
-def test_summarize_error_scoring_strings(linear_regression_with_test, scoring):
+@pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
+def test_summarize_error_metric_strings(linear_regression_with_test, metric):
     """Check that we raise an error if a scoring string is not a valid metric."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    err_msg = re.escape(f"Invalid metric: {scoring!r}.")
+    err_msg = re.escape(f"Invalid metric: {metric!r}.")
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(scoring=[scoring])
+        report.metrics.summarize(metric=[metric])
 
 
 def test_custom_function_kwargs_numpy_array(
@@ -559,19 +559,19 @@ def test_roc_multiclass_requires_predict_proba(
     report.metrics.roc_auc()
 
 
-def test_summarize_scoring_dict(forest_binary_classification_with_test):
+def test_summarize_metric_dict(forest_binary_classification_with_test):
     """Test that scoring can be passed as a dictionary with custom names."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     # Test with dictionary scoring
-    scoring_dict = {
+    metric_dict = {
         "Custom Accuracy": "accuracy",
         "Custom Precision": "precision",
         "Custom R2": get_scorer("neg_mean_absolute_error"),
     }
 
-    result = report.metrics.summarize(scoring=scoring_dict).frame()
+    result = report.metrics.summarize(metric=metric_dict).frame()
 
     # Check that custom names are used
     assert "Custom Accuracy" in result.index
@@ -583,7 +583,7 @@ def test_summarize_scoring_dict(forest_binary_classification_with_test):
     assert len(result.index) >= 3  # At least our 3 custom metrics
 
 
-def test_summarize_scoring_dict_with_callables(linear_regression_with_test):
+def test_summarize_metric_dict_with_callables(linear_regression_with_test):
     """Test that scoring dict works with callable functions."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -591,10 +591,10 @@ def test_summarize_scoring_dict_with_callables(linear_regression_with_test):
     def custom_metric(y_true, y_pred):
         return np.mean(np.abs(y_true - y_pred))
 
-    scoring_dict = {"R Squared": "r2", "Custom MAE": custom_metric}
+    metric_dict = {"R Squared": "r2", "Custom MAE": custom_metric}
 
     result = report.metrics.summarize(
-        scoring=scoring_dict, scoring_kwargs={"response_method": "predict"}
+        metric=metric_dict, metric_kwargs={"response_method": "predict"}
     ).frame()
 
     # Check that custom names are used
