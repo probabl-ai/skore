@@ -19,16 +19,22 @@ class FakeEntryPoint(EntryPoint):
 
 @fixture
 def FakeLocalProject():
-    return Mock()
+    project = Mock()
+    project.summarize = Mock(return_value=[])
+    project_factory = Mock(return_value=project)
+    return project_factory
 
 
 @fixture
 def FakeHubProject():
-    return Mock()
+    project = Mock()
+    project.summarize = Mock(return_value=[])
+    project_factory = Mock(return_value=project)
+    return project_factory
 
 
 @fixture(autouse=True)
-def monkeypatch_entrypoints(monkeypatch, request, FakeLocalProject, FakeHubProject):
+def monkeypatch_entrypoints(monkeypatch, FakeLocalProject, FakeHubProject):
     monkeypatch.setattr(
         "skore.project.project.entry_points",
         lambda **kwargs: EntryPoints(
@@ -141,6 +147,39 @@ class TestProject:
             match=escape("Unknown mode `local`. Please install `skore[local]`."),
         ):
             Project("<name>")
+
+    def test_init_exception_wrong_ml_task(self, monkeypatch):
+        """If the underlying Project implementation contains reports with
+        different ML tasks, the top-level `skore.Project` will raise."""
+
+        project = Mock()
+        project.summarize = Mock(
+            return_value=[
+                {"ml_task": "binary-classification"},
+                {"ml_task": "regression"},
+            ]
+        )
+        project_factory = Mock(return_value=project)
+
+        monkeypatch.setattr(
+            "skore.project.project.entry_points",
+            lambda **kwargs: EntryPoints(
+                [
+                    FakeEntryPoint(
+                        name="local",
+                        value=project_factory,
+                        group="skore.plugins.project",
+                    ),
+                ]
+            ),
+        )
+
+        err_msg = (
+            "Expected every report in the Project to have the same ML task. "
+            "Got ML tasks "
+        )
+        with raises(RuntimeError, match=err_msg):
+            Project("<name>", workspace="<workspace>")
 
     def test_mode(self):
         assert Project("<name>").mode == "local"

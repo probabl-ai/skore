@@ -197,6 +197,16 @@ class Project:
         self.__name = name
         self.__project = plugin(**(kwargs | parameters))
 
+        ml_tasks = {report["ml_task"] for report in self.__project.summarize()}
+
+        if len(ml_tasks) > 1:
+            raise RuntimeError(
+                "Expected every report in the Project to have the same ML task. "
+                f"Got ML tasks {ml_tasks}."
+            )
+
+        self.ml_task: MLTask | None = ml_tasks.pop() if ml_tasks else None
+
     @property
     def mode(self):
         """The mode of the project."""
@@ -235,8 +245,7 @@ class Project:
                 f"(found '{type(report)}')"
             )
 
-        if hasattr(self, "ml_task"):
-            self.ml_task: MLTask
+        if self.ml_task is not None:
             if report.ml_task != self.ml_task:
                 raise ValueError(
                     f"Expected a report meant for ML task {self.ml_task!r} "
