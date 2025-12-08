@@ -8,10 +8,10 @@ from skore._sklearn._plot import ConfusionMatrixDisplay
 
 
 def test_binary_classification(pyplot, forest_binary_classification_with_train_test):
+    """Check that the confusion matrix display is correct for binary classification."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
-    """Check that the confusion matrix display is correct for binary classification."""
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -28,13 +28,14 @@ def test_binary_classification(pyplot, forest_binary_classification_with_train_t
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert len(display.display_labels) == 2
-    assert display.ax_.get_title() == "Confusion Matrix"
+    assert "Confusion Matrix" in display.ax_.get_title()
+    assert "Decision threshold" in display.ax_.get_title()
     assert display.ax_.get_xlabel() == "Predicted label"
     assert display.ax_.get_ylabel() == "True label"
 
-    frame = display.frame()
-    assert isinstance(frame, pd.DataFrame)
-    assert frame.shape == (2, 2)
+    n_classes = len(display.display_labels)
+    n_thresholds = len(display.thresholds_)
+    assert display.confusion_matrix.shape == (n_thresholds * n_classes * n_classes, 7)
 
 
 def test_multiclass_classification(
@@ -58,13 +59,11 @@ def test_multiclass_classification(
     assert isinstance(display, ConfusionMatrixDisplay)
     n_classes = len(np.unique(y_test))
     assert len(display.display_labels) == n_classes
-
-    frame = display.frame()
-    assert isinstance(frame, pd.DataFrame)
-    assert frame.shape == (n_classes, n_classes)
+    assert display.confusion_matrix.shape == (n_classes * n_classes, 7)
 
 
 def test_confusion_matrix(pyplot, forest_binary_classification_with_train_test):
+    """Check the structure of the confusion_matrix attribute."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
@@ -88,48 +87,37 @@ def test_confusion_matrix(pyplot, forest_binary_classification_with_train_test):
         "threshold",
     ]
     n_classes = len(display.display_labels)
-    assert display.confusion_matrix.shape[0] == (n_classes * n_classes)
+    n_thresholds = len(display.thresholds_)
+    assert display.confusion_matrix.shape[0] == (n_thresholds * n_classes * n_classes)
 
 
 def test_normalization(pyplot, forest_binary_classification_with_train_test):
-    """Check the behaviour of the `normalize` parameter for frame and plot"""
+    """Check that normalized values are correctly computed."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
     report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
+    display = report.metrics.confusion_matrix()
+    cm = display.confusion_matrix
+    threshold_val = display.thresholds_[len(display.thresholds_) // 2]
+    cm_at_threshold = cm[cm["threshold"] == threshold_val]
 
-    display_true = report.metrics.confusion_matrix()
-    display_true.plot(normalize="true")
-    np.testing.assert_allclose(
-        display_true.confusion_matrix.pivot(
-            index="true_label", columns="predicted_label", values="normalized_by_true"
-        ).sum(axis=1),
-        1.0,
+    pivoted_true = cm_at_threshold.pivot(
+        index="true_label", columns="predicted_label", values="normalized_by_true"
     )
-    np.testing.assert_allclose(display_true.frame(normalize="true").sum(axis=1), 1.0)
+    np.testing.assert_allclose(pivoted_true.sum(axis=1), 1.0)
 
-    display_pred = report.metrics.confusion_matrix()
-    display_pred.plot(normalize="pred")
-    np.testing.assert_allclose(
-        display_pred.confusion_matrix.pivot(
-            index="true_label", columns="predicted_label", values="normalized_by_pred"
-        ).sum(axis=0),
-        1.0,
+    pivoted_pred = cm_at_threshold.pivot(
+        index="true_label", columns="predicted_label", values="normalized_by_pred"
     )
-    np.testing.assert_allclose(display_pred.frame(normalize="pred").sum(axis=0), 1.0)
+    np.testing.assert_allclose(pivoted_pred.sum(axis=0), 1.0)
 
-    display_all = report.metrics.confusion_matrix()
-    display_all.plot(normalize="all")
-    assert display_all.confusion_matrix.pivot(
+    pivoted_all = cm_at_threshold.pivot(
         index="true_label", columns="predicted_label", values="normalized_by_all"
-    ).sum().sum() == pytest.approx(1.0)
-    assert display_all.frame(normalize="all").sum().sum() == pytest.approx(1.0)
+    )
+    np.testing.assert_allclose(pivoted_all.sum().sum(), 1.0)
 
 
 def test_data_source(pyplot, forest_binary_classification_with_train_test):
@@ -155,14 +143,15 @@ def test_data_source(pyplot, forest_binary_classification_with_train_test):
         y=y_train,
     )
 
-    assert display_test.confusion_matrix is not None  # Simple existence check
-    assert not np.array_equal(  # Verify test vs train are different
-        display_test.confusion_matrix,
-        display_train.confusion_matrix,
+    assert display_test.confusion_matrix is not None
+    assert not np.array_equal(
+        display_test.confusion_matrix["count"].values,
+        display_train.confusion_matrix["count"].values,
     )
+
     assert np.array_equal(
-        display_train.confusion_matrix,
-        display_custom.confusion_matrix,
+        display_train.confusion_matrix["count"].values,
+        display_custom.confusion_matrix["count"].values,
     )
 
 
@@ -260,7 +249,7 @@ def test_plot_attributes(pyplot, forest_binary_classification_with_train_test):
 
     assert display.ax_.get_xlabel() == "Predicted label"
     assert display.ax_.get_ylabel() == "True label"
-    assert display.ax_.get_title() == "Confusion Matrix"
+    assert "Confusion Matrix" in display.ax_.get_title()
 
     n_classes = len(display.display_labels)
     assert len(display.ax_.get_xticks()) == n_classes
@@ -286,17 +275,23 @@ def test_frame_structure(forest_binary_classification_with_train_test):
     )
     display = report.metrics.confusion_matrix()
     n_classes = len(display.display_labels)
+
     frame = display.frame()
     assert isinstance(frame, pd.DataFrame)
-    assert frame.shape == (n_classes, n_classes)
+    assert frame.shape == (n_classes * n_classes, 7)
 
-    assert list(frame.index) == display.display_labels
-    assert list(frame.columns) == display.display_labels
-
-    expected = display.confusion_matrix.pivot(
-        index="true_label", columns="predicted_label", values="count"
-    )
-    pd.testing.assert_frame_equal(frame, expected)
+    expected_columns = [
+        "true_label",
+        "predicted_label",
+        "count",
+        "normalized_by_true",
+        "normalized_by_pred",
+        "normalized_by_all",
+        "threshold",
+    ]
+    assert frame.columns.tolist() == expected_columns
+    assert set(frame["true_label"].unique()) == set(display.display_labels)
+    assert set(frame["predicted_label"].unique()) == set(display.display_labels)
 
 
 def test_not_implemented_error_for_non_estimator_report(
@@ -304,9 +299,12 @@ def test_not_implemented_error_for_non_estimator_report(
 ):
     """Check that we raise NotImplementedError for non-estimator report types."""
     display = ConfusionMatrixDisplay(
-        confusion_matrix=pd.DataFrame([[10, 5], [2, 20]]),
+        confusion_matrix=pd.DataFrame(),
         display_labels=["0", "1"],
         report_type="cross-validation",
+        ml_task="binary-classification",
+        thresholds=np.array([0.5]),
+        pos_label=None,
     )
     err_msg = (
         "`ConfusionMatrixDisplay` is only implemented for `EstimatorReport` for now."
@@ -315,52 +313,56 @@ def test_not_implemented_error_for_non_estimator_report(
         display.plot()
 
 
-def test_threshold_display_creation(
+def test_thresholds_available_for_binary_classification(
     pyplot, forest_binary_classification_with_train_test
 ):
-    """Check that we can create a confusion matrix display with threshold support."""
+    """Check that thresholds are available for binary classification."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.confusion_matrix(threshold=True)
+    display = report.metrics.confusion_matrix()
 
     assert isinstance(display, ConfusionMatrixDisplay)
-    assert display.threshold is True
     assert display.thresholds_ is not None
     assert len(display.thresholds_) > 0
     assert "threshold" in display.confusion_matrix.columns
 
 
-def test_threshold_display_without_threshold(
-    pyplot, forest_binary_classification_with_train_test
+def test_thresholds_not_available_for_multiclass(
+    pyplot, forest_multiclass_classification_with_train_test
 ):
-    """Check that threshold is False when threshold=False and that we raise an error
-    when frame or plot is called with threshold_value."""
+    """Check that thresholds are NaN for multiclass classification."""
     estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
+        forest_multiclass_classification_with_train_test
     )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.confusion_matrix(threshold=False)
+    display = report.metrics.confusion_matrix()
 
-    assert display.threshold is False
-    assert display.thresholds_ is None
+    assert isinstance(display, ConfusionMatrixDisplay)
+    assert len(display.thresholds_) == 1
+    assert np.isnan(display.thresholds_[0])
 
-    display = report.metrics.confusion_matrix(threshold=False)
 
-    for func in ["frame", "plot"]:
-        err_msg = (
-            "Enable threshold support by passing `threshold=True` to "
-            f"`report.metrics.confusion_matrix\\(\\)` before calling `{func}\\(\\)` "
-            "with `threshold_value`. This is only applicable for binary "
-            "classification."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            getattr(display, func)(threshold_value=0.5)
+def test_threshold_value_error_for_multiclass(
+    forest_multiclass_classification_with_train_test,
+):
+    """Check that specifying threshold_value for multiclass raises an error."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_multiclass_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.confusion_matrix()
+
+    err_msg = "Threshold support is only available for binary classification."
+    with pytest.raises(ValueError, match=err_msg):
+        display.frame(threshold_value=0.5)
 
 
 def test_plot_with_threshold(pyplot, forest_binary_classification_with_train_test):
@@ -371,7 +373,7 @@ def test_plot_with_threshold(pyplot, forest_binary_classification_with_train_tes
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.confusion_matrix(threshold=True)
+    display = report.metrics.confusion_matrix()
 
     display.plot(threshold_value=0.3)
     assert "threshold" in display.ax_.get_title().lower()
@@ -387,18 +389,13 @@ def test_plot_with_default_threshold(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.confusion_matrix(threshold=True)
+    display = report.metrics.confusion_matrix()
     display.plot()
 
-    closest_threshold = display.thresholds_[
-        np.argmin(np.abs(display.thresholds_ - 0.5))
-    ]
-    assert (
-        display.ax_.get_title()
-        == f"Confusion Matrix (threshold: {closest_threshold:.2f})"
-    )
-    default_vals = display.ax_.collections[0].get_array().flatten()
+    expected_title = "Confusion Matrix\nDecision threshold: 0.50"
+    assert display.ax_.get_title() == expected_title
 
+    default_vals = display.ax_.collections[0].get_array().flatten()
     display.plot(threshold_value=0.5)
     np.testing.assert_allclose(
         default_vals, display.ax_.collections[0].get_array().flatten()
@@ -413,123 +410,58 @@ def test_frame_with_threshold(forest_binary_classification_with_train_test):
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.confusion_matrix(threshold=True)
+    display = report.metrics.confusion_matrix()
     frame = display.frame(threshold_value=0.5)
 
     assert isinstance(frame, pd.DataFrame)
-    assert frame.shape == (2, 2)
+    n_classes = len(display.display_labels)
+    assert frame.shape == (n_classes * n_classes, 7)
 
 
-def test_frame_all_thresholds(forest_binary_classification_with_train_test):
-    """Check that we get all thresholds when threshold_value='all'."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    display = report.metrics.confusion_matrix(threshold=True)
-    frame = display.frame(threshold_value="all")
-
-    assert isinstance(frame, pd.DataFrame)
-    assert "threshold" in frame.columns
-    assert len(frame) == len(display.thresholds_)
-
-
-def test_frame_without_threshold(forest_binary_classification_with_train_test):
-    """Check that we get the default confusion matrix when threshold_value is None."""
+def test_frame_default_threshold(forest_binary_classification_with_train_test):
+    """Check that frame() uses default threshold (0.5) when threshold_value is None."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.confusion_matrix(threshold=True)
+    display = report.metrics.confusion_matrix()
+
     frame = display.frame(threshold_value=None)
-
     assert isinstance(frame, pd.DataFrame)
-    assert "threshold" not in frame.columns
-    assert frame.shape == (estimator.classes_.size, estimator.classes_.size)
-
-
-def test_threshold_normalization(pyplot, forest_binary_classification_with_train_test):
-    """Check that normalization works with threshold support."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.metrics.confusion_matrix(threshold=True)
-
-    display.plot(threshold_value=0.5, normalize="true")
-    display_vals = display.ax_.collections[0].get_array()
-    frame = display.frame(threshold_value=0.5, normalize="true")
-    np.testing.assert_allclose(display_vals.sum(axis=1), 1.0)
-    np.testing.assert_allclose(frame.sum(axis=1), 1.0)
-
-    display.plot(threshold_value=0.5, normalize="pred")
-    display_vals = display.ax_.collections[0].get_array()
-    frame = display.frame(threshold_value=0.5, normalize="pred")
-    np.testing.assert_allclose(display_vals.sum(axis=0), 1.0)
-    np.testing.assert_allclose(frame.sum(axis=0), 1.0)
-
-    display.plot(threshold_value=0.5, normalize="all")
-    display_vals = display.ax_.collections[0].get_array()
-    frame = display.frame(threshold_value=0.5, normalize="all")
-    assert display_vals.sum() == pytest.approx(1.0)
-    assert frame.sum().sum() == pytest.approx(1.0)
+    n_classes = len(display.display_labels)
+    assert frame.shape == (n_classes * n_classes, 7)
+    assert frame["threshold"].nunique() == 1
 
 
 def test_threshold_closest_match(pyplot, forest_binary_classification_with_train_test):
-    """Check that the closest threshold is selected."""
+    """Check that the closest threshold is selected for data."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.confusion_matrix(threshold=True)
+    display = report.metrics.confusion_matrix()
 
     # Create a threshold that is not in the list to test the closest match
     middle_index = len(display.thresholds_) // 2
     threshold = (
         display.thresholds_[middle_index] + display.thresholds_[middle_index + 1]
     ) / 2 - 1e-6
-    closest_threshold = display.thresholds_[middle_index]
     assert threshold not in display.thresholds_
+
     display.plot(threshold_value=threshold)
-    assert (
-        display.ax_.get_title()
-        == f"Confusion Matrix (threshold: {closest_threshold:.2f})"
-    )
+    expected_title = f"Confusion Matrix\nDecision threshold: {threshold:.2f}"
+    assert display.ax_.get_title() == expected_title
+
     np.testing.assert_allclose(
         display.ax_.collections[0].get_array(),
-        display.frame(threshold_value=closest_threshold).values,
-    )
-
-
-def test_frame_plot_coincidence_with_threshold(
-    pyplot, forest_binary_classification_with_train_test
-):
-    """Check that the values in the frame and plot coincide when threshold is
-    provided."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.metrics.confusion_matrix(threshold=True)
-    frame = display.frame(threshold_value=0.5)
-    frame_values = frame.values.flatten()
-    display.plot(threshold_value=0.5)
-    np.testing.assert_allclose(
-        frame_values, display.ax_.collections[0].get_array().flatten()
+        display.frame(threshold_value=threshold)
+        .pivot(index="true_label", columns="predicted_label", values="count")
+        .reindex(index=display.display_labels, columns=display.display_labels)
+        .values,
     )
 
 
@@ -545,13 +477,83 @@ def test_pos_label(pyplot, forest_binary_classification_with_train_test):
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
+
     display = report.metrics.confusion_matrix(pos_label="A")
     display.plot()
-    # check that the pos label is in second position on both axes
-    assert display.ax_.get_xticklabels()[1].get_text() == "A"
-    assert display.ax_.get_yticklabels()[1].get_text() == "A"
+    assert display.ax_.get_xticklabels()[1].get_text() == "A*"
+    assert display.ax_.get_yticklabels()[1].get_text() == "A*"
 
     display = report.metrics.confusion_matrix(pos_label="B")
     display.plot()
-    assert display.ax_.get_xticklabels()[1].get_text() == "B"
-    assert display.ax_.get_yticklabels()[1].get_text() == "B"
+    assert display.ax_.get_xticklabels()[1].get_text() == "B*"
+    assert display.ax_.get_yticklabels()[1].get_text() == "B*"
+
+
+def test_plot_multiclass_no_threshold_in_title(
+    pyplot, forest_multiclass_classification_with_train_test
+):
+    """Check that multiclass classification does not show threshold in title."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_multiclass_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.metrics.confusion_matrix()
+    display.plot()
+
+    assert display.ax_.get_title() == "Confusion Matrix"
+    assert "threshold" not in display.ax_.get_title().lower()
+
+
+def test_multiple_thresholds_different_confusion_matrices(
+    forest_binary_classification_with_train_test,
+):
+    """Check that different thresholds produce different confusion matrices."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.confusion_matrix()
+
+    low_threshold = display.thresholds_[len(display.thresholds_) // 4]
+    high_threshold = display.thresholds_[3 * len(display.thresholds_) // 4]
+
+    cm = display.confusion_matrix
+    cm_low = cm[cm["threshold"] == low_threshold]
+    cm_high = cm[cm["threshold"] == high_threshold]
+
+    assert cm_low["threshold"].iloc[0] != cm_high["threshold"].iloc[0]
+    assert cm_low.shape == cm_high.shape
+
+
+def test_threshold_values_are_sorted(forest_binary_classification_with_train_test):
+    """Check that thresholds_ are sorted in ascending order."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.confusion_matrix()
+
+    assert np.all(display.thresholds_[:-1] <= display.thresholds_[1:])
+
+
+def test_threshold_values_are_unique(forest_binary_classification_with_train_test):
+    """Check that thresholds_ contains unique values."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.confusion_matrix()
+
+    assert len(display.thresholds_) == len(np.unique(display.thresholds_))
