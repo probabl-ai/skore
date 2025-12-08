@@ -584,10 +584,8 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             )
             curve_idx = 0
 
-            pos_label = self.pos_label
-
             for report_idx, estimator_name in enumerate(estimator_names):
-                query = "label == @pos_label & estimator_name == @estimator_name"
+                query = "label == @self.pos_label & estimator_name == @estimator_name"
                 average_precision = self.average_precision.query(query)[
                     "average_precision"
                 ]

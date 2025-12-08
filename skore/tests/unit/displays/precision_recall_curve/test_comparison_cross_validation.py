@@ -302,6 +302,7 @@ def test_frame_multiclass_classification(
         ):
             assert group["average_precision"].nunique() == 1
 
+
 def test_multiclass_str_labels_precision_recall_plot(pyplot):
     """Regression test for issue #2183 with multiclass comparison reports.
 
