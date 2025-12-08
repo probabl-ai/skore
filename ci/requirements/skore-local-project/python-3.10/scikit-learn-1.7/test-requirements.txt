@@ -210,7 +210,7 @@ typing-extensions==4.15.0
     #   virtualenv
 tzdata==2025.2
     # via pandas
-urllib3==2.5.0
+urllib3==2.6.0
     # via requests
 virtualenv==20.35.4
     # via pre-commit
