@@ -1,4 +1,3 @@
-from functools import partialmethod
 from io import BytesIO
 
 from joblib import dump, load
@@ -8,67 +7,117 @@ from skore._utils._cache import Cache
 
 
 @mark.parametrize(
-    "input,output,action",
+    "input,output,state,method",
     (
         param(
+            {0: 0, 1: 1},
+            None,
+            {0: 0},
+            lambda cache: type(cache).__delitem__(cache, 1),
+            id="__delitem__",
+        ),
+        param(
+            {0: 0},
+            [0],
+            {0: 0},
+            lambda cache: list(cache),
+            id="__iter__",
+        ),
+        param(
             {},
+            None,
             {0: 0},
             lambda cache: type(cache).__setitem__(cache, 0, 0),
             id="__setitem__",
         ),
         param(
             {0: 0, 1: 1},
-            {0: 0},
-            lambda cache: type(cache).__delitem__(cache, 1),
-            id="__delitem__",
+            None,
+            {},
+            lambda cache: cache.clear(),
+            id="clear",
         ),
-        param({0: 0, 1: 1}, {}, lambda cache: cache.clear(), id="clear"),
-        param({0: 0, 1: 1}, {0: 0}, lambda cache: cache.pop(1), id="pop"),
-        param({0: 0, 1: 1}, {1: 1}, lambda cache: cache.popitem(), id="popitem"),
-        param({0: 0}, {0: 1}, lambda cache: cache.update({0: 1}), id="update"),
+        param(
+            {0: 0, 1: 1},
+            1,
+            {0: 0},
+            lambda cache: cache.pop(1),
+            id="pop",
+        ),
+        param(
+            {0: 0, 1: 1},
+            (0, 0),
+            {1: 1},
+            lambda cache: cache.popitem(),
+            id="popitem",
+        ),
+        param(
+            {0: 0},
+            None,
+            {0: 1},
+            lambda cache: cache.update({0: 1}),
+            id="update",
+        ),
     ),
 )
-def test_cache_method_with_explicit_lock(monkeypatch, input, output, action):
-    cache = Cache()
-    cache.data = input
+def test_cache_method_is_functional(monkeypatch, input, output, state, method):
+    cache = Cache(input)
 
-    assert not hasattr(cache, "__lock__")
-
-    action(cache)
-
-    assert hasattr(cache, "__lock__")
-    assert cache == output
+    assert method(cache) == output
+    assert cache == state
 
 
-def test_cache_lockable(monkeypatch):
+@mark.parametrize(
+    "method",
+    (
+        param((lambda cache: cache.__delitem__()), id="__delitem__"),
+        param((lambda cache: list(cache.__iter__())), id="__iter__"),
+        param((lambda cache: cache.__setitem__()), id="__setitem__"),
+        param((lambda cache: cache.clear()), id="clear"),
+        param((lambda cache: cache.pop()), id="pop"),
+        param((lambda cache: cache.popitem()), id="popitem"),
+        param((lambda cache: cache.update()), id="update"),
+    ),
+)
+def test_cache_method_is_explicitly_locked(monkeypatch, method):
     # Ensure that cache uses the lock system properly.
     #
-    # First, we patch the lock acquisition so that it timeouts when it has already been
-    # acquired by another thread. We then manually lock the cache before attempting to
-    # perform a `pop` operation. This should trigger an exception indicating that the
-    # lock cannot be set.
+    # First, we patch the lock acquisition so that it raises an exception when it has
+    # already been acquired by another thread. We then manually lock the cache before
+    # attempting to perform an operation. This should trigger an exception indicating
+    # that the lock cannot be set.
     import concurrent.futures
     import threading
 
-    monkeypatch.setattr("threading._CRLock", None)
-    monkeypatch.setattr(
-        "threading._PyRLock.__enter__",
-        partialmethod(threading._PyRLock.__enter__, timeout=0),
-    )
+    def __enter__(lock):
+        if lock.locked():
+            raise RuntimeError("Lock already acquired")
 
-    cache = Cache({0: 0})
+        return lock.acquire()
+
+    monkeypatch.setattr("threading._CRLock", None)
+    monkeypatch.setattr("threading._PyRLock.__enter__", __enter__)
+
+    cache = Cache()
+    event = threading.Event()
+
+    def acquire_and_wait():
+        cache.__lock__.acquire()
+        event.wait()
 
     with (
-        cache.__lock__,
-        concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool,
-        raises(RuntimeError, match="cannot release un-acquired lock"),
+        concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool,
+        raises(RuntimeError, match="Lock already acquired"),
     ):
-        task = pool.submit((lambda cache: cache.pop(1)), cache)
+        task1 = pool.submit(acquire_and_wait)
+        task2 = pool.submit(method, cache)
 
-        while task.running():
-            pass
+        concurrent.futures.wait([task2])
+        event.set()
+        concurrent.futures.wait([task1])
 
-        task.result()
+        task1.result()
+        task2.result()
 
 
 def test_cache_picklable():

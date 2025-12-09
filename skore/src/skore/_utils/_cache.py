@@ -7,27 +7,41 @@ from typing import Any
 def method_with_explicit_lock(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        if not hasattr(self, "__lock__"):
-            self.__lock__ = RLock()
-
         with self.__lock__:
             return method(self, *args, **kwargs)
 
     return wrapper
 
 
-class Cache(UserDict[tuple[Any, ...], Any]):
-    """Thread-safe cache based on ``dict``, with an explicit lock on write/delete."""
+def method_generator_with_explicit_lock(method):
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        with self.__lock__:
+            yield from method(self, *args, **kwargs)
 
-    __setitem__ = method_with_explicit_lock(UserDict.__setitem__)
+    return wrapper
+
+
+class Cache(UserDict[tuple[Any, ...], Any]):
+    """Thread-safe cache based on ``dict``, with a lock on write/delete/iter."""
+
     __delitem__ = method_with_explicit_lock(UserDict.__delitem__)
+    __iter__ = method_generator_with_explicit_lock(UserDict.__iter__)
+    __setitem__ = method_with_explicit_lock(UserDict.__setitem__)
     clear = method_with_explicit_lock(UserDict.clear)
     pop = method_with_explicit_lock(UserDict.pop)
     popitem = method_with_explicit_lock(UserDict.popitem)
     update = method_with_explicit_lock(UserDict.update)
 
+    def __init__(self, *args, **kwargs):
+        self.__lock__ = RLock()
+        super().__init__(*args, **kwargs)
+
     def __getstate__(self):
         return self.data.copy()
 
     def __setstate__(self, state):
+        if not hasattr(self, "__lock__"):
+            self.__lock__ = RLock()
+
         self.data = state
