@@ -6,6 +6,7 @@ import pytest
 from sklearn.datasets import make_classification
 from sklearn.metrics import (
     accuracy_score,
+    brier_score_loss,
 )
 from sklearn.svm import SVC
 
@@ -156,22 +157,21 @@ def test_custom_metric(forest_binary_classification_data):
 
 def test_custom_metric_specific_response_method(forest_binary_classification_data):
     """Check the behavior of the `response_method` computation in the report when doing
-    a custom metric
+    a custom metric with predict_proba
     """
 
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y)
 
-    def custom_metric(y_true, y_proba):
-        return (y_true - y_proba) ** 2
-
     result = report.metrics.custom_metric(
-        metric_function=custom_metric,
+        metric_function=brier_score_loss,
         response_method="predict_proba",
     )
 
-    assert isinstance(result, dict)
-    assert result[0] == pytest.approx(0.0256)
+    assert isinstance(result, pd.DataFrame)
+    assert result.shape[0] == 1
+    assert result.index[0] == "Brier Score Loss"
+    assert result.iloc[0, 0] == pytest.approx(0.058148)
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
