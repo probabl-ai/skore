@@ -1,6 +1,7 @@
 name: Documentation improvement
 description: Create a report to help us improve the documentation. Alternatively you can just open a pull request with the suggested change.
 labels: ['documentation', 'needs-triage']
+type: task
 
 body:
 - type: textarea

@@ -33,24 +33,24 @@ def test_analyze_data_source_not_available(
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier)
 
-    err_msg = "X_train is required when `data_source=train`"
+    err_msg = "X_train is required when `data_source='train'`"
     with pytest.raises(ValueError, match=err_msg):
         report.data.analyze(data_source="train")
 
-    err_msg = "X_test is required when `data_source=test`"
+    err_msg = "X_test is required when `data_source='test'`"
     with pytest.raises(ValueError, match=err_msg):
         report.data.analyze(data_source="test")
 
-    err_msg = "X_train is required when `data_source=all`"
+    err_msg = "X_train is required when `data_source='both'`"
     with pytest.raises(ValueError, match=err_msg):
-        report.data.analyze(data_source="all")
+        report.data.analyze(data_source="both")
 
     # if not requesting `y`, we should not raise an error
     report = EstimatorReport(classifier, X_test=X_test)
     display = report.data.analyze(data_source="test", with_y=False)
     np.testing.assert_array_equal(display.summary["dataframe"].to_numpy(), X_test)
 
-    err_msg = "y_test is required when `data_source=test`"
+    err_msg = "y_test is required when `data_source='test'`"
     with pytest.raises(ValueError, match=err_msg):
         report.data.analyze(data_source="test", with_y=True)
 
@@ -74,7 +74,7 @@ def test_analyze_data_source_without_y():
     display = report.data.analyze(data_source="test", with_y=False)
     pd.testing.assert_frame_equal(display.summary["dataframe"], X_test)
 
-    display = report.data.analyze(data_source="all", with_y=False)
+    display = report.data.analyze(data_source="both", with_y=False)
     pd.testing.assert_frame_equal(display.summary["dataframe"], X)
 
 
@@ -102,13 +102,13 @@ def test_analyze_data_source_with_y():
         display.summary["dataframe"], pd.concat([X_test, y_test], axis=1)
     )
 
-    display = report.data.analyze(data_source="all")
+    display = report.data.analyze(data_source="both")
     pd.testing.assert_frame_equal(
         display.summary["dataframe"], pd.concat([X, y], axis=1)
     )
 
 
-@pytest.mark.parametrize("data_source", ["train", "test", "all"])
+@pytest.mark.parametrize("data_source", ["train", "test", "both"])
 @pytest.mark.parametrize(
     "n_targets, target_column_names", [(1, ["Target"]), (2, ["Target 0", "Target 1"])]
 )

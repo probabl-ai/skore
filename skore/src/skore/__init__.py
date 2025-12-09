@@ -11,6 +11,7 @@ from skore._config import config_context, get_config, set_config
 from skore._externals._sklearn_compat import parse_version
 from skore._sklearn import (
     ComparisonReport,
+    ConfusionMatrixDisplay,
     CrossValidationReport,
     EstimatorReport,
     MetricsSummaryDisplay,
@@ -21,6 +22,9 @@ from skore._sklearn import (
     train_test_split,
 )
 from skore._sklearn._plot.base import Display
+from skore._sklearn._plot.metrics.feature_importance_coefficients_display import (
+    FeatureImportanceCoefficientsDisplay,
+)
 from skore._utils._patch import setup_jupyter_display
 from skore._utils._show_versions import show_versions
 from skore.project import Project
@@ -28,6 +32,7 @@ from skore.project import Project
 __all__ = [
     "CrossValidationReport",
     "ComparisonReport",
+    "ConfusionMatrixDisplay",
     "Display",
     "EstimatorReport",
     "PrecisionRecallCurveDisplay",
@@ -41,6 +46,7 @@ __all__ = [
     "get_config",
     "set_config",
     "TableReportDisplay",
+    "FeatureImportanceCoefficientsDisplay",
 ]
 
 logger = logging.getLogger(__name__)

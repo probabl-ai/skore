@@ -145,7 +145,6 @@ import matplotlib.pyplot as plt
 
 ax = metric_report.plot.barh()
 ax.set_title("Metrics report")
-plt.tight_layout()
 
 # %%
 #
@@ -291,9 +290,12 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # that we can compute some additional metrics without having to recompute the
 # the predictions.
 report.metrics.summarize(
-    scoring=["precision", "recall", operational_decision_cost],
-    scoring_names=["Precision", "Recall", "Operational Decision Cost"],
-    scoring_kwargs={"amount": amount, "response_method": "predict"},
+    metric={
+        "Precision": "precision",
+        "Recall": "recall",
+        "Operational Decision Cost": operational_decision_cost,
+    },
+    metric_kwargs={"amount": amount, "response_method": "predict"},
 ).frame()
 
 # %%
@@ -309,8 +311,10 @@ operational_decision_cost_scorer = make_scorer(
     operational_decision_cost, response_method="predict", amount=amount
 )
 report.metrics.summarize(
-    scoring=[f1_scorer, operational_decision_cost_scorer],
-    scoring_names=["F1 Score", "Operational Decision Cost"],
+    metric={
+        "F1 Score": f1_scorer,
+        "Operational Decision Cost": operational_decision_cost_scorer,
+    },
 ).frame()
 
 # %%
@@ -392,15 +396,15 @@ plt.show()
 # %%
 # We can normalize the confusion matrix to get percentages instead of raw counts.
 # Here we normalize by true labels (rows):
-cm_display = report.metrics.confusion_matrix(normalize="true")
-cm_display.plot()
+cm_display = report.metrics.confusion_matrix()
+cm_display.plot(normalize="true")
 plt.show()
 
 # %%
-# More plotting options are available, check out the API on the confusion matrix for
-# more information. We can customize the display labels:
-cm_display = report.metrics.confusion_matrix(display_labels=["Disallowed", "Allowed"])
-cm_display.plot()
+# More plotting options are available via ``heatmap_kwargs``, which are passed to
+# seaborn's heatmap. For example, we can customize the colormap and number format:
+cm_display = report.metrics.confusion_matrix()
+cm_display.plot(heatmap_kwargs={"cmap": "Greens", "fmt": ".2e"})
 plt.show()
 
 # %%

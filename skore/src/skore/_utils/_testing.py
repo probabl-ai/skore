@@ -53,6 +53,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
     """Check the structure of the display's internal data."""
     assert list(display.roc_curve.columns) == [
         "estimator_name",
+        "data_source",
         "split",
         "label",
         "threshold",
@@ -61,6 +62,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
     ]
     assert list(display.roc_auc.columns) == [
         "estimator_name",
+        "data_source",
         "split",
         "label",
         "roc_auc",
@@ -71,6 +73,7 @@ def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDispl
     """Check the structure of the display's internal data."""
     assert list(display.precision_recall.columns) == [
         "estimator_name",
+        "data_source",
         "split",
         "label",
         "threshold",
@@ -79,6 +82,7 @@ def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDispl
     ]
     assert list(display.average_precision.columns) == [
         "estimator_name",
+        "data_source",
         "split",
         "label",
         "average_precision",
@@ -90,10 +94,11 @@ def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"
     legend = ax.get_legend()
     assert legend._loc == Legend.codes[loc]
     bbox = legend.get_window_extent().transformed(ax.transAxes.inverted())
+    tol = 1e-6
     if position == "inside":
-        assert 0 <= bbox.x0 <= 1
+        assert -tol <= bbox.x0 <= 1 + tol
     else:
-        assert bbox.x0 >= 1
+        assert bbox.x0 >= 1 - tol
 
 
 def check_frame_structure(df, expected_index, expected_data_columns):

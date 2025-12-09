@@ -24,9 +24,8 @@ from skore._sklearn._plot import (
 from skore._sklearn.types import (
     _DEFAULT,
     Aggregate,
+    Metric,
     PositiveLabel,
-    Scoring,
-    ScoringName,
     YPlotData,
 )
 from skore._utils._accessor import _check_estimator_report_has_method
@@ -55,9 +54,8 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        scoring: Scoring | list[Scoring] | None = None,
-        scoring_names: ScoringName | list[ScoringName] | None = None,
-        scoring_kwargs: dict[str, Any] | None = None,
+        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        metric_kwargs: dict[str, Any] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
@@ -83,8 +81,9 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : str, callable, scorer or list of such instances, default=None
-            The metrics to report. The possible values (whether or not in a list) are:
+        metric : str, callable, scorer, or list of such instances or dict of such \
+            instances, default=None
+            The metric(s) to report. The possible values are:
 
             - if a string, either one of the built-in metrics or a scikit-learn scorer
               name. You can get the possible list of string using
@@ -92,20 +91,20 @@ class _MetricsAccessor(
               the built-in metrics or the scikit-learn scorers, respectively.
             - if a callable, it should take as arguments `y_true`, `y_pred` as the two
               first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `scoring_kwargs`. No favorability indicator can
+              and will be forwarded with `metric_kwargs`. No favorability indicator can
               be displayed in this case.
             - if the callable API is too restrictive (e.g. need to pass
               same parameter name with different values), you can use scikit-learn
               scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
               the metric favorability will only be displayed if it is given explicitly
               via `make_scorer`'s `greater_is_better` parameter.
+            - if a dict, the keys are used as metric names and the values are the
+              metric functions (strings, callables, or scorers as described above).
+            - if a list, each element can be any of the above types (strings, callables,
+              scorers).
 
-        scoring_names : str, None or list of such instances, default=None
-            Used to overwrite the default scoring names in the report. If a list,
-            it should be of the same length as the `scoring` parameter.
-
-        scoring_kwargs : dict, default=None
-            The keyword arguments to pass to the scoring functions.
+        metric_kwargs : dict, default=None
+            The keyword arguments to pass to the metric functions.
 
         pos_label : int, float, bool, str or None default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
@@ -139,7 +138,7 @@ class _MetricsAccessor(
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.metrics.summarize(
-        ...     scoring=["precision", "recall"],
+        ...     metric=["precision", "recall"],
         ...     pos_label=1,
         ...     indicator_favorability=True,
         ... ).frame()
@@ -158,10 +157,9 @@ class _MetricsAccessor(
             X=X,
             y=y,
             aggregate=aggregate,
-            scoring=scoring,
+            metric=metric,
             pos_label=pos_label,
-            scoring_kwargs=scoring_kwargs,
-            scoring_names=scoring_names,
+            metric_kwargs=metric_kwargs,
             indicator_favorability=indicator_favorability,
         )
         if flat_index:
@@ -385,7 +383,7 @@ class _MetricsAccessor(
         Accuracy           0.94...  0.00...
         """
         return self.summarize(
-            scoring=["accuracy"],
+            metric=["accuracy"],
             data_source=data_source,
             aggregate=aggregate,
             X=X,
@@ -480,13 +478,13 @@ class _MetricsAccessor(
                   1                         0.94...  0.02...
         """
         return self.summarize(
-            scoring=["precision"],
+            metric=["precision"],
             data_source=data_source,
             aggregate=aggregate,
             X=X,
             y=y,
             pos_label=pos_label,
-            scoring_kwargs={"average": average},
+            metric_kwargs={"average": average},
         ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "recall"))
@@ -578,13 +576,13 @@ class _MetricsAccessor(
                1                         0.96...  0.02...
         """
         return self.summarize(
-            scoring=["recall"],
+            metric=["recall"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
             pos_label=pos_label,
-            scoring_kwargs={"average": average},
+            metric_kwargs={"average": average},
         ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "brier_score"))
@@ -639,7 +637,7 @@ class _MetricsAccessor(
         Brier score            0.04...  0.00...
         """
         return self.summarize(
-            scoring=["brier_score"],
+            metric=["brier_score"],
             data_source=data_source,
             X=X,
             y=y,
@@ -733,12 +731,12 @@ class _MetricsAccessor(
         ROC AUC           0.98...  0.00...
         """
         return self.summarize(
-            scoring=["roc_auc"],
+            metric=["roc_auc"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
-            scoring_kwargs={"average": average, "multi_class": multi_class},
+            metric_kwargs={"average": average, "multi_class": multi_class},
         ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
@@ -793,7 +791,7 @@ class _MetricsAccessor(
         Log loss            0.14...  0.03...
         """
         return self.summarize(
-            scoring=["log_loss"],
+            metric=["log_loss"],
             data_source=data_source,
             X=X,
             y=y,
@@ -863,12 +861,12 @@ class _MetricsAccessor(
         R²      0.37...  0.02...
         """
         return self.summarize(
-            scoring=["r2"],
+            metric=["r2"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
-            scoring_kwargs={"multioutput": multioutput},
+            metric_kwargs={"multioutput": multioutput},
         ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "rmse"))
@@ -934,12 +932,12 @@ class _MetricsAccessor(
         RMSE    60.7...  1.0...
         """
         return self.summarize(
-            scoring=["rmse"],
+            metric=["rmse"],
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
-            scoring_kwargs={"multioutput": multioutput},
+            metric_kwargs={"multioutput": multioutput},
         ).frame()
 
     def custom_metric(
@@ -1035,13 +1033,13 @@ class _MetricsAccessor(
             response_method=response_method,
             **kwargs,
         )
+        scoring = {metric_name: scorer} if metric_name is not None else [scorer]
         return self.summarize(
-            scoring=[scorer],
+            metric=scoring,
             data_source=data_source,
             X=X,
             y=y,
             aggregate=aggregate,
-            scoring_names=[metric_name] if metric_name is not None else None,
             pos_label=pos_label,
         ).frame()
 
@@ -1131,7 +1129,7 @@ class _MetricsAccessor(
         total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
-        if cache_key in self._parent._cache:
+        if cache_key and cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
             y_true: list[YPlotData] = []
@@ -1147,6 +1145,7 @@ class _MetricsAccessor(
                 y_true.append(
                     YPlotData(
                         estimator_name=self._parent.estimator_name_,
+                        data_source=data_source,
                         split=report_idx,
                         y=cast(ArrayLike, y),
                     )
@@ -1168,6 +1167,7 @@ class _MetricsAccessor(
                         y_pred.append(
                             YPlotData(
                                 estimator_name=self._parent.estimator_name_,
+                                data_source=data_source,
                                 split=report_idx,
                                 y=value,
                             )

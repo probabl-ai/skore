@@ -1,14 +1,16 @@
 import copy
+from typing import Literal
 
 import pandas as pd
 
-from skore._sklearn.types import Aggregate
+from skore._sklearn.types import Aggregate, DataSource
 
 
 def _combine_estimator_results(
     individual_results: list[pd.DataFrame],
     estimator_names: list[str],
     indicator_favorability: bool,
+    data_source: DataSource | Literal["both"],
 ) -> pd.DataFrame:
     """Combine a list of dataframes provided by `EstimatorReport`s.
 
@@ -23,6 +25,9 @@ def _combine_estimator_results(
 
     indicator_favorability : bool
         Whether to keep the Favorability column.
+
+    data_source : {"test", "train", "X_y", "both"}
+        The data source.
 
     Examples
     --------
@@ -55,6 +60,7 @@ def _combine_estimator_results(
     ...     individual_results,
     ...     estimator_names,
     ...     indicator_favorability=False,
+    ...     data_source="test",
     ... )
     Estimator    LogisticRegression_1  LogisticRegression_2
     Metric
@@ -73,7 +79,17 @@ def _combine_estimator_results(
     else:
         favorability = None
 
-    results.columns = pd.Index(estimator_names, name="Estimator")
+    if data_source == "both":
+        results.columns = pd.Index(
+            [
+                x
+                for name in estimator_names
+                for x in [f"{name} (train)", f"{name} (test)"]
+            ],
+            name="Estimator",
+        )
+    else:
+        results.columns = pd.Index(estimator_names, name="Estimator")
 
     if favorability is not None:
         results["Favorability"] = favorability

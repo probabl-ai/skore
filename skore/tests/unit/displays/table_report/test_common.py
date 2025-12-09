@@ -13,7 +13,7 @@ from skore._sklearn._plot.data.table_report import (
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def X_y():
     X, y = make_regression(n_samples=100, n_features=5, random_state=42)
     X = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(5)])
@@ -21,20 +21,20 @@ def X_y():
     return X, y
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def estimator_report(X_y):
     X, y = X_y
     split_data = train_test_split(X, y, random_state=0, as_dict=True)
     return EstimatorReport(tabular_pipeline("regressor"), **split_data)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def cross_validation_report(X_y):
     X, y = X_y
     return CrossValidationReport(tabular_pipeline("regressor"), X=X, y=y)
 
 
-@pytest.fixture(params=["estimator_report", "cross_validation_report"])
+@pytest.fixture(params=["estimator_report", "cross_validation_report"], scope="module")
 def display(request):
     report = request.getfixturevalue(request.param)
     return report.data.analyze()

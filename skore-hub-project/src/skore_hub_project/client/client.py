@@ -1,11 +1,12 @@
 """Client exchanging with ``skore hub``."""
 
+import importlib.metadata
 import logging
 from contextlib import suppress
 from http import HTTPStatus
 from os import environ
 from time import sleep
-from typing import Final
+from typing import Any, Final
 from urllib.parse import urljoin
 
 from httpx import (
@@ -83,7 +84,7 @@ class Client(HTTPXClient):
         self.retry_backoff_factor = retry_backoff_factor
         self.retry_backoff_max = retry_backoff_max
 
-    def request(self, *args, **kwargs) -> Response:
+    def request(self, *args: Any, **kwargs: Any) -> Response:
         """Execute request with retry strategy."""
         retries = 0
 
@@ -132,6 +133,13 @@ class Client(HTTPXClient):
         raise HTTPStatusError(message, request=response.request, response=response)
 
 
+PACKAGE_VERSION = (
+    version
+    if ((version := importlib.metadata.version("skore-hub-project")) != "0.0.0+unknown")
+    else None
+)
+
+
 class HUBClient(Client):
     """
     Client exchanging with ``skore hub``.
@@ -142,7 +150,7 @@ class HUBClient(Client):
         Use headers with API key or token, default True.
     """
 
-    def __init__(self, *, authenticated=True, **kwargs):
+    def __init__(self, *, authenticated: bool = True, **kwargs: Any):
         super().__init__(**kwargs)
 
         self.authenticated = authenticated
@@ -152,15 +160,19 @@ class HUBClient(Client):
         method: str,
         url: URL | str,
         headers: HeaderTypes | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Response:
         """Execute request with authorization."""
         headers = Headers(headers)
 
-        # Overload headers with our custom headers (API key or token)
+        # Overload headers with package version
+        if PACKAGE_VERSION:
+            headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_VERSION}"})
+
+        # Overload headers with credentials
         if self.authenticated:
             if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
-                headers.update({"X-API-Key": f"{apikey}"})
+                headers.update({"X-API-Key": apikey})
             else:
                 headers.update({"Authorization": f"Bearer {Token.access()}"})
 

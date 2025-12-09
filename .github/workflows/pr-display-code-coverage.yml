@@ -32,7 +32,7 @@ jobs:
       - name: Download coverage reports
         id: download-coverage-reports
         continue-on-error: True
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: ${{ matrix.package }}-coverage
           path: coverage/
@@ -46,7 +46,7 @@ jobs:
 
       - name: Display coverage reports
         if: ${{ steps.download-coverage-reports.outcome == 'success' }}
-        uses: MishaKav/pytest-coverage-comment@1bdbba85fb74a2fdc1ec66383acec1091610f82b # v1.1.57
+        uses: MishaKav/pytest-coverage-comment@ae0e8a539a3f310aefb3bfb6a2209778a21fa42b # v1.2.0
         with:
           issue-number: ${{ steps.acquire-pr-context.outputs.pr-number }}
           pytest-xml-coverage-path: coverage/pytest-coverage.xml

@@ -6,8 +6,8 @@ from sklearn.utils.metaestimators import available_if
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._cross_validation.report import CrossValidationReport
-from skore._sklearn._plot.metrics.feature_importance_display import (
-    FeatureImportanceDisplay,
+from skore._sklearn._plot.metrics.feature_importance_coefficients_display import (
+    FeatureImportanceCoefficientsDisplay,
 )
 from skore._utils._accessor import _check_cross_validation_sub_estimator_has_coef
 
@@ -22,8 +22,14 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         super().__init__(parent)
 
     @available_if(_check_cross_validation_sub_estimator_has_coef())
-    def coefficients(self) -> FeatureImportanceDisplay:
+    def coefficients(self) -> FeatureImportanceCoefficientsDisplay:
         """Retrieve the coefficients across splits, including the intercept.
+
+        Returns
+        -------
+        :class:`FeatureImportanceCoefficientsDisplay`
+            The feature importance display containing model coefficients and
+            intercept.
 
         Examples
         --------
@@ -34,7 +40,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         >>> report = CrossValidationReport(
         >>>     estimator=Ridge(), X=X, y=y, splitter=5, n_jobs=4
         >>> )
-        >>> report.feature_importance.coefficients().frame()
+        >>> display = report.feature_importance.coefficients()
+        >>> display.frame()
                     Intercept	Feature #0	Feature #1	Feature #2
         Split index
         0       	0.064837	74.100966	27.309656	17.367865
@@ -42,7 +49,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         2       	0.000084	74.107126	27.614821	17.277730
         3       	0.145613	74.207645	27.523667	17.391055
         4       	0.033695	74.259575	27.599610	17.390481
-        >>> report.feature_importance.coefficients().plot() # shows plot
+        >>> display.plot() # shows plot
         """
         combined = pd.concat(
             {
@@ -56,7 +63,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         ).T
         combined.index.name = "Split index"
 
-        return FeatureImportanceDisplay(self._parent, combined)
+        return FeatureImportanceCoefficientsDisplay("cross-validation", combined)
 
     ####################################################################################
     # Methods related to the help tree

@@ -10,7 +10,7 @@ class TokenError(Exception):
     """An exception dedicated to ``Token``."""
 
 
-def post_oauth_refresh_token(refresh_token: str):
+def post_oauth_refresh_token(refresh_token: str) -> tuple[str, str, str]:
     """
     Refresh an access token using a provided refresh token.
 
@@ -53,7 +53,7 @@ def Filepath() -> Path:
     return Path(gettempdir(), "skore.token")
 
 
-def persist(access: str, refreshment: str, expiration: str):
+def persist(access: str, refreshment: str, expiration: str) -> None:
     """
     Persist the token.
 
@@ -71,7 +71,7 @@ def persist(access: str, refreshment: str, expiration: str):
     )
 
 
-def access(*, refresh=True) -> str:
+def access(*, refresh: bool = True) -> str:
     """
     Access token.
 
@@ -82,6 +82,10 @@ def access(*, refresh=True) -> str:
     """
     if not Filepath().exists():
         raise TokenError("You are not logged in. Please run `skore-hub-login`.")
+
+    access: str
+    refreshment: str
+    expiration: str
 
     access, refreshment, expiration = loads(Filepath().read_text())
 

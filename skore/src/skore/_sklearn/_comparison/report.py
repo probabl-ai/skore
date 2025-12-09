@@ -14,6 +14,7 @@ from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import _DEFAULT, PositiveLabel
+from skore._utils._cache import Cache
 from skore._utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
@@ -103,6 +104,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
+        "feature_importance": {"name": "feature_importance"},
     }
     metrics: _MetricsAccessor
     feature_importance: _FeatureImportanceAccessor
@@ -250,7 +252,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
-        self._cache: dict[tuple[Any, ...], Any] = {}
+        self._cache = Cache()
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
 
     def clear_cache(self) -> None:
@@ -276,7 +278,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         """
         for report in self.reports_.values():
             report.clear_cache()
-        self._cache = {}
+
+        self._cache = Cache()
 
     @progress_decorator(description="Estimator predictions")
     def cache_predictions(

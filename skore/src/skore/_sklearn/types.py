@@ -20,6 +20,8 @@ MLTask = Literal[
     "unknown",
 ]
 
+DataSource = Literal["test", "train", "X_y"]
+
 
 class _DefaultType:
     """Sentinel class for default values."""
@@ -41,6 +43,7 @@ class YPlotData:
     """
 
     estimator_name: str
+    data_source: DataSource
     split: int | None
     y: ArrayLike
 
@@ -61,9 +64,7 @@ class SKLearnScorer(Protocol):
     _kwargs: dict[str, Any]
 
 
-ScoringName = str | None
-
-Scoring = str | Callable | SKLearnScorer
+Metric = str | Callable | SKLearnScorer
 
 
 class SKLearnCrossValidator(Protocol):

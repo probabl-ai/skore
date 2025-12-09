@@ -106,7 +106,7 @@ class DiskCacheStorage:
         with Cache(self.directory) as storage:
             return storage[key]
 
-    def __setitem__(self, key: str, value: Any):
+    def __setitem__(self, key: str, value: Any) -> None:
         """
         Set an item in the storage.
 
@@ -120,7 +120,7 @@ class DiskCacheStorage:
         with Cache(self.directory) as storage:
             storage[key] = value
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         """
         Delete an item from the storage.
 

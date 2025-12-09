@@ -3,20 +3,21 @@ import pandas as pd
 import pytest
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_regression
+from sklearn.dummy import DummyRegressor
 
 from skore import CrossValidationReport, Display, TableReportDisplay
 from skore._externals._skrub_compat import tabular_pipeline
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def cross_validation_report():
     X, y = make_regression(n_samples=100, n_features=5, random_state=42)
     X = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(5)])
     y = pd.Series(y, name="Target_")
-    return CrossValidationReport(tabular_pipeline("regressor"), X=X, y=y)
+    return CrossValidationReport(tabular_pipeline(DummyRegressor()), X=X, y=y)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def display(cross_validation_report):
     return cross_validation_report.data.analyze()
 
@@ -44,9 +45,8 @@ def test_table_report_display_constructor(display):
     )
 
 
-def test_table_report_display_frame(cross_validation_report):
+def test_table_report_display_frame(cross_validation_report, display):
     """Check that we return the expected kind of data when calling `.frame`."""
-    display = cross_validation_report.data.analyze()
     dataset = display.frame(kind="dataset")
 
     pd.testing.assert_frame_equal(
@@ -81,7 +81,7 @@ def test_table_report_display_frame(cross_validation_report):
 )
 def test_display_creation(X, y):
     """Check that the display can be created with different types of X and y."""
-    report = CrossValidationReport(tabular_pipeline("regressor"), X=X, y=y)
+    report = CrossValidationReport(tabular_pipeline(DummyRegressor()), X=X, y=y)
     display = report.data.analyze()
     assert isinstance(display, TableReportDisplay)
 

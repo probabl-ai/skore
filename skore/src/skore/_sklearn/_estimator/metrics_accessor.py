@@ -8,7 +8,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
-from sklearn import metrics
+from sklearn import metrics as sklearn_metrics
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
@@ -28,9 +28,9 @@ from skore._sklearn._plot import (
 )
 from skore._sklearn.types import (
     _DEFAULT,
+    DataSource,
+    Metric,
     PositiveLabel,
-    Scoring,
-    ScoringName,
     YPlotData,
 )
 from skore._utils._accessor import (
@@ -40,8 +40,6 @@ from skore._utils._accessor import (
     _check_supported_ml_task,
 )
 from skore._utils._index import flatten_multi_index
-
-DataSource = Literal["test", "train", "X_y"]
 
 
 class _MetricsAccessor(
@@ -63,12 +61,11 @@ class _MetricsAccessor(
     def summarize(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        scoring: Scoring | list[Scoring] | None = None,
-        scoring_names: ScoringName | list[ScoringName] | None = None,
-        scoring_kwargs: dict[str, Any] | None = None,
+        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        metric_kwargs: dict[str, Any] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
@@ -77,12 +74,14 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metrics and
+              present them side-by-side.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -92,8 +91,9 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        scoring : str, callable, scorer or list of such instances, default=None
-            The metrics to report. The possible values (whether or not in a list) are:
+        metric : str, callable, scorer, or list of such instances or dict of such \
+            instances, default=None
+            The metrics to report. The possible values are:
 
             - if a string, either one of the built-in metrics or a scikit-learn scorer
               name. You can get the possible list of string using
@@ -101,20 +101,20 @@ class _MetricsAccessor(
               the built-in metrics or the scikit-learn scorers, respectively.
             - if a callable, it should take as arguments `y_true`, `y_pred` as the two
               first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `scoring_kwargs`. No favorability indicator can
+              and will be forwarded with `metric_kwargs`. No favorability indicator can
               be displayed in this case.
             - if the callable API is too restrictive (e.g. need to pass
               same parameter name with different values), you can use scikit-learn
               scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
               the metric favorability will only be displayed if it is given explicitly
               via `make_scorer`'s `greater_is_better` parameter.
+            - if a dict, the keys are used as metric names and the values are the
+              metric functions (strings, callables, or scorers as described above).
+            - if a list, each element can be any of the above types (strings, callables,
+              scorers).
 
-        scoring_names : str, None or list of such instances, default=None
-            Used to overwrite the default scoring names in the report. It should be of
-            the same length as the `scoring` parameter.
-
-        scoring_kwargs : dict, default=None
-            The keyword arguments to pass to the scoring functions.
+        metric_kwargs : dict, default=None
+            The keyword arguments to pass to the metric functions.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
@@ -154,21 +154,68 @@ class _MetricsAccessor(
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
-        ...     scoring=["f1"],
+        ...     metric=["f1"],
+        ...     indicator_favorability=True,
+        ... ).frame()
+                                  LogisticRegression Favorability
+        Metric   Label / Average
+        F1 Score               1             0.96...          (↗︎)
+        >>> report.metrics.summarize(
+        ...    indicator_favorability=True,
+        ...    data_source="both"
+        ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
+                     LogisticRegression (train)  LogisticRegression (test)  Favorability
+        Metric
+        Precision                       0.96...                     0.98...          (↗︎)
+        Recall                          0.97...                     0.93...          (↗︎)
+        ROC AUC                         0.99...                     0.99...          (↗︎)
+        Brier score                     0.02...                     0.03...          (↘︎)
+        >>> # Using scikit-learn metrics
+        >>> report.metrics.summarize(
+        ...     metric=["f1"],
         ...     indicator_favorability=True,
         ... ).frame()
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
         """
+        if data_source == "both":
+            train_summary = self.summarize(
+                data_source="train",
+                metric=metric,
+                metric_kwargs=metric_kwargs,
+                pos_label=pos_label,
+                indicator_favorability=False,
+                flat_index=flat_index,
+            )
+            test_summary = self.summarize(
+                data_source="test",
+                metric=metric,
+                metric_kwargs=metric_kwargs,
+                pos_label=pos_label,
+                indicator_favorability=indicator_favorability,
+                flat_index=flat_index,
+            )
+            # Add suffix to the dataframes to distinguish train and test.
+            train_df = train_summary.frame().add_suffix(" (train)")
+            test_df = test_summary.frame().add_suffix(" (test)")
+            combined = pd.concat([train_df, test_df], axis=1).rename(
+                columns={"Favorability (test)": "Favorability"}
+            )
+            return MetricsSummaryDisplay(summarize_data=combined)
+
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
-        if scoring is not None and not isinstance(scoring, list):
-            scoring = [scoring]
-
-        if scoring_names is not None and not isinstance(scoring_names, list):
-            scoring_names = [scoring_names]
+        # Handle dictionary metrics
+        metric_names = None
+        if isinstance(metric, dict):
+            metric_names = list(metric.keys())
+            metrics = list(metric.values())
+        elif metric is not None and not isinstance(metric, list):
+            metrics = [metric]
+        elif isinstance(metric, list):
+            metrics = metric
 
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
@@ -181,79 +228,63 @@ class _MetricsAccessor(
         else:
             data_source_hash = None
 
-        scoring_was_none = scoring is None
-        if scoring is None:
+        if metric is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
-                scoring = ["_precision", "_recall", "_roc_auc"]
+                metrics = ["_precision", "_recall", "_roc_auc"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    scoring.append("_brier_score")
+                    metrics.append("_brier_score")
             elif self._parent._ml_task == "multiclass-classification":
-                scoring = ["_precision", "_recall"]
+                metrics = ["_precision", "_recall"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    scoring += ["_roc_auc", "_log_loss"]
+                    metrics += ["_roc_auc", "_log_loss"]
             else:
-                scoring = ["_r2", "_rmse"]
-            scoring += ["_fit_time", "_predict_time"]
+                metrics = ["_r2", "_rmse"]
+            metrics += ["_fit_time", "_predict_time"]
 
-        if scoring_names is not None and len(scoring_names) != len(scoring):
-            if scoring_was_none:
-                # we raise a better error message since we decide the default scores
-                raise ValueError(
-                    "The `scoring_names` parameter should be of the same length as "
-                    "the `scoring` parameter. In your case, `scoring` was set to None "
-                    f"and you are using our default scores that are {len(scoring)}. "
-                    f"The list is the following: {scoring}."
-                )
-            else:
-                raise ValueError(
-                    "The `scoring_names` parameter should be of the same length as "
-                    f"the `scoring` parameter. Got {len(scoring_names)} names for "
-                    f"{len(scoring)} scoring functions."
-                )
-        elif scoring_names is None:
-            scoring_names = [None] * len(scoring)
+        if metric_names is None:
+            metric_names = [None] * len(metrics)  # type: ignore
 
         scores = []
         favorability_indicator = []
-        for metric_name, metric in zip(scoring_names, scoring, strict=False):
-            if isinstance(metric, str) and not (
-                (metric.startswith("_") and metric[1:] in self._score_or_loss_info)
-                or metric in self._score_or_loss_info
+        for metric_name, metric_ in zip(metric_names, metrics, strict=False):
+            if isinstance(metric_, str) and not (
+                (metric_.startswith("_") and metric_[1:] in self._score_or_loss_info)
+                or metric_ in self._score_or_loss_info
             ):
                 try:
-                    metric = metrics.get_scorer(metric)
+                    metric_ = sklearn_metrics.get_scorer(metric_)
                 except ValueError as err:
                     raise ValueError(
-                        f"Invalid metric: {metric!r}. "
+                        f"Invalid metric: {metric_!r}. "
                         f"Please use a valid metric from the "
                         f"list of supported metrics: "
                         f"{list(self._score_or_loss_info.keys())} "
                         "or a valid scikit-learn scoring string."
                     ) from err
-                if scoring_kwargs is not None:
+                if metric_kwargs is not None:
                     raise ValueError(
-                        "The `scoring_kwargs` parameter is not supported when "
-                        "`scoring` is a scikit-learn scorer name. Use the function "
+                        "The `metric_kwargs` parameter is not supported when "
+                        "`metric` is a scikit-learn scorer name. Use the function "
                         "`sklearn.metrics.make_scorer` to create a scorer with "
                         "additional parameters."
                     )
 
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
-            if isinstance(metric, _BaseScorer):
+            if isinstance(metric_, _BaseScorer):
                 # scorers have the advantage to have scoped defined kwargs
-                metric_function: Callable = metric._score_func
-                response_method: str | list[str] = metric._response_method
+                metric_function: Callable = metric_._score_func
+                response_method: str | list[str] = metric_._response_method
                 metric_fn = partial(
                     self._custom_metric,
                     metric_function=metric_function,
                     response_method=response_method,
                 )
                 # forward the additional parameters specific to the scorer
-                metrics_kwargs = {**metric._kwargs}
+                metrics_kwargs = {**metric_._kwargs}
                 metrics_kwargs["data_source_hash"] = data_source_hash
-                metrics_params = inspect.signature(metric._score_func).parameters
+                metrics_params = inspect.signature(metric_._score_func).parameters
                 if "pos_label" in metrics_params:
                     if pos_label is not None and "pos_label" in metrics_kwargs:
                         if pos_label != metrics_kwargs["pos_label"]:
@@ -266,63 +297,63 @@ class _MetricsAccessor(
                     elif pos_label is not None:
                         metrics_kwargs["pos_label"] = pos_label
                 if metric_name is None:
-                    metric_name = metric._score_func.__name__.replace("_", " ").title()
-                metric_favorability = "(↗︎)" if metric._sign == 1 else "(↘︎)"
+                    metric_name = metric_._score_func.__name__.replace("_", " ").title()
+                metric_favorability = "(↗︎)" if metric_._sign == 1 else "(↘︎)"
                 favorability_indicator.append(metric_favorability)
-            elif isinstance(metric, str) or callable(metric):
-                if isinstance(metric, str):
+            elif isinstance(metric_, str) or callable(metric_):
+                if isinstance(metric_, str):
                     # Handle built-in metrics (with underscore prefix)
                     if (
-                        metric.startswith("_")
-                        and metric[1:] in self._score_or_loss_info
+                        metric_.startswith("_")
+                        and metric_[1:] in self._score_or_loss_info
                     ):
-                        metric_fn = getattr(self, metric)
+                        metric_fn = getattr(self, metric_)
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                         if metric_name is None:
                             metric_name = (
-                                f"{self._score_or_loss_info[metric[1:]]['name']}"
+                                f"{self._score_or_loss_info[metric_[1:]]['name']}"
                             )
-                        metric_favorability = self._score_or_loss_info[metric[1:]][
+                        metric_favorability = self._score_or_loss_info[metric_[1:]][
                             "icon"
                         ]
 
                     # Handle built-in metrics (without underscore prefix)
-                    elif metric in self._score_or_loss_info:
-                        metric_fn = getattr(self, f"_{metric}")
+                    elif metric_ in self._score_or_loss_info:
+                        metric_fn = getattr(self, f"_{metric_}")
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                         if metric_name is None:
-                            metric_name = f"{self._score_or_loss_info[metric]['name']}"
-                        metric_favorability = self._score_or_loss_info[metric]["icon"]
+                            metric_name = f"{self._score_or_loss_info[metric_]['name']}"
+                        metric_favorability = self._score_or_loss_info[metric_]["icon"]
                 else:
                     # Handle callable metrics
-                    metric_fn = partial(self._custom_metric, metric_function=metric)
-                    if scoring_kwargs is None:
+                    metric_fn = partial(self._custom_metric, metric_function=metric_)
+                    if metric_kwargs is None:
                         metrics_kwargs = {}
                     else:
                         # check if we should pass any parameters specific to the metric
                         # callable
-                        metric_callable_params = inspect.signature(metric).parameters
+                        metric_callable_params = inspect.signature(metric_).parameters
                         metrics_kwargs = {
-                            param: scoring_kwargs[param]
+                            param: metric_kwargs[param]
                             for param in metric_callable_params
-                            if param in scoring_kwargs
+                            if param in metric_kwargs
                         }
                     metrics_kwargs["data_source_hash"] = data_source_hash
                     if metric_name is None:
-                        metric_name = metric.__name__
+                        metric_name = metric_.__name__
                     metric_favorability = ""
                     favorability_indicator.append(metric_favorability)
 
                 metrics_params = inspect.signature(metric_fn).parameters
-                if scoring_kwargs is not None:
+                if metric_kwargs is not None:
                     for param in metrics_params:
-                        if param in scoring_kwargs:
-                            metrics_kwargs[param] = scoring_kwargs[param]
+                        if param in metric_kwargs:
+                            metrics_kwargs[param] = metric_kwargs[param]
                 if "pos_label" in metrics_params:
                     metrics_kwargs["pos_label"] = pos_label
             else:
                 raise ValueError(
-                    f"Invalid type of metric: {type(metric)} for {metric!r}"
+                    f"Invalid type of metric: {type(metric_)} for {metric_!r}"
                 )
 
             score = metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
@@ -686,7 +717,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         score = self._compute_metric_scores(
-            metrics.accuracy_score,
+            sklearn_metrics.accuracy_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -816,7 +847,7 @@ class _MetricsAccessor(
             average = "binary"
 
         result = self._compute_metric_scores(
-            metrics.precision_score,
+            sklearn_metrics.precision_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -953,7 +984,7 @@ class _MetricsAccessor(
             average = "binary"
 
         result = self._compute_metric_scores(
-            metrics.recall_score,
+            sklearn_metrics.recall_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1047,7 +1078,7 @@ class _MetricsAccessor(
         # `pos_label`. Since we get the predictions with `get_response_method`, we
         # can pass any `pos_label`, they will lead to the same result.
         result = self._compute_metric_scores(
-            metrics.brier_score_loss,
+            sklearn_metrics.brier_score_loss,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1171,7 +1202,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            metrics.roc_auc_score,
+            sklearn_metrics.roc_auc_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1257,7 +1288,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            metrics.log_loss,
+            sklearn_metrics.log_loss,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1355,7 +1386,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            metrics.r2_score,
+            sklearn_metrics.r2_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1459,7 +1490,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            metrics.root_mean_squared_error,
+            sklearn_metrics.root_mean_squared_error,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1615,13 +1646,21 @@ class _MetricsAccessor(
         *,
         X: ArrayLike | None,
         y: ArrayLike | None,
-        data_source: DataSource,
+        data_source: DataSource | Literal["both"],
         response_method: str | list[str] | tuple[str, ...],
         display_class: type[
-            RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay
+            RocCurveDisplay
+            | PrecisionRecallCurveDisplay
+            | PredictionErrorDisplay
+            | ConfusionMatrixDisplay
         ],
         display_kwargs: dict[str, Any],
-    ) -> RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay:
+    ) -> (
+        RocCurveDisplay
+        | PrecisionRecallCurveDisplay
+        | PredictionErrorDisplay
+        | ConfusionMatrixDisplay
+    ):
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1632,12 +1671,13 @@ class _MetricsAccessor(
         y : array-like of shape (n_samples,)
             The target.
 
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train set and the test set to compute the metric.
 
         response_method : str, list of str or tuple of str
             The response method.
@@ -1646,63 +1686,126 @@ class _MetricsAccessor(
             The display class.
 
         display_kwargs : dict
-            The display kwargs used by `display_class._from_predictions`.
+            The display kwargs used by `display_class._compute_data_for_display`.
 
         Returns
         -------
         display : display_class
             The display.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-        assert y is not None, "y must be provided"
+        pos_label = display_kwargs.get("pos_label")
 
+        def get_ys(
+            *,
+            X,
+            y_true,
+            data_source,
+            data_source_hash,
+            cache=self._parent._cache,
+            estimator_hash=int(self._parent._hash),
+            estimator=self._parent.estimator_,
+            estimator_name=self._parent.estimator_name_,
+            response_method=response_method,
+            pos_label=pos_label,
+        ) -> tuple[list[YPlotData], list[YPlotData]]:
+            """Get predictions and format y_true and y_pred using YPlotData."""
+            results = _get_cached_response_values(
+                cache=cache,
+                estimator_hash=estimator_hash,
+                estimator=estimator,
+                X=X,
+                response_method=response_method,
+                pos_label=pos_label,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
+            for key, value, is_cached in results:
+                key = cast(tuple[Any, ...], key)
+                if not is_cached:
+                    cache[key] = value
+                if key[-1] != "predict_time":
+                    y_pred = value
+
+            y_true = [
+                YPlotData(
+                    estimator_name=estimator_name,
+                    data_source=data_source,
+                    split=None,
+                    y=y_true,
+                )
+            ]
+            y_pred = [
+                YPlotData(
+                    estimator_name=estimator_name,
+                    data_source=data_source,
+                    split=None,
+                    y=y_pred,
+                )
+            ]
+            return y_true, y_pred
+
+        if data_source == "both":
+            X_train, y_train, data_source_hash_train = (
+                self._get_X_y_and_data_source_hash(data_source="train", X=X, y=y)
+            )
+            y_train_true, y_train_pred = get_ys(
+                X=X_train,
+                y_true=y_train,
+                data_source="train",
+                data_source_hash=data_source_hash_train,
+            )
+            assert y_train_true is not None, "y must be provided"
+
+            X_test, y_test, data_source_hash_test = self._get_X_y_and_data_source_hash(
+                data_source="test", X=X, y=y
+            )
+            y_test_true, y_test_pred = get_ys(
+                X=X_test,
+                y_true=y_test,
+                data_source="test",
+                data_source_hash=data_source_hash_test,
+            )
+            assert y_test_true is not None, "y must be provided"
+
+            y_true = y_train_true + y_test_true
+            y_pred = y_train_pred + y_test_pred
+            data_source_hash = None
+        else:
+            X, y_data_source, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
+
+            y_true, y_pred = get_ys(
+                X=X,
+                y_true=y_data_source,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
+
+            assert y_true is not None, "y must be provided"
+
+        # Compute cache key
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            cache_key_parts.extend(display_kwargs.values())
+            for kwarg in display_kwargs.values():
+                # NOTE: We cannot use lists in cache keys because they are not hashable
+                if isinstance(kwarg, list):
+                    kwarg = tuple(kwarg)
+                cache_key_parts.append(kwarg)
             if data_source_hash is not None:
                 cache_key_parts.append(data_source_hash)
             else:
                 cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
-        if cache_key in self._parent._cache:
+        if cache_key and cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
-            results = _get_cached_response_values(
-                cache=self._parent._cache,
-                estimator_hash=int(self._parent._hash),
-                estimator=self._parent.estimator_,
-                X=X,
-                response_method=response_method,
-                pos_label=display_kwargs.get("pos_label"),
-                data_source=data_source,
-                data_source_hash=data_source_hash,
-            )
-            for key, value, is_cached in results:
-                if not is_cached:
-                    self._parent._cache[cast(tuple[Any, ...], key)] = value
-                if cast(tuple[Any, ...], key)[-1] != "predict_time":
-                    y_pred = value
-
             display = display_class._compute_data_for_display(
-                y_true=[
-                    YPlotData(
-                        estimator_name=self._parent.estimator_name_,
-                        split=None,
-                        y=y,
-                    )
-                ],
-                y_pred=[
-                    YPlotData(
-                        estimator_name=self._parent.estimator_name_,
-                        split=None,
-                        y=y_pred,
-                    )
-                ],
+                y_true=y_true,
+                y_pred=y_pred,
                 report_type="estimator",
                 estimators=[self._parent.estimator_],
                 ml_task=self._parent._ml_task,
@@ -1725,7 +1828,7 @@ class _MetricsAccessor(
     def roc(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
@@ -1734,12 +1837,14 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metrics and
+              present them side-by-side.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -1873,7 +1978,7 @@ class _MetricsAccessor(
     def prediction_error(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         subsample: float | int | None = 1_000,
@@ -1885,12 +1990,14 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metrics and
+              present them side-by-side.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -1954,11 +2061,6 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-        sample_weight: ArrayLike | None = None,
-        display_labels: list | None = None,
-        include_values: bool = True,
-        normalize: Literal["true", "pred", "all"] | None = None,
-        values_format: str | None = None,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -1982,25 +2084,6 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        sample_weight : array-like of shape (n_samples,), default=None
-            Sample weights.
-
-        display_labels : list of str, default=None
-            Display labels for plot. If None, display labels are set from 0 to
-            ``n_classes - 1``.
-
-        include_values : bool, default=True
-            Includes values in confusion matrix.
-
-        normalize : {'true', 'pred', 'all'}, default=None
-            Normalizes confusion matrix over the true (rows), predicted (columns)
-            conditions or all the population. If None, confusion matrix will not be
-            normalized.
-
-        values_format : str, default=None
-            Format specification for values in confusion matrix. If None, the format
-            specification is 'd' or '.2g' whichever is shorter.
-
         Returns
         -------
         display : :class:`~skore._sklearn._plot.ConfusionMatrixDisplay`
@@ -2018,21 +2101,16 @@ class _MetricsAccessor(
         >>> report = EstimatorReport(classifier, **split_data)
         >>> report.metrics.confusion_matrix()
         """
-        X, y, _ = self._get_X_y_and_data_source_hash(data_source=data_source, X=X, y=y)
-
-        y_pred = self._parent.get_predictions(
-            data_source=data_source,
-            response_method="predict",
-            X=X,
-            pos_label=None,
+        display_kwargs = {"display_labels": self._parent.estimator_.classes_.tolist()}
+        display = cast(
+            ConfusionMatrixDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method="predict",
+                display_class=ConfusionMatrixDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-
-        return ConfusionMatrixDisplay.from_predictions(
-            y_true=y,
-            y_pred=y_pred,
-            sample_weight=sample_weight,
-            display_labels=display_labels,
-            include_values=include_values,
-            normalize=normalize,
-            values_format=values_format,
-        )
+        return display

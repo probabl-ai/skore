@@ -16,7 +16,7 @@ from skore._sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore._sklearn.types import MLTask, ReportType, YPlotData
+from skore._sklearn.types import DataSource, MLTask, ReportType, YPlotData
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
@@ -54,7 +54,7 @@ class PredictionErrorDisplay(DisplayMixin):
     range_residuals : RangeData
         Global range of the residuals.
 
-    data_source : {"train", "test", "X_y"}
+    data_source : {"train", "test", "X_y", "both"}
         The data source used to display the prediction error.
 
     ml_task : {"regression", "multioutput-regression"}
@@ -107,7 +107,7 @@ class PredictionErrorDisplay(DisplayMixin):
         range_y_true: RangeData,
         range_y_pred: RangeData,
         range_residuals: RangeData,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: DataSource | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
@@ -223,39 +223,40 @@ class PredictionErrorDisplay(DisplayMixin):
             The scatter plot.
         """
         scatter = []
-        data_points_kwargs: dict[str, Any] = {
-            "color": "tab:blue",
-            "alpha": 0.3,
-            "s": 10,
-        }
+        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
 
         data_points_kwargs_validated = _validate_style_kwargs(
             data_points_kwargs, samples_kwargs[0]
         )
 
-        if self.data_source in ("train", "test"):
-            scatter_label = f"{self.data_source.title()} set"
-        else:  # data_source == "X_y"
-            scatter_label = "External data set"
+        def add_scatter(data_source: DataSource, marker="o"):
+            if data_source in ("train", "test"):
+                scatter_label = f"{data_source.title()} set"
+            else:  # data_source == "X_y"
+                scatter_label = "External data set"
 
-        if kind == "actual_vs_predicted":
+            prediction_error = self._prediction_error.query(
+                f"data_source == {data_source!r}"
+            )
+
             scatter.append(
                 self.ax_.scatter(
-                    self._prediction_error["y_pred"],
-                    self._prediction_error["y_true"],
+                    x=prediction_error["y_pred"],
+                    y=(
+                        prediction_error["y_true"]
+                        if kind == "actual_vs_predicted"
+                        else prediction_error["residuals"]
+                    ),
                     label=scatter_label,
-                    **data_points_kwargs_validated,
+                    **(data_points_kwargs_validated | {"marker": marker}),
                 )
             )
-        else:  # kind == "residual_vs_predicted"
-            scatter.append(
-                self.ax_.scatter(
-                    self._prediction_error["y_pred"],
-                    self._prediction_error["residuals"],
-                    label=scatter_label,
-                    **data_points_kwargs_validated,
-                )
-            )
+
+        if self.data_source == "both":
+            add_scatter(data_source="test", marker="x")
+            add_scatter(data_source="train")
+        else:
+            add_scatter(data_source=self.data_source)
 
         # move the perfect model line to the end of the legend
         handles, labels = self.ax_.get_legend_handles_labels()
@@ -720,7 +721,7 @@ class PredictionErrorDisplay(DisplayMixin):
         *,
         report_type: ReportType,
         ml_task: MLTask,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: DataSource | Literal["both"],
         subsample: float | int | None = 1_000,
         seed: int | None = None,
         **kwargs,
@@ -745,7 +746,7 @@ class PredictionErrorDisplay(DisplayMixin):
         ml_task : {"regression", "multioutput-regression"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y"}
+        data_source : {"train", "test", "X_y", "both"}
             The data source used to compute the prediction error curve.
 
         subsample : float, int or None, default=1_000
@@ -817,6 +818,7 @@ class PredictionErrorDisplay(DisplayMixin):
                     prediction_error_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
+                            "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "y_true": y_true_sample_i,
                             "y_pred": y_pred_sample_i,
@@ -834,6 +836,7 @@ class PredictionErrorDisplay(DisplayMixin):
                     prediction_error_records.append(
                         {
                             "estimator_name": y_true_i.estimator_name,
+                            "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "y_true": y_true_sample_i,
                             "y_pred": y_pred_sample_i,
@@ -854,7 +857,11 @@ class PredictionErrorDisplay(DisplayMixin):
 
         return cls(
             prediction_error=DataFrame.from_records(prediction_error_records).astype(
-                {"estimator_name": "category", "split": "category"}
+                {
+                    "estimator_name": "category",
+                    "data_source": "category",
+                    "split": "category",
+                }
             ),
             range_y_true=range_y_true,
             range_y_pred=range_y_pred,
@@ -894,6 +901,10 @@ class PredictionErrorDisplay(DisplayMixin):
         >>> df = display.frame()
         """
         statistical_columns = ["y_true", "y_pred", "residuals"]
+
+        if self.data_source == "both":
+            statistical_columns = ["data_source"] + statistical_columns
+
         if self.report_type == "estimator":
             columns = statistical_columns
         elif self.report_type == "cross-validation":
