@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 from typing import Any, Literal, cast
 
-import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import colormaps
 from matplotlib.axes import Axes
@@ -26,26 +25,6 @@ from skore._sklearn.types import (
     ReportType,
     YPlotData,
 )
-
-
-def _set_axis_labels(ax: Axes, info_pos_label: str | None) -> None:
-    """Add axis labels."""
-    xlabel = "Recall"
-    ylabel = "Precision"
-    if info_pos_label:
-        xlabel += info_pos_label
-        ylabel += info_pos_label
-
-    ax.set(
-        xlabel=xlabel,
-        xlim=(-0.01, 1.01),
-        ylabel=ylabel,
-        ylim=(-0.01, 1.01),
-        aspect="equal",
-    )
-
-
-MAX_N_LABELS = 5
 
 
 class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
@@ -113,8 +92,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     >>> display = report.metrics.precision_recall()
     >>> display.plot(relplot_kwargs={"palette": "Set2"})
     """
-
-    _default_pr_curve_kwargs: dict[str, Any] | None = None
 
     _default_relplot_kwargs: dict[str, Any] = {
         "kind": "line",
@@ -203,17 +180,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         stats_df: DataFrame,
         aggregate: bool = False,
     ) -> None:
-        """Build custom legend with AP stats for a single axis.
-
-        Parameters
-        ----------
-        ax : Axes
-            The axes to add legend to.
-        stats_df : DataFrame
-            DataFrame with average_precision column and optional grouping columns.
-        aggregate : bool, default=False
-            If True, show mean±std over splits. If False, show single value.
-        """
+        """Build custom legend with AP stats for a single axis."""
         if " = " in ax.get_title():
             ax_col, ax_col_value = ax.get_title().split(" = ")[-2:]
             stats_df = stats_df.query(f"{ax_col} == '{ax_col_value}'")
@@ -255,44 +222,108 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     if mask.any():
                         ap_series = stats_df.loc[mask, "average_precision"]
                         stat_str = self._format_ap_stat(ap_series, aggregate)
-                        new_labels.append(f"{val1} - {val2} ({stat_str})")
+                        val1_short = self._truncate_name(str(val1))
+                        val2_short = self._truncate_name(str(val2))
+                        new_labels.append(f"{val1_short} | {val2_short} ({stat_str})")
 
         if not new_labels:
             return
 
-        n_colors = len(new_labels)
+        n_entries = len(new_labels)
         if aggregate:
-            handles = self._create_legend_handles(n_colors)
+            handles = self._create_legend_handles(n_entries)
         else:
-            handles = ax.get_lines()[:n_colors]
+            handles = ax.get_lines()[:n_entries]
 
-        ncol = min(n_colors, 2)
+        # Adaptive layout based on number of entries and label length
+        max_label_len = max(len(lbl) for lbl in new_labels)
+        if n_entries <= 2 and max_label_len <= 40:
+            ncol = n_entries
+        elif n_entries <= 4 and max_label_len <= 30:
+            ncol = 2
+        else:
+            ncol = 1
+
+        fontsize = "small" if n_entries > 4 or max_label_len > 40 else "medium"
+
         ax.legend(
             handles,
             new_labels,
             loc="upper center",
-            bbox_to_anchor=(0.5, -0.20),
+            bbox_to_anchor=(0.5, -0.15),
             ncol=ncol,
             frameon=False,
+            fontsize=fontsize,
         )
+
+    def _truncate_name(self, name: str, max_len: int = 20) -> str:
+        """Truncate long names with ellipsis."""
+        if len(name) <= max_len:
+            return name
+        return name[: max_len - 1] + "…"
+
+    def _estimate_legend_rows(self, stats_df: DataFrame, aggregate: bool) -> int:
+        """Estimate number of legend rows for margin calculation."""
+        candidate_cols = ["estimator_name", "label", "data_source"]
+        if not aggregate:
+            candidate_cols.append("split")
+
+        grouping_cols = [
+            c
+            for c in candidate_cols
+            if c in stats_df.columns and stats_df[c].nunique() > 1
+        ]
+
+        if not grouping_cols:
+            n_entries = 1
+        elif len(grouping_cols) == 1:
+            n_entries = stats_df[grouping_cols[0]].nunique()
+        else:
+            n_entries = (
+                stats_df[grouping_cols[0]].nunique()
+                * stats_df[grouping_cols[1]].nunique()
+            )
+
+        # Estimate rows: more entries = more rows (single column for many)
+        if n_entries <= 2:
+            return 1
+        elif n_entries <= 4:
+            return 2
+        else:
+            return n_entries
+
+    def _adjust_figure_for_legend(self, n_legend_rows: int) -> None:
+        """Adjust figure bottom margin and height based on expected legend size."""
+        # Calculate additional height needed for legend
+        legend_height_inches = n_legend_rows * 0.25
+        current_height = self.figure_.get_figheight()
+
+        # Increase figure height to accommodate legend
+        new_height = current_height + legend_height_inches
+        self.figure_.set_figheight(new_height)
+
+        # Adjust bottom margin proportionally
+        bottom_ratio = legend_height_inches / new_height
+        self.figure_.subplots_adjust(bottom=max(0.1, min(bottom_ratio + 0.08, 0.4)))
 
     def _format_ap_stat(self, ap_series: Any, aggregate: bool) -> str:
         """Format AP statistic as single value or mean±std."""
         if aggregate and len(ap_series) > 1:
-            return f"AP = {ap_series.mean():0.2f} ± {ap_series.std():0.2f}"
-        return f"AP = {ap_series.iloc[0]:0.2f}"
+            return f"AP={ap_series.mean():.2f}±{ap_series.std():.2f}"
+        return f"AP={ap_series.iloc[0]:.2f}"
 
     def _format_legend_label(self, col_name: str, val: Any, stat_str: str) -> str:
         """Format a legend label based on column type."""
+        val_str = self._truncate_name(str(val))
         if col_name == "estimator_name":
-            return f"{val} ({stat_str})"
+            return f"{val_str} ({stat_str})"
         elif col_name == "data_source":
-            return f"{str(val).title()} set ({stat_str})"
+            return f"{val_str.title()} set ({stat_str})"
         elif col_name == "label":
-            return f"Class {str(val).title()} ({stat_str})"
+            return f"{val_str} ({stat_str})"
         elif col_name == "split":
             return f"Split #{int(val) + 1} ({stat_str})"
-        return f"{val} ({stat_str})"
+        return f"{val_str} ({stat_str})"
 
     def _create_legend_handles(self, n_colors: int) -> list[Line2D]:
         """Create legend handles matching seaborn's color palette."""
@@ -336,7 +367,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         )
 
         facet_grid = sns.relplot(**kwargs)
-        facet_grid.figure.subplots_adjust(bottom=0.2)
 
         self.figure_ = facet_grid.figure
         self.ax_ = facet_grid.axes.flatten()
@@ -361,6 +391,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         for ax in self.ax_:
             self._build_legend_for_ax(ax=ax, stats_df=plot_data)
+
+        n_legend_rows = self._estimate_legend_rows(plot_data, aggregate=False)
+        self._adjust_figure_for_legend(n_legend_rows)
 
         facet_grid.figure.suptitle(
             f"Precision-Recall Curve for {estimator_name}"
@@ -404,7 +437,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         )
 
         facet_grid = sns.relplot(**kwargs)
-        facet_grid.figure.subplots_adjust(bottom=0.25)
 
         self.figure_ = facet_grid.figure
         self.ax_ = facet_grid.axes.flatten()
@@ -428,6 +460,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         for ax in self.ax_:
             self._build_legend_for_ax(ax=ax, stats_df=plot_data, aggregate=aggregate)
 
+        n_legend_rows = self._estimate_legend_rows(plot_data, aggregate=aggregate)
+        self._adjust_figure_for_legend(n_legend_rows)
+
         facet_grid.figure.suptitle(
             f"Precision-Recall Curve for {estimator_name}"
             + info_pos_label
@@ -442,6 +477,13 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         relplot_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """Plot precision-recall curve comparing multiple estimators."""
+        if self.ml_task == "multiclass-classification" and subplot_by is None:
+            raise ValueError(
+                "subplot_by=None is not supported for multiclass classification "
+                "in comparison reports. Use subplot_by='label' or "
+                "subplot_by='estimator_name' instead."
+            )
+
         plot_data = self.frame(with_average_precision=True)
 
         col, hue = self._get_plot_columns(plot_data, subplot_by)
@@ -457,20 +499,12 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             "hue": hue,
         }
 
-        if (
-            self.ml_task == "multiclass-classification"
-            and col != "label"
-            and hue != "label"
-        ):
-            kwargs["style"] = "label"
-
         kwargs = _validate_style_kwargs(
             {**kwargs, **self._default_relplot_kwargs},
             relplot_kwargs or {},
         )
 
         facet_grid = sns.relplot(**kwargs)
-        facet_grid.figure.subplots_adjust(bottom=0.2)
 
         self.figure_ = facet_grid.figure
         self.ax_ = facet_grid.axes.flatten()
@@ -494,6 +528,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         for ax in self.ax_:
             self._build_legend_for_ax(ax=ax, stats_df=plot_data)
 
+        n_legend_rows = self._estimate_legend_rows(plot_data, aggregate=False)
+        self._adjust_figure_for_legend(n_legend_rows)
+
         facet_grid.figure.suptitle(
             "Precision-Recall Curve" + info_pos_label + info_data_source,
             y=1.02,
@@ -502,165 +539,70 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     def _plot_comparison_cross_validation(
         self,
         *,
-        estimator_names: list[str],
-        pr_curve_kwargs: list[dict[str, Any]],
-    ) -> tuple[Axes, list[Line2D], str | None]:
-        """Plot precision-recall curve of several estimators.
+        subplot_by: str | Literal["auto"] | None = "auto",
+        relplot_kwargs: dict[str, Any] | None = None,
+    ) -> None:
+        """Plot precision-recall curve comparing multiple cross-validated estimators."""
+        if self.ml_task == "multiclass-classification" and subplot_by is None:
+            raise ValueError(
+                "subplot_by=None is not supported for multiclass classification "
+                "in comparison reports. Use subplot_by='label' or "
+                "subplot_by='estimator_name' instead."
+            )
 
-        Parameters
-        ----------
-        estimator_names : list of str
-            The names of the estimators.
+        plot_data = self.frame(with_average_precision=True)
 
-        pr_curve_kwargs : list of dict
-            List of dictionaries containing keyword arguments to customize the
-            precision-recall curves. The length of the list should match the number of
-            curves to plot.
+        col, hue = self._get_plot_columns(plot_data, subplot_by)
 
-        Returns
-        -------
-        ax : matplotlib.axes.Axes
-            The axes with the precision-recall curves plotted.
+        # Convert categorical columns to avoid FutureWarning from pandas groupby
+        for c in ["label", "data_source", "estimator_name", "split"]:
+            if c in plot_data.columns and hasattr(plot_data[c], "cat"):
+                plot_data[c] = plot_data[c].astype(str)
 
-        lines : list of matplotlib.lines.Line2D
-            The plotted precision-recall curve lines.
+        kwargs: dict[str, Any] = {
+            "data": plot_data,
+            "col": col,
+            "hue": hue,
+            "units": "split",
+            "alpha": 0.4,
+        }
 
-        info_pos_label : str or None
-            String containing positive label information for binary classification,
-            None for multiclass.
-        """
-        lines: list[Line2D] = []
-        line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
+        kwargs = _validate_style_kwargs(
+            {**kwargs, **self._default_relplot_kwargs},
+            relplot_kwargs or {},
+        )
+
+        facet_grid = sns.relplot(**kwargs)
+
+        self.figure_ = facet_grid.figure
+        self.ax_ = facet_grid.axes.flatten()
+        self.lines_ = [line for ax in self.ax_ for line in ax.get_lines()]
 
         if self.ml_task == "binary-classification":
-            labels = self.precision_recall["label"].cat.categories
-            colors = sample_mpl_colormap(
-                colormaps.get_cmap("tab10"),
-                10 if len(estimator_names) < 10 else len(estimator_names),
-            )
-            curve_idx = 0
-            for report_idx, estimator_name in enumerate(estimator_names):
-                query = (
-                    f"label == {self.pos_label!r} "
-                    f"& estimator_name == '{estimator_name}'"
-                )
-                average_precision = self.average_precision.query(query)[
-                    "average_precision"
-                ]
-
-                precision_recall = self.precision_recall.query(query)
-
-                for split_idx, segment in precision_recall.groupby(
-                    "split", observed=True
-                ):
-                    if split_idx == 0:
-                        label_kwargs = {
-                            "label": (
-                                f"{estimator_name} "
-                                f"(AUC = {average_precision.mean():0.2f} "
-                                f"+/- {average_precision.std():0.2f})"
-                            )
-                        }
-                    else:
-                        label_kwargs = {}
-
-                    line_kwargs["color"] = colors[report_idx]
-                    line_kwargs["alpha"] = 0.6
-                    line_kwargs_validated = _validate_style_kwargs(
-                        line_kwargs, pr_curve_kwargs[curve_idx]
-                    )
-
-                    (line,) = self.ax_.plot(
-                        segment["recall"],
-                        segment["precision"],
-                        **(line_kwargs_validated | label_kwargs),
-                    )
-                    lines.append(line)
-
-                    curve_idx += 1
-
             info_pos_label = (
-                f"\n(Positive label: {self.pos_label})"
+                f"\nPositive label: {self.pos_label}"
                 if self.pos_label is not None
                 else ""
             )
+        else:
+            info_pos_label = ""
 
-            if self.data_source in ("train", "test"):
-                legend_title = f"{self.data_source.capitalize()} set"
-            else:
-                legend_title = "External set"
+        info_data_source = (
+            f"\nData source: {self.data_source.capitalize()} set"
+            if self.data_source in ("train", "test")
+            else "\nData source: external set"
+        )
 
-            _, labels = self.ax_.get_legend_handles_labels()
-            if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
-                self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
-            else:
-                self.ax_.legend(loc="lower left", title=legend_title)
-            self.ax_.set_title("Precision-Recall Curve")
+        for ax in self.ax_:
+            self._build_legend_for_ax(ax=ax, stats_df=plot_data, aggregate=True)
 
-        else:  # multiclass-classification
-            info_pos_label = None  # irrelevant for multiclass
-            labels = self.precision_recall["label"].cat.categories
-            colors = sample_mpl_colormap(
-                colormaps.get_cmap("tab10"),
-                10 if len(estimator_names) < 10 else len(estimator_names),
-            )
-            idx = 0
+        n_legend_rows = self._estimate_legend_rows(plot_data, aggregate=True)
+        self._adjust_figure_for_legend(n_legend_rows)
 
-            for est_idx, estimator_name in enumerate(estimator_names):
-                est_color = colors[est_idx]
-
-                for label_idx, label in enumerate(labels):
-                    query = f"label == {label!r} & estimator_name == '{estimator_name}'"
-                    average_precision = self.average_precision.query(query)[
-                        "average_precision"
-                    ]
-
-                    precision_recall = self.precision_recall.query(query)
-
-                    for split_idx, segment in precision_recall.groupby(
-                        "split", observed=True
-                    ):
-                        if split_idx == 0:
-                            label_kwargs = {
-                                "label": (
-                                    f"{estimator_name} "
-                                    f"(AUC = {average_precision.mean():0.2f} "
-                                    f"+/- {average_precision.std():0.2f})"
-                                )
-                            }
-                        else:
-                            label_kwargs = {}
-
-                        line_kwargs["color"] = est_color
-                        line_kwargs["alpha"] = 0.6
-                        line_kwargs_validated = _validate_style_kwargs(
-                            line_kwargs, pr_curve_kwargs[idx]
-                        )
-
-                        (line,) = self.ax_[label_idx].plot(
-                            segment["recall"],
-                            segment["precision"],
-                            **(line_kwargs_validated | label_kwargs),
-                        )
-                        lines.append(line)
-
-                        idx = idx + 1
-
-                    info_pos_label = f"\n(Positive label: {label})"
-                    _set_axis_labels(self.ax_[label_idx], info_pos_label)
-
-            if self.data_source in ("train", "test"):
-                legend_title = f"{self.data_source.capitalize()} set"
-            else:
-                legend_title = "External set"
-
-            for ax in self.ax_:
-                _, labels = ax.get_legend_handles_labels()
-                ax.legend(loc="lower left", title=legend_title)
-
-            self.figure_.suptitle("Precision-Recall Curve")
-
-        return self.ax_, lines, info_pos_label
+        facet_grid.figure.suptitle(
+            "Precision-Recall Curve" + info_pos_label + info_data_source,
+            y=1.02,
+        )
 
     @DisplayMixin.style_plot
     def plot(
@@ -668,7 +610,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         *,
         estimator_name: str | None = None,
         relplot_kwargs: dict[str, Any] | None = None,
-        pr_curve_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
         despine: bool = True,
         subplot_by: str | Literal["auto"] | None = "auto",
     ) -> None:
@@ -682,13 +623,8 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         relplot_kwargs : dict, default=None
             Keyword arguments to be passed to seaborn's `relplot` for rendering
-            the precision-recall curve(s). Used for single estimator and
-            cross-validation reports. Common options include `palette`, `alpha`,
-            `linewidth`, etc.
-
-        pr_curve_kwargs : dict or list of dict, default=None
-            Keyword arguments to be passed to matplotlib's `plot` for rendering
-            the precision-recall curve(s). Used for comparison reports.
+            the precision-recall curve(s). Common options include `palette`,
+            `alpha`, `linewidth`, etc.
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
@@ -696,7 +632,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         subplot_by : str, "auto", or None, default="auto"
             Column to use for subplots. If "auto", defaults to "label" for
             multiclass classification and None for binary. Can be set to
-            "label", "data_source", "split", or None.
+            "label", "data_source", "split", "estimator_name", or None.
+            Note: subplot_by=None is not supported for multiclass classification
+            in comparison reports.
 
         Notes
         -----
@@ -721,7 +659,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         return self._plot(
             estimator_name=estimator_name,
             relplot_kwargs=relplot_kwargs,
-            pr_curve_kwargs=pr_curve_kwargs,
             despine=despine,
             subplot_by=subplot_by,
         )
@@ -731,7 +668,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         *,
         estimator_name: str | None = None,
         relplot_kwargs: dict[str, Any] | None = None,
-        pr_curve_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
         despine: bool = True,
         subplot_by: str | Literal["auto"] | None = "auto",
     ) -> None:
@@ -776,76 +712,21 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     _despine_matplotlib_axis(ax)
             return
 
-        if pr_curve_kwargs is None:
-            pr_curve_kwargs = self._default_pr_curve_kwargs
-
-        if self.ml_task == "binary-classification":
-            n_curves = len(self.average_precision.query(f"label == {self.pos_label!r}"))
-        else:
-            n_curves = len(self.average_precision)
-
-        pr_curve_kwargs = self._validate_curve_kwargs(
-            curve_param_name="pr_curve_kwargs",
-            curve_kwargs=pr_curve_kwargs,
-            n_curves=n_curves,
-            report_type=self.report_type,
-        )
-
-        # For comparison-cross-validation, use the old matplotlib-based approach
-        if pr_curve_kwargs is None:
-            pr_curve_kwargs = self._default_pr_curve_kwargs
-
-        if self.ml_task == "binary-classification":
-            n_curves = len(self.average_precision.query(f"label == {self.pos_label!r}"))
-        else:
-            n_curves = len(self.average_precision)
-
-        pr_curve_kwargs = self._validate_curve_kwargs(
-            curve_param_name="pr_curve_kwargs",
-            curve_kwargs=pr_curve_kwargs,
-            n_curves=n_curves,
-            report_type=self.report_type,
-        )
-
-        if (
-            self.report_type == "comparison-cross-validation"
-            and self.ml_task == "multiclass-classification"
-        ):
-            n_labels = len(self.average_precision["label"].cat.categories)
-            self.figure_, self.ax_ = plt.subplots(
-                ncols=n_labels, figsize=(6.4 * n_labels, 4.8)
+        elif self.report_type == "comparison-cross-validation":
+            self._plot_comparison_cross_validation(
+                subplot_by=subplot_by,
+                relplot_kwargs=relplot_kwargs,
             )
-        else:
-            self.figure_, self.ax_ = plt.subplots()
-
-        if self.report_type == "comparison-cross-validation":
-            self.ax_, self.lines_, info_pos_label = (
-                self._plot_comparison_cross_validation(
-                    estimator_names=self.precision_recall[
-                        "estimator_name"
-                    ].cat.categories,
-                    pr_curve_kwargs=pr_curve_kwargs,
-                )
-            )
-        else:
-            raise ValueError(
-                "`report_type` should be one of 'estimator', 'cross-validation', "
-                "'comparison-cross-validation' or 'comparison-estimator'. "
-                f"Got '{self.report_type}' instead."
-            )
-
-        if (
-            self.report_type == "comparison-cross-validation"
-            and self.ml_task == "multiclass-classification"
-        ):
-            for ax in self.ax_:
-                if despine:
-                    _despine_matplotlib_axis(ax)
-        else:
-            _set_axis_labels(self.ax_, info_pos_label)
-
             if despine:
-                _despine_matplotlib_axis(self.ax_)
+                for ax in self.ax_:
+                    _despine_matplotlib_axis(ax)
+            return
+
+        raise ValueError(
+            "`report_type` should be one of 'estimator', 'cross-validation', "
+            "'comparison-cross-validation' or 'comparison-estimator'. "
+            f"Got '{self.report_type}' instead."
+        )
 
     @classmethod
     def _compute_data_for_display(
