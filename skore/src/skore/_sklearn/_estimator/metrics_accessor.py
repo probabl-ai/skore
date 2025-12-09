@@ -1598,7 +1598,7 @@ class _MetricsAccessor(
         self,
         *,
         metric_function: Callable,
-        response_method: str | list[str],
+        response_method: str | list[str] = "predict",
         data_source: DataSource = "test",
         data_source_hash: int | None = None,
         X: ArrayLike | None = None,
