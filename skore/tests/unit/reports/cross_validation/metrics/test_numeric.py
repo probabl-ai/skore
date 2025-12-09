@@ -154,6 +154,26 @@ def test_custom_metric(forest_binary_classification_data):
     assert result.index == ["Accuracy Score"]
 
 
+def test_custom_metric_specific_response_method(forest_binary_classification_data):
+    """Check the behavior of the `response_method` computation in the report when doing
+    a custom metric
+    """
+
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y)
+
+    def custom_metric(y_true, y_proba):
+        return (y_true - y_proba) ** 2
+
+    result = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict_proba",
+    )
+
+    assert isinstance(result, dict)
+    assert result[0] == pytest.approx(0.0256)
+
+
 @pytest.mark.parametrize("metric", ["precision", "recall"])
 def test_summarize_pos_label_overwrite(metric, logistic_binary_classification_data):
     """Check that `pos_label` can be overwritten in `summarize`"""

@@ -943,8 +943,8 @@ class _MetricsAccessor(
     def custom_metric(
         self,
         metric_function: Callable,
-        response_method: str | list[str],
         *,
+        response_method: str | list[str] = "predict",
         metric_name: str | None = None,
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
@@ -969,7 +969,7 @@ class _MetricsAccessor(
             The metric function to be computed. The expected signature is
             `metric_function(y_true, y_pred, **kwargs)`.
 
-        response_method : str or list of str
+        response_method : str or list of str, default="predict"
             The estimator's method to be invoked to get the predictions. The possible
             values are: `predict`, `predict_proba`, `predict_log_proba`, and
             `decision_function`.

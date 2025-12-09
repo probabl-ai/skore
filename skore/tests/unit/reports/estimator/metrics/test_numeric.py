@@ -214,7 +214,6 @@ def test_custom_metric(linear_regression_with_test):
     threshold = 1
     result = report.metrics.custom_metric(
         metric_function=custom_metric,
-        response_method="predict",
         threshold=threshold,
     )
     should_raise = True
@@ -250,6 +249,26 @@ def test_custom_metric(linear_regression_with_test):
     assert result == pytest.approx(
         custom_metric(y_test, estimator.predict(X_test), threshold)
     )
+
+
+def test_custom_metric_specific_response_method(forest_binary_classification_with_test):
+    """Check the behavior of the `response_method` computation in the report when doing
+    a custom metric
+    """
+
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def custom_metric(y_true, y_proba):
+        return (y_true - y_proba) ** 2
+
+    result = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict_proba",
+    )
+
+    assert isinstance(result, dict)
+    assert result[0] == pytest.approx(0.0256)
 
 
 @pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])

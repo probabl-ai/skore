@@ -140,13 +140,13 @@ def regression_multioutput_train_test_split(regression_multioutput_data):
 @pytest.fixture
 def forest_binary_classification_data(binary_classification_data):
     X, y = binary_classification_data
-    return RandomForestClassifier(), X, y
+    return RandomForestClassifier(random_state=1), X, y
 
 
 @pytest.fixture
 def forest_binary_classification_with_test(binary_classification_train_test_split):
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
-    return RandomForestClassifier().fit(X_train, y_train), X_test, y_test
+    return RandomForestClassifier(random_state=1).fit(X_train, y_train), X_test, y_test
 
 
 @pytest.fixture
