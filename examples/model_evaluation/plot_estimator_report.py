@@ -145,7 +145,6 @@ import matplotlib.pyplot as plt
 
 ax = metric_report.plot.barh()
 ax.set_title("Metrics report")
-plt.tight_layout()
 
 # %%
 #
@@ -291,12 +290,12 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # that we can compute some additional metrics without having to recompute the
 # the predictions.
 report.metrics.summarize(
-    scoring={
+    metric={
         "Precision": "precision",
         "Recall": "recall",
         "Operational Decision Cost": operational_decision_cost,
     },
-    scoring_kwargs={"amount": amount, "response_method": "predict"},
+    metric_kwargs={"amount": amount, "response_method": "predict"},
 ).frame()
 
 # %%
@@ -312,7 +311,7 @@ operational_decision_cost_scorer = make_scorer(
     operational_decision_cost, response_method="predict", amount=amount
 )
 report.metrics.summarize(
-    scoring={
+    metric={
         "F1 Score": f1_scorer,
         "Operational Decision Cost": operational_decision_cost_scorer,
     },

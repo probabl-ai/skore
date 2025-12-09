@@ -109,10 +109,7 @@ roc_plot.plot()
 # In particular, we can inspect the model using the permutation feature importance:
 
 # %%
-import matplotlib.pyplot as plt
-
 rf_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
-plt.tight_layout()
 
 # %%
 # .. seealso::

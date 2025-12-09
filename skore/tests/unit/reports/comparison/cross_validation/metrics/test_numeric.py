@@ -281,7 +281,7 @@ def test_pos_label_default(metric):
     report_1 = CrossValidationReport(LogisticRegression(), X, y)
     report_2 = CrossValidationReport(LogisticRegression(), X, y)
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(scoring=metric).frame().reset_index()
+    result_both_labels = report.metrics.summarize(metric=metric).frame().reset_index()
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
     result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
 
@@ -299,11 +299,9 @@ def test_pos_label_overwrite(metric):
     report_2 = CrossValidationReport(LogisticRegression(), X, y, pos_label="B")
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
 
-    result_both_labels = report.metrics.summarize(
-        scoring=metric, pos_label=None
-    ).frame()
+    result_both_labels = report.metrics.summarize(metric=metric, pos_label=None).frame()
 
-    result = report.metrics.summarize(scoring=metric).frame().reset_index()
+    result = report.metrics.summarize(metric=metric).frame().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     for report_name in report.reports_:
@@ -313,7 +311,7 @@ def test_pos_label_overwrite(metric):
         )
 
     result = (
-        report.metrics.summarize(scoring=metric, pos_label="A").frame().reset_index()
+        report.metrics.summarize(metric=metric, pos_label="A").frame().reset_index()
     )
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
