@@ -125,6 +125,192 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         self.ml_task = ml_task
         self.report_type = report_type
 
+    @DisplayMixin.style_plot
+    def plot(
+        self,
+        *,
+        estimator_name: str | None = None,
+        subplot_by: str | Literal["auto"] | None = "auto",
+        relplot_kwargs: dict[str, Any] | None = None,
+        despine: bool = True,
+    ) -> None:
+        """Plot visualization.
+
+        Parameters
+        ----------
+        estimator_name : str, default=None
+            Name of the estimator used to plot the precision-recall curve. If
+            `None`, we use the inferred name from the estimator.
+
+        subplot_by : str, "auto", or None, default="auto"
+            Column to use for creating subplots. Options:
+            - "auto": "label" for multiclass, None for binary
+            - "label": one subplot per class (multiclass only)
+            - "estimator_name": one subplot per estimator (comparison only)
+            - None: no subplots (binary only)
+
+        relplot_kwargs : dict, default=None
+            Keyword arguments to be passed to seaborn's `relplot` for rendering
+            the precision-recall curve(s). Common options include `palette`,
+            `alpha`, `linewidth`, etc.
+
+        despine : bool, default=True
+            Whether to remove the top and right spines from the plot.
+
+        Notes
+        -----
+        The average precision (cf. :func:`~sklearn.metrics.average_precision_score`)
+        in scikit-learn is computed without any interpolation. To be consistent
+        with this metric, the precision-recall curve is plotted without any
+        interpolation as well (step-wise style).
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(classifier, **split_data)
+        >>> display = report.metrics.precision_recall()
+        >>> display.plot(relplot_kwargs={"palette": "Set2", "alpha": 0.8})
+        """
+        return self._plot(
+            estimator_name=estimator_name,
+            subplot_by=subplot_by,
+            relplot_kwargs=relplot_kwargs,
+            despine=despine,
+        )
+
+    def _plot_matplotlib(
+        self,
+        *,
+        estimator_name: str | None = None,
+        subplot_by: str | Literal["auto"] | None = "auto",
+        relplot_kwargs: dict[str, Any] | None = None,
+        despine: bool = True,
+    ) -> None:
+        """Matplotlib implementation of the `plot` method."""
+        is_crossval = self.report_type in (
+            "cross-validation",
+            "comparison-cross-validation",
+        )
+
+        plot_estimator_name = None
+        if self.report_type in ("estimator", "cross-validation"):
+            plot_estimator_name = (
+                self.precision_recall["estimator_name"].cat.categories.item()
+                if estimator_name is None
+                else estimator_name
+            )
+
+        self._plot_with_seaborn(
+            subplot_by=subplot_by,
+            relplot_kwargs=relplot_kwargs,
+            estimator_name=plot_estimator_name,
+            is_crossval=is_crossval,
+        )
+
+        if despine:
+            for ax in self.ax_:
+                _despine_matplotlib_axis(ax)
+
+    def _plot_with_seaborn(
+        self,
+        *,
+        subplot_by: str | Literal["auto"] | None = "auto",
+        relplot_kwargs: dict[str, Any] | None = None,
+        estimator_name: str | None = None,
+        is_crossval: bool = False,
+    ) -> None:
+        """Unified plotting function using seaborn relplot.
+
+        Parameters
+        ----------
+        subplot_by : str, "auto", or None
+            Column to use for subplots.
+        relplot_kwargs : dict, optional
+            User-provided kwargs for relplot.
+        estimator_name : str, optional
+            Estimator name for title (single estimator reports only).
+        is_crossval : bool
+            If True, add units="split" and alpha=0.4.
+        """
+        plot_data = self.frame(with_average_precision=True)
+
+        col, hue = self._get_plot_columns(plot_data, subplot_by)
+
+        cols_to_convert = ["label", "data_source"]
+        if is_crossval:
+            cols_to_convert.append("split")
+        if self.report_type in ("comparison-estimator", "comparison-cross-validation"):
+            cols_to_convert.append("estimator_name")
+
+        for c in cols_to_convert:
+            if c in plot_data.columns and hasattr(plot_data[c], "cat"):
+                plot_data[c] = plot_data[c].astype(str)
+
+        kwargs: dict[str, Any] = {
+            "data": plot_data,
+            "col": col,
+            "hue": hue,
+        }
+
+        if is_crossval:
+            kwargs["units"] = "split"
+            kwargs["alpha"] = 0.4
+
+        if self.data_source == "both" and not is_crossval:
+            kwargs["style"] = "data_source"
+            kwargs["dashes"] = {"train": (2, 2), "test": (1, 0)}
+
+        kwargs = _validate_style_kwargs(
+            {**kwargs, **self._default_relplot_kwargs},
+            relplot_kwargs or {},
+        )
+
+        facet_grid = sns.relplot(**kwargs)
+
+        self.figure_ = facet_grid.figure
+        self.ax_ = facet_grid.axes.flatten()
+        self.lines_ = [line for ax in self.ax_ for line in ax.get_lines()]
+
+        for ax in self.ax_:
+            self._build_legend_for_ax(
+                ax=ax, stats_df=plot_data, is_crossval=is_crossval
+            )
+
+        self._adjust_figure_for_legend(plot_data[hue].nunique() if hue else 1)
+
+        if self.ml_task == "binary-classification":
+            info_pos_label = (
+                f"\nPositive label: {self.pos_label}"
+                if self.pos_label is not None
+                else ""
+            )
+        else:
+            info_pos_label = ""
+
+        info_data_source = (
+            f"\nData source: {self.data_source.capitalize()} set"
+            if self.data_source in ("train", "test")
+            else "\nData source: external set"
+            if self.data_source != "both"
+            else ""
+        )
+
+        title = (
+            f"Precision-Recall Curve for {estimator_name}"
+            if estimator_name
+            else "Precision-Recall Curve"
+        )
+        facet_grid.figure.suptitle(
+            title + info_pos_label + info_data_source,
+            y=1.02,
+        )
+
     def _get_plot_columns(
         self,
         plot_data: DataFrame,
@@ -201,7 +387,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         *,
         ax: Axes,
         stats_df: DataFrame,
-        aggregate: bool = False,
+        is_crossval: bool = False,
     ) -> None:
         """Build custom legend with AP stats for a single axis."""
         if " = " in ax.get_title():
@@ -209,8 +395,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             stats_df = stats_df.query(f"{ax_col} == '{ax_col_value}'")
 
         candidate_cols = ["estimator_name", "label", "data_source"]
-        if not aggregate:
-            candidate_cols.append("split")
 
         grouping_cols = [
             c
@@ -221,7 +405,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         new_labels = []
         if not grouping_cols:
             ap_series = stats_df["average_precision"]
-            new_labels = [self._format_ap_stat(ap_series, aggregate)]
+            new_labels = [self._format_ap_stat(ap_series, is_crossval)]
         elif len(grouping_cols) == 1:
             col_name = grouping_cols[0]
             col = stats_df[col_name]
@@ -230,7 +414,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 mask = col == val
                 if mask.any():
                     ap_series = stats_df.loc[mask, "average_precision"]
-                    stat_str = self._format_ap_stat(ap_series, aggregate)
+                    stat_str = self._format_ap_stat(ap_series, is_crossval)
                     lbl = self._format_legend_label(col_name, val, stat_str)
                     new_labels.append(lbl)
         else:
@@ -244,7 +428,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     mask = (col1 == val1) & (col2 == val2)
                     if mask.any():
                         ap_series = stats_df.loc[mask, "average_precision"]
-                        stat_str = self._format_ap_stat(ap_series, aggregate)
+                        stat_str = self._format_ap_stat(ap_series, is_crossval)
                         val1_short = self._truncate_name(str(val1))
                         val2_short = self._truncate_name(str(val2))
                         new_labels.append(f"{val1_short} | {val2_short} ({stat_str})")
@@ -255,7 +439,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         n_entries = len(new_labels)
 
         lines = ax.get_lines()
-        if aggregate:
+        if is_crossval:
             seen_colors = []
             for line in lines:
                 color = line.get_color()
@@ -277,7 +461,8 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             fontsize=fontsize,
         )
 
-    def _truncate_name(self, name: str, max_len: int = 20) -> str:
+    @staticmethod
+    def _truncate_name(name: str, max_len: int = 20) -> str:
         """Truncate long names with ellipsis."""
         if len(name) <= max_len:
             return name
@@ -294,9 +479,10 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         bottom_ratio = legend_height_inches / new_height
         self.figure_.subplots_adjust(bottom=bottom_ratio)
 
-    def _format_ap_stat(self, ap_series: Any, aggregate: bool) -> str:
+    @staticmethod
+    def _format_ap_stat(ap_series: Any, is_crossval: bool) -> str:
         """Format AP statistic as single value or mean±std."""
-        if aggregate and len(ap_series) > 1:
+        if is_crossval and len(ap_series) > 1:
             return f"AP={ap_series.mean():.2f}±{ap_series.std():.2f}"
         return f"AP={ap_series.iloc[0]:.2f}"
 
@@ -312,193 +498,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         elif col_name == "split":
             return f"Split #{int(val) + 1} ({stat_str})"
         return f"{val_str} ({stat_str})"
-
-    def _plot_with_seaborn(
-        self,
-        *,
-        subplot_by: str | Literal["auto"] | None = "auto",
-        relplot_kwargs: dict[str, Any] | None = None,
-        estimator_name: str | None = None,
-        is_cross_validation: bool = False,
-    ) -> None:
-        """Unified plotting function using seaborn relplot.
-
-        Parameters
-        ----------
-        subplot_by : str, "auto", or None
-            Column to use for subplots.
-        relplot_kwargs : dict, optional
-            User-provided kwargs for relplot.
-        estimator_name : str, optional
-            Estimator name for title (single estimator reports only).
-        is_cross_validation : bool
-            If True, add units="split" and alpha=0.4, and use aggregate=True for legend.
-        """
-        plot_data = self.frame(with_average_precision=True)
-
-        col, hue = self._get_plot_columns(plot_data, subplot_by)
-
-        cols_to_convert = ["label", "data_source"]
-        if is_cross_validation:
-            cols_to_convert.append("split")
-        if self.report_type in ("comparison-estimator", "comparison-cross-validation"):
-            cols_to_convert.append("estimator_name")
-
-        for c in cols_to_convert:
-            if c in plot_data.columns and hasattr(plot_data[c], "cat"):
-                plot_data[c] = plot_data[c].astype(str)
-
-        kwargs: dict[str, Any] = {
-            "data": plot_data,
-            "col": col,
-            "hue": hue,
-        }
-
-        if is_cross_validation:
-            kwargs["units"] = "split"
-            kwargs["alpha"] = 0.4
-
-        if self.data_source == "both" and not is_cross_validation:
-            kwargs["style"] = "data_source"
-            kwargs["dashes"] = {"train": (2, 2), "test": (1, 0)}
-
-        kwargs = _validate_style_kwargs(
-            {**kwargs, **self._default_relplot_kwargs},
-            relplot_kwargs or {},
-        )
-
-        facet_grid = sns.relplot(**kwargs)
-
-        self.figure_ = facet_grid.figure
-        self.ax_ = facet_grid.axes.flatten()
-        self.lines_ = [line for ax in self.ax_ for line in ax.get_lines()]
-
-        if self.ml_task == "binary-classification":
-            info_pos_label = (
-                f"\nPositive label: {self.pos_label}"
-                if self.pos_label is not None
-                else ""
-            )
-        else:
-            info_pos_label = ""
-
-        info_data_source = (
-            f"\nData source: {self.data_source.capitalize()} set"
-            if self.data_source in ("train", "test")
-            else "\nData source: external set"
-            if self.data_source != "both"
-            else ""
-        )
-
-        aggregate = is_cross_validation
-        for ax in self.ax_:
-            self._build_legend_for_ax(ax=ax, stats_df=plot_data, aggregate=aggregate)
-
-        self._adjust_figure_for_legend(plot_data[hue].nunique() if hue else 1)
-
-        title = (
-            f"Precision-Recall Curve for {estimator_name}"
-            if estimator_name
-            else "Precision-Recall Curve"
-        )
-        facet_grid.figure.suptitle(
-            title + info_pos_label + info_data_source,
-            y=1.02,
-        )
-
-    @DisplayMixin.style_plot
-    def plot(
-        self,
-        *,
-        estimator_name: str | None = None,
-        subplot_by: str | Literal["auto"] | None = "auto",
-        relplot_kwargs: dict[str, Any] | None = None,
-        despine: bool = True,
-    ) -> None:
-        """Plot visualization.
-
-        Parameters
-        ----------
-        estimator_name : str, default=None
-            Name of the estimator used to plot the precision-recall curve. If
-            `None`, we use the inferred name from the estimator.
-
-        subplot_by : str, "auto", or None, default="auto"
-            Column to use for creating subplots. Options:
-            - "auto": "label" for multiclass, None for binary
-            - "label": one subplot per class (multiclass only)
-            - "estimator_name": one subplot per estimator (comparison only)
-            - None: no subplots (binary only)
-            Note: "split" is not allowed.
-
-        relplot_kwargs : dict, default=None
-            Keyword arguments to be passed to seaborn's `relplot` for rendering
-            the precision-recall curve(s). Common options include `palette`,
-            `alpha`, `linewidth`, etc.
-
-        despine : bool, default=True
-            Whether to remove the top and right spines from the plot.
-
-        Notes
-        -----
-        The average precision (cf. :func:`~sklearn.metrics.average_precision_score`)
-        in scikit-learn is computed without any interpolation. To be consistent
-        with this metric, the precision-recall curve is plotted without any
-        interpolation as well (step-wise style).
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
-        >>> display = report.metrics.precision_recall()
-        >>> display.plot(relplot_kwargs={"palette": "Set2", "alpha": 0.8})
-        """
-        return self._plot(
-            estimator_name=estimator_name,
-            subplot_by=subplot_by,
-            relplot_kwargs=relplot_kwargs,
-            despine=despine,
-        )
-
-    def _plot_matplotlib(
-        self,
-        *,
-        estimator_name: str | None = None,
-        subplot_by: str | Literal["auto"] | None = "auto",
-        relplot_kwargs: dict[str, Any] | None = None,
-        despine: bool = True,
-    ) -> None:
-        """Matplotlib implementation of the `plot` method."""
-        is_cross_validation = self.report_type in (
-            "cross-validation",
-            "comparison-cross-validation",
-        )
-
-        # Get estimator name for single estimator reports
-        plot_estimator_name = None
-        if self.report_type in ("estimator", "cross-validation"):
-            plot_estimator_name = (
-                self.precision_recall["estimator_name"].cat.categories.item()
-                if estimator_name is None
-                else estimator_name
-            )
-
-        self._plot_with_seaborn(
-            subplot_by=subplot_by,
-            relplot_kwargs=relplot_kwargs,
-            estimator_name=plot_estimator_name,
-            is_cross_validation=is_cross_validation,
-        )
-
-        if despine:
-            for ax in self.ax_:
-                _despine_matplotlib_axis(ax)
 
     @classmethod
     def _compute_data_for_display(
