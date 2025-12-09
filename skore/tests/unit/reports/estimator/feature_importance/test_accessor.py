@@ -2,7 +2,7 @@ import pytest
 
 from skore import EstimatorReport
 from skore._sklearn._estimator.feature_importance_accessor import (
-    _check_scoring,
+    _check_metric,
     metric_to_scorer,
 )
 
@@ -39,7 +39,7 @@ def _dummy_scorer(*_) -> float:
 
 
 @pytest.mark.parametrize(
-    "scoring, expected",
+    "metric, expected",
     [
         pytest.param(None, None, id="none"),
         pytest.param(_dummy_scorer, _dummy_scorer, id="callable"),
@@ -52,21 +52,21 @@ def _dummy_scorer(*_) -> float:
         ),
     ],
 )
-def test_check_scoring_passthrough_and_conversion(scoring, expected):
+def test_check_metric_passthrough_and_conversion(metric, expected):
     """Check that the scoring is passed through or converted to a dictionary of\
     scorers."""
-    assert _check_scoring(scoring) == expected
+    assert _check_metric(metric) == expected
 
 
 @pytest.mark.parametrize(
-    "scoring, err_msg",
+    "metric, err_msg",
     [
-        ("neg_root_mean_squared_error", "If scoring is a string"),
+        ("neg_root_mean_squared_error", "If metric is a string"),
         (["r2", metric_to_scorer["rmse"]], "must contain only strings"),
-        (3, "scoring must be a string"),
+        (3, "metric must be a string"),
     ],
 )
-def test_check_scoring_errors(scoring, err_msg):
-    """Check that the scoring is converted to a dictionary of scorers."""
+def test_check_metric_errors(metric, err_msg):
+    """Check that the metric is converted to a dictionary of scorers."""
     with pytest.raises(TypeError, match=err_msg):
-        _check_scoring(scoring)
+        _check_metric(metric)
