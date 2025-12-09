@@ -395,6 +395,22 @@ cm_display.plot()
 plt.show()
 
 # %%
+# In binary classification, a confusion matrix depends on the decision threshold used
+# to convert predicted probabilities into class labels. By default, skore uses a
+# threshold of 0.5, but confusion matrices are actually computed at every threshold
+# internally. You can access all available thresholds via the ``thresholds_`` attribute:
+print(f"Number of thresholds: {len(cm_display.thresholds_)}")
+print(
+    f"Threshold range: [{cm_display.thresholds_.min():.3f}, {cm_display.thresholds_.max():.3f}]"
+)
+
+# %%
+# To visualize the confusion matrix at a different threshold, use the ``threshold_value``
+# parameter. For example, a threshold of 0.3 will classify more samples as positive:
+cm_display.plot(threshold_value=0.3)
+plt.show()
+
+# %%
 # We can normalize the confusion matrix to get percentages instead of raw counts.
 # Here we normalize by true labels (rows):
 cm_display.plot(normalize="true")
@@ -411,36 +427,6 @@ plt.show()
 # analysis:
 cm_frame = cm_display.frame()
 cm_frame
-
-# %%
-# Decision threshold support
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~
-#
-# For binary classification, the confusion matrix can be computed at different
-# decision thresholds. This is useful for understanding how the model's predictions
-# change as the decision threshold varies.
-
-# %%
-# First, we create a display with threshold support enabled:
-cm_threshold_display = report.metrics.confusion_matrix(threshold=True)
-
-# %%
-# Now we can plot the confusion matrix at a specific threshold:
-cm_threshold_display.plot(threshold_value=0.3)
-plt.show()
-
-# %%
-# Since there are a finite number of threshold where the predictions change,
-# we plot the decision matrix associated with the threshold closest to the one provided.
-#
-# The frame method also supports threshold selection:
-cm_threshold_display.frame(threshold_value=0.7)
-
-# %%
-# When `threshold_value` is set to `"all"`, we get all confusion matrices for all
-# available thresholds:
-cm_all_thresholds = cm_threshold_display.frame(threshold_value="all")
-cm_all_thresholds.head(5)
 
 # %%
 # .. seealso::
