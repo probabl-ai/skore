@@ -178,7 +178,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
         )
 
         title = "Confusion Matrix"
-        print(f"ML task:{self.ml_task} !!")
         if self.ml_task == "binary-classification":
             if threshold_value is None:
                 threshold_value = 0.5
