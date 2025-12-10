@@ -462,6 +462,8 @@ class CoefficientsDisplay(DisplayMixin):
 
         Parameters
         ----------
+        frame : pd.DataFrame
+            The frame to plot.
         report_type : {"comparison-estimator", "comparison-cross-validation"}
             The type of report to plot.
         subplots_by : {"estimator", "label", "output"}
