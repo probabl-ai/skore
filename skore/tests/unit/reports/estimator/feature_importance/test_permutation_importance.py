@@ -55,7 +55,7 @@ def case_default_args_numpy():
 def case_r2_numpy():
     data = regression_data()
 
-    kwargs = {"scoring": make_scorer(r2_score), "seed": 42}
+    kwargs = {"metric": make_scorer(r2_score), "seed": 42}
 
     return (
         data,
@@ -68,7 +68,7 @@ def case_r2_numpy():
 def case_train_numpy():
     data = regression_data()
 
-    kwargs = {"data_source": "train", "scoring": "r2", "seed": 42}
+    kwargs = {"data_source": "train", "metric": "r2", "seed": 42}
 
     return data, kwargs, multi_index_numpy, repeat_columns
 
@@ -76,7 +76,7 @@ def case_train_numpy():
 def case_several_scoring_numpy():
     data = regression_data()
 
-    kwargs = {"scoring": ["r2", "rmse"], "seed": 42}
+    kwargs = {"metric": ["r2", "rmse"], "seed": 42}
 
     expected_index = pd.MultiIndex.from_product(
         [
@@ -117,7 +117,7 @@ def case_default_args_pandas():
 def case_r2_pandas():
     data = regression_data_dataframe()
 
-    kwargs = {"scoring": make_scorer(r2_score), "seed": 42}
+    kwargs = {"metric": make_scorer(r2_score), "seed": 42}
 
     return (
         data,
@@ -135,10 +135,10 @@ def case_train_pandas():
     return data, kwargs, multi_index_pandas, repeat_columns
 
 
-def case_several_scoring_pandas():
+def case_several_metric_pandas():
     data = regression_data_dataframe()
 
-    kwargs = {"scoring": ["r2", "rmse"], "seed": 42}
+    kwargs = {"metric": ["r2", "rmse"], "seed": 42}
 
     expected_index = pd.MultiIndex.from_product(
         [
@@ -171,7 +171,7 @@ def case_several_scoring_pandas():
         case_default_args_pandas,
         case_r2_pandas,
         case_train_pandas,
-        case_several_scoring_pandas,
+        case_several_metric_pandas,
         case_X_y,
     ],
 )
@@ -265,50 +265,50 @@ def test_cache_seed_int(regression_data):
     pd.testing.assert_frame_equal(report._cache[key], importance_second_call)
 
 
-def test_cache_scoring(regression_data):
-    """`scoring` is in the cache."""
+def test_cache_metric(regression_data):
+    """`metric` is in the cache."""
 
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    report.feature_importance.permutation(data_source="train", scoring="r2", seed=42)
+    report.feature_importance.permutation(data_source="train", metric="r2", seed=42)
 
-    # Scorings are different, so cache keys should be different
+    # Metrics are different, so cache keys should be different
     with check_cache_changed(report._cache):
         report.feature_importance.permutation(
-            data_source="train", scoring="rmse", seed=42
+            data_source="train", metric="rmse", seed=42
         )
 
 
 @pytest.mark.parametrize(
-    "scoring",
+    "metric",
     [
         make_scorer(r2_score),
         ["r2", "rmse"],
         {"r2": make_scorer(r2_score), "rmse": make_scorer(root_mean_squared_error)},
     ],
 )
-def test_cache_scoring_is_callable(regression_data, scoring):
-    """If `scoring` is a callable then the result is cached properly."""
+def test_cache_metric_is_callable(regression_data, metric):
+    """If `metric` is a callable then the result is cached properly."""
 
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
     with check_cache_changed(report._cache):
         result = report.feature_importance.permutation(
-            data_source="train", scoring=scoring, seed=42
+            data_source="train", metric=metric, seed=42
         )
 
     with check_cache_unchanged(report._cache):
         cached_result = report.feature_importance.permutation(
-            data_source="train", scoring=copy.copy(scoring), seed=42
+            data_source="train", metric=copy.copy(metric), seed=42
         )
 
     pd.testing.assert_frame_equal(cached_result, result)
 
 
 def test_classification(binary_classification_data):
-    """If `scoring` is a callable then the result is cached properly."""
+    """If `metric` is a callable then the result is cached properly."""
 
     X, y = binary_classification_data
     report = EstimatorReport(LogisticRegression(), X_train=X, y_train=y)

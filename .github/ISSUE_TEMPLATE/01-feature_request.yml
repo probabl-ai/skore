@@ -1,6 +1,7 @@
 name: Feature request
 description: Suggest a new feature, or enhancement to an existing feature.
-labels: ['enhancement', 'needs-triage']
+labels: ['needs-triage']
+type: feature
 
 body:
 - type: textarea
