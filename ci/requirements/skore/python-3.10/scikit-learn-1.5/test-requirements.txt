@@ -172,7 +172,7 @@ rich==14.2.0
     # via
     #   skore (skore/pyproject.toml)
     #   skore-local-project
-scikit-learn==1.7.2
+scikit-learn==1.5.2
     # via
     #   --override skore/overrides.txt
     #   skore (skore/pyproject.toml)
