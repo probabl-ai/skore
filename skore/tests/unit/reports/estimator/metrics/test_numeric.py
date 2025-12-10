@@ -271,6 +271,29 @@ def test_custom_metric_specific_response_method(forest_binary_classification_wit
     assert result[0] == pytest.approx(0.0256)
 
 
+def test_custom_metric_make_scorer(forest_binary_classification_with_test):
+    """Check the behavior of the `response_method` computation in the report when doing
+    a custom metric
+    """
+
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    from sklearn.metrics import make_scorer
+
+    def custom_metric(y_true, y_proba):
+        return (y_true - y_proba) ** 2
+
+    custom_scorer = make_scorer(custom_metric, response_method="predict_proba")
+
+    result = report.metrics.custom_metric(
+        metric_function=custom_scorer,
+        response_method="predict_proba",
+    )
+
+    assert result
+
+
 @pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
 def test_summarize_error_metric_strings(linear_regression_with_test, metric):
     """Check that we raise an error if a scoring string is not a valid metric."""

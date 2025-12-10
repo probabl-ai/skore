@@ -1509,7 +1509,7 @@ class _MetricsAccessor(
         self,
         metric_function: Callable,
         *,
-        response_method: str | list[str] = "predict",
+        response_method: str | list[str] | None = None,
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
@@ -1536,6 +1536,8 @@ class _MetricsAccessor(
             The estimator's method to be invoked to get the predictions. The possible
             values are: `predict`, `predict_proba`, `predict_log_proba`, and
             `decision_function`.
+            If `None`, will try to fetch the default response method based on the
+            scorer, or fallback to `predict`.
 
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
@@ -1584,6 +1586,13 @@ class _MetricsAccessor(
         ... )
         {'output': 44.9...}
         """
+        if response_method is None:
+            response_method = getattr(
+                metric_function,
+                "_response_method",
+                "predict",
+            )
+
         return self._custom_metric(
             data_source=data_source,
             data_source_hash=None,
