@@ -58,11 +58,18 @@ def test_coefficients_display_boxplot_kwargs(pyplot):
     )
 
     display = report.feature_importance.coefficients()
-    display.plot(boxplot_kwargs={"color": "red"})
+    display.plot(
+        boxplot_kwargs={"boxprops": {"facecolor": "blue"}},
+        stripplot_kwargs={"color": "red"},
+    )
 
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     patches = display.ax_.patches
     assert len(patches) > 0
     for patch in patches:
-        assert patch.get_facecolor() == (0.875, 0.125, 0.125, 1.0)  # red in RGBA
+        assert patch.get_facecolor() == (0.0, 0.0, 1.0, 1.0)  # blue in RGBA
+    expected_red = np.array([1, 0, 0, 0.5])  # red in RGBA
+    for collection in display.ax_.collections:
+        for facecolor in collection.get_facecolor():
+            np.testing.assert_allclose(facecolor, expected_red)

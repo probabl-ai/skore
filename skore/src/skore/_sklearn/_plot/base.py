@@ -108,7 +108,7 @@ DEFAULT_STYLE = {
 
 BOXPLOT_STYLE = {
     "patch_artist": True,
-    "boxprops": {"edgecolor": "black"},
+    "boxprops": {"edgecolor": "black", "facecolor": "none"},
     "whiskerprops": {"color": "black"},
     "capprops": {"color": "black"},
     "medianprops": {"color": "black"},

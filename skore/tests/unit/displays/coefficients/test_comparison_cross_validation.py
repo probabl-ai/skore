@@ -95,12 +95,6 @@ def test_binary_classification(
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
 
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Estimator"
-    assert [t.get_text() for t in legend.get_texts()] == [
-        f"{report_name}" for report_name in list(report.reports_.keys())
-    ]
-
     display.plot(subplots_by="estimator")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
@@ -108,10 +102,9 @@ def test_binary_classification(
     assert len(display.ax_) == len(report.reports_)
     for report_name, ax in zip(report.reports_, display.ax_, strict=True):
         assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"Estimator: {report_name}"
+        assert ax.get_title() == f"estimator = {report_name}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
-        assert ax.get_legend() is None
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
         display.plot(subplots_by="incorrect")
@@ -203,15 +196,9 @@ def test_multiclass_classification(
     assert len(display.ax_) == len(report.reports_)
     for report_name, ax in zip(report.reports_, display.ax_, strict=True):
         assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"Estimator: {report_name}"
+        assert ax.get_title() == f"estimator = {report_name}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
-
-        legend = ax.get_legend()
-        assert legend.get_title().get_text() == "Label"
-        assert [t.get_text() for t in legend.get_texts()] == [
-            f"{i}" for i in range(n_classes)
-        ]
 
     display.plot(subplots_by="estimator")
     assert hasattr(display, "figure_")
@@ -220,15 +207,9 @@ def test_multiclass_classification(
     assert len(display.ax_) == len(report.reports_)
     for report_name, ax in zip(report.reports_, display.ax_, strict=True):
         assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"Estimator: {report_name}"
+        assert ax.get_title() == f"estimator = {report_name}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
-
-        legend = ax.get_legend()
-        assert legend.get_title().get_text() == "Label"
-        assert [t.get_text() for t in legend.get_texts()] == [
-            f"{i}" for i in range(n_classes)
-        ]
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
         display.plot(subplots_by="incorrect")
@@ -329,12 +310,6 @@ def test_single_output_regression(
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
 
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Estimator"
-    assert [t.get_text() for t in legend.get_texts()] == [
-        f"{report_name}" for report_name in list(report.reports_.keys())
-    ]
-
     display.plot(subplots_by="estimator")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
@@ -342,10 +317,9 @@ def test_single_output_regression(
     assert len(display.ax_) == len(report.reports_)
     for report_name, ax in zip(report.reports_, display.ax_, strict=True):
         assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"Estimator: {report_name}"
+        assert ax.get_title() == f"estimator = {report_name}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
-        assert ax.get_legend() is None
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
         display.plot(subplots_by="incorrect")
@@ -450,15 +424,9 @@ def test_multi_output_regression(
     assert len(display.ax_) == len(report.reports_)
     for report_name, ax in zip(report.reports_, display.ax_, strict=True):
         assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"Estimator: {report_name}"
+        assert ax.get_title() == f"estimator = {report_name}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
-
-        legend = ax.get_legend()
-        assert legend.get_title().get_text() == "Output"
-        assert [t.get_text() for t in legend.get_texts()] == [
-            f"{i}" for i in range(n_outputs)
-        ]
 
     display.plot(subplots_by="estimator")
     assert hasattr(display, "figure_")
@@ -467,15 +435,9 @@ def test_multi_output_regression(
     assert len(display.ax_) == len(report.reports_)
     for report_name, ax in zip(report.reports_, display.ax_, strict=True):
         assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"Estimator: {report_name}"
+        assert ax.get_title() == f"estimator = {report_name}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
-
-        legend = ax.get_legend()
-        assert legend.get_title().get_text() == "Output"
-        assert [t.get_text() for t in legend.get_texts()] == [
-            f"{i}" for i in range(n_outputs)
-        ]
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
         display.plot(subplots_by="incorrect")
@@ -538,12 +500,30 @@ def test_different_features(
         assert len(display.ax_) == len(report.reports_)
         for report_name, ax in zip(report.reports_, display.ax_, strict=True):
             assert isinstance(ax, mpl.axes.Axes)
-            assert ax.get_title() == f"Estimator: {report_name}"
+            assert ax.get_title() == f"estimator = {report_name}"
             assert ax.get_xlabel() == "Magnitude of coefficient"
             assert ax.get_ylabel() == ""
 
-            legend = ax.get_legend()
-            assert legend.get_title().get_text() == "Label"
-            assert [t.get_text() for t in legend.get_texts()] == [
-                f"{i}" for i in range(n_classes)
-            ]
+
+def test_include_intercept(
+    pyplot,
+    logistic_binary_classification_data,
+):
+    """Check whether or not we can include or exclude the intercept."""
+    estimator, X, y = logistic_binary_classification_data
+    columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
+    X = _convert_container(X, "dataframe", columns_name=columns_names)
+    splitter = 2
+
+    report_1 = CrossValidationReport(clone(estimator), X, y, splitter=splitter)
+    report_2 = CrossValidationReport(clone(estimator), X, y, splitter=splitter)
+    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+
+    display = report.feature_importance.coefficients()
+
+    assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
+
+    display.plot(include_intercept=False)
+    assert all(
+        label.get_text() != "Intercept" for label in display.ax_.get_yticklabels()
+    )
