@@ -282,7 +282,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             title += (
                 f" for {self.precision_recall['estimator_name'].cat.categories.item()}"
             )
-        self.figure_.suptitle(title + info_pos_label + info_data_source, y=1.02)
+        self.figure_.suptitle(title + info_pos_label + info_data_source)
 
         if despine:
             for ax in self.ax_:
