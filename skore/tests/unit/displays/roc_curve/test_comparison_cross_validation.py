@@ -102,7 +102,7 @@ def test_multiclass_classification(
     assert display.chance_level_[0].get_label() == "Chance level (AUC = 0.5)"
     assert display.chance_level_[0].get_color() == "k"
 
-    assert isinstance(display.ax_, mpl.axes.Axes)
+    assert isinstance(display.ax_[0], mpl.axes.Axes)
     for label, ax in zip(labels, display.ax_, strict=False):
         check_legend_position(ax, loc="lower right", position="inside")
         legend = ax.get_legend()
@@ -211,8 +211,8 @@ def test_multiclass_classification_kwargs(
     assert display.chance_level_ is None
 
     display.plot(despine=False)
-    assert display.ax_.spines["top"].get_visible()
-    assert display.ax_.spines["right"].get_visible()
+    assert display.ax_[0].spines["top"].get_visible()
+    assert display.ax_[0].spines["right"].get_visible()
 
 
 def test_binary_classification_constructor(logistic_binary_classification_data):

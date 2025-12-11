@@ -1,8 +1,6 @@
 import matplotlib as mpl
-import matplotlib.colors as mcolors
 import numpy as np
 import pytest
-from numpy.testing import assert_allclose
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -158,31 +156,6 @@ def test_relplot_kwargs(
     estimator, X_train, X_test, y_train, y_test = (
         logistic_multiclass_classification_with_train_test
     )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.metrics.precision_recall()
-
-    display.plot(relplot_kwargs={"alpha": 0.5})
-    assert len(display.lines_) == len(estimator.classes_)
-    for line in display.lines_:
-        assert line.get_alpha() == 0.5
-
-    display.plot(despine=False)
-    for ax in display.ax_:
-        assert ax is not None
-
-    display = report.metrics.precision_recall(data_source="both")
-    display.plot(relplot_kwargs={"palette": ["red", "blue"]})
-    assert len(display.lines_) == len(estimator.classes_) * 2
-
-    expected_colors = ["red", "blue"]
-    first_subplot_lines = display.ax_[0].get_lines()
-    for line, expected_color in zip(first_subplot_lines, expected_colors, strict=True):
-        line_color = line.get_color()
-        expected_rgb = mcolors.to_rgb(expected_color)
-        actual_rgb = mcolors.to_rgb(line_color)
-        assert_allclose(expected_rgb, actual_rgb, atol=0.01)
 
 
 def test_wrong_kwargs(

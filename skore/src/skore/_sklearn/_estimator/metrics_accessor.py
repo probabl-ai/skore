@@ -1950,7 +1950,7 @@ class _MetricsAccessor(
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.precision_recall()
-        >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
+        >>> display.plot(relplot_kwargs={"color": "tab:red"})
         """
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label

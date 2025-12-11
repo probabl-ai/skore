@@ -193,12 +193,13 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         plot_data = self.frame(with_average_precision=True)
 
-        col, hue = self._get_plot_columns(plot_data, subplot_by)
+        col, hue, style = self._get_plot_columns(plot_data, subplot_by)
 
         kwargs: dict[str, Any] = {
             "data": plot_data,
             "col": col,
             "hue": hue,
+            "style": style,
         }
 
         if is_crossval:
@@ -218,9 +219,15 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 if c in plot_data.columns and hasattr(plot_data[c], "cat"):
                     plot_data[c] = plot_data[c].astype(str)
 
-        if self.data_source == "both":
-            kwargs["style"] = "data_source"
-            kwargs["dashes"] = {"train": (2, 2), "test": (1, 0)}
+        col_order = plot_data[col].unique().tolist() if col else None
+        hue_order = plot_data[hue].unique().tolist() if hue else None
+        style_order = plot_data[style].unique().tolist() if style else None
+        kwargs["col_order"] = col_order
+        kwargs["hue_order"] = hue_order
+        kwargs["style_order"] = style_order
+
+        if style:
+            kwargs["dashes"] = {"train": (5, 5), "test": (1, 0)}
 
         kwargs = _validate_style_kwargs(
             {**kwargs, **self._default_relplot_kwargs},
@@ -233,18 +240,24 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         self.lines_ = [line for ax in self.ax_ for line in ax.get_lines()]
 
         n_legend_rows = plot_data[hue].nunique() if hue else 1
-        legend_height_inches = n_legend_rows * 0.25 + 0.5
+        legend_height_inches = n_legend_rows * 0.25 + 1
         current_height = self.figure_.get_figheight()
         new_height = current_height + legend_height_inches
         self.figure_.set_figheight(new_height)
         bottom_margin = legend_height_inches / new_height
         self.figure_.tight_layout(rect=[0, bottom_margin, 1, 1])
 
-        col_values = plot_data[col].unique() if col else [None]
-        for ax, col_value in zip(self.ax_, col_values, strict=True):
+        for idx, ax in enumerate(self.ax_):
+            col_value = col_order[idx] if col_order else None
             stats_df = plot_data[plot_data[col] == col_value] if col else plot_data
             self._build_legend_for_ax(
-                ax=ax, stats_df=stats_df, hue=hue, is_crossval=is_crossval
+                ax=ax,
+                stats_df=stats_df,
+                hue=hue,
+                style=style,
+                hue_order=hue_order,
+                style_order=style_order,
+                is_crossval=is_crossval,
             )
 
         if self.ml_task == "binary-classification":
@@ -282,8 +295,8 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         self,
         plot_data: DataFrame,
         subplot_by: str | Literal["auto"] | None = "auto",
-    ) -> tuple[str | None, str | None]:
-        """Determine subplot (col) and hue columns based on data and user preference.
+    ) -> tuple[str | None, str | None, str | None]:
+        """Determine col, hue, and style columns based on data and user preference.
 
         Rules:
         - Default ("auto"): "label" for multiclass, None for binary
@@ -292,7 +305,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         - subplot_by="label" only allowed for multiclass classification
         - hue priority: estimator_name > label > data_source (excluding col)
 
-        Returns (col, hue) tuple where each can be None if not applicable.
+        Returns (col, hue, style) tuple where each can be None if not applicable.
         """
         has_multiple_estimators = (
             "estimator_name" in plot_data.columns
@@ -332,22 +345,18 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         has_multiple_labels = (
             "label" in plot_data.columns and plot_data["label"].nunique() > 1
         )
-        has_multiple_data_sources = (
-            "data_source" in plot_data.columns
-            and plot_data["data_source"].nunique() > 1
-        )
 
         hue_candidates = []
         if has_multiple_estimators:
             hue_candidates.append("estimator_name")
         if has_multiple_labels:
             hue_candidates.append("label")
-        if has_multiple_data_sources:
-            hue_candidates.append("data_source")
 
         hue = next((c for c in hue_candidates if c != col), None)
 
-        return col, hue
+        style = "data_source" if self.data_source == "both" else None
+
+        return col, hue, style
 
     def _build_legend_for_ax(
         self,
@@ -355,34 +364,77 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         ax: Axes,
         stats_df: DataFrame,
         hue: str | None,
+        style: str | None,
+        hue_order: list[str] | None,
+        style_order: list[str] | None,
         is_crossval: bool = False,
     ) -> None:
         """Build custom legend with AP stats for a single axis."""
         new_labels = []
         if hue is None:
-            ap_series = stats_df["average_precision"]
-            new_labels = [self._format_ap_stat(ap_series, is_crossval)]
+            if style is None:
+                ap_series = stats_df["average_precision"]
+                new_labels = [self._format_ap_stat(ap_series, is_crossval)]
+            else:
+                for style_val in cast(list[str], style_order):
+                    mask = stats_df[style] == style_val
+                    if mask.any():
+                        ap_series = stats_df.loc[mask, "average_precision"]
+                        stat_str = self._format_ap_stat(ap_series, is_crossval)
+                        lbl = self._format_legend_label(style, style_val, stat_str)
+                        new_labels.append(lbl)
         else:
-            col = stats_df[hue]
-            order = col.cat.categories if hasattr(col, "cat") else col.unique()
-            for val in order:
-                mask = col == val
-                if mask.any():
-                    ap_series = stats_df.loc[mask, "average_precision"]
-                    stat_str = self._format_ap_stat(ap_series, is_crossval)
-                    lbl = self._format_legend_label(hue, val, stat_str)
-                    new_labels.append(lbl)
+            if style is None:
+                for hue_val in cast(list[str], hue_order):
+                    mask = stats_df[hue] == hue_val
+                    if mask.any():
+                        ap_series = stats_df.loc[mask, "average_precision"]
+                        stat_str = self._format_ap_stat(ap_series, is_crossval)
+                        lbl = self._format_legend_label(hue, hue_val, stat_str)
+                        new_labels.append(lbl)
+            else:
+                for hue_val in cast(list[str], hue_order):
+                    hue_mask = stats_df[hue] == hue_val
+                    for style_val in cast(list[str], style_order):
+                        mask = hue_mask & (stats_df[style] == style_val)
+                        if mask.any():
+                            ap_series = stats_df.loc[mask, "average_precision"]
+                            stat_str = self._format_ap_stat(ap_series, is_crossval)
+                            hue_str = str(hue_val)
+                            if style == "data_source":
+                                style_str = str(style_val).title() + " set"
+                            else:
+                                style_str = str(style_val)
+                            lbl = f"{hue_str} - {style_str} ({stat_str})"
+                            new_labels.append(lbl)
 
         n_entries = len(new_labels)
 
         lines = ax.get_lines()
         if is_crossval:
-            # For cross-validation, multiple lines per hue value exist.
-            # Get unique colors in order of first appearance.
-            unique_colors = list(dict.fromkeys(line.get_color() for line in lines))
-            handles = [
-                Line2D([0], [0], color=c, lw=2) for c in unique_colors[:n_entries]
-            ]
+            if style is None:
+                unique_colors = list(dict.fromkeys(line.get_color() for line in lines))
+                handles = [
+                    Line2D([0], [0], color=c, lw=2) for c in unique_colors[:n_entries]
+                ]
+            else:
+                seen_combos = {}
+                unique_handles = []
+                for line in lines:
+                    color = line.get_color()
+                    linestyle = line.get_linestyle()
+                    combo = (color, linestyle)
+                    if combo not in seen_combos:
+                        seen_combos[combo] = True
+                        handle = Line2D(
+                            [0], [0], color=color, linestyle=linestyle, lw=2
+                        )
+                        if hasattr(line, "_dashSeq") and line._dashSeq is not None:
+                            handle.set_dashes(line._dashSeq)
+                        unique_handles.append(handle)
+                        if len(unique_handles) >= n_entries:
+                            break
+                handles = unique_handles
         else:
             handles = lines[:n_entries]
 
