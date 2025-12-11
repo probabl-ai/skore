@@ -8,7 +8,15 @@ import numpy as np
 from pydantic import computed_field
 from sklearn.model_selection._split import _CVIterableWrapper
 
-from skore_hub_project.artifact.media import EstimatorHtmlRepr
+from skore_hub_project.artifact.media import (
+    EstimatorHtmlRepr,
+    PrecisionRecallTest,
+    PrecisionRecallTrain,
+    PredictionErrorTest,
+    PredictionErrorTrain,
+    RocTest,
+    RocTrain,
+)
 from skore_hub_project.artifact.media.data import TableReport
 from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.metric import (
@@ -118,6 +126,12 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     )
     MEDIAS: ClassVar[tuple[type[Media[CrossValidationReport]], ...]] = (
         EstimatorHtmlRepr,
+        PrecisionRecallTest,
+        PrecisionRecallTrain,
+        PredictionErrorTest,
+        PredictionErrorTrain,
+        RocTest,
+        RocTrain,
         TableReport,
     )
 
