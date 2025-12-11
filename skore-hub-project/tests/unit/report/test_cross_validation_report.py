@@ -1,10 +1,6 @@
-import numpy as np
 from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
-from sklearn.datasets import make_classification, make_regression
-from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import ShuffleSplit
 from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project import Project
@@ -91,65 +87,43 @@ class TestCrossValidationReportPayload:
     def test_dataset_size(self, payload):
         assert payload.dataset_size == 10
 
-    def test_splitting_strategy_name(self, payload):
-        assert payload.splitting_strategy_name == "StratifiedKFold"
-
-    def test_splits_test_samples_density(self, payload):
-        assert payload.splits == [
-            [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
-        ]
-
-    def test_splits_test_samples_density_many_rows(self):
-        X, y = make_regression(random_state=42, n_samples=10_000)
-        cvr = CrossValidationReport(
-            LinearRegression(),
-            X,
-            y,
-            splitter=ShuffleSplit(random_state=42, n_splits=7),
-        )
-        payload = CrossValidationReportPayload(
-            project=Project("<tenant>", "<name>"),
-            report=cvr,
-            key="<key>",
-        )
-        splits = payload.splits
-        assert len(splits) == 7
-        assert all(len(s) == 200 for s in splits)
-        for s in splits:
-            assert all(bucket >= 0 and bucket <= 1 for bucket in s)
+    def test_splits(self, payload):
+        assert payload.splits == {
+            "repeat_count": 1,
+            "seed": "None",
+            "splits": [
+                {
+                    "test": {
+                        "class_distribution": [3, 2],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [2, 3],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
+                },
+                {
+                    "test": {
+                        "class_distribution": [2, 3],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [3, 2],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
+                },
+            ],
+            "strategy_name": "StratifiedKFold",
+        }
 
     def test_class_names(self, payload):
         assert payload.class_names == ["1", "0"]
-
-    @mark.filterwarnings(
-        # ignore `scipy` deprecation warning, raised by `scikit-learn<1.7`
-        "ignore:scipy.optimize*:DeprecationWarning"
-    )
-    def test_classes(self, payload):
-        X, y = make_classification(
-            random_state=42,
-            n_samples=10_000,
-            n_classes=2,
-        )
-        cvr = CrossValidationReport(
-            LogisticRegression(),
-            X,
-            y,
-            splitter=ShuffleSplit(random_state=42, n_splits=7),
-        )
-        payload = CrossValidationReportPayload(
-            project=Project("<tenant>", "<name>"),
-            report=cvr,
-            key="<key>",
-        )
-        classes = payload.classes
-        assert len(classes) == 200
-        assert np.unique(classes).tolist() == [0, 1]
-        assert np.sum(classes) == 93
-
-    def test_classes_many_rows(self, payload):
-        assert payload.classes == [0, 0, 1, 1, 1, 0, 0, 1, 0, 1]
 
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
@@ -265,22 +239,20 @@ class TestCrossValidationReportPayload:
         payload_dict.pop("estimators")
         payload_dict.pop("metrics")
         payload_dict.pop("medias")
+        payload_dict.pop("splits")
 
         assert payload_dict == {
             "key": "<key>",
             "estimator_class_name": "RandomForestClassifier",
             "dataset_fingerprint": hash(small_cv_binary_classification.y),
             "ml_task": "binary-classification",
-            "groups": None,
             "pickle": {
                 "checksum": checksum,
                 "content_type": "application/octet-stream",
             },
             "dataset_size": 10,
-            "splitting_strategy_name": "StratifiedKFold",
-            "splits": [[1, 1, 1, 1, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 1, 1, 1, 1]],
             "class_names": ["1", "0"],
-            "classes": [0, 0, 1, 1, 1, 0, 0, 1, 0, 1],
+            "groups": None,
         }
 
     def test_exception(self):
