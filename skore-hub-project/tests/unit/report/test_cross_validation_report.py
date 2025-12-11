@@ -1,6 +1,9 @@
 from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
+from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import RepeatedKFold
 from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project import Project
@@ -120,6 +123,78 @@ class TestCrossValidationReportPayload:
                 },
             ],
             "strategy_name": "StratifiedKFold",
+        }
+
+    def test_splits_with_repetitions(self, project):
+        X, y = make_classification(random_state=42, n_samples=10)
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=CrossValidationReport(
+                RandomForestClassifier(random_state=42),
+                X,
+                y,
+                splitter=RepeatedKFold(n_splits=2, n_repeats=2, random_state=42),
+            ),
+            key="<key>",
+        )
+        assert payload.splits == {
+            "repeat_count": 2,
+            "seed": "42",
+            "splits": [
+                {
+                    "test": {
+                        "class_distribution": [4, 1],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [1, 4],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [1, 1, 0, 0, 0, 1, 0, 1, 1, 0],
+                },
+                {
+                    "test": {
+                        "class_distribution": [1, 4],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [4, 1],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [0, 0, 1, 1, 1, 0, 1, 0, 0, 1],
+                },
+                {
+                    "test": {
+                        "class_distribution": [4, 1],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [1, 4],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [1, 1, 0, 1, 0, 1, 0, 0, 1, 0],
+                },
+                {
+                    "test": {
+                        "class_distribution": [1, 4],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [4, 1],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [0, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+                },
+            ],
+            "strategy_name": "RepeatedKFold",
         }
 
     def test_class_names(self, payload):
