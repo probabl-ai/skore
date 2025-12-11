@@ -1,4 +1,3 @@
-import matplotlib as mpl
 import numpy as np
 import pytest
 from sklearn.datasets import make_classification
@@ -6,7 +5,6 @@ from sklearn.linear_model import LogisticRegression
 
 from skore import CrossValidationReport
 from skore._sklearn._plot import PrecisionRecallCurveDisplay
-from skore._sklearn._plot.utils import sample_mpl_colormap
 from skore._utils._testing import check_frame_structure, check_legend_position
 from skore._utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
@@ -40,33 +38,28 @@ def test_binary_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == cv
 
-    expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for split_idx, line in enumerate(display.lines_):
-        assert isinstance(line, mpl.lines.Line2D)
-        average_precision = display.average_precision.query(
-            f"label == {pos_label} & split == {split_idx}"
-        )["average_precision"].item()
+    assert isinstance(display.ax_, np.ndarray)
+    ax = display.ax_[0]
+    legend = ax.get_legend()
+    assert legend is not None
+    legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        assert line.get_label() == (
-            f"Split #{split_idx + 1} (AP = {average_precision:0.2f})"
-        )
-        assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
-
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
-    data_source_title = "external" if data_source == "X_y" else data_source
-    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
-    assert len(legend.get_texts()) == 3
-
-    assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
-    assert display.ax_.get_ylabel() == "Precision\n(Positive label: 1)"
-    assert display.ax_.get_adjustable() == "box"
-    assert display.ax_.get_aspect() in ("equal", 1.0)
-    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    average_precision = display.average_precision.query(f"label == {pos_label}")[
+        "average_precision"
+    ]
     assert (
-        display.ax_.get_title()
-        == f"Precision-Recall Curve for {estimator.__class__.__name__}"
+        f"AP={average_precision.mean():.2f}±{average_precision.std():.2f}"
+        in legend_texts
     )
+
+    assert ax.get_xlabel() == "recall"
+    assert ax.get_ylabel() == "precision"
+    assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
+    data_source_title = "external" if data_source == "X_y" else data_source
+    suptitle = display.figure_.get_suptitle()
+    assert f"Precision-Recall Curve for {estimator.__class__.__name__}" in suptitle
+    assert f"Positive label: {pos_label}" in suptitle
+    assert f"data source: {data_source_title}" in suptitle.lower()
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -93,57 +86,44 @@ def test_multiclass_classification(
 
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * cv
-    default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for class_label, expected_color in zip(class_labels, default_colors, strict=False):
-        for split_idx in range(cv):
-            precision_recall_curve_mpl = display.lines_[class_label * cv + split_idx]
-            assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
-            if split_idx == 0:
-                average_precision = display.average_precision.query(
-                    f"label == {class_label} & split == {split_idx}"
-                )["average_precision"]
-                assert precision_recall_curve_mpl.get_label() == (
-                    f"{str(class_label).title()} "
-                    f"(AP = {np.mean(average_precision):0.2f}"
-                    f" +/- {np.std(average_precision, ddof=1):0.2f})"
-                )
-            assert precision_recall_curve_mpl.get_color() == expected_color
 
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_) == len(class_labels)
+
     data_source_title = "external" if data_source == "X_y" else data_source
-    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
-    assert len(legend.get_texts()) == 3
+    for idx in range(len(class_labels)):
+        ax = display.ax_[idx]
+        legend = ax.get_legend()
+        assert legend is not None
+        legend_texts = [text.get_text() for text in legend.get_texts()]
 
-    assert display.ax_.get_xlabel() == "Recall"
-    assert display.ax_.get_ylabel() == "Precision"
-    assert display.ax_.get_adjustable() == "box"
-    assert display.ax_.get_aspect() in ("equal", 1.0)
-    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
-    assert (
-        display.ax_.get_title()
-        == f"Precision-Recall Curve for {estimator.__class__.__name__}"
-    )
+        assert any("AP=" in text for text in legend_texts)
+
+        assert ax.get_xlabel() == "recall"
+        assert ax.get_ylabel() in ("precision", "")
+        assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
+
+    suptitle = display.figure_.get_suptitle()
+    assert f"Precision-Recall Curve for {estimator.__class__.__name__}" in suptitle
+    assert f"data source: {data_source_title}" in suptitle.lower()
 
 
 @pytest.mark.parametrize(
     "fixture_name",
     ["logistic_binary_classification_data", "logistic_multiclass_classification_data"],
 )
-@pytest.mark.parametrize("pr_curve_kwargs", [[{"color": "red"}], "unknown"])
-def test_wrong_kwargs(pyplot, fixture_name, request, pr_curve_kwargs):
+def test_wrong_kwargs(pyplot, fixture_name, request):
     """Check that we raise a proper error message when passing an inappropriate
-    value for the `pr_curve_kwargs` argument."""
+    value for the `subplot_by` argument."""
     (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
 
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.precision_recall()
-    err_msg = (
-        "You intend to plot multiple curves. We expect `pr_curve_kwargs` to be a list "
-        "of dictionaries"
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(pr_curve_kwargs=pr_curve_kwargs)
+    with pytest.raises(ValueError, match="subplot_by"):
+        display.plot(subplot_by="invalid")
+
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        display.plot(non_existent_kwarg="value")
 
 
 @pytest.mark.parametrize("with_average_precision", [False, True])
@@ -197,29 +177,24 @@ def test_legend(
     pyplot, logistic_binary_classification_data, logistic_multiclass_classification_data
 ):
     """Check the rendering of the legend for with an `CrossValidationReport`."""
-
-    # binary classification <= 5 splits
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_, loc="lower left", position="inside")
+    check_legend_position(display.ax_[0], loc="upper center", position="inside")
 
-    # binary classification > 5 splits
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=10)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_, loc="upper left", position="outside")
+    check_legend_position(display.ax_[0], loc="upper center", position="inside")
 
-    # multiclass classification <= 5 classes
     estimator, X, y = logistic_multiclass_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_, loc="lower left", position="inside")
+    check_legend_position(display.ax_[0], loc="upper center", position="inside")
 
-    # multiclass classification > 5 classes
     estimator = LogisticRegression()
     X, y = make_classification(
         n_samples=1_000,
@@ -231,7 +206,7 @@ def test_legend(
     report = CrossValidationReport(estimator, X=X, y=y, splitter=10)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_, loc="upper left", position="outside")
+    check_legend_position(display.ax_[0], loc="upper center", position="inside")
 
 
 def test_binary_classification_constructor(logistic_binary_classification_data):
