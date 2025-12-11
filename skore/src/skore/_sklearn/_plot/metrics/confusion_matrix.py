@@ -72,7 +72,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
     _default_heatmap_kwargs: dict = {
         "cmap": "Blues",
         "annot": True,
-        "cbar": True,
+        "cbar": False,
     }
 
     @DisplayMixin.style_plot
