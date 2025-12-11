@@ -1,4 +1,6 @@
-from joblib import hash
+from io import BytesIO
+
+from joblib import dump, hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from sklearn.datasets import make_classification
@@ -49,18 +51,14 @@ from skore_hub_project.report import (
 
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
-    import io
-
-    import joblib
-
     reports = [object] + getattr(object, "estimator_reports_", [])
     caches = [report_to_clear._cache for report_to_clear in reports]
 
     object.clear_cache()
 
     try:
-        with io.BytesIO() as stream:
-            joblib.dump(object, stream)
+        with BytesIO() as stream:
+            dump(object, stream)
             pickle_bytes = stream.getvalue()
     finally:
         for report, cache in zip(reports, caches, strict=True):
