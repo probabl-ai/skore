@@ -12,6 +12,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     get_scorer,
+    make_scorer,
     precision_score,
     rand_score,
     recall_score,
@@ -214,6 +215,59 @@ def test_custom_metric(linear_regression_with_test):
     threshold = 1
     result = report.metrics.custom_metric(
         metric_function=custom_metric,
+        response_method="predict",
+        threshold=threshold,
+    )
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == threshold for item in cached_key):
+            should_raise = False
+            break
+    assert not should_raise, (
+        f"The value {threshold} should be stored in one of the cache keys"
+    )
+
+    assert isinstance(result, float)
+    assert result == pytest.approx(
+        custom_metric(y_test, estimator.predict(X_test), threshold)
+    )
+
+    threshold = 100
+    result = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict",
+        threshold=threshold,
+    )
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == threshold for item in cached_key):
+            should_raise = False
+            break
+    assert not should_raise, (
+        f"The value {threshold} should be stored in one of the cache keys"
+    )
+
+    assert isinstance(result, float)
+    assert result == pytest.approx(
+        custom_metric(y_test, estimator.predict(X_test), threshold)
+    )
+
+
+def test_custom_metric_scorer(linear_regression_with_test):
+    """Check the behaviour of the `custom_metric` computation in the report when the
+    custom metric is a sklearn Scorer."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def custom_metric(y_true, y_pred, threshold=0.5):
+        residuals = y_true - y_pred
+        return np.mean(np.where(residuals < threshold, residuals, 1))
+
+    custom_score = make_scorer(custom_metric, greater_is_better=False)
+
+    threshold = 1
+    result = report.metrics.custom_metric(
+        metric_function=custom_score,
         response_method="predict",
         threshold=threshold,
     )
