@@ -229,22 +229,23 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         facet_grid = sns.relplot(**kwargs)
 
-        self.figure_ = facet_grid.figure
-        self.ax_ = facet_grid.axes.flatten()
+        self.figure_, self.ax_ = facet_grid.figure, facet_grid.axes.flatten()
         self.lines_ = [line for ax in self.ax_ for line in ax.get_lines()]
 
-        for ax in self.ax_:
-            self._build_legend_for_ax(
-                ax=ax, stats_df=plot_data, hue=hue, is_crossval=is_crossval
-            )
-
         n_legend_rows = plot_data[hue].nunique() if hue else 1
-        legend_height_inches = n_legend_rows * 0.25 + 1
+        legend_height_inches = n_legend_rows * 0.25 + 0.5
         current_height = self.figure_.get_figheight()
         new_height = current_height + legend_height_inches
         self.figure_.set_figheight(new_height)
         bottom_margin = legend_height_inches / new_height
         self.figure_.tight_layout(rect=[0, bottom_margin, 1, 1])
+
+        col_values = plot_data[col].unique() if col else [None]
+        for ax, col_value in zip(self.ax_, col_values, strict=True):
+            stats_df = plot_data[plot_data[col] == col_value] if col else plot_data
+            self._build_legend_for_ax(
+                ax=ax, stats_df=stats_df, hue=hue, is_crossval=is_crossval
+            )
 
         if self.ml_task == "binary-classification":
             info_pos_label = (
@@ -273,6 +274,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         if despine:
             for ax in self.ax_:
                 _despine_matplotlib_axis(ax)
+
+        if len(self.ax_) == 1:
+            self.ax_ = self.ax_[0]
 
     def _get_plot_columns(
         self,
@@ -354,11 +358,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         is_crossval: bool = False,
     ) -> None:
         """Build custom legend with AP stats for a single axis."""
-        title = ax.get_title()
-        if " = " in title:
-            ax_col, ax_col_value = title.rsplit(" = ", 1)
-            stats_df = stats_df[stats_df[ax_col].astype(str) == ax_col_value]
-
         new_labels = []
         if hue is None:
             ap_series = stats_df["average_precision"]

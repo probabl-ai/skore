@@ -1,3 +1,4 @@
+import matplotlib as mpl
 import matplotlib.colors as mcolors
 import numpy as np
 import pytest
@@ -42,8 +43,8 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
     check_display_data(display)
 
     display.plot()
-    assert isinstance(display.ax_, np.ndarray)
-    ax = display.ax_[0]
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    ax = display.ax_
     legend = ax.get_legend()
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
@@ -103,7 +104,7 @@ def test_multiclass_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * n_reports
 
-    assert isinstance(display.ax_, np.ndarray)
+    assert isinstance(display.ax_[0], mpl.axes.Axes)
     assert len(display.ax_) == len(class_labels)
 
     for class_label_idx, class_label in enumerate(class_labels):
@@ -312,7 +313,7 @@ def test_legend(
     )
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_[0], loc="upper center", position="inside")
+    check_legend_position(display.ax_, loc="upper center", position="inside")
 
     estimator, X_train, X_test, y_train, y_test = (
         logistic_multiclass_classification_with_train_test

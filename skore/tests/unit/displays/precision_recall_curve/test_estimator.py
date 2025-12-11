@@ -37,8 +37,8 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
     precision_recall_curve_mpl = display.lines_[0]
     assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
 
-    assert isinstance(display.ax_, np.ndarray)
-    ax = display.ax_[0]
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    ax = display.ax_
     legend = ax.get_legend()
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
@@ -78,7 +78,7 @@ def test_multiclass_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(estimator.classes_)
 
-    assert isinstance(display.ax_, np.ndarray)
+    assert isinstance(display.ax_[0], mpl.axes.Axes)
     assert len(display.ax_) == len(estimator.classes_)
 
     for idx, class_label in enumerate(estimator.classes_):
@@ -114,14 +114,14 @@ def test_data_source(pyplot, logistic_binary_classification_with_train_test):
     )
     display = report.metrics.precision_recall(data_source="train")
     display.plot()
-    ax = display.ax_[0]
+    ax = display.ax_
     legend = ax.get_legend()
     legend_texts = [text.get_text() for text in legend.get_texts()]
     assert "AP=1.00" in legend_texts
 
     display = report.metrics.precision_recall(data_source="X_y", X=X_train, y=y_train)
     display.plot()
-    ax = display.ax_[0]
+    ax = display.ax_
     legend = ax.get_legend()
     legend_texts = [text.get_text() for text in legend.get_texts()]
     assert "AP=1.00" in legend_texts
@@ -220,7 +220,7 @@ def test_binary_classification_data_source(
     )
     display = report.metrics.precision_recall(data_source="train")
     display.plot()
-    ax = display.ax_[0]
+    ax = display.ax_
     legend = ax.get_legend()
     legend_texts = [text.get_text() for text in legend.get_texts()]
     # When there's only one data source, legend shows just AP, not data source
@@ -228,7 +228,7 @@ def test_binary_classification_data_source(
 
     display = report.metrics.precision_recall(data_source="X_y", X=X_train, y=y_train)
     display.plot()
-    ax = display.ax_[0]
+    ax = display.ax_
     legend = ax.get_legend()
     legend_texts = [text.get_text() for text in legend.get_texts()]
     assert "AP=1.00" in legend_texts
@@ -285,7 +285,7 @@ def test_binary_classification_data_source_both(
 
     assert len(display.lines_) == 2
 
-    ax = display.ax_[0]
+    ax = display.ax_
     legend = ax.get_legend()
     legend_texts = [text.get_text() for text in legend.get_texts()]
     assert any("Train set (AP=" in text for text in legend_texts)
@@ -417,7 +417,7 @@ def test_legend(
     )
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_[0], loc="upper center", position="inside")
+    check_legend_position(display.ax_, loc="upper center", position="inside")
 
     estimator, X_train, X_test, y_train, y_test = (
         logistic_multiclass_classification_with_train_test

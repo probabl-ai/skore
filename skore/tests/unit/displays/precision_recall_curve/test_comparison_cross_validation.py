@@ -1,3 +1,4 @@
+import matplotlib as mpl
 import matplotlib.colors as mcolors
 import numpy as np
 import pytest
@@ -34,8 +35,8 @@ def test_binary_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == n_reports * n_splits
 
-    assert isinstance(display.ax_, np.ndarray)
-    ax = display.ax_[0]
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    ax = display.ax_
     check_legend_position(ax, loc="upper center", position="inside")
     legend = ax.get_legend()
     assert legend is not None
@@ -80,7 +81,7 @@ def test_multiclass_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(labels) * n_reports * n_splits
 
-    assert isinstance(display.ax_, np.ndarray)
+    assert isinstance(display.ax_[0], mpl.axes.Axes)
     assert len(display.ax_) == len(labels)
 
     for label, ax in zip(labels, display.ax_, strict=False):

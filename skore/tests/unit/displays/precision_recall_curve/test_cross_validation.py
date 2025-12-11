@@ -1,3 +1,4 @@
+import matplotlib as mpl
 import numpy as np
 import pytest
 from sklearn.datasets import make_classification
@@ -38,8 +39,8 @@ def test_binary_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == cv
 
-    assert isinstance(display.ax_, np.ndarray)
-    ax = display.ax_[0]
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    ax = display.ax_
     legend = ax.get_legend()
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
@@ -87,7 +88,7 @@ def test_multiclass_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * cv
 
-    assert isinstance(display.ax_, np.ndarray)
+    assert isinstance(display.ax_[0], mpl.axes.Axes)
     assert len(display.ax_) == len(class_labels)
 
     data_source_title = "external" if data_source == "X_y" else data_source
@@ -181,13 +182,13 @@ def test_legend(
     report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_[0], loc="upper center", position="inside")
+    check_legend_position(display.ax_, loc="upper center", position="inside")
 
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=10)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_[0], loc="upper center", position="inside")
+    check_legend_position(display.ax_, loc="upper center", position="inside")
 
     estimator, X, y = logistic_multiclass_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
