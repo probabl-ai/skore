@@ -1,6 +1,6 @@
 """Class definition of the payload used to send a cross-validation report to ``hub``."""
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from functools import cached_property
 from typing import Any, ClassVar
 
@@ -151,17 +151,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def splitting_strategy_name(self) -> str:
-        """The name of the splitting strategy used by the report."""
-        is_iterable_splitter = isinstance(self.report.splitter, _CVIterableWrapper)
-
-        return (
-            is_iterable_splitter and "custom" or self.report.splitter.__class__.__name__
-        )
-
-    @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def splits(self) -> list[list[float]]:
+    def splits(self) -> dict[str, Any]:
         """
         Distribution between train and test by split.
 
@@ -169,21 +159,57 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         of 200 buckets, and averaging the number of samples belonging to the test-set in
         each of these buckets.
         """
-        distributions = []
-        buckets_number = min(len(self.report.X), 200)
+        splits = []
 
-        for _, test_indices in self.report.split_indices:
+        for train_indices, test_indices in self.report.split_indices:
+            train_y = self.report.y[train_indices]
+            test_y = self.report.y[test_indices]
+            train_label_distribution = []
+            test_label_distribution = []
+
+            if self.__classes:
+                train = {str(label): count for label, count in Counter(train_y).items()}
+                test = {str(label): count for label, count in Counter(test_y).items()}
+
+                for label in self.__classes:
+                    train_label_distribution.append(train.get(label, 0))
+                    test_label_distribution.append(test.get(label, 0))
+
+            # remove this when a better solution is found
+            # see #2212 for details
+            buckets_number = min(len(self.report.X), 200)
             split = np.zeros(len(self.report.X), dtype=int)
             split[test_indices] = 1
 
-            distributions.append(
-                [
-                    float(np.mean(bucket))
-                    for bucket in np.array_split(split, buckets_number)
-                ]
+            splits.append(
+                {
+                    "train": {
+                        "sample_count": len(train_indices),
+                        "class_distribution": train_label_distribution,
+                        "groups": None,
+                    },
+                    "test": {
+                        "sample_count": len(test_indices),
+                        "class_distribution": test_label_distribution,
+                        "groups": None,
+                    },
+                    "train_test_distribution": [
+                        float(np.mean(bucket))
+                        for bucket in np.array_split(split, buckets_number)
+                    ],
+                }
             )
 
-        return distributions
+        return {
+            "strategy_name": (
+                isinstance(self.report.splitter, _CVIterableWrapper)
+                and "custom"
+                or self.report.splitter.__class__.__name__
+            ),
+            "repeat_count": getattr(self.report.splitter, "n_repeats", 1),
+            "seed": str(getattr(self.report.splitter, "random_state", "")),
+            "splits": splits,
+        }
 
     groups: list[int] | None = None
 
@@ -192,23 +218,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     def class_names(self) -> list[str] | None:
         """In classification, the class names of the dataset used in the report."""
         return self.__classes
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def classes(self) -> list[int] | None:
-        """
-        In classification, the distribution of the classes in the dataset.
-
-        The distribution is computed by dividing the dataset into a maximum of 200
-        buckets, and noting the dominant class in each of these buckets.
-        """
-        if self.__sample_to_class_index is None:
-            return None
-
-        buckets_number = min(len(self.__sample_to_class_index), 200)
-        buckets = np.array_split(self.__sample_to_class_index, buckets_number)
-
-        return [int(np.bincount(bucket).argmax()) for bucket in buckets]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
