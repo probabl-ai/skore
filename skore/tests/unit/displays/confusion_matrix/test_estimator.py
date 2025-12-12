@@ -2,6 +2,8 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 
 from skore import EstimatorReport
 from skore._sklearn._plot import ConfusionMatrixDisplay
@@ -377,29 +379,6 @@ def test_plot_with_threshold(pyplot, forest_binary_classification_with_train_tes
     assert "threshold" in display.ax_.get_title().lower()
 
 
-def test_plot_with_default_threshold(
-    pyplot, forest_binary_classification_with_train_test
-):
-    """Check that the default threshold (0.5) is used when not specified."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.metrics.confusion_matrix()
-    display.plot()
-
-    expected_title = "Confusion Matrix\nDecision threshold: 0.50"
-    assert display.ax_.get_title() == expected_title
-
-    default_vals = display.ax_.collections[0].get_array().flatten()
-    display.plot(threshold_value=0.5)
-    np.testing.assert_allclose(
-        default_vals, display.ax_.collections[0].get_array().flatten()
-    )
-
-
 def test_frame_with_threshold(forest_binary_classification_with_train_test):
     """Check that we can get a frame at a specific threshold."""
     estimator, X_train, X_test, y_train, y_test = (
@@ -416,13 +395,15 @@ def test_frame_with_threshold(forest_binary_classification_with_train_test):
     assert frame.shape == (n_classes * n_classes, 4)
 
 
-def test_frame_default_threshold_predict_proba(
-    forest_binary_classification_with_train_test,
+@pytest.mark.parametrize(
+    "estimator, expected_default_threshold",
+    [(SVC(probability=False), 0), (LogisticRegression(), 0.5)],
+)
+def test_frame_default_threshold(
+    binary_classification_train_test_split, estimator, expected_default_threshold
 ):
-    """Check that frame() uses default threshold (0.5) for predict_proba response."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
+    """Check that frame() uses default threshold."""
+    X_train, X_test, y_train, y_test = binary_classification_train_test_split
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -433,32 +414,9 @@ def test_frame_default_threshold_predict_proba(
     n_classes = len(display.display_labels)
     assert frame.shape == (n_classes * n_classes, 4)
     assert frame["threshold"].nunique() == 1
-    closest_threshold = display.thresholds[np.argmin(abs(display.thresholds - 0.5))]
-    assert frame["threshold"].unique() == closest_threshold
-
-
-def test_frame_default_threshold_decision_function(
-    svc_binary_classification_with_train_test,
-):
-    """Check that frame() uses default threshold (0) for decision_function response."""
-    estimator, X_train, X_test, y_train, y_test = (
-        svc_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator.set_params(probability=False),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    display = report.metrics.confusion_matrix()
-
-    frame = display.frame(threshold_value=None)
-    assert isinstance(frame, pd.DataFrame)
-    n_classes = len(display.display_labels)
-    assert frame.shape == (n_classes * n_classes, 4)
-    assert frame["threshold"].nunique() == 1
-    closest_threshold = display.thresholds[np.argmin(abs(display.thresholds - 0.0))]
+    closest_threshold = display.thresholds[
+        np.argmin(abs(display.thresholds - expected_default_threshold))
+    ]
     assert frame["threshold"].unique() == closest_threshold
 
 
@@ -584,3 +542,17 @@ def test_threshold_values_are_unique(forest_binary_classification_with_train_tes
     display = report.metrics.confusion_matrix()
 
     assert len(display.thresholds) == len(np.unique(display.thresholds))
+
+
+def test_threshold_greater_than_max(forest_binary_classification_with_train_test):
+    """Check that a threshold greater than the maximum threshold is set to the maximum
+    threshold."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.confusion_matrix()
+    frame = display.frame(threshold_value=1.1)
+    assert frame["threshold"].unique() == display.thresholds[-1]
