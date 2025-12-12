@@ -340,8 +340,7 @@ class CoefficientsDisplay(DisplayMixin):
                 kind="strip",
                 dodge=True,
                 **stripplot_kwargs,
-            )
-            facet = facet.map_dataframe(
+            ).map_dataframe(
                 sns.boxplot,
                 x="coefficients",
                 y="feature",
@@ -352,7 +351,6 @@ class CoefficientsDisplay(DisplayMixin):
             add_background_features = hue is not None
 
         self.figure_, self.ax_ = facet.figure, facet.axes.squeeze()
-        # self.figure_.suptitle(name)
         for ax in self.ax_.flatten():
             self._decorate_matplotlib_axis(
                 ax=ax,
