@@ -394,16 +394,30 @@ cm_display.plot()
 plt.show()
 
 # %%
+# In binary classification, a confusion matrix depends on the decision threshold used
+# to convert predicted probabilities into class labels. By default, skore uses a
+# threshold of 0.5, but confusion matrices are actually computed at every threshold
+# internally. You can access all available thresholds via the ``thresholds_`` attribute:
+print(f"Number of thresholds: {len(cm_display.thresholds_)}")
+print(
+    f"Threshold range: [{cm_display.thresholds_.min():.3f}, {cm_display.thresholds_.max():.3f}]"
+)
+
+# %%
+# To visualize the confusion matrix at a different threshold, use the ``threshold_value``
+# parameter. For example, a threshold of 0.3 will classify more samples as positive:
+cm_display.plot(threshold_value=0.3)
+plt.show()
+
+# %%
 # We can normalize the confusion matrix to get percentages instead of raw counts.
 # Here we normalize by true labels (rows):
-cm_display = report.metrics.confusion_matrix()
 cm_display.plot(normalize="true")
 plt.show()
 
 # %%
 # More plotting options are available via ``heatmap_kwargs``, which are passed to
 # seaborn's heatmap. For example, we can customize the colormap and number format:
-cm_display = report.metrics.confusion_matrix()
 cm_display.plot(heatmap_kwargs={"cmap": "Greens", "fmt": ".2e"})
 plt.show()
 
