@@ -47,9 +47,10 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
     Attributes
     ----------
-    thresholds_ : array-like of shape (n_thresholds,)
+    thresholds : ndarray of shape (n_thresholds,)
         Thresholds of the decision function. Each threshold is associated with a
-        confusion matrix. Only available for binary classification.
+        confusion matrix. Only available for binary classification. Thresholds are
+        sorted in ascending order.
 
     figure_ : matplotlib Figure
         Figure containing the confusion matrix.
@@ -72,7 +73,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self.confusion_matrix = confusion_matrix
         self.display_labels = display_labels
         self.report_type = report_type
-        self.thresholds_ = thresholds
+        self.thresholds = thresholds
         self.ml_task = ml_task
         self.pos_label = pos_label
         self.response_method = response_method
@@ -96,7 +97,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
         In binary classification, the confusion matrix can be displayed at various
         decision thresholds. This is useful for understanding how the model's
         predictions change as the decision threshold varies. If no threshold is
-        provided, the confusion matrix is displayed at the default threshold (0.5).
+        provided, the confusion matrix is displayed at the default threshold (0.5 for
+        `predict_proba` response method, 0 for `decision_function` response method).
 
         Parameters
         ----------
@@ -165,7 +167,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
         threshold_value : float or None, default=None
             The decision threshold to use when applicable.
             If None and thresholds are available, plots the confusion matrix at the
-            default threshold (0.5).
+            default threshold (0.5 for `predict_proba` response method, 0 for
+            `decision_function` response method).
 
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
@@ -176,11 +179,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
             {"fmt": ".2f" if normalize else "d", **self._default_heatmap_kwargs},
             heatmap_kwargs or {},
         )
-        normalize_by = "normalized_by_" + normalize if normalize else "count"
-
         sns.heatmap(
-            self.frame(threshold_value=threshold_value)
-            .pivot(index="true_label", columns="predicted_label", values=normalize_by)
+            self.frame(normalize=normalize, threshold_value=threshold_value)
+            .pivot(index="true_label", columns="predicted_label", values="value")
             .reindex(index=self.display_labels, columns=self.display_labels),
             ax=self.ax_,
             **heatmap_kwargs_validated,
@@ -361,6 +362,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
     def frame(
         self,
+        *,
+        normalize: Literal["true", "pred", "all"] | None = None,
         threshold_value: float | None = None,
     ):
         """Return the confusion matrix as a long format dataframe.
@@ -368,14 +371,22 @@ class ConfusionMatrixDisplay(DisplayMixin):
         In binary classification, the confusion matrix can be returned at various
         decision thresholds. This is useful for understanding how the model's
         predictions change as the decision threshold varies. If no threshold is
-        provided, the default threshold (0.5) is used.
+        provided, the default threshold (0.5 for `predict_proba` response method, 0 for
+        `decision_function` response method) is used.
 
         The matrix is returned as a long format dataframe where each line represents one
-        cell of the matrix. The columns are "true_label", "predicted_label", "count",
-        "normalized_by_true", "normalized_by_pred", "normalized_by_all" and "threshold".
+        cell of the matrix. The columns are "true_label", "predicted_label", "value"
+        and "threshold", where "value" is one of {"count", "normalized_by_true",
+        "normalized_by_pred", "normalized_by_all"}, depending on the value of
+        `normalize`.
 
         Parameters
         ----------
+        normalize : {'true', 'pred', 'all'}, default=None
+            Normalizes confusion matrix over the true (rows), predicted (columns)
+            conditions or all the population. If None, the confusion matrix will not be
+            normalized.
+
         threshold_value : float or None, default=None
             The decision threshold to use when applicable.
             If None and thresholds are available, returns the confusion matrix at the
@@ -387,6 +398,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         frame : pandas.DataFrame
             The confusion matrix as a dataframe.
         """
+        normalize_col = "normalized_by_" + normalize if normalize else "count"
         if threshold_value is not None and self.ml_task != "binary-classification":
             raise ValueError(
                 "Threshold support is only available for binary classification."
@@ -395,16 +407,23 @@ class ConfusionMatrixDisplay(DisplayMixin):
             if self.ml_task == "binary-classification":
                 threshold_value = 0.5 if self.response_method == "predict_proba" else 0
             else:
-                return self.confusion_matrix
+                return self.confusion_matrix[
+                    ["true_label", "predicted_label", normalize_col, "threshold"]
+                ].rename(columns={normalize_col: "value"})
 
-        index_right = np.searchsorted(self.thresholds_, threshold_value)
-        if index_right == len(self.thresholds_):
+        index_right = np.searchsorted(self.thresholds, threshold_value)
+        if index_right == len(self.thresholds):
             index_right = index_right - 1
         index_left = index_right - 1
-        diff_right = abs(self.thresholds_[index_right] - threshold_value)
-        diff_left = abs(self.thresholds_[index_left] - threshold_value)
+        diff_right = abs(self.thresholds[index_right] - threshold_value)
+        diff_left = abs(self.thresholds[index_left] - threshold_value)
 
-        threshold_value = self.thresholds_[
+        threshold_value = self.thresholds[
             index_right if diff_right < diff_left else index_left
         ]
-        return self.confusion_matrix.query("threshold == @threshold_value")
+        frame = self.confusion_matrix.query("threshold == @threshold_value")
+        frame = frame[
+            ["true_label", "predicted_label", normalize_col, "threshold"]
+        ].rename(columns={normalize_col: "value"})
+
+        return frame

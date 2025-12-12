@@ -34,7 +34,7 @@ def test_binary_classification(pyplot, forest_binary_classification_with_train_t
     assert display.ax_.get_ylabel() == "True label"
 
     n_classes = len(display.display_labels)
-    n_thresholds = len(display.thresholds_)
+    n_thresholds = len(display.thresholds)
     assert display.confusion_matrix.shape == (n_thresholds * n_classes * n_classes, 7)
 
 
@@ -87,7 +87,7 @@ def test_confusion_matrix(pyplot, forest_binary_classification_with_train_test):
         "threshold",
     ]
     n_classes = len(display.display_labels)
-    n_thresholds = len(display.thresholds_)
+    n_thresholds = len(display.thresholds)
     assert display.confusion_matrix.shape[0] == (n_thresholds * n_classes * n_classes)
 
 
@@ -101,7 +101,7 @@ def test_normalization(pyplot, forest_binary_classification_with_train_test):
     )
     display = report.metrics.confusion_matrix()
     cm = display.confusion_matrix
-    threshold_val = display.thresholds_[len(display.thresholds_) // 2]
+    threshold_val = display.thresholds[len(display.thresholds) // 2]
     cm_at_threshold = cm[cm["threshold"] == threshold_val]
 
     pivoted_true = cm_at_threshold.pivot(
@@ -278,15 +278,12 @@ def test_frame_structure(forest_binary_classification_with_train_test):
 
     frame = display.frame()
     assert isinstance(frame, pd.DataFrame)
-    assert frame.shape == (n_classes * n_classes, 7)
+    assert frame.shape == (n_classes * n_classes, 4)
 
     expected_columns = [
         "true_label",
         "predicted_label",
-        "count",
-        "normalized_by_true",
-        "normalized_by_pred",
-        "normalized_by_all",
+        "value",
         "threshold",
     ]
     assert frame.columns.tolist() == expected_columns
@@ -314,7 +311,7 @@ def test_not_implemented_error_for_non_estimator_report(
         display.plot()
 
 
-def test_thresholds_available_for_binary_classification(
+def test_thresholdsavailable_for_binary_classification(
     pyplot, forest_binary_classification_with_train_test
 ):
     """Check that thresholds are available for binary classification."""
@@ -327,12 +324,12 @@ def test_thresholds_available_for_binary_classification(
     display = report.metrics.confusion_matrix()
 
     assert isinstance(display, ConfusionMatrixDisplay)
-    assert display.thresholds_ is not None
-    assert len(display.thresholds_) > 0
+    assert display.thresholds is not None
+    assert len(display.thresholds) > 0
     assert "threshold" in display.confusion_matrix.columns
 
 
-def test_thresholds_not_available_for_multiclass(
+def test_thresholdsnot_available_for_multiclass(
     pyplot, forest_multiclass_classification_with_train_test
 ):
     """Check that thresholds are NaN for multiclass classification."""
@@ -345,8 +342,8 @@ def test_thresholds_not_available_for_multiclass(
     display = report.metrics.confusion_matrix()
 
     assert isinstance(display, ConfusionMatrixDisplay)
-    assert len(display.thresholds_) == 1
-    assert np.isnan(display.thresholds_[0])
+    assert len(display.thresholds) == 1
+    assert np.isnan(display.thresholds[0])
 
 
 def test_threshold_value_error_for_multiclass(
@@ -416,7 +413,7 @@ def test_frame_with_threshold(forest_binary_classification_with_train_test):
 
     assert isinstance(frame, pd.DataFrame)
     n_classes = len(display.display_labels)
-    assert frame.shape == (n_classes * n_classes, 7)
+    assert frame.shape == (n_classes * n_classes, 4)
 
 
 def test_frame_default_threshold_predict_proba(
@@ -434,9 +431,9 @@ def test_frame_default_threshold_predict_proba(
     frame = display.frame(threshold_value=None)
     assert isinstance(frame, pd.DataFrame)
     n_classes = len(display.display_labels)
-    assert frame.shape == (n_classes * n_classes, 7)
+    assert frame.shape == (n_classes * n_classes, 4)
     assert frame["threshold"].nunique() == 1
-    closest_threshold = display.thresholds_[np.argmin(abs(display.thresholds_ - 0.5))]
+    closest_threshold = display.thresholds[np.argmin(abs(display.thresholds - 0.5))]
     assert frame["threshold"].unique() == closest_threshold
 
 
@@ -459,9 +456,9 @@ def test_frame_default_threshold_decision_function(
     frame = display.frame(threshold_value=None)
     assert isinstance(frame, pd.DataFrame)
     n_classes = len(display.display_labels)
-    assert frame.shape == (n_classes * n_classes, 7)
+    assert frame.shape == (n_classes * n_classes, 4)
     assert frame["threshold"].nunique() == 1
-    closest_threshold = display.thresholds_[np.argmin(abs(display.thresholds_ - 0.0))]
+    closest_threshold = display.thresholds[np.argmin(abs(display.thresholds - 0.0))]
     assert frame["threshold"].unique() == closest_threshold
 
 
@@ -476,11 +473,11 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_with_train
     display = report.metrics.confusion_matrix()
 
     # Create a threshold that is not in the list to test the closest match
-    middle_index = len(display.thresholds_) // 2
+    middle_index = len(display.thresholds) // 2
     threshold = (
-        display.thresholds_[middle_index] + display.thresholds_[middle_index + 1]
+        display.thresholds[middle_index] + display.thresholds[middle_index + 1]
     ) / 2 - 1e-6
-    assert threshold not in display.thresholds_
+    assert threshold not in display.thresholds
 
     display.plot(threshold_value=threshold)
     expected_title = f"Confusion Matrix\nDecision threshold: {threshold:.2f}"
@@ -488,8 +485,8 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_with_train
 
     np.testing.assert_allclose(
         display.ax_.collections[0].get_array(),
-        display.frame(threshold_value=threshold)
-        .pivot(index="true_label", columns="predicted_label", values="count")
+        display.frame(normalize=None, threshold_value=threshold)
+        .pivot(index="true_label", columns="predicted_label", values="value")
         .reindex(index=display.display_labels, columns=display.display_labels)
         .values,
     )
@@ -540,7 +537,7 @@ def test_plot_multiclass_no_threshold_in_title(
     assert "threshold" not in display.ax_.get_title().lower()
 
 
-def test_multiple_thresholds_different_confusion_matrices(
+def test_multiple_thresholdsdifferent_confusion_matrices(
     forest_binary_classification_with_train_test,
 ):
     """Check that different thresholds produce different confusion matrices."""
@@ -552,8 +549,8 @@ def test_multiple_thresholds_different_confusion_matrices(
     )
     display = report.metrics.confusion_matrix()
 
-    low_threshold = display.thresholds_[len(display.thresholds_) // 4]
-    high_threshold = display.thresholds_[3 * len(display.thresholds_) // 4]
+    low_threshold = display.thresholds[len(display.thresholds) // 4]
+    high_threshold = display.thresholds[3 * len(display.thresholds) // 4]
 
     cm = display.confusion_matrix
     cm_low = cm[cm["threshold"] == low_threshold]
@@ -564,7 +561,7 @@ def test_multiple_thresholds_different_confusion_matrices(
 
 
 def test_threshold_values_are_sorted(forest_binary_classification_with_train_test):
-    """Check that thresholds_ are sorted in ascending order."""
+    """Check that thresholds are sorted in ascending order."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
@@ -573,11 +570,11 @@ def test_threshold_values_are_sorted(forest_binary_classification_with_train_tes
     )
     display = report.metrics.confusion_matrix()
 
-    assert np.all(display.thresholds_[:-1] <= display.thresholds_[1:])
+    assert np.all(display.thresholds[:-1] <= display.thresholds[1:])
 
 
 def test_threshold_values_are_unique(forest_binary_classification_with_train_test):
-    """Check that thresholds_ contains unique values."""
+    """Check that thresholds contains unique values."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
@@ -586,4 +583,4 @@ def test_threshold_values_are_unique(forest_binary_classification_with_train_tes
     )
     display = report.metrics.confusion_matrix()
 
-    assert len(display.thresholds_) == len(np.unique(display.thresholds_))
+    assert len(display.thresholds) == len(np.unique(display.thresholds))
