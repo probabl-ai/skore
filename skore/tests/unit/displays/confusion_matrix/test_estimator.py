@@ -461,7 +461,7 @@ def test_frame_default_threshold_decision_function(
     n_classes = len(display.display_labels)
     assert frame.shape == (n_classes * n_classes, 7)
     assert frame["threshold"].nunique() == 1
-    closest_threshold = display.thresholds_[[np.argmin(abs(display.thresholds_ - 0.0))]]
+    closest_threshold = display.thresholds_[np.argmin(abs(display.thresholds_ - 0.0))]
     assert frame["threshold"].unique() == closest_threshold
 
 
