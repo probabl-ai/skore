@@ -175,7 +175,7 @@ def test_default_heatmap_kwargs(pyplot, forest_binary_classification_with_train_
     assert all(isinstance(text, mpl.text.Text) for text in display.ax_.texts)
     for text in display.ax_.texts:
         assert "." not in text.get_text()
-    assert len(display.figure_.axes) == 2
+    assert len(display.figure_.axes) == 1
 
 
 def test_heatmap_kwargs_override(pyplot, forest_binary_classification_with_train_test):
@@ -305,6 +305,7 @@ def test_not_implemented_error_for_non_estimator_report(
         ml_task="binary-classification",
         thresholds=np.array([0.5]),
         pos_label=None,
+        response_method="predict_proba",
     )
     err_msg = (
         "`ConfusionMatrixDisplay` is only implemented for `EstimatorReport` for now."
@@ -418,8 +419,10 @@ def test_frame_with_threshold(forest_binary_classification_with_train_test):
     assert frame.shape == (n_classes * n_classes, 7)
 
 
-def test_frame_default_threshold(forest_binary_classification_with_train_test):
-    """Check that frame() uses default threshold (0.5) when threshold_value is None."""
+def test_frame_default_threshold_predict_proba(
+    forest_binary_classification_with_train_test,
+):
+    """Check that frame() uses default threshold (0.5) for predict_proba response."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
@@ -433,6 +436,33 @@ def test_frame_default_threshold(forest_binary_classification_with_train_test):
     n_classes = len(display.display_labels)
     assert frame.shape == (n_classes * n_classes, 7)
     assert frame["threshold"].nunique() == 1
+    closest_threshold = display.thresholds_[np.argmin(abs(display.thresholds_ - 0.5))]
+    assert frame["threshold"].unique() == closest_threshold
+
+
+def test_frame_default_threshold_decision_function(
+    svc_binary_classification_with_train_test,
+):
+    """Check that frame() uses default threshold (0) for decision_function response."""
+    estimator, X_train, X_test, y_train, y_test = (
+        svc_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator.set_params(probability=False),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.metrics.confusion_matrix()
+
+    frame = display.frame(threshold_value=None)
+    assert isinstance(frame, pd.DataFrame)
+    n_classes = len(display.display_labels)
+    assert frame.shape == (n_classes * n_classes, 7)
+    assert frame["threshold"].nunique() == 1
+    closest_threshold = display.thresholds_[[np.argmin(abs(display.thresholds_ - 0.0))]]
+    assert frame["threshold"].unique() == closest_threshold
 
 
 def test_threshold_closest_match(pyplot, forest_binary_classification_with_train_test):

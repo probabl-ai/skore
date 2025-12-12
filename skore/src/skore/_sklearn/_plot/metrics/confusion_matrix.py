@@ -5,10 +5,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
+from sklearn.utils._response import _check_response_method
 
 from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
+from skore._sklearn._base import BaseEstimator
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import _validate_style_kwargs
 from skore._sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
@@ -39,6 +41,10 @@ class ConfusionMatrixDisplay(DisplayMixin):
         The class considered as the positive class when displaying the confusion
         matrix.
 
+    response_method : str
+        The estimator's method that was used to get the predictions. The possible
+        values are: "predict", "predict_proba", and "decision_function".
+
     Attributes
     ----------
     thresholds_ : array-like of shape (n_thresholds,)
@@ -61,6 +67,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         ml_task: MLTask,
         thresholds: NDArray,
         pos_label: PositiveLabel,
+        response_method: str,
     ):
         self.confusion_matrix = confusion_matrix
         self.display_labels = display_labels
@@ -68,6 +75,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         self.thresholds_ = thresholds
         self.ml_task = ml_task
         self.pos_label = pos_label
+        self.response_method = response_method
 
     _default_heatmap_kwargs: dict = {
         "cmap": "Blues",
@@ -100,7 +108,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
         threshold_value : float or None, default=None
             The decision threshold to use when applicable.
             If None and thresholds are available, plots the confusion matrix at the
-            default threshold (0.5).
+            default threshold (0.5 for `predict_proba` response method, 0 for
+            `decision_function` response method).
 
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
@@ -180,7 +189,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
         title = "Confusion Matrix"
         if self.ml_task == "binary-classification":
             if threshold_value is None:
-                threshold_value = 0.5
+                threshold_value = 0.5 if self.response_method == "predict_proba" else 0
             title = title + f"\nDecision threshold: {threshold_value:.2f}"
 
         if self.ml_task == "binary-classification" and self.pos_label is not None:
@@ -229,9 +238,11 @@ class ConfusionMatrixDisplay(DisplayMixin):
         y_pred: Sequence[YPlotData],
         *,
         report_type: ReportType,
+        estimators: Sequence[BaseEstimator],
         ml_task: MLTask,
         display_labels: list[str],
         pos_label: PositiveLabel,
+        response_method: str | list[str] | tuple[str, ...],
         **kwargs,
     ) -> "ConfusionMatrixDisplay":
         """Compute the confusion matrix for display.
@@ -249,6 +260,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 "cross-validation", "estimator"}
             The type of report.
 
+        estimators : list of BaseEstimator
+            The estimators.
+
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
@@ -258,6 +272,11 @@ class ConfusionMatrixDisplay(DisplayMixin):
         pos_label : int, float, bool, str or None
             The class considered as the positive class when displaying the confusion
             matrix.
+
+        response_method : str or list of str or tuple of str
+            The estimator's method to be invoked to get the predictions. The possible
+            values are: `predict`, `predict_proba`, `predict_log_proba`, and
+            `decision_function`.
 
         **kwargs : dict
             Additional keyword arguments that are ignored for compatibility with
@@ -332,6 +351,9 @@ class ConfusionMatrixDisplay(DisplayMixin):
             report_type=report_type,
             ml_task=ml_task,
             pos_label=pos_label,
+            response_method=_check_response_method(
+                estimators[0], response_method
+            ).__name__,
             thresholds=np.unique(thresholds),
         )
 
@@ -357,7 +379,8 @@ class ConfusionMatrixDisplay(DisplayMixin):
         threshold_value : float or None, default=None
             The decision threshold to use when applicable.
             If None and thresholds are available, returns the confusion matrix at the
-            default threshold (0.5).
+            default threshold (0.5 for `predict_proba` response method, 0 for
+            `decision_function` response method).
 
         Returns
         -------
@@ -370,11 +393,13 @@ class ConfusionMatrixDisplay(DisplayMixin):
             )
         if threshold_value is None:
             if self.ml_task == "binary-classification":
-                threshold_value = 0.5
+                threshold_value = 0.5 if self.response_method == "predict_proba" else 0
             else:
                 return self.confusion_matrix
 
         index_right = np.searchsorted(self.thresholds_, threshold_value)
+        if index_right == len(self.thresholds_):
+            index_right = index_right - 1
         index_left = index_right - 1
         diff_right = abs(self.thresholds_[index_right] - threshold_value)
         diff_left = abs(self.thresholds_[index_left] - threshold_value)

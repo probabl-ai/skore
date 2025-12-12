@@ -2116,17 +2116,17 @@ class _MetricsAccessor(
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
-        display_kwargs = {
-            "display_labels": self._parent.estimator_.classes_.tolist(),
-            "pos_label": pos_label,
-        }
-
         response_method: str | list[str] | tuple[str, ...]
         if self._parent._ml_task == "binary-classification":
             response_method = ("predict_proba", "decision_function")
         else:
             response_method = "predict"
 
+        display_kwargs = {
+            "display_labels": self._parent.estimator_.classes_.tolist(),
+            "pos_label": pos_label,
+            "response_method": response_method,
+        }
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(
