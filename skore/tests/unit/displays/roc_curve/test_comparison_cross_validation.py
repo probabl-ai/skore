@@ -102,7 +102,7 @@ def test_multiclass_classification(
     assert display.chance_level_[0].get_label() == "Chance level (AUC = 0.5)"
     assert display.chance_level_[0].get_color() == "k"
 
-    assert isinstance(display.ax_[0], mpl.axes.Axes)
+    assert isinstance(display.ax_, np.ndarray)
     for label, ax in zip(labels, display.ax_, strict=False):
         check_legend_position(ax, loc="lower right", position="inside")
         legend = ax.get_legend()
