@@ -56,15 +56,15 @@ split_data = train_test_split(X=df, y=y, random_state=42, as_dict=True)
 # for a class imbalance.
 #
 # Now, we need to define a predictive model. Hopefully, `skrub` provides a convenient
-# function (:func:`skrub.tabular_learner`) when it comes to getting strong baseline
+# function (:func:`skrub.tabular_pipeline`) when it comes to getting strong baseline
 # predictive models with a single line of code. As its feature engineering is generic,
 # it does not provide some handcrafted and tailored feature engineering but still
 # provides a good starting point.
 #
 # So let's create a classifier for our task.
-from skrub import tabular_learner
+from skrub import tabular_pipeline
 
-estimator = tabular_learner("classifier")
+estimator = tabular_pipeline("classifier")
 estimator
 
 # %%
