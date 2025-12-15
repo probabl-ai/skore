@@ -1613,6 +1613,9 @@ class _MetricsAccessor(
         """
         pos_label = kwargs.pop("pos_label", self._parent.pos_label)
 
+        if isinstance(metric_function, _BaseScorer):
+            metric_function = metric_function._score_func
+
         return self._compute_metric_scores(
             metric_function,
             X=X,
