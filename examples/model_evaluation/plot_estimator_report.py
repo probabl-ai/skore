@@ -397,10 +397,10 @@ plt.show()
 # In binary classification, a confusion matrix depends on the decision threshold used
 # to convert predicted probabilities into class labels. By default, skore uses a
 # threshold of 0.5, but confusion matrices are actually computed at every threshold
-# internally. You can access all available thresholds via the ``thresholds_`` attribute:
-print(f"Number of thresholds: {len(cm_display.thresholds_)}")
+# internally. You can access all available thresholds via the ``thresholds`` attribute:
+print(f"Number of thresholds: {len(cm_display.thresholds)}")
 print(
-    f"Threshold range: [{cm_display.thresholds_.min():.3f}, {cm_display.thresholds_.max():.3f}]"
+    f"Threshold range: [{cm_display.thresholds.min():.3f}, {cm_display.thresholds.max():.3f}]"
 )
 
 # %%
