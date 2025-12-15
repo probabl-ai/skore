@@ -113,18 +113,19 @@ Join our mission to promote open-source and make machine learning development mo
 
 Skore is tested on Linux and Windows, for at most 4 versions of Python, and at most 4 versions of scikit-learn:
 - Python 3.10
-  - scikit-learn 1.4
+  - scikit-learn 1.5
   - scikit-learn 1.7
 - Python 3.11
-  - scikit-learn 1.4
-  - scikit-learn 1.7
+  - scikit-learn 1.5
+  - scikit-learn 1.8
 - Python 3.12
-  - scikit-learn 1.4
-  - scikit-learn 1.7
+  - scikit-learn 1.5
+  - scikit-learn 1.8
 - Python 3.13
   - scikit-learn 1.5
   - scikit-learn 1.6
   - scikit-learn 1.7
+  - scikit-learn 1.8
 
 ---
 
