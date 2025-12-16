@@ -359,7 +359,7 @@ traitlets==5.14.3
     #   ipython
     #   ipywidgets
     #   matplotlib-inline
-transformers==4.50.3
+transformers==4.53.0
     # via
     #   skore (skore/pyproject.toml)
     #   sentence-transformers
