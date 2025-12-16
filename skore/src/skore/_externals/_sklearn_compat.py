@@ -260,7 +260,6 @@ else:
     )
     from sklearn.utils.validation import (
         _is_fitted,  # noqa: F401
-        _is_pandas_df,  # noqa: F401
     )
 
 
@@ -869,3 +868,20 @@ else:
         check_X_y,  # noqa: F401
         validate_data,  # noqa: F401
     )
+
+
+########################################################################################
+# Upgrading for scikit-learn 1.8
+########################################################################################
+
+if sklearn_version < parse_version("1.8"):
+
+    def confusion_matrix_at_thresholds(y_true, y_score, pos_label):
+        from sklearn.metrics._ranking import _binary_clf_curve
+
+        fps, tps, thresholds = _binary_clf_curve(y_true, y_score, pos_label=pos_label)
+        fns = tps[-1] - tps
+        tns = fps[-1] - fps
+        return tns, fps, fns, tps, thresholds
+else:
+    from sklearn.metrics._ranking import confusion_matrix_at_thresholds  # noqa: F401

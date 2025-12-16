@@ -1613,6 +1613,9 @@ class _MetricsAccessor(
         """
         pos_label = kwargs.pop("pos_label", self._parent.pos_label)
 
+        if isinstance(metric_function, _BaseScorer):
+            metric_function = metric_function._score_func
+
         return self._compute_metric_scores(
             metric_function,
             X=X,
@@ -2061,6 +2064,7 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -2084,6 +2088,11 @@ class _MetricsAccessor(
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when displaying the matrix. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report.
+
         Returns
         -------
         display : :class:`~skore._sklearn._plot.ConfusionMatrixDisplay`
@@ -2099,16 +2108,35 @@ class _MetricsAccessor(
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
-        >>> report.metrics.confusion_matrix()
+        >>> display = report.metrics.confusion_matrix()
+        >>> display.plot()
+
+        With specific threshold for binary classification:
+
+        >>> display = report.metrics.confusion_matrix()
+        >>> display.plot(threshold_value=0.7)
         """
-        display_kwargs = {"display_labels": self._parent.estimator_.classes_.tolist()}
+        if pos_label is _DEFAULT:
+            pos_label = self._parent.pos_label
+
+        response_method: str | list[str] | tuple[str, ...]
+        if self._parent._ml_task == "binary-classification":
+            response_method = ("predict_proba", "decision_function")
+        else:
+            response_method = "predict"
+
+        display_kwargs = {
+            "display_labels": self._parent.estimator_.classes_.tolist(),
+            "pos_label": pos_label,
+            "response_method": response_method,
+        }
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(
                 X=X,
                 y=y,
                 data_source=data_source,
-                response_method="predict",
+                response_method=response_method,
                 display_class=ConfusionMatrixDisplay,
                 display_kwargs=display_kwargs,
             ),
