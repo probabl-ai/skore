@@ -6,78 +6,109 @@
 #
 # You can pass any `uv pip compile` parameter:
 #
-#     $ bash pip-compile.sh <skore|skore-hub-project|skore-local-project> --upgrade
+#     $ bash pip-compile.sh --test-requirements <skore|skore-hub-project|skore-local-project> --upgrade
 #
+
+usage () {
+    >&2 echo "Usage:"
+    >&2 echo "    $ bash pip-compile.sh --test-requirements <all|skore|skore-hub-project|skore-local-project> [option...]"
+}
 
 CWD=$(realpath $(dirname $0))
 TMPDIR=$(mktemp -d)
-PACKAGE=$1
-
-case "${PACKAGE}" in
-    "skore"|"skore-hub-project"|"skore-local-project") ;;
-    *)
-        >&2 echo "Error: Unknown package: '${PACKAGE}'"
-        >&2 echo "Usage: bash pip-compile.sh <skore|skore-hub-project|skore-local-project> [option...]"
-        exit 1
-        ;;
-esac
+COMBINATIONS=()
 
 # Make sure that `TMPDIR` is removed on exit, whatever the signal
 trap 'rm -rf ${TMPDIR}' 0
 
-# Declare the combinations of `python` and `scikit-learn` versions
-declare -a COMBINATIONS
+# Construct `COMBINATIONS` based on arguments
+case $1 in
+    "--test-requirements")
+        PACKAGES=()
 
-COMBINATIONS[0]='3.10;1.4'
-COMBINATIONS[1]='3.10;1.7'
-COMBINATIONS[2]='3.11;1.4'
-COMBINATIONS[3]='3.11;1.7'
-COMBINATIONS[4]='3.12;1.4'
-COMBINATIONS[5]='3.12;1.7'
-COMBINATIONS[6]='3.13;1.5'
-COMBINATIONS[7]='3.13;1.6'
-COMBINATIONS[8]='3.13;1.7'
+        case $2 in
+            "all")
+                PACKAGES+=("skore")
+                PACKAGES+=("skore-hub-project")
+                PACKAGES+=("skore-local-project")
+                ;;
+            "skore"|"skore-hub-project"|"skore-local-project")
+                PACKAGES+=($2)
+                ;;
+            *)
+                >&2 echo -e "Error: Unknown PACKAGE \033[0;41m$2\033[0m"
+                usage
+                exit 1
+                ;;
+        esac
+
+        for PACKAGE in "${PACKAGES[@]}"
+        do
+            COMBINATIONS+=("${PACKAGE};test;3.10;1.4")
+            COMBINATIONS+=("${PACKAGE};test;3.10;1.7")
+            COMBINATIONS+=("${PACKAGE};test;3.11;1.4")
+            COMBINATIONS+=("${PACKAGE};test;3.11;1.7")
+            COMBINATIONS+=("${PACKAGE};test;3.12;1.4")
+            COMBINATIONS+=("${PACKAGE};test;3.12;1.7")
+            COMBINATIONS+=("${PACKAGE};test;3.13;1.5")
+            COMBINATIONS+=("${PACKAGE};test;3.13;1.6")
+            COMBINATIONS+=("${PACKAGE};test;3.13;1.7")
+        done
+
+        unset PACKAGES
+        unset PACKAGE
+        shift 2
+        ;;
+    *)
+        >&2 echo -e "Error: Unknown OPTION \033[0;41m$1\033[0m"
+        usage
+        exit 1
+        ;;
+esac
 
 set -eu
 
 (
-    # Copy everything necessary to compile requirements in `TMPDIR`
-    mkdir "${TMPDIR}/${PACKAGE}"; cp "${CWD}/../${PACKAGE}/pyproject.toml" "${TMPDIR}/${PACKAGE}"
+    counter=1
 
     # Move to `TMPDIR` to avoid absolute paths in requirements file
     cd "${TMPDIR}"
 
-    counter=1
     for combination in "${COMBINATIONS[@]}"
     do
         IFS=";" read -r -a combination <<< "${combination}"
 
-        python="${combination[0]}"
-        scikit_learn="${combination[1]}"
-        filepath="${CWD}/requirements/${PACKAGE}/python-${python}/scikit-learn-${scikit_learn}/test-requirements.txt"
+        PACKAGE="${combination[0]}"
+        EXTRA="${combination[1]}"
+        PYTHON="${combination[2]}"
+        SCIKIT_LEARN="${combination[3]}"
+        FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/scikit-learn-${SCIKIT_LEARN}/${EXTRA}-requirements.txt"
 
-        echo "Generating ${PACKAGE} requirements: python==${python} | scikit-learn==${scikit_learn} (${counter}/${#COMBINATIONS[@]})"
+        echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | scikit-learn==${SCIKIT_LEARN} (${counter}/${#COMBINATIONS[@]})"
+
+        # Copy everything necessary to compile requirements in `TMPDIR`
+        mkdir -p "${TMPDIR}/${PACKAGE}"; cp -u "${CWD}/../${PACKAGE}/pyproject.toml" "${TMPDIR}/${PACKAGE}"
 
         # Force the `scikit-learn` version by creating file overriding requirements
-        echo "scikit-learn==${scikit_learn}.*" > "${PACKAGE}/overrides.txt"
+        echo "scikit-learn==${SCIKIT_LEARN}.*" > "${PACKAGE}/overrides.txt"
 
         # Create the requirements file tree
-        mkdir -p $(dirname "${filepath}")
+        mkdir -p $(dirname "${FILEPATH}")
 
         # Create the `.python-version` file used by `Dependabot`
-        echo "${python}" > "${CWD}/requirements/${PACKAGE}/python-${python}/.python-version"
+        echo "${PYTHON}" > "${CWD}/requirements/${PACKAGE}/python-${PYTHON}/.python-version"
 
         # Create the requirements file
         uv pip compile \
            --quiet \
            --no-strip-extras \
            --no-header \
-           --extra=test \
+           --extra="${EXTRA}" \
            --override "${PACKAGE}/overrides.txt" \
-           --python-version "${python}" \
-           --output-file "${filepath}" \
+           --python-version "${PYTHON}" \
+           --output-file "${FILEPATH}" \
            "${PACKAGE}/pyproject.toml" \
-           "${@:2}"
+           "${@:1}"
 
         let counter++
     done
