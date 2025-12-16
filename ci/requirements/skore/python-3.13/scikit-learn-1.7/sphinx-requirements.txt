@@ -203,7 +203,6 @@ pexpect==4.9.0
 pillow==12.0.0
     # via
     #   matplotlib
-    #   sentence-transformers
     #   sphinx-gallery
 platformdirs==4.5.1
     # via skore-local-project
@@ -291,7 +290,7 @@ scipy==1.16.3
     #   xgboost
 seaborn==0.13.2
     # via skore (skore/pyproject.toml)
-sentence-transformers==3.4.1
+sentence-transformers==5.2.0
     # via skore (skore/pyproject.toml)
 setuptools==80.9.0
     # via torch
@@ -372,6 +371,7 @@ typing-extensions==4.15.0
     #   beautifulsoup4
     #   huggingface-hub
     #   pydata-sphinx-theme
+    #   sentence-transformers
     #   torch
 tzdata==2025.3
     # via pandas
