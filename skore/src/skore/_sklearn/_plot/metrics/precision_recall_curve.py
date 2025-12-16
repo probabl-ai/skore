@@ -262,19 +262,19 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         if self.ml_task == "binary-classification":
             info_pos_label = (
-                f"\nPositive label: {self.pos_label}"
+                f"Positive label: {self.pos_label}"
                 if self.pos_label is not None
-                else ""
+                else None
             )
         else:
-            info_pos_label = ""
+            info_pos_label = None
 
         info_data_source = (
-            f"\nData source: {self.data_source.capitalize()} set"
+            f"Data source: {self.data_source.capitalize()} set"
             if self.data_source in ("train", "test")
-            else "\nData source: external set"
+            else "Data source: external set"
             if self.data_source == "X_y"
-            else ""
+            else None
         )
 
         title = "Precision-Recall Curve"
@@ -282,7 +282,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             title += (
                 f" for {self.precision_recall['estimator_name'].cat.categories.item()}"
             )
-        self.figure_.suptitle("\n".join([title, info_pos_label, info_data_source]))
+        self.figure_.suptitle(
+            "\n".join(filter(None, [title, info_pos_label, info_data_source]))
+        )
 
         if despine:
             for ax in self.ax_:
