@@ -62,7 +62,6 @@ sphinx-base = [
   "numpydoc",
   "plotly>=6,<7", # plotly <6 conflicting with kaleido
   "pydata-sphinx-theme",
-  "scikit-learn<1.8",
   "seaborn",
   "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
   "skrub",
