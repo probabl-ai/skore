@@ -7,11 +7,13 @@
 # You can pass any `uv pip compile` parameter:
 #
 #     $ bash pip-compile.sh --test-requirements <skore|skore-hub-project|skore-local-project> --upgrade
+#     $ bash pip-compile.sh --sphinx-requirements --upgrade
 #
 
 usage () {
     >&2 echo "Usage:"
     >&2 echo "    $ bash pip-compile.sh --test-requirements <all|skore|skore-hub-project|skore-local-project> [option...]"
+    >&2 echo "    $ bash pip-compile.sh --sphinx-requirements [option...]"
 }
 
 CWD=$(realpath $(dirname $0))
@@ -58,6 +60,10 @@ case $1 in
         unset PACKAGES
         unset PACKAGE
         shift 2
+        ;;
+    "--sphinx-requirements")
+        COMBINATIONS+=("skore;sphinx;3.13;1.7")
+        shift
         ;;
     *)
         >&2 echo -e "Error: Unknown OPTION \033[0;41m$1\033[0m"
