@@ -71,7 +71,7 @@ sphinx-base = [
   "sphinx-tabs",
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
-  "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
+  "transformers",
   "xgboost",
 ]
 sphinx = ["skore[sphinx-base]", "polars"]
