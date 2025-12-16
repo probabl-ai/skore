@@ -273,7 +273,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             f"\nData source: {self.data_source.capitalize()} set"
             if self.data_source in ("train", "test")
             else "\nData source: external set"
-            if self.data_source != "both"
+            if self.data_source == "X_y"
             else ""
         )
 
@@ -282,7 +282,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             title += (
                 f" for {self.precision_recall['estimator_name'].cat.categories.item()}"
             )
-        self.figure_.suptitle(title + info_pos_label + info_data_source)
+        self.figure_.suptitle("\n".join([title, info_pos_label, info_data_source])
 
         if despine:
             for ax in self.ax_:
@@ -460,12 +460,8 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     def _format_legend_label(self, col_name: str, val: Any, stat_str: str) -> str:
         """Format a legend label based on column type."""
         val_str = str(val)
-        if col_name == "estimator_name":
-            return f"{val_str} ({stat_str})"
-        elif col_name == "data_source":
+        if col_name == "data_source":
             return f"{val_str.title()} set ({stat_str})"
-        elif col_name == "label":
-            return f"{val_str} ({stat_str})"
         return f"{val_str} ({stat_str})"
 
     @classmethod
