@@ -12,11 +12,14 @@ from sklearn.utils._response import _check_response_method
 from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
 from skore._sklearn._base import BaseEstimator
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn._plot.utils import _validate_style_kwargs
+from skore._sklearn._plot.utils import (
+    _ClassifierCurveDisplayMixin,
+    _validate_style_kwargs,
+)
 from skore._sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 
-class ConfusionMatrixDisplay(DisplayMixin):
+class ConfusionMatrixDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     """Display for confusion matrix.
 
     Parameters
@@ -174,24 +177,40 @@ class ConfusionMatrixDisplay(DisplayMixin):
         """
         self.figure_, self.ax_ = plt.subplots()
 
-        frame, annot = (
-            self._compute_mean_std_annotations(
-                self.frame(normalize=normalize, threshold_value=threshold_value),
-                self.display_labels,
-            )
-            if self.report_type == "cross-validation"
-            else (
-                self.frame(normalize=normalize, threshold_value=threshold_value)
-                .pivot(index="true_label", columns="predicted_label", values="value")
-                .reindex(index=self.display_labels, columns=self.display_labels),
-                True,
-            )
-        )
-
         if self.report_type == "cross-validation":
+            default_fmt = ".3f" if normalize else ".1f"
+            annot_fmt = (
+                heatmap_kwargs.get("fmt", default_fmt)
+                if heatmap_kwargs
+                else default_fmt
+            )
+            aggregated = (
+                self.frame(normalize=normalize, threshold_value=threshold_value)
+                .groupby(["true_label", "predicted_label"])["value"]
+                .agg(["mean", "std"])
+                .reset_index()
+            )
+            aggregated["annot"] = aggregated.apply(
+                lambda row: f"{row['mean']:{annot_fmt}}\n(± {row['std']:{annot_fmt}})",
+                axis=1,
+            )
+
+            frame = aggregated.pivot(
+                index="true_label", columns="predicted_label", values="mean"
+            ).reindex(index=self.display_labels, columns=self.display_labels)
+            annot = aggregated.pivot(
+                index="true_label", columns="predicted_label", values="annot"
+            ).reindex(index=self.display_labels, columns=self.display_labels)
             default_fmt = ""
         else:
+            frame = (
+                self.frame(normalize=normalize, threshold_value=threshold_value)
+                .pivot(index="true_label", columns="predicted_label", values="value")
+                .reindex(index=self.display_labels, columns=self.display_labels)
+            )
+            annot = True
             default_fmt = ".2f" if normalize else "d"
+
         heatmap_kwargs_validated = _validate_style_kwargs(
             {"fmt": default_fmt, "annot": annot, **self._default_heatmap_kwargs},
             heatmap_kwargs or {},
@@ -304,10 +323,16 @@ class ConfusionMatrixDisplay(DisplayMixin):
         display : ConfusionMatrixDisplay
             The confusion matrix display.
         """
+        pos_label_validated = cls._validate_from_predictions_params(
+            y_true, y_pred, ml_task=ml_task, pos_label=pos_label
+        )
+
         # When provided, the positive label is set in second position.
-        if ml_task == "binary-classification" and pos_label is not None:
-            neg_label = next(label for label in display_labels if label != pos_label)
-            display_labels = [str(neg_label), str(pos_label)]
+        if ml_task == "binary-classification" and pos_label_validated is not None:
+            neg_label = next(
+                label for label in display_labels if label != pos_label_validated
+            )
+            display_labels = [str(neg_label), str(pos_label_validated)]
 
         cm_records = []
         for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
@@ -315,7 +340,7 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
                     y_true=y_true_i.y,
                     y_score=y_pred_i.y,
-                    pos_label=pos_label,
+                    pos_label=pos_label_validated,
                 )
                 cms = (
                     np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
@@ -365,63 +390,20 @@ class ConfusionMatrixDisplay(DisplayMixin):
                     }
                 )
             )
-
+        confusion_matrix = pd.concat(cm_records)
         disp = cls(
-            confusion_matrix=pd.concat(cm_records),
+            confusion_matrix=confusion_matrix,
             display_labels=display_labels,
             report_type=report_type,
             ml_task=ml_task,
-            pos_label=pos_label,
+            pos_label=pos_label_validated,
             response_method=_check_response_method(
                 estimators[0], response_method
             ).__name__,
-            thresholds=np.unique(thresholds),
+            thresholds=np.unique(confusion_matrix["threshold"]),
         )
 
         return disp
-
-    @staticmethod
-    def _compute_mean_std_annotations(
-        frame: pd.DataFrame,
-        display_labels: list[str],
-    ) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """Compute mean, std and formatted annotations for cross-validation.
-
-        Parameters
-        ----------
-        frame : pd.DataFrame
-            Frame with columns "true_label", "predicted_label", "value", "split",
-            and "threshold".
-
-        display_labels : list of str
-            Display labels for plot.
-
-        Returns
-        -------
-        pd.DataFrame
-            DataFrame with columns "true_label", "predicted_label", "mean".
-        annot : pd.DataFrame
-            DataFrame with columns "true_label", "predicted_label", "annot", indexed by
-            "true_label" and "predicted_label".
-        """
-        aggregated = (
-            frame.groupby(["true_label", "predicted_label"])["value"]
-            .agg(["mean", "std"])
-            .reset_index()
-        )
-        aggregated["annot"] = aggregated.apply(
-            lambda row: f"{row['mean']:.3f}\n(± {row['std']:.3f})",
-            axis=1,
-        )
-
-        return (
-            aggregated.pivot(
-                index="true_label", columns="predicted_label", values="mean"
-            ).reindex(index=display_labels, columns=display_labels),
-            aggregated.pivot(
-                index="true_label", columns="predicted_label", values="annot"
-            ).reindex(index=display_labels, columns=display_labels),
-        )
 
     def frame(
         self,

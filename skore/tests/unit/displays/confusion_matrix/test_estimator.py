@@ -37,7 +37,7 @@ def test_binary_classification(pyplot, forest_binary_classification_with_train_t
 
     n_classes = len(display.display_labels)
     n_thresholds = len(display.thresholds)
-    assert display.confusion_matrix.shape == (n_thresholds * n_classes * n_classes, 7)
+    assert display.confusion_matrix.shape == (n_thresholds * n_classes * n_classes, 8)
 
 
 def test_multiclass_classification(
@@ -61,7 +61,7 @@ def test_multiclass_classification(
     assert isinstance(display, ConfusionMatrixDisplay)
     n_classes = len(np.unique(y_test))
     assert len(display.display_labels) == n_classes
-    assert display.confusion_matrix.shape == (n_classes * n_classes, 7)
+    assert display.confusion_matrix.shape == (n_classes * n_classes, 8)
 
 
 def test_confusion_matrix(pyplot, forest_binary_classification_with_train_test):
@@ -87,6 +87,7 @@ def test_confusion_matrix(pyplot, forest_binary_classification_with_train_test):
         "normalized_by_pred",
         "normalized_by_all",
         "threshold",
+        "split",
     ]
     n_classes = len(display.display_labels)
     n_thresholds = len(display.thresholds)
@@ -199,7 +200,8 @@ def test_heatmap_kwargs_override(pyplot, forest_binary_classification_with_train
 
     display = report.metrics.confusion_matrix()
     display.plot(heatmap_kwargs={"annot": False})
-    assert len(display.ax_.texts) == 0
+    # There is still the pos_label annotation
+    assert len(display.ax_.texts) == 1
 
     display = report.metrics.confusion_matrix()
     display.plot(heatmap_kwargs={"fmt": "d"})
@@ -207,8 +209,8 @@ def test_heatmap_kwargs_override(pyplot, forest_binary_classification_with_train
         assert "." not in text.get_text() or text.get_text().endswith(".0")
 
     display = report.metrics.confusion_matrix()
-    display.plot(heatmap_kwargs={"cbar": False})
-    assert len(display.figure_.axes) == 1
+    display.plot(heatmap_kwargs={"cbar": True})
+    assert len(display.figure_.axes) == 2
 
 
 def test_set_style(pyplot, forest_binary_classification_with_train_test):
@@ -259,8 +261,8 @@ def test_plot_attributes(pyplot, forest_binary_classification_with_train_test):
 
     xticklabels = [label.get_text() for label in display.ax_.get_xticklabels()]
     yticklabels = [label.get_text() for label in display.ax_.get_yticklabels()]
-    assert xticklabels == [str(label) for label in display.display_labels]
-    assert yticklabels == [str(label) for label in display.display_labels]
+    assert xticklabels == ["0", "1*"]
+    assert yticklabels == ["0", "1*"]
 
 
 def test_frame_structure(forest_binary_classification_with_train_test):
@@ -280,13 +282,14 @@ def test_frame_structure(forest_binary_classification_with_train_test):
 
     frame = display.frame()
     assert isinstance(frame, pd.DataFrame)
-    assert frame.shape == (n_classes * n_classes, 4)
+    assert frame.shape == (n_classes * n_classes, 5)
 
     expected_columns = [
         "true_label",
         "predicted_label",
         "value",
         "threshold",
+        "split",
     ]
     assert frame.columns.tolist() == expected_columns
     assert set(frame["true_label"].unique()) == set(display.display_labels)
@@ -300,14 +303,15 @@ def test_not_implemented_error_for_non_estimator_report(
     display = ConfusionMatrixDisplay(
         confusion_matrix=pd.DataFrame(),
         display_labels=["0", "1"],
-        report_type="cross-validation",
+        report_type="comparison-estimator",
         ml_task="binary-classification",
         thresholds=np.array([0.5]),
         pos_label=None,
         response_method="predict_proba",
     )
     err_msg = (
-        "`ConfusionMatrixDisplay` is only implemented for `EstimatorReport` for now."
+        "`ConfusionMatrixDisplay` is only implemented for `EstimatorReport` and "
+        "`CrossValidationReport` for now."
     )
     with pytest.raises(NotImplementedError, match=err_msg):
         display.plot()
@@ -392,7 +396,7 @@ def test_frame_with_threshold(forest_binary_classification_with_train_test):
 
     assert isinstance(frame, pd.DataFrame)
     n_classes = len(display.display_labels)
-    assert frame.shape == (n_classes * n_classes, 4)
+    assert frame.shape == (n_classes * n_classes, 5)
 
 
 @pytest.mark.parametrize(
@@ -412,7 +416,7 @@ def test_frame_default_threshold(
     frame = display.frame(threshold_value=None)
     assert isinstance(frame, pd.DataFrame)
     n_classes = len(display.display_labels)
-    assert frame.shape == (n_classes * n_classes, 4)
+    assert frame.shape == (n_classes * n_classes, 5)
     assert frame["threshold"].nunique() == 1
     closest_threshold = display.thresholds[
         np.argmin(abs(display.thresholds - expected_default_threshold))
