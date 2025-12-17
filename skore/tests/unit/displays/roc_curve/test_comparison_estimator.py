@@ -405,3 +405,38 @@ def test_multiclass_classification_constructor(
         np.testing.assert_array_equal(df["label"].unique(), np.unique(y_train))
 
     assert len(display.roc_auc) == len(np.unique(y_train)) * 2
+    
+
+def test_frame_binary_classification_both_datasources(
+    logistic_binary_classification_with_train_test,
+):
+    """Test the frame method when using data_source='both' with binary data."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+
+    display = report.metrics.roc(data_source="both")
+    df = display.frame()
+    assert not df.empty
+    assert "data_source" in df.columns
+    assert set(df["data_source"].unique()) == {"train", "test"}

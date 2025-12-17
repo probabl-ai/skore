@@ -509,85 +509,203 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {}
 
+        if self.report_type == "comparison-estimator" and self.data_source == "both":
+            ax_train, ax_test = self.ax_
+        else:
+            ax_train = ax_test = self.ax_
+
         if self.ml_task == "binary-classification":
             for est_idx, est_name in enumerate(estimator_names):
-                query = f"label == {self.pos_label!r} & estimator_name == '{est_name}'"
+                if self.data_source == "both":
+                    for ds, ax in (("train", ax_train), ("test", ax_test)):
+                        query = (
+                            f"label == {self.pos_label!r} "
+                            f"& estimator_name == '{est_name}' "
+                            f"& data_source == {ds!r}"
+                        )
+                        roc_curve_ds = self.roc_curve.query(query)
+                        if roc_curve_ds.empty:
+                            continue
 
-                roc_curve = self.roc_curve.query(query)
+                        roc_auc_ds = (
+                            self.roc_auc.query(query)["roc_auc"].squeeze().item()
+                        )
 
-                roc_auc = self.roc_auc.query(query)["roc_auc"].item()
+                        line_kwargs_validated = _validate_style_kwargs(
+                            line_kwargs, roc_curve_kwargs[est_idx]
+                        )
+                        line_kwargs_validated["label"] = (
+                            f"{est_name} (AUC = {roc_auc_ds:0.2f})"
+                        )
 
-                line_kwargs_validated = _validate_style_kwargs(
-                    line_kwargs, roc_curve_kwargs[est_idx]
-                )
-                line_kwargs_validated["label"] = f"{est_name} (AUC = {roc_auc:0.2f})"
-                (line,) = self.ax_.plot(
-                    roc_curve["fpr"],
-                    roc_curve["tpr"],
-                    **line_kwargs_validated,
-                )
-                lines.append(line)
+                        (line,) = ax.plot(
+                            roc_curve_ds["fpr"],
+                            roc_curve_ds["tpr"],
+                            **line_kwargs_validated,
+                        )
+                        lines.append(line)
+                else:
+                    if self.data_source in ("train", "test"):
+                        query = (
+                            f"label == {self.pos_label!r} "
+                            f"& estimator_name == '{est_name}' "
+                            f"& data_source == {self.data_source!r}"
+                        )
+                    else:
+                        query = (
+                            f"label == {self.pos_label!r} "
+                            f"& estimator_name == '{est_name}'"
+                        )
+
+                    roc_curve = self.roc_curve.query(query)
+                    roc_auc = self.roc_auc.query(query)["roc_auc"].item()
+
+                    line_kwargs_validated = _validate_style_kwargs(
+                        line_kwargs, roc_curve_kwargs[est_idx]
+                    )
+                    line_kwargs_validated["label"] = (
+                        f"{est_name} (AUC = {roc_auc:0.2f})"
+                    )
+                    (line,) = self.ax_.plot(
+                        roc_curve["fpr"],
+                        roc_curve["tpr"],
+                        **line_kwargs_validated,
+                    )
+                    lines.append(line)
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
                 if self.pos_label is not None
                 else ""
             )
+
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
             labels = self.roc_curve["label"].cat.categories
             class_colors = sample_mpl_colormap(
-                colormaps.get_cmap("tab10"), 10 if len(labels) < 10 else len(labels)
+                colormaps.get_cmap("tab10"),
+                10 if len(estimator_names) < 10 else len(estimator_names),
             )
 
             for est_idx, est_name in enumerate(estimator_names):
                 est_color = class_colors[est_idx]
 
                 for class_idx, class_label in enumerate(labels):
-                    query = f"label == {class_label} & estimator_name == '{est_name}'"
-                    roc_curve = self.roc_curve.query(query)
-
-                    roc_auc = self.roc_auc.query(query)["roc_auc"].item()
-
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 
-                    line_kwargs["color"] = est_color
-                    line_kwargs["alpha"] = 0.6
-                    line_kwargs["linestyle"] = class_linestyle
+                    if self.data_source == "both":
+                        for ds, ax in (("train", ax_train), ("test", ax_test)):
+                            query = (
+                                f"label == {class_label} "
+                                f"& estimator_name == '{est_name}' "
+                                f"& data_source == {ds!r}"
+                            )
+                            roc_curve_ds = self.roc_curve.query(query)
+                            if roc_curve_ds.empty:
+                                continue
 
-                    line_kwargs_validated = _validate_style_kwargs(
-                        line_kwargs, roc_curve_kwargs[est_idx]
-                    )
-                    line_kwargs_validated["label"] = (
-                        f"{est_name} - {str(class_label).title()} "
-                        f"(AUC = {roc_auc:0.2f})"
-                    )
+                            roc_auc_ds = (
+                                self.roc_auc.query(query)["roc_auc"]
+                                .squeeze()
+                                .item()
+                            )
 
-                    (line,) = self.ax_.plot(
-                        roc_curve["fpr"], roc_curve["tpr"], **line_kwargs_validated
-                    )
-                    lines.append(line)
+                            line_kwargs["color"] = est_color
+                            line_kwargs["alpha"] = 0.6
+                            line_kwargs["linestyle"] = class_linestyle
+
+                            line_kwargs_validated = _validate_style_kwargs(
+                                line_kwargs, roc_curve_kwargs[est_idx]
+                            )
+                            line_kwargs_validated["label"] = (
+                                f"{est_name} - {str(class_label).title()} "
+                                f"(AUC = {roc_auc_ds:0.2f})"
+                            )
+
+                            (line,) = ax.plot(
+                                roc_curve_ds["fpr"],
+                                roc_curve_ds["tpr"],
+                                **line_kwargs_validated,
+                            )
+                            lines.append(line)
+                    else:
+                        query = (
+                            f"label == {class_label} "
+                            f"& estimator_name == '{est_name}'"
+                        )
+                        if self.data_source in ("train", "test"):
+                            query += f" & data_source == {self.data_source!r}"
+
+                        roc_curve = self.roc_curve.query(query)
+                        roc_auc = self.roc_auc.query(query)["roc_auc"].item()
+
+                        line_kwargs["color"] = est_color
+                        line_kwargs["alpha"] = 0.6
+                        line_kwargs["linestyle"] = class_linestyle
+
+                        line_kwargs_validated = _validate_style_kwargs(
+                            line_kwargs, roc_curve_kwargs[est_idx]
+                        )
+                        line_kwargs_validated["label"] = (
+                            f"{est_name} - {str(class_label).title()} "
+                            f"(AUC = {roc_auc:0.2f})"
+                        )
+
+                        (line,) = self.ax_.plot(
+                            roc_curve["fpr"],
+                            roc_curve["tpr"],
+                            **line_kwargs_validated,
+                        )
+                        lines.append(line)
 
         if plot_chance_level:
-            self.chance_level_ = _add_chance_level(
-                self.ax_,
-                chance_level_kwargs,
-                self._default_chance_level_kwargs,
-            )
+            if self.data_source == "both":
+                self.chance_level_ = []
+                for ax in (ax_train, ax_test):
+                    self.chance_level_.append(
+                        _add_chance_level(
+                            ax,
+                            chance_level_kwargs,
+                            self._default_chance_level_kwargs,
+                        )
+                    )
+            else:
+                self.chance_level_ = _add_chance_level(
+                    self.ax_,
+                    chance_level_kwargs,
+                    self._default_chance_level_kwargs,
+                )
         else:
             self.chance_level_ = None
 
-        if self.data_source in ("train", "test"):
-            legend_title = f"{self.data_source.capitalize()} set"
-        else:
-            legend_title = "External set"
+        if self.data_source == "both":
+            for ax, legend_title in zip(
+                (ax_train, ax_test),
+                ("Train set", "Test set"),
+            ):
+                handles, labels = ax.get_legend_handles_labels()
+                if not labels:
+                    continue
 
-        _, labels = self.ax_.get_legend_handles_labels()
-        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
-            self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+                if len(labels) > MAX_N_LABELS:  # too many lines
+                    ax.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+                else:
+                    ax.legend(loc="lower right", title=legend_title)
+
+            ax_train.set_title("ROC Curve (train)")
+            ax_test.set_title("ROC Curve (test)")
         else:
-            self.ax_.legend(loc="lower right", title=legend_title)
-        self.ax_.set_title("ROC Curve")
+            if self.data_source in ("train", "test"):
+                legend_title = f"{self.data_source.capitalize()} set"
+            else:
+                legend_title = "External set"
+
+            _, labels = self.ax_.get_legend_handles_labels()
+            if len(labels) > MAX_N_LABELS:  # too many lines
+                self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+            else:
+                self.ax_.legend(loc="lower right", title=legend_title)
+            self.ax_.set_title("ROC Curve")
 
         return self.ax_, lines, info_pos_label
 
@@ -842,6 +960,10 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             self.figure_, self.ax_ = plt.subplots(
                 ncols=n_labels, figsize=(6.4 * n_labels, 4.8)
             )
+        elif self.report_type == "comparison-estimator" and self.data_source == "both":
+            self.figure_, self.ax_ = plt.subplots(
+                ncols=2, figsize=(12.8, 4.8), sharex=True, sharey=True
+            )
         else:
             self.figure_, self.ax_ = plt.subplots()
 
@@ -910,11 +1032,16 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             and self.ml_task == "multiclass-classification"
         ):
             for ax in self.ax_:
+                _set_axis_labels(ax, info_pos_label)
+                if despine:
+                    _despine_matplotlib_axis(ax)
+        elif self.report_type == "comparison-estimator" and self.data_source == "both":
+            for ax in self.ax_:
+                _set_axis_labels(ax, info_pos_label)
                 if despine:
                     _despine_matplotlib_axis(ax)
         else:
             _set_axis_labels(self.ax_, info_pos_label)
-
             if despine:
                 _despine_matplotlib_axis(self.ax_)
 
