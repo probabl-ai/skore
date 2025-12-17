@@ -145,7 +145,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             - None: no subplots (binary only)
 
         relplot_kwargs : dict, default=None
-            Keyword arguments to be passed to seaborn's `relplot` for rendering
+            Keyword arguments to be passed to :func:`seaborn.relplot` for rendering
             the precision-recall curve(s). Common options include `palette`,
             `alpha`, `linewidth`, etc.
 
