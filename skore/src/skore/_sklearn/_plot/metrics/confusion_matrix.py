@@ -180,7 +180,7 @@ class ConfusionMatrixDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         if self.report_type == "cross-validation":
             default_fmt = ".3f" if normalize else ".1f"
             annot_fmt = (
-                heatmap_kwargs.get("fmt", default_fmt)
+                heatmap_kwargs.pop("fmt", default_fmt)
                 if heatmap_kwargs
                 else default_fmt
             )
