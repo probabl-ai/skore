@@ -1,8 +1,9 @@
+import re
+
 import matplotlib as mpl
-import matplotlib.colors as mcolors
 import numpy as np
 import pytest
-from numpy.testing import assert_allclose
+import seaborn as sns
 from sklearn.base import clone
 
 from skore import ComparisonReport, EstimatorReport
@@ -41,21 +42,28 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
     display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
     check_display_data(display)
+    n_reports = len(report.reports_)
 
     display.plot()
-    assert isinstance(display.ax_, mpl.axes.Axes)
     ax = display.ax_
+    assert isinstance(ax, mpl.axes.Axes)
     legend = ax.get_legend()
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
 
-    for estimator_name in report.reports_:
-        average_precision = display.average_precision.query(
-            f"label == {display.pos_label} & estimator_name == '{estimator_name}'"
-        )["average_precision"].item()
-        assert f"{estimator_name} (AP={average_precision:.2f})" in legend_texts
+    expected_colors = sns.color_palette()[:n_reports]
+    for idx, (estimator_name, line) in enumerate(
+        zip(report.reports_, display.lines_, strict=False)
+    ):
+        assert isinstance(line, mpl.lines.Line2D)
+        plot_data = display.frame(with_average_precision=True)
+        average_precision = plot_data.query(f"estimator_name == '{estimator_name}'")[
+            "average_precision"
+        ].iloc[0]
+        assert legend_texts[idx] == f"{estimator_name} (AP={average_precision:.2f})"
+        assert line.get_color() == expected_colors[idx]
 
-    assert len(legend_texts) == 2
+    assert len(legend_texts) == n_reports
     assert ax.get_xlabel() == "recall"
     assert ax.get_ylabel() == "precision"
     assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
@@ -103,22 +111,27 @@ def test_multiclass_classification(
     display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * n_reports
-
-    assert isinstance(display.ax_[0], mpl.axes.Axes)
+    expected_colors = sns.color_palette()[:n_reports]
     assert len(display.ax_) == len(class_labels)
 
     for class_label_idx, class_label in enumerate(class_labels):
         ax = display.ax_[class_label_idx]
+        assert isinstance(ax, mpl.axes.Axes)
         legend = ax.get_legend()
         assert legend is not None
         legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        for estimator_name in report.reports_:
-            average_precision = display.average_precision.query(
+        for idx, (estimator_name, line) in enumerate(
+            zip(report.reports_, ax.get_lines(), strict=False)
+        ):
+            plot_data = display.frame(with_average_precision=True)
+            average_precision = plot_data.query(
                 f"label == {class_label} & estimator_name == '{estimator_name}'"
-            )["average_precision"].item()
-            assert f"{estimator_name} (AP={average_precision:.2f})" in legend_texts
+            )["average_precision"].iloc[0]
+            assert legend_texts[idx] == f"{estimator_name} (AP={average_precision:.2f})"
+            assert line.get_color() == expected_colors[idx]
 
+        assert len(legend_texts) == n_reports
         assert ax.get_xlabel() == "recall"
         assert ax.get_ylabel() in ("precision", "")
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
@@ -127,46 +140,6 @@ def test_multiclass_classification(
         display.figure_.get_suptitle()
         == "Precision-Recall Curve\nData source: Test set"
     )
-
-
-def test_binary_classification_kwargs(
-    pyplot, logistic_binary_classification_with_train_test
-):
-    """Check that we can pass keyword arguments to the precision-recall curve plot for
-    cross-validation."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
-    report = ComparisonReport(
-        reports={
-            "estimator_1": EstimatorReport(
-                estimator,
-                X_train=X_train,
-                y_train=y_train,
-                X_test=X_test,
-                y_test=y_test,
-            ),
-            "estimator_2": EstimatorReport(
-                estimator_2,
-                X_train=X_train,
-                y_train=y_train,
-                X_test=X_test,
-                y_test=y_test,
-            ),
-        }
-    )
-    display = report.metrics.precision_recall()
-    n_reports = len(report.reports_)
-    display.plot(relplot_kwargs={"palette": ["red", "blue"]})
-    assert len(display.lines_) == n_reports
-
-    expected_colors = ["red", "blue"]
-    for line, expected_color in zip(display.lines_, expected_colors, strict=True):
-        line_color = line.get_color()
-        expected_rgb = mcolors.to_rgb(expected_color)
-        actual_rgb = mcolors.to_rgb(line_color)
-        assert_allclose(expected_rgb, actual_rgb, atol=0.01)
 
 
 @pytest.mark.parametrize(
@@ -178,7 +151,7 @@ def test_binary_classification_kwargs(
 )
 def test_wrong_kwargs(pyplot, fixture_name, request):
     """Check that we raise a proper error message when passing an inappropriate
-    value for the `subplot_by` argument."""
+    value for the `relplot_kwargs` argument."""
     estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
 
     report = ComparisonReport(
@@ -200,11 +173,69 @@ def test_wrong_kwargs(pyplot, fixture_name, request):
         }
     )
     display = report.metrics.precision_recall()
-    with pytest.raises(ValueError, match="subplot_by"):
-        display.plot(subplot_by="invalid")
+    err_msg = "Line2D.set() got an unexpected keyword argument 'invalid'"
+    with pytest.raises(AttributeError, match=re.escape(err_msg)):
+        display.plot(relplot_kwargs={"invalid": "value"})
 
-    with pytest.raises(TypeError, match="unexpected keyword argument"):
-        display.plot(non_existent_kwarg="value")
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "logistic_binary_classification_with_train_test",
+        "logistic_multiclass_classification_with_train_test",
+    ],
+)
+def test_relplot_kwargs(pyplot, fixture_name, request):
+    """Check that we can pass keyword arguments to the precision-recall curve plot."""
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+    multiclass = "multiclass" in fixture_name
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.precision_recall()
+    n_reports = len(report.reports_)
+    n_labels = (
+        len(display.precision_recall["label"].cat.categories) if multiclass else 1
+    )
+
+    display.plot()
+    default_colors = [line.get_color() for line in display.lines_]
+    assert default_colors == sns.color_palette()[:n_reports] * n_labels
+
+    display.plot(relplot_kwargs={"palette": ["red", "blue"]})
+    assert len(display.lines_) == n_reports * n_labels
+    expected_colors = ["red", "blue"] * n_labels
+    for line, expected_color, default_color in zip(
+        display.lines_, expected_colors, default_colors, strict=True
+    ):
+        assert line.get_color() == expected_color
+        assert mpl.colors.to_rgb(line.get_color()) != default_color
+
+    display.set_style(relplot_kwargs={"palette": ["green", "yellow"]}, policy="update")
+    display.plot()
+    assert len(display.lines_) == n_reports * n_labels
+    expected_colors = ["green", "yellow"] * n_labels
+    for line, expected_color, default_color in zip(
+        display.lines_, expected_colors, default_colors, strict=True
+    ):
+        assert line.get_color() == expected_color
+        assert mpl.colors.to_rgb(line.get_color()) != default_color
 
 
 @pytest.mark.parametrize("with_average_precision", [False, True])

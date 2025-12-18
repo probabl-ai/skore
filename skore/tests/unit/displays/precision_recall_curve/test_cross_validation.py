@@ -1,6 +1,9 @@
+import re
+
 import matplotlib as mpl
 import numpy as np
 import pytest
+import seaborn as sns
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 
@@ -39,28 +42,32 @@ def test_binary_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == cv
 
-    assert isinstance(display.ax_, mpl.axes.Axes)
+    expected_color = sns.color_palette()[:1][0]
+    for line in display.lines_:
+        assert line.get_color() == expected_color
+
     ax = display.ax_
+    assert isinstance(ax, mpl.axes.Axes)
     legend = ax.get_legend()
     assert legend is not None
-    legend_texts = [text.get_text() for text in legend.get_texts()]
 
-    average_precision = display.average_precision.query(f"label == {pos_label}")[
-        "average_precision"
-    ]
+    plot_data = display.frame(with_average_precision=True)
+    average_precision = plot_data["average_precision"]
     assert (
-        f"AP={average_precision.mean():.2f}±{average_precision.std():.2f}"
-        in legend_texts
+        legend.get_texts()[0].get_text()
+        == f"AP={average_precision.mean():.2f}±{average_precision.std():.2f}"
     )
 
     assert ax.get_xlabel() == "recall"
     assert ax.get_ylabel() == "precision"
     assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
-    data_source_title = "external" if data_source == "X_y" else data_source
-    suptitle = display.figure_.get_suptitle()
-    assert f"Precision-Recall Curve for {estimator.__class__.__name__}" in suptitle
-    assert f"Positive label: {pos_label}" in suptitle
-    assert f"data source: {data_source_title}" in suptitle.lower()
+    data_source_title = "external" if data_source == "X_y" else data_source.capitalize()
+    assert (
+        display.figure_.get_suptitle()
+        == f"Precision-Recall Curve for {estimator.__class__.__name__}"
+        f"\nPositive label: {pos_label}"
+        f"\nData source: {data_source_title} set"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -88,25 +95,36 @@ def test_multiclass_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * cv
 
-    assert isinstance(display.ax_[0], mpl.axes.Axes)
+    expected_color = sns.color_palette()[:1][0]
+    for line in display.lines_:
+        assert line.get_color() == expected_color
+
     assert len(display.ax_) == len(class_labels)
 
-    data_source_title = "external" if data_source == "X_y" else data_source
-    for idx in range(len(class_labels)):
-        ax = display.ax_[idx]
+    for class_label in class_labels:
+        ax = display.ax_[class_label]
+        assert isinstance(ax, mpl.axes.Axes)
         legend = ax.get_legend()
         assert legend is not None
-        legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        assert any("AP=" in text for text in legend_texts)
-
+        plot_data = display.frame(with_average_precision=True)
+        average_precision = plot_data.query(f"label == {class_label}")[
+            "average_precision"
+        ]
+        assert (
+            legend.get_texts()[0].get_text()
+            == f"AP={average_precision.mean():.2f}±{average_precision.std():.2f}"
+        )
         assert ax.get_xlabel() == "recall"
         assert ax.get_ylabel() in ("precision", "")
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
 
-    suptitle = display.figure_.get_suptitle()
-    assert f"Precision-Recall Curve for {estimator.__class__.__name__}" in suptitle
-    assert f"data source: {data_source_title}" in suptitle.lower()
+    data_source_title = "external" if data_source == "X_y" else data_source.capitalize()
+    assert (
+        display.figure_.get_suptitle()
+        == f"Precision-Recall Curve for {estimator.__class__.__name__}"
+        f"\nData source: {data_source_title} set"
+    )
 
 
 @pytest.mark.parametrize(
@@ -115,16 +133,40 @@ def test_multiclass_classification(
 )
 def test_wrong_kwargs(pyplot, fixture_name, request):
     """Check that we raise a proper error message when passing an inappropriate
-    value for the `subplot_by` argument."""
+    value for the `relplot_kwargs` argument."""
     (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
 
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.precision_recall()
-    with pytest.raises(ValueError, match="subplot_by"):
-        display.plot(subplot_by="invalid")
+    err_msg = "Line2D.set() got an unexpected keyword argument 'invalid'"
+    with pytest.raises(AttributeError, match=re.escape(err_msg)):
+        display.plot(relplot_kwargs={"invalid": "value"})
 
-    with pytest.raises(TypeError, match="unexpected keyword argument"):
-        display.plot(non_existent_kwarg="value")
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["logistic_binary_classification_data", "logistic_multiclass_classification_data"],
+)
+def test_relplot_kwargs(pyplot, fixture_name, request):
+    """Check that we can pass keyword arguments to the precision-recall curve plot."""
+    (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
+    display = report.metrics.precision_recall()
+
+    display.plot()
+    default_color = display.lines_[0].get_color()
+    assert default_color == sns.color_palette()[:1][0]
+
+    display.plot(relplot_kwargs={"color": "red"})
+    for line in display.lines_:
+        assert line.get_color() == "red"
+        assert mpl.colors.to_rgb(line.get_color()) != default_color
+
+    display.set_style(relplot_kwargs={"color": "blue"}, policy="update")
+    display.plot()
+    for line in display.lines_:
+        assert line.get_color() == "blue"
+        assert mpl.colors.to_rgb(line.get_color()) != default_color
 
 
 @pytest.mark.parametrize("with_average_precision", [False, True])

@@ -1,8 +1,9 @@
+import re
+
 import matplotlib as mpl
-import matplotlib.colors as mcolors
 import numpy as np
 import pytest
-from numpy.testing import assert_allclose
+import seaborn as sns
 from sklearn.datasets import load_iris
 from sklearn.linear_model import LogisticRegression
 
@@ -35,21 +36,25 @@ def test_binary_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == n_reports * n_splits
 
-    assert isinstance(display.ax_, mpl.axes.Axes)
     ax = display.ax_
+    assert isinstance(ax, mpl.axes.Axes)
     check_legend_position(ax, loc="upper center", position="inside")
     legend = ax.get_legend()
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
 
-    for estimator_name in report.reports_:
-        average_precision = display.average_precision.query(
-            f"label == {pos_label} & estimator_name == '{estimator_name}'"
-        )["average_precision"]
+    expected_colors = sns.color_palette()[:n_reports]
+    for idx, estimator_name in enumerate(report.reports_):
+        plot_data = display.frame(with_average_precision=True)
+        average_precision = plot_data.query(f"estimator_name == '{estimator_name}'")[
+            "average_precision"
+        ]
         assert (
-            f"{estimator_name} (AP={average_precision.mean():.2f}"
-            f"±{average_precision.std():.2f})" in legend_texts
+            legend_texts[idx] == f"{estimator_name} (AP={average_precision.mean():.2f}"
+            f"±{average_precision.std():.2f})"
         )
+        for line in ax.get_lines()[idx * n_splits : (idx + 1) * n_splits]:
+            assert line.get_color() == expected_colors[idx]
 
     assert len(legend_texts) == n_reports
     assert ax.get_xlabel() == "recall"
@@ -79,25 +84,30 @@ def test_multiclass_classification(
 
     display.plot()
     assert isinstance(display.lines_, list)
-    assert len(display.lines_) == len(labels) * n_reports * n_splits
+    assert len(display.lines_) == n_reports * len(labels) * n_splits
 
-    assert isinstance(display.ax_[0], mpl.axes.Axes)
     assert len(display.ax_) == len(labels)
 
+    expected_colors = sns.color_palette()[:n_reports]
     for label, ax in zip(labels, display.ax_, strict=False):
+        assert isinstance(ax, mpl.axes.Axes)
         check_legend_position(ax, loc="upper center", position="inside")
         legend = ax.get_legend()
         assert legend is not None
         legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        for estimator_name in report.reports_:
-            average_precision = display.average_precision.query(
+        for idx, estimator_name in enumerate(report.reports_):
+            plot_data = display.frame(with_average_precision=True)
+            average_precision = plot_data.query(
                 f"label == {label} & estimator_name == '{estimator_name}'"
             )["average_precision"]
             assert (
-                f"{estimator_name} (AP={average_precision.mean():.2f}"
-                f"±{average_precision.std():.2f})" in legend_texts
+                legend_texts[idx]
+                == f"{estimator_name} (AP={average_precision.mean():.2f}"
+                f"±{average_precision.std():.2f})"
             )
+            for line in ax.get_lines()[idx * n_splits : (idx + 1) * n_splits]:
+                assert line.get_color() == expected_colors[idx]
 
         assert len(legend_texts) == n_reports
         assert ax.get_xlabel() == "recall"
@@ -109,94 +119,68 @@ def test_multiclass_classification(
     )
 
 
-def test_binary_classification_wrong_kwargs(
-    pyplot, comparison_cross_validation_reports_binary_classification
-):
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "comparison_cross_validation_reports_binary_classification",
+        "comparison_cross_validation_reports_multiclass_classification",
+    ],
+)
+def test_wrong_kwargs(pyplot, fixture_name, request):
     """Check that we raise a proper error message when passing an inappropriate
-    value for the `subplot_by` argument."""
-    report = comparison_cross_validation_reports_binary_classification
+    value for the `relplot_kwargs` argument."""
+    report = request.getfixturevalue(fixture_name)
     display = report.metrics.precision_recall()
-    with pytest.raises(ValueError, match="subplot_by"):
-        display.plot(subplot_by="invalid")
-
-    with pytest.raises(TypeError, match="unexpected keyword argument"):
-        display.plot(non_existent_kwarg="value")
+    err_msg = "Line2D.set() got an unexpected keyword argument 'invalid'"
+    with pytest.raises(AttributeError, match=re.escape(err_msg)):
+        display.plot(relplot_kwargs={"invalid": "value"})
 
 
-def test_binary_classification_kwargs(
-    pyplot, comparison_cross_validation_reports_binary_classification
-):
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "comparison_cross_validation_reports_binary_classification",
+        "comparison_cross_validation_reports_multiclass_classification",
+    ],
+)
+def test_relplot_kwargs(pyplot, fixture_name, request):
     """Check that we can pass keyword arguments to the PR curve plot."""
-    report = comparison_cross_validation_reports_binary_classification
-    display = report.metrics.precision_recall()
+    report = request.getfixturevalue(fixture_name)
+    multiclass = "multiclass" in fixture_name
 
+    display = report.metrics.precision_recall()
     n_reports = len(report.reports_)
     n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
+    n_labels = (
+        len(display.precision_recall["label"].cat.categories) if multiclass else 1
+    )
 
     display.plot()
-    default_linewidth = display.lines_[0].get_linewidth()
-
-    display.plot(relplot_kwargs={"linewidth": 2})
-    assert len(display.lines_) == n_reports * n_splits
-    for line in display.lines_:
-        assert line.get_linewidth() == 2
-        assert line.get_linewidth() != default_linewidth
-
-    display.plot(relplot_kwargs={"alpha": 0.6})
-    assert len(display.lines_) == n_reports * n_splits
-    for line in display.lines_:
-        assert line.get_alpha() == 0.6
-
-
-def test_multiclass_classification_wrong_kwargs(
-    pyplot, comparison_cross_validation_reports_multiclass_classification
-):
-    """Check that we raise a proper error message when passing an inappropriate
-    value for the `subplot_by` argument."""
-    report = comparison_cross_validation_reports_multiclass_classification
-    display = report.metrics.precision_recall()
-    with pytest.raises(ValueError, match="subplot_by"):
-        display.plot(subplot_by="invalid")
-
-    with pytest.raises(TypeError, match="unexpected keyword argument"):
-        display.plot(non_existent_kwarg="value")
-
-
-def test_multiclass_classification_kwargs(
-    pyplot, comparison_cross_validation_reports_multiclass_classification
-):
-    """Check that we can pass keyword arguments to the PR curve plot for
-    multiclass classification."""
-    report = comparison_cross_validation_reports_multiclass_classification
-    display = report.metrics.precision_recall()
-
-    labels = display.precision_recall["label"].cat.categories
-    n_reports = len(report.reports_)
-    n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
-
-    display.plot(relplot_kwargs={"alpha": 0.5})
-    assert len(display.lines_) == len(labels) * n_reports * n_splits
-    for line in display.lines_:
-        assert line.get_alpha() == 0.5
+    default_colors = [line.get_color() for line in display.lines_]
+    assert (
+        default_colors
+        == ([sns.color_palette()[0]] * n_splits + [sns.color_palette()[1]] * n_splits)
+        * n_labels
+    )
 
     display.plot(relplot_kwargs={"palette": ["red", "blue"]})
-    assert len(display.lines_) == len(labels) * n_reports * n_splits
-
-    expected_colors = ["red", "blue"]
-    first_subplot_lines = display.ax_[0].get_lines()
-    unique_colors = list(
-        dict.fromkeys(line.get_color() for line in first_subplot_lines)
-    )
-    for expected_color, actual_color in zip(
-        expected_colors, unique_colors, strict=True
+    assert len(display.lines_) == n_reports * n_splits * n_labels
+    expected_colors = (["red"] * n_splits + ["blue"] * n_splits) * n_labels
+    for line, expected_color, default_color in zip(
+        display.lines_, expected_colors, default_colors, strict=True
     ):
-        expected_rgb = mcolors.to_rgb(expected_color)
-        actual_rgb = mcolors.to_rgb(actual_color)
-        assert_allclose(expected_rgb, actual_rgb, atol=0.01)
+        assert line.get_color() == expected_color
+        assert mpl.colors.to_rgb(line.get_color()) != default_color
 
-    display.plot(despine=False)
-    for ax in display.ax_:
-        assert ax is not None
+    display.set_style(relplot_kwargs={"palette": ["green", "yellow"]}, policy="update")
+    display.plot()
+    assert len(display.lines_) == n_reports * n_splits * n_labels
+    expected_colors = (["green"] * n_splits + ["yellow"] * n_splits) * n_labels
+    for line, expected_color, default_color in zip(
+        display.lines_, expected_colors, default_colors, strict=True
+    ):
+        assert line.get_color() == expected_color
+        assert mpl.colors.to_rgb(line.get_color()) != default_color
 
 
 def test_binary_classification_constructor(forest_binary_classification_data):
@@ -309,7 +293,7 @@ def test_multiclass_str_labels_precision_recall_plot(pyplot):
     X, y_int = iris.data, iris.target
     y = iris.target_names[y_int]
 
-    report_1 = CrossValidationReport(LogisticRegression(max_iter=200), X=X, y=y)
+    report_1 = CrossValidationReport(LogisticRegression(), X=X, y=y)
     report_2 = CrossValidationReport(LogisticRegression(max_iter=500), X=X, y=y)
     report = ComparisonReport([report_1, report_2])
 
