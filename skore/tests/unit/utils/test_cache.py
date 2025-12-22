@@ -90,7 +90,7 @@ def test_cache_method_is_explicitly_locked(monkeypatch, method):
     import threading
 
     def acquire(self):
-        if self.locked():
+        if self._block.locked():
             raise RuntimeError("Lock already acquired")
 
         return self._block.acquire()
