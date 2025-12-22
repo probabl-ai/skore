@@ -165,6 +165,24 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
+    def splitting_strategy_name(self) -> str:
+        """Deprecated: only for backward compatibility reasons."""
+        return ""
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def splits(self) -> list[list[float]]:
+        """Deprecated: only for backward compatibility reasons."""
+        return []
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def classes(self) -> list[int] | None:
+        """Deprecated: only for backward compatibility reasons."""
+        return None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
     def splitting_strategy(self) -> dict[str, Any]:
         """
         Splitting strategy used to split the dataset into train and test sets.
