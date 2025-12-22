@@ -221,7 +221,7 @@ jobs:
         if: ${{ ! matrix.coverage }}
         timeout-minutes: 10
         working-directory: ${{ matrix.package }}/
-        run: python -m pytest -svvvv tests/unit/utils/test_cache.py::test_cache_method_is_explicitly_locked --no-cov
+        run: python -m pytest src/ tests/ --no-cov
 
       - name: Test with coverage
         if: ${{ matrix.coverage }}
@@ -229,7 +229,7 @@ jobs:
         working-directory: ${{ matrix.package }}/
         run: |
           mkdir coverage
-          python -m pytest tests/unit/utils/test_cache.py::test_cache_method_is_explicitly_locked --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
+          python -m pytest src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
           sed -i -E "s/filename=\"venv\/lib\/python[^/]*\/site-packages\/${PACKAGE//-/_}/filename=\"${PACKAGE}\/src\/${PACKAGE//-/_}/g" coverage/pytest-coverage.xml
         env:
           PACKAGE: ${{ matrix.package }}
