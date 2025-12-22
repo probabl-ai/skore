@@ -71,12 +71,12 @@ def test_cache_method_is_functional(monkeypatch, input, output, state, method):
     "method",
     (
         param((lambda cache: cache.__delitem__()), id="__delitem__"),
-        # param((lambda cache: list(cache.__iter__())), id="__iter__"),
-        # param((lambda cache: cache.__setitem__()), id="__setitem__"),
-        # param((lambda cache: cache.clear()), id="clear"),
-        # param((lambda cache: cache.pop()), id="pop"),
-        # param((lambda cache: cache.popitem()), id="popitem"),
-        # param((lambda cache: cache.update()), id="update"),
+        param((lambda cache: list(cache.__iter__())), id="__iter__"),
+        param((lambda cache: cache.__setitem__()), id="__setitem__"),
+        param((lambda cache: cache.clear()), id="clear"),
+        param((lambda cache: cache.pop()), id="pop"),
+        param((lambda cache: cache.popitem()), id="popitem"),
+        param((lambda cache: cache.update()), id="update"),
     ),
 )
 def test_cache_method_is_explicitly_locked(monkeypatch, method):
@@ -89,14 +89,14 @@ def test_cache_method_is_explicitly_locked(monkeypatch, method):
     import concurrent.futures
     import threading
 
-    def __enter__(self):
+    def acquire(self):
         if self.locked():
             raise RuntimeError("Lock already acquired")
 
-        return self.acquire()
+        return self._block.acquire()
 
     monkeypatch.setattr("threading._CRLock", None)
-    monkeypatch.setattr("threading._PyRLock.__enter__", __enter__)
+    monkeypatch.setattr("threading._RLock.acquire", acquire)
 
     event = threading.Event()
     cache = Cache()
@@ -104,10 +104,8 @@ def test_cache_method_is_explicitly_locked(monkeypatch, method):
     def acquire_and_wait():
         cache.__lock__.acquire()
 
-        if not event.wait(timeout=2):
+        if not event.wait(timeout=0.5):
             raise RuntimeError("An issue occurs during the test: timeout expired")
-
-    # monkeypatch.setattr(cache.__lock__, "__enter__", __enter__)
 
     with (
         concurrent.futures.ThreadPoolExecutor() as pool,

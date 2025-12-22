@@ -7,8 +7,12 @@ from typing import Any
 def method_with_explicit_lock(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        with self.__lock__:
+        self.__lock__.acquire()
+
+        try:
             return method(self, *args, **kwargs)
+        finally:
+            self.__lock__.release()
 
     return wrapper
 
@@ -16,8 +20,12 @@ def method_with_explicit_lock(method):
 def method_generator_with_explicit_lock(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        with self.__lock__:
+        self.__lock__.acquire()
+
+        try:
             yield from method(self, *args, **kwargs)
+        finally:
+            self.__lock__.release()
 
     return wrapper
 
