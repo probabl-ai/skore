@@ -386,6 +386,11 @@ class PredictionErrorDisplay(DisplayMixin):
             n_estimators if n_estimators > 10 else 10,
         )
 
+        if self.report_type == "comparison-estimator" and self.data_source == "both":
+            ax_train, ax_test = self.ax_
+        else:
+            ax_train = ax_test = self.ax_
+
         for idx, (estimator_name, prediction_error_estimator) in enumerate(
             self._prediction_error.groupby("estimator_name", observed=True)
         ):
@@ -398,43 +403,111 @@ class PredictionErrorDisplay(DisplayMixin):
                 data_points_kwargs_split, samples_kwargs[idx]
             )
 
-            if kind == "actual_vs_predicted":
-                scatter.append(
-                    self.ax_.scatter(
-                        prediction_error_estimator["y_pred"],
-                        prediction_error_estimator["y_true"],
-                        label=estimator_name,
-                        **data_points_kwargs_validated,
+            if self.data_source == "both":
+                for ds, ax in (("train", ax_train), ("test", ax_test)):
+                    pe_ds = prediction_error_estimator.query(
+                        f"data_source == {ds!r}"
                     )
-                )
-            else:  # kind == "residual_vs_predicted"
-                scatter.append(
-                    self.ax_.scatter(
-                        prediction_error_estimator["y_pred"],
-                        prediction_error_estimator["residuals"],
-                        label=estimator_name,
-                        **data_points_kwargs_validated,
+                    if pe_ds.empty:
+                        continue
+
+                    if kind == "actual_vs_predicted":
+                        scatter.append(
+                            ax.scatter(
+                                pe_ds["y_pred"],
+                                pe_ds["y_true"],
+                                label=estimator_name,
+                                **data_points_kwargs_validated,
+                            )
+                        )
+                    else:  # kind == "residual_vs_predicted"
+                        scatter.append(
+                            ax.scatter(
+                                pe_ds["y_pred"],
+                                pe_ds["residuals"],
+                                label=estimator_name,
+                                **data_points_kwargs_validated,
+                            )
+                        )
+            else:
+                if self.data_source in ("train", "test"):
+                    pe_ds = prediction_error_estimator.query(
+                        f"data_source == {self.data_source!r}"
                     )
+                else:  # "X_y"
+                    pe_ds = prediction_error_estimator
+
+                if kind == "actual_vs_predicted":
+                    scatter.append(
+                        self.ax_.scatter(
+                            pe_ds["y_pred"],
+                            pe_ds["y_true"],
+                            label=estimator_name,
+                            **data_points_kwargs_validated,
+                        )
+                    )
+                else:  # kind == "residual_vs_predicted"
+                    scatter.append(
+                        self.ax_.scatter(
+                            pe_ds["y_pred"],
+                            pe_ds["residuals"],
+                            label=estimator_name,
+                            **data_points_kwargs_validated,
+                        )
+                    )
+
+        if self.data_source == "both":
+            for ax, legend_title in zip(
+                (ax_train, ax_test),
+                ("Train set", "Test set"),
+            ):
+                handles, labels = ax.get_legend_handles_labels()
+                if not handles:
+                    continue
+
+                # move the perfect model line to the end of the legend
+                handles.append(handles.pop(0))
+                labels.append(labels.pop(0))
+
+                if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
+                    ax.legend(
+                        handles,
+                        labels,
+                        bbox_to_anchor=(1.02, 1),
+                        title=legend_title,
+                    )
+                else:
+                    ax.legend(
+                        handles,
+                        labels,
+                        loc="lower right",
+                        title=legend_title,
+                    )
+
+            ax_train.set_title("Prediction Error (train)")
+            ax_test.set_title("Prediction Error (test)")
+
+        else:
+            if self.data_source in ("train", "test"):
+                legend_title = f"{self.data_source.capitalize()} set"
+            else:
+                legend_title = "External set"
+
+            # move the perfect model line to the end of the legend
+            handles, labels = self.ax_.get_legend_handles_labels()
+            handles.append(handles.pop(0))
+            labels.append(labels.pop(0))
+
+            if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
+                # too many lines to fit legend in the plot
+                self.ax_.legend(
+                    handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
                 )
-
-        if self.data_source in ("train", "test"):
-            legend_title = f"{self.data_source.capitalize()} set"
-        else:
-            legend_title = "External set"
-
-        # move the perfect model line to the end of the legend
-        handles, labels = self.ax_.get_legend_handles_labels()
-        handles.append(handles.pop(0))
-        labels.append(labels.pop(0))
-
-        if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
-            # too many lines to fit legend in the plot
-            self.ax_.legend(
-                handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
-            )
-        else:
-            self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
-        self.ax_.set_title("Prediction Error")
+            else:
+                self.ax_.legend(
+                    handles, labels, loc="lower right", title=legend_title
+                )
+            self.ax_.set_title("Prediction Error")
 
         return cast(list[Artist], scatter)
 
@@ -603,12 +676,20 @@ class PredictionErrorDisplay(DisplayMixin):
                 f"`kind` must be one of {', '.join(expected_kind)}. "
                 f"Got {kind!r} instead."
             )
+
         if kind == "actual_vs_predicted":
             xlabel, ylabel = "Predicted values", "Actual values"
         else:  # kind == "residual_vs_predicted"
             xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
 
-        self.figure_, self.ax_ = plt.subplots()
+        if self.report_type == "comparison-estimator" and self.data_source == "both":
+            self.figure_, self.ax_ = plt.subplots(
+                ncols=2, figsize=(12.8, 4.8), sharex=True, sharey=True
+            )
+            axes = np.ravel(self.ax_)
+        else:
+            self.figure_, self.ax_ = plt.subplots()
+            axes = [self.ax_]
 
         perfect_model_kwargs_validated = _validate_style_kwargs(
             {
@@ -621,51 +702,52 @@ class PredictionErrorDisplay(DisplayMixin):
         )
 
         if kind == "actual_vs_predicted":
-            # For actual vs predicted, we want the same range for both axes
             min_value = min(self.range_y_pred.min, self.range_y_true.min)
             max_value = max(self.range_y_pred.max, self.range_y_true.max)
             x_range_perfect_pred = [min_value, max_value]
             y_range_perfect_pred = [min_value, max_value]
 
-            self.line_ = self.ax_.plot(
+            self.line_ = axes[0].plot(
                 x_range_perfect_pred,
                 y_range_perfect_pred,
                 **perfect_model_kwargs_validated,
             )[0]
-            self.ax_.set(
-                aspect="equal",
-                xlim=x_range_perfect_pred,
-                ylim=y_range_perfect_pred,
-                xticks=np.linspace(
-                    x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
-                ),
-                yticks=np.linspace(
-                    y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
-                ),
-            )
 
+            for ax in axes:
+                ax.set(
+                    aspect="equal",
+                    xlim=x_range_perfect_pred,
+                    ylim=y_range_perfect_pred,
+                    xticks=np.linspace(
+                        x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                    ),
+                    yticks=np.linspace(
+                        y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                    ),
+                )
         else:  # kind == "residual_vs_predicted"
             x_range_perfect_pred = [self.range_y_pred.min, self.range_y_pred.max]
             y_range_perfect_pred = [self.range_residuals.min, self.range_residuals.max]
 
-            self.line_ = self.ax_.plot(
+            self.line_ = axes[0].plot(
                 x_range_perfect_pred, [0, 0], **perfect_model_kwargs_validated
             )[0]
-            self.ax_.set(
-                xlim=x_range_perfect_pred,
-                ylim=y_range_perfect_pred,
-                xticks=np.linspace(
-                    x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
-                ),
-                yticks=np.linspace(
-                    y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
-                ),
-            )
 
-        self.ax_.set(xlabel=xlabel, ylabel=ylabel)
+            for ax in axes:
+                ax.set(
+                    xlim=x_range_perfect_pred,
+                    ylim=y_range_perfect_pred,
+                    xticks=np.linspace(
+                        x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                    ),
+                    yticks=np.linspace(
+                        y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                    ),
+                )
 
-        # make the scatter plot afterwards since it should take into account the line
-        # for the perfect predictions
+        for ax in axes:
+            ax.set(xlabel=xlabel, ylabel=ylabel)
+
         if data_points_kwargs is None:
             data_points_kwargs = self._default_data_points_kwargs
         data_points_kwargs = self._validate_data_points_kwargs(
@@ -704,14 +786,21 @@ class PredictionErrorDisplay(DisplayMixin):
             )
         else:
             raise ValueError(
-                f"`report_type` should be one of 'estimator', 'cross-validation', "
-                f"or 'comparison-estimator'. Got '{self.report_type}' instead."
+                "`report_type` should be one of 'estimator', 'cross-validation', "
+                "'comparison-cross-validation' or 'comparison-estimator'. "
+                f"Got '{self.report_type}' instead."
             )
 
         if despine:
-            x_range = self.ax_.get_xlim()
-            y_range = self.ax_.get_ylim()
-            _despine_matplotlib_axis(self.ax_, x_range=x_range, y_range=y_range)
+            if isinstance(self.ax_, np.ndarray):
+                for ax in np.ravel(self.ax_):
+                    x_range = ax.get_xlim()
+                    y_range = ax.get_ylim()
+                    _despine_matplotlib_axis(ax, x_range=x_range, y_range=y_range)
+            else:
+                x_range = self.ax_.get_xlim()
+                y_range = self.ax_.get_ylim()
+                _despine_matplotlib_axis(self.ax_, x_range=x_range, y_range=y_range)
 
     @classmethod
     def _compute_data_for_display(

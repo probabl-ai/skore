@@ -453,7 +453,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         Returns
         -------
-        ax : matplotlib.axes.Axes
+        ax : matplotlib.axes.Axes or ndarray of Axes
             The axes with the precision-recall curves plotted.
 
         lines : list of matplotlib.lines.Line2D
@@ -466,32 +466,81 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         lines: list[Line2D] = []
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
+        if self.report_type == "comparison-estimator" and self.data_source == "both":
+            ax_train, ax_test = self.ax_
+        else:
+            ax_train = ax_test = self.ax_
+
         if self.ml_task == "binary-classification":
             for est_idx, est_name in enumerate(estimator_names):
-                query = f"label == {self.pos_label!r} & estimator_name == '{est_name}'"
-                precision_recall = self.precision_recall.query(query)
-                average_precision = self.average_precision.query(query)[
-                    "average_precision"
-                ].item()
+                base_query = (
+                    f"label == {self.pos_label!r} "
+                    f"& estimator_name == '{est_name}'"
+                )
 
-                line_kwargs_validated = _validate_style_kwargs(
-                    line_kwargs, pr_curve_kwargs[est_idx]
-                )
-                line_kwargs_validated["label"] = (
-                    f"{est_name} (AP = {average_precision:0.2f})"
-                )
-                (line,) = self.ax_.plot(
-                    precision_recall["recall"],
-                    precision_recall["precision"],
-                    **line_kwargs_validated,
-                )
-                lines.append(line)
+                if self.report_type == "comparison-estimator" and self.data_source == "both":
+                    for data_source, ax in (("train", ax_train), ("test", ax_test)):
+                        query = (
+                            f"{base_query} & data_source == {data_source!r}"
+                        )
+                        precision_recall = self.precision_recall.query(query)
+                        average_precision = (
+                            self.average_precision.query(query)["average_precision"]
+                            .squeeze()
+                            .item()
+                        )
+
+                        line_kwargs_validated = _validate_style_kwargs(
+                            line_kwargs,
+                            pr_curve_kwargs[est_idx],
+                        )
+                        line_kwargs_validated["label"] = (
+                            f"{est_name} (AP = {average_precision:0.2f})"
+                        )
+
+                        (line,) = ax.plot(
+                            precision_recall["recall"],
+                            precision_recall["precision"],
+                            **line_kwargs_validated,
+                        )
+                        lines.append(line)
+
+                else:
+                    if self.data_source in ("train", "test"):
+                        query = (
+                            f"{base_query} & data_source == {self.data_source!r}"
+                        )
+                    else:
+                        query = base_query
+
+                    precision_recall = self.precision_recall.query(query)
+                    average_precision = (
+                        self.average_precision.query(query)["average_precision"]
+                        .squeeze()
+                        .item()
+                    )
+
+                    line_kwargs_validated = _validate_style_kwargs(
+                        line_kwargs,
+                        pr_curve_kwargs[est_idx],
+                    )
+                    line_kwargs_validated["label"] = (
+                        f"{est_name} (AP = {average_precision:0.2f})"
+                    )
+
+                    (line,) = self.ax_.plot(
+                        precision_recall["recall"],
+                        precision_recall["precision"],
+                        **line_kwargs_validated,
+                    )
+                    lines.append(line)
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
                 if self.pos_label is not None
                 else ""
             )
+
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
             labels = self.precision_recall["label"].cat.categories
@@ -504,42 +553,101 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 est_color = class_colors[est_idx]
 
                 for class_idx, class_label in enumerate(labels):
-                    query = f"label == {class_label!r} & estimator_name == '{est_name}'"
-                    precision_recall = self.precision_recall.query(query)
-                    average_precision = self.average_precision.query(query)[
-                        "average_precision"
-                    ].item()
+                    base_query = (
+                        f"label == {class_label!r} "
+                        f"& estimator_name == '{est_name}'"
+                    )
 
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
                     line_kwargs["color"] = est_color
                     line_kwargs["alpha"] = 0.6
                     line_kwargs["linestyle"] = class_linestyle
-                    line_kwargs_validated = _validate_style_kwargs(
-                        line_kwargs, pr_curve_kwargs[est_idx]
-                    )
-                    line_kwargs_validated["label"] = (
-                        f"{est_name} - {str(class_label).title()} "
-                        f"(AP = {average_precision:0.2f})"
-                    )
 
-                    (line,) = self.ax_.plot(
-                        precision_recall["recall"],
-                        precision_recall["precision"],
-                        **line_kwargs_validated,
-                    )
-                    lines.append(line)
+                    if self.report_type == "comparison-estimator" and self.data_source == "both":
+                        for data_source, ax in (("train", ax_train), ("test", ax_test)):
+                            query = (
+                                f"{base_query} & data_source == {data_source!r}"
+                            )
+                            precision_recall = self.precision_recall.query(query)
+                            average_precision = (
+                                self.average_precision.query(query)["average_precision"]
+                                .squeeze()
+                                .item()
+                            )
 
-        if self.data_source in ("train", "test"):
-            legend_title = f"{self.data_source.capitalize()} set"
+                            line_kwargs_validated = _validate_style_kwargs(
+                                line_kwargs,
+                                pr_curve_kwargs[est_idx],
+                            )
+                            line_kwargs_validated["label"] = (
+                                f"{est_name} - {str(class_label).title()} "
+                                f"(AP = {average_precision:0.2f})"
+                            )
+
+                            (line,) = ax.plot(
+                                precision_recall["recall"],
+                                precision_recall["precision"],
+                                **line_kwargs_validated,
+                            )
+                            lines.append(line)
+
+                    else:
+                        if self.data_source in ("train", "test"):
+                            query = (
+                                f"{base_query} & data_source == {self.data_source!r}"
+                            )
+                        else:
+                            query = base_query
+
+                        precision_recall = self.precision_recall.query(query)
+                        average_precision = (
+                            self.average_precision.query(query)["average_precision"]
+                            .squeeze()
+                            .item()
+                        )
+
+                        line_kwargs_validated = _validate_style_kwargs(
+                            line_kwargs,
+                            pr_curve_kwargs[est_idx],
+                        )
+                        line_kwargs_validated["label"] = (
+                            f"{est_name} - {str(class_label).title()} "
+                            f"(AP = {average_precision:0.2f})"
+                        )
+
+                        (line,) = self.ax_.plot(
+                            precision_recall["recall"],
+                            precision_recall["precision"],
+                            **line_kwargs_validated,
+                        )
+                        lines.append(line)
+
+        if self.report_type == "comparison-estimator" and self.data_source == "both":
+            for ax, legend_title in zip(
+                (ax_train, ax_test),
+                ("Train set", "Test set"),
+            ):
+                _, legend_labels = ax.get_legend_handles_labels()
+                if len(legend_labels) > MAX_N_LABELS:
+                    ax.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+                else:
+                    ax.legend(loc="lower left", title=legend_title)
+
+            ax_train.set_title("Precision-Recall Curve (train)")
+            ax_test.set_title("Precision-Recall Curve (test)")
+
         else:
-            legend_title = "External set"
+            if self.data_source in ("train", "test"):
+                legend_title = f"{self.data_source.capitalize()} set"
+            else:
+                legend_title = "External set"
 
-        _, labels = self.ax_.get_legend_handles_labels()
-        if len(labels) > MAX_N_LABELS:  # too many lines to fit legend in the plot
-            self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
-        else:
-            self.ax_.legend(loc="lower left", title=legend_title)
-        self.ax_.set_title("Precision-Recall Curve")
+            _, legend_labels = self.ax_.get_legend_handles_labels()
+            if len(legend_labels) > MAX_N_LABELS:  # too many lines to fit legend
+                self.ax_.legend(bbox_to_anchor=(1.02, 1), title=legend_title)
+            else:
+                self.ax_.legend(loc="lower left", title=legend_title)
+            self.ax_.set_title("Precision-Recall Curve")
 
         return self.ax_, lines, info_pos_label
 
@@ -766,6 +874,13 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
         if (
+            self.report_type == "comparison-estimator"
+            and self.data_source == "both"
+        ):
+            self.figure_, self.ax_ = plt.subplots(
+                ncols=2, figsize=(12.8, 4.8), sharex=True, sharey=True
+            )
+        elif (
             self.report_type == "comparison-cross-validation"
             and self.ml_task == "multiclass-classification"
         ):
@@ -836,14 +951,20 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             self.report_type == "comparison-cross-validation"
             and self.ml_task == "multiclass-classification"
         ):
-            for ax in self.ax_:
+            for ax in np.ravel(self.ax_):
                 if despine:
                     _despine_matplotlib_axis(ax)
         else:
-            _set_axis_labels(self.ax_, info_pos_label)
-
-            if despine:
-                _despine_matplotlib_axis(self.ax_)
+            if isinstance(self.ax_, np.ndarray):
+                # ex: comparison-estimator + data_source='both'
+                for ax in np.ravel(self.ax_):
+                    _set_axis_labels(ax, info_pos_label)
+                    if despine:
+                        _despine_matplotlib_axis(ax)
+            else:
+                _set_axis_labels(self.ax_, info_pos_label)
+                if despine:
+                    _despine_matplotlib_axis(self.ax_)
 
     @classmethod
     def _compute_data_for_display(
