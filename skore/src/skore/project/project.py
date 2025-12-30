@@ -7,6 +7,7 @@ from importlib.metadata import entry_points
 from typing import Any, Literal
 
 from skore import CrossValidationReport, EstimatorReport
+from skore._sklearn.types import MLTask
 from skore.project.summary import Summary
 
 
@@ -77,6 +78,8 @@ class Project:
         The name of the project, extrapolated from the ``name`` parameter.
     mode : str
         The mode of the project, extrapolated from the ``name`` parameter.
+    ml_task : MLTask
+        The ML task of the project; unset until a first report is put.
 
     Examples
     --------
@@ -122,14 +125,13 @@ class Project:
 
     Put reports in the project.
 
-    >>> local_project.put("my-simple-classification", classifier_report)
     >>> local_project.put("my-simple-regression", regressor_report)
     >>> local_project.put("my-simple-cv_regression", cv_regressor_report)
 
     Investigate metadata/metrics to filter the best reports.
 
     >>> summary = local_project.summarize()
-    >>> summary = summary.query("ml_task.str.contains('regression') and (rmse < 67)")
+    >>> summary = summary.query("rmse < 67")
     >>> reports = summary.reports()
 
     See Also
@@ -195,6 +197,16 @@ class Project:
         self.__name = name
         self.__project = plugin(**(kwargs | parameters))
 
+        ml_tasks = {report["ml_task"] for report in self.__project.summarize()}
+
+        if len(ml_tasks) > 1:
+            raise RuntimeError(
+                "Expected every report in the Project to have the same ML task. "
+                f"Got ML tasks {ml_tasks}."
+            )
+
+        self.ml_task: MLTask | None = ml_tasks.pop() if ml_tasks else None
+
     @property
     def mode(self):
         """The mode of the project."""
@@ -232,6 +244,15 @@ class Project:
                 f"Report must be `EstimatorReport` or `CrossValidationReport` "
                 f"(found '{type(report)}')"
             )
+
+        if self.ml_task is not None:
+            if report.ml_task != self.ml_task:
+                raise ValueError(
+                    f"Expected a report meant for ML task {self.ml_task!r} "
+                    f"but the given report is for ML task {report.ml_task!r}"
+                )
+        else:
+            self.ml_task = report.ml_task
 
         return self.__project.put(key=key, report=report)
 

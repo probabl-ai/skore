@@ -583,11 +583,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 10 if len(estimator_names) < 10 else len(estimator_names),
             )
             curve_idx = 0
+
             for report_idx, estimator_name in enumerate(estimator_names):
-                query = (
-                    f"label == {self.pos_label!r} "
-                    f"& estimator_name == '{estimator_name}'"
-                )
+                query = "label == @self.pos_label & estimator_name == @estimator_name"
                 average_precision = self.average_precision.query(query)[
                     "average_precision"
                 ]
@@ -654,7 +652,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 est_color = colors[est_idx]
 
                 for label_idx, label in enumerate(labels):
-                    query = f"label == {label!r} & estimator_name == '{estimator_name}'"
+                    query = "label == @label & estimator_name == @estimator_name"
                     average_precision = self.average_precision.query(query)[
                         "average_precision"
                     ]

@@ -4,6 +4,8 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from matplotlib.lines import Line2D
+from sklearn.datasets import load_iris
+from sklearn.linear_model import LogisticRegression
 
 from skore import ComparisonReport, CrossValidationReport
 from skore._sklearn._plot.metrics.precision_recall_curve import (
@@ -299,3 +301,21 @@ def test_frame_multiclass_classification(
             ["estimator_name", "split", "label"], observed=True
         ):
             assert group["average_precision"].nunique() == 1
+
+
+def test_multiclass_str_labels_precision_recall_plot(pyplot):
+    """Regression test for issue #2183 with multiclass comparison reports.
+
+    Using string labels backed by numpy.str_ should not break
+    `precision_recall().plot()` for a multiclass ComparisonReport.
+    """
+    iris = load_iris(as_frame=True)
+    X, y_int = iris.data, iris.target
+    y = iris.target_names[y_int]
+
+    report_1 = CrossValidationReport(LogisticRegression(), X=X, y=y)
+    report_2 = CrossValidationReport(LogisticRegression(max_iter=500), X=X, y=y)
+    report = ComparisonReport([report_1, report_2])
+
+    display = report.metrics.precision_recall()
+    display.plot()

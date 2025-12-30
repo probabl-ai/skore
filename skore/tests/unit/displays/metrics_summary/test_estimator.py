@@ -168,15 +168,15 @@ def test_regression(linear_regression_with_test, data_source):
     _check_results_summarize(result, expected_metrics, len(expected_metrics))
 
 
-def test_scoring_kwargs(
+def test_metric_kwargs(
     linear_regression_multioutput_with_test, forest_multiclass_classification_with_test
 ):
-    """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
+    """Check the behaviour of the `MetricsSummaryDisplay` method with metric kwargs."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "summarize")
     result = report.metrics.summarize(
-        scoring_kwargs={"multioutput": "raw_values"}
+        metric_kwargs={"multioutput": "raw_values"}
     ).frame()
     assert result.shape == (6, 1)
     assert isinstance(result.index, pd.MultiIndex)
@@ -185,14 +185,14 @@ def test_scoring_kwargs(
     estimator, X_test, y_test = forest_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "summarize")
-    result = report.metrics.summarize(scoring_kwargs={"average": None}).frame()
+    result = report.metrics.summarize(metric_kwargs={"average": None}).frame()
     assert result.shape == (12, 1)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Label / Average"]
 
 
 @pytest.mark.parametrize(
-    "fixture_name, scoring_dict, expected_columns",
+    "fixture_name, metric_dict, expected_columns",
     [
         (
             "linear_regression_with_test",
@@ -232,12 +232,12 @@ def test_scoring_kwargs(
     ],
 )
 def test_overwrite_scoring_names_with_dict(
-    request, fixture_name, scoring_dict, expected_columns
+    request, fixture_name, metric_dict, expected_columns
 ):
-    """Test that we can overwrite the scoring names using dict scoring."""
+    """Test that we can overwrite the scoring names using dict metric."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(scoring=scoring_dict).frame()
+    result = report.metrics.summarize(metric=metric_dict).frame()
     assert result.shape == (len(expected_columns), 1)
 
     # Get level 0 names if MultiIndex, otherwise get column names
@@ -265,7 +265,7 @@ def test_indicator_favorability(
 
 
 @pytest.mark.parametrize(
-    "scoring, scoring_kwargs",
+    "metric, metric_kwargs",
     [
         ("accuracy", None),
         ("neg_log_loss", None),
@@ -273,23 +273,23 @@ def test_indicator_favorability(
         (get_scorer("accuracy"), None),
     ],
 )
-def test_scoring_single_list_equivalence(
-    forest_binary_classification_with_test, scoring, scoring_kwargs
+def test_metric_single_list_equivalence(
+    forest_binary_classification_with_test, metric, metric_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
     list with a single element."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result_single = report.metrics.summarize(
-        scoring=scoring, scoring_kwargs=scoring_kwargs
+        metric=metric, metric_kwargs=metric_kwargs
     ).frame()
     result_list = report.metrics.summarize(
-        scoring=[scoring], scoring_kwargs=scoring_kwargs
+        metric=[metric], metric_kwargs=metric_kwargs
     ).frame()
     assert result_single.equals(result_list)
 
 
-def test_scoring_custom_metric(linear_regression_with_test):
+def test_metric_custom_metric(linear_regression_with_test):
     """Check that we can pass a custom metric with specific kwargs into
     `MetricsSummaryDisplay`."""
     estimator, X_test, y_test = linear_regression_with_test
@@ -300,8 +300,8 @@ def test_scoring_custom_metric(linear_regression_with_test):
         return np.mean((y_true - y_pred) * some_weights)
 
     result = report.metrics.summarize(
-        scoring=["r2", custom_metric],
-        scoring_kwargs={"some_weights": weights, "response_method": "predict"},
+        metric=["r2", custom_metric],
+        metric_kwargs={"some_weights": weights, "response_method": "predict"},
     ).frame()
     assert result.shape == (2, 1)
     np.testing.assert_allclose(
@@ -330,8 +330,8 @@ def test_scorer(linear_regression_with_test):
         custom_metric, response_method="predict", some_weights=weights
     )
     result = report.metrics.summarize(
-        scoring=[r2_score, median_absolute_error_scorer, custom_metric_scorer],
-        scoring_kwargs={"response_method": "predict"},  # only dispatched to r2_score
+        metric=[r2_score, median_absolute_error_scorer, custom_metric_scorer],
+        metric_kwargs={"response_method": "predict"},  # only dispatched to r2_score
     ).frame()
     assert result.shape == (3, 1)
     np.testing.assert_allclose(
@@ -375,8 +375,8 @@ def test_scorer_binary_classification(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     result = report.metrics.summarize(
-        scoring=["accuracy", accuracy_score, scorer],
-        scoring_kwargs={"response_method": "predict"},
+        metric=["accuracy", accuracy_score, scorer],
+        metric_kwargs={"response_method": "predict"},
     ).frame()
     assert result.shape == (3, 1)
     np.testing.assert_allclose(
@@ -411,7 +411,7 @@ def test_scorer_pos_label_error(
         "`pos_label` is passed both in the scorer and to the `summarize` method."
     )
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(scoring=[f1_scorer], pos_label=0).frame()
+        report.metrics.summarize(metric=[f1_scorer], pos_label=0).frame()
 
 
 def test_invalid_metric_type(linear_regression_with_test):
@@ -421,7 +421,7 @@ def test_invalid_metric_type(linear_regression_with_test):
 
     err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(scoring=[1]).frame()
+        report.metrics.summarize(metric=[1]).frame()
 
 
 def test_neg_metric_strings(
@@ -431,7 +431,7 @@ def test_neg_metric_strings(
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    result = report.metrics.summarize(scoring=["neg_log_loss"]).frame()
+    result = report.metrics.summarize(metric=["neg_log_loss"]).frame()
     assert "Log Loss" in result.index
     assert result.loc["Log Loss", "RandomForestClassifier"] == pytest.approx(
         report.metrics.log_loss()
@@ -445,11 +445,11 @@ def test_sklearn_scoring_strings(
     classifier, X_test, y_test = forest_binary_classification_with_test
     class_report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    result = class_report.metrics.summarize(scoring=["neg_log_loss"]).frame()
+    result = class_report.metrics.summarize(metric=["neg_log_loss"]).frame()
     assert "Log Loss" in result.index.get_level_values(0)
 
     result_multi = class_report.metrics.summarize(
-        scoring=["accuracy", "neg_log_loss", "roc_auc"], indicator_favorability=True
+        metric=["accuracy", "neg_log_loss", "roc_auc"], indicator_favorability=True
     ).frame()
     assert "Accuracy" in result_multi.index.get_level_values(0)
     assert "Log Loss" in result_multi.index.get_level_values(0)
@@ -469,7 +469,7 @@ def test_sklearn_scoring_strings_regression(
     reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
 
     reg_result = reg_report.metrics.summarize(
-        scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
+        metric=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
         indicator_favorability=True,
     ).frame()
 
@@ -481,13 +481,13 @@ def test_sklearn_scoring_strings_regression(
     assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
 
 
-def test_scoring_strings_regression(linear_regression_with_test):
+def test_metric_strings_regression(linear_regression_with_test):
     """Test skore regression metric strings in `MetricsSummaryDisplay`."""
     regressor, X_test, y_test = linear_regression_with_test
     reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
 
     reg_result = reg_report.metrics.summarize(
-        scoring=["rmse", "r2"], indicator_favorability=True
+        metric=["rmse", "r2"], indicator_favorability=True
     ).frame()
 
     assert "RMSE" in reg_result.index.get_level_values(0)
@@ -504,7 +504,7 @@ def test_scorer_names_pos_label(
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    result = report.metrics.summarize(scoring=["f1"], pos_label=0).frame()
+    result = report.metrics.summarize(metric=["f1"], pos_label=0).frame()
     assert "F1 Score" in result.index.get_level_values(0)
     assert 0 in result.index.get_level_values(1)
     f1_scorer = make_scorer(
@@ -515,22 +515,22 @@ def test_scorer_names_pos_label(
     )
 
 
-def test_sklearn_scorer_names_scoring_kwargs(
+def test_sklearn_scorer_names_metric_kwargs(
     forest_binary_classification_with_test,
 ):
-    """Check that `scoring_kwargs` is not supported when `scoring` is a scikit-learn
+    """Check that `metric_kwargs` is not supported when `metric` is a scikit-learn
     scorer name.
     """
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
     err_msg = (
-        "The `scoring_kwargs` parameter is not supported when `scoring` is a "
+        "The `metric_kwargs` parameter is not supported when `metric` is a "
         "scikit-learn scorer name."
     )
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.summarize(
-            scoring=["f1"], scoring_kwargs={"average": "macro"}
+            metric=["f1"], metric_kwargs={"average": "macro"}
         ).frame()
 
 
@@ -547,18 +547,18 @@ def test_pos_label_overwrite(metric, metric_fn):
     classifier = LogisticRegression().fit(X, y)
 
     report = EstimatorReport(classifier, X_test=X, y_test=y)
-    result = report.metrics.summarize(scoring=metric).frame().reset_index()
+    result = report.metrics.summarize(metric=metric).frame().reset_index()
     assert result["Label / Average"].to_list() == ["A", "B"]
 
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="B")
-    result = report.metrics.summarize(scoring=metric).frame().reset_index()
+    result = report.metrics.summarize(metric=metric).frame().reset_index()
     assert "Label / Average" not in result.columns
     assert result[report.estimator_name_].item() == pytest.approx(
         metric_fn(y, classifier.predict(X), pos_label="B")
     )
 
     result = (
-        report.metrics.summarize(scoring=metric, pos_label="A").frame().reset_index()
+        report.metrics.summarize(metric=metric, pos_label="A").frame().reset_index()
     )
     assert "Label / Average" not in result.columns
     assert result[report.estimator_name_].item() == pytest.approx(

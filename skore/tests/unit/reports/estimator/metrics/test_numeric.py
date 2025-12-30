@@ -12,6 +12,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     get_scorer,
+    make_scorer,
     precision_score,
     rand_score,
     recall_score,
@@ -252,14 +253,67 @@ def test_custom_metric(linear_regression_with_test):
     )
 
 
-@pytest.mark.parametrize("scoring", ["public_metric", "_private_metric"])
-def test_summarize_error_scoring_strings(linear_regression_with_test, scoring):
+def test_custom_metric_scorer(linear_regression_with_test):
+    """Check the behaviour of the `custom_metric` computation in the report when the
+    custom metric is a sklearn Scorer."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def custom_metric(y_true, y_pred, threshold=0.5):
+        residuals = y_true - y_pred
+        return np.mean(np.where(residuals < threshold, residuals, 1))
+
+    custom_score = make_scorer(custom_metric, greater_is_better=False)
+
+    threshold = 1
+    result = report.metrics.custom_metric(
+        metric_function=custom_score,
+        response_method="predict",
+        threshold=threshold,
+    )
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == threshold for item in cached_key):
+            should_raise = False
+            break
+    assert not should_raise, (
+        f"The value {threshold} should be stored in one of the cache keys"
+    )
+
+    assert isinstance(result, float)
+    assert result == pytest.approx(
+        custom_metric(y_test, estimator.predict(X_test), threshold)
+    )
+
+    threshold = 100
+    result = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict",
+        threshold=threshold,
+    )
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == threshold for item in cached_key):
+            should_raise = False
+            break
+    assert not should_raise, (
+        f"The value {threshold} should be stored in one of the cache keys"
+    )
+
+    assert isinstance(result, float)
+    assert result == pytest.approx(
+        custom_metric(y_test, estimator.predict(X_test), threshold)
+    )
+
+
+@pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
+def test_summarize_error_metric_strings(linear_regression_with_test, metric):
     """Check that we raise an error if a scoring string is not a valid metric."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    err_msg = re.escape(f"Invalid metric: {scoring!r}.")
+    err_msg = re.escape(f"Invalid metric: {metric!r}.")
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(scoring=[scoring])
+        report.metrics.summarize(metric=[metric])
 
 
 def test_custom_function_kwargs_numpy_array(
@@ -559,19 +613,19 @@ def test_roc_multiclass_requires_predict_proba(
     report.metrics.roc_auc()
 
 
-def test_summarize_scoring_dict(forest_binary_classification_with_test):
+def test_summarize_metric_dict(forest_binary_classification_with_test):
     """Test that scoring can be passed as a dictionary with custom names."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     # Test with dictionary scoring
-    scoring_dict = {
+    metric_dict = {
         "Custom Accuracy": "accuracy",
         "Custom Precision": "precision",
         "Custom R2": get_scorer("neg_mean_absolute_error"),
     }
 
-    result = report.metrics.summarize(scoring=scoring_dict).frame()
+    result = report.metrics.summarize(metric=metric_dict).frame()
 
     # Check that custom names are used
     assert "Custom Accuracy" in result.index
@@ -583,7 +637,7 @@ def test_summarize_scoring_dict(forest_binary_classification_with_test):
     assert len(result.index) >= 3  # At least our 3 custom metrics
 
 
-def test_summarize_scoring_dict_with_callables(linear_regression_with_test):
+def test_summarize_metric_dict_with_callables(linear_regression_with_test):
     """Test that scoring dict works with callable functions."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -591,10 +645,10 @@ def test_summarize_scoring_dict_with_callables(linear_regression_with_test):
     def custom_metric(y_true, y_pred):
         return np.mean(np.abs(y_true - y_pred))
 
-    scoring_dict = {"R Squared": "r2", "Custom MAE": custom_metric}
+    metric_dict = {"R Squared": "r2", "Custom MAE": custom_metric}
 
     result = report.metrics.summarize(
-        scoring=scoring_dict, scoring_kwargs={"response_method": "predict"}
+        metric=metric_dict, metric_kwargs={"response_method": "predict"}
     ).frame()
 
     # Check that custom names are used

@@ -1,18 +1,22 @@
 from io import BytesIO
 
 from joblib import dump, hash
-from numpy import sum as np_sum
-from numpy import unique as np_unique
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
-from sklearn.datasets import make_classification, make_regression
-from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import ShuffleSplit
+from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import RepeatedKFold
 from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project import Project
+from skore_hub_project.artifact.media import (
+    EstimatorHtmlRepr,
+    PrecisionRecallTest,
+    PrecisionRecallTrain,
+    RocTest,
+    RocTrain,
+)
 from skore_hub_project.artifact.media.data import TableReport
-from skore_hub_project.artifact.media.model import EstimatorHtmlRepr
 from skore_hub_project.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
@@ -86,65 +90,115 @@ class TestCrossValidationReportPayload:
     def test_dataset_size(self, payload):
         assert payload.dataset_size == 10
 
-    def test_splitting_strategy_name(self, payload):
-        assert payload.splitting_strategy_name == "StratifiedKFold"
+    def test_splits(self, payload):
+        assert payload.splitting_strategy == {
+            "repeat_count": 1,
+            "seed": "None",
+            "splits": [
+                {
+                    "test": {
+                        "class_distribution": [3, 2],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [2, 3],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
+                },
+                {
+                    "test": {
+                        "class_distribution": [2, 3],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [3, 2],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
+                },
+            ],
+            "strategy_name": "StratifiedKFold",
+        }
 
-    def test_splits_test_samples_density(self, payload):
-        assert payload.splits == [
-            [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
-        ]
-
-    def test_splits_test_samples_density_many_rows(self):
-        X, y = make_regression(random_state=42, n_samples=10_000)
-        cvr = CrossValidationReport(
-            LinearRegression(),
-            X,
-            y,
-            splitter=ShuffleSplit(random_state=42, n_splits=7),
-        )
+    def test_splits_with_repetitions(self, project):
+        X, y = make_classification(random_state=42, n_samples=10)
         payload = CrossValidationReportPayload(
-            project=Project("<tenant>", "<name>"),
-            report=cvr,
+            project=project,
+            report=CrossValidationReport(
+                RandomForestClassifier(random_state=42),
+                X,
+                y,
+                splitter=RepeatedKFold(n_splits=2, n_repeats=2, random_state=42),
+            ),
             key="<key>",
         )
-        splits = payload.splits
-        assert len(splits) == 7
-        assert all(len(s) == 200 for s in splits)
-        for s in splits:
-            assert all(bucket >= 0 and bucket <= 1 for bucket in s)
+        assert payload.splitting_strategy == {
+            "repeat_count": 2,
+            "seed": "42",
+            "splits": [
+                {
+                    "test": {
+                        "class_distribution": [4, 1],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [1, 4],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [1, 1, 0, 0, 0, 1, 0, 1, 1, 0],
+                },
+                {
+                    "test": {
+                        "class_distribution": [1, 4],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [4, 1],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [0, 0, 1, 1, 1, 0, 1, 0, 0, 1],
+                },
+                {
+                    "test": {
+                        "class_distribution": [4, 1],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [1, 4],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [1, 1, 0, 1, 0, 1, 0, 0, 1, 0],
+                },
+                {
+                    "test": {
+                        "class_distribution": [1, 4],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train": {
+                        "class_distribution": [4, 1],
+                        "groups": None,
+                        "sample_count": 5,
+                    },
+                    "train_test_distribution": [0, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+                },
+            ],
+            "strategy_name": "RepeatedKFold",
+        }
 
     def test_class_names(self, payload):
         assert payload.class_names == ["1", "0"]
-
-    @mark.filterwarnings(
-        # ignore `scipy` deprecation warning, raised by `scikit-learn<1.7`
-        "ignore:scipy.optimize*:DeprecationWarning"
-    )
-    def test_classes(self, payload):
-        X, y = make_classification(
-            random_state=42,
-            n_samples=10_000,
-            n_classes=2,
-        )
-        cvr = CrossValidationReport(
-            LogisticRegression(),
-            X,
-            y,
-            splitter=ShuffleSplit(random_state=42, n_splits=7),
-        )
-        payload = CrossValidationReportPayload(
-            project=Project("<tenant>", "<name>"),
-            report=cvr,
-            key="<key>",
-        )
-        classes = payload.classes
-        assert len(classes) == 200
-        assert np_unique(classes).tolist() == [0, 1]
-        assert np_sum(classes) == 93
-
-    def test_classes_many_rows(self, payload):
-        assert payload.classes == [0, 0, 1, 1, 1, 0, 0, 1, 0, 1]
 
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
@@ -246,6 +300,10 @@ class TestCrossValidationReportPayload:
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
             EstimatorHtmlRepr,
+            PrecisionRecallTest,
+            PrecisionRecallTrain,
+            RocTest,
+            RocTrain,
             TableReport,
         ]
 
@@ -264,22 +322,20 @@ class TestCrossValidationReportPayload:
         payload_dict.pop("estimators")
         payload_dict.pop("metrics")
         payload_dict.pop("medias")
+        payload_dict.pop("splitting_strategy")
 
         assert payload_dict == {
             "key": "<key>",
             "estimator_class_name": "RandomForestClassifier",
             "dataset_fingerprint": hash(small_cv_binary_classification.y),
             "ml_task": "binary-classification",
-            "groups": None,
             "pickle": {
                 "checksum": checksum,
                 "content_type": "application/octet-stream",
             },
             "dataset_size": 10,
-            "splitting_strategy_name": "StratifiedKFold",
-            "splits": [[1, 1, 1, 1, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 1, 1, 1, 1]],
             "class_names": ["1", "0"],
-            "classes": [0, 0, 1, 1, 1, 0, 0, 1, 0, 1],
+            "groups": None,
         }
 
     def test_exception(self):

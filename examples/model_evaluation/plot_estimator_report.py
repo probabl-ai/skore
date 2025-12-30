@@ -56,15 +56,15 @@ split_data = train_test_split(X=df, y=y, random_state=42, as_dict=True)
 # for a class imbalance.
 #
 # Now, we need to define a predictive model. Hopefully, `skrub` provides a convenient
-# function (:func:`skrub.tabular_learner`) when it comes to getting strong baseline
+# function (:func:`skrub.tabular_pipeline`) when it comes to getting strong baseline
 # predictive models with a single line of code. As its feature engineering is generic,
 # it does not provide some handcrafted and tailored feature engineering but still
 # provides a good starting point.
 #
 # So let's create a classifier for our task.
-from skrub import tabular_learner
+from skrub import tabular_pipeline
 
-estimator = tabular_learner("classifier")
+estimator = tabular_pipeline("classifier")
 estimator
 
 # %%
@@ -145,7 +145,6 @@ import matplotlib.pyplot as plt
 
 ax = metric_report.plot.barh()
 ax.set_title("Metrics report")
-plt.tight_layout()
 
 # %%
 #
@@ -291,12 +290,12 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # that we can compute some additional metrics without having to recompute the
 # the predictions.
 report.metrics.summarize(
-    scoring={
+    metric={
         "Precision": "precision",
         "Recall": "recall",
         "Operational Decision Cost": operational_decision_cost,
     },
-    scoring_kwargs={"amount": amount, "response_method": "predict"},
+    metric_kwargs={"amount": amount, "response_method": "predict"},
 ).frame()
 
 # %%
@@ -312,7 +311,7 @@ operational_decision_cost_scorer = make_scorer(
     operational_decision_cost, response_method="predict", amount=amount
 )
 report.metrics.summarize(
-    scoring={
+    metric={
         "F1 Score": f1_scorer,
         "Operational Decision Cost": operational_decision_cost_scorer,
     },
@@ -395,17 +394,31 @@ cm_display.plot()
 plt.show()
 
 # %%
-# We can normalize the confusion matrix to get percentages instead of raw counts.
-# Here we normalize by true labels (rows):
-cm_display = report.metrics.confusion_matrix(normalize="true")
-cm_display.plot()
+# In binary classification, a confusion matrix depends on the decision threshold used
+# to convert predicted probabilities into class labels. By default, skore uses a
+# threshold of 0.5, but confusion matrices are actually computed at every threshold
+# internally. You can access all available thresholds via the ``thresholds`` attribute:
+print(f"Number of thresholds: {len(cm_display.thresholds)}")
+print(
+    f"Threshold range: [{cm_display.thresholds.min():.3f}, {cm_display.thresholds.max():.3f}]"
+)
+
+# %%
+# To visualize the confusion matrix at a different threshold, use the ``threshold_value``
+# parameter. For example, a threshold of 0.3 will classify more samples as positive:
+cm_display.plot(threshold_value=0.3)
 plt.show()
 
 # %%
-# More plotting options are available, check out the API on the confusion matrix for
-# more information. We can customize the display labels:
-cm_display = report.metrics.confusion_matrix(display_labels=["Disallowed", "Allowed"])
-cm_display.plot()
+# We can normalize the confusion matrix to get percentages instead of raw counts.
+# Here we normalize by true labels (rows):
+cm_display.plot(normalize="true")
+plt.show()
+
+# %%
+# More plotting options are available via ``heatmap_kwargs``, which are passed to
+# seaborn's heatmap. For example, we can customize the colormap and number format:
+cm_display.plot(heatmap_kwargs={"cmap": "Greens", "fmt": ".2e"})
 plt.show()
 
 # %%

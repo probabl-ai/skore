@@ -277,7 +277,6 @@ ridge_report.feature_importance.coefficients().frame()
 
 # %%
 ridge_report.feature_importance.coefficients().plot()
-plt.tight_layout()
 
 # %%
 # .. note::
@@ -469,7 +468,6 @@ engineered_ridge_report_feature_importance.plot.barh(
     xlabel="Coefficient",
     ylabel="Feature",
 )
-plt.tight_layout()
 
 # %%
 # We can observe that the most important features are interactions between features,
@@ -717,7 +715,6 @@ selectk_ridge_report.feature_importance.coefficients().frame().sort_values(
     xlabel="Coefficient",
     ylabel="Feature",
 )
-plt.tight_layout()
 
 # %%
 # Tree-based models: mean decrease in impurity (MDI)
@@ -815,7 +812,6 @@ plot_tree(
     feature_names=tree_report.estimator_.feature_names_in_,
     max_depth=2,
 )
-plt.tight_layout()
 
 # %%
 # This tree explains how each sample is going to be predicted by our tree.
@@ -866,7 +862,6 @@ tree_report.feature_importance.mean_decrease_impurity().plot.barh(
     xlabel="MDI",
     ylabel="Feature",
 )
-plt.tight_layout()
 
 # %%
 # For a decision tree, for each feature, the MDI is averaged across all splits in the
@@ -929,7 +924,6 @@ rf_report.feature_importance.mean_decrease_impurity().plot.barh(
     xlabel="MDI",
     ylabel="Feature",
 )
-plt.tight_layout()
 
 # %%
 # In a random forest, the MDI is computed by averaging the MDI of each feature across
@@ -1018,8 +1012,6 @@ def plot_permutation_train_test(importances):
     )
     ax.set_xlabel("Decrease of $R^2$ score")
     ax.set_title("Permutation feature importance (Train vs Test)")
-
-    plt.tight_layout()
     plt.show()
 
 

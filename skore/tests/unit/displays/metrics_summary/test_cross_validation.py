@@ -126,7 +126,7 @@ def _check_results_summarize(
 
 
 @pytest.mark.parametrize(
-    "scoring, scoring_kwargs",
+    "metric, metric_kwargs",
     [
         ("accuracy", None),
         ("neg_log_loss", None),
@@ -134,18 +134,18 @@ def _check_results_summarize(
         (get_scorer("accuracy"), None),
     ],
 )
-def test_scoring_single_list_equivalence(
-    forest_binary_classification_data, scoring, scoring_kwargs
+def test_metric_single_list_equivalence(
+    forest_binary_classification_data, metric, metric_kwargs
 ):
     """Check that passing a single string, callable, scorer is equivalent to passing a
     list with a single element."""
     (estimator, X, y), cv = forest_binary_classification_data, 2
     report = CrossValidationReport(estimator, X, y, splitter=cv)
     result_single = report.metrics.summarize(
-        scoring=scoring, scoring_kwargs=scoring_kwargs
+        metric=metric, metric_kwargs=metric_kwargs
     ).frame()
     result_list = report.metrics.summarize(
-        scoring=[scoring], scoring_kwargs=scoring_kwargs
+        metric=[metric], metric_kwargs=metric_kwargs
     ).frame()
     assert result_single.equals(result_list)
 
@@ -284,7 +284,7 @@ def test_regression(linear_regression_data):
     )
 
 
-def test_scoring_kwargs_regression(
+def test_metric_kwargs_regression(
     linear_regression_multioutput_data,
 ):
     """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
@@ -292,28 +292,28 @@ def test_scoring_kwargs_regression(
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, "summarize")
     result = report.metrics.summarize(
-        scoring_kwargs={"multioutput": "raw_values"}
+        metric_kwargs={"multioutput": "raw_values"}
     ).frame()
     assert result.shape == (6, 2)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Output"]
 
 
-def test_scoring_kwargs_multi_class(
+def test_metric_kwargs_multi_class(
     forest_multiclass_classification_data,
 ):
     """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
     estimator, X, y = forest_multiclass_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, "summarize")
-    result = report.metrics.summarize(scoring_kwargs={"average": None}).frame()
+    result = report.metrics.summarize(metric_kwargs={"average": None}).frame()
     assert result.shape == (12, 2)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Label / Average"]
 
 
 @pytest.mark.parametrize(
-    "fixture_name, scoring, expected_index",
+    "fixture_name, metric, expected_index",
     [
         (
             "linear_regression_data",
@@ -352,11 +352,11 @@ def test_scoring_kwargs_multi_class(
         ),
     ],
 )
-def test_overwrite_scoring_names(request, fixture_name, scoring, expected_index):
+def test_overwrite_metric_names(request, fixture_name, metric, expected_index):
     """Test that we can overwrite the scoring names in `MetricsSummaryDisplay`."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    result = report.metrics.summarize(scoring=scoring).frame()
+    result = report.metrics.summarize(metric=metric).frame()
     assert result.shape == (len(expected_index), 2)
 
     # Get level 0 names if MultiIndex, otherwise get column names
@@ -368,14 +368,14 @@ def test_overwrite_scoring_names(request, fixture_name, scoring, expected_index)
     assert result_index == expected_index
 
 
-@pytest.mark.parametrize("scoring", ["public_metric", "_private_metric"])
-def test_error_scoring_strings(linear_regression_data, scoring):
-    """Check that we raise an error if a scoring string is not a valid metric."""
+@pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
+def test_error_metric_strings(linear_regression_data, metric):
+    """Check that we raise an error if a metric string is not a valid metric."""
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    err_msg = re.escape(f"Invalid metric: {scoring!r}.")
+    err_msg = re.escape(f"Invalid metric: {metric!r}.")
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(scoring=[scoring])
+        report.metrics.summarize(metric=[metric])
 
 
 def test_scorer(linear_regression_data):
@@ -389,8 +389,8 @@ def test_scorer(linear_regression_data):
     )
 
     result = report.metrics.summarize(
-        scoring=[r2_score, median_absolute_error_scorer],
-        scoring_kwargs={"response_method": "predict"},  # only dispatched to r2_score
+        metric=[r2_score, median_absolute_error_scorer],
+        metric_kwargs={"response_method": "predict"},  # only dispatched to r2_score
         aggregate=None,
     ).frame()
     assert result.shape == (2, 2)
@@ -441,8 +441,8 @@ def test_scorer_binary_classification(
     report = CrossValidationReport(estimator, X, y, splitter=2)
 
     result = report.metrics.summarize(
-        scoring=["accuracy", accuracy_score, scorer],
-        scoring_kwargs={"response_method": "predict"},
+        metric=["accuracy", accuracy_score, scorer],
+        metric_kwargs={"response_method": "predict"},
     ).frame()
     assert result.shape == (3, 2)
 
@@ -462,7 +462,7 @@ def test_scorer_pos_label_error(
         "`pos_label` is passed both in the scorer and to the `summarize` method."
     )
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(scoring=[f1_scorer], pos_label=0)
+        report.metrics.summarize(metric=[f1_scorer], pos_label=0)
 
 
 def test_invalid_metric_type(linear_regression_data):
@@ -472,7 +472,7 @@ def test_invalid_metric_type(linear_regression_data):
 
     err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(scoring=[1])
+        report.metrics.summarize(metric=[1])
 
 
 @pytest.mark.parametrize("aggregate", [None, "mean", ["mean", "std"]])
@@ -508,7 +508,7 @@ def test_overwrite_scoring_names_with_dict_cross_validation(
         "Custom ROC AUC": "_roc_auc",
     }
 
-    result = report.metrics.summarize(scoring=scoring_dict).frame()
+    result = report.metrics.summarize(metric=scoring_dict).frame()
 
     # Check that custom names are used
     result_index = (
