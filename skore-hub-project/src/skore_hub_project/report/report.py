@@ -3,16 +3,32 @@
 from __future__ import annotations
 
 from abc import ABC
-from functools import cached_property
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import cached_property, partial
 from typing import ClassVar, Generic, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
+from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from skore_hub_project import Project
+from skore_hub_project import Project, switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
+
+SkinnedProgress = partial(
+    Progress,
+    TextColumn("[bold cyan]{task.description}..."),
+    BarColumn(
+        complete_style="dark_orange",
+        finished_style="dark_orange",
+        pulse_style="orange1",
+    ),
+    TextColumn("[orange1]{task.percentage:>3.0f}%"),
+    TimeElapsedColumn(),
+    transient=True,
+)
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
@@ -89,15 +105,29 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         - int [0, inf[, to be displayed at the position,
         - None, not to be displayed.
         """
-        payloads = []
+        self.report.cache_predictions()
 
-        for metric_cls in self.METRICS:
-            payload = metric_cls(report=self.report)
+        metrics = [metric_cls(report=self.report) for metric_cls in self.METRICS]
 
-            if payload.value is not None:
-                payloads.append(payload)
+        with (
+            switch_mpl_backend(),
+            SkinnedProgress() as progress,
+            ThreadPoolExecutor() as pool,
+        ):
+            tasks = [
+                pool.submit(lambda metric: metric.compute(), metric)
+                for metric in metrics
+            ]
 
-        return payloads
+            deque(
+                progress.track(
+                    as_completed(tasks),
+                    description=f"Computing {self.report.__class__.__name__} metrics",
+                    total=len(tasks),
+                )
+            )
+
+        return [metric for metric in metrics if metric.value is not None]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property

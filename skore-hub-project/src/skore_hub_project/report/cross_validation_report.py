@@ -116,7 +116,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         RocAucTestStd,
         RocAucTrainMean,
         RocAucTrainStd,
-        # timings must be calculated last
+        # timings must be calculated last, or predictions must be cached before
         FitTimeMean,
         FitTimeStd,
         PredictTimeTestMean,
