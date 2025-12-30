@@ -1,7 +1,7 @@
 from abc import ABC
 from collections import UserList
 
-from sklearn.metrics._scorer import _BaseScorer
+import sklearn.metrics
 
 # https://github.com/scikit-learn/scikit-learn/blob/e9752287ffffecb2d2878ce1ed97a77a43941579/sklearn/metrics/_scorer.py#L228
 #
@@ -13,29 +13,47 @@ from sklearn.metrics._scorer import _BaseScorer
 #
 
 
-class Metric(ABC, _BaseScorer):  # or Protocol
-    name: str
-    verbose_name: str
-    function: Callable[[Any, Any], float | Any]
-    custom: bool = False
+class Metric(ABC):  # or Protocol
+    # est-ce qu'on hérite de basescorer ? qu'on puisse intergenger un Metric/BaseScorer
+    # ou est-ce qu'on fait un wrapper qui a un attribute scorer ?
 
-    # Fields inherited from `sklearn.metrics._Scorer` or something similar:
-    #
-    # greater_is_better: bool | None
-    # prediction_method: str | list[str]
-    # data_source: DataSource = "test"
-    # X: ArrayLike | None = None
-    # y: ArrayLike | None = None
+    NAME: str
+    VERBOSE_NAME: str
+    SCORE_FUNC: Callable  # foo(self, y_true, y_pred) -> float | Any
+    RESPONSE_METHOD: str | Iterable[str]
+    GREATER_IS_BETTER: bool
+    CUSTOM: bool
 
     @staticmethod
-    def compatibility(estimator, ml_task) -> bool:
-        # equivalent of `available_if`
-        return True
+    def available(estimator, ml_task) -> bool:
+        raise NotImplementedError
 
-    def compute(self, y_true, y_pred) -> float | Any:
+    def compute(self, *, data_source="test", X=None, y=None) -> float | Any:
+        # changer _compute_metric_scores pour l'intégrer ici dans "compute"
+        #
         # implémenter ici la logique de cache
         # pour le moment, ne mettre en cache que les prédictions, ne pas mettre en cache le résultat (à voir)
+        #
+        # Il faudrait encapsuler `Scorer._score` et y ajouter la gestion du cache
         ...
+
+    @staticmethod
+    def factory() -> Metric: ...
+
+
+class Accuracy(Metric):
+    NAME = "accuracy"
+    VERBOSE_NAME = "Accuracy"
+    SCORE_FUNC = sklearn.metrics.accuracy_score
+    RESPONSE_METHOD = "predict"
+    GREATER_IS_BETTER = True
+    CUSTOM = False
+
+    @staticmethod
+    def available(estimator, ml_task) -> bool:
+        return hasattr(estimator, "_accuracy") and (
+            ml_task in ("binary-classification", "multiclass-classification")
+        )
 
 
 # redefinir les metriques actuelles comme des Metric
