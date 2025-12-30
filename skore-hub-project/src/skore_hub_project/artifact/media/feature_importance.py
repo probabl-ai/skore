@@ -20,23 +20,30 @@ class FeatureImportance(Media[Report], ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["application/vnd.dataframe"] = "application/vnd.dataframe"
 
-    def content_to_upload(self) -> bytes | None:  # noqa: D102
+    def compute(self) -> None:  # noqa: D102
+        if self.computed:
+            return
+
+        self.computed = True
+
         try:
             function = cast(
                 "Callable[..., Display | DataFrame]",
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:
-            return None
+            return
 
         result = function()
 
         if isinstance(result, Display):
             result = result.frame()
 
-        return dumps(
-            result.fillna("NaN").to_dict(orient="tight"),
-            option=(OPT_NON_STR_KEYS | OPT_SERIALIZE_NUMPY),
+        self.filepath.write_bytes(
+            dumps(
+                result.fillna("NaN").to_dict(orient="tight"),
+                option=(OPT_NON_STR_KEYS | OPT_SERIALIZE_NUMPY),
+            )
         )
 
 
@@ -44,7 +51,12 @@ class Permutation(FeatureImportance[EstimatorReport], ABC):  # noqa: D101
     accessor: ClassVar[str] = "feature_importance.permutation"
     name: Literal["permutation"] = "permutation"
 
-    def content_to_upload(self) -> bytes | None:  # noqa: D102
+    def compute(self) -> None:  # noqa: D102
+        if self.computed:
+            return
+
+        self.computed = True
+
         for key, obj in reversed(list(self.report._cache.items())):
             if len(key) < 7:
                 continue
@@ -60,12 +72,13 @@ class Permutation(FeatureImportance[EstimatorReport], ABC):  # noqa: D101
                 and data_source == self.data_source
                 and scoring is None
             ):
-                return dumps(
-                    obj.fillna("NaN").to_dict(orient="tight"),
-                    option=(OPT_NON_STR_KEYS | OPT_SERIALIZE_NUMPY),
+                self.filepath.write_bytes(
+                    dumps(
+                        obj.fillna("NaN").to_dict(orient="tight"),
+                        option=(OPT_NON_STR_KEYS | OPT_SERIALIZE_NUMPY),
+                    )
                 )
-
-        return None
+                return
 
 
 class PermutationTrain(Permutation):  # noqa: D101
