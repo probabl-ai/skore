@@ -12,7 +12,7 @@ dependencies = [
   "numpy",
   "orjson",
   "pydantic",
-  "rich",
+  "rich>=14.2.0",
   "scikit-learn",
 ]
 
