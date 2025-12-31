@@ -14,8 +14,9 @@ from skore._sklearn._base import (
     _BaseMetricsAccessor,
     _get_cached_response_values,
 )
-from skore._sklearn._comparison.report import ComparisonReport
+from skore._sklearn._comparison.report import ComparisonReport, CrossValidationReport
 from skore._sklearn._plot.metrics import (
+    ConfusionMatrixDisplay,
     MetricsSummaryDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -1198,7 +1199,11 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             # build the cache key components to finally create a tuple that will be used
             # to check if the metric has already been computed
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            cache_key_parts.extend(display_kwargs.values())
+            for kwarg in display_kwargs.values():
+                # NOTE: We cannot use lists in cache keys because they are not hashable
+                if isinstance(kwarg, list):
+                    kwarg = tuple(kwarg)
+                cache_key_parts.append(kwarg)
             cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
@@ -1571,6 +1576,106 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 data_source=data_source,
                 response_method="predict",
                 display_class=PredictionErrorDisplay,
+                display_kwargs=display_kwargs,
+            ),
+        )
+        return display
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def confusion_matrix(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+    ) -> ConfusionMatrixDisplay:
+        """Plot the confusion matrix.
+
+        The confusion matrix shows the counts of correct and incorrect classifications
+        for each class.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
+
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when displaying the matrix. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report.
+
+        Returns
+        -------
+        display : :class:`~skore._sklearn._plot.ConfusionMatrixDisplay`
+            The confusion matrix display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> display = report.metrics.confusion_matrix()
+        >>> display.plot()
+
+        With specific threshold for binary classification:
+
+        >>> display = report.metrics.confusion_matrix()
+        >>> display.plot(threshold_value=0.7)
+        """
+        if pos_label == _DEFAULT:
+            pos_label = self._parent.pos_label
+        response_method: str | list[str] | tuple[str, ...]
+        if self._parent._ml_task == "binary-classification":
+            response_method = ("predict_proba", "decision_function")
+        else:
+            response_method = "predict"
+
+        if isinstance(
+            next(iter(self._parent.reports_.values())), CrossValidationReport
+        ):
+            display_labels = (
+                next(iter(self._parent.reports_.values()))
+                .estimator_reports_[0]
+                .estimator_.classes_.tolist()
+            )
+        else:
+            display_labels = next(
+                iter(self._parent.reports_.values())
+            ).estimator_.classes_.tolist()
+
+        display_kwargs = {
+            "display_labels": display_labels,
+            "pos_label": pos_label,
+            "response_method": response_method,
+        }
+        display = cast(
+            ConfusionMatrixDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method=response_method,
+                display_class=ConfusionMatrixDisplay,
                 display_kwargs=display_kwargs,
             ),
         )
