@@ -133,11 +133,25 @@ class Client(HTTPXClient):
         raise HTTPStatusError(message, request=response.request, response=response)
 
 
-PACKAGE_VERSION = (
-    version
-    if ((version := importlib.metadata.version("skore-hub-project")) != "0.0.0+unknown")
-    else None
-)
+def __semver(version: str) -> str | None:
+    """
+    Convert a PyPI version of the ``skore-hub-project`` package to semver.
+
+    Parameters
+    ----------
+    version : str
+        The PyPI version of the ``skore-hub-project`` package, that can only be:
+        - ``0.0.0+unknown``
+        - ``X.Y.Z``
+        - ``X.Y.ZrcN``
+    """
+    if version == "0.0.0+unknown":
+        return None
+
+    return version.replace("rc", "-rc.")
+
+
+PACKAGE_SEMVER = __semver(importlib.metadata.version("skore-hub-project"))
 
 
 class HUBClient(Client):
@@ -165,9 +179,9 @@ class HUBClient(Client):
         """Execute request with authorization."""
         headers = Headers(headers)
 
-        # Overload headers with package version
-        if PACKAGE_VERSION:
-            headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_VERSION}"})
+        # Overload headers with package semantic versioning
+        if PACKAGE_SEMVER:
+            headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_SEMVER}"})
 
         # Overload headers with credentials
         if self.authenticated:

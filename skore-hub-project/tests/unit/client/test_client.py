@@ -11,7 +11,7 @@ from httpx import (
 from pytest import mark, raises
 
 from skore_hub_project.authentication import token, uri
-from skore_hub_project.client.client import Client, HUBClient
+from skore_hub_project.client.client import Client, HUBClient, __semver
 
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
@@ -117,6 +117,12 @@ class TestClient:
 
         assert timeouts == [0.25, 0.5, 1.0]
         assert excinfo.value.response.status_code == 400
+
+
+def test___semver():
+    assert __semver("0.0.0+unknown") is None
+    assert __semver("0.1.2") == "0.1.2"
+    assert __semver("0.1.2rc10") == "0.1.2-rc.10"
 
 
 class TestHUBClient:
