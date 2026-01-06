@@ -1,7 +1,11 @@
 from abc import ABC
-from collections import UserList
+from collections.abc import Callable
 
-import sklearn.metrics
+from numpy.typing import Any, ArrayLike
+from sklearn.metrics import accuracy_score, precision_score
+
+from skore._sklearn._base import _get_cached_response_values
+from skore._sklearn.types import DataSource, PositiveLabel
 
 # https://github.com/scikit-learn/scikit-learn/blob/e9752287ffffecb2d2878ce1ed97a77a43941579/sklearn/metrics/_scorer.py#L228
 #
@@ -19,8 +23,8 @@ class Metric(ABC):  # or Protocol
 
     NAME: str
     VERBOSE_NAME: str
-    SCORE_FUNC: Callable  # foo(self, y_true, y_pred) -> float | Any
-    RESPONSE_METHOD: str | Iterable[str]
+    SCORE_FUNC: Callable  # foo(y_true, y_pred) -> float | Any
+    RESPONSE_METHOD: str | list[str] | tuple[str, ...]
     GREATER_IS_BETTER: bool
     CUSTOM: bool
 
@@ -31,7 +35,7 @@ class Metric(ABC):  # or Protocol
     def available(estimator, ml_task) -> bool:
         raise NotImplementedError
 
-    def compute(
+    def __call__(
         self,
         *,
         X: ArrayLike | None = None,
@@ -39,17 +43,52 @@ class Metric(ABC):  # or Protocol
         data_source: DataSource = "test",
         data_source_hash: int | None = None,
         pos_label: PositiveLabel | None = None,
-    ) -> float:
-        # cast(float, metric)
-
-    def compute2(self, *, data_source="test", X=None, y=None) -> float | Any:
+        **kwargs: Any,
+    ) -> float | list[float] | dict[Any, float]:
         # changer _compute_metric_scores pour l'intégrer ici dans "compute"
         #
         # implémenter ici la logique de cache
         # pour le moment, ne mettre en cache que les prédictions, ne pas mettre en cache le résultat (à voir)
         #
-        # Il faudrait encapsuler `Scorer._score` et y ajouter la gestion du cache
-        ...
+        # -> cast(float, metric)
+        #
+        # integrer dans la clé de cache la signature de score_func, pour intégrer les partial
+        # les kwargs etc
+
+        results = _get_cached_response_values(
+            cache=self.report._cache,
+            estimator_hash=int(self.report._hash),
+            estimator=self.report.estimator_,
+            X=X,
+            response_method=self.RESPONSE_METHOD,
+            pos_label=pos_label,
+            data_source=data_source,
+            data_source_hash=data_source_hash,
+        )
+
+        for key_tuple, value, is_cached in results:
+            if not is_cached:
+                self.report._cache[key_tuple] = value
+
+            if key_tuple[-1] != "predict_time":
+                y_pred = value
+
+        score = self.SCORE_FUNC(y, y_pred, **kwargs)
+
+        if hasattr(score, "tolist"):
+            score = score.tolist()
+        elif hasattr(score, "item"):
+            score = score.item()
+
+        if isinstance(score, list):
+            if "classification" in self.report._ml_task:
+                classes = self.report._estimator.classes_.tolist()
+                return dict(zip(classes, score, strict=False))
+
+            if len(score) == 1:
+                return score[0]
+
+        return score
 
     @staticmethod
     def factory() -> Metric: ...
@@ -58,15 +97,67 @@ class Metric(ABC):  # or Protocol
 class Accuracy(Metric):
     NAME = "accuracy"
     VERBOSE_NAME = "Accuracy"
-    SCORE_FUNC = sklearn.metrics.accuracy_score
+    SCORE_FUNC = accuracy_score
     RESPONSE_METHOD = "predict"
     GREATER_IS_BETTER = True
     CUSTOM = False
 
     @staticmethod
     def available(estimator, ml_task) -> bool:
-        return hasattr(estimator, "_accuracy") and (
-            ml_task in ("binary-classification", "multiclass-classification")
+        return ml_task in ("binary-classification", "multiclass-classification")
+
+    def __call__(
+        self,
+        *,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        data_source: DataSource = "test",
+    ) -> float:
+        return super()(X=X, y=y, data_source=data_source)
+
+
+Average = Literal["binary", "macro", "micro", "weighted", "samples"]
+
+
+class Precision(Metric):
+    NAME = "precision"
+    VERBOSE_NAME = "Precision"
+    SCORE_FUNC = precision_score
+    RESPONSE_METHOD = "predict"
+    GREATER_IS_BETTER = True
+    CUSTOM = False
+
+    @staticmethod
+    def available(estimator, ml_task) -> bool:
+        return ml_task in ("binary-classification", "multiclass-classification")
+
+    def __call__(
+        self,
+        *,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        data_source: DataSource = "test",
+        pos_label: PositiveLabel | None | ... = ...,
+        average: Average | None = None,
+    ) -> float | dict[Any, float]:
+        if pos_label is ...:
+            pos_label = self.report.pos_label
+
+        if (
+            (average is None)
+            and (self.report._ml_task == "binary-classification")
+            and (pos_label is not None)
+        ):
+            # if `pos_label` is specified by our user, then we can safely report only
+            # the statistics of the positive class
+            average = "binary"
+
+        return super()(
+            X=X,
+            y=y,
+            data_source=data_source,
+            pos_label=pos_label,
+            average=average,
         )
 
 
@@ -83,29 +174,29 @@ class Accuracy(Metric):
 # https://github.com/scikit-learn/scikit-learn/blob/e9752287ffffecb2d2878ce1ed97a77a43941579/sklearn/metrics/_scorer.py#L798
 
 
-class AggregateCustomMetricFormula(CustomMetricFormula, ABC):  # or Protocol
-    aggregate: Aggregate = ("mean", "std")
+# class AggregateCustomMetricFormula(CustomMetricFormula, ABC):  # or Protocol
+#     aggregate: Aggregate = ("mean", "std")
 
 
-class MetricRegistry(UserList[type[Metric]]):
-    def __init__(self, *, report: Report):
-        super().__init__()
+# class MetricRegistry(UserList[type[Metric]]):
+#     def __init__(self, *, report: Report):
+#         super().__init__()
 
-        self.__report = report
+#         self.__report = report
 
-    def append(self, metric_cls: type[CustomMetricFormula]):
-        # ensure metric_cls is valid
-        # ensure metric_cls is not already present in the registry
-        # append to the list
-        # expose the tuple (name, compute) under the "report.metrics" accessor
-        ...
+#     def append(self, metric_cls: type[CustomMetricFormula]):
+#         # ensure metric_cls is valid
+#         # ensure metric_cls is not already present in the registry
+#         # append to the list
+#         # expose the tuple (name, compute) under the "report.metrics" accessor
+#         ...
 
 
-class Report:
-    def __init__(self):
-        self.custom_metric_formula_registry: list[type[CustomMetricFormula]] = (
-            CustomMetricFormulaRegistry(report=self)
-        )
+# class Report:
+#     def __init__(self):
+#         self.custom_metric_formula_registry: list[type[CustomMetricFormula]] = (
+#             CustomMetricFormulaRegistry(report=self)
+#         )
 
 
 # note important
@@ -115,8 +206,8 @@ class Report:
 # -------------------------
 
 
-def foobar(y_true, y_pred):
-    return 1
+# def foobar(y_true, y_pred):
+#     return 1
 
 
-report.registry.append(foobar, verbose_name="Ma métrique", greater_is_better=True)
+# report.registry.append(foobar, verbose_name="Ma métrique", greater_is_better=True)
