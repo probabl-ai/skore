@@ -300,7 +300,7 @@ six==1.17.0
     # via python-dateutil
 skore-local-project==0.0.5
     # via skore (skore/pyproject.toml)
-skrub==0.7.0
+skrub==0.7.1
     # via skore (skore/pyproject.toml)
 snowballstemmer==3.0.1
     # via sphinx
