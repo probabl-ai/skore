@@ -1,7 +1,11 @@
-from abc import ABC
-from collections.abc import Callable
+from __future__ import annotations
 
-from numpy.typing import Any, ArrayLike
+from abc import ABC
+from collections import UserList
+from collections.abc import Callable
+from typing import Any, Literal
+
+from numpy.typing import ArrayLike
 from sklearn.metrics import accuracy_score, precision_score
 
 from skore._sklearn._base import _get_cached_response_values
@@ -32,7 +36,7 @@ class Metric(ABC):  # or Protocol
         self.report = report
 
     @staticmethod
-    def available(estimator, ml_task) -> bool:
+    def available(report) -> bool:
         raise NotImplementedError
 
     def __call__(
@@ -81,7 +85,7 @@ class Metric(ABC):  # or Protocol
             score = score.item()
 
         if isinstance(score, list):
-            if "classification" in self.report._ml_task:
+            if "classification" in self.report.ml_task:
                 classes = self.report._estimator.classes_.tolist()
                 return dict(zip(classes, score, strict=False))
 
@@ -103,8 +107,8 @@ class Accuracy(Metric):
     CUSTOM = False
 
     @staticmethod
-    def available(estimator, ml_task) -> bool:
-        return ml_task in ("binary-classification", "multiclass-classification")
+    def available(report) -> bool:
+        return report.ml_task in ("binary-classification", "multiclass-classification")
 
     def __call__(
         self,
@@ -113,7 +117,7 @@ class Accuracy(Metric):
         y: ArrayLike | None = None,
         data_source: DataSource = "test",
     ) -> float:
-        return super()(X=X, y=y, data_source=data_source)
+        return super().__call__(X=X, y=y, data_source=data_source)
 
 
 Average = Literal["binary", "macro", "micro", "weighted", "samples"]
@@ -128,8 +132,8 @@ class Precision(Metric):
     CUSTOM = False
 
     @staticmethod
-    def available(estimator, ml_task) -> bool:
-        return ml_task in ("binary-classification", "multiclass-classification")
+    def available(report) -> bool:
+        return report.ml_task in ("binary-classification", "multiclass-classification")
 
     def __call__(
         self,
@@ -145,14 +149,14 @@ class Precision(Metric):
 
         if (
             (average is None)
-            and (self.report._ml_task == "binary-classification")
+            and (self.report.ml_task == "binary-classification")
             and (pos_label is not None)
         ):
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
             average = "binary"
 
-        return super()(
+        return super().__call__(
             X=X,
             y=y,
             data_source=data_source,
@@ -178,18 +182,28 @@ class Precision(Metric):
 #     aggregate: Aggregate = ("mean", "std")
 
 
-# class MetricRegistry(UserList[type[Metric]]):
-#     def __init__(self, *, report: Report):
-#         super().__init__()
+class MetricRegistry(UserList[type[Metric]]):
+    def __init__(self, report, /):
+        super().__init__()
 
-#         self.__report = report
+        self.__report = report
 
-#     def append(self, metric_cls: type[CustomMetricFormula]):
-#         # ensure metric_cls is valid
-#         # ensure metric_cls is not already present in the registry
-#         # append to the list
-#         # expose the tuple (name, compute) under the "report.metrics" accessor
-#         ...
+    def append(self, *metric_classes: type[Metric]):
+        # ensure metric_cls is valid
+        # ensure metric_cls is not already present in the registry
+        # append to the list
+        # expose the tuple (name, compute) under the "report.metrics" accessor
+
+        for metric_cls in metric_classes:
+            if (
+                (not isinstance(metric_cls, Metric))
+                or (not metric_cls.available(self.__report))
+                or (metric_cls in (type(metric) for metric in self))
+            ):
+                # logger.debug()
+                continue
+
+            super().append(metric_cls(self.__report))
 
 
 # class Report:
