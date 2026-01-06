@@ -231,10 +231,9 @@ class MetricRegistry(UserList[Metric]):
                 or (not metric_cls.available(self.__report))
                 or (metric_cls in self.__classes)
             ):
-                # logger.debug()
-                self.__classes.add(metric_cls)
                 continue
 
+            self.__classes.add(metric_cls)
             super().append(metric_cls(self.__report))
 
 
