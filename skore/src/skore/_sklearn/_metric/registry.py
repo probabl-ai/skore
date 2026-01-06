@@ -24,11 +24,25 @@ class Metric(ABC):  # or Protocol
     GREATER_IS_BETTER: bool
     CUSTOM: bool
 
+    def __init__(self, report, /):
+        self.report = report
+
     @staticmethod
     def available(estimator, ml_task) -> bool:
         raise NotImplementedError
 
-    def compute(self, *, data_source="test", X=None, y=None) -> float | Any:
+    def compute(
+        self,
+        *,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        data_source: DataSource = "test",
+        data_source_hash: int | None = None,
+        pos_label: PositiveLabel | None = None,
+    ) -> float:
+        # cast(float, metric)
+
+    def compute2(self, *, data_source="test", X=None, y=None) -> float | Any:
         # changer _compute_metric_scores pour l'intégrer ici dans "compute"
         #
         # implémenter ici la logique de cache
