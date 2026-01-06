@@ -79,7 +79,7 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         RmseTrain,
         RocAucTest,
         RocAucTrain,
-        # timings must be calculated last
+        # timings must be calculated last, or predictions must be cached before
         FitTime,
         PredictTimeTest,
         PredictTimeTrain,
