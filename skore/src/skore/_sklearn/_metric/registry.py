@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from numpy.typing import ArrayLike
-from sklearn.metrics import accuracy_score, precision_score
+from sklearn.metrics import accuracy_score, precision_score, r2_score
 
 from skore._sklearn._base import _get_cached_response_values
 from skore._sklearn.types import DataSource, PositiveLabel
@@ -165,6 +165,36 @@ class Precision(Metric):
         )
 
 
+class R2(Metric):
+    NAME = "r2"
+    VERBOSE_NAME = "R²"
+    SCORE_FUNC = r2_score
+    RESPONSE_METHOD = "predict"
+    GREATER_IS_BETTER = True
+    CUSTOM = False
+
+    @staticmethod
+    def available(report) -> bool:
+        return report.ml_task in ("regression", "multioutput-regression")
+
+    def __call__(
+        self,
+        *,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        data_source: DataSource = "test",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
+    ) -> float | list[float]:
+        return super().__call__(
+            X=X,
+            y=y,
+            data_source=data_source,
+            multioutput=multioutput,
+        )
+
+
 # redefinir les metriques actuelles comme des Metric
 # les register dynamiqument dans les init des reports si elles sont compatibles
 #
@@ -182,11 +212,12 @@ class Precision(Metric):
 #     aggregate: Aggregate = ("mean", "std")
 
 
-class MetricRegistry(UserList[type[Metric]]):
+class MetricRegistry(UserList[Metric]):
     def __init__(self, report, /):
         super().__init__()
 
         self.__report = report
+        self.__classes = set()
 
     def append(self, *metric_classes: type[Metric]):
         # ensure metric_cls is valid
@@ -196,11 +227,12 @@ class MetricRegistry(UserList[type[Metric]]):
 
         for metric_cls in metric_classes:
             if (
-                (not isinstance(metric_cls, Metric))
+                (not issubclass(metric_cls, Metric))
                 or (not metric_cls.available(self.__report))
-                or (metric_cls in (type(metric) for metric in self))
+                or (metric_cls in self.__classes)
             ):
                 # logger.debug()
+                self.__classes.add(metric_cls)
                 continue
 
             super().append(metric_cls(self.__report))
