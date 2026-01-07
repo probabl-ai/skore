@@ -136,26 +136,6 @@ class ConfusionMatrixDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         threshold_value: float | None = None,
         heatmap_kwargs: dict | None = None,
     ) -> None:
-        """Matplotlib implementation of the `plot` method."""
-        if self.report_type in ["estimator", "cross-validation"]:
-            self._plot_single_estimator(
-                normalize=normalize,
-                threshold_value=threshold_value,
-                heatmap_kwargs=heatmap_kwargs,
-            )
-        else:
-            raise NotImplementedError(
-                "`ConfusionMatrixDisplay` is only implemented for "
-                "`EstimatorReport` and `CrossValidationReport` for now."
-            )
-
-    def _plot_single_estimator(
-        self,
-        *,
-        normalize: Literal["true", "pred", "all"] | None = None,
-        threshold_value: float | None = None,
-        heatmap_kwargs: dict | None = None,
-    ) -> None:
         """
         Plot the confusion matrix for a single estimator.
 
@@ -175,6 +155,12 @@ class ConfusionMatrixDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
         """
+        if self.report_type not in ["estimator", "cross-validation"]:
+            raise NotImplementedError(
+                "`ConfusionMatrixDisplay` is only implemented for "
+                "`EstimatorReport` and `CrossValidationReport` for now."
+            )
+
         self.figure_, self.ax_ = plt.subplots()
 
         if self.report_type == "cross-validation":
@@ -354,14 +340,22 @@ class ConfusionMatrixDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 )[np.newaxis, ...]
                 thresholds = np.array([np.nan])
 
+            counts = cms.reshape(-1)
+
             row_sums = cms.sum(axis=2, keepdims=True)
-            cm_true = np.divide(cms, row_sums, where=row_sums != 0)
+            cm_true = np.zeros_like(cms, dtype=float)
+            np.divide(cms, row_sums, out=cm_true, where=row_sums != 0)
+            normalized_true_values = cm_true.reshape(-1)
 
             col_sums = cms.sum(axis=1, keepdims=True)
-            cm_pred = np.divide(cms, col_sums, where=col_sums != 0)
+            cm_pred = np.zeros_like(cms, dtype=float)
+            np.divide(cms, col_sums, out=cm_pred, where=col_sums != 0)
+            normalized_pred_values = cm_pred.reshape(-1)
 
             total_sums = cms.sum(axis=(1, 2), keepdims=True)
-            cm_all = np.divide(cms, total_sums, where=total_sums != 0)
+            cm_all = np.zeros_like(cms, dtype=float)
+            np.divide(cms, total_sums, out=cm_all, where=total_sums != 0)
+            normalized_all_values = cm_all.reshape(-1)
 
             n_thresholds = len(thresholds)
             n_classes = len(display_labels)
@@ -370,11 +364,6 @@ class ConfusionMatrixDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             true_labels = np.tile(np.repeat(display_labels, n_classes), n_thresholds)
             pred_labels = np.tile(np.tile(display_labels, n_classes), n_thresholds)
             threshold_values = np.repeat(thresholds, n_cells)
-
-            counts = cms.reshape(-1)
-            normalized_true_values = cm_true.reshape(-1)
-            normalized_pred_values = cm_pred.reshape(-1)
-            normalized_all_values = cm_all.reshape(-1)
 
             cm_records.append(
                 pd.DataFrame(
