@@ -51,7 +51,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Create dynamically filtering file, based on `env.PACKAGES`
         id: setup
@@ -60,7 +60,7 @@ jobs:
             echo "${PACKAGES}" | jq -r '.[]' | while read package; do
                 >>${FILEPATH} echo "${package}:
                 - '.github/workflows/pytest.yml'
-                - 'ci/requirements/${package}/**'
+                - 'ci/requirements/${package}/**/test-requirements.txt'
                 - '${package}/**'"
             done
         env:
@@ -85,7 +85,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 2
 
@@ -114,10 +114,10 @@ jobs:
             (echo "${changes}" | (! grep -qE "ci/requirements/${{ matrix.package }}/.*/test-requirements.txt"))
           then
               curl -LsSf https://astral.sh/uv/0.6.16/install.sh | sh
-              bash ci/pip-compile.sh ${{ matrix.package }}
+              bash ci/pip-compile.sh --test-requirements ${{ matrix.package }}
 
               if (git diff --name-only | grep -qE "ci/requirements/${{ matrix.package }}/.*/test-requirements.txt"); then
-                  echo '::error title=${{ matrix.package }}-lockfiles::Lockfiles obsolete, please execute `$ bash ci/pip-compile.sh ${{ matrix.package }}`'
+                  echo '::error title=${{ matrix.package }}-lockfiles::Lockfiles obsolete, please execute `$ bash ci/pip-compile.sh --test-requirements ${{ matrix.package }}`'
                   exit 1
              fi
           fi
@@ -131,36 +131,34 @@ jobs:
         package: ${{ (github.event_name == 'push') && fromJSON(needs.pytest-changes.outputs.packages) || fromJSON(needs.pytest-changes.outputs.modified-packages) }}
         os: ["ubuntu-latest", "windows-latest"]
         python: ["3.10", "3.11", "3.12", "3.13"]
-        scikit-learn: ["1.4", "1.5", "1.6", "1.7"]
+        scikit-learn: ["1.5", "1.6", "1.7", "1.8"]
         exclude:
           - python: "3.10"
-            scikit-learn: "1.5"
+            scikit-learn: "1.6"
           - python: "3.10"
-            scikit-learn: "1.6"
-          - python: "3.11"
-            scikit-learn: "1.5"
+            scikit-learn: "1.8"
           - python: "3.11"
             scikit-learn: "1.6"
-          - python: "3.12"
-            scikit-learn: "1.5"
+          - python: "3.11"
+            scikit-learn: "1.7"
           - python: "3.12"
             scikit-learn: "1.6"
-          - python: "3.13"
-            scikit-learn: "1.4"
+          - python: "3.12"
+            scikit-learn: "1.7"
         include:
           - os: "ubuntu-latest"
             python: "3.13"
-            scikit-learn: "1.7"
+            scikit-learn: "1.8"
             coverage: true
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Setup Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
         id: setup-python
         with:
           python-version: ${{ matrix.python }}
@@ -168,7 +166,7 @@ jobs:
           cache: pip
 
       - name: Restore python-venv
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/restore@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         id: cache-python-venv
         with:
           path: ${{ matrix.package }}/venv
@@ -203,7 +201,7 @@ jobs:
           python -m pip install --requirement test-requirements.txt
 
       - name: Save python-venv
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
         with:
           path: ${{ matrix.package }}/venv
@@ -236,7 +234,7 @@ jobs:
 
       - name: Upload coverage reports
         if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: ${{ matrix.package }}-coverage
           path: ${{ matrix.package }}/coverage/

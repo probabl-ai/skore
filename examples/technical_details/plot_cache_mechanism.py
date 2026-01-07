@@ -43,9 +43,9 @@ TableReport(pd.DataFrame(y))
 #
 # We use `skrub` to create a simple predictive model that handles our dataset's
 # challenges.
-from skrub import tabular_learner
+from skrub import tabular_pipeline
 
-model = tabular_learner("classifier")
+model = tabular_pipeline("classifier")
 model
 
 

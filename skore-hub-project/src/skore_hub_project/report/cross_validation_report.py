@@ -116,7 +116,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         RocAucTestStd,
         RocAucTrainMean,
         RocAucTrainStd,
-        # timings must be calculated last
+        # timings must be calculated last, or predictions must be cached before
         FitTimeMean,
         FitTimeStd,
         PredictTimeTestMean,
@@ -165,13 +165,16 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def splits(self) -> dict[str, Any]:
+    def splitting_strategy(self) -> dict[str, Any]:
         """
-        Distribution between train and test by split.
+        Splitting strategy used to split the dataset into train and test sets.
+
+        This includes the number of splits, the number of repeats, the seed,
+        and the distribution of the train and test sets.
 
         The distribution of each split is computed by dividing the split into a maximum
         of 200 buckets, and averaging the number of samples belonging to the test-set in
-        each of these buckets.
+        each of these buckets. @TODO: find a better representation of the distribution.
         """
         splits = []
 

@@ -11,7 +11,7 @@ from httpx import (
 from pytest import mark, raises
 
 from skore_hub_project.authentication import token, uri
-from skore_hub_project.client.client import Client, HUBClient
+from skore_hub_project.client.client import Client, HUBClient, __semver
 
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
@@ -117,6 +117,12 @@ class TestClient:
 
         assert timeouts == [0.25, 0.5, 1.0]
         assert excinfo.value.response.status_code == 400
+
+
+def test___semver():
+    assert __semver("0.0.0+unknown") is None
+    assert __semver("0.1.2") == "0.1.2"
+    assert __semver("0.1.2rc10") == "0.1.2-rc.10"
 
 
 class TestHUBClient:
@@ -273,13 +279,13 @@ class TestHUBClient:
         assert token.Filepath().exists()
         assert token.access(refresh=False) == "A"
 
-    def test_request_without_package_version(self, respx_mock):
+    def test_request_without_package_semver(self, respx_mock):
         from importlib.metadata import version
 
-        from skore_hub_project.client.client import PACKAGE_VERSION
+        from skore_hub_project.client.client import PACKAGE_SEMVER
 
         assert version("skore-hub-project") == "0.0.0+unknown"
-        assert PACKAGE_VERSION is None
+        assert PACKAGE_SEMVER is None
 
         respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
 
@@ -288,8 +294,8 @@ class TestHUBClient:
 
         assert "X-Skore-Client" not in respx_mock.calls.last.request.headers
 
-    def test_request_with_package_version(self, monkeypatch, respx_mock):
-        monkeypatch.setattr("skore_hub_project.client.client.PACKAGE_VERSION", "1.0.0")
+    def test_request_with_package_semver(self, monkeypatch, respx_mock):
+        monkeypatch.setattr("skore_hub_project.client.client.PACKAGE_SEMVER", "1.0.0")
         respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
 
         with HUBClient(authenticated=False) as client:

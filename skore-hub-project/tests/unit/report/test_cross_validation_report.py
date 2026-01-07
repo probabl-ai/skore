@@ -95,7 +95,7 @@ class TestCrossValidationReportPayload:
         assert payload.dataset_size == 10
 
     def test_splits(self, payload):
-        assert payload.splits == {
+        assert payload.splitting_strategy == {
             "repeat_count": 1,
             "seed": "None",
             "splits": [
@@ -141,7 +141,7 @@ class TestCrossValidationReportPayload:
             ),
             key="<key>",
         )
-        assert payload.splits == {
+        assert payload.splitting_strategy == {
             "repeat_count": 2,
             "seed": "42",
             "splits": [
@@ -322,7 +322,7 @@ class TestCrossValidationReportPayload:
         payload_dict.pop("estimators")
         payload_dict.pop("metrics")
         payload_dict.pop("medias")
-        payload_dict.pop("splits")
+        payload_dict.pop("splitting_strategy")
 
         assert payload_dict == {
             "key": "<key>",

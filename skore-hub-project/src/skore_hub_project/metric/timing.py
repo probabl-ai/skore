@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import ClassVar, Literal
-
-from pydantic import computed_field
 
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
@@ -19,13 +16,12 @@ class FitTime(Metric[EstimatorReport]):  # noqa: D101
     position: int = 1
     data_source: None = None
 
-    @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def value(self) -> float | None:  # noqa: D102
+    def compute(self) -> None:
+        """Compute the value of the metric."""
         timings = self.report.metrics.timings()
         fit_time = timings.get("fit_time")
 
-        return cast_to_float(fit_time)
+        self.value = cast_to_float(fit_time)
 
 
 class FitTimeAggregate(Metric[CrossValidationReport]):  # noqa: D101
@@ -40,17 +36,16 @@ class FitTimeAggregate(Metric[CrossValidationReport]):  # noqa: D101
     greater_is_better: bool = False
     data_source: None = None
 
-    @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def value(self) -> float | None:  # noqa: D102
+    def compute(self) -> None:
+        """Compute the value of the metric."""
         timings = self.report.metrics.timings(aggregate=self.aggregate)
 
         try:
             fit_times = timings.loc["Fit time (s)"]
         except KeyError:
-            return None
-
-        return cast_to_float(fit_times.iloc[0])
+            self.value = None
+        else:
+            self.value = cast_to_float(fit_times.iloc[0])
 
 
 class FitTimeMean(FitTimeAggregate):  # noqa: D101
@@ -73,13 +68,12 @@ class PredictTime(Metric[EstimatorReport]):  # noqa: D101
     greater_is_better: bool = False
     position: int = 2
 
-    @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def value(self) -> float | None:  # noqa: D102
+    def compute(self) -> None:
+        """Compute the value of the metric."""
         timings = self.report.metrics.timings()
         predict_time = timings.get(f"predict_time_{self.data_source}")
 
-        return cast_to_float(predict_time)
+        self.value = cast_to_float(predict_time)
 
 
 class PredictTimeTrain(PredictTime):  # noqa: D101
@@ -101,17 +95,16 @@ class PredictTimeAggregate(Metric[CrossValidationReport]):  # noqa: D101
     aggregate: ClassVar[Literal["mean", "std"]]
     greater_is_better: bool = False
 
-    @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def value(self) -> float | None:  # noqa: D102
+    def compute(self) -> None:
+        """Compute the value of the metric."""
         timings = self.report.metrics.timings(aggregate=self.aggregate)
 
         try:
             predict_times = timings.loc[f"Predict time {self.data_source} (s)"]
         except KeyError:
-            return None
-
-        return cast_to_float(predict_times.iloc[0])
+            self.value = None
+        else:
+            self.value = cast_to_float(predict_times.iloc[0])
 
 
 class PredictTimeMean(PredictTimeAggregate):  # noqa: D101
