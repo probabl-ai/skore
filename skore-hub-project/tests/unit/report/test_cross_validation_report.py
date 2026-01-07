@@ -3,9 +3,10 @@ from io import BytesIO
 from joblib import dump, hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
-from sklearn.datasets import make_classification
+from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import RepeatedKFold
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import KFold, RepeatedKFold
 from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project import Project
@@ -101,12 +102,12 @@ class TestCrossValidationReportPayload:
             "splits": [
                 {
                     "test": {
-                        "class_distribution": [3, 2],
+                        "target_distribution": [3, 2],
                         "groups": None,
                         "sample_count": 5,
                     },
                     "train": {
-                        "class_distribution": [2, 3],
+                        "target_distribution": [2, 3],
                         "groups": None,
                         "sample_count": 5,
                     },
@@ -114,12 +115,12 @@ class TestCrossValidationReportPayload:
                 },
                 {
                     "test": {
-                        "class_distribution": [2, 3],
+                        "target_distribution": [2, 3],
                         "groups": None,
                         "sample_count": 5,
                     },
                     "train": {
-                        "class_distribution": [3, 2],
+                        "target_distribution": [3, 2],
                         "groups": None,
                         "sample_count": 5,
                     },
@@ -147,12 +148,12 @@ class TestCrossValidationReportPayload:
             "splits": [
                 {
                     "test": {
-                        "class_distribution": [4, 1],
+                        "target_distribution": [4, 1],
                         "groups": None,
                         "sample_count": 5,
                     },
                     "train": {
-                        "class_distribution": [1, 4],
+                        "target_distribution": [1, 4],
                         "groups": None,
                         "sample_count": 5,
                     },
@@ -160,12 +161,12 @@ class TestCrossValidationReportPayload:
                 },
                 {
                     "test": {
-                        "class_distribution": [1, 4],
+                        "target_distribution": [1, 4],
                         "groups": None,
                         "sample_count": 5,
                     },
                     "train": {
-                        "class_distribution": [4, 1],
+                        "target_distribution": [4, 1],
                         "groups": None,
                         "sample_count": 5,
                     },
@@ -173,12 +174,12 @@ class TestCrossValidationReportPayload:
                 },
                 {
                     "test": {
-                        "class_distribution": [4, 1],
+                        "target_distribution": [4, 1],
                         "groups": None,
                         "sample_count": 5,
                     },
                     "train": {
-                        "class_distribution": [1, 4],
+                        "target_distribution": [1, 4],
                         "groups": None,
                         "sample_count": 5,
                     },
@@ -186,12 +187,12 @@ class TestCrossValidationReportPayload:
                 },
                 {
                     "test": {
-                        "class_distribution": [1, 4],
+                        "target_distribution": [1, 4],
                         "groups": None,
                         "sample_count": 5,
                     },
                     "train": {
-                        "class_distribution": [4, 1],
+                        "target_distribution": [4, 1],
                         "groups": None,
                         "sample_count": 5,
                     },
@@ -200,6 +201,31 @@ class TestCrossValidationReportPayload:
             ],
             "strategy_name": "RepeatedKFold",
         }
+
+    def test_splits_for_regression(self, project):
+        X, y = make_regression(random_state=42, n_samples=10)
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=CrossValidationReport(
+                LinearRegression(),
+                X,
+                y,
+                splitter=KFold(n_splits=2),
+            ),
+            key="<key>",
+        )
+
+        assert payload.splitting_strategy["repeat_count"] == 1
+        assert payload.splitting_strategy["seed"] == "None"
+        splits = payload.splitting_strategy["splits"]
+        assert len(splits) == 2
+        for split in splits:
+            train_target_distribution = split["train"]["target_distribution"]
+            test_target_distribution = split["test"]["target_distribution"]
+            assert len(train_target_distribution) == 100
+            assert len(test_target_distribution) == 100
+            assert all(isinstance(value, float) for value in train_target_distribution)
+            assert all(isinstance(value, float) for value in test_target_distribution)
 
     def test_class_names(self, payload):
         assert payload.class_names == ["1", "0"]
@@ -314,7 +340,7 @@ class TestCrossValidationReportPayload:
     )
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
-    def test_model_dump(self, small_cv_binary_classification, payload):
+    def test_model_dump_classification(self, small_cv_binary_classification, payload):
         _, checksum = serialize(small_cv_binary_classification)
 
         payload_dict = payload.model_dump()
