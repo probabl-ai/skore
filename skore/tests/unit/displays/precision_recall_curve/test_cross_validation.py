@@ -285,26 +285,40 @@ def test_multiclass_classification_constructor(logistic_multiclass_classificatio
 
 
 @pytest.mark.parametrize(
-    "fixture_name",
+    "fixture_name, valid_values",
     [
-        "logistic_binary_classification_data",
-        "logistic_multiclass_classification_data",
+        ("logistic_binary_classification_data", ["'auto'", "None"]),
+        ("logistic_multiclass_classification_data", ["'auto'", "'label'"]),
     ],
 )
-def test_invalid_subplot_by(fixture_name, request):
+def test_invalid_subplot_by(fixture_name, valid_values, request):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `subplot_by` argument.
     """
-    (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
+    estimator, X, y = request.getfixturevalue(fixture_name)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=3)
 
     display = report.metrics.precision_recall()
-    valid_values = ["'auto'"]
-    if len(np.unique(y)) > 2:
-        valid_values.append("'label'")
-    else:
-        valid_values.append("None")
     valid_values_str = ", ".join(valid_values)
     err_msg = f"subplot_by must be one of {valid_values_str}, got 'invalid' instead."
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
+
+
+@pytest.mark.parametrize(
+    "fixture_name, subplot_by, expected_len",
+    [
+        ("logistic_binary_classification_data", None, 0),
+        ("logistic_multiclass_classification_data", "label", 3),
+    ],
+)
+def test_valid_subplot_by(fixture_name, subplot_by, expected_len, request):
+    """Check that we can pass `None` to `subplot_by`."""
+    estimator, X, y = request.getfixturevalue(fixture_name)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=3)
+    display = report.metrics.precision_recall()
+    display.plot(subplot_by=subplot_by)
+    if subplot_by is None:
+        assert isinstance(display.ax_, mpl.axes.Axes)
+    else:
+        assert len(display.ax_) == expected_len

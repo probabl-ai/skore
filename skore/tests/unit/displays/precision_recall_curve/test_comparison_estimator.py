@@ -420,13 +420,19 @@ def test_multiclass_classification_constructor(
 
 
 @pytest.mark.parametrize(
-    "fixture_name",
+    "fixture_name, valid_values",
     [
-        "logistic_binary_classification_with_train_test",
-        "logistic_multiclass_classification_with_train_test",
+        (
+            "logistic_binary_classification_with_train_test",
+            ["'auto'", "'estimator_name'", "None"],
+        ),
+        (
+            "logistic_multiclass_classification_with_train_test",
+            ["'auto'", "'estimator_name'", "'label'"],
+        ),
     ],
 )
-def test_invalid_subplot_by(fixture_name, request):
+def test_invalid_subplot_by(fixture_name, valid_values, request):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `subplot_by` argument.
     """
@@ -441,12 +447,41 @@ def test_invalid_subplot_by(fixture_name, request):
         reports={"estimator_1": report_1, "estimator_2": report_2}
     )
     display = report.metrics.precision_recall()
-    valid_values = ["'auto'", "'estimator_name'"]
-    if len(np.unique(y_train)) > 2:
-        valid_values.append("'label'")
-    else:
-        valid_values.append("None")
     valid_values_str = ", ".join(valid_values)
     err_msg = f"subplot_by must be one of {valid_values_str}, got 'invalid' instead."
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
+
+
+@pytest.mark.parametrize(
+    "fixture_name, subplot_by_tuples",
+    [
+        (
+            "logistic_binary_classification_with_train_test",
+            [(None, 0), ("estimator_name", 2)],
+        ),
+        (
+            "logistic_multiclass_classification_with_train_test",
+            [("label", 3), ("estimator_name", 2)],
+        ),
+    ],
+)
+def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
+    """Check that we can pass non default values to `subplot_by`."""
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.precision_recall()
+    for subplot_by, expected_len in subplot_by_tuples:
+        display.plot(subplot_by=subplot_by)
+        if subplot_by is None:
+            assert isinstance(display.ax_, mpl.axes.Axes)
+        else:
+            assert len(display.ax_) == expected_len
