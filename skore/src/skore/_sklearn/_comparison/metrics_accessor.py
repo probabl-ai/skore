@@ -62,6 +62,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
+        response_method: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for the estimators.
 
@@ -153,6 +154,15 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Precision                    0.96...               0.96...
         Recall                       0.97...               0.97...
         """
+        if response_method is not None:
+            raise TypeError(
+                "`response_method` is not supported in `ComparisonReport.metrics.summarize`. "
+                "To compute a custom metric with an explicit response method, use "
+                "`ComparisonReport.metrics.custom_metric(metric_function=..., response_method=...)`, "
+                "or pass a scikit-learn scorer created with "
+                "`sklearn.metrics.make_scorer(..., response_method=...)` via `metric=`."
+            )
+
         results = self._compute_metric_scores(
             report_metric_name="summarize",
             data_source=data_source,

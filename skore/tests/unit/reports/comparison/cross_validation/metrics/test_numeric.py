@@ -368,3 +368,30 @@ def test_precision_recall_pos_label_overwrite(metric):
             result.loc[metric.capitalize(), ("mean", report_name)]
             == result_both_labels.loc[(metric.capitalize(), "A"), ("mean", report_name)]
         )
+
+@pytest.mark.parametrize("response_method", ["predict", "predict_proba"])
+def test_summarize_response_method_guidance(
+    comparison_cross_validation_reports_regression,
+    response_method,
+):
+    """`response_method` is not supported in `summarize` and should guide users."""
+    report = comparison_cross_validation_reports_regression
+
+    def business_loss(y_true_list, y_pred_list):
+        loss = 0
+        for y_true_, y_pred_ in zip(y_true_list, y_pred_list):
+            # If under the market: 100% loss for me
+            if y_true_ > y_pred_:
+                loss = loss + float(y_true_ - y_pred_)
+            # If I'm above the market, I waste time to sell
+            # Each month costs 2k, and every month I lower the price by 10k
+            else:
+                loss = loss + float(2 * (y_pred_ - y_true_) / 10)
+        return loss
+
+    with pytest.raises(TypeError, match=r"custom_metric|make_scorer"):
+        report.metrics.summarize(
+            metric=business_loss,
+            response_method=response_method,
+        )
+
