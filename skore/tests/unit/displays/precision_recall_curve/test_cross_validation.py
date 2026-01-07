@@ -282,3 +282,29 @@ def test_multiclass_classification_constructor(logistic_multiclass_classificatio
         np.testing.assert_array_equal(df["label"].unique(), np.unique(y))
 
     assert len(display.average_precision) == len(np.unique(y)) * cv
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "logistic_binary_classification_data",
+        "logistic_multiclass_classification_data",
+    ],
+)
+def test_invalid_subplot_by(fixture_name, request):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `subplot_by` argument.
+    """
+    (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
+
+    display = report.metrics.precision_recall()
+    valid_values = ["'auto'"]
+    if len(np.unique(y)) > 2:
+        valid_values.append("'label'")
+    else:
+        valid_values.append("None")
+    valid_values_str = ", ".join(valid_values)
+    err_msg = f"subplot_by must be one of {valid_values_str}, got 'invalid' instead."
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="invalid")

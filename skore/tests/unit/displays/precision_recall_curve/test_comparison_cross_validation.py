@@ -299,3 +299,34 @@ def test_multiclass_str_labels_precision_recall_plot(pyplot):
 
     display = report.metrics.precision_recall()
     display.plot()
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "comparison_cross_validation_reports_binary_classification",
+        "comparison_cross_validation_reports_multiclass_classification",
+    ],
+)
+def test_invalid_subplot_by(fixture_name, request):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `subplot_by` argument.
+    """
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.precision_recall()
+    valid_values = ["'auto'", "'estimator_name'"]
+    if (
+        len(
+            next(iter(report.reports_.values()))
+            .estimator_reports_[0]
+            .estimator_.classes_
+        )
+        > 2
+    ):
+        valid_values.append("'label'")
+    else:
+        valid_values.append("None")
+    valid_values_str = ", ".join(valid_values)
+    err_msg = f"subplot_by must be one of {valid_values_str}, got 'invalid' instead."
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="invalid")

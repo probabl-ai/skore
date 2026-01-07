@@ -417,3 +417,36 @@ def test_multiclass_classification_constructor(
         np.testing.assert_array_equal(df["label"].unique(), np.unique(y_train))
 
     assert len(display.average_precision) == len(np.unique(y_train)) * 2
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "logistic_binary_classification_with_train_test",
+        "logistic_multiclass_classification_with_train_test",
+    ],
+)
+def test_invalid_subplot_by(fixture_name, request):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `subplot_by` argument.
+    """
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.precision_recall()
+    valid_values = ["'auto'", "'estimator_name'"]
+    if len(np.unique(y_train)) > 2:
+        valid_values.append("'label'")
+    else:
+        valid_values.append("None")
+    valid_values_str = ", ".join(valid_values)
+    err_msg = f"subplot_by must be one of {valid_values_str}, got 'invalid' instead."
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="invalid")
