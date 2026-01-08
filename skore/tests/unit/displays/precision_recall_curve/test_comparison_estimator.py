@@ -52,15 +52,15 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
     legend_texts = [text.get_text() for text in legend.get_texts()]
 
     expected_colors = sns.color_palette()[:n_reports]
-    for idx, (estimator_name, line) in enumerate(
+    for idx, (estimator, line) in enumerate(
         zip(report.reports_, display.lines_, strict=False)
     ):
         assert isinstance(line, mpl.lines.Line2D)
         plot_data = display.frame(with_average_precision=True)
-        average_precision = plot_data.query(f"estimator_name == '{estimator_name}'")[
+        average_precision = plot_data.query(f"estimator == '{estimator}'")[
             "average_precision"
         ].iloc[0]
-        assert legend_texts[idx] == f"{estimator_name} (AP={average_precision:.2f})"
+        assert legend_texts[idx] == f"{estimator} (AP={average_precision:.2f})"
         assert line.get_color() == expected_colors[idx]
 
     assert len(legend_texts) == n_reports
@@ -121,14 +121,14 @@ def test_multiclass_classification(
         assert legend is not None
         legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        for idx, (estimator_name, line) in enumerate(
+        for idx, (estimator, line) in enumerate(
             zip(report.reports_, ax.get_lines(), strict=False)
         ):
             plot_data = display.frame(with_average_precision=True)
             average_precision = plot_data.query(
-                f"label == {class_label} & estimator_name == '{estimator_name}'"
+                f"label == {class_label} & estimator == '{estimator}'"
             )["average_precision"].iloc[0]
-            assert legend_texts[idx] == f"{estimator_name} (AP={average_precision:.2f})"
+            assert legend_texts[idx] == f"{estimator} (AP={average_precision:.2f})"
             assert line.get_color() == expected_colors[idx]
 
         assert len(legend_texts) == n_reports
@@ -268,16 +268,16 @@ def test_frame_binary_classification(
     display = report.metrics.precision_recall()
     df = display.frame(with_average_precision=with_average_precision)
 
-    expected_index = ["estimator_name"]
+    expected_index = ["estimator"]
     expected_columns = ["threshold", "precision", "recall"]
     if with_average_precision:
         expected_columns.append("average_precision")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["estimator_name"].nunique() == 2
+    assert df["estimator"].nunique() == 2
 
     if with_average_precision:
-        for (_), group in df.groupby(["estimator_name"], observed=True):
+        for (_), group in df.groupby(["estimator"], observed=True):
             assert group["average_precision"].nunique() == 1
 
 
@@ -311,16 +311,16 @@ def test_frame_multiclass_classification(
     display = report.metrics.precision_recall()
     df = display.frame(with_average_precision=with_average_precision)
 
-    expected_index = ["estimator_name", "label"]
+    expected_index = ["estimator", "label"]
     expected_columns = ["threshold", "precision", "recall"]
     if with_average_precision:
         expected_columns.append("average_precision")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["estimator_name"].nunique() == 2
+    assert df["estimator"].nunique() == 2
 
     if with_average_precision:
-        for (_, _), group in df.groupby(["estimator_name", "label"], observed=True):
+        for (_, _), group in df.groupby(["estimator", "label"], observed=True):
             assert group["average_precision"].nunique() == 1
 
 
@@ -381,10 +381,10 @@ def test_binary_classification_constructor(
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
+        assert df["estimator"].unique().tolist() == list(report.reports_.keys())
         assert df["split"].isnull().all()
         assert df["label"].unique() == 1
 
@@ -409,10 +409,10 @@ def test_multiclass_classification_constructor(
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
+        assert df["estimator"].unique().tolist() == list(report.reports_.keys())
         assert df["split"].isnull().all()
         np.testing.assert_array_equal(df["label"].unique(), np.unique(y_train))
 
@@ -424,11 +424,11 @@ def test_multiclass_classification_constructor(
     [
         (
             "logistic_binary_classification_with_train_test",
-            ["'auto'", "'estimator_name'", "None"],
+            ["None", "auto", "estimator"],
         ),
         (
             "logistic_multiclass_classification_with_train_test",
-            ["'auto'", "'estimator_name'", "'label'"],
+            ["auto", "estimator", "label"],
         ),
     ],
 )
@@ -448,7 +448,7 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     )
     display = report.metrics.precision_recall()
     valid_values_str = ", ".join(valid_values)
-    err_msg = f"subplot_by must be one of {valid_values_str}, got 'invalid' instead."
+    err_msg = f"subplot_by must be one of {valid_values_str}. Got 'invalid' instead."
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
 
@@ -458,11 +458,11 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     [
         (
             "logistic_binary_classification_with_train_test",
-            [(None, 0), ("estimator_name", 2)],
+            [(None, 0), ("estimator", 2)],
         ),
         (
             "logistic_multiclass_classification_with_train_test",
-            [("label", 3), ("estimator_name", 2)],
+            [("label", 3), ("estimator", 2)],
         ),
     ],
 )

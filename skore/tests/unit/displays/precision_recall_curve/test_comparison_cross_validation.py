@@ -44,13 +44,13 @@ def test_binary_classification(
     legend_texts = [text.get_text() for text in legend.get_texts()]
 
     expected_colors = sns.color_palette()[:n_reports]
-    for idx, estimator_name in enumerate(report.reports_):
+    for idx, estimator in enumerate(report.reports_):
         plot_data = display.frame(with_average_precision=True)
-        average_precision = plot_data.query(f"estimator_name == '{estimator_name}'")[
+        average_precision = plot_data.query(f"estimator == '{estimator}'")[
             "average_precision"
         ]
         assert (
-            legend_texts[idx] == f"{estimator_name} (AP={average_precision.mean():.2f}"
+            legend_texts[idx] == f"{estimator} (AP={average_precision.mean():.2f}"
             f"±{average_precision.std():.2f})"
         )
         for line in ax.get_lines()[idx * n_splits : (idx + 1) * n_splits]:
@@ -96,14 +96,13 @@ def test_multiclass_classification(
         assert legend is not None
         legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        for idx, estimator_name in enumerate(report.reports_):
+        for idx, estimator in enumerate(report.reports_):
             plot_data = display.frame(with_average_precision=True)
             average_precision = plot_data.query(
-                f"label == {label} & estimator_name == '{estimator_name}'"
+                f"label == {label} & estimator == '{estimator}'"
             )["average_precision"]
             assert (
-                legend_texts[idx]
-                == f"{estimator_name} (AP={average_precision.mean():.2f}"
+                legend_texts[idx] == f"{estimator} (AP={average_precision.mean():.2f}"
                 f"±{average_precision.std():.2f})"
             )
             for line in ax.get_lines()[idx * n_splits : (idx + 1) * n_splits]:
@@ -193,16 +192,16 @@ def test_binary_classification_constructor(forest_binary_classification_data):
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df.query("estimator_name == 'estimator_1'")[
+        assert df.query("estimator == 'estimator_1'")[
             "split"
         ].unique().tolist() == list(range(cv))
-        assert df.query("estimator_name == 'estimator_2'")[
+        assert df.query("estimator == 'estimator_2'")[
             "split"
         ].unique().tolist() == list(range(cv + 1))
-        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
+        assert df["estimator"].unique().tolist() == list(report.reports_.keys())
         assert df["label"].unique() == 1
 
     assert len(display.average_precision) == cv + (cv + 1)
@@ -218,17 +217,17 @@ def test_multiclass_classification_constructor(forest_multiclass_classification_
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     classes = np.unique(y)
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df.query("estimator_name == 'estimator_1'")[
+        assert df.query("estimator == 'estimator_1'")[
             "split"
         ].unique().tolist() == list(range(cv))
-        assert df.query("estimator_name == 'estimator_2'")[
+        assert df.query("estimator == 'estimator_2'")[
             "split"
         ].unique().tolist() == list(range(cv + 1))
-        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
+        assert df["estimator"].unique().tolist() == list(report.reports_.keys())
         np.testing.assert_array_equal(df["label"].unique(), classes)
 
     assert len(display.average_precision) == len(classes) * cv + len(classes) * (cv + 1)
@@ -244,16 +243,16 @@ def test_frame_binary_classification(
     display = report.metrics.precision_recall()
 
     df = display.frame(with_average_precision=with_average_precision)
-    expected_index = ["estimator_name", "split"]
+    expected_index = ["estimator", "split"]
     expected_columns = ["threshold", "precision", "recall"]
     if with_average_precision:
         expected_columns.append("average_precision")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["estimator_name"].nunique() == len(report.reports_)
+    assert df["estimator"].nunique() == len(report.reports_)
 
     if with_average_precision:
-        for (_, _), group in df.groupby(["estimator_name", "split"], observed=True):
+        for (_, _), group in df.groupby(["estimator", "split"], observed=True):
             assert group["average_precision"].nunique() == 1
 
 
@@ -268,17 +267,17 @@ def test_frame_multiclass_classification(
     display = report.metrics.precision_recall()
 
     df = display.frame(with_average_precision=with_average_precision)
-    expected_index = ["estimator_name", "split", "label"]
+    expected_index = ["estimator", "split", "label"]
     expected_columns = ["threshold", "precision", "recall"]
     if with_average_precision:
         expected_columns.append("average_precision")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["estimator_name"].nunique() == len(report.reports_)
+    assert df["estimator"].nunique() == len(report.reports_)
 
     if with_average_precision:
         for (_, _, _), group in df.groupby(
-            ["estimator_name", "split", "label"], observed=True
+            ["estimator", "split", "label"], observed=True
         ):
             assert group["average_precision"].nunique() == 1
 
@@ -306,11 +305,11 @@ def test_multiclass_str_labels_precision_recall_plot(pyplot):
     [
         (
             "comparison_cross_validation_reports_binary_classification",
-            ["'auto'", "'estimator_name'", "None"],
+            ["None", "auto", "estimator"],
         ),
         (
             "comparison_cross_validation_reports_multiclass_classification",
-            ["'auto'", "'estimator_name'", "'label'"],
+            ["auto", "estimator", "label"],
         ),
     ],
 )
@@ -321,7 +320,7 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.precision_recall()
     valid_values_str = ", ".join(valid_values)
-    err_msg = f"subplot_by must be one of {valid_values_str}, got 'invalid' instead."
+    err_msg = f"subplot_by must be one of {valid_values_str}. Got 'invalid' instead."
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
 
@@ -331,11 +330,11 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     [
         (
             "comparison_cross_validation_reports_binary_classification",
-            [(None, 0), ("estimator_name", 2)],
+            [(None, 0), ("estimator", 2)],
         ),
         (
             "comparison_cross_validation_reports_multiclass_classification",
-            [("label", 3), ("estimator_name", 2)],
+            [("label", 3), ("estimator", 2)],
         ),
     ],
 )

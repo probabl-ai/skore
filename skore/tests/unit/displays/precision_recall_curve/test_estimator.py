@@ -447,10 +447,10 @@ def test_binary_classification_constructor(
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["estimator"].unique()[0] == report.estimator_name_
         assert df["split"].isnull().all()
         assert df["label"].unique() == 1
 
@@ -469,10 +469,10 @@ def test_multiclass_classification_constructor(
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["estimator"].unique()[0] == report.estimator_name_
         assert df["split"].isnull().all()
         np.testing.assert_array_equal(df["label"].unique(), estimator.classes_)
 
@@ -482,8 +482,8 @@ def test_multiclass_classification_constructor(
 @pytest.mark.parametrize(
     "fixture_name, valid_values",
     [
-        ("logistic_binary_classification_with_train_test", ["'auto'", "None"]),
-        ("logistic_multiclass_classification_with_train_test", ["'auto'", "'label'"]),
+        ("logistic_binary_classification_with_train_test", ["None", "auto"]),
+        ("logistic_multiclass_classification_with_train_test", ["auto", "label"]),
     ],
 )
 def test_invalid_subplot_by(fixture_name, valid_values, request):
@@ -496,7 +496,7 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     )
     display = report.metrics.precision_recall()
     valid_values_str = ", ".join(valid_values)
-    err_msg = f"subplot_by must be one of {valid_values_str}, got 'invalid' instead."
+    err_msg = f"subplot_by must be one of {valid_values_str}. Got 'invalid' instead."
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
 

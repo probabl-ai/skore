@@ -37,7 +37,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     precision_recall : DataFrame
         The precision-recall curve data to display. The columns are
 
-        - `estimator_name`
+        - `estimator`
         - `split` (may be null)
         - `label`
         - `threshold`
@@ -47,7 +47,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     average_precision : DataFrame
         The average precision data to display. The columns are
 
-        - `estimator_name`
+        - `estimator`
         - `split` (may be null)
         - `label`
         - `average_precision`.
@@ -92,10 +92,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     """
 
     _default_relplot_kwargs: dict[str, Any] = {
-        "kind": "line",
-        "estimator": None,
-        "x": "recall",
-        "y": "precision",
         "height": 6,
         "aspect": 1,
         "legend": False,
@@ -141,7 +137,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             Column to use for creating subplots. Options:
             - "auto": "label" for multiclass, None for binary
             - "label": one subplot per class (multiclass only)
-            - "estimator_name": one subplot per estimator (comparison only)
+            - "estimator": one subplot per estimator (comparison only)
             - None: no subplots (binary only)
 
         relplot_kwargs : dict, default=None
@@ -186,7 +182,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         despine: bool = True,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
-        is_crossval = self.report_type in (
+        is_cross_validation = self.report_type in (
             "cross-validation",
             "comparison-cross-validation",
         )
@@ -202,29 +198,19 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             "style": style,
         }
 
-        if is_crossval:
+        if is_cross_validation:
             kwargs["units"] = "split"
             kwargs["alpha"] = 0.4
 
             # Convert categorical columns to strings to avoid pandas future warning.
             # See: https://github.com/mwaskom/seaborn/issues/3891
-            cols_to_convert = ["label", "data_source", "split"]
-            if self.report_type in (
-                "comparison-estimator",
-                "comparison-cross-validation",
-            ):
-                cols_to_convert.append("estimator_name")
+            # Only needed in cross val as its aggregation that causes the future warning
+            columns_to_convert = plot_data.select_dtypes(include="category").columns
+            plot_data[columns_to_convert].astype(str)
 
-            for c in cols_to_convert:
-                if c in plot_data.columns and hasattr(plot_data[c], "cat"):
-                    plot_data[c] = plot_data[c].astype(str)
-
-        col_order = plot_data[col].unique().tolist() if col else None
-        hue_order = plot_data[hue].unique().tolist() if hue else None
-        style_order = plot_data[style].unique().tolist() if style else None
-        kwargs["col_order"] = col_order
-        kwargs["hue_order"] = hue_order
-        kwargs["style_order"] = style_order
+        kwargs["col_order"] = plot_data[col].unique().tolist() if col else None
+        kwargs["hue_order"] = plot_data[hue].unique().tolist() if hue else None
+        kwargs["style_order"] = plot_data[style].unique().tolist() if style else None
 
         if style:
             kwargs["dashes"] = {"train": (5, 5), "test": (1, 0)}
@@ -234,30 +220,36 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             relplot_kwargs or {},
         )
 
-        facet_grid = sns.relplot(**kwargs)
+        facet_grid = sns.relplot(
+            **kwargs,
+            kind="line",
+            estimator=None,
+            x="recall",
+            y="precision",
+        )
 
         self.figure_, self.ax_ = facet_grid.figure, facet_grid.axes.flatten()
         self.lines_ = [line for ax in self.ax_ for line in ax.get_lines()]
 
+        # Create space under the plot to fit the manually created legends.
         n_legend_rows = plot_data[hue].nunique() if hue else 1
         legend_height_inches = n_legend_rows * 0.25 + 1
         current_height = self.figure_.get_figheight()
         new_height = current_height + legend_height_inches
         self.figure_.set_figheight(new_height)
-        bottom_margin = legend_height_inches / new_height
-        self.figure_.tight_layout(rect=[0, bottom_margin, 1, 1])
 
+        # Build a legend for each subplot.
         for idx, ax in enumerate(self.ax_):
-            col_value = col_order[idx] if col_order else None
-            stats_df = plot_data[plot_data[col] == col_value] if col else plot_data
+            col_value = kwargs["col_order"][idx] if kwargs["col_order"] else None
+            subplot_data = plot_data[plot_data[col] == col_value] if col else plot_data
             self._build_legend_for_ax(
                 ax=ax,
-                stats_df=stats_df,
+                subplot_data=subplot_data,
                 hue=hue,
                 style=style,
-                hue_order=hue_order,
-                style_order=style_order,
-                is_crossval=is_crossval,
+                hue_order=kwargs["hue_order"],
+                style_order=kwargs["style_order"],
+                is_cross_validation=is_cross_validation,
             )
 
         if self.ml_task == "binary-classification":
@@ -279,9 +271,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         title = "Precision-Recall Curve"
         if self.report_type in ("estimator", "cross-validation"):
-            title += (
-                f" for {self.precision_recall['estimator_name'].cat.categories.item()}"
-            )
+            title += f" for {self.precision_recall['estimator'].cat.categories.item()}"
         self.figure_.suptitle(
             "\n".join(filter(None, [title, info_pos_label, info_data_source]))
         )
@@ -303,15 +293,14 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         Rules:
         - Default ("auto"): "label" for multiclass, None for binary
         - subplot_by=None only allowed for binary classification
-        - subplot_by="estimator_name" only allowed for comparison reports
+        - subplot_by="estimator" only allowed for comparison reports
         - subplot_by="label" only allowed for multiclass classification
-        - hue priority: estimator_name > label > data_source (excluding col)
+        - hue priority: estimator > label > data_source (excluding col)
 
         Returns (col, hue, style) tuple where each can be None if not applicable.
         """
         has_multiple_estimators = (
-            "estimator_name" in plot_data.columns
-            and plot_data["estimator_name"].nunique() > 1
+            "estimator" in plot_data.columns and plot_data["estimator"].nunique() > 1
         )
         is_comparison = self.report_type in (
             "comparison-estimator",
@@ -326,18 +315,14 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         else:
             allowed_values.add(None)
         if is_comparison and has_multiple_estimators:
-            allowed_values.add("estimator_name")
+            allowed_values.add("estimator")
         if has_both_data_sources:
             allowed_values.add("data_source")
 
         if subplot_by not in allowed_values:
-            string_values = sorted([v for v in allowed_values if isinstance(v, str)])
-            allowed_list = [f"'{v}'" for v in string_values]
-            if None in allowed_values:
-                allowed_list.append("None")
-            allowed_str = ", ".join(allowed_list)
+            allowed_str = ", ".join(sorted([str(s) for s in allowed_values]))
             raise ValueError(
-                f"subplot_by must be one of {allowed_str}, got {subplot_by!r} instead."
+                f"subplot_by must be one of {allowed_str}. Got {subplot_by!r} instead."
             )
 
         if subplot_by == "auto":
@@ -350,11 +335,11 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         hue_candidates = []
         if has_multiple_estimators:
-            hue_candidates.append("estimator_name")
+            hue_candidates.append("estimator")
         if has_multiple_labels:
             hue_candidates.append("label")
 
-        hue = next((c for c in hue_candidates if c != col), None)
+        hue = hue[0] if (hue := [c for c in hue_candidates if c != col]) else None
 
         style = "data_source" if self.data_source == "both" else None
 
@@ -364,44 +349,46 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         self,
         *,
         ax: Axes,
-        stats_df: DataFrame,
+        subplot_data: DataFrame,
         hue: str | None,
         style: str | None,
         hue_order: list[str] | None,
         style_order: list[str] | None,
-        is_crossval: bool = False,
+        is_cross_validation: bool = False,
     ) -> None:
         """Build custom legend with AP stats for a single axis."""
         new_labels = []
         if hue is None:
             if style is None:
-                ap_series = stats_df["average_precision"]
-                new_labels = [self._format_ap_stat(ap_series, is_crossval)]
+                ap_series = subplot_data["average_precision"]
+                new_labels = [self._format_ap_stat(ap_series, is_cross_validation)]
             else:
                 for style_val in cast(list[str], style_order):
-                    mask = stats_df[style] == style_val
+                    mask = subplot_data[style] == style_val
                     if mask.any():
-                        ap_series = stats_df.loc[mask, "average_precision"]
-                        stat_str = self._format_ap_stat(ap_series, is_crossval)
+                        ap_series = subplot_data.loc[mask, "average_precision"]
+                        stat_str = self._format_ap_stat(ap_series, is_cross_validation)
                         lbl = self._format_legend_label(style, style_val, stat_str)
                         new_labels.append(lbl)
         else:
             if style is None:
                 for hue_val in cast(list[str], hue_order):
-                    mask = stats_df[hue] == hue_val
+                    mask = subplot_data[hue] == hue_val
                     if mask.any():
-                        ap_series = stats_df.loc[mask, "average_precision"]
-                        stat_str = self._format_ap_stat(ap_series, is_crossval)
+                        ap_series = subplot_data.loc[mask, "average_precision"]
+                        stat_str = self._format_ap_stat(ap_series, is_cross_validation)
                         lbl = self._format_legend_label(hue, hue_val, stat_str)
                         new_labels.append(lbl)
             else:
                 for hue_val in cast(list[str], hue_order):
-                    hue_mask = stats_df[hue] == hue_val
+                    hue_mask = subplot_data[hue] == hue_val
                     for style_val in cast(list[str], style_order):
-                        mask = hue_mask & (stats_df[style] == style_val)
+                        mask = hue_mask & (subplot_data[style] == style_val)
                         if mask.any():
-                            ap_series = stats_df.loc[mask, "average_precision"]
-                            stat_str = self._format_ap_stat(ap_series, is_crossval)
+                            ap_series = subplot_data.loc[mask, "average_precision"]
+                            stat_str = self._format_ap_stat(
+                                ap_series, is_cross_validation
+                            )
                             hue_str = str(hue_val)
                             if style == "data_source":
                                 style_str = str(style_val).title() + " set"
@@ -413,7 +400,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         n_entries = len(new_labels)
 
         lines = ax.get_lines()
-        if is_crossval:
+        if is_cross_validation:
             if style is None:
                 unique_colors = list(dict.fromkeys(line.get_color() for line in lines))
                 handles = [
@@ -453,9 +440,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         )
 
     @staticmethod
-    def _format_ap_stat(ap_series: Any, is_crossval: bool) -> str:
+    def _format_ap_stat(ap_series: Any, is_cross_validation: bool) -> str:
         """Format AP statistic as single value or mean±std."""
-        if is_crossval and len(ap_series) > 1:
+        if is_cross_validation and len(ap_series) > 1:
             return f"AP={ap_series.mean():.2f}±{ap_series.std():.2f}"
         return f"AP={ap_series.iloc[0]:.2f}"
 
@@ -542,7 +529,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 ):
                     precision_recall_records.append(
                         {
-                            "estimator_name": y_true_i.estimator_name,
+                            "estimator": y_true_i.estimator_name,
                             "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "label": pos_label_validated,
@@ -553,7 +540,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     )
                 average_precision_records.append(
                     {
-                        "estimator_name": y_true_i.estimator_name,
+                        "estimator": y_true_i.estimator_name,
                         "data_source": y_true_i.data_source,
                         "split": y_true_i.split,
                         "label": pos_label_validated,
@@ -588,7 +575,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     ):
                         precision_recall_records.append(
                             {
-                                "estimator_name": y_true_i.estimator_name,
+                                "estimator": y_true_i.estimator_name,
                                 "data_source": y_true_i.data_source,
                                 "split": y_true_i.split,
                                 "label": class_,
@@ -599,7 +586,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                         )
                     average_precision_records.append(
                         {
-                            "estimator_name": y_true_i.estimator_name,
+                            "estimator": y_true_i.estimator_name,
                             "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "label": class_,
@@ -608,7 +595,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                     )
 
         dtypes = {
-            "estimator_name": "category",
+            "estimator": "category",
             "data_source": "category",
             "split": "category",
             "label": "category",
@@ -641,7 +628,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             A DataFrame containing the precision-recall curve data with columns
             depending on the report type:
 
-            - `estimator_name`: Name of the estimator (when comparing estimators)
+            - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
             - `label`: Class label (for multiclass-classification)
             - `threshold`: Decision threshold
@@ -681,9 +668,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         elif self.report_type == "cross-validation":
             indexing_columns = ["split"]
         elif self.report_type == "comparison-estimator":
-            indexing_columns = ["estimator_name"]
+            indexing_columns = ["estimator"]
         else:  # self.report_type == "comparison-cross-validation"
-            indexing_columns = ["estimator_name", "split"]
+            indexing_columns = ["estimator", "split"]
 
         if self.data_source == "both":
             indexing_columns += ["data_source"]
