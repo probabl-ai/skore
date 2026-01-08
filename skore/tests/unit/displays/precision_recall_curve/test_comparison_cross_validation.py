@@ -1,9 +1,9 @@
-from itertools import product
+import re
 
 import matplotlib as mpl
 import numpy as np
 import pytest
-from matplotlib.lines import Line2D
+import seaborn as sns
 from sklearn.datasets import load_iris
 from sklearn.linear_model import LogisticRegression
 
@@ -11,7 +11,6 @@ from skore import ComparisonReport, CrossValidationReport
 from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
-from skore._sklearn._plot.utils import sample_mpl_colormap
 from skore._utils._testing import check_frame_structure, check_legend_position
 from skore._utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
@@ -36,33 +35,35 @@ def test_binary_classification(
     display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == n_reports * n_splits
-    default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for i, estimator_name in enumerate(report.reports_.keys()):
-        precision_recall_mpl = display.lines_[i * n_splits]
-        assert isinstance(precision_recall_mpl, Line2D)
 
-        average_precision = display.average_precision.query(
-            f"label == {pos_label} & estimator_name == '{estimator_name}'"
-        )["average_precision"]
+    ax = display.ax_
+    assert isinstance(ax, mpl.axes.Axes)
+    check_legend_position(ax, loc="upper center", position="inside")
+    legend = ax.get_legend()
+    assert legend is not None
+    legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        assert precision_recall_mpl.get_label() == (
-            f"{estimator_name} (AUC = {average_precision.mean():0.2f} "
-            f"+/- {average_precision.std():0.2f})"
+    expected_colors = sns.color_palette()[:n_reports]
+    for idx, estimator in enumerate(report.reports_):
+        plot_data = display.frame(with_average_precision=True)
+        average_precision = plot_data.query(f"estimator == '{estimator}'")[
+            "average_precision"
+        ]
+        assert (
+            legend_texts[idx] == f"{estimator} (AP={average_precision.mean():.2f}"
+            f"±{average_precision.std():.2f})"
         )
-        assert list(precision_recall_mpl.get_color()[:3]) == list(default_colors[i][:3])
+        for line in ax.get_lines()[idx * n_splits : (idx + 1) * n_splits]:
+            assert line.get_color() == expected_colors[idx]
 
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    check_legend_position(display.ax_, loc="lower left", position="inside")
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Test set"
-    assert len(legend.get_texts()) == n_reports
-
-    assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
-    assert display.ax_.get_ylabel() == "Precision\n(Positive label: 1)"
-    assert display.ax_.get_adjustable() == "box"
-    assert display.ax_.get_aspect() in ("equal", 1.0)
-    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
-    assert display.ax_.get_title() == "Precision-Recall Curve"
+    assert len(legend_texts) == n_reports
+    assert ax.get_xlabel() == "recall"
+    assert ax.get_ylabel() == "precision"
+    assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
+    assert (
+        display.figure_.get_suptitle()
+        == f"Precision-Recall Curve\nPositive label: {pos_label}\nData source: Test set"
+    )
 
 
 def test_multiclass_classification(
@@ -85,144 +86,122 @@ def test_multiclass_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == n_reports * len(labels) * n_splits
 
-    default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for i, ((estimator_idx, estimator_name), label) in enumerate(
-        product(enumerate(report.reports_.keys()), labels)
-    ):
-        precision_recall_mpl = display.lines_[i * n_splits]
-        assert isinstance(precision_recall_mpl, Line2D)
+    assert len(display.ax_) == len(labels)
 
-        average_precision = display.average_precision.query(
-            f"label == {label} & estimator_name == '{estimator_name}'"
-        )["average_precision"]
-
-        assert precision_recall_mpl.get_label() == (
-            f"{estimator_name} (AUC = {average_precision.mean():0.2f} "
-            f"+/- {average_precision.std():0.2f})"
-        )
-        assert list(precision_recall_mpl.get_color()[:3]) == list(
-            default_colors[estimator_idx][:3]
-        )
-
-    assert isinstance(display.ax_, np.ndarray)
+    expected_colors = sns.color_palette()[:n_reports]
     for label, ax in zip(labels, display.ax_, strict=False):
-        check_legend_position(ax, loc="lower left", position="inside")
+        assert isinstance(ax, mpl.axes.Axes)
+        check_legend_position(ax, loc="upper center", position="inside")
         legend = ax.get_legend()
-        assert legend.get_title().get_text() == "Test set"
-        assert len(legend.get_texts()) == n_reports
+        assert legend is not None
+        legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        assert ax.get_xlabel() == f"Recall\n(Positive label: {label})"
-        assert ax.get_ylabel() == f"Precision\n(Positive label: {label})"
-        assert ax.get_adjustable() == "box"
-        assert ax.get_aspect() in ("equal", 1.0)
+        for idx, estimator in enumerate(report.reports_):
+            plot_data = display.frame(with_average_precision=True)
+            average_precision = plot_data.query(
+                f"label == {label} & estimator == '{estimator}'"
+            )["average_precision"]
+            assert (
+                legend_texts[idx] == f"{estimator} (AP={average_precision.mean():.2f}"
+                f"±{average_precision.std():.2f})"
+            )
+            for line in ax.get_lines()[idx * n_splits : (idx + 1) * n_splits]:
+                assert line.get_color() == expected_colors[idx]
+
+        assert len(legend_texts) == n_reports
+        assert ax.get_xlabel() == "recall"
+        assert ax.get_ylabel() in ("precision", "")
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
-    assert display.figure_.get_suptitle() == "Precision-Recall Curve"
-
-
-def test_binary_classification_wrong_kwargs(
-    pyplot, comparison_cross_validation_reports_binary_classification
-):
-    """Check that we raise a proper error message when passing an inappropriate
-    value for the `pr_curve_kwargs` argument."""
-    report = comparison_cross_validation_reports_binary_classification
-    display = report.metrics.precision_recall()
-    err_msg = (
-        "You intend to plot multiple curves. We expect `pr_curve_kwargs` to be a "
-        "list of dictionaries with the same length as the number of curves. "
-        "Got 2 instead of 10."
+    assert (
+        display.figure_.get_suptitle()
+        == "Precision-Recall Curve\nData source: Test set"
     )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(pr_curve_kwargs=[{}, {}])
 
 
-@pytest.mark.parametrize("pr_curve_kwargs", [[{"color": "red"}] * 10])
-def test_binary_classification_kwargs(
-    pyplot, comparison_cross_validation_reports_binary_classification, pr_curve_kwargs
-):
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "comparison_cross_validation_reports_binary_classification",
+        "comparison_cross_validation_reports_multiclass_classification",
+    ],
+)
+def test_wrong_kwargs(pyplot, fixture_name, request):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `relplot_kwargs` argument."""
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.precision_recall()
+    err_msg = "Line2D.set() got an unexpected keyword argument 'invalid'"
+    with pytest.raises(AttributeError, match=re.escape(err_msg)):
+        display.plot(relplot_kwargs={"invalid": "value"})
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "comparison_cross_validation_reports_binary_classification",
+        "comparison_cross_validation_reports_multiclass_classification",
+    ],
+)
+def test_relplot_kwargs(pyplot, fixture_name, request):
     """Check that we can pass keyword arguments to the PR curve plot."""
-    report = comparison_cross_validation_reports_binary_classification
-    display = report.metrics.precision_recall()
-    display.plot(pr_curve_kwargs=pr_curve_kwargs)
-    assert display.lines_[0].get_color() == "red"
+    report = request.getfixturevalue(fixture_name)
+    multiclass = "multiclass" in fixture_name
 
-    # check the `.style` display setter
-    display.plot()  # default style
-    assert display.lines_[0].get_color() == (
-        np.float64(0.12156862745098039),
-        np.float64(0.4666666666666667),
-        np.float64(0.7058823529411765),
-        np.float64(1.0),
+    display = report.metrics.precision_recall()
+    n_reports = len(report.reports_)
+    n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
+    n_labels = (
+        len(display.precision_recall["label"].cat.categories) if multiclass else 1
     )
 
-    display.set_style(pr_curve_kwargs=pr_curve_kwargs)
     display.plot()
-    assert display.lines_[0].get_color() == "red"
-
-    # overwrite the style that was set above
-    display.plot(pr_curve_kwargs=[{"color": "#1f77b4"}] * 10)
-    assert display.lines_[0].get_color() == "#1f77b4"
-
-
-def test_multiclass_classification_wrong_kwargs(
-    pyplot, comparison_cross_validation_reports_multiclass_classification
-):
-    """Check that we raise a proper error message when passing an inappropriate
-    value for the `pr_curve_kwargs` argument."""
-    report = comparison_cross_validation_reports_multiclass_classification
-    display = report.metrics.precision_recall()
-    err_msg = "You intend to plot multiple curves."
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(pr_curve_kwargs=[{}, {}])
-
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(pr_curve_kwargs={})
-
-
-def test_multiclass_classification_kwargs(
-    pyplot, comparison_cross_validation_reports_multiclass_classification
-):
-    """Check that we can pass keyword arguments to the PR curve plot for
-    multiclass classification."""
-    report = comparison_cross_validation_reports_multiclass_classification
-    display = report.metrics.precision_recall()
-    display.plot(
-        pr_curve_kwargs=(
-            [{"color": "red"}] * 10
-            + [{"color": "blue"}] * 10
-            + [{"color": "green"}] * 10
-        )
+    default_colors = [line.get_color() for line in display.lines_]
+    assert (
+        default_colors
+        == ([sns.color_palette()[0]] * n_splits + [sns.color_palette()[1]] * n_splits)
+        * n_labels
     )
-    assert display.lines_[0].get_color() == "red"
-    assert display.lines_[10].get_color() == "blue"
-    assert display.lines_[20].get_color() == "green"
 
+    display.plot(relplot_kwargs={"palette": ["red", "blue"]})
+    assert len(display.lines_) == n_reports * n_splits * n_labels
+    expected_colors = (["red"] * n_splits + ["blue"] * n_splits) * n_labels
+    for line, expected_color, default_color in zip(
+        display.lines_, expected_colors, default_colors, strict=True
+    ):
+        assert line.get_color() == expected_color
+        assert mpl.colors.to_rgb(line.get_color()) != default_color
+
+    display.set_style(relplot_kwargs={"palette": ["green", "yellow"]}, policy="update")
     display.plot()
-
-    display.plot(despine=False)
-    assert display.ax_[0].spines["top"].get_visible()
+    assert len(display.lines_) == n_reports * n_splits * n_labels
+    expected_colors = (["green"] * n_splits + ["yellow"] * n_splits) * n_labels
+    for line, expected_color, default_color in zip(
+        display.lines_, expected_colors, default_colors, strict=True
+    ):
+        assert line.get_color() == expected_color
+        assert mpl.colors.to_rgb(line.get_color()) != default_color
 
 
 def test_binary_classification_constructor(forest_binary_classification_data):
     """Check that the dataframe has the correct structure at initialization."""
     (estimator, X, y), cv = forest_binary_classification_data, 3
     report_1 = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    # add a different number of splits for the second report
     report_2 = CrossValidationReport(estimator, X=X, y=y, splitter=cv + 1)
     report = ComparisonReport(
         reports={"estimator_1": report_1, "estimator_2": report_2}
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df.query("estimator_name == 'estimator_1'")[
+        assert df.query("estimator == 'estimator_1'")[
             "split"
         ].unique().tolist() == list(range(cv))
-        assert df.query("estimator_name == 'estimator_2'")[
+        assert df.query("estimator == 'estimator_2'")[
             "split"
         ].unique().tolist() == list(range(cv + 1))
-        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
+        assert df["estimator"].unique().tolist() == list(report.reports_.keys())
         assert df["label"].unique() == 1
 
     assert len(display.average_precision) == cv + (cv + 1)
@@ -238,17 +217,17 @@ def test_multiclass_classification_constructor(forest_multiclass_classification_
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     classes = np.unique(y)
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df.query("estimator_name == 'estimator_1'")[
+        assert df.query("estimator == 'estimator_1'")[
             "split"
         ].unique().tolist() == list(range(cv))
-        assert df.query("estimator_name == 'estimator_2'")[
+        assert df.query("estimator == 'estimator_2'")[
             "split"
         ].unique().tolist() == list(range(cv + 1))
-        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
+        assert df["estimator"].unique().tolist() == list(report.reports_.keys())
         np.testing.assert_array_equal(df["label"].unique(), classes)
 
     assert len(display.average_precision) == len(classes) * cv + len(classes) * (cv + 1)
@@ -264,16 +243,16 @@ def test_frame_binary_classification(
     display = report.metrics.precision_recall()
 
     df = display.frame(with_average_precision=with_average_precision)
-    expected_index = ["estimator_name", "split"]
+    expected_index = ["estimator", "split"]
     expected_columns = ["threshold", "precision", "recall"]
     if with_average_precision:
         expected_columns.append("average_precision")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["estimator_name"].nunique() == len(report.reports_)
+    assert df["estimator"].nunique() == len(report.reports_)
 
     if with_average_precision:
-        for (_, _), group in df.groupby(["estimator_name", "split"], observed=True):
+        for (_, _), group in df.groupby(["estimator", "split"], observed=True):
             assert group["average_precision"].nunique() == 1
 
 
@@ -288,17 +267,17 @@ def test_frame_multiclass_classification(
     display = report.metrics.precision_recall()
 
     df = display.frame(with_average_precision=with_average_precision)
-    expected_index = ["estimator_name", "split", "label"]
+    expected_index = ["estimator", "split", "label"]
     expected_columns = ["threshold", "precision", "recall"]
     if with_average_precision:
         expected_columns.append("average_precision")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["estimator_name"].nunique() == len(report.reports_)
+    assert df["estimator"].nunique() == len(report.reports_)
 
     if with_average_precision:
         for (_, _, _), group in df.groupby(
-            ["estimator_name", "split", "label"], observed=True
+            ["estimator", "split", "label"], observed=True
         ):
             assert group["average_precision"].nunique() == 1
 
@@ -319,3 +298,53 @@ def test_multiclass_str_labels_precision_recall_plot(pyplot):
 
     display = report.metrics.precision_recall()
     display.plot()
+
+
+@pytest.mark.parametrize(
+    "fixture_name, valid_values",
+    [
+        (
+            "comparison_cross_validation_reports_binary_classification",
+            ["None", "auto", "estimator"],
+        ),
+        (
+            "comparison_cross_validation_reports_multiclass_classification",
+            ["auto", "estimator", "label"],
+        ),
+    ],
+)
+def test_invalid_subplot_by(fixture_name, valid_values, request):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `subplot_by` argument.
+    """
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.precision_recall()
+    valid_values_str = ", ".join(valid_values)
+    err_msg = f"subplot_by must be one of {valid_values_str}. Got 'invalid' instead."
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="invalid")
+
+
+@pytest.mark.parametrize(
+    "fixture_name, subplot_by_tuples",
+    [
+        (
+            "comparison_cross_validation_reports_binary_classification",
+            [(None, 0), ("estimator", 2)],
+        ),
+        (
+            "comparison_cross_validation_reports_multiclass_classification",
+            [("label", 3), ("estimator", 2)],
+        ),
+    ],
+)
+def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
+    """Check that we can pass non default values to `subplot_by`."""
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.precision_recall()
+    for subplot_by, expected_len in subplot_by_tuples:
+        display.plot(subplot_by=subplot_by)
+        if subplot_by is None:
+            assert isinstance(display.ax_, mpl.axes.Axes)
+        else:
+            assert len(display.ax_) == expected_len
