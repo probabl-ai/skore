@@ -14,17 +14,18 @@ dependencies = [
   "pydantic",
   "rich>=14.2.0",
   "scikit-learn",
+  "scipy",
 ]
 
 [project.optional-dependencies]
 test = [
   "pandas-stubs",
   "pre-commit",
-  "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
+  "pytest",
   "respx",
   "skore>=0.11.5",
   "xdoctest",
@@ -120,5 +121,6 @@ module = ["skore.*"]
 ignore_missing_imports = true
 module = [
   "joblib.*",
+  "scipy.*",
   "sklearn.*",
 ]
