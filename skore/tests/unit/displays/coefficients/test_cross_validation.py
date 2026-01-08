@@ -89,7 +89,7 @@ def test_binary_classification(
     assert display.ax_.get_ylabel() == ""
 
     with pytest.raises(ValueError, match="No columns to group by."):
-        display.plot(subplots_by="label")
+        display.plot(subplot_by="label")
 
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
@@ -170,7 +170,7 @@ def test_multiclass_classification(
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
 
-    display.plot(subplots_by="label")
+    display.plot(subplot_by="label")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
@@ -182,7 +182,7 @@ def test_multiclass_classification(
         assert ax.get_ylabel() == ""
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
-        display.plot(subplots_by="incorrect")
+        display.plot(subplot_by="incorrect")
 
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
@@ -272,7 +272,7 @@ def test_single_output_regression(
     assert display.ax_.get_ylabel() == ""
 
     with pytest.raises(ValueError, match="No columns to group by."):
-        display.plot(subplots_by="output")
+        display.plot(subplot_by="output")
 
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
@@ -366,7 +366,7 @@ def test_multi_output_regression(
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
 
-    display.plot(subplots_by="output")
+    display.plot(subplot_by="output")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
@@ -378,7 +378,7 @@ def test_multi_output_regression(
         assert ax.get_ylabel() == ""
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
-        display.plot(subplots_by="incorrect")
+        display.plot(subplot_by="incorrect")
 
 
 def test_include_intercept(

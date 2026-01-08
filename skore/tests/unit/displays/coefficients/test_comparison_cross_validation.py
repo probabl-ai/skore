@@ -95,7 +95,7 @@ def test_binary_classification(
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
 
-    display.plot(subplots_by="estimator")
+    display.plot(subplot_by="estimator")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
@@ -107,7 +107,7 @@ def test_binary_classification(
         assert ax.get_ylabel() == ""
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
-        display.plot(subplots_by="incorrect")
+        display.plot(subplot_by="incorrect")
 
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
@@ -200,7 +200,7 @@ def test_multiclass_classification(
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
 
-    display.plot(subplots_by="estimator")
+    display.plot(subplot_by="estimator")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
@@ -212,7 +212,7 @@ def test_multiclass_classification(
         assert ax.get_ylabel() == ""
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
-        display.plot(subplots_by="incorrect")
+        display.plot(subplot_by="incorrect")
 
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
@@ -310,7 +310,7 @@ def test_single_output_regression(
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
 
-    display.plot(subplots_by="estimator")
+    display.plot(subplot_by="estimator")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
@@ -322,7 +322,7 @@ def test_single_output_regression(
         assert ax.get_ylabel() == ""
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
-        display.plot(subplots_by="incorrect")
+        display.plot(subplot_by="incorrect")
 
 
 @pytest.mark.parametrize("fit_intercept", [True, False])
@@ -428,7 +428,7 @@ def test_multi_output_regression(
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
 
-    display.plot(subplots_by="estimator")
+    display.plot(subplot_by="estimator")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
@@ -440,7 +440,7 @@ def test_multi_output_regression(
         assert ax.get_ylabel() == ""
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
-        display.plot(subplots_by="incorrect")
+        display.plot(subplot_by="incorrect")
 
 
 def test_different_features(
@@ -487,13 +487,13 @@ def test_different_features(
 
     err_msg = (
         "The estimators have different features and should be plotted on different "
-        "axis using `subplots_by='estimator'`."
+        "axis using `subplot_by='estimator'`."
     )
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(subplots_by="label")
+        display.plot(subplot_by="label")
 
-    for subplots_by in (None, "estimator"):
-        display.plot(subplots_by=subplots_by)
+    for subplot_by in (None, "estimator"):
+        display.plot(subplot_by=subplot_by)
         assert hasattr(display, "figure_")
         assert hasattr(display, "ax_")
         assert isinstance(display.ax_, np.ndarray)

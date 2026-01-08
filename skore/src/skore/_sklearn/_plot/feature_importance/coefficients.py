@@ -159,7 +159,7 @@ class CoefficientsDisplay(DisplayMixin):
         self,
         *,
         include_intercept: bool = True,
-        subplots_by: Literal["estimator", "label", "output"] | None = None,
+        subplot_by: Literal["estimator", "label", "output"] | None = None,
         barplot_kwargs: dict[str, Any] | None = None,
         boxplot_kwargs: dict[str, Any] | None = None,
         stripplot_kwargs: dict[str, Any] | None = None,
@@ -171,7 +171,7 @@ class CoefficientsDisplay(DisplayMixin):
         include_intercept : bool, default=True
             Whether or not to include the intercept in the dataframe.
 
-        subplots_by : {"estimator", "label", "output"}, default=None
+        subplot_by : {"estimator", "label", "output"}, default=None
             The column to use for subplotting and dividing the coefficients into
             subplots. If `None`, an automatic choice is made depending on the type of
             reports at hand.
@@ -208,7 +208,7 @@ class CoefficientsDisplay(DisplayMixin):
         """
         return self._plot(
             include_intercept=include_intercept,
-            subplots_by=subplots_by,
+            subplot_by=subplot_by,
             barplot_kwargs=barplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
@@ -218,7 +218,7 @@ class CoefficientsDisplay(DisplayMixin):
         self,
         *,
         include_intercept: bool = True,
-        subplots_by: Literal["estimator", "label", "output"] | None = None,
+        subplot_by: Literal["estimator", "label", "output"] | None = None,
         barplot_kwargs: dict[str, Any] | None = None,
         boxplot_kwargs: dict[str, Any] | None = None,
         stripplot_kwargs: dict[str, Any] | None = None,
@@ -242,7 +242,7 @@ class CoefficientsDisplay(DisplayMixin):
             return self._plot_single_estimator(
                 frame=self.frame(include_intercept=include_intercept),
                 report_type=self.report_type,
-                subplots_by=subplots_by,
+                subplot_by=subplot_by,
                 barplot_kwargs=barplot_kwargs,
                 boxplot_kwargs=boxplot_kwargs,
                 stripplot_kwargs=stripplot_kwargs,
@@ -254,7 +254,7 @@ class CoefficientsDisplay(DisplayMixin):
             return self._plot_comparison(
                 frame=self.frame(include_intercept=include_intercept),
                 report_type=self.report_type,
-                subplots_by=subplots_by,
+                subplot_by=subplot_by,
                 barplot_kwargs=barplot_kwargs,
                 boxplot_kwargs=boxplot_kwargs,
                 stripplot_kwargs=stripplot_kwargs,
@@ -365,7 +365,7 @@ class CoefficientsDisplay(DisplayMixin):
         *,
         frame: pd.DataFrame,
         report_type: ReportType,
-        subplots_by: Literal["estimator", "label", "output"] | None,
+        subplot_by: Literal["estimator", "label", "output"] | None,
         barplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
@@ -381,7 +381,7 @@ class CoefficientsDisplay(DisplayMixin):
             The frame to plot.
         report_type : {"estimator", "cross-validation"}
             The type of report to plot.
-        subplots_by : {"estimator", "label", "output"}
+        subplot_by : {"estimator", "label", "output"}
             The column to use for subplotting and dividing the coefficients into
             subplots. If `None`, an automatic choice is made depending on the type of
             reports at hand.
@@ -400,24 +400,24 @@ class CoefficientsDisplay(DisplayMixin):
         """
         # {"label"} or {"output"} or {}
         columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-        if subplots_by is not None and not len(columns_to_groupby):
+        if subplot_by is not None and not len(columns_to_groupby):
             raise ValueError(
-                "No columns to group by. `subplots_by` is expected to be None."
+                "No columns to group by. `subplot_by` is expected to be None."
             )
-        elif subplots_by is not None and subplots_by not in columns_to_groupby:
+        elif subplot_by is not None and subplot_by not in columns_to_groupby:
             raise ValueError(
-                f"Column {subplots_by} not found in the frame. It should be one "
+                f"Column {subplot_by} not found in the frame. It should be one "
                 f"of {', '.join(columns_to_groupby)}."
             )
 
-        if subplots_by is None:
+        if subplot_by is None:
             hue = None if not len(columns_to_groupby) else columns_to_groupby[0]
             if hue is None:
                 barplot_kwargs.pop("palette", None)
                 stripplot_kwargs.pop("palette", None)
             col = None
         else:
-            hue, col = None, subplots_by
+            hue, col = None, subplot_by
             # we don't need the palette and we are at risk of raising an error or
             # deprecation warning if passing palette without a hue
             barplot_kwargs.pop("palette", None)
@@ -451,7 +451,7 @@ class CoefficientsDisplay(DisplayMixin):
         *,
         frame: pd.DataFrame,
         report_type: ReportType,
-        subplots_by: Literal["estimator", "label", "output"] | None,
+        subplot_by: Literal["estimator", "label", "output"] | None,
         barplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
@@ -464,7 +464,7 @@ class CoefficientsDisplay(DisplayMixin):
             The frame to plot.
         report_type : {"comparison-estimator", "comparison-cross-validation"}
             The type of report to plot.
-        subplots_by : {"estimator", "label", "output"}
+        subplot_by : {"estimator", "label", "output"}
             The column to use for subplotting and dividing the coefficients into
             subplots. If `None`, an automatic choice is made depending on the type of
             reports at hand.
@@ -486,15 +486,15 @@ class CoefficientsDisplay(DisplayMixin):
 
         # {"estimator", "label"} or {"estimator", "output"} or {"estimator"}
         columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-        if subplots_by is not None and subplots_by not in columns_to_groupby:
+        if subplot_by is not None and subplot_by not in columns_to_groupby:
             raise ValueError(
-                f"Column {subplots_by} not found in the frame. It should be one "
+                f"Column {subplot_by} not found in the frame. It should be one "
                 f"of {', '.join(columns_to_groupby)}."
             )
 
         has_same_features = self._has_same_features(frame=frame)
-        if (frame.columns.isin(["label", "output"]).any() and subplots_by is None) or (
-            not has_same_features and subplots_by is None
+        if (frame.columns.isin(["label", "output"]).any() and subplot_by is None) or (
+            not has_same_features and subplot_by is None
         ):
             # default fallback on subplots by estimator
             # case 1: multiclass classification or multi-output regression
@@ -502,15 +502,15 @@ class CoefficientsDisplay(DisplayMixin):
             # group by estimator
             # case 2: features cannot be compared across estimators and we therefore
             # need to subplots by estimator
-            subplots_by = "estimator"
+            subplot_by = "estimator"
 
-        if subplots_by is None:
+        if subplot_by is None:
             hue, col = columns_to_groupby[0], None
         else:
             # infer if we should group by another column using hue
-            hue_groupby = [col for col in columns_to_groupby if col != subplots_by]
+            hue_groupby = [col for col in columns_to_groupby if col != subplot_by]
             hue = hue_groupby[0] if len(hue_groupby) else None
-            col = subplots_by
+            col = subplot_by
 
             if hue is None:
                 barplot_kwargs.pop("palette", None)
@@ -519,7 +519,7 @@ class CoefficientsDisplay(DisplayMixin):
             if not has_same_features and hue == "estimator":
                 raise ValueError(
                     "The estimators have different features and should be plotted on "
-                    "different axis using `subplots_by='estimator'`."
+                    "different axis using `subplot_by='estimator'`."
                 )
 
         self._categorical_plot(
