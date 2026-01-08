@@ -94,7 +94,7 @@ set -eu
         echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | scikit-learn==${SCIKIT_LEARN} (${counter}/${#COMBINATIONS[@]})"
 
         # Copy everything necessary to compile requirements in `TMPDIR`
-        mkdir -p "${TMPDIR}/${PACKAGE}"; cp -u "${CWD}/../${PACKAGE}/pyproject.toml" "${TMPDIR}/${PACKAGE}"
+        mkdir -p "${TMPDIR}/${PACKAGE}"; cp "${CWD}/../${PACKAGE}/pyproject.toml" "${TMPDIR}/${PACKAGE}"
 
         # Force the `scikit-learn` version by creating file overriding requirements
         echo "scikit-learn==${SCIKIT_LEARN}.*" > "${PACKAGE}/overrides.txt"
