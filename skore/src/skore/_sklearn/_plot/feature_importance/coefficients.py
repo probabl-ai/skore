@@ -332,7 +332,6 @@ class CoefficientsDisplay(DisplayMixin):
                 kind="bar",
                 **barplot_kwargs,
             )
-            add_background_features = False
         else:  # "cross-validation" in report_type
             facet = sns.catplot(
                 data=frame,
@@ -351,7 +350,7 @@ class CoefficientsDisplay(DisplayMixin):
                 dodge=True,
                 **boxplot_kwargs,
             )
-            add_background_features = hue is not None
+        add_background_features = hue is not None
 
         self.figure_, self.ax_ = facet.figure, facet.axes.squeeze()
         for ax in self.ax_.flatten():
