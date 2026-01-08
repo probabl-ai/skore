@@ -13,13 +13,13 @@ from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
 from skore._sklearn._base import BaseEstimator
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
-    _ClassifierCurveDisplayMixin,
+    _ClassifierDisplayMixin,
     _validate_style_kwargs,
 )
 from skore._sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 
-class ConfusionMatrixDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
+class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     """Display for confusion matrix.
 
     Parameters
