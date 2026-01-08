@@ -63,7 +63,6 @@ sphinx-base = [
   "plotly>=6,<7", # plotly <6 conflicting with kaleido
   "pydata-sphinx-theme",
   "seaborn",
-  "sentence-transformers",
   "skrub",
   "sphinx-copybutton",
   "sphinx-design",
@@ -71,7 +70,6 @@ sphinx-base = [
   "sphinx-tabs",
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
-  "transformers",
   "xgboost",
 ]
 sphinx = ["skore[sphinx-base]", "polars"]
