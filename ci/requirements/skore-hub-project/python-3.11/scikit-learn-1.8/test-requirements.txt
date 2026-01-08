@@ -103,8 +103,6 @@ numpy==2.4.0
     #   skore-hub-project (skore-hub-project/pyproject.toml)
     #   contourpy
     #   matplotlib
-    #   numpy-typing-compat
-    #   optype
     #   pandas
     #   pandas-stubs
     #   scikit-learn
@@ -112,10 +110,6 @@ numpy==2.4.0
     #   seaborn
     #   skore
     #   skrub
-numpy-typing-compat==20251206.2.4
-    # via optype
-optype[numpy]==0.15.0
-    # via scipy-stubs
 orjson==3.11.5
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 packaging==25.0
@@ -215,8 +209,6 @@ scipy==1.16.3
     #   skore-hub-project (skore-hub-project/pyproject.toml)
     #   scikit-learn
     #   skrub
-scipy-stubs==1.17.0.0
-    # via skore-hub-project (skore-hub-project/pyproject.toml)
 seaborn==0.13.2
     # via skore
 six==1.17.0
@@ -246,7 +238,6 @@ typing-extensions==4.15.0
     #   anywidget
     #   blake3
     #   ipython
-    #   optype
     #   pydantic
     #   pydantic-core
     #   typing-inspection
