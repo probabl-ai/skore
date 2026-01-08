@@ -156,9 +156,11 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         """
         if response_method is not None:
             raise TypeError(
-                "`response_method` is not supported in `ComparisonReport.metrics.summarize`. "
+                "`response_method` is not supported in "
+                "`ComparisonReport.metrics.summarize`. "
                 "To compute a custom metric with an explicit response method, use "
-                "`ComparisonReport.metrics.custom_metric(metric_function=..., response_method=...)`, "
+                "`ComparisonReport.metrics.custom_metric("
+                "metric_function=..., response_method=...)`, "
                 "or pass a scikit-learn scorer created with "
                 "`sklearn.metrics.make_scorer(..., response_method=...)` via `metric=`."
             )

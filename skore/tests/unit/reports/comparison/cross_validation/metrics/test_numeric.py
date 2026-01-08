@@ -369,6 +369,7 @@ def test_precision_recall_pos_label_overwrite(metric):
             == result_both_labels.loc[(metric.capitalize(), "A"), ("mean", report_name)]
         )
 
+
 @pytest.mark.parametrize("response_method", ["predict", "predict_proba"])
 def test_summarize_response_method_guidance(
     comparison_cross_validation_reports_regression,
@@ -379,7 +380,7 @@ def test_summarize_response_method_guidance(
 
     def business_loss(y_true_list, y_pred_list):
         loss = 0
-        for y_true_, y_pred_ in zip(y_true_list, y_pred_list):
+        for y_true_, y_pred_ in zip(y_true_list, y_pred_list, strict=True):
             # If under the market: 100% loss for me
             if y_true_ > y_pred_:
                 loss = loss + float(y_true_ - y_pred_)
@@ -394,4 +395,3 @@ def test_summarize_response_method_guidance(
             metric=business_loss,
             response_method=response_method,
         )
-
