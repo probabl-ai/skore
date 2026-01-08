@@ -201,7 +201,7 @@ typing-extensions==4.15.0
     # via anywidget
 tzdata==2025.3
     # via pandas
-urllib3==2.6.2
+urllib3==2.6.3
     # via requests
 virtualenv==20.35.4
     # via pre-commit
