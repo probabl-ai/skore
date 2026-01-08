@@ -18,7 +18,7 @@ from github_link import make_linkcode_resolve  # noqa
 from matplotlib_skore_scraper import matplotlib_skore_scraper  # noqa
 
 project = "skore"
-copyright = "2024, Probabl"
+copyright = "2026, Probabl"
 author = "Probabl"
 version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_RELEASE"]
