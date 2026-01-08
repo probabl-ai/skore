@@ -112,11 +112,9 @@ numpy==2.4.0
     #   scipy
     #   seaborn
     #   skrub
-    #   xgboost
+    #   xgboost-cpu
 numpydoc==1.10.0
     # via skore (skore/pyproject.toml)
-nvidia-nccl-cu12==2.27.5
-    # via xgboost
 orjson==3.11.5
     # via kaleido
 packaging==25.0
@@ -212,7 +210,7 @@ scipy==1.16.3
     # via
     #   scikit-learn
     #   skrub
-    #   xgboost
+    #   xgboost-cpu
 seaborn==0.13.2
     # via skore (skore/pyproject.toml)
 simplejson==3.20.2
@@ -282,5 +280,5 @@ wcwidth==0.2.14
     # via prompt-toolkit
 widgetsnbextension==4.0.15
     # via ipywidgets
-xgboost==3.1.2
+xgboost-cpu==3.1.2
     # via skore (skore/pyproject.toml)
