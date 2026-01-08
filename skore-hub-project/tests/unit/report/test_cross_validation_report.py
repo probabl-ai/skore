@@ -230,6 +230,23 @@ class TestCrossValidationReportPayload:
     def test_class_names(self, payload):
         assert payload.class_names == ["1", "0"]
 
+    def test_target_range_regression(self, project):
+        X, y = make_regression(random_state=42, n_samples=10)
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=CrossValidationReport(
+                LinearRegression(),
+                X,
+                y,
+                splitter=KFold(n_splits=2),
+            ),
+            key="<key>",
+        )
+        assert payload.target_range == [float(y.min()), float(y.max())]
+
+    def test_target_range_classification(self, payload):
+        assert payload.target_range is None
+
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
         # `small_cv_binary_classification`, raised by `scikit-learn`
@@ -362,6 +379,7 @@ class TestCrossValidationReportPayload:
             "dataset_size": 10,
             "class_names": ["1", "0"],
             "groups": None,
+            "target_range": None,
         }
 
     def test_exception(self):

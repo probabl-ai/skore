@@ -180,6 +180,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         splits = []
 
         for train_indices, test_indices in self.report.split_indices:
+            linspace = np.linspace(self.report.y.min(), self.report.y.max(), num=100)
             train_y = self.report.y[train_indices]
             test_y = self.report.y[test_indices]
             train_target_distribution: list[float] = []
@@ -195,19 +196,9 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
             else:
                 train_kernel = gaussian_kde(train_y)
-                train_target_distribution = [
-                    float(x)
-                    for x in train_kernel(
-                        np.linspace(train_y.min(), train_y.max(), num=100)
-                    )
-                ]
+                train_target_distribution = [float(x) for x in train_kernel(linspace)]
                 test_kernel = gaussian_kde(test_y)
-                test_target_distribution = [
-                    float(x)
-                    for x in test_kernel(
-                        np.linspace(test_y.min(), test_y.max(), num=100)
-                    )
-                ]
+                test_target_distribution = [float(x) for x in test_kernel(linspace)]
 
             # remove this when a better solution is found
             # see #2212 for details
@@ -252,6 +243,14 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     def class_names(self) -> list[str] | None:
         """In classification, the class names of the dataset used in the report."""
         return self.__classes
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def target_range(self) -> list[float] | None:
+        """The range of the target values of the dataset used in the report."""
+        if self.__classes:
+            return None
+        return [float(self.report.y.min()), float(self.report.y.max())]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
