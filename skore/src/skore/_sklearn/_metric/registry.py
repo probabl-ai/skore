@@ -57,7 +57,7 @@ class Metric(ABC):  # or Protocol
         # -> cast(float, metric)
         #
         # integrer dans la clé de cache la signature de score_func, pour intégrer les partial
-        # les kwargs etc
+        # les kwargs etc ?
 
         results = _get_cached_response_values(
             cache=self.report._cache,
@@ -212,36 +212,54 @@ class R2(Metric):
 #     aggregate: Aggregate = ("mean", "std")
 
 
-class MetricRegistry(UserList[Metric]):
-    def __init__(self, report, /):
+class MetricRegistry:
+    def __init__(self, report, /, *metric_classes):
         super().__init__()
 
         self.__report = report
-        self.__classes = set()
+        self.__metric_name_to_function = {}
 
-    def append(self, *metric_classes: type[Metric]):
-        # ensure metric_cls is valid
-        # ensure metric_cls is not already present in the registry
-        # append to the list
-        # expose the tuple (name, compute) under the "report.metrics" accessor
-
-        for metric_cls in metric_classes:
-            if (
-                (not issubclass(metric_cls, Metric))
-                or (not metric_cls.available(self.__report))
-                or (metric_cls in self.__classes)
-            ):
+        for metric_class in metric_classes:
+            if (not metric_class.available(self.__report)):
                 continue
 
-            self.__classes.add(metric_cls)
-            super().append(metric_cls(self.__report))
+            self.__metric_name_to_function[metric_class.NAME] = metric_class(
+                self.__report
+            )
+
+    def __iter__(self):
+        yield from self.__metrics_name_to_function.items()
+
+    def __repr__(self):
+        return str(self.__metric_name_to_function)
+
+    def __getattr__(self, name):
+        return self.__metric_name_to_function[name]
+
+    def summary(self):
+        raise NotImplementedError
+
+    def append(self, _):
+        # case 1 : str -> find in scikit-learn the corresponding scorer
+        # case 2 : scorer -> scikit-learn scorer
+        # case 3 : callable -> create a custom scorer based on the provided callable (optional verbose_name + greater_is_better)
+        raise NotImplementedError
 
 
-# class Report:
-#     def __init__(self):
-#         self.custom_metric_formula_registry: list[type[CustomMetricFormula]] = (
-#             CustomMetricFormulaRegistry(report=self)
-#         )
+from skore import EstimatorReport
+
+
+class NewEstimatorReport(EstimatorReport):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # create registry and append default metrics
+        self.metrics = MetricRegistry(
+            self,
+            Accuracy,
+            Precision,
+            R2
+        )
 
 
 # note important
