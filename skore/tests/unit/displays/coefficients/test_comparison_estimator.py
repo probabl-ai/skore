@@ -531,7 +531,7 @@ def test_different_features(
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="label")
 
-    for subplot_by in (None, "estimator"):
+    for subplot_by in ("auto", "estimator"):
         display.plot(subplot_by=subplot_by)
         assert hasattr(display, "figure_")
         assert hasattr(display, "ax_")
