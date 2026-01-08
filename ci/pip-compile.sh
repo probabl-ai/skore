@@ -46,15 +46,16 @@ case $1 in
 
         for PACKAGE in "${PACKAGES[@]}"
         do
-            COMBINATIONS+=("${PACKAGE};test;3.10;1.4")
+            COMBINATIONS+=("${PACKAGE};test;3.10;1.5")
             COMBINATIONS+=("${PACKAGE};test;3.10;1.7")
-            COMBINATIONS+=("${PACKAGE};test;3.11;1.4")
-            COMBINATIONS+=("${PACKAGE};test;3.11;1.7")
-            COMBINATIONS+=("${PACKAGE};test;3.12;1.4")
-            COMBINATIONS+=("${PACKAGE};test;3.12;1.7")
+            COMBINATIONS+=("${PACKAGE};test;3.11;1.5")
+            COMBINATIONS+=("${PACKAGE};test;3.11;1.8")
+            COMBINATIONS+=("${PACKAGE};test;3.12;1.5")
+            COMBINATIONS+=("${PACKAGE};test;3.12;1.8")
             COMBINATIONS+=("${PACKAGE};test;3.13;1.5")
             COMBINATIONS+=("${PACKAGE};test;3.13;1.6")
             COMBINATIONS+=("${PACKAGE};test;3.13;1.7")
+            COMBINATIONS+=("${PACKAGE};test;3.13;1.8")
         done
 
         unset PACKAGES
@@ -62,7 +63,7 @@ case $1 in
         shift 2
         ;;
     "--sphinx-requirements")
-        COMBINATIONS+=("skore;sphinx;3.13;1.7")
+        COMBINATIONS+=("skore;sphinx;3.13;1.8")
         shift
         ;;
     *)
@@ -93,7 +94,7 @@ set -eu
         echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | scikit-learn==${SCIKIT_LEARN} (${counter}/${#COMBINATIONS[@]})"
 
         # Copy everything necessary to compile requirements in `TMPDIR`
-        mkdir -p "${TMPDIR}/${PACKAGE}"; cp -u "${CWD}/../${PACKAGE}/pyproject.toml" "${TMPDIR}/${PACKAGE}"
+        mkdir -p "${TMPDIR}/${PACKAGE}"; cp "${CWD}/../${PACKAGE}/pyproject.toml" "${TMPDIR}/${PACKAGE}"
 
         # Force the `scikit-learn` version by creating file overriding requirements
         echo "scikit-learn==${SCIKIT_LEARN}.*" > "${PACKAGE}/overrides.txt"

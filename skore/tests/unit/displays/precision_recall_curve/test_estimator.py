@@ -1,13 +1,15 @@
+import re
+
 import matplotlib as mpl
 import numpy as np
 import pytest
+import seaborn as sns
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 
 from skore import EstimatorReport
 from skore._sklearn._plot import PrecisionRecallCurveDisplay
-from skore._sklearn._plot.utils import sample_mpl_colormap
 from skore._utils._testing import check_frame_structure, check_legend_position
 from skore._utils._testing import (
     check_precision_recall_curve_display_data as check_display_data,
@@ -35,28 +37,26 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
     assert len(display.lines_) == 1
     precision_recall_curve_mpl = display.lines_[0]
     assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
-    average_precision = display.average_precision.query(
-        f"label == {estimator.classes_[1]}"
-    )["average_precision"].item()
-    assert (
-        precision_recall_curve_mpl.get_label()
-        == f"Test set (AP = {average_precision:0.2f})"
-    )
-    assert precision_recall_curve_mpl.get_color() == "#1f77b4"  # tab:blue in hex
 
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == ""
-    assert len(legend.get_texts()) == 1
+    ax = display.ax_
+    assert isinstance(ax, mpl.axes.Axes)
+    legend = ax.get_legend()
+    assert legend is not None
+    legend_texts = [text.get_text() for text in legend.get_texts()]
+    plot_data = display.frame(with_average_precision=True)
+    average_precision = plot_data["average_precision"].iloc[0]
+    assert legend_texts[0] == f"AP={average_precision:.2f}"
+    expected_color = sns.color_palette()[:1][0]
+    assert precision_recall_curve_mpl.get_color() == expected_color
 
-    assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
-    assert display.ax_.get_ylabel() == "Precision\n(Positive label: 1)"
-    assert display.ax_.get_adjustable() == "box"
-    assert display.ax_.get_aspect() in ("equal", 1.0)
-    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert ax.get_xlabel() == "recall"
+    assert ax.get_ylabel() in ("precision", "")
+    assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
     assert (
-        display.ax_.get_title()
+        display.figure_.get_suptitle()
         == f"Precision-Recall Curve for {estimator.__class__.__name__}"
+        f"\nPositive label: {estimator.classes_[1]}"
+        f"\nData source: Test set"
     )
 
 
@@ -79,33 +79,33 @@ def test_multiclass_classification(
     display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(estimator.classes_)
-    default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for class_label, expected_color in zip(
-        estimator.classes_, default_colors, strict=False
-    ):
+
+    assert isinstance(display.ax_[0], mpl.axes.Axes)
+    assert len(display.ax_) == len(estimator.classes_)
+
+    expected_color = sns.color_palette()[:1][0]
+    for class_label in estimator.classes_:
         precision_recall_curve_mpl = display.lines_[class_label]
         assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
-        average_precision = display.average_precision.query(f"label == {class_label}")[
+        ax = display.ax_[class_label]
+        legend = ax.get_legend()
+        assert legend is not None
+        legend_texts = [text.get_text() for text in legend.get_texts()]
+        plot_data = display.frame(with_average_precision=True)
+        average_precision = plot_data.query(f"label == {class_label}")[
             "average_precision"
-        ].item()
-        assert precision_recall_curve_mpl.get_label() == (
-            f"{str(class_label).title()} (AP = {average_precision:0.2f})"
-        )
+        ].iloc[0]
+        assert legend_texts[0] == f"AP={average_precision:.2f}"
         assert precision_recall_curve_mpl.get_color() == expected_color
 
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Test set"
-    assert len(legend.get_texts()) == 3
+        assert ax.get_xlabel() == "recall"
+        assert ax.get_ylabel() in ("precision", "")
+        assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
 
-    assert display.ax_.get_xlabel() == "Recall"
-    assert display.ax_.get_ylabel() == "Precision"
-    assert display.ax_.get_adjustable() == "box"
-    assert display.ax_.get_aspect() in ("equal", 1.0)
-    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
     assert (
-        display.ax_.get_title()
+        display.figure_.get_suptitle()
         == f"Precision-Recall Curve for {estimator.__class__.__name__}"
+        f"\nData source: Test set"
     )
 
 
@@ -121,100 +121,67 @@ def test_data_source(pyplot, logistic_binary_classification_with_train_test):
     )
     display = report.metrics.precision_recall(data_source="train")
     display.plot()
-    assert display.lines_[0].get_label() == "Train set (AP = 1.00)"
+    ax = display.ax_
+    legend = ax.get_legend()
+    legend_texts = [text.get_text() for text in legend.get_texts()]
+    assert "AP=1.00" in legend_texts
 
     display = report.metrics.precision_recall(data_source="X_y", X=X_train, y=y_train)
     display.plot()
-    assert display.lines_[0].get_label() == "AP = 1.00"
+    ax = display.ax_
+    legend = ax.get_legend()
+    legend_texts = [text.get_text() for text in legend.get_texts()]
+    assert "AP=1.00" in legend_texts
 
 
-def test_pr_curve_kwargs(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-    logistic_multiclass_classification_with_train_test,
-):
-    """Check that we can pass keyword arguments to the precision-recall curve plot."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    for pr_curve_kwargs in ({"color": "red"}, [{"color": "red"}]):
-        display = report.metrics.precision_recall()
-        display.plot(pr_curve_kwargs=pr_curve_kwargs)
-        assert display.lines_[0].get_color() == "red"
-
-        # check the `.style` display setter
-        display.plot()  # default style
-        assert display.lines_[0].get_color() == "#1f77b4"
-        display.set_style(pr_curve_kwargs=pr_curve_kwargs)
-        display.plot()
-        assert display.lines_[0].get_color() == "red"
-        display.plot(pr_curve_kwargs=pr_curve_kwargs)
-        assert display.lines_[0].get_color() == "red"
-
-        # reset to default style since next call to `precision_recall` will use the
-        # cache
-        display.set_style(pr_curve_kwargs={"color": "#1f77b4"})
-
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_multiclass_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.metrics.precision_recall()
-    display.plot(
-        pr_curve_kwargs=[{"color": "red"}, {"color": "blue"}, {"color": "green"}],
-    )
-    assert display.lines_[0].get_color() == "red"
-    assert display.lines_[1].get_color() == "blue"
-    assert display.lines_[2].get_color() == "green"
-
-    display.plot(despine=False)
-    assert display.ax_.spines["top"].get_visible()
-    assert display.ax_.spines["right"].get_visible()
-
-
-def test_wrong_kwargs(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-    logistic_multiclass_classification_with_train_test,
-):
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "logistic_binary_classification_with_train_test",
+        "logistic_multiclass_classification_with_train_test",
+    ],
+)
+def test_wrong_kwargs(pyplot, fixture_name, request):
     """Check that we raise a proper error message when passing an inappropriate
-    value for the `roc_curve_kwargs` argument.
+    value for the `relplot_kwargs` argument.
     """
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.precision_recall()
-    err_msg = (
-        "You intend to plot a single curve. We expect `pr_curve_kwargs` to be a "
-        "dictionary."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(pr_curve_kwargs=[{}, {}])
+    err_msg = "Line2D.set() got an unexpected keyword argument 'invalid'"
+    with pytest.raises(AttributeError, match=re.escape(err_msg)):
+        display.plot(relplot_kwargs={"invalid": "value"})
 
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_multiclass_classification_with_train_test
-    )
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "logistic_binary_classification_with_train_test",
+        "logistic_multiclass_classification_with_train_test",
+    ],
+)
+def test_relplot_kwargs(pyplot, fixture_name, request):
+    """Check that we can pass keyword arguments to the precision-recall curve plot."""
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.precision_recall()
-    err_msg = (
-        "You intend to plot multiple curves. We expect `pr_curve_kwargs` to be a "
-        "list of dictionaries."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(pr_curve_kwargs=[{}, {}])
 
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(pr_curve_kwargs={})
+    display.plot()
+    default_color = display.lines_[0].get_color()
+    assert default_color == sns.color_palette()[:1][0]
+
+    display.plot(relplot_kwargs={"color": "red"})
+    assert display.lines_[0].get_color() == "red"
+    assert mpl.colors.to_rgb(display.lines_[0].get_color()) != default_color
+
+    display.set_style(relplot_kwargs={"color": "blue"}, policy="update")
+    display.plot()
+    assert display.lines_[0].get_color() == "blue"
+    assert mpl.colors.to_rgb(display.lines_[0].get_color()) != default_color
 
 
 def test_binary_classification_data_source(
@@ -230,11 +197,13 @@ def test_binary_classification_data_source(
     )
     display = report.metrics.precision_recall(data_source="train")
     display.plot()
-    assert display.lines_[0].get_label() == "Train set (AP = 1.00)"
+    assert display.ax_.get_legend().get_texts()[0].get_text() == "AP=1.00"
+    assert "Data source: Train set" in display.figure_.get_suptitle()
 
     display = report.metrics.precision_recall(data_source="X_y", X=X_train, y=y_train)
     display.plot()
-    assert display.lines_[0].get_label() == "AP = 1.00"
+    assert display.ax_.get_legend().get_texts()[0].get_text() == "AP=1.00"
+    assert "Data source: external set" in display.figure_.get_suptitle()
 
 
 def test_multiclass_classification_data_source(
@@ -251,22 +220,31 @@ def test_multiclass_classification_data_source(
     display = report.metrics.precision_recall(data_source="train")
     display.plot()
     for class_label in estimator.classes_:
-        average_precision = display.average_precision.query(f"label == {class_label}")[
+        plot_data = display.frame(with_average_precision=True)
+        average_precision = plot_data.query(f"label == {class_label}")[
             "average_precision"
-        ].item()
-        assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} (AP = {average_precision:0.2f})"
-        )
+        ].iloc[0]
+        legend = display.ax_[class_label].get_legend()
+        assert legend.get_texts()[0].get_text() == f"AP={average_precision:.2f}"
+    assert (
+        display.figure_.get_suptitle()
+        == f"Precision-Recall Curve for {estimator.__class__.__name__}"
+        f"\nData source: Train set"
+    )
 
     display = report.metrics.precision_recall(data_source="X_y", X=X_train, y=y_train)
     display.plot()
     for class_label in estimator.classes_:
-        average_precision = display.average_precision.query(f"label == {class_label}")[
+        plot_data = display.frame(with_average_precision=True)
+        average_precision = plot_data.query(f"label == {class_label}")[
             "average_precision"
-        ].item()
-        assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} (AP = {average_precision:0.2f})"
-        )
+        ].iloc[0]
+        assert legend.get_texts()[0].get_text() == f"AP={average_precision:.2f}"
+    assert (
+        display.figure_.get_suptitle()
+        == f"Precision-Recall Curve for {estimator.__class__.__name__}"
+        f"\nData source: external set"
+    )
 
 
 def test_binary_classification_data_source_both(
@@ -285,13 +263,17 @@ def test_binary_classification_data_source_both(
     display.plot()
 
     assert len(display.lines_) == 2
-
-    assert "Train set (AP = " in display.lines_[0].get_label()
-    assert "Test set (AP = " in display.lines_[1].get_label()
-
+    plot_data = display.frame(with_average_precision=True)
+    average_precision_train = plot_data.query("data_source == 'train'")[
+        "average_precision"
+    ].iloc[0]
+    average_precision_test = plot_data.query("data_source == 'test'")[
+        "average_precision"
+    ].iloc[0]
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == ""
-    assert len(legend.get_texts()) == 2
+    legend_texts = [text.get_text() for text in legend.get_texts()]
+    assert legend_texts[0] == f"Train set (AP={average_precision_train:.2f})"
+    assert legend_texts[1] == f"Test set (AP={average_precision_test:.2f})"
 
 
 def test_multiclass_classification_data_source_both(
@@ -310,25 +292,22 @@ def test_multiclass_classification_data_source_both(
     display.plot()
 
     n_classes = len(estimator.classes_)
-    assert len(display.lines_) == 2 * n_classes
+    assert len(display.lines_) == n_classes * 2
+    assert len(display.ax_) == n_classes
 
-    for i in range(n_classes):
-        train_line = display.lines_[i * 2]
-        assert train_line.get_linestyle() == "--"
-
-        test_line = display.lines_[i * 2 + 1]
-        assert test_line.get_linestyle() == "-"
-
-        assert train_line.get_color() == test_line.get_color()
-
-    train_labels = [line.get_label() for line in display.lines_[::2]]
-    test_labels = [line.get_label() for line in display.lines_[1::2]]
-    assert all("Train set -" in label for label in train_labels)
-    assert all("Test set -" in label for label in test_labels)
-
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == ""
-    assert len(legend.get_texts()) == 2 * n_classes
+    for class_label in estimator.classes_:
+        plot_data = display.frame(with_average_precision=True)
+        average_precision_train = plot_data.query(
+            f"label == {class_label} & data_source == 'train'"
+        )["average_precision"].iloc[0]
+        average_precision_test = plot_data.query(
+            f"label == {class_label} & data_source == 'test'"
+        )["average_precision"].iloc[0]
+        legend = display.ax_[class_label].get_legend()
+        legend_texts = [text.get_text() for text in legend.get_texts()]
+        assert len(legend_texts) == 2
+        assert legend_texts[0] == f"Train set (AP={average_precision_train:.2f})"
+        assert legend_texts[1] == f"Test set (AP={average_precision_test:.2f})"
 
 
 @pytest.mark.parametrize("with_average_precision", [False, True])
@@ -419,8 +398,6 @@ def test_legend(
     logistic_multiclass_classification_with_train_test,
 ):
     """Check the rendering of the legend for with an `EstimatorReport`."""
-
-    # binary classification
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -429,9 +406,8 @@ def test_legend(
     )
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_, loc="lower left", position="inside")
+    check_legend_position(display.ax_, loc="upper center", position="inside")
 
-    # multiclass classification <= 5 classes
     estimator, X_train, X_test, y_train, y_test = (
         logistic_multiclass_classification_with_train_test
     )
@@ -440,9 +416,8 @@ def test_legend(
     )
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_, loc="lower left", position="inside")
+    check_legend_position(display.ax_[0], loc="upper center", position="inside")
 
-    # multiclass classification > 5 classes
     estimator = LogisticRegression()
     X, y = make_classification(
         n_samples=1_000,
@@ -457,7 +432,7 @@ def test_legend(
     )
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_, loc="upper left", position="outside")
+    check_legend_position(display.ax_[0], loc="upper center", position="inside")
 
 
 def test_binary_classification_constructor(
@@ -472,10 +447,10 @@ def test_binary_classification_constructor(
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["estimator"].unique()[0] == report.estimator_name_
         assert df["split"].isnull().all()
         assert df["label"].unique() == 1
 
@@ -494,11 +469,54 @@ def test_multiclass_classification_constructor(
     )
     display = report.metrics.precision_recall()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     for df in [display.precision_recall, display.average_precision]:
         assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique() == report.estimator_name_
+        assert df["estimator"].unique()[0] == report.estimator_name_
         assert df["split"].isnull().all()
         np.testing.assert_array_equal(df["label"].unique(), estimator.classes_)
 
     assert len(display.average_precision) == len(estimator.classes_)
+
+
+@pytest.mark.parametrize(
+    "fixture_name, valid_values",
+    [
+        ("logistic_binary_classification_with_train_test", ["None", "auto"]),
+        ("logistic_multiclass_classification_with_train_test", ["auto", "label"]),
+    ],
+)
+def test_invalid_subplot_by(fixture_name, valid_values, request):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `subplot_by` argument.
+    """
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.precision_recall()
+    valid_values_str = ", ".join(valid_values)
+    err_msg = f"subplot_by must be one of {valid_values_str}. Got 'invalid' instead."
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="invalid")
+
+
+@pytest.mark.parametrize(
+    "fixture_name, subplot_by, expected_len",
+    [
+        ("logistic_binary_classification_with_train_test", None, 0),
+        ("logistic_multiclass_classification_with_train_test", "label", 3),
+    ],
+)
+def test_valid_subplot_by(fixture_name, subplot_by, expected_len, request):
+    """Check that we can pass `None` to `subplot_by`."""
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.precision_recall()
+    display.plot(subplot_by=subplot_by)
+    if subplot_by is None:
+        assert isinstance(display.ax_, mpl.axes.Axes)
+    else:
+        assert len(display.ax_) == expected_len

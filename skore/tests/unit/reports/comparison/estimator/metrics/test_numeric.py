@@ -301,11 +301,17 @@ def test_display_binary_classification_pos_label(
     report = ComparisonReport([report_1, report_2])
     display = getattr(report.metrics, metric)()
     display.plot()
-    assert "Positive label: A" in display.ax_.get_xlabel()
+    if metric == "precision_recall":
+        assert "Positive label: A" in display.figure_.get_suptitle()
+    else:
+        assert "Positive label: A" in display.ax_.get_xlabel()
 
     display = getattr(report.metrics, metric)(pos_label="B")
     display.plot()
-    assert "Positive label: B" in display.ax_.get_xlabel()
+    if metric == "precision_recall":
+        assert "Positive label: B" in display.figure_.get_suptitle()
+    else:
+        assert "Positive label: B" in display.ax_.get_xlabel()
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])

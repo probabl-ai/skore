@@ -37,11 +37,13 @@ We can also inspect the permutation feature importance, that is model-agnostic.
 # regression task about predicting house prices:
 
 # %%
-from sklearn.datasets import fetch_california_housing
+from skrub.datasets import fetch_california_housing
 
-california_housing = fetch_california_housing(as_frame=True)
-X, y = california_housing.data, california_housing.target
-california_housing.frame.head(2)
+california_housing = fetch_california_housing()
+dataset = california_housing.california_housing
+X, y = california_housing.X, california_housing.y
+
+dataset.head(2)
 
 # %%
 # The documentation of the California housing dataset explains that the dataset
@@ -67,7 +69,7 @@ california_housing.frame.head(2)
 # %%
 from skrub import TableReport
 
-TableReport(california_housing.frame)
+TableReport(dataset)
 
 # %%
 # From the table report, we can draw some key observations:
@@ -104,9 +106,7 @@ TableReport(california_housing.frame)
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-sns.histplot(
-    data=california_housing.frame, x=california_housing.target_names[0], bins=100
-)
+sns.histplot(data=dataset, x=y.name, bins=100)
 plt.show()
 
 # %%
@@ -125,12 +125,12 @@ plt.show()
 import pandas as pd
 import plotly.express as px
 
-X_y_plot = california_housing.frame.copy()
+X_y_plot = dataset.copy()
 X_y_plot["MedInc_bins"] = pd.qcut(X_y_plot["MedInc"], q=5)
 bin_order = X_y_plot["MedInc_bins"].cat.categories.sort_values()
 fig = px.histogram(
     X_y_plot,
-    x=california_housing.target_names[0],
+    x=y.name,
     color="MedInc_bins",
     category_orders={"MedInc_bins": bin_order},
 )
@@ -165,7 +165,7 @@ def plot_map(df, color_feature):
 
 
 # %%
-fig = plot_map(california_housing.frame, california_housing.target_names[0])
+fig = plot_map(dataset, y.name)
 fig
 
 # %%
@@ -485,12 +485,12 @@ engineered_ridge_report_feature_importance.plot.barh(
 # Let us visualize how ``AveOccup`` interacts with ``MedHouseVal``:
 
 # %%
-X_y_plot = california_housing.frame.copy()
+X_y_plot = dataset.copy()
 X_y_plot["AveOccup"] = pd.qcut(X_y_plot["AveOccup"], q=5)
 bin_order = X_y_plot["AveOccup"].cat.categories.sort_values()
 fig = px.histogram(
     X_y_plot,
-    x=california_housing.target_names[0],
+    x=y.name,
     color="AveOccup",
     category_orders={"AveOccup": bin_order},
 )

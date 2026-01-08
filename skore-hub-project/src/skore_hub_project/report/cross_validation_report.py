@@ -6,6 +6,7 @@ from typing import Any, ClassVar
 
 import numpy as np
 from pydantic import computed_field
+from scipy.stats import gaussian_kde
 from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.artifact.media import (
@@ -181,16 +182,32 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         for train_indices, test_indices in self.report.split_indices:
             train_y = self.report.y[train_indices]
             test_y = self.report.y[test_indices]
-            train_label_distribution = []
-            test_label_distribution = []
+            train_target_distribution: list[float] = []
+            test_target_distribution: list[float] = []
 
             if self.__classes:
                 train = {str(label): count for label, count in Counter(train_y).items()}
                 test = {str(label): count for label, count in Counter(test_y).items()}
 
                 for label in self.__classes:
-                    train_label_distribution.append(train.get(label, 0))
-                    test_label_distribution.append(test.get(label, 0))
+                    train_target_distribution.append(train.get(label, 0))
+                    test_target_distribution.append(test.get(label, 0))
+
+            else:
+                train_kernel = gaussian_kde(train_y)
+                train_target_distribution = [
+                    float(x)
+                    for x in train_kernel(
+                        np.linspace(train_y.min(), train_y.max(), num=100)
+                    )
+                ]
+                test_kernel = gaussian_kde(test_y)
+                test_target_distribution = [
+                    float(x)
+                    for x in test_kernel(
+                        np.linspace(test_y.min(), test_y.max(), num=100)
+                    )
+                ]
 
             # remove this when a better solution is found
             # see #2212 for details
@@ -202,12 +219,12 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 {
                     "train": {
                         "sample_count": len(train_indices),
-                        "class_distribution": train_label_distribution,
+                        "target_distribution": train_target_distribution,
                         "groups": None,
                     },
                     "test": {
                         "sample_count": len(test_indices),
-                        "class_distribution": test_label_distribution,
+                        "target_distribution": test_target_distribution,
                         "groups": None,
                     },
                     "train_test_distribution": [
