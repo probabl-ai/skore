@@ -3,7 +3,6 @@ from typing import Any, Literal, cast
 
 import seaborn as sns
 from matplotlib.axes import Axes
-from matplotlib.lines import Line2D
 from numpy.typing import NDArray
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
@@ -94,7 +93,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     _default_relplot_kwargs: dict[str, Any] = {
         "height": 6,
         "aspect": 1,
-        "legend": False,
         "facet_kws": {
             "sharex": False,
             "sharey": False,
@@ -102,6 +100,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             "ylim": (-0.01, 1.01),
         },
         "drawstyle": "steps-post",
+        "legend": False,
     }
 
     def __init__(
@@ -213,7 +212,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         kwargs["style_order"] = plot_data[style].unique().tolist() if style else None
 
         if style:
-            kwargs["dashes"] = {"train": (5, 5), "test": (1, 0)}
+            kwargs["dashes"] = {"train": (5, 5), "test": ""}
 
         kwargs = _validate_style_kwargs(
             {**kwargs, **self._default_relplot_kwargs},
@@ -352,86 +351,62 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         subplot_data: DataFrame,
         hue: str | None,
         style: str | None,
-        hue_order: list[str] | None,
-        style_order: list[str] | None,
+        hue_order: list[Any] | None,
+        style_order: list[Any] | None,
         is_cross_validation: bool = False,
     ) -> None:
         """Build custom legend with AP stats for a single axis."""
-        new_labels = []
-        if hue is None:
-            if style is None:
-                ap_series = subplot_data["average_precision"]
-                new_labels = [self._format_ap_stat(ap_series, is_cross_validation)]
-            else:
-                for style_val in cast(list[str], style_order):
-                    mask = subplot_data[style] == style_val
-                    if mask.any():
-                        ap_series = subplot_data.loc[mask, "average_precision"]
-                        stat_str = self._format_ap_stat(ap_series, is_cross_validation)
-                        lbl = self._format_legend_label(style, style_val, stat_str)
-                        new_labels.append(lbl)
-        else:
-            if style is None:
-                for hue_val in cast(list[str], hue_order):
-                    mask = subplot_data[hue] == hue_val
-                    if mask.any():
-                        ap_series = subplot_data.loc[mask, "average_precision"]
-                        stat_str = self._format_ap_stat(ap_series, is_cross_validation)
-                        lbl = self._format_legend_label(hue, hue_val, stat_str)
-                        new_labels.append(lbl)
-            else:
-                for hue_val in cast(list[str], hue_order):
-                    hue_mask = subplot_data[hue] == hue_val
-                    for style_val in cast(list[str], style_order):
-                        mask = hue_mask & (subplot_data[style] == style_val)
-                        if mask.any():
-                            ap_series = subplot_data.loc[mask, "average_precision"]
-                            stat_str = self._format_ap_stat(
-                                ap_series, is_cross_validation
-                            )
-                            hue_str = str(hue_val)
-                            if style == "data_source":
-                                style_str = str(style_val).title() + " set"
-                            else:
-                                style_str = str(style_val)
-                            lbl = f"{hue_str} - {style_str} ({stat_str})"
-                            new_labels.append(lbl)
-
-        n_entries = len(new_labels)
-
-        lines = ax.get_lines()
-        if is_cross_validation:
-            if style is None:
-                unique_colors = list(dict.fromkeys(line.get_color() for line in lines))
-                handles = [
-                    Line2D([0], [0], color=c, lw=2) for c in unique_colors[:n_entries]
-                ]
-            else:
-                seen_combos = {}
-                unique_handles = []
-                for line in lines:
-                    color = line.get_color()
-                    linestyle = line.get_linestyle()
-                    combo = (color, linestyle)
-                    if combo not in seen_combos:
-                        seen_combos[combo] = True
-                        handle = Line2D(
-                            [0], [0], color=color, linestyle=linestyle, lw=2
+        legend_labels = []
+        for hue_value in hue_order or [None]:
+            hue_value_str = (
+                f"'{hue_value}'" if isinstance(hue_value, str) else str(hue_value)
+            )
+            hue_group = (
+                subplot_data.query(f"{hue} == {hue_value_str}")
+                if hue_value is not None
+                else subplot_data
+            )
+            for style_value in style_order or [None]:
+                style_value_str = (
+                    f"'{style_value}'"
+                    if isinstance(style_value, str)
+                    else str(style_value)
+                )
+                average_precision_group = (
+                    hue_group.query(f"{style} == {style_value_str}")[
+                        "average_precision"
+                    ]
+                    if style_value is not None
+                    else hue_group["average_precision"]
+                )
+                if not average_precision_group.empty:
+                    legend_labels.append(
+                        self._format_legend_label(
+                            style_column_name=style,
+                            style_value=style_value,
+                            hue_column_name=hue,
+                            hue_value=hue_value,
+                            statistic=self._format_average_precision(
+                                average_precision_group, is_cross_validation
+                            ),
                         )
-                        if hasattr(line, "_dashSeq") and line._dashSeq is not None:
-                            handle.set_dashes(line._dashSeq)
-                        unique_handles.append(handle)
-                        if len(unique_handles) >= n_entries:
-                            break
-                handles = unique_handles
-        else:
-            handles = lines[:n_entries]
+                    )
+
+        n_entries = len(legend_labels)
+        lines = ax.get_lines()
+        handles = []
+        seen_line_attributes = []
+        for line in lines:
+            line_attributes = (line.get_color(), line.get_linestyle())
+            if line_attributes not in seen_line_attributes:
+                seen_line_attributes.append(line_attributes)
+                handles.append(line)
 
         fontsize = "small" if n_entries > 4 else "medium"
 
         ax.legend(
             handles,
-            new_labels,
+            legend_labels,
             loc="upper center",
             bbox_to_anchor=(0.5, -0.15),
             ncol=1,
@@ -440,18 +415,38 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         )
 
     @staticmethod
-    def _format_ap_stat(ap_series: Any, is_cross_validation: bool) -> str:
-        """Format AP statistic as single value or mean±std."""
-        if is_cross_validation and len(ap_series) > 1:
-            return f"AP={ap_series.mean():.2f}±{ap_series.std():.2f}"
-        return f"AP={ap_series.iloc[0]:.2f}"
+    def _format_average_precision(
+        average_precision: Any, is_cross_validation: bool
+    ) -> str:
+        """Format average precision statistic as single value or mean±std."""
+        if is_cross_validation and len(average_precision) > 1:
+            return f"AP={average_precision.mean():.2f}±{average_precision.std():.2f}"
+        return f"AP={average_precision.iloc[0]:.2f}"
 
-    def _format_legend_label(self, col_name: str, val: Any, stat_str: str) -> str:
-        """Format a legend label based on column type."""
-        val_str = str(val)
-        if col_name == "data_source":
-            return f"{val_str.title()} set ({stat_str})"
-        return f"{val_str} ({stat_str})"
+    def _format_legend_label(
+        self,
+        style_column_name: str | None,
+        style_value: str | None,
+        hue_column_name: str | None,
+        hue_value: str | None,
+        statistic: str,
+    ) -> str:
+        """Format a legend label based on style and hue."""
+        if style_value is None and hue_value is None:
+            return statistic
+        if style_column_name == "data_source":
+            style_value = cast(str, style_value)
+            style_value = style_value.title() + " set"
+        if hue_column_name == "data_source":
+            hue_value = cast(str, hue_value)
+            hue_value = hue_value.title() + " set"
+        return (
+            " - ".join(
+                str(s)
+                for s in filter(lambda x: x is not None, [hue_value, style_value])
+            )
+            + f" ({statistic})"
+        )
 
     @classmethod
     def _compute_data_for_display(
