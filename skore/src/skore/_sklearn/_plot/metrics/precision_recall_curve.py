@@ -439,9 +439,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         if style_column_name == "data_source":
             style_value = cast(str, style_value)
             style_value = style_value.title() + " set"
-        if hue_column_name == "data_source":
-            hue_value = cast(str, hue_value)
-            hue_value = hue_value.title() + " set"
         return (
             " - ".join(
                 str(s)
