@@ -12,11 +12,14 @@ from sklearn.utils._response import _check_response_method
 from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
 from skore._sklearn._base import BaseEstimator
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn._plot.utils import _validate_style_kwargs
+from skore._sklearn._plot.utils import (
+    _ClassifierDisplayMixin,
+    _validate_style_kwargs,
+)
 from skore._sklearn.types import MLTask, PositiveLabel, ReportType, YPlotData
 
 
-class ConfusionMatrixDisplay(DisplayMixin):
+class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     """Display for confusion matrix.
 
     Parameters
@@ -80,7 +83,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
 
     _default_heatmap_kwargs: dict = {
         "cmap": "Blues",
-        "annot": True,
         "cbar": False,
     }
 
@@ -134,26 +136,6 @@ class ConfusionMatrixDisplay(DisplayMixin):
         threshold_value: float | None = None,
         heatmap_kwargs: dict | None = None,
     ) -> None:
-        """Matplotlib implementation of the `plot` method."""
-        if self.report_type == "estimator":
-            self._plot_single_estimator(
-                normalize=normalize,
-                threshold_value=threshold_value,
-                heatmap_kwargs=heatmap_kwargs,
-            )
-        else:
-            raise NotImplementedError(
-                "`ConfusionMatrixDisplay` is only implemented for "
-                "`EstimatorReport` for now."
-            )
-
-    def _plot_single_estimator(
-        self,
-        *,
-        normalize: Literal["true", "pred", "all"] | None = None,
-        threshold_value: float | None = None,
-        heatmap_kwargs: dict | None = None,
-    ) -> None:
         """
         Plot the confusion matrix for a single estimator.
 
@@ -173,16 +155,55 @@ class ConfusionMatrixDisplay(DisplayMixin):
         heatmap_kwargs : dict, default=None
             Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
         """
+        if self.report_type not in ["estimator", "cross-validation"]:
+            raise NotImplementedError(
+                "`ConfusionMatrixDisplay` is only implemented for "
+                "`EstimatorReport` and `CrossValidationReport` for now."
+            )
+
         self.figure_, self.ax_ = plt.subplots()
 
+        if self.report_type == "cross-validation":
+            default_fmt = ".3f" if normalize else ".1f"
+            annot_fmt = (
+                heatmap_kwargs.pop("fmt", default_fmt)
+                if heatmap_kwargs
+                else default_fmt
+            )
+            aggregated = (
+                self.frame(normalize=normalize, threshold_value=threshold_value)
+                .groupby(["true_label", "predicted_label"])["value"]
+                .agg(["mean", "std"])
+                .reset_index()
+            )
+            aggregated["annot"] = aggregated.apply(
+                lambda row: f"{row['mean']:{annot_fmt}}\n(± {row['std']:{annot_fmt}})",
+                axis=1,
+            )
+
+            frame = aggregated.pivot(
+                index="true_label", columns="predicted_label", values="mean"
+            ).reindex(index=self.display_labels, columns=self.display_labels)
+            annot = aggregated.pivot(
+                index="true_label", columns="predicted_label", values="annot"
+            ).reindex(index=self.display_labels, columns=self.display_labels)
+            default_fmt = ""
+        else:
+            frame = (
+                self.frame(normalize=normalize, threshold_value=threshold_value)
+                .pivot(index="true_label", columns="predicted_label", values="value")
+                .reindex(index=self.display_labels, columns=self.display_labels)
+            )
+            annot = True
+            default_fmt = ".2f" if normalize else "d"
+
         heatmap_kwargs_validated = _validate_style_kwargs(
-            {"fmt": ".2f" if normalize else "d", **self._default_heatmap_kwargs},
+            {"fmt": default_fmt, "annot": annot, **self._default_heatmap_kwargs},
             heatmap_kwargs or {},
         )
+
         sns.heatmap(
-            self.frame(normalize=normalize, threshold_value=threshold_value)
-            .pivot(index="true_label", columns="predicted_label", values="value")
-            .reindex(index=self.display_labels, columns=self.display_labels),
+            frame,
             ax=self.ax_,
             **heatmap_kwargs_validated,
         )
@@ -288,74 +309,87 @@ class ConfusionMatrixDisplay(DisplayMixin):
         display : ConfusionMatrixDisplay
             The confusion matrix display.
         """
-        y_true_values = y_true[0].y
-        y_pred_values = y_pred[0].y
-
-        if ml_task == "binary-classification":
-            if pos_label is not None:
-                neg_label = next(
-                    label for label in display_labels if label != pos_label
-                )
-                display_labels = [str(neg_label), str(pos_label)]
-            tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
-                y_true=y_true_values,
-                y_score=y_pred_values,
-                pos_label=pos_label,
-            )
-            cms = np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
-        else:
-            cms = sklearn_confusion_matrix(
-                y_true=y_true_values,
-                y_pred=y_pred_values,
-                normalize=None,  # we will normalize later
-                labels=display_labels,
-            )[np.newaxis, ...]
-            thresholds = np.array([np.nan])
-
-        row_sums = cms.sum(axis=2, keepdims=True)
-        cm_true = np.divide(cms, row_sums, where=row_sums != 0)
-
-        col_sums = cms.sum(axis=1, keepdims=True)
-        cm_pred = np.divide(cms, col_sums, where=col_sums != 0)
-
-        total_sums = cms.sum(axis=(1, 2), keepdims=True)
-        cm_all = np.divide(cms, total_sums, where=total_sums != 0)
-
-        n_thresholds = len(thresholds)
-        n_classes = len(display_labels)
-        n_cells = n_classes * n_classes
-
-        true_labels = np.tile(np.repeat(display_labels, n_classes), n_thresholds)
-        pred_labels = np.tile(np.tile(display_labels, n_classes), n_thresholds)
-        threshold_values = np.repeat(thresholds, n_cells)
-
-        counts = cms.reshape(-1)
-        normalized_true_values = cm_true.reshape(-1)
-        normalized_pred_values = cm_pred.reshape(-1)
-        normalized_all_values = cm_all.reshape(-1)
-
-        confusion_matrix = pd.DataFrame(
-            {
-                "true_label": true_labels,
-                "predicted_label": pred_labels,
-                "count": counts,
-                "normalized_by_true": normalized_true_values,
-                "normalized_by_pred": normalized_pred_values,
-                "normalized_by_all": normalized_all_values,
-                "threshold": threshold_values,
-            }
+        pos_label_validated = cls._validate_from_predictions_params(
+            y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
+        # When provided, the positive label is set in second position.
+        if ml_task == "binary-classification" and pos_label_validated is not None:
+            neg_label = next(
+                label for label in display_labels if label != pos_label_validated
+            )
+            display_labels = [str(neg_label), str(pos_label_validated)]
+
+        cm_records = []
+        for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
+            if ml_task == "binary-classification":
+                tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
+                    y_true=y_true_i.y,
+                    y_score=y_pred_i.y,
+                    pos_label=pos_label_validated,
+                )
+                cms = (
+                    np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
+                )
+            else:
+                cms = sklearn_confusion_matrix(
+                    y_true=y_true_i.y,
+                    y_pred=y_pred_i.y,
+                    normalize=None,  # we will normalize later
+                    labels=display_labels,
+                )[np.newaxis, ...]
+                thresholds = np.array([np.nan])
+
+            counts = cms.reshape(-1)
+
+            row_sums = cms.sum(axis=2, keepdims=True)
+            cm_true = np.zeros_like(cms, dtype=float)
+            np.divide(cms, row_sums, out=cm_true, where=row_sums != 0)
+            normalized_true_values = cm_true.reshape(-1)
+
+            col_sums = cms.sum(axis=1, keepdims=True)
+            cm_pred = np.zeros_like(cms, dtype=float)
+            np.divide(cms, col_sums, out=cm_pred, where=col_sums != 0)
+            normalized_pred_values = cm_pred.reshape(-1)
+
+            total_sums = cms.sum(axis=(1, 2), keepdims=True)
+            cm_all = np.zeros_like(cms, dtype=float)
+            np.divide(cms, total_sums, out=cm_all, where=total_sums != 0)
+            normalized_all_values = cm_all.reshape(-1)
+
+            n_thresholds = len(thresholds)
+            n_classes = len(display_labels)
+            n_cells = n_classes * n_classes
+
+            true_labels = np.tile(np.repeat(display_labels, n_classes), n_thresholds)
+            pred_labels = np.tile(np.tile(display_labels, n_classes), n_thresholds)
+            threshold_values = np.repeat(thresholds, n_cells)
+
+            cm_records.append(
+                pd.DataFrame(
+                    {
+                        "true_label": true_labels,
+                        "predicted_label": pred_labels,
+                        "count": counts,
+                        "normalized_by_true": normalized_true_values,
+                        "normalized_by_pred": normalized_pred_values,
+                        "normalized_by_all": normalized_all_values,
+                        "threshold": threshold_values,
+                        "split": y_true_i.split,
+                    }
+                )
+            )
+        confusion_matrix = pd.concat(cm_records)
         disp = cls(
             confusion_matrix=confusion_matrix,
             display_labels=display_labels,
             report_type=report_type,
             ml_task=ml_task,
-            pos_label=pos_label,
+            pos_label=pos_label_validated,
             response_method=_check_response_method(
                 estimators[0], response_method
             ).__name__,
-            thresholds=np.unique(thresholds),
+            thresholds=np.unique(confusion_matrix["threshold"]),
         )
 
         return disp
@@ -408,22 +442,44 @@ class ConfusionMatrixDisplay(DisplayMixin):
                 threshold_value = 0.5 if self.response_method == "predict_proba" else 0
             else:
                 return self.confusion_matrix[
-                    ["true_label", "predicted_label", normalize_col, "threshold"]
+                    [
+                        "true_label",
+                        "predicted_label",
+                        normalize_col,
+                        "threshold",
+                        "split",
+                    ]
                 ].rename(columns={normalize_col: "value"})
 
-        index_right = np.searchsorted(self.thresholds, threshold_value)
-        if index_right == len(self.thresholds):
-            index_right = index_right - 1
-        index_left = index_right - 1
-        diff_right = abs(self.thresholds[index_right] - threshold_value)
-        diff_left = abs(self.thresholds[index_left] - threshold_value)
+        frames = []
+        splits = (
+            self.confusion_matrix["split"].unique()
+            if self.report_type == "cross-validation"
+            else [None]
+        )
 
-        threshold_value = self.thresholds[
-            index_right if diff_right < diff_left else index_left
-        ]
-        frame = self.confusion_matrix.query("threshold == @threshold_value")
-        frame = frame[
-            ["true_label", "predicted_label", normalize_col, "threshold"]
-        ].rename(columns={normalize_col: "value"})
+        # Thresholding is different for each split.
+        for split in splits:
+            if split is None:
+                frame = self.confusion_matrix
+            else:
+                frame = self.confusion_matrix.query("split == @split")
+            thresholds = np.sort(frame["threshold"].unique())
+            index_right = int(np.searchsorted(thresholds, threshold_value))
+            if index_right == len(thresholds):
+                index_right = index_right - 1
+            elif index_right == 0 and len(thresholds) > 1:
+                index_right = 1
+            index_left = index_right - 1
+            diff_right = abs(thresholds[index_right] - threshold_value)
+            diff_left = abs(thresholds[index_left] - threshold_value)
+            closest_threshold_value = thresholds[
+                index_right if diff_right < diff_left else index_left
+            ]
+            frame = frame.query(f"threshold == {closest_threshold_value}")
+            frame = frame[
+                ["true_label", "predicted_label", normalize_col, "threshold", "split"]
+            ].rename(columns={normalize_col: "value"})
+            frames.append(frame)
 
-        return frame
+        return pd.concat(frames)

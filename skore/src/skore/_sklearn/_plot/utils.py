@@ -39,17 +39,34 @@ LINESTYLE = [
 ]
 
 
-class _ClassifierCurveDisplayMixin:
-    """Mixin class to be used in Displays requiring a binary classifier.
-
-    The aim of this class is to centralize some validations regarding the estimator and
-    the target and gather the response of the estimator.
-    """
+class _ClassifierDisplayMixin:
+    """Mixin class to be used in Displays requiring a classifier."""
 
     # defined in the concrete display class
     estimator_name: str
     ml_task: MLTask
     pos_label: PositiveLabel | None
+
+    @classmethod
+    def _validate_from_predictions_params(
+        cls,
+        y_true: Sequence[YPlotData],
+        y_pred: Sequence[YPlotData],
+        *,
+        ml_task: str,
+        pos_label: PositiveLabel | None = None,
+    ) -> PositiveLabel | None:
+        for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
+            check_consistent_length(y_true_i.y, y_pred_i.y)
+
+        if ml_task == "binary-classification":
+            pos_label = _check_pos_label_consistency(pos_label, y_true[0].y)
+
+        return pos_label
+
+
+class _ClassifierCurveDisplayMixin(_ClassifierDisplayMixin):
+    """Mixin class to be used in Displays requiring a classifier curve."""
 
     def _validate_curve_kwargs(
         self,
@@ -135,23 +152,6 @@ class _ClassifierCurveDisplayMixin:
                 )
 
             return curve_kwargs
-
-    @classmethod
-    def _validate_from_predictions_params(
-        cls,
-        y_true: Sequence[YPlotData],
-        y_pred: Sequence[YPlotData],
-        *,
-        ml_task: str,
-        pos_label: PositiveLabel | None = None,
-    ) -> PositiveLabel | None:
-        for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
-            check_consistent_length(y_true_i.y, y_pred_i.y)
-
-        if ml_task == "binary-classification":
-            pos_label = _check_pos_label_consistency(pos_label, y_true[0].y)
-
-        return pos_label
 
 
 def _rotate_ticklabels(
