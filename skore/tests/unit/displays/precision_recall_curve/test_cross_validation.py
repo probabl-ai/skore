@@ -95,29 +95,32 @@ def test_multiclass_classification(
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * cv
 
-    expected_color = sns.color_palette()[:1][0]
-    for line in display.lines_:
-        assert line.get_color() == expected_color
+    # With subplot_by=None, all labels are on a single axes with different colors
+    expected_colors = sns.color_palette()[: len(class_labels)]
+    for label_idx in range(len(class_labels)):
+        for line in display.lines_[label_idx * cv : (label_idx + 1) * cv]:
+            assert line.get_color() == expected_colors[label_idx]
 
-    assert len(display.ax_) == len(class_labels)
+    ax = display.ax_
+    assert isinstance(ax, mpl.axes.Axes)
+    legend = ax.get_legend()
+    assert legend is not None
+    legend_texts = [text.get_text() for text in legend.get_texts()]
 
-    for class_label in class_labels:
-        ax = display.ax_[class_label]
-        assert isinstance(ax, mpl.axes.Axes)
-        legend = ax.get_legend()
-        assert legend is not None
-
+    for label_idx, class_label in enumerate(class_labels):
         plot_data = display.frame(with_average_precision=True)
         average_precision = plot_data.query(f"label == {class_label}")[
             "average_precision"
         ]
+        ap_mean = average_precision.mean()
+        ap_std = average_precision.std()
         assert (
-            legend.get_texts()[0].get_text()
-            == f"AP={average_precision.mean():.2f}±{average_precision.std():.2f}"
+            legend_texts[label_idx] == f"{class_label} (AP={ap_mean:.2f}±{ap_std:.2f})"
         )
-        assert ax.get_xlabel() == "recall"
-        assert ax.get_ylabel() in ("precision", "")
-        assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
+
+    assert ax.get_xlabel() == "recall"
+    assert ax.get_ylabel() == "precision"
+    assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
 
     data_source_title = "external" if data_source == "X_y" else data_source.capitalize()
     assert (
@@ -152,21 +155,48 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
     (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.precision_recall()
+    multiclass = "multiclass" in fixture_name
+    n_labels = (
+        len(report.estimator_reports_[0].estimator_.classes_) if multiclass else 1
+    )
 
     display.plot()
-    default_color = display.lines_[0].get_color()
-    assert default_color == sns.color_palette()[:1][0]
+    default_colors = [line.get_color() for line in display.lines_]
+    if multiclass:
+        # With subplot_by=None, colors cycle by label
+        expected_default = sum([[c] * cv for c in sns.color_palette()[:n_labels]], [])
+        assert default_colors == expected_default
+        default_color = default_colors[0]
+    else:
+        default_color = default_colors[0]
+        assert default_color == sns.color_palette()[:1][0]
 
-    display.plot(relplot_kwargs={"color": "red"})
-    for line in display.lines_:
-        assert line.get_color() == "red"
-        assert mpl.colors.to_rgb(line.get_color()) != default_color
+    if multiclass:
+        # For multiclass, use palette since there's a hue variable
+        display.plot(relplot_kwargs={"palette": ["red"] * n_labels})
+        for line in display.lines_:
+            assert line.get_color() == "red"
+            assert mpl.colors.to_rgb(line.get_color()) != default_color
 
-    display.set_style(relplot_kwargs={"color": "blue"}, policy="update")
-    display.plot()
-    for line in display.lines_:
-        assert line.get_color() == "blue"
-        assert mpl.colors.to_rgb(line.get_color()) != default_color
+        display.set_style(
+            relplot_kwargs={"palette": ["blue"] * n_labels}, policy="update"
+        )
+        display.plot()
+        for line in display.lines_:
+            assert line.get_color() == "blue"
+            assert mpl.colors.to_rgb(line.get_color()) != default_color
+    else:
+        # For binary, color works since there's no hue variable
+        display.plot(relplot_kwargs={"color": "red"})
+        for line in display.lines_:
+            assert line.get_color() == "red"
+            assert mpl.colors.to_rgb(line.get_color()) != default_color
+
+        display.set_style(relplot_kwargs={"color": "blue"}, policy="update")
+        display.plot()
+        for line in display.lines_:
+            assert line.get_color() == "blue"
+            assert mpl.colors.to_rgb(line.get_color()) != default_color
 
 
 @pytest.mark.parametrize("with_average_precision", [False, True])
@@ -236,7 +266,7 @@ def test_legend(
     report = CrossValidationReport(estimator, X=X, y=y, splitter=5)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_[0], loc="upper center", position="inside")
+    check_legend_position(display.ax_, loc="upper center", position="inside")
 
     estimator = LogisticRegression()
     X, y = make_classification(
@@ -249,7 +279,7 @@ def test_legend(
     report = CrossValidationReport(estimator, X=X, y=y, splitter=10)
     display = report.metrics.precision_recall()
     display.plot()
-    check_legend_position(display.ax_[0], loc="upper center", position="inside")
+    check_legend_position(display.ax_, loc="upper center", position="inside")
 
 
 def test_binary_classification_constructor(logistic_binary_classification_data):

@@ -134,7 +134,8 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         ----------
         subplot_by : {"auto", "label", "estimator"} or None, default="auto"
             Column to use for creating subplots. Options:
-            - "auto": "label" for multiclass, None for binary
+            - "auto": None for EstimatorReport and Cross-Validation Report,
+                "label" for ComparisonReport
             - "label": one subplot per class (multiclass only)
             - "estimator": one subplot per estimator (comparison only)
             - None: no subplots (Not available for comparison in multiclass)
@@ -290,7 +291,8 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         """Determine col, hue, and style columns based on data and user preference.
 
         Rules:
-        - Default ("auto"): "label" for multiclass, None for binary
+        - Default ("auto"): None for EstimatorReport and Cross-Validation Report,
+            "label" for ComparisonReport
         - subplot_by=None disallowed for comparison in multiclass
         - subplot_by="estimator" only allowed for comparison reports
         - subplot_by="label" only allowed for multiclass classification
@@ -327,7 +329,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             )
 
         if subplot_by == "auto":
-            col = "label" if is_multiclass else None
+            col = "estimator" if is_comparison else None
         else:
             col = subplot_by
         has_multiple_labels = (
