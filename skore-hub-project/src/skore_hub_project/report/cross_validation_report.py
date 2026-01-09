@@ -6,6 +6,7 @@ from typing import Any, ClassVar
 
 import numpy as np
 from pydantic import computed_field
+from scipy.stats import gaussian_kde
 from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.artifact.media import (
@@ -116,7 +117,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         RocAucTestStd,
         RocAucTrainMean,
         RocAucTrainStd,
-        # timings must be calculated last
+        # timings must be calculated last, or predictions must be cached before
         FitTimeMean,
         FitTimeStd,
         PredictTimeTestMean,
@@ -165,29 +166,41 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def splits(self) -> dict[str, Any]:
+    def splitting_strategy(self) -> dict[str, Any]:
         """
-        Distribution between train and test by split.
+        Splitting strategy used to split the dataset into train and test sets.
+
+        This includes the number of splits, the number of repeats, the seed,
+        and the distribution of the train and test sets.
 
         The distribution of each split is computed by dividing the split into a maximum
         of 200 buckets, and averaging the number of samples belonging to the test-set in
-        each of these buckets.
+        each of these buckets. @TODO: find a better representation of the distribution.
         """
         splits = []
 
         for train_indices, test_indices in self.report.split_indices:
             train_y = self.report.y[train_indices]
             test_y = self.report.y[test_indices]
-            train_label_distribution = []
-            test_label_distribution = []
+            train_target_distribution: list[float] = []
+            test_target_distribution: list[float] = []
 
             if self.__classes:
                 train = {str(label): count for label, count in Counter(train_y).items()}
                 test = {str(label): count for label, count in Counter(test_y).items()}
 
                 for label in self.__classes:
-                    train_label_distribution.append(train.get(label, 0))
-                    test_label_distribution.append(test.get(label, 0))
+                    train_target_distribution.append(train.get(label, 0))
+                    test_target_distribution.append(test.get(label, 0))
+
+            else:
+                linspace = np.linspace(
+                    float(train_y.min()), float(train_y.max()), num=100
+                )
+                train_kernel = gaussian_kde(train_y)
+                train_target_distribution = [float(x) for x in train_kernel(linspace)]
+                test_kernel = gaussian_kde(test_y)
+                test_target_distribution = [float(x) for x in test_kernel(linspace)]
 
             # remove this when a better solution is found
             # see #2212 for details
@@ -199,12 +212,12 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 {
                     "train": {
                         "sample_count": len(train_indices),
-                        "class_distribution": train_label_distribution,
+                        "target_distribution": train_target_distribution,
                         "groups": None,
                     },
                     "test": {
                         "sample_count": len(test_indices),
-                        "class_distribution": test_label_distribution,
+                        "target_distribution": test_target_distribution,
                         "groups": None,
                     },
                     "train_test_distribution": [
@@ -232,6 +245,14 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     def class_names(self) -> list[str] | None:
         """In classification, the class names of the dataset used in the report."""
         return self.__classes
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def target_range(self) -> list[float] | None:
+        """The range of the target values of the dataset used in the report."""
+        if self.__classes:
+            return None
+        return [float(self.report.y.min()), float(self.report.y.max())]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property

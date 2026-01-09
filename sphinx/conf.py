@@ -18,7 +18,7 @@ from github_link import make_linkcode_resolve  # noqa
 from matplotlib_skore_scraper import matplotlib_skore_scraper  # noqa
 
 project = "skore"
-copyright = "2024, Probabl"
+copyright = "2026, Probabl"
 author = "Probabl"
 version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_RELEASE"]
@@ -73,11 +73,10 @@ autodoc_typehints = "none"
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 
-html_css_files = [
-    "css/custom.css",
-]
+html_css_files = ["css/custom.css"]
 html_js_files = [
     "js/sg_plotly_resize.js",
+    "js/reo.js",
 ]
 
 # list of examples in explicit order

@@ -10,15 +10,6 @@ allowing to get insights from machine learning experiments.
 """
 
 # %%
-# We set some environment variables to avoid some spurious warnings related to
-# parallelism when using the `TextEncoder` from `skrub` that uses tokenizers.
-
-# %%
-import os
-
-os.environ["TOKENIZERS_PARALLELISM"] = "true"
-
-# %%
 # Loading a non-trivial dataset
 # =============================
 
@@ -83,8 +74,7 @@ TableReport(y)
 #
 # For feature engineering, we use skrub's :class:`~skrub.TableVectorizer`.
 # To deal with the high cardinality of the categorical features, we use a
-# :class:`~skrub.TextEncoder` that uses a language model and an embedding model to
-# encode the categorical features.
+# :class:`~skrub.StringEncoder` to encode the categorical features.
 #
 # Finally, we use a :class:`~sklearn.ensemble.HistGradientBoostingRegressor` as a
 # base estimator, it is a rather robust model.
@@ -93,12 +83,12 @@ TableReport(y)
 # ^^^^^^^^^
 
 # %%
-from skrub import TableVectorizer, TextEncoder
+from skrub import TableVectorizer, StringEncoder
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 
 model = make_pipeline(
-    TableVectorizer(high_cardinality=TextEncoder()),
+    TableVectorizer(high_cardinality=StringEncoder()),
     HistGradientBoostingRegressor(),
 )
 model
