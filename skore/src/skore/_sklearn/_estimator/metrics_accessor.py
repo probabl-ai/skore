@@ -66,6 +66,7 @@ class _MetricsAccessor(
         y: ArrayLike | None = None,
         metric: Metric | list[Metric] | dict[str, Metric] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
+        response_method: str | list[str] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
@@ -115,6 +116,11 @@ class _MetricsAccessor(
 
         metric_kwargs : dict, default=None
             The keyword arguments to pass to the metric functions.
+
+        response_method : {"predict", "predict_proba", "predict_log_proba", \
+            "decision_function"} or list of such str, default=None
+            The estimator's method to be invoked to get the predictions. Only necessary
+            for custom metrics.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
@@ -187,6 +193,7 @@ class _MetricsAccessor(
                 pos_label=pos_label,
                 indicator_favorability=False,
                 flat_index=flat_index,
+                response_method=response_method,
             )
             test_summary = self.summarize(
                 data_source="test",
@@ -195,6 +202,7 @@ class _MetricsAccessor(
                 pos_label=pos_label,
                 indicator_favorability=indicator_favorability,
                 flat_index=flat_index,
+                response_method=response_method,
             )
             # Add suffix to the dataframes to distinguish train and test.
             train_df = train_summary.frame().add_suffix(" (train)")
@@ -274,12 +282,10 @@ class _MetricsAccessor(
             # is also a callable but it has a special private API that we can leverage
             if isinstance(metric_, _BaseScorer):
                 # scorers have the advantage to have scoped defined kwargs
-                metric_function: Callable = metric_._score_func
-                response_method: str | list[str] = metric_._response_method
                 metric_fn = partial(
                     self._custom_metric,
-                    metric_function=metric_function,
-                    response_method=response_method,
+                    metric_function=metric_._score_func,
+                    response_method=metric_._response_method,
                 )
                 # forward the additional parameters specific to the scorer
                 metrics_kwargs = {**metric_._kwargs}
@@ -326,7 +332,15 @@ class _MetricsAccessor(
                         metric_favorability = self._score_or_loss_info[metric_]["icon"]
                 else:
                     # Handle callable metrics
-                    metric_fn = partial(self._custom_metric, metric_function=metric_)
+                    if response_method is None:
+                        raise ValueError(
+                            "response_method is required when the metric is a callable"
+                        )
+                    metric_fn = partial(
+                        self._custom_metric,
+                        metric_function=metric_,
+                        response_method=response_method,
+                    )
                     if metric_kwargs is None:
                         metrics_kwargs = {}
                     else:
@@ -1532,10 +1546,9 @@ class _MetricsAccessor(
             The metric function to be computed. The expected signature is
             `metric_function(y_true, y_pred, **kwargs)`.
 
-        response_method : str or list of str
-            The estimator's method to be invoked to get the predictions. The possible
-            values are: `predict`, `predict_proba`, `predict_log_proba`, and
-            `decision_function`.
+        response_method : {"predict", "predict_proba", "predict_log_proba", \
+            "decision_function"} or list of such str
+            The estimator's method to be invoked to get the predictions.
 
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.

@@ -56,6 +56,7 @@ class _MetricsAccessor(
         y: ArrayLike | None = None,
         metric: Metric | list[Metric] | dict[str, Metric] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
+        response_method: str | list[str] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
@@ -106,7 +107,12 @@ class _MetricsAccessor(
         metric_kwargs : dict, default=None
             The keyword arguments to pass to the metric functions.
 
-        pos_label : int, float, bool, str or None default=_DEFAULT
+        response_method : {"predict", "predict_proba", "predict_log_proba", \
+            "decision_function"} or list of such str, default=None
+            The estimator's method to be invoked to get the predictions. Only necessary
+            for custom metrics.
+
+        pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
             this parameter to override the positive class. By default, the positive
             class is set to the one provided when creating the report. If `None`,
@@ -161,6 +167,7 @@ class _MetricsAccessor(
             pos_label=pos_label,
             metric_kwargs=metric_kwargs,
             indicator_favorability=indicator_favorability,
+            response_method=response_method,
         )
         if flat_index:
             if isinstance(results.columns, pd.MultiIndex):
@@ -969,10 +976,9 @@ class _MetricsAccessor(
             The metric function to be computed. The expected signature is
             `metric_function(y_true, y_pred, **kwargs)`.
 
-        response_method : str or list of str
-            The estimator's method to be invoked to get the predictions. The possible
-            values are: `predict`, `predict_proba`, `predict_log_proba`, and
-            `decision_function`.
+        response_method : {"predict", "predict_proba", "predict_log_proba", \
+            "decision_function"} or list of such str
+            The estimator's method to be invoked to get the predictions.
 
         metric_name : str, default=None
             The name of the metric. If not provided, it will be inferred from the
