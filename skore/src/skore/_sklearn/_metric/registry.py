@@ -15,9 +15,6 @@ from skore._sklearn.types import DataSource, PositiveLabel
 
 
 class Metric(_BaseAccessor[EstimatorReport]):  # or Protocol
-    # est-ce qu'on hérite de basescorer ? qu'on puisse intergenger un Metric/BaseScorer
-    # ou est-ce qu'on fait un wrapper qui a un attribute scorer ?
-
     NAME: str
     VERBOSE_NAME: str
     SCORE_FUNC: Callable  # foo(y_true, y_pred) -> float | Any
@@ -46,15 +43,6 @@ class Metric(_BaseAccessor[EstimatorReport]):  # or Protocol
         pos_label: PositiveLabel | None = None,
         **kwargs: Any,
     ) -> float | list[float] | dict[Any, float]:
-        # changer _compute_metric_scores pour l'intégrer ici dans "compute"
-        #
-        # implémenter ici la logique de cache
-        # pour le moment, ne mettre en cache que les prédictions, ne pas mettre en cache le résultat (à voir)
-        #
-        # -> cast(float, metric)
-        #
-        # integrer dans la clé de cache la signature de score_func, pour intégrer les partial
-        # les kwargs etc ?
         if data_source_hash is None:
             X, y, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y,
