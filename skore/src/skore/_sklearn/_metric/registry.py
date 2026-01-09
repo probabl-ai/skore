@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from functools import partial
-from typing import Any, Literal, runtime_checkable, Protocol
+from typing import Any, Literal, Protocol, runtime_checkable
 
 from numpy.typing import ArrayLike
+from sklearn.metrics import accuracy_score, get_scorer, precision_score, r2_score
 from sklearn.metrics._scorer import _BaseScorer
-from sklearn.metrics import accuracy_score, precision_score, r2_score, get_scorer
 
 from skore import EstimatorReport
 from skore._sklearn._base import _BaseAccessor, _get_cached_response_values
@@ -47,7 +47,9 @@ class Metric(_BaseAccessor[EstimatorReport], MetricProtocol):  # or Protocol
     ) -> float | list[float] | dict[Any, float]:
         if data_source_hash is None:
             X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-                data_source=data_source, X=X, y=y,
+                data_source=data_source,
+                X=X,
+                y=y,
             )
 
         results = _get_cached_response_values(
