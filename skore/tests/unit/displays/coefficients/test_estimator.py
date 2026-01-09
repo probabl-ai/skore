@@ -77,6 +77,8 @@ def test_binary_classification(
 
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
+    estimator_name = display.coefficients["estimator"][0]
+    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
 
     with pytest.raises(ValueError, match="No columns to group by."):
         display.plot(subplot_by="label")
@@ -154,6 +156,8 @@ def test_multiclass_classification(
 
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
+    estimator_name = display.coefficients["estimator"][0]
+    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
 
     display.plot(subplot_by="label")
     assert hasattr(display, "figure_")
@@ -165,6 +169,7 @@ def test_multiclass_classification(
         assert ax.get_title() == f"label = {label}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
+    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
         display.plot(subplot_by="incorrect")
@@ -245,6 +250,8 @@ def test_single_output_regression(
 
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
+    estimator_name = display.coefficients["estimator"][0]
+    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
 
     with pytest.raises(ValueError, match="No columns to group by."):
         display.plot(subplot_by="output")
@@ -330,6 +337,8 @@ def test_multi_output_regression(
 
     assert display.ax_.get_xlabel() == "Magnitude of coefficient"
     assert display.ax_.get_ylabel() == ""
+    estimator_name = display.coefficients["estimator"][0]
+    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
 
     display.plot(subplot_by="output")
     assert hasattr(display, "figure_")
@@ -341,6 +350,7 @@ def test_multi_output_regression(
         assert ax.get_title() == f"output = {output}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
+    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
         display.plot(subplot_by="incorrect")
@@ -369,3 +379,5 @@ def test_include_intercept(
     assert all(
         label.get_text() != "Intercept" for label in display.ax_.get_yticklabels()
     )
+    estimator_name = display.coefficients["estimator"][0]
+    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"

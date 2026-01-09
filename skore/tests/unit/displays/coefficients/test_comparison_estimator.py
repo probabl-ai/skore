@@ -216,6 +216,8 @@ def test_multiclass_classification(
         assert ax.get_title() == f"estimator = {report_name}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
+    # For multiclass, auto subplot_by becomes "estimator"
+    assert display.figure_.get_suptitle() == "Coefficients by estimator"
 
     display.plot(subplot_by="estimator")
     assert hasattr(display, "figure_")
@@ -229,6 +231,7 @@ def test_multiclass_classification(
         assert ax.get_title() == f"estimator = {report_name}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
+    assert display.figure_.get_suptitle() == "Coefficients by estimator"
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
         display.plot(subplot_by="incorrect")
@@ -457,6 +460,8 @@ def test_multi_output_regression(
         assert ax.get_title() == f"estimator = {report_name}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
+    # For multi-output regression, auto subplot_by becomes "estimator"
+    assert display.figure_.get_suptitle() == "Coefficients by estimator"
 
     display.plot(subplot_by="estimator")
     assert hasattr(display, "figure_")
@@ -470,6 +475,7 @@ def test_multi_output_regression(
         assert ax.get_title() == f"estimator = {report_name}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
+    assert display.figure_.get_suptitle() == "Coefficients by estimator"
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
         display.plot(subplot_by="incorrect")
@@ -542,6 +548,7 @@ def test_different_features(
             assert ax.get_title() == f"estimator = {report_name}"
             assert ax.get_xlabel() == "Magnitude of coefficient"
             assert ax.get_ylabel() == ""
+        assert display.figure_.get_suptitle() == "Coefficients by estimator"
 
 
 def test_include_intercept(
@@ -572,3 +579,4 @@ def test_include_intercept(
     assert all(
         label.get_text() != "Intercept" for label in display.ax_.get_yticklabels()
     )
+    assert display.figure_.get_suptitle() == "Coefficients"

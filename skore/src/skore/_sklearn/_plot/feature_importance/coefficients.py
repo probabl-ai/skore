@@ -244,6 +244,7 @@ class CoefficientsDisplay(DisplayMixin):
         if self.report_type in ("estimator", "cross-validation"):
             return self._plot_single_estimator(
                 frame=self.frame(include_intercept=include_intercept),
+                estimator_name=self.coefficients["estimator"][0],
                 report_type=self.report_type,
                 subplot_by=subplot_by,
                 barplot_kwargs=barplot_kwargs,
@@ -366,6 +367,7 @@ class CoefficientsDisplay(DisplayMixin):
         self,
         *,
         frame: pd.DataFrame,
+        estimator_name: str,
         report_type: ReportType,
         subplot_by: Literal["auto", "estimator", "label", "output"] | None,
         barplot_kwargs: dict[str, Any],
@@ -381,6 +383,8 @@ class CoefficientsDisplay(DisplayMixin):
         ----------
         frame : pd.DataFrame
             The frame to plot.
+        estimator_name : str
+            The name of the estimator to plot.
         report_type : {"estimator", "cross-validation"}
             The type of report to plot.
         subplot_by : {"auto", "estimator", "label", "output"} or None
@@ -436,6 +440,8 @@ class CoefficientsDisplay(DisplayMixin):
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
         )
+
+        self.figure_.suptitle(f"Coefficients of {estimator_name}")
 
     @staticmethod
     def _has_same_features(*, frame: pd.DataFrame) -> bool:
@@ -537,6 +543,11 @@ class CoefficientsDisplay(DisplayMixin):
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
         )
+
+        title = "Coefficients"
+        if subplot_by is not None:
+            title += f" by {subplot_by}"
+        self.figure_.suptitle(title)
 
     @classmethod
     def _compute_data_for_display(
