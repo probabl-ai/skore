@@ -250,7 +250,7 @@ class MetricRegistry:
                 metric._score_func.__name__.replace("_", " ").title(),
                 partial(metric._score_func, **metric._kwargs),
                 metric._response_method,
-                bool(metric._sign),
+                (metric._sign > 0),
                 self.__report,
             )
         elif callable(metric):
