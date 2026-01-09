@@ -84,8 +84,8 @@ rf_report.help()
 #
 
 # %%
-# We can use the :meth:`~skore.EstimatorReport.metrics` attribute to compute
-# common metrics for our estimator:
+# We can use the :meth:`~skore.EstimatorReport.metrics` attribute to evaluate the
+# performance of our estimator:
 
 # %%
 rf_report.metrics.summarize(indicator_favorability=True).frame()
@@ -125,7 +125,7 @@ rf_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # skore can perform cross-validation through the :class:`skore.CrossValidationReport`
-# class, which is built on top of :class:`skore.EstimatorReport` (one for each split).
+# class, which is simply an ensemble of :class:`EstimatorReports <skore.EstimatorReport>` (one for each split).
 
 # %%
 from skore import CrossValidationReport
@@ -183,10 +183,10 @@ first_split_report.metrics.summarize().frame()
 # Let us now try another algorithm:
 
 # %%
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier
 
 gb_report = EstimatorReport(
-    GradientBoostingClassifier(random_state=0),
+    HistGradientBoostingClassifier(random_state=0),
     X_train=X_train,
     X_test=X_test,
     y_train=y_train,
