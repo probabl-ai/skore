@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from functools import partial
+from functools import partial, singledispatchmethod
 from typing import Any, Literal, Protocol, runtime_checkable
 
 from numpy.typing import ArrayLike
@@ -24,12 +24,42 @@ class MetricProtocol(Protocol):
 
 
 class Metric(_BaseAccessor[EstimatorReport], MetricProtocol):  # or Protocol
-    def __init__(self, report, /):
+    @singledispatchmethod
+    def __init__(self, report: EstimatorReport, /):
         super().__init__(report)
+
+        assert hasattr(self, "name")
+        assert hasattr(self, "verbose_name")
+        assert hasattr(self, "score_func")
+        assert hasattr(self, "response_method")
+        assert hasattr(self, "greater_is_better")
+        assert hasattr(self, "custom")
+
+        self.report = report
+
+    @__init__.register
+    def _(
+        self,
+        name: str,
+        verbose_name: str,
+        score_func: Callable,
+        response_method: str,
+        greater_is_better: bool,
+        report: EstimatorReport,
+        /,
+    ):
+        super().__init__(report)
+
+        self.name = name
+        self.verbose_name = verbose_name
+        self.score_func = score_func
+        self.response_method = response_method
+        self.greater_is_better = greater_is_better
+        self.custom = True
         self.report = report
 
     def _get_help_tree_title(self) -> str:
-        pass
+        return ""
 
     @staticmethod
     def available(report) -> bool:
@@ -87,21 +117,6 @@ class Metric(_BaseAccessor[EstimatorReport], MetricProtocol):  # or Protocol
                 return score[0]
 
         return score
-
-    @staticmethod
-    def factory(
-        report, /, *, name, verbose_name, score_func, response_method, greater_is_better
-    ) -> Metric:
-        metric = Metric(report)
-
-        metric.name = name
-        metric.verbose_name = verbose_name
-        metric.score_func = score_func
-        metric.response_method = response_method
-        metric.greater_is_better = greater_is_better
-        metric.custom = True
-
-        return metric
 
 
 class Accuracy(Metric):
@@ -200,10 +215,10 @@ class MetricRegistry:
         self.__metric_name_to_function = {}
 
         for metric_class in metric_classes:
-            if not metric_class.available(self.__report):
+            if not metric_class.available(report=report):
                 continue
 
-            metric = metric_class(self.__report)
+            metric = metric_class(report)
             self.__metric_name_to_function[metric.name] = metric
 
     def __iter__(self):
@@ -230,22 +245,22 @@ class MetricRegistry:
             if isinstance(metric, str):
                 metric = get_scorer(metric)
 
-            metric = Metric.factory(
+            metric = Metric(
+                metric._score_func.__name__,
+                metric._score_func.__name__.replace("_", " ").title(),
+                partial(metric._score_func, **metric._kwargs),
+                metric._response_method,
+                bool(metric._sign),
                 self.__report,
-                name=metric._score_func.__name__,
-                verbose_name=metric._score_func.__name__.replace("_", " ").title(),
-                score_func=partial(metric._score_func, **metric._kwargs),
-                response_method=metric._response_method,
-                greater_is_better=bool(metric._sign),
             )
         elif callable(metric):
-            metric = Metric.factory(
+            metric = Metric(
+                metric.__name__,
+                metric.__name__.replace("_", " ").title(),
+                metric,
+                response_method,
+                greater_is_better,
                 self.__report,
-                name=metric.__name__,
-                verbose_name=metric.__name__.replace("_", " ").title(),
-                score_func=metric,
-                response_method=response_method,
-                greater_is_better=greater_is_better,
             )
         else:
             raise Exception
