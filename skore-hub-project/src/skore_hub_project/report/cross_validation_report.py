@@ -180,7 +180,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         splits = []
 
         for train_indices, test_indices in self.report.split_indices:
-            linspace = np.linspace(self.report.y.min(), self.report.y.max(), num=100)
             train_y = self.report.y[train_indices]
             test_y = self.report.y[test_indices]
             train_target_distribution: list[float] = []
@@ -195,6 +194,9 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                     test_target_distribution.append(test.get(label, 0))
 
             else:
+                linspace = np.linspace(
+                    float(train_y.min()), float(train_y.max()), num=100
+                )
                 train_kernel = gaussian_kde(train_y)
                 train_target_distribution = [float(x) for x in train_kernel(linspace)]
                 test_kernel = gaussian_kde(test_y)
