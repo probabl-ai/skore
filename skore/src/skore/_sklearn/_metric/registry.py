@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from abc import ABC
 from collections.abc import Callable
 from functools import partial
-from typing import Any, Literal
+from typing import Any, Literal, runtime_checkable, Protocol
 
 from numpy.typing import ArrayLike
 from sklearn.metrics._scorer import _BaseScorer
@@ -14,14 +13,17 @@ from skore._sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore._sklearn.types import DataSource, PositiveLabel
 
 
-class Metric(_BaseAccessor[EstimatorReport]):  # or Protocol
-    NAME: str
-    VERBOSE_NAME: str
-    SCORE_FUNC: Callable  # foo(y_true, y_pred) -> float | Any
-    RESPONSE_METHOD: str | list[str] | tuple[str, ...]
-    GREATER_IS_BETTER: bool | None
-    CUSTOM: bool
+@runtime_checkable
+class MetricProtocol(Protocol):
+    name: str
+    verbose_name: str
+    score_func: Callable  # foo(y_true, y_pred) -> float | any
+    response_method: str | list[str] | tuple[str, ...]
+    greater_is_better: bool
+    custom: bool
 
+
+class Metric(_BaseAccessor[EstimatorReport], MetricProtocol):  # or Protocol
     def __init__(self, report, /):
         super().__init__(report)
         self.report = report
@@ -53,7 +55,7 @@ class Metric(_BaseAccessor[EstimatorReport]):  # or Protocol
             estimator_hash=int(self.report._hash),
             estimator=self.report.estimator_,
             X=X,
-            response_method=self.RESPONSE_METHOD,
+            response_method=self.response_method,
             pos_label=pos_label,
             data_source=data_source,
             data_source_hash=data_source_hash,
@@ -66,8 +68,8 @@ class Metric(_BaseAccessor[EstimatorReport]):  # or Protocol
             if key_tuple[-1] != "predict_time":
                 y_pred = value
 
-        sign = -1 if self.NAME.startswith("neg_") else 1
-        score = sign * self.SCORE_FUNC(y, y_pred, **kwargs)
+        sign = -1 if self.name.startswith("neg_") else 1
+        score = sign * self.score_func(y, y_pred, **kwargs)
 
         if hasattr(score, "tolist"):
             score = score.tolist()
@@ -90,48 +92,39 @@ class Metric(_BaseAccessor[EstimatorReport]):  # or Protocol
     ) -> Metric:
         metric = Metric(report)
 
-        metric.NAME = name
-        metric.VERBOSE_NAME = verbose_name
-        metric.SCORE_FUNC = score_func
-        metric.RESPONSE_METHOD = response_method
-        metric.GREATER_IS_BETTER = greater_is_better
-        metric.CUSTOM = True
+        metric.name = name
+        metric.verbose_name = verbose_name
+        metric.score_func = score_func
+        metric.response_method = response_method
+        metric.greater_is_better = greater_is_better
+        metric.custom = True
 
         return metric
 
 
 class Accuracy(Metric):
-    NAME = "accuracy_score"
-    VERBOSE_NAME = "Accuracy"
-    SCORE_FUNC = staticmethod(accuracy_score)
-    RESPONSE_METHOD = "predict"
-    GREATER_IS_BETTER = True
-    CUSTOM = False
+    name = "accuracy"
+    verbose_name = "Accuracy"
+    score_func = staticmethod(accuracy_score)
+    response_method = "predict"
+    greater_is_better = True
+    custom = False
 
     @staticmethod
     def available(report) -> bool:
         return report.ml_task in ("binary-classification", "multiclass-classification")
-
-    def __call__(
-        self,
-        *,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-        data_source: DataSource = "test",
-    ) -> float:
-        return super().__call__(X=X, y=y, data_source=data_source)
 
 
 Average = Literal["binary", "macro", "micro", "weighted", "samples"]
 
 
 class Precision(Metric):
-    NAME = "precision"
-    VERBOSE_NAME = "Precision"
-    SCORE_FUNC = staticmethod(precision_score)
-    RESPONSE_METHOD = "predict"
-    GREATER_IS_BETTER = True
-    CUSTOM = False
+    name = "precision"
+    verbose_name = "Precision"
+    score_func = staticmethod(precision_score)
+    response_method = "predict"
+    greater_is_better = True
+    custom = False
 
     @staticmethod
     def available(report) -> bool:
@@ -168,12 +161,12 @@ class Precision(Metric):
 
 
 class R2(Metric):
-    NAME = "r2"
-    VERBOSE_NAME = "R²"
-    SCORE_FUNC = staticmethod(r2_score)
-    RESPONSE_METHOD = "predict"
-    GREATER_IS_BETTER = True
-    CUSTOM = False
+    name = "r2"
+    verbose_name = "r²"
+    score_func = staticmethod(r2_score)
+    response_method = "predict"
+    greater_is_better = True
+    custom = False
 
     @staticmethod
     def available(report) -> bool:
@@ -209,7 +202,7 @@ class MetricRegistry:
                 continue
 
             metric = metric_class(self.__report)
-            self.__metric_name_to_function[metric.NAME] = metric
+            self.__metric_name_to_function[metric.name] = metric
 
     def __iter__(self):
         yield from self.__metrics_name_to_function.items()
@@ -255,7 +248,7 @@ class MetricRegistry:
         else:
             raise Exception
 
-        self.__metric_name_to_function[metric.NAME] = metric
+        self.__metric_name_to_function[metric.name] = metric
 
 
 from skore import EstimatorReport
