@@ -137,7 +137,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             - "auto": "label" for multiclass, None for binary
             - "label": one subplot per class (multiclass only)
             - "estimator": one subplot per estimator (comparison only)
-            - None: no subplots (binary only)
+            - None: no subplots (Not available for comparison in multiclass)
 
         relplot_kwargs : dict, default=None
             Keyword arguments to be passed to :func:`seaborn.relplot` for rendering
@@ -291,7 +291,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         Rules:
         - Default ("auto"): "label" for multiclass, None for binary
-        - subplot_by=None only allowed for binary classification
+        - subplot_by=None disallowed for comparison in multiclass
         - subplot_by="estimator" only allowed for comparison reports
         - subplot_by="label" only allowed for multiclass classification
         - hue priority: estimator > label > data_source (excluding col)
@@ -311,6 +311,8 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         allowed_values: set[str | None] = {"auto"}
         if is_multiclass:
             allowed_values.add("label")
+            if self.report_type in ["estimator", "cross-validation"]:
+                allowed_values.add(None)
         else:
             allowed_values.add(None)
         if is_comparison and has_multiple_estimators:

@@ -483,7 +483,10 @@ def test_multiclass_classification_constructor(
     "fixture_name, valid_values",
     [
         ("logistic_binary_classification_with_train_test", ["None", "auto"]),
-        ("logistic_multiclass_classification_with_train_test", ["auto", "label"]),
+        (
+            "logistic_multiclass_classification_with_train_test",
+            ["None", "auto", "label"],
+        ),
     ],
 )
 def test_invalid_subplot_by(fixture_name, valid_values, request):
