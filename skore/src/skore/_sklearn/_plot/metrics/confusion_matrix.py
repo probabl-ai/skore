@@ -12,7 +12,7 @@ from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
 from skore._sklearn._base import BaseEstimator
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
-    _ClassifierCurveDisplayMixin,
+    _ClassifierDisplayMixin,
     _validate_style_kwargs,
     _validate_subplot_by,
 )
@@ -25,7 +25,7 @@ from skore._sklearn.types import (
 )
 
 
-class ConfusionMatrixDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
+class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     """Display for confusion matrix.
 
     Parameters
@@ -411,14 +411,22 @@ class ConfusionMatrixDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 )[np.newaxis, ...]
                 thresholds = np.array([np.nan])
 
+            counts = cms.reshape(-1)
+
             row_sums = cms.sum(axis=2, keepdims=True)
-            cm_true = np.divide(cms, row_sums, where=row_sums != 0)
+            cm_true = np.zeros_like(cms, dtype=float)
+            np.divide(cms, row_sums, out=cm_true, where=row_sums != 0)
+            normalized_true_values = cm_true.reshape(-1)
 
             col_sums = cms.sum(axis=1, keepdims=True)
-            cm_pred = np.divide(cms, col_sums, where=col_sums != 0)
+            cm_pred = np.zeros_like(cms, dtype=float)
+            np.divide(cms, col_sums, out=cm_pred, where=col_sums != 0)
+            normalized_pred_values = cm_pred.reshape(-1)
 
             total_sums = cms.sum(axis=(1, 2), keepdims=True)
-            cm_all = np.divide(cms, total_sums, where=total_sums != 0)
+            cm_all = np.zeros_like(cms, dtype=float)
+            np.divide(cms, total_sums, out=cm_all, where=total_sums != 0)
+            normalized_all_values = cm_all.reshape(-1)
 
             n_thresholds = len(thresholds)
             n_classes = len(display_labels)
@@ -427,11 +435,6 @@ class ConfusionMatrixDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             true_labels = np.tile(np.repeat(display_labels, n_classes), n_thresholds)
             pred_labels = np.tile(np.tile(display_labels, n_classes), n_thresholds)
             threshold_values = np.repeat(thresholds, n_cells)
-
-            counts = cms.reshape(-1)
-            normalized_true_values = cm_true.reshape(-1)
-            normalized_pred_values = cm_pred.reshape(-1)
-            normalized_all_values = cm_all.reshape(-1)
 
             cm_records.append(
                 pd.DataFrame(
@@ -444,8 +447,6 @@ class ConfusionMatrixDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                         "normalized_by_all": normalized_all_values,
                         "threshold": threshold_values,
                         "split": y_true_i.split,
-                        "estimator_name": y_true_i.estimator_name,
-                        "data_source": y_true_i.data_source,
                     }
                 )
             )

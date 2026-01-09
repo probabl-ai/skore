@@ -344,6 +344,20 @@ def linear_regression_multioutput_with_train_test(
 
 
 @pytest.fixture
+def cross_validation_report_binary_classification(forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    return CrossValidationReport(estimator, X, y, splitter=3)
+
+
+@pytest.fixture
+def cross_validation_report_multiclass_classification(
+    forest_multiclass_classification_data,
+):
+    estimator, X, y = forest_multiclass_classification_data
+    return CrossValidationReport(estimator, X, y, splitter=3)
+
+
+@pytest.fixture
 def estimator_reports_binary_classification(binary_classification_train_test_split):
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
 

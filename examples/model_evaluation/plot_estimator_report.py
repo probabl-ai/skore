@@ -56,15 +56,15 @@ split_data = train_test_split(X=df, y=y, random_state=42, as_dict=True)
 # for a class imbalance.
 #
 # Now, we need to define a predictive model. Hopefully, `skrub` provides a convenient
-# function (:func:`skrub.tabular_learner`) when it comes to getting strong baseline
+# function (:func:`skrub.tabular_pipeline`) when it comes to getting strong baseline
 # predictive models with a single line of code. As its feature engineering is generic,
 # it does not provide some handcrafted and tailored feature engineering but still
 # provides a good starting point.
 #
 # So let's create a classifier for our task.
-from skrub import tabular_learner
+from skrub import tabular_pipeline
 
-estimator = tabular_learner("classifier")
+estimator = tabular_pipeline("classifier")
 estimator
 
 # %%
@@ -397,10 +397,10 @@ plt.show()
 # In binary classification, a confusion matrix depends on the decision threshold used
 # to convert predicted probabilities into class labels. By default, skore uses a
 # threshold of 0.5, but confusion matrices are actually computed at every threshold
-# internally. You can access all available thresholds via the ``thresholds_`` attribute:
-print(f"Number of thresholds: {len(cm_display.thresholds_)}")
+# internally. You can access all available thresholds via the ``thresholds`` attribute:
+print(f"Number of thresholds: {len(cm_display.thresholds)}")
 print(
-    f"Threshold range: [{cm_display.thresholds_.min():.3f}, {cm_display.thresholds_.max():.3f}]"
+    f"Threshold range: [{cm_display.thresholds.min():.3f}, {cm_display.thresholds.max():.3f}]"
 )
 
 # %%

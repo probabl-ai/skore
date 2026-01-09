@@ -1473,9 +1473,9 @@ class _MetricsAccessor(
             response_method = "predict"
 
         display_kwargs = {
-            "display_labels": self._parent.estimator_reports_[
-                0
-            ].estimator_.classes_.tolist(),
+            "display_labels": tuple(
+                self._parent.estimator_reports_[0].estimator_.classes_
+            ),
             "pos_label": pos_label,
             "response_method": response_method,
         }

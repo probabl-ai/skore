@@ -213,6 +213,8 @@ def test_heatmap_kwargs_override(pyplot, forest_binary_classification_with_train
     display = report.metrics.confusion_matrix()
     display.plot(heatmap_kwargs={"cbar": True})
     assert len(display.figure_.axes) == 2
+    display.plot(heatmap_kwargs={"cbar": True})
+    assert len(display.figure_.axes) == 2
 
 
 def test_set_style(pyplot, forest_binary_classification_with_train_test):
@@ -263,6 +265,8 @@ def test_plot_attributes(pyplot, forest_binary_classification_with_train_test):
 
     xticklabels = [label.get_text() for label in display.ax_.get_xticklabels()]
     yticklabels = [label.get_text() for label in display.ax_.get_yticklabels()]
+    assert xticklabels == ["0", "1*"]
+    assert yticklabels == ["0", "1*"]
     assert xticklabels == ["0", "1*"]
     assert yticklabels == ["0", "1*"]
 
