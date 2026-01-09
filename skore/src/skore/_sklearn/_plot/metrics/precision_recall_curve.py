@@ -124,7 +124,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     def plot(
         self,
         *,
-        subplot_by: str | Literal["auto"] | None = "auto",
+        subplot_by: Literal["auto", "label", "estimator"] | None = "auto",
         relplot_kwargs: dict[str, Any] | None = None,
         despine: bool = True,
     ) -> None:
@@ -132,7 +132,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         Parameters
         ----------
-        subplot_by : str, "auto", or None, default="auto"
+        subplot_by : {"auto", "label", "estimator"} or None, default="auto"
             Column to use for creating subplots. Options:
             - "auto": "label" for multiclass, None for binary
             - "label": one subplot per class (multiclass only)
@@ -176,7 +176,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     def _plot_matplotlib(
         self,
         *,
-        subplot_by: str | Literal["auto"] | None = "auto",
+        subplot_by: Literal["auto", "label", "estimator"] | None = "auto",
         relplot_kwargs: dict[str, Any] | None = None,
         despine: bool = True,
     ) -> None:
@@ -285,7 +285,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     def _get_plot_columns(
         self,
         plot_data: DataFrame,
-        subplot_by: str | Literal["auto"] | None = "auto",
+        subplot_by: Literal["auto", "label", "estimator"] | None = "auto",
     ) -> tuple[str | None, str | None, str | None]:
         """Determine col, hue, and style columns based on data and user preference.
 
