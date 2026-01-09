@@ -1,27 +1,20 @@
 from __future__ import annotations
 
 from abc import ABC
-from collections import UserList
 from collections.abc import Callable
+from functools import partial
 from typing import Any, Literal
 
 from numpy.typing import ArrayLike
-from sklearn.metrics import accuracy_score, precision_score, r2_score
+from sklearn.metrics._scorer import _BaseScorer
+from sklearn.metrics import accuracy_score, precision_score, r2_score, get_scorer
 
-from skore._sklearn._base import _get_cached_response_values
+from skore import EstimatorReport
+from skore._sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore._sklearn.types import DataSource, PositiveLabel
 
-# https://github.com/scikit-learn/scikit-learn/blob/e9752287ffffecb2d2878ce1ed97a77a43941579/sklearn/metrics/_scorer.py#L228
-#
-# def __init__(self, score_func, sign, kwargs# , response_method="predict"):
-#     self._score_func = score_func
-#     self._sign = sign
-#     self._kwargs = kwargs
-#     self._response_method = response_method
-#
 
-
-class Metric(ABC):  # or Protocol
+class Metric(_BaseAccessor[EstimatorReport]):  # or Protocol
     # est-ce qu'on hérite de basescorer ? qu'on puisse intergenger un Metric/BaseScorer
     # ou est-ce qu'on fait un wrapper qui a un attribute scorer ?
 
@@ -29,15 +22,19 @@ class Metric(ABC):  # or Protocol
     VERBOSE_NAME: str
     SCORE_FUNC: Callable  # foo(y_true, y_pred) -> float | Any
     RESPONSE_METHOD: str | list[str] | tuple[str, ...]
-    GREATER_IS_BETTER: bool
+    GREATER_IS_BETTER: bool | None
     CUSTOM: bool
 
     def __init__(self, report, /):
+        super().__init__(report)
         self.report = report
+
+    def _get_help_tree_title(self) -> str:
+        pass
 
     @staticmethod
     def available(report) -> bool:
-        raise NotImplementedError
+        return True
 
     def __call__(
         self,
@@ -58,6 +55,10 @@ class Metric(ABC):  # or Protocol
         #
         # integrer dans la clé de cache la signature de score_func, pour intégrer les partial
         # les kwargs etc ?
+        if data_source_hash is None:
+            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y,
+            )
 
         results = _get_cached_response_values(
             cache=self.report._cache,
@@ -77,7 +78,8 @@ class Metric(ABC):  # or Protocol
             if key_tuple[-1] != "predict_time":
                 y_pred = value
 
-        score = self.SCORE_FUNC(y, y_pred, **kwargs)
+        sign = -1 if self.NAME.startswith("neg_") else 1
+        score = sign * self.SCORE_FUNC(y, y_pred, **kwargs)
 
         if hasattr(score, "tolist"):
             score = score.tolist()
@@ -95,13 +97,25 @@ class Metric(ABC):  # or Protocol
         return score
 
     @staticmethod
-    def factory() -> Metric: ...
+    def factory(
+        report, /, *, name, verbose_name, score_func, response_method, greater_is_better
+    ) -> Metric:
+        metric = Metric(report)
+
+        metric.NAME = name
+        metric.VERBOSE_NAME = verbose_name
+        metric.SCORE_FUNC = score_func
+        metric.RESPONSE_METHOD = response_method
+        metric.GREATER_IS_BETTER = greater_is_better
+        metric.CUSTOM = True
+
+        return metric
 
 
 class Accuracy(Metric):
-    NAME = "accuracy"
+    NAME = "accuracy_score"
     VERBOSE_NAME = "Accuracy"
-    SCORE_FUNC = accuracy_score
+    SCORE_FUNC = staticmethod(accuracy_score)
     RESPONSE_METHOD = "predict"
     GREATER_IS_BETTER = True
     CUSTOM = False
@@ -126,7 +140,7 @@ Average = Literal["binary", "macro", "micro", "weighted", "samples"]
 class Precision(Metric):
     NAME = "precision"
     VERBOSE_NAME = "Precision"
-    SCORE_FUNC = precision_score
+    SCORE_FUNC = staticmethod(precision_score)
     RESPONSE_METHOD = "predict"
     GREATER_IS_BETTER = True
     CUSTOM = False
@@ -168,7 +182,7 @@ class Precision(Metric):
 class R2(Metric):
     NAME = "r2"
     VERBOSE_NAME = "R²"
-    SCORE_FUNC = r2_score
+    SCORE_FUNC = staticmethod(r2_score)
     RESPONSE_METHOD = "predict"
     GREATER_IS_BETTER = True
     CUSTOM = False
@@ -195,23 +209,6 @@ class R2(Metric):
         )
 
 
-# redefinir les metriques actuelles comme des Metric
-# les register dynamiqument dans les init des reports si elles sont compatibles
-#
-# faire une factory qui acceptent des _base_scorer, des callables ou des nom de scorer scikit et qui transforme ça en Metric
-# changer _compute_metric_scores pour l'intégrer ici dans "compute"
-
-# case 1 : str -> find in scikit-learn the corresponding scorer
-# case 2 : scorer -> scikit-learn scorer
-# case 3 : callable -> create a custom scorer based on the provided callable (optional verbose_name + greater_is_better)
-
-# https://github.com/scikit-learn/scikit-learn/blob/e9752287ffffecb2d2878ce1ed97a77a43941579/sklearn/metrics/_scorer.py#L798
-
-
-# class AggregateCustomMetricFormula(CustomMetricFormula, ABC):  # or Protocol
-#     aggregate: Aggregate = ("mean", "std")
-
-
 class MetricRegistry:
     def __init__(self, report, /, *metric_classes):
         super().__init__()
@@ -220,12 +217,11 @@ class MetricRegistry:
         self.__metric_name_to_function = {}
 
         for metric_class in metric_classes:
-            if (not metric_class.available(self.__report)):
+            if not metric_class.available(self.__report):
                 continue
 
-            self.__metric_name_to_function[metric_class.NAME] = metric_class(
-                self.__report
-            )
+            metric = metric_class(self.__report)
+            self.__metric_name_to_function[metric.NAME] = metric
 
     def __iter__(self):
         yield from self.__metrics_name_to_function.items()
@@ -239,11 +235,39 @@ class MetricRegistry:
     def summary(self):
         raise NotImplementedError
 
-    def append(self, _):
-        # case 1 : str -> find in scikit-learn the corresponding scorer
-        # case 2 : scorer -> scikit-learn scorer
-        # case 3 : callable -> create a custom scorer based on the provided callable (optional verbose_name + greater_is_better)
-        raise NotImplementedError
+    def append(
+        self,
+        metric: str | _BaseScorer | Callable,
+        /,
+        *,
+        response_method="predict",
+        greater_is_better=True,
+    ):
+        if isinstance(metric, str | _BaseScorer):
+            if isinstance(metric, str):
+                metric = get_scorer(metric)
+
+            metric = Metric.factory(
+                self.__report,
+                name=metric._score_func.__name__,
+                verbose_name=metric._score_func.__name__.replace("_", " ").title(),
+                score_func=partial(metric._score_func, **metric._kwargs),
+                response_method=metric._response_method,
+                greater_is_better=bool(metric._sign),
+            )
+        elif callable(metric):
+            metric = Metric.factory(
+                self.__report,
+                name=metric.__name__,
+                verbose_name=metric.__name__.replace("_", " ").title(),
+                score_func=metric,
+                response_method=response_method,
+                greater_is_better=greater_is_better,
+            )
+        else:
+            raise Exception
+
+        self.__metric_name_to_function[metric.NAME] = metric
 
 
 from skore import EstimatorReport
@@ -254,23 +278,4 @@ class NewEstimatorReport(EstimatorReport):
         super().__init__(*args, **kwargs)
 
         # create registry and append default metrics
-        self.metrics = MetricRegistry(
-            self,
-            Accuracy,
-            Precision,
-            R2
-        )
-
-
-# note important
-# pour toutes les string de scorer commencant par "neg_" (genre "neg_rmse") -> on garde le greater_is_better,
-# mais on change le signe pour n'avoir que des résultats positifs
-
-# -------------------------
-
-
-# def foobar(y_true, y_pred):
-#     return 1
-
-
-# report.registry.append(foobar, verbose_name="Ma métrique", greater_is_better=True)
+        self.metrics = MetricRegistry(self, Accuracy, Precision, R2)
