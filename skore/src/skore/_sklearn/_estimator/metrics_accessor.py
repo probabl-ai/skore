@@ -333,9 +333,17 @@ class _MetricsAccessor(
                 else:
                     # Handle callable metrics
                     if response_method is None:
-                        raise ValueError(
-                            "response_method is required when the metric is a callable"
-                        )
+                        if (
+                            metric_kwargs is None
+                            or "response_method" not in metric_kwargs
+                        ):
+                            raise ValueError(
+                                "response_method is required when the metric is a "
+                                "callable. Pass it directly or through `metric_kwargs`."
+                            )
+
+                        response_method = metric_kwargs["response_method"]
+
                     metric_fn = partial(
                         self._custom_metric,
                         metric_function=metric_,
