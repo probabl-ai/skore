@@ -1199,12 +1199,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             # build the cache key components to finally create a tuple that will be used
             # to check if the metric has already been computed
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            for kwarg in display_kwargs.values():
-                # NOTE: We cannot use lists in cache keys because they are not hashable
-                if isinstance(kwarg, list):
-                    kwarg = tuple(kwarg)
-                cache_key_parts.append(kwarg)
-            cache_key_parts.append(data_source)
+            cache_key_parts.extend(display_kwargs.values())
             cache_key = tuple(cache_key_parts)
 
         assert self._parent._progress_info is not None, "Progress info not set"
@@ -1653,15 +1648,15 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         if isinstance(
             next(iter(self._parent.reports_.values())), CrossValidationReport
         ):
-            display_labels = (
+            display_labels = tuple(
                 next(iter(self._parent.reports_.values()))
                 .estimator_reports_[0]
-                .estimator_.classes_.tolist()
+                .estimator_.classes_
             )
         else:
-            display_labels = next(
-                iter(self._parent.reports_.values())
-            ).estimator_.classes_.tolist()
+            display_labels = tuple(
+                next(iter(self._parent.reports_.values())).estimator_.classes_
+            )
 
         display_kwargs = {
             "display_labels": display_labels,

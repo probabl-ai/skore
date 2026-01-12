@@ -109,7 +109,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
         threshold_value: float | None = None,
-        subplot_by: Literal["split", "estimator_name", "auto"] | None = "auto",
+        subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
         heatmap_kwargs: dict | None = None,
         facet_grid_kwargs: dict | None = None,
     ):
@@ -134,7 +134,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             default threshold (0.5 for `predict_proba` response method, 0 for
             `decision_function` response method).
 
-        subplot_by: Literal["split", "estimator_name", "auto"]
+        subplot_by: Literal["split", "estimator", "auto"]
         | None = "auto",
             The variable to use for subplotting. If None, the confusion matrix will not
             be subplotted. If "auto", the variable will be automatically determined
@@ -164,7 +164,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
         threshold_value: float | None = None,
-        subplot_by: Literal["split", "estimator_name", "auto"] | None = "auto",
+        subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
         heatmap_kwargs: dict | None = None,
         facet_grid_kwargs: dict | None = None,
     ) -> None:
@@ -183,7 +183,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             default threshold (0.5 for `predict_proba` response method, 0 for
             `decision_function` response method).
 
-        subplot_by: Literal["split", "estimator_name", "auto"] | None = "auto",
+        subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
             The variable to use for subplotting. If None, the confusion matrix will not
             be subplotted. If "auto", the variable will be automatically determined
             based on the report type.
@@ -213,7 +213,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             frame = self.frame(normalize=normalize, threshold_value=threshold_value)
             aggregated = (
                 frame.groupby(
-                    ["true_label", "predicted_label", "estimator_name", "data_source"]
+                    ["true_label", "predicted_label", "estimator", "data_source"]
                 )["value"]
                 .agg(["mean", "std"])
                 .reset_index()
@@ -447,6 +447,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                         "normalized_by_all": normalized_all_values,
                         "threshold": threshold_values,
                         "split": y_true_i.split,
+                        "estimator": y_true_i.estimator_name,
+                        "data_source": y_true_i.data_source,
                     }
                 )
             )
@@ -482,7 +484,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         The matrix is returned as a long format dataframe where each line represents one
         cell of the matrix. The columns are "true_label", "predicted_label", "value",
-        "threshold", "split", "estimator_name", "data_source" ; where "value" is one of
+        "threshold", "split", "estimator", "data_source" ; where "value" is one of
         {"count", "normalized_by_true", "normalized_by_pred", "normalized_by_all"},
         depending on the value of the `normalize` parameter.
 
@@ -520,7 +522,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                         normalize_col,
                         "threshold",
                         "split",
-                        "estimator_name",
+                        "estimator",
                         "data_source",
                     ]
                 ].rename(columns={normalize_col: "value"})
@@ -546,21 +548,21 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     normalize_col,
                     "threshold",
                     "split",
-                    "estimator_name",
+                    "estimator",
                     "data_source",
                 ]
             ].rename(columns={normalize_col: "value"})
 
         frames = []
         if self.report_type == "comparison-cross-validation":
-            for _, group in self.confusion_matrix.groupby(["split", "estimator_name"]):
+            for _, group in self.confusion_matrix.groupby(["split", "estimator"]):
                 frames.append(select_threshold_and_format(group))
         elif self.report_type == "cross-validation":
             for split in self.confusion_matrix["split"].unique():
                 split_frame = self.confusion_matrix.query(f"split == {split}")
                 frames.append(select_threshold_and_format(split_frame))
         elif self.report_type == "comparison-estimator":
-            for _, group in self.confusion_matrix.groupby(["estimator_name"]):
+            for _, group in self.confusion_matrix.groupby(["estimator"]):
                 frames.append(select_threshold_and_format(group))
         else:
             frames.append(select_threshold_and_format(self.confusion_matrix))

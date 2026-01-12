@@ -351,14 +351,14 @@ def sample_mpl_colormap(
 
 
 def _validate_subplot_by(
-    subplot_by: Literal["split", "estimator_name", "auto"] | None,
+    subplot_by: Literal["split", "estimator", "auto"] | None,
     report_type: ReportType,
-) -> Literal["split", "estimator_name"] | None:
+) -> Literal["split", "estimator"] | None:
     """Validate the subplot by parameter.
 
     Parameters
     ----------
-    subplot_by : Literal["split", "estimator_name", "auto"] | None
+    subplot_by : Literal["split", "estimator", "auto"] | None
         The variable to use for subplotting.
 
     report_type : {"comparison-cross-validation", "comparison-estimator", \
@@ -367,22 +367,22 @@ def _validate_subplot_by(
 
     Returns
     -------
-    Literal["split", "estimator_name"] | None
+    Literal["split", "estimator"] | None
         The validated subplot by parameter.
     """
     if subplot_by == "auto":
         if report_type in ["comparison-estimator", "comparison-cross-validation"]:
-            return "estimator_name"
+            return "estimator"
         else:
             return None
 
-    valid_subplot_by: list[Literal["split", "estimator_name"] | None] = []
+    valid_subplot_by: list[Literal["split", "estimator"] | None] = []
     if report_type in ["estimator", "cross-validation"]:
         valid_subplot_by.append(None)
     if report_type in ["cross-validation"]:
         valid_subplot_by.append("split")
     if report_type in ["comparison-estimator", "comparison-cross-validation"]:
-        valid_subplot_by.append("estimator_name")
+        valid_subplot_by.append("estimator")
 
     if subplot_by not in valid_subplot_by:
         raise ValueError(

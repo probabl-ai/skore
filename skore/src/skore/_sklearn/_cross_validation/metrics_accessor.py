@@ -1117,11 +1117,7 @@ class _MetricsAccessor(
             cache_key = None
         else:
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            for kwarg in display_kwargs.values():
-                # NOTE: We cannot use lists in cache keys because they are not hashable
-                if isinstance(kwarg, list):
-                    kwarg = tuple(kwarg)
-                cache_key_parts.append(kwarg)
+            cache_key_parts.extend(display_kwargs.values())
             if data_source_hash is not None:
                 cache_key_parts.append(data_source_hash)
             else:

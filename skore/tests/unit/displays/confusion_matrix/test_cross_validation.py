@@ -80,7 +80,7 @@ def test_confusion_matrix(pyplot, forest_binary_classification_data):
         "normalized_by_all",
         "threshold",
         "split",
-        "estimator_name",
+        "estimator",
         "data_source",
     ]
     n_classes = len(display.display_labels)
@@ -253,7 +253,7 @@ def test_frame_structure(forest_binary_classification_data):
         "value",
         "threshold",
         "split",
-        "estimator_name",
+        "estimator",
         "data_source",
     ]
     assert frame.columns.tolist() == expected_columns
