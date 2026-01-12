@@ -134,8 +134,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         ----------
         subplot_by : {"auto", "label", "estimator"} or None, default="auto"
             Column to use for creating subplots. Options:
-            - "auto": None for EstimatorReport and Cross-Validation Report,
-                "label" for ComparisonReport
+
+            - "auto": None for EstimatorReport and Cross-Validation Report, \
+              "label" for ComparisonReport
             - "label": one subplot per class (multiclass only)
             - "estimator": one subplot per estimator (comparison only)
             - None: no subplots (Not available for comparison in multiclass)
