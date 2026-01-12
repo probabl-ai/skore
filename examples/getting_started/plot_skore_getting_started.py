@@ -29,19 +29,19 @@ Skore: getting started
 # Machine learning evaluation and diagnostics
 # ===========================================
 #
-# Skore implements new tools or wraps some key scikit-learn class / functions to
+# Skore implements new tools or wraps some key scikit-learn concepts to
 # automatically provide insights and diagnostics when using them, as a way to
-# facilitate good practices and avoid common pitfalls.
+# accelerate development and facilitate good practices.
 
 # %%
 # Model evaluation with skore
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# In order to assist its users when programming, skore has implemented a
-# :class:`skore.EstimatorReport` class.
+# One of the main skore features is the :class:`skore.EstimatorReport` class.
 #
-# Let us create a challenging synthetic binary classification dataset and get the estimator report for a
-# :class:`~sklearn.ensemble.RandomForestClassifier`:
+# Let us create a challenging synthetic binary classification dataset and train a
+# :class:`~sklearn.ensemble.RandomForestClassifier` on it, then wrap an
+# :class:`~skore.EstimatorReport` around it.
 
 # %%
 from sklearn.datasets import make_classification
@@ -66,47 +66,47 @@ rf_report = EstimatorReport(
 )
 
 # %%
-# Now, we can display the helper to see all the insights that are available to us
-# (skore detected that we are doing multiclass classification):
+# Now, we can display the help menu to see what we can do with the report:
 
 # %%
 rf_report.help()
 
 # %%
 # .. note::
-#   This helper is great because:
+#   This helper:
 #
-#   -   it enables users to get a glimpse at the API of the different available
+#   -   enables users to get a glimpse at the API of the different available
 #       accessors without having to look up the online documentation,
-#   -   it provides methodological guidance: for example, we easily provide
+#   -   provides methodological guidance: for example, we easily provide
 #       several metrics as a way to encourage users looking into them.
+#       In particular, skore automatically detected that we are doing multiclass
+#       classification.
+#
 
 # %%
-# We can evaluate our model using the :meth:`~skore.EstimatorReport.metrics` accessor.
-# In particular, we can get the report metrics that is computed for us (including the
-# fit and prediction times):
+# We can use the :meth:`~skore.EstimatorReport.metrics` attribute to evaluate the
+# performance of our estimator:
 
 # %%
 rf_report.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
-# For inspection, we can also retrieve the predictions, on the train set for example
-# (here we display only the first 10 predictions for conciseness purposes):
+# We can also retrieve the predictions directly e.g. on the train set:
 
 # %%
 rf_report.get_predictions(data_source="train")[0:10]
 
 # %%
-# We can also plot the ROC curve that is generated for us:
+# More metrics are available, such as the ROC curve:
 
 # %%
-roc_plot = rf_report.metrics.roc()
-roc_plot.plot()
+roc = rf_report.metrics.roc()
+roc.plot()
 
 # %%
-# Furthermore, we can inspect our model using the
-# :meth:`~skore.EstimatorReport.feature_importance` accessor.
-# In particular, we can inspect the model using the permutation feature importance:
+# We can further inspect our model using the
+# :meth:`~skore.EstimatorReport.feature_importance` attribute.
+# For example we can compute the permutation feature importance:
 
 # %%
 rf_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
@@ -124,8 +124,8 @@ rf_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
 # Cross-validation with skore
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# skore has also (re-)implemented a :class:`skore.CrossValidationReport` class that
-# contains several :class:`skore.EstimatorReport`, one for each split.
+# skore can perform cross-validation through the :class:`skore.CrossValidationReport`
+# class, which is simply an ensemble of :class:`EstimatorReports <skore.EstimatorReport>` (one for each split).
 
 # %%
 from skore import CrossValidationReport
@@ -133,36 +133,37 @@ from skore import CrossValidationReport
 cv_report = CrossValidationReport(rf, X, y, splitter=5)
 
 # %%
-# We display the cross-validation report helper:
+# The cross-validation report also has a helper menu:
 
 # %%
 cv_report.help()
 
 # %%
-# We display the mean and standard deviation for each metric:
+# It can also compute common metrics:
 
 # %%
 cv_report.metrics.summarize().frame()
 
 # %%
-# or by individual split:
+# If aggregation is not necessary:
 
 # %%
 cv_report.metrics.summarize(aggregate=None).frame()
 
 # %%
-# We display the ROC curves for each split:
+# Plot metrics like the ROC curve are also implemented:
 
 # %%
-roc_plot_cv = cv_report.metrics.roc()
-roc_plot_cv.plot()
+roc_cv = cv_report.metrics.roc()
+roc_cv.plot()
 
 # %%
-# We can retrieve the estimator report of a specific split to investigate further,
-# for example getting the report metrics for the first split only:
+# The cross-validation report contains the individual estimator reports
+# for each split, so e.g. we can obtain metrics for the first split only:
 
 # %%
-cv_report.estimator_reports_[0].metrics.summarize().frame()
+first_split_report = cv_report.estimator_reports_[0]
+first_split_report.metrics.summarize().frame()
 
 # %%
 # .. seealso::
@@ -174,23 +175,27 @@ cv_report.estimator_reports_[0].metrics.summarize().frame()
 # Comparing estimator reports
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# :class:`skore.ComparisonReport` enables users to compare several estimator reports
-# (corresponding to several estimators) on a same test set, as in a benchmark of
-# estimators.
+# skore makes it easy to compare estimators on the same test set through the
+# :class:`skore.ComparisonReport` class.
 #
-# Apart from the previous ``rf_report``, let us define another estimator report:
+# We previously trained a random forest estimator which we investigated in
+# ``rf_report``.
+# Let us now try another algorithm:
 
 # %%
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier
 
-gb = GradientBoostingClassifier(random_state=0)
 gb_report = EstimatorReport(
-    gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test, pos_label=1
+    HistGradientBoostingClassifier(random_state=0),
+    X_train=X_train,
+    X_test=X_test,
+    y_train=y_train,
+    y_test=y_test,
+    pos_label=1,
 )
 
 # %%
-# We can conveniently compare our two estimator reports, that were applied to the exact
-# same test set:
+# Now let us create a :class:`~skore.ComparisonReport`:
 
 # %%
 from skore import ComparisonReport
@@ -198,24 +203,19 @@ from skore import ComparisonReport
 comparator = ComparisonReport(reports=[rf_report, gb_report])
 
 # %%
-# As for the :class:`~skore.EstimatorReport` and the
-# :class:`~skore.CrossValidationReport`, we have a helper:
+# The comparison report also has a helper menu:
 
 # %%
 comparator.help()
 
 # %%
-# Let us display the result of our benchmark:
+# It can also compute common metrics, which will give us our benchmark:
 
 # %%
 comparator.metrics.summarize(indicator_favorability=True).frame()
 
 # %%
-# Thus, we easily have the result of our benchmark for several recommended metrics.
-
-# %%
-# Moreover, we can display the ROC curve for the two estimator reports we want to
-# compare, by superimposing them on the same figure:
+# Other metrics like the ROC curve are also implemented to enable easy comparison:
 
 # %%
 comparator.metrics.roc().plot()
@@ -241,7 +241,7 @@ X_employee["date_first_hired"] = pd.to_datetime(
 X_employee.head(2)
 
 # %%
-# We can observe that there is a ``date_first_hired`` which is time-based.
+# The dataset contains a ``date_first_hired`` column which is time-based.
 # Now, let us apply :func:`skore.train_test_split` on this data:
 
 # %%
@@ -254,7 +254,7 @@ _ = skore.train_test_split(
 # %%
 # We get a ``TimeBasedColumnWarning`` advising us to use
 # :class:`sklearn.model_selection.TimeSeriesSplit` instead!
-# Indeed, we should not shuffle time-ordered data!
+# Indeed, shuffling time-ordered data is a common pitfall.
 
 # %%
 # .. seealso::
@@ -264,18 +264,14 @@ _ = skore.train_test_split(
 #   :func:`skore.train_test_split`, see :ref:`example_train_test_split`.
 
 # %%
-# Tracking: skore project
-# =======================
+# Tracking work with skore
+# ========================
 #
-# Another key feature of skore is its :class:`~skore.Project` that allows us to store
+# Another key feature of skore is :class:`skore.Project` that allows us to store
 # and retrieve :class:`~skore.EstimatorReport` objects.
 
 # %%
-# Setup: creating and loading a skore project
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-# %%
-#  Let us start by creating a skore project named ``my_project``:
+# Let us create a skore project:
 
 # %%
 
@@ -289,26 +285,26 @@ os.environ["SKORE_WORKSPACE"] = temp_dir.name
 my_project = skore.Project("my_project")
 
 # %%
-# Storing some reports in our project
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Storing reports
+# ^^^^^^^^^^^^^^^
 #
-# Now that the project exists, we can store some useful reports in it using
+# Now that the project exists, we can store reports in it using
 # :func:`~skore.Project.put`, with a key-value convention.
 
 # %%
 # Let us store the estimator reports of the random forest and the gradient boosting
-# to help us track our experiments:
+# models to keep track of our experiments:
 
 # %%
-my_project.put("estimator_report", rf_report)
-my_project.put("estimator_report", gb_report)
+my_project.put("my_estimator_report", rf_report)
+my_project.put("my_estimator_report", gb_report)
 
 # %%
-# Retrieving our stored reports
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Retrieving stored reports
+# ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# Now, let us retrieve the data that we just stored using a
+# We can retrieve the data in the project in the form of a
 # :class:`~skore.project.summary.Summary` object:
 
 # %%
@@ -316,51 +312,52 @@ summary = my_project.summarize()
 print(type(summary))
 
 # %%
-# We can retrieve the complete list of stored reports:
+# From there, we can retrieve the complete list of stored reports:
 
 # %%
 from pprint import pprint
 
-reports_get = summary.reports()
-pprint(reports_get)
+stored_reports = summary.reports()
+pprint(stored_reports)
 
 # %%
-# For example, we can compare the stored reports:
+# And we can manipulate them as usual, e.g. compare them:
 
 # %%
-comparator = ComparisonReport(reports=reports_get)
+comparator = ComparisonReport(reports=stored_reports)
 comparator.metrics.summarize(pos_label=1, indicator_favorability=True).frame()
 
 # %%
-# We can retrieve any accessor of our stored estimator reports, for example
-# the timings from the first estimator report:
+# We can retrieve metrics about our stored estimator reports, for example
+# the fit and test times for the first estimator report:
 
 # %%
-reports_get[0].metrics.timings()
+stored_reports[0].metrics.timings()
 
 # %%
 # But what if instead of having stored only 2 estimators reports, we had a dozen or
 # even a few hundreds over several months of experimenting?
-# We would need to navigate through our stored estimator reports.
-# For that, the skore project provides a convenient search feature.
+# We would need a more powerful way to navigate through our stored estimator reports.
 
 # %%
-# Searching through our stored reports
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Searching through project reports
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Using the interactive widget
 # """"""""""""""""""""""""""""
 #
 # If rendered in a Jupyter notebook, ``summary`` would render an interactive
-# parallel coordinate plot to search for your preferred model based on some metrics.
-# Here is a screenshot:
+# parallel coordinate plot to search for your preferred model based on some metrics,
+# which looks like this:
 #
 # .. image:: /_static/images/screenshot_getting_started.png
 #   :alt: Screenshot of the widget in a Jupyter notebook
 #
-# How to use the widget? You select the estimator(s) you are interested in by clicking
-# on the plot and the metric(s) you are interested in by checking them.
-# Then, using the python API, we can retrieve the *corresponding* list of stored reports:
+# Each line is an estimator. We can select interesting estimators by
+# clicking on the plot: clicking on a line selects one estimator, and dragging on
+# one of the metrics axes will trigger a brush tool to select several estimators.
+#
+# Once we are done selecting on the plot, we can retrieve the selected reports:
 #
 # .. code:: python
 #
@@ -370,41 +367,37 @@ reports_get[0].metrics.timings()
 # Using the Python API
 # """"""""""""""""""""
 #
-# Alternatively, this search feature can be performed using the Python API.
+# Alternatively, we can query for reports using Python (more precisely, the pandas
+# query language).
 
 # %%
-# We can perform some queries on our stored data using the following keys:
+# We can use the following keys to write queries:
 
 # %%
-pprint(summary.keys())
+summary.keys()
 
 # %%
-# For example, we can query all the estimators corresponding to a
+# For example, we can query for all the instances of
 # :class:`~sklearn.ensemble.RandomForestClassifier`:
 
 # %%
-report_search_rf = summary.query(
-    "learner.str.contains('RandomForestClassifier')"
-).reports()
-pprint(report_search_rf)
+summary.query("learner.str.contains('RandomForestClassifier')").reports()
 
 # %%
-# Or, we can query all the estimator reports corresponding to a classification
-# task:
+# Or, we can query for all the estimators made for classification:
 
 # %%
-report_search_clf = summary.query("ml_task.str.contains('classification')").reports()
-pprint(report_search_clf)
+pprint(summary.query("ml_task.str.contains('classification')").reports())
 
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
+
 # %%
 # .. admonition:: Stay tuned!
 #
-#   These are only the initial features: skore is a work in progress and aims to be
-#   an end-to-end library for data scientists.
+#   This is only the beginning for skore. We welcome your feedback and ideas
+#   to make it the best tool for end-to-end data science.
 #
-#   Feedbacks are welcome: please feel free to join our
-#   `Discord <http://discord.probabl.ai>`_ or
-#   `create an issue <https://github.com/probabl-ai/skore/issues>`_.
+#   Feel free to join our community on `Discord <http://discord.probabl.ai>`_
+#   or `create an issue <https://github.com/probabl-ai/skore/issues>`_.
