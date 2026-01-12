@@ -77,6 +77,7 @@ html_css_files = ["css/custom.css"]
 html_js_files = [
     "js/sg_plotly_resize.js",
     "js/reo.js",
+    "js/posthog.js",
 ]
 
 # list of examples in explicit order
@@ -176,14 +177,6 @@ html_theme_options = {
     "navbar_start": ["navbar-logo", "version-switcher"],
     "navbar_center": ["navbar-nav"],
     "navbar_end": ["theme-switcher", "navbar-icon-links"],
-}
-
-# Plausible Analytics
-html_theme_options["analytics"] = {
-    # The domain you'd like to use for this analytics instance
-    "plausible_analytics_domain": domain,
-    # The analytics script that is served by Plausible
-    "plausible_analytics_url": "https://plausible.io/js/script.js",
 }
 
 # Sphinx remove the sidebar from some pages
