@@ -21,6 +21,7 @@ class TestCustomMetricSummarize:
         "response_method", ["predict", ["predict", "predict_proba"]]
     )
     def test_works(self, fixture_name, request, response_method):
+        """Check that computing a custom metric works."""
         report = request.getfixturevalue(fixture_name)
         if isinstance(report, tuple):
             report = report[0]
@@ -30,6 +31,8 @@ class TestCustomMetricSummarize:
         ).frame()
 
     def test_no_response_method(self, fixture_name, request):
+        """Check that computing a custom metric without passing the
+        response method raises an error."""
         report = request.getfixturevalue(fixture_name)
         if isinstance(report, tuple):
             report = report[0]
