@@ -231,32 +231,29 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
     assert default_colors == expected_default
 
     if multiclass:
-        # For multiclass, palette works since there's a hue variable
-        display.plot(relplot_kwargs={"palette": ["red", "blue"]})
+        # For multiclass, use palette since there's a hue variable
+        palette_colors = ["red", "blue", "green"]
+        display.plot(relplot_kwargs={"palette": palette_colors})
         assert len(display.lines_) == n_reports * n_labels
-        # Colors: red for first label, blue for second, default for third if exists
-        palette_colors = ["red", "blue"] + list(sns.color_palette()[2:n_labels])
-        expected_colors = palette_colors[:n_labels] * n_reports
+        expected_colors = palette_colors * n_reports
         for line, expected_color, default_color in zip(
             display.lines_, expected_colors, default_colors, strict=True
         ):
             assert line.get_color() == expected_color
             assert mpl.colors.to_rgb(line.get_color()) != default_color
 
-        display.set_style(
-            relplot_kwargs={"palette": ["green", "yellow"]}, policy="update"
-        )
+        palette_colors = ["magenta", "cyan", "yellow"]
+        display.set_style(relplot_kwargs={"palette": palette_colors}, policy="update")
         display.plot()
         assert len(display.lines_) == n_reports * n_labels
-        palette_colors = ["green", "yellow"] + list(sns.color_palette()[2:n_labels])
-        expected_colors = palette_colors[:n_labels] * n_reports
+        expected_colors = palette_colors * n_reports
         for line, expected_color, default_color in zip(
             display.lines_, expected_colors, default_colors, strict=True
         ):
             assert line.get_color() == expected_color
             assert mpl.colors.to_rgb(line.get_color()) != default_color
     else:
-        # For binary, palette is ignored (no hue), so use color instead
+        # For binary, use color since there's no hue variable
         display.plot(relplot_kwargs={"color": "red"})
         assert len(display.lines_) == n_reports * n_labels
         expected_colors = ["red"] * n_reports

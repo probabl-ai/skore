@@ -181,35 +181,41 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
         # With subplot_by=None, colors cycle by label
         expected_default = sns.color_palette()[:n_labels]
         assert default_colors == expected_default
-        default_color = default_colors[0]
     else:
-        default_color = default_colors[0]
-        assert default_color == sns.color_palette()[:1][0]
+        assert default_colors == [sns.color_palette()[0]]
 
     if multiclass:
         # For multiclass, use palette since there's a hue variable
-        display.plot(relplot_kwargs={"palette": ["red"] * n_labels})
-        for line in display.lines_:
-            assert line.get_color() == "red"
+        palette_colors = ["red", "blue", "green"]
+        display.plot(relplot_kwargs={"palette": palette_colors})
+        expected_colors = palette_colors
+        for line, expected_color, default_color in zip(
+            display.lines_, expected_colors, default_colors, strict=True
+        ):
+            assert line.get_color() == expected_color
             assert mpl.colors.to_rgb(line.get_color()) != default_color
 
-        display.set_style(
-            relplot_kwargs={"palette": ["blue"] * n_labels}, policy="update"
-        )
+        palette_colors = ["magenta", "cyan", "yellow"]
+        display.set_style(relplot_kwargs={"palette": palette_colors}, policy="update")
         display.plot()
-        for line in display.lines_:
-            assert line.get_color() == "blue"
+        expected_colors = palette_colors
+        for line, expected_color, default_color in zip(
+            display.lines_, expected_colors, default_colors, strict=True
+        ):
+            assert line.get_color() == expected_color
             assert mpl.colors.to_rgb(line.get_color()) != default_color
     else:
-        # For binary, color works since there's no hue variable
+        # For binary, use color since there's no hue variable
         display.plot(relplot_kwargs={"color": "red"})
-        assert display.lines_[0].get_color() == "red"
-        assert mpl.colors.to_rgb(display.lines_[0].get_color()) != default_color
+        for line in display.lines_:
+            assert line.get_color() == "red"
+            assert mpl.colors.to_rgb(line.get_color()) != default_colors[0]
 
         display.set_style(relplot_kwargs={"color": "blue"}, policy="update")
         display.plot()
-        assert display.lines_[0].get_color() == "blue"
-        assert mpl.colors.to_rgb(display.lines_[0].get_color()) != default_color
+        for line in display.lines_:
+            assert line.get_color() == "blue"
+            assert mpl.colors.to_rgb(line.get_color()) != default_colors[0]
 
 
 def test_binary_classification_data_source(
