@@ -22,6 +22,7 @@ from urllib.parse import quote
 import joblib
 import orjson
 from httpx import HTTPStatusError
+from rich.progress import Progress, TextColumn, TimeElapsedColumn
 
 from skore_hub_project.client.client import Client, HUBClient
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
@@ -200,18 +201,33 @@ class Project:
                 f"`skore.CrossValidationReport` (found '{type(report)}')"
             )
 
-        payload_dict = payload.model_dump()
-        payload_json_bytes = orjson.dumps(payload_dict, option=orjson.OPT_NON_STR_KEYS)
+        progress = Progress(
+            TextColumn("{task.description}"),
+            TimeElapsedColumn(),
+            transient=True,
+        )
 
-        with HUBClient() as hub_client:
-            hub_client.post(
-                url=f"projects/{self.quoted_tenant}/{self.quoted_name}/{endpoint}",
-                content=payload_json_bytes,
-                headers={
-                    "Content-Length": str(len(payload_json_bytes)),
-                    "Content-Type": "application/json",
-                },
+        with progress:
+            task = progress.add_task(
+                description=f"[bold red1]Putting [bright_white on red1 blink]{key}"
             )
+
+            payload_dict = payload.model_dump()
+            payload_json_bytes = orjson.dumps(
+                payload_dict, option=orjson.OPT_NON_STR_KEYS
+            )
+
+            with HUBClient() as hub_client:
+                hub_client.post(
+                    url=f"projects/{self.quoted_tenant}/{self.quoted_name}/{endpoint}",
+                    content=payload_json_bytes,
+                    headers={
+                        "Content-Length": str(len(payload_json_bytes)),
+                        "Content-Type": "application/json",
+                    },
+                )
+
+            progress.update(task, completed=1)
 
     @ensure_project_is_created
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:

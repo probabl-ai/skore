@@ -1,15 +1,19 @@
 """Interface definition of the payload used to associate an artifact with a project."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from contextlib import AbstractContextManager, nullcontext
+from concurrent.futures import ThreadPoolExecutor
 from functools import cached_property
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from skore_hub_project import Project
-from skore_hub_project.artifact.upload import upload
-
-Content = str | bytes | None
+from skore_hub_project.artifact.upload import upload as upload_content
+from skore_hub_project.client.client import HUBClient
 
 
 class Artifact(BaseModel, ABC):
@@ -22,6 +26,10 @@ class Artifact(BaseModel, ABC):
         The project to which the artifact's payload must be associated.
     content_type : str
         The content-type of the artifact content.
+    computed : bool
+        True when the artifact content is computed, False otherwise.
+    uploaded : bool
+        True when the artifact is uploaded, False otherwise.
 
     Notes
     -----
@@ -29,47 +37,97 @@ class Artifact(BaseModel, ABC):
     as a file to the ``hub`` artifacts storage.
     """
 
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     project: Project = Field(repr=False, exclude=True)
     content_type: str = Field(init=False)
-
-    @abstractmethod
-    def content_to_upload(self) -> Content | AbstractContextManager[Content]:
-        """
-        Content of the artifact to upload.
-
-        Example
-        -------
-        You can implement this ``abstractmethod`` to return directly the content:
-
-            def content_to_upload(self) -> str:
-                return "<str>"
-
-        or to yield the content, as a ``contextmanager`` would:
-
-            from contextlib import contextmanager
-
-            @contextmanager
-            def content_to_upload(self) -> Generator[str, None, None]:
-                yield "<str>"
-        """
+    computed: bool = Field(init=False, repr=False, exclude=True, default=False)
+    uploaded: bool = Field(init=False, repr=False, exclude=True, default=False)
 
     @computed_field  # type: ignore[prop-decorator]
-    @cached_property
+    @property
+    @abstractmethod
     def checksum(self) -> str | None:
-        """Checksum used to identify the content of the artifact."""
-        contextmanager = self.content_to_upload()
+        """The checksum used to identify the content of the artifact."""
 
-        if not isinstance(contextmanager, AbstractContextManager):
-            contextmanager = nullcontext(contextmanager)
+    def __del__(self) -> None:  # noqa: D105
+        self.filepath.unlink(True)
 
-        with contextmanager as content:
-            if content is not None:
-                return upload(
-                    project=self.project,
-                    content=content,
-                    content_type=self.content_type,
-                )
+    @cached_property
+    def filepath(self) -> Path:
+        """The temporary filepath used to store the content of the artifact."""
+        with NamedTemporaryFile(mode="w+b", delete=False) as file:
+            return Path(file.name)
 
-        return None
+    @abstractmethod
+    def compute(self) -> None:
+        """
+        Compute and write the content of the artifact in ``artifact.filepath``.
+
+        Notes
+        -----
+        It is triggered when ``artifact.upload`` is called, in a lazy way.
+        """
+
+    def upload(
+        self,
+        *,
+        pool: ThreadPoolExecutor,
+        checksums_being_uploaded: set[str],
+    ) -> None:
+        """
+        Upload the artifact.
+
+        Notes
+        -----
+        Artifact that was already uploaded in its whole will be ignored.
+        It triggers the compute of the content of the artifact, in a lazy way.
+        """
+        if self.uploaded:
+            return
+
+        self.uploaded = True
+
+        try:
+            if (self.checksum is None) or (self.checksum in checksums_being_uploaded):
+                return
+
+            checksums_being_uploaded.add(self.checksum)
+
+            with HUBClient() as hub_client:
+                # Ask for the artifact.
+                #
+                # An non-empty response means that an artifact with the same checksum
+                # already exists. The content doesn't have to be re-uploaded.
+                if (
+                    response := hub_client.get(
+                        url=f"projects/{self.project.quoted_tenant}/{self.project.quoted_name}/artifacts",
+                        params={
+                            "artifact_checksum": self.checksum,
+                            "status": "uploaded",
+                        },
+                    )
+                ) and (response.json()):
+                    return
+
+            self.compute()
+
+            upload_content(
+                project=self.project,
+                checksum=self.checksum,
+                filepath=self.filepath,
+                content_type=self.content_type,
+                pool=pool,
+            )
+        finally:
+            self.filepath.unlink(missing_ok=True)
+
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:  # noqa: D102
+        if not self.uploaded:
+            raise RuntimeError(
+                "You cannot access the dictionary representation of the model of an "
+                "artifact without explicitly uploading it. "
+                "Please use `artifact.upload()` before."
+            )
+
+        return super().model_dump(**kwargs)

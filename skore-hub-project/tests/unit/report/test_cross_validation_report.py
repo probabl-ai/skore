@@ -18,7 +18,6 @@ from skore_hub_project.artifact.media import (
     RocTrain,
 )
 from skore_hub_project.artifact.media.data import TableReport
-from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
@@ -71,10 +70,7 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
         for report, cache in zip(reports, caches, strict=True):
             report._cache = cache
 
-    with Serializer(pickle_bytes) as serializer:
-        checksum = serializer.checksum
-
-    return pickle_bytes, checksum
+    return pickle_bytes, f"skore-{object.__class__.__name__}-{object._hash}"
 
 
 @fixture
@@ -265,15 +261,17 @@ class TestCrossValidationReportPayload:
             assert estimator.report == payload.report.estimator_reports_[i]
 
             # ensure `upload` is well called
-            pickle, checksum = serialize(payload.report.estimator_reports_[i])
+            _, checksum = serialize(payload.report.estimator_reports_[i])
 
             estimator.model_dump()
 
             assert upload_mock.called
             assert not upload_mock.call_args.args
+            assert upload_mock.call_args.kwargs.pop("pool")
             assert upload_mock.call_args.kwargs == {
                 "project": project,
-                "content": pickle,
+                "filepath": estimator.pickle.filepath,
+                "checksum": checksum,
                 "content_type": "application/octet-stream",
             }
 
@@ -285,17 +283,19 @@ class TestCrossValidationReportPayload:
     def test_pickle(
         self, small_cv_binary_classification, project, payload, upload_mock, respx_mock
     ):
-        pickle, checksum = serialize(small_cv_binary_classification)
+        _, checksum = serialize(small_cv_binary_classification)
 
-        # Ensure payload is well constructed
+        # Ensure checksum is well constructed
         assert payload.pickle.checksum == checksum
 
         # ensure `upload` is well called
         assert upload_mock.called
         assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs.pop("pool")
         assert upload_mock.call_args.kwargs == {
             "project": project,
-            "content": pickle,
+            "filepath": payload.pickle.filepath,
+            "checksum": checksum,
             "content_type": "application/octet-stream",
         }
 

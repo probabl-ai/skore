@@ -1,4 +1,6 @@
-from joblib import hash
+from io import BytesIO
+
+from joblib import dump, hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from skore import CrossValidationReport, EstimatorReport
@@ -16,7 +18,6 @@ from skore_hub_project.artifact.media import (
     TableReportTest,
     TableReportTrain,
 )
-from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.metric import (
     AccuracyTest,
     AccuracyTrain,
@@ -38,27 +39,20 @@ from skore_hub_project.report import EstimatorReportPayload
 
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
-    import io
-
-    import joblib
-
     reports = [object] + getattr(object, "estimator_reports_", [])
     caches = [report_to_clear._cache for report_to_clear in reports]
 
     object.clear_cache()
 
     try:
-        with io.BytesIO() as stream:
-            joblib.dump(object, stream)
+        with BytesIO() as stream:
+            dump(object, stream)
             pickle_bytes = stream.getvalue()
     finally:
         for report, cache in zip(reports, caches, strict=True):
             report._cache = cache
 
-    with Serializer(pickle_bytes) as serializer:
-        checksum = serializer.checksum
-
-    return pickle_bytes, checksum
+    return pickle_bytes, f"skore-{object.__class__.__name__}-{object._hash}"
 
 
 @fixture
@@ -88,18 +82,17 @@ class TestEstimatorReportPayload:
     ):
         pickle, checksum = serialize(binary_classification)
 
-        # Ensure payload is well constructed
-        assert payload.pickle.checksum == checksum
-
-        # Ensure payload is well constructed
+        # Ensure checksum is well constructed
         assert payload.pickle.checksum == checksum
 
         # ensure `upload` is well called
         assert upload_mock.called
         assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs.pop("pool")
         assert upload_mock.call_args.kwargs == {
             "project": project,
-            "content": pickle,
+            "filepath": payload.pickle.filepath,
+            "checksum": checksum,
             "content_type": "application/octet-stream",
         }
 

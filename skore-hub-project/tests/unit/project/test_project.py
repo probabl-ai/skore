@@ -33,6 +33,10 @@ def monkeypatch_client(monkeypatch):
         FakeClient,
     )
     monkeypatch.setattr(
+        "skore_hub_project.artifact.artifact.HUBClient",
+        FakeClient,
+    )
+    monkeypatch.setattr(
         "skore_hub_project.artifact.upload.HUBClient",
         FakeClient,
     )
@@ -72,9 +76,11 @@ def monkeypatch_permutation(monkeypatch):
 
 @fixture(autouse=True)
 def monkeypatch_table_report_representation(monkeypatch):
+    def compute(artifact):
+        artifact.computed = True
+
     monkeypatch.setattr(
-        "skore_hub_project.artifact.media.data.TableReport.content_to_upload",
-        lambda self: None,
+        "skore_hub_project.artifact.media.data.TableReport.compute", compute
     )
 
 
@@ -105,9 +111,7 @@ class TestProject:
 
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
-        respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
-            Response(200, json=[])
-        )
+        respx_mock.get("projects/<tenant>/<name>/artifacts").mock(Response(200, json=1))
         respx_mock.post("projects/<tenant>/<name>/estimator-reports").mock(
             Response(200)
         )
@@ -140,9 +144,7 @@ class TestProject:
         self, monkeypatch, small_cv_binary_classification, respx_mock
     ):
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
-        respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
-            Response(200, json=[])
-        )
+        respx_mock.get("projects/<tenant>/<name>/artifacts").mock(Response(200, json=1))
         respx_mock.post("projects/<tenant>/<name>/cross-validation-reports").mock(
             Response(200)
         )
