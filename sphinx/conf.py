@@ -179,6 +179,10 @@ html_theme_options = {
     "navbar_end": ["theme-switcher", "navbar-icon-links"],
 }
 
+# Additional templates that should be rendered to pages, maps page names to
+# template names.
+html_additional_pages = {"index": "index.html"}
+
 # Sphinx remove the sidebar from some pages
 html_sidebars = {
     "index": [],

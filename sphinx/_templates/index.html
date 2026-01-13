@@ -1,0 +1,162 @@
+{% extends "layout.html" %}
+{% set title = 'skore: Track your Data Science' %}
+
+{%- block extrahead %}
+    {{ super() }}
+    {# Add here landing-page specific stuff that goes in the header (eg css) #}
+{%- endblock extrahead %}
+
+{% block docs_navbar %}
+    {{ super() }}
+
+    {# We add the full-width banner below the navbar, as the div there is
+still full-width (unlike the article) #}
+<div class="container-fluid sk-landing-bg">
+  <div class="container sk-landing-container">
+    <div class="row">
+      <div class="col-md-4 d-flex align-items-center">
+          <h1 class="sk-landing-header text-white text-monospace">skore</h1>
+      </div>
+      <div class="col-md-8">
+        <ul class="sk-landing-header-body">
+          <li>scikit-learn compatible</li>
+          <li>Evaluate and inspect your data science experiments</li>
+          <li>Store and retrieve your data science artifacts</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock docs_navbar %}
+
+{% block docs_main %}
+<div class="container-fluid sk-landing-container">
+  <div class="row row-padding-main-container">
+    <h1 class="hero-title">Track your Data Science</h1>
+    <p class="hero-description"><code>skore</code> is a Python library to
+      help, evaluate, and getting insights from your predictive models.
+      <br />
+      We structure and store your experiments such that you can easily retrieve them
+      later.
+    </p>
+    <div class="text-center mt-4">
+      <a class="btn sk-btn-orange mb-1 d-inline-block" href="{{ pathto('auto_examples/getting_started/plot_skore_getting_started') }}" role="button">Get started →</a>
+  </div>
+
+
+  <!-- Feature Section 1 -->
+  <div class="row mb-0 row-padding-between-features">
+    <div class="col-md-5 mb-5">
+      <h4 class="feature-title">Effortless Tabular Learning</h4>
+      <p class="feature-text">Create strong scikit-learn pipeline baselines effortlessly with
+        <a class="reference internal"
+        href="reference/generated/skrub.TableVectorizer.html#tablevectorizer"
+        title="skrub.TableVectorizer"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">TableVectorizer</span></code></a>
+        and
+        <a class="reference internal"
+        href="reference/generated/skrub.tabular_pipeline.html#skrub.tabular_pipeline"
+        title="skrub.tabular_pipeline"><code class="xref py py-class docutils
+        literal notranslate"><span class="pre">tabular_pipeline</span></code></a>.
+      </p>
+    </div>
+
+
+    <div class="col-md-7">
+      <!-- Placeholder for coding demo -->
+      {% include "demo_tabular_pipeline.html" %}
+
+    </div>
+  </div>
+
+  <!-- Community Section -->
+  <div class="row mt-5 flex-md-row-reverse row-padding-between-features">
+    <div class="col-md-4 mb-4">
+      <h4 class="feature-title">Our Community</h4>
+      <p class="feature-text">
+        The <code>skore</code> project is driven by Probabl together with a world-wide
+        community of contributors. Here we display a randomly selected group of 30
+        contributors.
+      </p>
+    </div>
+    <div class="col-md-8">
+        <div class="contributors-list" id="contributors-list">
+        <!-- Contributors will be dynamically added here -->
+        </div>
+    </div>
+  </div>
+
+  <div class="row mb-0 row-padding-between-features">
+    <h1 class="hero-title">Try it yourself!</h1>
+    <p class="hero-description">
+      Ready to write less code, focus on what matters, and store your experiments to
+      retrieve them later? Dive into <code>skore</code> now and be part of our growing
+      community!
+    </p>
+    <div class="text-center mt-4">
+        <a class="btn sk-btn-orange mb-1 d-inline-block" href="{{ pathto('auto_examples/getting_started/plot_skore_getting_started') }}" role="button">Get started →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1)); // random index from 0 to i
+        [array[i], array[j]] = [array[j], array[i]];  // swap elements
+    }
+    return array;
+}
+
+function selectFirst30(array) {
+    // Shuffle the array
+    shuffleArray(array);
+
+    // Return the first 30 elements
+    return array.slice(0, 30);
+}
+
+async function fetchContributors() {
+const response = await fetch('https://api.github.com/repos/probabl-ai/skore/contributors?per_page=100');
+var contributors = await response.json();
+contributors = selectFirst30(contributors)
+
+const contributorsList = document.getElementById('contributors-list');
+
+contributors.forEach(contributor => {
+    const contributorElement = document.createElement('div');
+    contributorElement.classList.add('contributor');
+
+    contributorElement.innerHTML = `
+        <a href="${contributor.html_url}" target="_blank">
+            <img src="${contributor.avatar_url}" alt="${contributor.login}">
+            <div class="contributor-name">${contributor.login}</div>
+        </a>
+    `;
+
+    contributorsList.appendChild(contributorElement);
+});
+
+// Add "And many more" link as the last element
+const andMoreElement = document.createElement('div');
+andMoreElement.classList.add('more-contributors');
+andMoreElement.innerHTML = `
+    <a href="https://github.com/probabl-ai/skore/graphs/contributors" target="_blank">
+        And many more →
+    </a>
+`;
+contributorsList.appendChild(andMoreElement);
+}
+
+fetchContributors();
+</script>
+
+
+{% endblock docs_main %}
+
+{%- block footer %}
+
+<div class="home-footer">the skore developers - 2026</div>
+
+{%- endblock footer %}
