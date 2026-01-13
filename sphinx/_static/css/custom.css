@@ -42,6 +42,60 @@ div.docutils.container.index-box {
   }
 }
 
+.card-body {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+.card-title {
+  margin-bottom: 1.0rem;
+  text-align: left;
+}
+
+.card-body p {
+  text-align: left;
+}
+
+.sd-card  {
+  border: 0px;
+  margin-block-end: 1.0rem;
+}
+
+.sk-landing-header text-white text-monospace {
+  font-family: var(--pst-font-family-heading);
+  margin-top: -20px;
+}
+
+div.card-body div.output_result {
+  overflow-x: auto;
+}
+
+div.card-body details {
+border-radius: 4px;
+}
+
+div.card-body summary i {
+  color: var(--pst-color-on-surface);
+  margin-left: 4em;
+}
+
+div.card-body summary {
+  margin: 0.5em;
+  padding-left: 0.5em;
+}
+
+div.card-body summary:hover {
+background-color: var(--pst-color-border-muted);
+}
+
+div.card-body details[open] summary {
+margin-bottom: -0.5em;
+}
+
+div.card-body details[open] summary i {
+  display: none;
+}
+
 /* Download/laucher links and top hint (sphinx-gallery) */
 
 .sphx-glr-download-link-note,
