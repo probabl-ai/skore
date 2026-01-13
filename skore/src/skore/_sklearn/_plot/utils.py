@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -348,47 +348,3 @@ def sample_mpl_colormap(
     """
     indices = np.linspace(0, 1, n)
     return [cmap(i) for i in indices]
-
-
-def _validate_subplot_by(
-    subplot_by: Literal["split", "estimator", "auto"] | None,
-    report_type: ReportType,
-) -> Literal["split", "estimator"] | None:
-    """Validate the `subplot_by` parameter.
-
-    Parameters
-    ----------
-    subplot_by : Literal["split", "estimator", "auto"] | None
-        The variable to use for subplotting.
-
-    report_type : {"comparison-cross-validation", "comparison-estimator", \
-            "cross-validation", "estimator"}
-        The type of report.
-
-    Returns
-    -------
-    Literal["split", "estimator"] | None
-        The validated `subplot_by` parameter.
-    """
-    if subplot_by == "auto":
-        if report_type in ["comparison-estimator", "comparison-cross-validation"]:
-            return "estimator"
-        else:
-            return None
-
-    valid_subplot_by: list[Literal["split", "estimator"] | None] = []
-    if report_type in ["estimator", "cross-validation"]:
-        valid_subplot_by.append(None)
-    if report_type in ["cross-validation"]:
-        valid_subplot_by.append("split")
-    if report_type in ["comparison-estimator", "comparison-cross-validation"]:
-        valid_subplot_by.append("estimator")
-
-    if subplot_by not in valid_subplot_by:
-        raise ValueError(
-            f"Invalid `subplot_by` parameter. Valid options are: "
-            f"{', '.join(str(s) for s in valid_subplot_by)} or auto. "
-            f"Got '{subplot_by}' instead."
-        )
-
-    return subplot_by

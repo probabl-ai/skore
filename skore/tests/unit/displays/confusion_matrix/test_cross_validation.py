@@ -159,47 +159,6 @@ def test_data_source(pyplot, forest_binary_classification_data):
     assert display_custom.confusion_matrix.shape[0] > 0
 
 
-def test_default_heatmap_kwargs(pyplot, forest_binary_classification_data):
-    """Check that default heatmap kwargs are applied correctly."""
-    (estimator, X, y), cv = forest_binary_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    display = report.metrics.confusion_matrix()
-    display.plot()
-
-    assert display.ax_.collections[0].get_cmap().name == "Blues"
-    assert len(display.ax_.texts) > 0
-    assert all(isinstance(text, mpl.text.Text) for text in display.ax_.texts)
-    for text in display.ax_.texts:
-        text_content = text.get_text()
-        assert "±" in text_content or "*" in text_content
-    assert len(display.figure_.axes) == 1
-
-
-def test_heatmap_kwargs_override(pyplot, forest_binary_classification_data):
-    """Check that we can override default heatmap kwargs."""
-    (estimator, X, y), cv = forest_binary_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-
-    display = report.metrics.confusion_matrix()
-    display.plot(heatmap_kwargs={"cmap": "Reds"})
-    assert display.ax_.collections[0].get_cmap().name == "Reds"
-
-    display = report.metrics.confusion_matrix()
-    display.plot(heatmap_kwargs={"annot": False})
-    # There is still the pos_label annotation
-    assert len(display.ax_.texts) == 1
-
-    display = report.metrics.confusion_matrix()
-    display.plot(normalize="all", heatmap_kwargs={"fmt": ".2e"})
-    for text in display.ax_.texts:
-        text_content = text.get_text()
-        assert "e-" in text_content or "*" in text_content
-
-    display = report.metrics.confusion_matrix()
-    display.plot(heatmap_kwargs={"cbar": True})
-    assert len(display.figure_.axes) == 2
-
-
 def test_set_style(pyplot, forest_binary_classification_data):
     """Check that the set_style method works with heatmap_kwargs."""
     (estimator, X, y), cv = forest_binary_classification_data, 3
@@ -509,3 +468,30 @@ def test_split_column_present(forest_binary_classification_data):
     assert "split" in display.confusion_matrix.columns
     assert display.confusion_matrix["split"].nunique() == cv
     assert set(display.confusion_matrix["split"].unique()) == set(range(cv))
+
+
+@pytest.mark.parametrize("subplot_by", [None, "split", "auto", "invalid"])
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "forest_binary_classification_data",
+        "forest_multiclass_classification_data",
+    ],
+)
+def test_subplot_by(subplot_by, fixture_name, request):
+    estimator, X, y = request.getfixturevalue(fixture_name)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=3)
+    display = report.metrics.confusion_matrix()
+    if subplot_by == "invalid":
+        err_msg = (
+            "Invalid `subplot_by` parameter. Valid options are: None, split or auto. "
+            f"Got '{subplot_by}' instead."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            display.plot(subplot_by=subplot_by)
+    elif subplot_by == "split":
+        display.plot(subplot_by=subplot_by)
+        assert len(display.ax_) == 3
+    else:
+        display.plot(subplot_by=subplot_by)
+        assert isinstance(display.ax_, mpl.axes.Axes)

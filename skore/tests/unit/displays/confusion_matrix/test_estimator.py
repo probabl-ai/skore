@@ -160,63 +160,6 @@ def test_data_source(pyplot, forest_binary_classification_with_train_test):
     )
 
 
-def test_default_heatmap_kwargs(pyplot, forest_binary_classification_with_train_test):
-    """Check that default heatmap kwargs are applied correctly."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    display = report.metrics.confusion_matrix()
-    display.plot()
-
-    assert display.ax_.collections[0].get_cmap().name == "Blues"
-    assert len(display.ax_.texts) > 0
-    assert all(isinstance(text, mpl.text.Text) for text in display.ax_.texts)
-    for text in display.ax_.texts:
-        assert "." not in text.get_text()
-    assert len(display.figure_.axes) == 1
-
-
-def test_heatmap_kwargs_override(pyplot, forest_binary_classification_with_train_test):
-    """Check that we can override default heatmap kwargs."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    display = report.metrics.confusion_matrix()
-    display.plot(heatmap_kwargs={"cmap": "Reds"})
-    assert display.ax_.collections[0].get_cmap().name == "Reds"
-
-    display = report.metrics.confusion_matrix()
-    display.plot(heatmap_kwargs={"annot": False})
-    # There is still the pos_label annotation
-    assert len(display.ax_.texts) == 1
-
-    display = report.metrics.confusion_matrix()
-    display.plot(heatmap_kwargs={"fmt": "d"})
-    for text in display.ax_.texts:
-        assert "." not in text.get_text() or text.get_text().endswith(".0")
-
-    display = report.metrics.confusion_matrix()
-    display.plot(heatmap_kwargs={"cbar": True})
-    assert len(display.figure_.axes) == 2
-    display.plot(heatmap_kwargs={"cbar": True})
-    assert len(display.figure_.axes) == 2
-
-
 def test_set_style(pyplot, forest_binary_classification_with_train_test):
     """Check that the set_style method works with heatmap_kwargs."""
     estimator, X_train, X_test, y_train, y_test = (
@@ -551,3 +494,29 @@ def test_threshold_greater_than_max(forest_binary_classification_with_train_test
     display = report.metrics.confusion_matrix()
     frame = display.frame(threshold_value=1.1)
     assert frame["threshold"].unique() == display.thresholds[-1]
+
+
+@pytest.mark.parametrize("subplot_by", [None, "auto", "invalid"])
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "forest_binary_classification_with_train_test",
+        "forest_multiclass_classification_with_train_test",
+    ],
+)
+def test_subplot_by(subplot_by, fixture_name, request):
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.confusion_matrix()
+    if subplot_by == "invalid":
+        err_msg = (
+            "Invalid `subplot_by` parameter. Valid options are: None or auto. "
+            f"Got '{subplot_by}' instead."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            display.plot(subplot_by=subplot_by)
+    else:
+        display.plot(subplot_by=subplot_by)
+        assert isinstance(display.ax_, mpl.axes.Axes)

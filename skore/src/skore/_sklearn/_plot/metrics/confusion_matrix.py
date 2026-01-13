@@ -11,11 +11,7 @@ from sklearn.utils._response import _check_response_method
 from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
 from skore._sklearn._base import BaseEstimator
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn._plot.utils import (
-    _ClassifierDisplayMixin,
-    _validate_style_kwargs,
-    _validate_subplot_by,
-)
+from skore._sklearn._plot.utils import _ClassifierDisplayMixin, _validate_style_kwargs
 from skore._sklearn.types import (
     DataSource,
     MLTask,
@@ -198,7 +194,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             Additional keyword arguments to be passed to seaborn's
             :class:`seaborn.FacetGrid`.
         """
-        subplot_by_validated = _validate_subplot_by(subplot_by, self.report_type)
+        subplot_by_validated = self._validate_subplot_by(subplot_by, self.report_type)
 
         if (
             self.report_type in ["cross-validation", "comparison-cross-validation"]
@@ -319,6 +315,50 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         if len(self.ax_) == 1:
             self.ax_ = self.ax_[0]
+
+    def _validate_subplot_by(
+        self,
+        subplot_by: Literal["split", "estimator", "auto"] | None,
+        report_type: ReportType,
+    ) -> Literal["split", "estimator"] | None:
+        """Validate the `subplot_by` parameter.
+
+        Parameters
+        ----------
+        subplot_by : Literal["split", "estimator", "auto"] | None
+            The variable to use for subplotting.
+
+        report_type : {"comparison-cross-validation", "comparison-estimator", \
+                "cross-validation", "estimator"}
+            The type of report.
+
+        Returns
+        -------
+        Literal["split", "estimator"] | None
+            The validated `subplot_by` parameter.
+        """
+        if subplot_by == "auto":
+            if report_type in ["comparison-estimator", "comparison-cross-validation"]:
+                return "estimator"
+            else:
+                return None
+
+        valid_subplot_by: list[Literal["split", "estimator"] | None] = []
+        if report_type in ["estimator", "cross-validation"]:
+            valid_subplot_by.append(None)
+        if report_type in ["cross-validation"]:
+            valid_subplot_by.append("split")
+        if report_type in ["comparison-estimator", "comparison-cross-validation"]:
+            valid_subplot_by.append("estimator")
+
+        if subplot_by not in valid_subplot_by:
+            raise ValueError(
+                f"Invalid `subplot_by` parameter. Valid options are: "
+                f"{', '.join(str(s) for s in valid_subplot_by)} or auto. "
+                f"Got '{subplot_by}' instead."
+            )
+
+        return subplot_by
 
     @classmethod
     def _compute_data_for_display(
