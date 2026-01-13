@@ -47,11 +47,6 @@ div.docutils.container.index-box {
   padding-right: 0px;
 }
 
-.card-title {
-  margin-bottom: 1.0rem;
-  text-align: left;
-}
-
 .card-body p {
   text-align: left;
 }
@@ -59,11 +54,6 @@ div.docutils.container.index-box {
 .sd-card  {
   border: 0px;
   margin-block-end: 1.0rem;
-}
-
-.sk-landing-header text-white text-monospace {
-  font-family: var(--pst-font-family-heading);
-  margin-top: -20px;
 }
 
 div.card-body div.output_result {
@@ -177,75 +167,15 @@ div.card-body details[open] summary i {
   margin-top: 0px;
 }
 
-h5.feature-title {
-  font-size: 1.5rem;
-}
-
 .feature-text {
   font-family: var(--pst-font-family-base);
   font-size: 1.05rem; /* Regular font size for text */
   margin-bottom: 0; /* Remove default bottom margin */
 }
 
-.feature-text-see-also {
-  font-family: var(--pst-font-family-base);
-  /* font-size: 1.1rem; */
-  margin-top: 1.75rem;
-}
-
-.feature-text-see-also a {
-  color: var(--pst-color-text-base) !important;
-  font-weight: normal;
-  transition: font-weight 0.3s ease;
-}
-
-.feature-text-see-also a:hover {
-  color: var(--pst-color-text-base) !important;
-  font-weight: bold;
-}
-
 .code-margin {
   margin-top: 0.75em !important;
   margin-bottom: 0.75em !important;
-}
-
-div.feature-flex {
-  display: flex;
-}
-
-div.feature-flex div {
-  flex: 1 1 auto;
-  padding-bottom: 1ex;
-}
-
-div.feature-img {
-  border-radius: 1ex;
-  overflow: clip;
-  margin-top: 8px;
-}
-
-/* For the pipeline svg */
-div.pipeline-img {
-  transform: scale(0.8);
-  transform-origin: left top;
-  height: 283pt
-}
-
-div.pipeline-img svg > g > polygon {
-  fill: transparent;
-}
-
-div.pipeline-img svg g a polygon[fill="none"] {
-  fill: white;
-}
-
-div.pipeline-img svg g.edge path {
-  stroke: var(--sg-text-color);
-}
-
-div.pipeline-img svg g.edge polygon {
-  stroke: var(--sg-text-color);
-  fill: var(--sg-text-color);
 }
 
 .prediction-error-image {
@@ -385,25 +315,8 @@ ul.sk-landing-header-body {
   color: black;
 }
 
-.simple dd {
-  margin-left: 0;
-}
-
-div.sk-landing-bg-more-info dd {
-  padding-left: 0;
-}
-
-div.sk-landing-bg-more-info dd {
-  padding-left: 0;
-}
-
 div.sk-landing-bg {
   background-image: linear-gradient(160deg, rgba(0,48,70,.75) 0%, rgba(0,118,179,.75) 17%, rgba(255,239,193,.75) 59%, rgba(255,149,40,.75) 100%);
-}
-
-div.sk-landing-bg-more-info {
-  background-color: #f8f8f8;
-  font-size: 0.96rem;
 }
 
 .sk-landing-header {
@@ -441,34 +354,6 @@ a.sk-btn-orange:hover {
   background-color: #fbe1ca; /* Fill with white on hover */
   color: #DA7007 !important; /* Text color changes to match the original background color */
   border: 2px solid #DA7007; /* Border remains the same on hover */
-}
-
-.click-table-report-hint {
-  color: #da4607;
-  font-size: 1.25rem;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-}
-
-/* Switch the arrow on small screens, as it needs to point down */
-@media (max-width: 720px) {
-  .visible-small-screen {
-display: initial;
-  }
-
-  .visible-large-screen {
-display: none;
-  }
-}
-
-@media (min-width: 720px) {
-  .visible-small-screen {
-display: none;
-  }
-
-  .visible-large-screen {
-display: initial;
-  }
 }
 
 /** Contributors ***************************/
