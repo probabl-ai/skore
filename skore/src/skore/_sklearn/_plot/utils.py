@@ -354,7 +354,7 @@ def _validate_subplot_by(
     subplot_by: Literal["split", "estimator", "auto"] | None,
     report_type: ReportType,
 ) -> Literal["split", "estimator"] | None:
-    """Validate the subplot by parameter.
+    """Validate the `subplot_by` parameter.
 
     Parameters
     ----------
@@ -368,7 +368,7 @@ def _validate_subplot_by(
     Returns
     -------
     Literal["split", "estimator"] | None
-        The validated subplot by parameter.
+        The validated `subplot_by` parameter.
     """
     if subplot_by == "auto":
         if report_type in ["comparison-estimator", "comparison-cross-validation"]:

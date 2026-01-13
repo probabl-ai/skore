@@ -141,10 +141,12 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             based on the report type.
 
         heatmap_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
+            Additional keyword arguments to be passed to seaborn's
+            :func:`seaborn.heatmap`.
 
         facet_grid_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's `sns.FacetGrid`.
+            Additional keyword arguments to be passed to seaborn's
+            :class:`seaborn.FacetGrid`.
 
         Returns
         -------
@@ -189,10 +191,12 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             based on the report type.
 
         heatmap_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's `sns.heatmap`.
+            Additional keyword arguments to be passed to seaborn's
+            :func:`seaborn.heatmap`.
 
         facet_grid_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's `sns.FacetGrid`.
+            Additional keyword arguments to be passed to seaborn's
+            :class:`seaborn.FacetGrid`.
         """
         subplot_by_validated = _validate_subplot_by(subplot_by, self.report_type)
 

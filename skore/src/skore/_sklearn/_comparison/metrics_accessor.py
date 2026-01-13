@@ -14,7 +14,7 @@ from skore._sklearn._base import (
     _BaseMetricsAccessor,
     _get_cached_response_values,
 )
-from skore._sklearn._comparison.report import ComparisonReport, CrossValidationReport
+from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._plot.metrics import (
     ConfusionMatrixDisplay,
     MetricsSummaryDisplay,
@@ -1645,9 +1645,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         else:
             response_method = "predict"
 
-        if isinstance(
-            next(iter(self._parent.reports_.values())), CrossValidationReport
-        ):
+        if self._parent._reports_type == "CrossValidationReport":
             display_labels = tuple(
                 next(iter(self._parent.reports_.values()))
                 .estimator_reports_[0]
