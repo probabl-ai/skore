@@ -264,12 +264,23 @@ div.pipeline-img svg g.edge polygon {
   fill: var(--sg-text-color);
 }
 
-.encoding-image {
-  width: 100%;
+.prediction-error-image {
+  margin-top: 2rem;
+  margin-left: auto;
+  margin-right: auto;
+  width: 80%;
   aspect-ratio: 1.2;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+}
+
+html[data-theme="light"] .prediction-error-image {
+  background-image: url('../images/plot_prediction_error_light.png');
+}
+
+html[data-theme="dark"] .prediction-error-image {
+  background-image: url('../images/plot_prediction_error_dark.png');
 }
 
 .row-padding-main-container {
