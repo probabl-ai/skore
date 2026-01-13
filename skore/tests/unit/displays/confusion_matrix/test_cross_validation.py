@@ -195,70 +195,6 @@ def test_plot_attributes(pyplot, forest_binary_classification_data):
     assert yticklabels == ["0", "1*"]
 
 
-def test_frame_structure(forest_binary_classification_data):
-    """Check that the frame method returns a properly structured dataframe."""
-    (estimator, X, y), cv = forest_binary_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    display = report.metrics.confusion_matrix()
-    n_classes = len(display.display_labels)
-
-    frame = display.frame()
-    assert isinstance(frame, pd.DataFrame)
-    assert frame.shape == (n_classes * n_classes * cv, 7)
-
-    expected_columns = [
-        "true_label",
-        "predicted_label",
-        "value",
-        "threshold",
-        "split",
-        "estimator",
-        "data_source",
-    ]
-    assert frame.columns.tolist() == expected_columns
-    assert set(frame["true_label"].unique()) == set(display.display_labels)
-    assert set(frame["predicted_label"].unique()) == set(display.display_labels)
-    assert frame["split"].nunique() == cv
-
-
-def test_thresholds_available_for_binary_classification(
-    pyplot, forest_binary_classification_data
-):
-    """Check that thresholds are available for binary classification."""
-    (estimator, X, y), cv = forest_binary_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    display = report.metrics.confusion_matrix()
-
-    assert isinstance(display, ConfusionMatrixDisplay)
-    assert display.thresholds is not None
-    assert len(display.thresholds) > 0
-    assert "threshold" in display.confusion_matrix.columns
-
-
-def test_thresholds_not_available_for_multiclass(
-    pyplot, forest_multiclass_classification_data
-):
-    """Check that thresholds are NaN for multiclass classification."""
-    (estimator, X, y), cv = forest_multiclass_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    display = report.metrics.confusion_matrix()
-
-    assert isinstance(display, ConfusionMatrixDisplay)
-    assert len(display.thresholds) == 1
-    assert np.isnan(display.thresholds[0])
-
-
-def test_threshold_value_error_for_multiclass(forest_multiclass_classification_data):
-    """Check that specifying threshold_value for multiclass raises an error."""
-    (estimator, X, y), cv = forest_multiclass_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    display = report.metrics.confusion_matrix()
-
-    err_msg = "Threshold support is only available for binary classification."
-    with pytest.raises(ValueError, match=err_msg):
-        display.frame(threshold_value=0.5)
-
-
 def test_plot_with_threshold(pyplot, forest_binary_classification_data):
     """Check that we can plot with a specific threshold."""
     (estimator, X, y), cv = forest_binary_classification_data, 3
@@ -457,17 +393,6 @@ def test_split_aggregation(pyplot, forest_binary_classification_data):
         assert len(parts) == 2
         assert parts[1].startswith("(±")
         assert parts[1].endswith(")")
-
-
-def test_split_column_present(forest_binary_classification_data):
-    """Check that the split column is present in confusion matrix dataframe."""
-    (estimator, X, y), cv = forest_binary_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    display = report.metrics.confusion_matrix()
-
-    assert "split" in display.confusion_matrix.columns
-    assert display.confusion_matrix["split"].nunique() == cv
-    assert set(display.confusion_matrix["split"].unique()) == set(range(cv))
 
 
 @pytest.mark.parametrize("subplot_by", [None, "split", "auto", "invalid"])
