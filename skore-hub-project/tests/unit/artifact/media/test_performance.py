@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from pydantic import ValidationError
 from pytest import mark, param, raises
 
-from skore_hub_project import Project, bytes_to_b64_str, switch_mpl_backend
+from skore_hub_project import Project, bytes_to_b64_str
 from skore_hub_project.artifact.media import (
     PrecisionRecallTest,
     PrecisionRecallTrain,
@@ -18,7 +18,7 @@ from skore_hub_project.artifact.media import (
 
 
 def serialize(display) -> (bytes, str):
-    with switch_mpl_backend(), BytesIO() as stream:
+    with BytesIO() as stream:
         display.plot()
         display.figure_.savefig(stream, format="svg", bbox_inches="tight")
         plt.close(display.figure_)

@@ -6,13 +6,15 @@ from abc import ABC
 from collections.abc import Callable
 from functools import reduce
 from io import BytesIO
+from threading import RLock
 from typing import ClassVar, Literal, cast
 
 from matplotlib import pyplot as plt
 
-from skore_hub_project import switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.protocol import Display
+
+MATPLOTLIB_LOCK = RLock()
 
 
 class Performance(Media[Report], ABC):  # noqa: D101
@@ -39,7 +41,12 @@ class Performance(Media[Report], ABC):  # noqa: D101
             else function(data_source=self.data_source)
         )
 
-        with switch_mpl_backend(), BytesIO() as stream:
+        # Matplotlib is not thread-safe: https://matplotlib.org/stable/users/faq.html#work-with-threads.
+        #
+        # Even with the non-interactive backend ``Agg``, when we try to create the same
+        # plot from different threads, we encounter problems with auto-scaling and they
+        # have inconsistent axis scales.
+        with MATPLOTLIB_LOCK, BytesIO() as stream:
             display.plot()
             display.figure_.savefig(stream, format="svg", bbox_inches="tight")  # type: ignore[attr-defined]
             plt.close(display.figure_)  # type: ignore[attr-defined]
