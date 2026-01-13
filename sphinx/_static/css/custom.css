@@ -265,7 +265,7 @@ div.pipeline-img svg g.edge polygon {
 }
 
 .prediction-error-image {
-  margin-top: 2rem;
+  margin-bottom: 2rem;
   margin-left: auto;
   margin-right: auto;
   width: 80%;

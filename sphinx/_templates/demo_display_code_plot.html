@@ -1,6 +1,4 @@
 <div class="doctest highlight-default notranslate">
-<div class="highlight hl-ipython3 code-margin"><pre><span></span><span class="n">metric_summary</span> <span class="o">=</span> <span class="n">report_ridge</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">summarize</span><span class="p">(</span>
-    <span class="n">aggregeate</span><span class="o">=</span><span class="kc">None</span>
-<span class="p">)</span>
-<span class="n">metric_summary</span><span class="o">.</span><span class="n">frame</span><span class="p">()</span></pre></div>
+<div class="highlight hl-ipython3 code-margin"><pre><span></span><span class="n">error</span> <span class="o">=</span> <span class="n">report_hgbdt</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">prediction_error</span><span class="p">()</span>
+<span class="n">error</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;actual_vs_predicted&quot;</span><span class="p">)</span></pre></div>
 </div>
