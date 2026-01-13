@@ -4,7 +4,6 @@ from typing import Literal
 
 from orjson import OPT_NON_STR_KEYS, OPT_SERIALIZE_NUMPY, dumps
 
-from skore_hub_project import switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.protocol import EstimatorReport
 
@@ -20,14 +19,11 @@ class TableReport(Media[Report]):  # noqa: D101
         if self.computed:
             return
 
-        self.computed = True
-
-        with switch_mpl_backend():
-            display = (
-                self.report.data.analyze()
-                if self.data_source is None
-                else self.report.data.analyze(data_source=self.data_source)
-            )
+        display = (
+            self.report.data.analyze()
+            if self.data_source is None
+            else self.report.data.analyze(data_source=self.data_source)
+        )
 
         table_report = display.summary
 
@@ -39,6 +35,7 @@ class TableReport(Media[Report]):  # noqa: D101
         # Remove irrelevant information
         del table_report["sample_table"]
 
+        self.computed = True
         self.filepath.write_bytes(
             dumps(
                 table_report,
