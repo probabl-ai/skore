@@ -40,7 +40,7 @@ execnet==2.1.2
     # via pytest-xdist
 executing==2.2.1
     # via stack-data
-filelock==3.20.2
+filelock==3.20.3
     # via virtualenv
 fonttools==4.61.1
     # via matplotlib
@@ -253,7 +253,7 @@ tzdata==2025.3
     # via pandas
 urllib3==2.6.3
     # via requests
-virtualenv==20.35.4
+virtualenv==20.36.1
     # via pre-commit
 wcwidth==0.2.14
     # via prompt-toolkit
