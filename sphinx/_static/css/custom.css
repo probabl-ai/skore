@@ -283,6 +283,24 @@ html[data-theme="dark"] .prediction-error-image {
   background-image: url('../images/plot_prediction_error_dark.png');
 }
 
+.project-summary-image {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  aspect-ratio: 1.2;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+html[data-theme="light"] .project-summary-image {
+  background-image: url('../images/project_summary_light.png');
+}
+
+html[data-theme="dark"] .project-summary-image {
+  background-image: url('../images/project_summary_dark.png');
+}
+
 .row-padding-main-container {
   padding-top: 1.5rem !important;
   padding-bottom: 2.5rem !important;
