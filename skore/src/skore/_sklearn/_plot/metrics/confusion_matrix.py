@@ -130,8 +130,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             default threshold (0.5 for `predict_proba` response method, 0 for
             `decision_function` response method).
 
-        subplot_by: Literal["split", "estimator", "auto"]
-        | None = "auto",
+        subplot_by: Literal["split", "estimator", "auto"]| None = "auto",
             The variable to use for subplotting. If None, the confusion matrix will not
             be subplotted. If "auto", the variable will be automatically determined
             based on the report type.
@@ -196,10 +195,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         """
         subplot_by_validated = self._validate_subplot_by(subplot_by, self.report_type)
 
-        if (
-            self.report_type in ["cross-validation", "comparison-cross-validation"]
-            and subplot_by_validated != "split"
-        ):
+        if "cross-validation" in self.report_type and subplot_by_validated != "split":
             # Aggregate the data across splits and create custom annotations.
             default_fmt = ".3f" if normalize else ".1f"
             annot_fmt = (
@@ -250,10 +246,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 index="true_label", columns="predicted_label", values="value"
             ).reindex(index=self.display_labels, columns=self.display_labels)
 
-            if (
-                self.report_type in ["cross-validation", "comparison-cross-validation"]
-                and "annot" in data.columns
-            ):
+            if "cross-validation" in self.report_type and "annot" in data.columns:
                 annot_data = data.pivot(
                     index="true_label", columns="predicted_label", values="annot"
                 ).reindex(index=self.display_labels, columns=self.display_labels)
@@ -338,18 +331,21 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             The validated `subplot_by` parameter.
         """
         if subplot_by == "auto":
-            if report_type in ["comparison-estimator", "comparison-cross-validation"]:
+            if "comparison" in report_type:
                 return "estimator"
             else:
                 return None
 
-        valid_subplot_by: list[Literal["split", "estimator"] | None] = []
-        if report_type in ["estimator", "cross-validation"]:
-            valid_subplot_by.append(None)
-        if report_type in ["cross-validation"]:
-            valid_subplot_by.append("split")
-        if report_type in ["comparison-estimator", "comparison-cross-validation"]:
-            valid_subplot_by.append("estimator")
+        valid_subplot_by: list[Literal["split", "estimator"] | None]
+        match report_type:
+            case "estimator":
+                valid_subplot_by = [None]
+            case "cross-validation":
+                valid_subplot_by = [None, "split"]
+            case "comparison-estimator":
+                valid_subplot_by = ["estimator"]
+            case "comparison-cross-validation":
+                valid_subplot_by = ["estimator"]
 
         if subplot_by not in valid_subplot_by:
             raise ValueError(
