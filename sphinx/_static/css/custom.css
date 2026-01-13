@@ -141,22 +141,6 @@ div.card-body details[open] summary i {
   height: auto;
 }
 
-/* .hero-title {
-  color: #f68d2e;
-  font-family: var(--pst-font-family-heading);
-  font-size: 2.5rem;
-  margin-bottom: 2rem;
-  margin-top: 0px;
-  text-align: center;
-}
-
-.hero-description {
-  font-family: var(--pst-font-family-base);
-  text-align: center;
-  font-size: 1.1rem;
-  margin-bottom: 10px;
-} */
-
 .hero-title {
   color: #DA7007; /* Darker text color for the title */
   font-family: var(--pst-font-family-heading);
