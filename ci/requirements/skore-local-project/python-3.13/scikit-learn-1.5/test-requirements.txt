@@ -203,7 +203,7 @@ tzdata==2025.3
     # via pandas
 urllib3==2.6.3
     # via requests
-virtualenv==20.35.4
+virtualenv==20.36.1
     # via pre-commit
 wcwidth==0.2.14
     # via prompt-toolkit
