@@ -380,10 +380,42 @@ def estimator_reports_binary_classification(binary_classification_train_test_spl
 
 
 @pytest.fixture
+def estimator_reports_multiclass_classification(
+    multiclass_classification_train_test_split,
+):
+    X_train, X_test, y_train, y_test = multiclass_classification_train_test_split
+
+    estimator_report_1 = EstimatorReport(
+        DummyClassifier(strategy="uniform", random_state=0),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    estimator_report_2 = EstimatorReport(
+        DummyClassifier(strategy="uniform", random_state=1),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    return estimator_report_1, estimator_report_2
+
+
+@pytest.fixture
 def comparison_estimator_reports_binary_classification(
     estimator_reports_binary_classification,
 ):
     estimator_report_1, estimator_report_2 = estimator_reports_binary_classification
+    return ComparisonReport([estimator_report_1, estimator_report_2])
+
+
+@pytest.fixture
+def comparison_estimator_reports_multiclass_classification(
+    estimator_reports_multiclass_classification,
+):
+    estimator_report_1, estimator_report_2 = estimator_reports_multiclass_classification
     return ComparisonReport([estimator_report_1, estimator_report_2])
 
 
