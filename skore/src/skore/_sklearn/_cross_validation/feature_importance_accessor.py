@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import pandas as pd
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._cross_validation.report import CrossValidationReport
-from skore._sklearn._plot.metrics.feature_importance_coefficients_display import (
-    FeatureImportanceCoefficientsDisplay,
-)
+from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
 from skore._utils._accessor import _check_cross_validation_sub_estimator_has_coef
 
 
@@ -22,12 +19,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         super().__init__(parent)
 
     @available_if(_check_cross_validation_sub_estimator_has_coef())
-    def coefficients(self) -> FeatureImportanceCoefficientsDisplay:
+    def coefficients(self) -> CoefficientsDisplay:
         """Retrieve the coefficients across splits, including the intercept.
 
         Returns
         -------
-        :class:`FeatureImportanceCoefficientsDisplay`
+        :class:`CoefficientsDisplay`
             The feature importance display containing model coefficients and
             intercept.
 
@@ -42,28 +39,39 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         >>> )
         >>> display = report.feature_importance.coefficients()
         >>> display.frame()
-                    Intercept	Feature #0	Feature #1	Feature #2
-        Split index
-        0       	0.064837	74.100966	27.309656	17.367865
-        1       	0.030257	74.276481	27.571421	17.392395
-        2       	0.000084	74.107126	27.614821	17.277730
-        3       	0.145613	74.207645	27.523667	17.391055
-        4       	0.033695	74.259575	27.599610	17.390481
+            split     feature  coefficients
+        0       0   Intercept      0.0...
+        1       0  Feature #0     74.1...
+        2       0  Feature #1     27.3...
+        3       0  Feature #2     17.3...
+        4       1   Intercept      0.0...
+        5       1  Feature #0     74.2...
+        6       1  Feature #1     27.5...
+        7       1  Feature #2     17.3...
+        8       2   Intercept      0.0...
+        9       2  Feature #0     74.1...
+        10      2  Feature #1     27.6...
+        11      2  Feature #2     17.2...
+        12      3   Intercept      0.1...
+        13      3  Feature #0     74.2...
+        14      3  Feature #1     27.5...
+        15      3  Feature #2     17.3...
+        16      4   Intercept      0.0...
+        17      4  Feature #0     74.2...
+        18      4  Feature #1     27.5...
+        19      4  Feature #2     17.3...
         >>> display.plot() # shows plot
         """
-        combined = pd.concat(
-            {
-                split: df["Coefficient"]
-                for split, df in enumerate(
-                    report.feature_importance.coefficients().frame()
-                    for report in self._parent.estimator_reports_
-                )
-            },
-            axis=1,
-        ).T
-        combined.index.name = "Split index"
-
-        return FeatureImportanceCoefficientsDisplay("cross-validation", combined)
+        return CoefficientsDisplay._compute_data_for_display(
+            estimators=[
+                report.estimator_ for report in self._parent.estimator_reports_
+            ],
+            names=[
+                report.estimator_name_ for report in self._parent.estimator_reports_
+            ],
+            splits=list(range(len(self._parent.estimator_reports_))),
+            report_type="cross-validation",
+        )
 
     ####################################################################################
     # Methods related to the help tree
