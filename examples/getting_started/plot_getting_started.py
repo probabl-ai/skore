@@ -1,5 +1,5 @@
 """
-.. _example_skore_getting_started:
+.. _example_getting_started:
 
 ======================
 Skore: getting started
@@ -47,6 +47,7 @@ Skore: getting started
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+
 from skore import EstimatorReport
 
 X, y = make_classification(
@@ -303,8 +304,8 @@ my_project.put("my_estimator_report", gb_report)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# We can retrieve the data in the project as a summary object
-# by calling the ``summarize`` method:
+# We can retrieve the data in the project in the form of a
+# :class:`~skore.project.summary.Summary` object:
 
 # %%
 summary = my_project.summarize()
