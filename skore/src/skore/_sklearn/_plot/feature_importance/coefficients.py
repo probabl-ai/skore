@@ -500,9 +500,13 @@ class CoefficientsDisplay(DisplayMixin):
         # {"estimator", "label"} or {"estimator", "output"} or {"estimator"}
         columns_to_groupby = self._get_columns_to_groupby(frame=frame)
         if subplot_by not in ("auto", None) and subplot_by not in columns_to_groupby:
+            additional_subplot_by = ["auto"]
+            if "label" in frame.columns and frame["label"].nunique() > 1:
+                additional_subplot_by.append("None")
+
             raise ValueError(
                 f"Column {subplot_by} not found in the frame. It should be one "
-                f"of {', '.join(columns_to_groupby)}."
+                f"of {', '.join(columns_to_groupby + additional_subplot_by)}."
             )
         elif subplot_by is None:
             if "label" in frame.columns:
