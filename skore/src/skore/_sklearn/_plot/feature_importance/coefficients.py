@@ -410,12 +410,12 @@ class CoefficientsDisplay(DisplayMixin):
 
         if subplot_by is not None and not len(columns_to_groupby):
             raise ValueError(
-                "No columns to group by. `subplot_by` is expected to be None."
+                "No columns to group by. `subplot_by` is expected to be None or 'auto'."
             )
         elif subplot_by is not None and subplot_by not in columns_to_groupby:
             raise ValueError(
                 f"Column {subplot_by} not found in the frame. It should be one "
-                f"of {', '.join(columns_to_groupby)}."
+                f"of {', '.join(columns_to_groupby + ['auto', 'None'])}."
             )
 
         if subplot_by is None:
@@ -441,7 +441,10 @@ class CoefficientsDisplay(DisplayMixin):
             stripplot_kwargs=stripplot_kwargs,
         )
 
-        self.figure_.suptitle(f"Coefficients of {estimator_name}")
+        title = f"Coefficients of {estimator_name}"
+        if subplot_by is not None:
+            title += f" by {subplot_by}"
+        self.figure_.suptitle(title)
 
     @staticmethod
     def _has_same_features(*, frame: pd.DataFrame) -> bool:

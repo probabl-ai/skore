@@ -184,7 +184,9 @@ def test_multiclass_classification(
         assert ax.get_title() == f"label = {label}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
-    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
+    assert (
+        display.figure_.get_suptitle() == f"Coefficients of {estimator_name} by label"
+    )
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
         display.plot(subplot_by="incorrect")
@@ -385,7 +387,9 @@ def test_multi_output_regression(
         assert ax.get_title() == f"output = {output}"
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
-    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
+    assert (
+        display.figure_.get_suptitle() == f"Coefficients of {estimator_name} by output"
+    )
 
     with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
         display.plot(subplot_by="incorrect")
