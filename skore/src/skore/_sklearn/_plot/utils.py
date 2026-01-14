@@ -253,7 +253,7 @@ def _despine_matplotlib_axis(
         The matplotlib axis to despine.
     axis_to_despine : tuple of str, default=("top", "right")
         The axes to despine.
-    remove_ticks : bool, default=True
+    remove_ticks : bool, default=False
         Whether to remove the ticks when adding "left" and "bottom" to the axis to
         despine.
     x_range : tuple of float, default=(0, 1)
