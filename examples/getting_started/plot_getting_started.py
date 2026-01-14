@@ -7,271 +7,254 @@ Skore: getting started
 """
 
 # %%
-# This getting started guide illustrates how to use skore and why:
+# This guide illustrates how to use skore through a complete
+# machine learning workflow for binary classification:
 #
-# #.    Get assistance when developing your machine learning projects to avoid common
-#       pitfalls and follow recommended practices.
+# #. Set up a proper experiment with training and test data
+# #. Develop and evaluate multiple models using cross-validation
+# #. Compare models to select the best one
+# #. Validate the final model on held-out data
+# #. Track and organize your machine learning results
 #
-#       *   :class:`skore.EstimatorReport`: get an insightful report on your estimator,
-#           for evaluation and inspection
+# Throughout this guide, we will see how skore helps you:
 #
-#       *   :class:`skore.CrossValidationReport`: get an insightful report on your
-#           cross-validation results
-#
-#       *   :class:`skore.ComparisonReport`: benchmark your skore estimator reports
-#
-#       *   :func:`skore.train_test_split`: get diagnostics when splitting your data
-#
-# #.    Track your machine learning results using skore's :class:`~skore.Project`
-#       (for storage).
+# * Avoid common pitfalls with smart diagnostics
+# * Quickly get rich insights into model performance
+# * Organize and track your experiments
 
 # %%
-# Machine learning evaluation and diagnostics
-# ===========================================
+# Setting up our binary classification problem
+# ============================================
 #
-# Skore implements new tools or wraps some key scikit-learn concepts to
-# automatically provide insights and diagnostics when using them, as a way to
-# accelerate development and facilitate good practices.
+# Let's start by loading the German credit dataset, a classic binary classification
+# problem where we predict the customer's credit risk ("good" or "bad").
+#
+# This dataset contains various features about credit applicants, including
+# personal information, credit history, and loan details.
 
 # %%
-# Model evaluation with skore
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-# One of the main skore features is the :class:`skore.EstimatorReport` class.
-#
-# Let us create a challenging synthetic binary classification dataset and train a
-# :class:`~sklearn.ensemble.RandomForestClassifier` on it, then wrap an
-# :class:`~skore.EstimatorReport` around it.
+import pandas as pd
+from sklearn.datasets import fetch_openml
+import skore
+from skrub import TableReport
+
+german_credit = fetch_openml(data_id=31, as_frame=True, parser="pandas")
+X, y = german_credit.data, german_credit.target
+TableReport(german_credit.frame)
 
 # %%
-from sklearn.datasets import make_classification
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+# Creating our experiment and held-out sets
+# -----------------------------------------
+#
+# We will use skore's enhanced `train_test_split` function to create our experiment set
+# and a left-out test set. The experiment set will be used for model development and
+# cross-validation, while the left-out set will only be used at the end to validate
+# our final model.
+#
+# Unlike scikit-learn's train_test_split, skore's version provides helpful diagnostics
+# about potential issues with your data split, such as class imbalance.
 
-from skore import EstimatorReport
-
-X, y = make_classification(
-    n_samples=10_000,
-    n_classes=3,
-    class_sep=0.3,
-    n_clusters_per_class=1,
-    random_state=42,
-)
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-
-rf = RandomForestClassifier(random_state=0)
-
-rf_report = EstimatorReport(
-    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+# %%
+X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
+    X, y, random_state=42
 )
 
 # %%
-# Now, we can display the help menu to see what we can do with the report:
+# skore tells us we have class-imbalance issues with our data, which we confirm
+# with the TableReport above: there are only 300 examples where the target is "bad".
 
 # %%
-rf_report.help()
-
-# %%
-# .. note::
-#   This helper:
+# Model development with cross-validation
+# =======================================
 #
-#   -   enables users to get a glimpse at the API of the different available
-#       accessors without having to look up the online documentation,
-#   -   provides methodological guidance: for example, we easily provide
-#       several metrics as a way to encourage users looking into them.
-#       In particular, skore automatically detected that we are doing multiclass
-#       classification.
+# We will investigate two different models using cross-validation:
 #
-
-# %%
-# We can use the :meth:`~skore.EstimatorReport.metrics` attribute to evaluate the
-# performance of our estimator:
-
-# %%
-rf_report.metrics.summarize(favorability=True).frame()
-
-# %%
-# We can also retrieve the predictions directly e.g. on the train set:
-
-# %%
-rf_report.get_predictions(data_source="train")[0:10]
-
-# %%
-# More metrics are available, such as the ROC curve:
-
-# %%
-roc = rf_report.metrics.roc()
-roc.plot()
-
-# %%
-# We can further inspect our model using the
-# :meth:`~skore.EstimatorReport.feature_importance` attribute.
-# For example we can compute the permutation feature importance:
-
-# %%
-rf_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
-
-# %%
-# .. seealso::
+# 1. A simple logistic regression model with some preprocessing, powered by
+# :func:`skrub.tabular_pipeline`
+# 2. A more advanced model which includes preprocessing, sklearn's :class:`~sklearn.ensemble.HistGradientBoostingClassifier`
 #
-#   For more information about the motivation and usage of
-#   :class:`skore.EstimatorReport`, see the following use cases:
-#
-#   -   :ref:`example_estimator_report` for model evaluation,
-#   -   :ref:`example_feature_importance` for model inspection.
+# Cross-validation is necessary to get a more reliable estimate of model performance.
+# skore makes it easy through :class:`skore.CrossValidationReport`.
 
 # %%
-# Cross-validation with skore
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Model no. 1: logistic regression
+# --------------------------------
 #
-# skore can perform cross-validation through the :class:`skore.CrossValidationReport`
-# class, which is simply an ensemble of :class:`EstimatorReports <skore.EstimatorReport>` (one for each split).
+# Our first model will be a logistic regression model.
+
+# %%
+from sklearn.linear_model import LogisticRegression
+from skrub import tabular_pipeline
+
+simple_model = tabular_pipeline(LogisticRegression(random_state=42))
+simple_model
+
+# %%
+# We now cross-validate the model with :class:`~skore.CrossValidationReport`.
 
 # %%
 from skore import CrossValidationReport
 
-cv_report = CrossValidationReport(rf, X, y, splitter=5)
+# Cross-validate our model with 5 folds (the default)
+simple_cv_report = CrossValidationReport(
+    simple_model, X=X_experiment, y=y_experiment, pos_label="good"
+)
 
 # %%
-# The cross-validation report also has a helper menu:
+# The :meth:`~skore.CrossValidationReport.help()` method shows all available methods and properties:
 
 # %%
-cv_report.help()
+simple_cv_report.help()
 
 # %%
-# It can also compute common metrics:
+# We now examine the performance metrics for our simple model.
+# The `metrics.summarize()` method provides a comprehensive overview of model performance:
 
 # %%
-cv_report.metrics.summarize().frame()
+
+# `indicator_favorability=True` highlights whether higher or lower values are better
+simple_metrics = simple_cv_report.metrics.summarize(indicator_favorability=True)
+simple_metrics.frame()
 
 # %%
-# If aggregation is not necessary:
+# More complex metrics are available, such as the precision-recall curve:
 
 # %%
-cv_report.metrics.summarize(aggregate=None).frame()
+precision_recall = simple_cv_report.metrics.precision_recall()
+precision_recall
 
 # %%
-# Plot metrics like the ROC curve are also implemented:
+# Note: The output of ``precision_recall()`` is a ``Display`` object. This is a
+# common pattern in skore, and it allows us to access the information in several
+# ways.
 
 # %%
-roc_cv = cv_report.metrics.roc()
-roc_cv.plot()
+# As a plot:
 
 # %%
-# The cross-validation report contains the individual estimator reports
-# for each split, so e.g. we can obtain metrics for the first split only:
+precision_recall.plot()
 
 # %%
-first_split_report = cv_report.estimator_reports_[0]
-first_split_report.metrics.summarize().frame()
+# Or in a table:
 
 # %%
-# .. seealso::
+precision_recall.frame()
+
+# %%
+# Similarly, we can plot the confusion matrix:
+
+# %%
+confusion_matrix = simple_cv_report.metrics.confusion_matrix()
+confusion_matrix.plot()
+
+# %%
+# Model no. 2: gradient boosting
+# ------------------------------
 #
-#   For more information about the motivation and usage of
-#   :class:`skore.CrossValidationReport`, see :ref:`example_use_case_employee_salaries`.
-
-# %%
-# Comparing estimator reports
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-# skore makes it easy to compare estimators on the same test set through the
-# :class:`skore.ComparisonReport` class.
-#
-# We previously trained a random forest estimator which we investigated in
-# ``rf_report``.
-# Let us now try another algorithm:
+# Now, we cross-validate a more advanced model using :class:`~sklearn.ensemble.HistGradientBoostingClassifier`.
+# This model automatically handles preprocessing for different column types.
 
 # %%
 from sklearn.ensemble import HistGradientBoostingClassifier
 
-gb_report = EstimatorReport(
-    HistGradientBoostingClassifier(random_state=0),
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
-    pos_label=1,
+advanced_model = HistGradientBoostingClassifier()
+advanced_model
+
+# %%
+advanced_cv_report = CrossValidationReport(
+    advanced_model, X=X_experiment, y=y_experiment, pos_label="good"
 )
 
 # %%
-# Now let us create a :class:`~skore.ComparisonReport`:
+# Comparing our models
+# ====================
+#
+# Now that we have our two models, we need to decide which one should go into production.
+# We can compare them with a :class:`skore.ComparisonReport`.
 
 # %%
 from skore import ComparisonReport
 
-comparator = ComparisonReport(reports=[rf_report, gb_report])
-
-# %%
-# The comparison report also has a helper menu:
-
-# %%
-comparator.help()
-
-# %%
-# It can also compute common metrics, which will give us our benchmark:
-
-# %%
-comparator.metrics.summarize(favorability=True).frame()
-
-# %%
-# Other metrics like the ROC curve are also implemented to enable easy comparison:
-
-# %%
-comparator.metrics.roc().plot()
-
-# %%
-# Train-test split with skore
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-# Skore has implemented a :func:`skore.train_test_split` function that wraps
-# scikit-learn's :func:`sklearn.model_selection.train_test_split`.
-#
-# Let us load a dataset containing some time series data:
-
-# %%
-import pandas as pd
-from skrub.datasets import fetch_employee_salaries
-
-dataset_employee = fetch_employee_salaries()
-X_employee, y_employee = dataset_employee.X, dataset_employee.y
-X_employee["date_first_hired"] = pd.to_datetime(
-    X_employee["date_first_hired"], format="%m/%d/%Y"
-)
-X_employee.head(2)
-
-# %%
-# The dataset contains a ``date_first_hired`` column which is time-based.
-# Now, let us apply :func:`skore.train_test_split` on this data:
-
-# %%
-import skore
-
-_ = skore.train_test_split(
-    X=X_employee, y=y_employee, random_state=0, shuffle=False, as_dict=True
+comparison = ComparisonReport(
+    {
+        "Simple Logistic Regression": simple_cv_report,
+        "Advanced Pipeline": advanced_cv_report,
+    },
 )
 
 # %%
-# We get a ``TimeBasedColumnWarning`` advising us to use
-# :class:`sklearn.model_selection.TimeSeriesSplit` instead!
-# Indeed, shuffling time-ordered data is a common pitfall.
+# This report also has a help menu:
+comparison.help()
 
 # %%
-# .. seealso::
+# In fact, it has mostly the same API as CrossValidationReport:
+comparison_metrics = comparison.metrics.summarize(favorability=True)
+comparison_metrics.frame()
+
+# %%
+comparison.metrics.precision_recall().plot()
+
+# %%
+# Based on the previous tables and plots, it seems that both models have similar performance. We will deploy the logistic regression because it is more interpretable.
+
+# %%
+# Final model evaluation on held-out data
+# =======================================
 #
-#   More methodological advice is available.
-#   For more information about the motivation and usage of
-#   :func:`skore.train_test_split`, see :ref:`example_train_test_split`.
+# Now that we have chosen to deploy the logistic regression model, we will train it on
+# the full experiment set and evaluate it on our held-out data: training on more data
+# should help performance and we can also validate that our model generalizes well to
+# new data.
 
 # %%
-# Tracking work with skore
-# ========================
+from skore import EstimatorReport
+
+final_report = EstimatorReport(
+    simple_model,
+    X_train=X_experiment,
+    y_train=y_experiment,
+    X_test=X_holdout,
+    y_test=y_holdout,
+    pos_label="good",
+)
+
+# %%
+# :class:`skore.EstimatorReport` has a similar API to the other report classes:
+
+# %%
+final_metrics = final_report.metrics.summarize()
+final_metrics.frame()
+
+# %%
+final_report.metrics.confusion_matrix().plot()
+
+# %%
+# We compare the performance on the held-out data with what we observed during cross-validation
+
+# %%
+pd.concat(
+    [final_metrics.frame(), simple_cv_report.metrics.summarize().frame()],
+    axis="columns",
+)
+
+# %%
+# As expected, our final model gets better performance, likely thanks to the
+# larger training set.
+
+# %%
+# Tracking our work with a skore Project
+# ======================================
 #
-# Another key feature of skore is :class:`skore.Project` that allows us to store
-# and retrieve :class:`~skore.EstimatorReport` objects.
-
-# %%
-# Let us create a skore project:
+# Now that we have completed our modeling workflow, we should store our models in a
+# safe place for future work; for example, if this research notebook were modified
+# we would no longer be able to relate the current production model to the code that
+# generated it.
+#
+# We can use a :class:`skore.Project` to keep track of our experiments.
+# This makes it easy to organize, retrieve, and compare models over time.
+#
+# Usually this would be done as you go along the model development, but
+# in the interest of simplicity we kept this until the end.
 
 # %%
 
@@ -282,112 +265,44 @@ import tempfile
 temp_dir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 os.environ["SKORE_WORKSPACE"] = temp_dir.name
 # sphinx_gallery_end_ignore
-my_project = skore.Project("my_project")
+
+# Load or create a local project
+project = skore.Project("german_credit_classification")
 
 # %%
-# Storing reports
-# ^^^^^^^^^^^^^^^
+# Store our reports with descriptive keys
+project.put("simple_logistic_regression_cv", simple_cv_report)
+project.put("advanced_pipeline_cv", advanced_cv_report)
+project.put("final_model", final_report)
+
+# %%
+# Now we can retrieve a summary of our stored reports
+summary = project.summarize()
+print(f"Number of reports: {len(summary.reports())}")
+
+# %%
+# The :class:`~skore.project.summary.Summary` object provides an interactive widget in Jupyter notebooks
+# that allows us to explore and filter your reports visually.
 #
-# Now that the project exists, we can store reports in it using
-# :func:`~skore.Project.put`, with a key-value convention.
-
-# %%
-# Let us store the estimator reports of the random forest and the gradient boosting
-# models to keep track of our experiments:
-
-# %%
-my_project.put("my_estimator_report", rf_report)
-my_project.put("my_estimator_report", gb_report)
-
-# %%
-# Retrieving stored reports
-# ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-# %%
-# We can retrieve the data in the project in the form of a
-# :class:`~skore.project.summary.Summary` object:
-
-# %%
-summary = my_project.summarize()
-print(type(summary))
-
-# %%
-# From there, we can retrieve the complete list of stored reports:
-
-# %%
-from pprint import pprint
-
-stored_reports = summary.reports()
-pprint(stored_reports)
-
-# %%
-# And we can manipulate them as usual, e.g. compare them:
-
-# %%
-comparator = ComparisonReport(reports=stored_reports)
-comparator.metrics.summarize(pos_label=1, favorability=True).frame()
-
-# %%
-# We can retrieve metrics about our stored estimator reports, for example
-# the fit and test times for the first estimator report:
-
-# %%
-stored_reports[0].metrics.timings()
-
-# %%
-# But what if instead of having stored only 2 estimators reports, we had a dozen or
-# even a few hundreds over several months of experimenting?
-# We would need a more powerful way to navigate through our stored estimator reports.
-
-# %%
-# Searching through project reports
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Each line represents a model, and we can select models by clicking on lines
+# or dragging on metric axes to filter by performance.
 #
-# Using the interactive widget
-# """"""""""""""""""""""""""""
-#
-# If rendered in a Jupyter notebook, ``summary`` would render an interactive
-# parallel coordinate plot to search for your preferred model based on some metrics,
-# which looks like this:
+# In the following screenshot, we selected only the cross-validation reports;
+# we will see that this allows us to retrieve exactly those reports.
 #
 # .. image:: /_static/images/screenshot_getting_started.png
 #   :alt: Screenshot of the widget in a Jupyter notebook
-#
-# Each line is an estimator. We can select interesting estimators by
-# clicking on the plot: clicking on a line selects one estimator, and dragging on
-# one of the metrics axes will trigger a brush tool to select several estimators.
-#
-# Once we are done selecting on the plot, we can retrieve the selected reports:
-#
-# .. code:: python
-#
-#     summary.reports()
 
 # %%
-# Using the Python API
-# """"""""""""""""""""
-#
-# Alternatively, we can query for reports using Python (more precisely, the pandas
-# query language).
 
-# %%
-# We can use the following keys to write queries:
+# sphinx_gallery_start_ignore
+# Pretend that the cross-validation reports were selected in the widget
+summary.query('report_type == "cross-validation"')
+# sphinx_gallery_end_ignore
 
-# %%
-summary.keys()
-
-# %%
-# For example, we can query for all the instances of
-# :class:`~sklearn.ensemble.RandomForestClassifier`:
-
-# %%
-summary.query("learner.str.contains('RandomForestClassifier')").reports()
-
-# %%
-# Or, we can query for all the estimators made for classification:
-
-# %%
-pprint(summary.query("ml_task.str.contains('classification')").reports())
+# Supposing you selected "Cross-validation" in the "Report type" tab,
+# if you now call `reports()`, you get only the CrossValidationReports
+print(summary.reports())
 
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
@@ -398,6 +313,12 @@ temp_dir.cleanup()
 #
 #   This is only the beginning for skore. We welcome your feedback and ideas
 #   to make it the best tool for end-to-end data science.
+#
+#   Key benefits of using skore in your ML workflow:
+#   * Standardized evaluation and comparison of models
+#   * Rich visualizations and diagnostics
+#   * Organized experiment tracking
+#   * Seamless integration with scikit-learn
 #
 #   Feel free to join our community on `Discord <http://discord.probabl.ai>`_
 #   or `create an issue <https://github.com/probabl-ai/skore/issues>`_.
