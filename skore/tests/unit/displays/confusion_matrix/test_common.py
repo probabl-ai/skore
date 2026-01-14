@@ -66,7 +66,7 @@ class TestConfusionMatrixDisplay:
         ]
         assert frame.columns.tolist() == expected_columns
         assert set(frame["true_label"]) == set(display.display_labels)
-        assert set(frame["predicted_label"])) == set(display.display_labels)
+        assert set(frame["predicted_label"]) == set(display.display_labels)
         assert frame["split"].nunique() == (
             5 if "cross_validation" in fixture_prefix else 0
         )
