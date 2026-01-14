@@ -501,6 +501,17 @@ class CoefficientsDisplay(DisplayMixin):
                 f"Column {subplot_by} not found in the frame. It should be one "
                 f"of {', '.join(columns_to_groupby)}."
             )
+        elif subplot_by is None:
+            if "label" in frame.columns:
+                n_unique = frame["label"].nunique()
+            else:
+                n_unique = frame["output"].nunique()
+            if n_unique > 1:
+                raise ValueError(
+                    "There are multiple labels or outputs and `subplot_by` is `None`. "
+                    "There is too much information to display on a single plot. "
+                    "Please provide a column to group by using `subplot_by`."
+                )
 
         has_same_features = self._has_same_features(frame=frame)
         if (frame.columns.isin(["label", "output"]).any() and subplot_by == "auto") or (

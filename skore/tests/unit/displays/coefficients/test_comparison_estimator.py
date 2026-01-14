@@ -481,6 +481,45 @@ def test_multi_output_regression(
         display.plot(subplot_by="incorrect")
 
 
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "logistic_multiclass_classification_with_train_test",
+        "linear_regression_multioutput_with_train_test",
+    ],
+)
+def test_subplot_by_none_multiclass_or_multioutput(
+    pyplot,
+    request,
+    fixture_name,
+):
+    """Check that an error is raised when `subplot_by=None` and there are multiple
+    labels (multiclass) or outputs (multi-output regression)."""
+    fixture = request.getfixturevalue(fixture_name)
+    estimator, X_train, X_test, y_train, y_test = fixture
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    report_1 = EstimatorReport(
+        clone(estimator), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        clone(estimator), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+
+    display = report.feature_importance.coefficients()
+
+    err_msg = (
+        "There are multiple labels or outputs and `subplot_by` is `None`. "
+        "There is too much information to display on a single plot. "
+        "Please provide a column to group by using `subplot_by`."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by=None)
+
+
 def test_different_features(
     pyplot,
     logistic_multiclass_classification_with_train_test,
