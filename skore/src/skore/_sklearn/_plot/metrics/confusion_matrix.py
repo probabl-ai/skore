@@ -130,7 +130,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             default threshold (0.5 for `predict_proba` response method, 0 for
             `decision_function` response method).
 
-        subplot_by: Literal["split", "estimator", "auto"]| None = "auto",
+        subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
             The variable to use for subplotting. If None, the confusion matrix will not
             be subplotted. If "auto", the variable will be automatically determined
             based on the report type.
@@ -270,8 +270,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if self.ml_task == "binary-classification":
             if threshold_value is None:
                 threshold_value = 0.5 if self.response_method == "predict_proba" else 0
-            title = title + f"\nDecision threshold: {threshold_value:.2f}"
-        self.figure_.suptitle(title + f"\n{info_data_source}")
+            title = f"{title}\nDecision threshold: {threshold_value:.2f}"
+        self.figure_.suptitle(f"{title}\n{info_data_source}")
 
         for ax in self.ax_:
             ax.set(
@@ -342,9 +342,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 valid_subplot_by = [None]
             case "cross-validation":
                 valid_subplot_by = [None, "split"]
-            case "comparison-estimator":
-                valid_subplot_by = ["estimator"]
-            case "comparison-cross-validation":
+            case "comparison-estimator" | "comparison-cross-validation":
                 valid_subplot_by = ["estimator"]
 
         if subplot_by not in valid_subplot_by:
