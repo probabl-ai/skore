@@ -29,7 +29,9 @@ class Display(Protocol):
     def plot(self, **kwargs: Any) -> None:
         """Display a figure containing the information of the display."""
 
-    def set_style(self, **kwargs: Any) -> None:
+    def set_style(
+        self, *, policy: Literal["override", "update"] = "update", **kwargs: Any
+    ) -> None:
         """Set the style of the display."""
 
     def frame(self, **kwargs: Any) -> pd.DataFrame:
