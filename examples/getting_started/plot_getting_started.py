@@ -1,5 +1,5 @@
 """
-.. _example_skore_getting_started:
+.. _example_getting_started:
 
 ======================
 Skore: getting started
