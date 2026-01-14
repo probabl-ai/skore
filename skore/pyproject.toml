@@ -1,7 +1,7 @@
 [project]
 name = "skore"
 description = """\
-𝗢𝘄𝗻 𝗬𝗼𝘂𝗿 𝗗𝗮𝘁𝗮 𝗦𝗰𝗶𝗲𝗻𝗰𝗲. \
+𝐓𝗿𝗮𝗰k 𝗬𝗼𝘂𝗿 𝗗𝗮𝘁𝗮 𝗦𝗰𝗶𝗲𝗻𝗰𝗲. \
 Skore's open-source Python library accelerates ML model development with automated evaluation reports, \
 smart methodological guidance, and comprehensive cross-validation analysis.\
 """
