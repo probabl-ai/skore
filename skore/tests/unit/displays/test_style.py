@@ -21,7 +21,7 @@ def test_style_mixin():
     "initial_state, override_value, expected_result, use_explicit_policy",
     [
         (None, {"a": 1, "b": 2}, {"a": 1, "b": 2}, False),
-        ({"a": 1, "b": 2}, {"c": 3}, {"c": 3}, False),
+        ({"a": 1, "b": 2}, {"c": 3}, {"a": 1, "b": 2, "c": 3}, False),
         ({"c": 3}, {"a": 1, "b": 2}, {"a": 1, "b": 2}, True),
         ({"a": 1, "b": 2}, 42, 42, True),
     ],
