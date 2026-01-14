@@ -106,8 +106,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         normalize: Literal["true", "pred", "all"] | None = None,
         threshold_value: float | None = None,
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
-        heatmap_kwargs: dict | None = None,
-        facet_grid_kwargs: dict | None = None,
     ):
         """Plot the confusion matrix.
 
@@ -135,14 +133,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             be subplotted. If "auto", the variable will be automatically determined
             based on the report type.
 
-        heatmap_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's
-            :func:`seaborn.heatmap`.
-
-        facet_grid_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's
-            :class:`seaborn.FacetGrid`.
-
         Returns
         -------
         self : ConfusionMatrixDisplay
@@ -152,8 +142,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             normalize=normalize,
             threshold_value=threshold_value,
             subplot_by=subplot_by,
-            heatmap_kwargs=heatmap_kwargs,
-            facet_grid_kwargs=facet_grid_kwargs,
         )
 
     def _plot_matplotlib(
@@ -162,8 +150,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         normalize: Literal["true", "pred", "all"] | None = None,
         threshold_value: float | None = None,
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
-        heatmap_kwargs: dict | None = None,
-        facet_grid_kwargs: dict | None = None,
     ) -> None:
         """Matplotlib implementation of the `plot` method.
 
@@ -184,28 +170,13 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             The variable to use for subplotting. If None, the confusion matrix will not
             be subplotted. If "auto", the variable will be automatically determined
             based on the report type.
-
-        heatmap_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's
-            :func:`seaborn.heatmap`.
-
-        facet_grid_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's
-            :class:`seaborn.FacetGrid`.
         """
         subplot_by_validated = self._validate_subplot_by(subplot_by, self.report_type)
 
         if "cross-validation" in self.report_type and subplot_by_validated != "split":
             # Aggregate the data across splits and create custom annotations.
             default_fmt = ".3f" if normalize else ".1f"
-            annot_fmt = (
-                heatmap_kwargs.pop("fmt", default_fmt)
-                if heatmap_kwargs
-                else self._default_heatmap_kwargs.pop("fmt", default_fmt)
-                # if fmt was changed with set_style
-                if "fmt" in self._default_heatmap_kwargs
-                else default_fmt
-            )
+            annot_fmt = self._default_heatmap_kwargs.get("fmt", default_fmt)
             frame = self.frame(normalize=normalize, threshold_value=threshold_value)
             aggregated = (
                 frame.groupby(
@@ -226,13 +197,11 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             default_fmt = ".2f" if normalize else "d"
 
         heatmap_kwargs_validated = _validate_style_kwargs(
-            {"fmt": default_fmt, **self._default_heatmap_kwargs},
-            heatmap_kwargs or {},
+            {"fmt": default_fmt, **self._default_heatmap_kwargs}, {}
         )
 
         facet_grid_kwargs_validated = _validate_style_kwargs(
-            {"col": subplot_by_validated, **self._default_facet_grid_kwargs},
-            facet_grid_kwargs or {},
+            {"col": subplot_by_validated, **self._default_facet_grid_kwargs}, {}
         )
         grid = sns.FacetGrid(
             data=frame,
@@ -605,3 +574,46 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             frames.append(select_threshold_and_format(self.confusion_matrix))
 
         return pd.concat(frames)
+
+    # ignore the type signature because we override kwargs by specifying the name of
+    # the parameters for the user.
+    def set_style(  # type: ignore[override]
+        self,
+        *,
+        policy: Literal["override", "update"] = "update",
+        heatmap_kwargs: dict | None = None,
+        facet_grid_kwargs: dict | None = None,
+    ):
+        """Set the style parameters for the display.
+
+        Parameters
+        ----------
+        policy : Literal["override", "update"], default="update"
+            Policy to use when setting the style parameters.
+            If "override", existing settings are set to the provided values.
+            If "update", existing settings are not changed; only settings that were
+            previously unset are changed.
+
+        heatmap_kwargs : dict, default=None
+            Additional keyword arguments to be passed to seaborn's
+            :func:`seaborn.heatmap`.
+
+        facet_grid_kwargs : dict, default=None
+            Additional keyword arguments to be passed to seaborn's
+            :class:`seaborn.FacetGrid`.
+
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+
+        Raises
+        ------
+        ValueError
+            If a style parameter is unknown.
+        """
+        return super().set_style(
+            policy=policy,
+            heatmap_kwargs=heatmap_kwargs or {},
+            facet_grid_kwargs=facet_grid_kwargs or {},
+        )

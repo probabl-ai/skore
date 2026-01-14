@@ -136,13 +136,13 @@ class StyleDisplayMixin:
         ]
 
     def set_style(
-        self, *, policy: Literal["override", "update"] = "override", **kwargs: Any
+        self, *, policy: Literal["override", "update"] = "update", **kwargs: Any
     ):
         """Set the style parameters for the display.
 
         Parameters
         ----------
-        policy : Literal["override", "update"], default="override"
+        policy : Literal["override", "update"], default="update"
             Policy to use when setting the style parameters.
             If "override", existing settings are set to the provided values.
             If "update", existing settings are not changed; only settings that were

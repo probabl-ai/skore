@@ -109,7 +109,7 @@ class TestConfusionMatrixDisplay:
         display.plot()
         assert display.figure_.get_figheight() == 6
 
-        display.plot(facet_grid_kwargs={"height": 8})
+        display.set_style(facet_grid_kwargs={"height": 8}).plot()
         assert display.figure_.get_figheight() == 8
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
@@ -130,15 +130,13 @@ class TestConfusionMatrixDisplay:
         display = report.metrics.confusion_matrix()
         display.plot()
         assert get_ax(display).collections[0].get_cmap().name == "Blues"
-        display.plot(heatmap_kwargs={"cmap": "Reds"})
+        display.set_style(heatmap_kwargs={"cmap": "Reds"}).plot()
         assert get_ax(display).collections[0].get_cmap().name == "Reds"
-        display.set_style(heatmap_kwargs={"cmap": "Greens"}, policy="update").plot()
-        assert get_ax(display).collections[0].get_cmap().name == "Greens"
 
         display = report.metrics.confusion_matrix()
         display.plot()
         assert len(get_ax(display).texts) > 1
-        display.plot(heatmap_kwargs={"annot": False})
+        display.set_style(heatmap_kwargs={"annot": False}).plot()
         # There is still the pos_label annotation
         assert len(get_ax(display).texts) == n_base_elements
         plt.close("all")
@@ -148,25 +146,17 @@ class TestConfusionMatrixDisplay:
         for text in get_ax(display).texts:
             text_content = text.get_text()
             assert "." in text_content or "*" in text_content
-        display.plot(normalize="all", heatmap_kwargs={"fmt": ".2e"})
+        display.set_style(heatmap_kwargs={"fmt": ".2e"}).plot(normalize="all")
         for text in get_ax(display).texts:
             text_content = text.get_text()
             assert "e" in text_content
-        display.set_style(heatmap_kwargs={"fmt": ".2E"}, policy="update").plot(
-            normalize="all"
-        )
-        for text in get_ax(display).texts:
-            text_content = text.get_text()
-            assert "E" in text_content or "*" in text_content
         plt.close("all")
 
         display = report.metrics.confusion_matrix()
         display.plot()
         assert len(display.figure_.axes) == n_plots
-        display.plot(heatmap_kwargs={"cbar": True})
+        display.set_style(heatmap_kwargs={"cbar": True}).plot()
         assert len(display.figure_.axes) == 2 * n_plots
-        display.set_style(heatmap_kwargs={"cbar": False}, policy="update").plot()
-        assert len(display.figure_.axes) == n_plots
         plt.close("all")
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
