@@ -134,10 +134,12 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         ----------
         subplot_by : {"auto", "label", "estimator"} or None, default="auto"
             Column to use for creating subplots. Options:
-            - "auto": "label" for multiclass, None for binary
+
+            - "auto": None for EstimatorReport and Cross-Validation Report, \
+              "label" for ComparisonReport
             - "label": one subplot per class (multiclass only)
             - "estimator": one subplot per estimator (comparison only)
-            - None: no subplots (binary only)
+            - None: no subplots (Not available for comparison in multiclass)
 
         relplot_kwargs : dict, default=None
             Keyword arguments to be passed to :func:`seaborn.relplot` for rendering
@@ -290,8 +292,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         """Determine col, hue, and style columns based on data and user preference.
 
         Rules:
-        - Default ("auto"): "label" for multiclass, None for binary
-        - subplot_by=None only allowed for binary classification
+        - Default ("auto"): None for EstimatorReport and Cross-Validation Report,
+            "label" for ComparisonReport
+        - subplot_by=None disallowed for comparison in multiclass
         - subplot_by="estimator" only allowed for comparison reports
         - subplot_by="label" only allowed for multiclass classification
         - hue priority: estimator > label > data_source (excluding col)
@@ -311,6 +314,8 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         allowed_values: set[str | None] = {"auto"}
         if is_multiclass:
             allowed_values.add("label")
+            if self.report_type in ["estimator", "cross-validation"]:
+                allowed_values.add(None)
         else:
             allowed_values.add(None)
         if is_comparison and has_multiple_estimators:
@@ -325,7 +330,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             )
 
         if subplot_by == "auto":
-            col = "label" if is_multiclass else None
+            col = "estimator" if is_comparison else None
         else:
             col = subplot_by
         has_multiple_labels = (
@@ -437,9 +442,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         if style_column_name == "data_source":
             style_value = cast(str, style_value)
             style_value = style_value.title() + " set"
-        if hue_column_name == "data_source":
-            hue_value = cast(str, hue_value)
-            hue_value = hue_value.title() + " set"
         return (
             " - ".join(
                 str(s)
