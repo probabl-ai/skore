@@ -16,6 +16,7 @@ from skore._sklearn._base import (
 )
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot import (
+    ConfusionMatrixDisplay,
     MetricsSummaryDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -56,6 +57,7 @@ class _MetricsAccessor(
         y: ArrayLike | None = None,
         metric: Metric | list[Metric] | dict[str, Metric] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
+        response_method: str | list[str] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
@@ -106,7 +108,12 @@ class _MetricsAccessor(
         metric_kwargs : dict, default=None
             The keyword arguments to pass to the metric functions.
 
-        pos_label : int, float, bool, str or None default=_DEFAULT
+        response_method : {"predict", "predict_proba", "predict_log_proba", \
+            "decision_function"} or list of such str, default=None
+            The estimator's method to be invoked to get the predictions. Only necessary
+            for custom metrics.
+
+        pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
             this parameter to override the positive class. By default, the positive
             class is set to the one provided when creating the report. If `None`,
@@ -161,6 +168,7 @@ class _MetricsAccessor(
             pos_label=pos_label,
             metric_kwargs=metric_kwargs,
             indicator_favorability=indicator_favorability,
+            response_method=response_method,
         )
         if flat_index:
             if isinstance(results.columns, pd.MultiIndex):
@@ -969,10 +977,9 @@ class _MetricsAccessor(
             The metric function to be computed. The expected signature is
             `metric_function(y_true, y_pred, **kwargs)`.
 
-        response_method : str or list of str
-            The estimator's method to be invoked to get the predictions. The possible
-            values are: `predict`, `predict_proba`, `predict_log_proba`, and
-            `decision_function`.
+        response_method : {"predict", "predict_proba", "predict_log_proba", \
+            "decision_function"} or list of such str
+            The estimator's method to be invoked to get the predictions.
 
         metric_name : str, default=None
             The name of the metric. If not provided, it will be inferred from the
@@ -1397,6 +1404,91 @@ class _MetricsAccessor(
                 y=y,
                 response_method="predict",
                 display_class=PredictionErrorDisplay,
+                display_kwargs=display_kwargs,
+            ),
+        )
+        return display
+
+    @available_if(_check_estimator_report_has_method("metrics", "confusion_matrix"))
+    def confusion_matrix(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+    ) -> ConfusionMatrixDisplay:
+        """Plot the confusion matrix.
+
+        The confusion matrix shows the counts of correct and incorrect classifications
+        for each class.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
+
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when displaying the matrix. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report.
+
+        Returns
+        -------
+        display : :class:`~skore._sklearn._plot.ConfusionMatrixDisplay`
+            The confusion matrix display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> display = report.metrics.confusion_matrix()
+        >>> display.plot()
+
+        With specific threshold for binary classification:
+
+        >>> display = report.metrics.confusion_matrix()
+        >>> display.plot(threshold_value=0.7)
+        """
+        if pos_label == _DEFAULT:
+            pos_label = self._parent.pos_label
+        response_method: str | list[str] | tuple[str, ...]
+        if self._parent._ml_task == "binary-classification":
+            response_method = ("predict_proba", "decision_function")
+        else:
+            response_method = "predict"
+
+        display_kwargs = {
+            "display_labels": tuple(
+                self._parent.estimator_reports_[0].estimator_.classes_
+            ),
+            "pos_label": pos_label,
+            "response_method": response_method,
+        }
+        display = cast(
+            ConfusionMatrixDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method=response_method,
+                display_class=ConfusionMatrixDisplay,
                 display_kwargs=display_kwargs,
             ),
         )

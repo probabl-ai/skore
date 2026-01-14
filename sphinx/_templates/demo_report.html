@@ -1,0 +1,49 @@
+<div class="container-fluid" style="max-width: 58rem;">
+    <div class="sd-card card-landing">
+      <div class="card-body">
+        <details>
+          <summary>Given, some data
+            <code class="docutils literal notranslate"><span class="pre">df</span></code>: <i>(expand for full code)</i>
+          </summary>
+          <div class="doctest highlight-default notranslate">
+            <div class="highlight">
+<pre style="overflow-x: auto;">
+<span class="kn">from</span> <span class="nn">skrub.datasets</span> <span class="kn">import</span> <span class="n">fetch_employee_salaries</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">fetch_employee_salaries</span><span class="p">()</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">X</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">y</span>
+<span class="n">df</span></pre>
+            </div>
+          </div>
+        </details>
+      </div>
+      <div class="highlight">
+<pre style="overflow-x: auto;"><span class="kn">import</span><span class="w"> </span><span class="nn">sklearn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skore</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skrub</span>
+
+<span class="n">report_ridge</span> <span class="o">=</span> <span class="n">skore</span><span class="o">.</span><span class="n">CrossValidationReport</span><span class="p">(</span>
+    <span class="n">skrub</span><span class="o">.</span><span class="n">tabular_pipeline</span><span class="p">(</span><span class="n">sklearn</span><span class="o">.</span><span class="n">linear_model</span><span class="o">.</span><span class="n">Ridge</span><span class="p">()),</span> <span class="n">df</span><span class="p">,</span> <span class="n">y</span>
+<span class="p">)</span>
+<span class="n">report_ridge</span><span class="o">.</span><span class="n">help</span><span class="p">()</span></pre>
+    </div>
+  </div>
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #ffaf00; text-decoration-color: #ffaf00">╭───────────────── </span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">Tools to diagnose estimator Ridge</span><span style="color: #ffaf00; text-decoration-color: #ffaf00"> ──────────────────╮</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> CrossValidationReport                                                <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> ├── <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">.data</span>                                                            <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> │   └── .analyze(...)                  - Plot dataset statistics.    <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> ├── <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">.metrics</span>                                                         <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> │   ├── .prediction_error(...)         - Plot the prediction error.  <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> │   ├── .rmse(...)             <span style="color: #ffaf00; text-decoration-color: #ffaf00">(↘︎)</span>     - Compute the RMSE.           <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> │   └── .summarize(...)                - Summarize all metrics.      <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> ├── <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">.feature_importance</span>                                              <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> │   └── .coefficients(...)             - Retrieve the coefficients.  <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> └── <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">Attributes</span>                                                       <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>     ├── .X                             - The data to fit.            <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>     ├── .y                             - The target variable.        <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>     └── .estimator                     - Estimator to train.         <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>                                                                      <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> Legend:                                                              <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span> <span style="color: #008080; text-decoration-color: #008080">(↗︎)</span> higher is better <span style="color: #ffaf00; text-decoration-color: #ffaf00">(↘︎)</span> lower is better                             <span style="color: #ffaf00; text-decoration-color: #ffaf00">│</span>
+<span style="color: #ffaf00; text-decoration-color: #ffaf00">╰──────────────────────────────────────────────────────────────────────╯</span></pre>
+</div>

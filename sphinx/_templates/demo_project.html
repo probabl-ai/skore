@@ -1,0 +1,11 @@
+<div class="doctest highlight-default notranslate">
+<div class="highlight hl-ipython3 code-margin"><pre><span></span><span class="n">project</span> <span class="o">=</span> <span class="n">skore</span><span class="o">.</span><span class="n">Project</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;adult_census_survey&quot;</span><span class="p">)</span>
+<span class="n">project</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;ridge&quot;</span><span class="p">,</span> <span class="n">report_ridge</span><span class="p">)</span>
+<span class="n">project</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
+    <span class="s2">&quot;hgbdt&quot;</span><span class="p">,</span> <span class="n">CrossValidationReport</span><span class="p">(</span>
+        <span class="n">skrub</span><span class="o">.</span><span class="n">tabular_pipeline</span><span class="p">(</span><span class="s2">&quot;regressor&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="n">project</span><span class="o">.</span><span class="n">summarize</span><span class="p">()</span></pre>
+</div>
+</div>
