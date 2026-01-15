@@ -94,6 +94,7 @@ def upload(
     pool : TheadPoolExecutor
         The pool used to execute the `upload_chunk` threads.
     """
+    return
     assert filepath.stat().st_size, "`filepath` must not be empty"
 
     with HUBClient() as hub_client, Client() as standard_client:
