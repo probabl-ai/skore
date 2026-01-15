@@ -1,6 +1,6 @@
 import numbers
 from collections import namedtuple
-from typing import Any, Literal, cast
+from typing import Literal, cast
 
 import numpy as np
 import seaborn as sns
@@ -36,7 +36,7 @@ class PredictionErrorDisplay(DisplayMixin):
     prediction_error : DataFrame
         The prediction error data to display. The columns are
 
-        - `estimator_name`
+        - `estimator`
         - `split` (may be null)
         - `y_true`
         - `y_pred`
@@ -94,11 +94,17 @@ class PredictionErrorDisplay(DisplayMixin):
     >>> display.plot(kind="actual_vs_predicted")
     """
 
-    _default_data_points_kwargs: dict[str, Any] | None = None
     _default_relplot_kwargs = {
         "alpha": 0.3,
-        "s": 10,
+        "s": 15,
         "marker": "o",
+        "x": "y_pred",
+        "kind": "scatter",
+    }
+    _default_perfect_model_kwargs = {
+        "color": "black",
+        "alpha": 0.7,
+        "linestyle": "--",
     }
 
     def __init__(
@@ -124,12 +130,11 @@ class PredictionErrorDisplay(DisplayMixin):
     def plot(
         self,
         *,
-        estimator_name: str | None = None,
+        subplot_by: Literal["auto", "data_source", "split", "estimator"]
+        | None = "auto",
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
-        data_points_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
-        relplot_kwargs: dict[str, Any] | None = None,
         despine: bool = True,
     ) -> None:
         """Plot visualization.
@@ -138,7 +143,7 @@ class PredictionErrorDisplay(DisplayMixin):
 
         Parameters
         ----------
-        estimator_name : str
+        estimator : str
             Name of the estimator used to plot the prediction error. If `None`,
             we used the inferred name from the estimator.
 
@@ -177,58 +182,172 @@ class PredictionErrorDisplay(DisplayMixin):
         >>> display.plot(kind="actual_vs_predicted")
         """
         return self._plot(
-            estimator_name=estimator_name,
+            subplot_by=subplot_by,
             kind=kind,
-            data_points_kwargs=data_points_kwargs,
-            relplot_kwargs=relplot_kwargs,
             despine=despine,
         )
 
     def _plot_matplotlib(
         self,
         *,
-        estimator_name: str | None = None,
+        subplot_by: Literal["auto", "data_source", "split", "estimator"]
+        | None = "auto",
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
-        data_points_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
-        relplot_kwargs: dict[str, Any] | None = None,
         despine: bool = True,
     ) -> None:
         """Matplolib implementation of the `plot` method."""
+        expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
+        if kind not in expected_kind:
+            raise ValueError(
+                f"`kind` must be one of {', '.join(expected_kind)}. "
+                f"Got {kind!r} instead."
+            )
         if kind == "actual_vs_predicted":
             xlabel, ylabel = "Predicted values", "Actual values"
-            y = "y_true"
+            y_plot = "y_true"
+            min_value = min(self.range_y_pred.min, self.range_y_true.min)
+            max_value = max(self.range_y_pred.max, self.range_y_true.max)
+            x_range_perfect_pred = [min_value, max_value]
+            y_range_perfect_pred = [min_value, max_value]
+            y_line = y_range_perfect_pred
         else:  # kind == "residual_vs_predicted"
             xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
-            y = "residuals"
+            y_plot = "residuals"
+            x_range_perfect_pred = [self.range_y_pred.min, self.range_y_pred.max]
+            y_range_perfect_pred = [self.range_residuals.min, self.range_residuals.max]
+            y_line = [0, 0]
 
-        relplot_kwargs_validated = _validate_style_kwargs(
-            self._default_relplot_kwargs,
-            relplot_kwargs or {},
-        )
+        col, hue, style = self._get_plot_columns(subplot_by)
+        relplot_kwargs = {
+            "y": y_plot,
+            "col": col,
+            "hue": hue,
+            "style": style,
+            **self._default_relplot_kwargs,
+        }
+        if style:
+            relplot_kwargs["style_order"] = ["train", "test"]
+            relplot_kwargs["hue_order"] = ["train", "test"]
 
-        plot_data = self.frame()
         facet_grid = sns.relplot(
-            data=plot_data,
-            x="y_pred",
-            y=y,
-            kind="scatter",
-            **relplot_kwargs_validated,
+            data=self.frame(),
+            **_validate_style_kwargs(relplot_kwargs, {}),
         )
         self.figure_, self.ax_ = facet_grid.figure, facet_grid.axes.flatten()
+        self.lines_ = []
+
+        title = "Prediction Error"
+        if "comparison" not in self.report_type:
+            title += f" for {self._prediction_error['estimator'].cat.categories.item()}"
+        title += (
+            f"\nData source: {self.data_source.capitalize()} set"
+            if self.data_source in ("train", "test")
+            else "\nData source: external set"
+            if self.data_source == "X_y"
+            else "\nData source: Train and Test"
+        )
+        self.figure_.suptitle(title)
 
         for ax in self.ax_:
-            ax.set(xlabel=xlabel, ylabel=ylabel)
+            self.lines_.append(
+                ax.plot(
+                    x_range_perfect_pred,
+                    y_line,
+                    **self._default_perfect_model_kwargs,
+                )[0]
+            )
+            ax.set(
+                xlabel=xlabel,
+                ylabel=ylabel,
+                xlim=x_range_perfect_pred,
+                ylim=y_range_perfect_pred,
+                xticks=np.linspace(
+                    x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                ),
+                yticks=np.linspace(
+                    y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                ),
+            )
 
-        if despine:
-            for ax in self.ax_:
-                x_range = ax.get_xlim()
-                y_range = ax.get_ylim()
-                _despine_matplotlib_axis(ax, x_range=x_range, y_range=y_range)
+            if despine:
+                _despine_matplotlib_axis(
+                    ax, x_range=ax.get_xlim(), y_range=ax.get_ylim()
+                )
+
+        handles = []
+        labels = []
+        if facet_grid._legend is not None:
+            handles = list(facet_grid._legend.legend_handles)
+            labels = [t.get_text() for t in facet_grid._legend.get_texts()]
+            facet_grid._legend.remove()
+            if hue == "split":
+                labels = [f"Split #{label}" for label in labels]
+        handles.append(self.lines_[0])
+        labels.append("Perfect predictions")
+
+        self.figure_.legend(
+            handles,
+            labels,
+            loc="upper center",
+            bbox_to_anchor=(0.5, 0),
+            ncol=1,
+            frameon=True,
+        )
 
         if len(self.ax_) == 1:
             self.ax_ = self.ax_[0]
+
+    def _get_plot_columns(
+        self,
+        subplot_by: Literal["auto", "estimator", "data_source", "split"] | None,
+    ) -> tuple[str | None, str | None, str | None]:
+        """Validate the `subplot_by` parameter.
+
+        Parameters
+        ----------
+        subplot_by : Literal["auto", "estimator","data_source", "split"] | None
+            The variable to use for subplotting.
+
+        report_type : {"comparison-cross-validation", "comparison-estimator", \
+                "cross-validation", "estimator"}
+            The type of report.
+
+        Returns
+        -------
+        Literal["split", "estimator"] | None
+            The validated `subplot_by` parameter.
+        """
+        valid_subplot_by: list[str | None] = ["auto"]
+        hue_candidates = []
+        if "estimator" in self.report_type and self.data_source == "both":
+            valid_subplot_by.append("data_source")
+            hue_candidates.append("data_source")
+        if "cross-validation" in self.report_type:
+            valid_subplot_by.append("split")
+            hue_candidates.append("split")
+        if "comparison" in self.report_type:
+            valid_subplot_by.append("estimator")
+            hue_candidates.append("estimator")
+        else:
+            valid_subplot_by.append(None)
+
+        if subplot_by not in valid_subplot_by:
+            raise ValueError(
+                f"Invalid `subplot_by` parameter. Valid options are: "
+                f"{', '.join(str(s) for s in valid_subplot_by)}."
+                f"Got '{subplot_by}' instead."
+            )
+
+        if subplot_by == "auto":
+            col = "estimator" if "comparison" in self.report_type else None
+        else:
+            col = subplot_by
+        hue = hue[0] if (hue := [c for c in hue_candidates if c != col]) else None
+        style = "data_source" if self.data_source == "both" else None
+
+        return col, hue, style
 
     @classmethod
     def _compute_data_for_display(
@@ -334,7 +453,7 @@ class PredictionErrorDisplay(DisplayMixin):
                 ):
                     prediction_error_records.append(
                         {
-                            "estimator_name": y_true_i.estimator_name,
+                            "estimator": y_true_i.estimator_name,
                             "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "y_true": y_true_sample_i,
@@ -352,7 +471,7 @@ class PredictionErrorDisplay(DisplayMixin):
                 ):
                     prediction_error_records.append(
                         {
-                            "estimator_name": y_true_i.estimator_name,
+                            "estimator": y_true_i.estimator_name,
                             "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "y_true": y_true_sample_i,
@@ -375,7 +494,7 @@ class PredictionErrorDisplay(DisplayMixin):
         return cls(
             prediction_error=DataFrame.from_records(prediction_error_records).astype(
                 {
-                    "estimator_name": "category",
+                    "estimator": "category",
                     "data_source": "category",
                     "split": "category",
                 }
@@ -397,7 +516,7 @@ class PredictionErrorDisplay(DisplayMixin):
             A DataFrame containing the prediction error data with columns depending on
             the report type:
 
-            - `estimator_name`: Name of the estimator (when comparing estimators)
+            - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
             - `y_true`: True target values
             - `y_pred`: Predicted target values
@@ -427,8 +546,51 @@ class PredictionErrorDisplay(DisplayMixin):
         elif self.report_type == "cross-validation":
             columns = ["split"] + statistical_columns
         elif self.report_type == "comparison-estimator":
-            columns = ["estimator_name"] + statistical_columns
+            columns = ["estimator"] + statistical_columns
         else:  # self.report_type == "comparison-cross-validation"
-            columns = ["estimator_name", "split"] + statistical_columns
+            columns = ["estimator", "split"] + statistical_columns
 
         return self._prediction_error[columns]
+
+    # ignore the type signature because we override kwargs by specifying the name of
+    # the parameters for the user.
+    def set_style(  # type: ignore[override]
+        self,
+        *,
+        policy: Literal["override", "update"] = "update",
+        relplot_kwargs: dict | None = None,
+        perfect_model_kwargs: dict | None = None,
+    ):
+        """Set the style parameters for the display.
+
+        Parameters
+        ----------
+        policy : Literal["override", "update"], default="update"
+            Policy to use when setting the style parameters.
+            If "override", existing settings are set to the provided values.
+            If "update", existing settings are not changed; only settings that were
+            previously unset are changed.
+
+        heatmap_kwargs : dict, default=None
+            Additional keyword arguments to be passed to seaborn's
+            :func:`seaborn.heatmap`.
+
+        facet_grid_kwargs : dict, default=None
+            Additional keyword arguments to be passed to seaborn's
+            :class:`seaborn.FacetGrid`.
+
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+
+        Raises
+        ------
+        ValueError
+            If a style parameter is unknown.
+        """
+        return super().set_style(
+            policy=policy,
+            relplot_kwargs=relplot_kwargs or {},
+            perfect_model_kwargs=perfect_model_kwargs or {},
+        )
