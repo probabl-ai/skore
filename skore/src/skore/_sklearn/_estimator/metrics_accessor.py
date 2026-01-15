@@ -149,11 +149,13 @@ class _MetricsAccessor(
         >>> from skore import EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+        ...
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
         >>> report.metrics.summarize(indicator_favorability=True).frame()
                     LogisticRegression Favorability
         Metric
+        Accuracy               0.95...         (↗︎)
         Precision              0.98...         (↗︎)
         Recall                 0.93...         (↗︎)
         ROC AUC                0.99...         (↗︎)
@@ -172,6 +174,7 @@ class _MetricsAccessor(
         ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
         Metric
+        Accuracy                        0.96...                     0.95...          (↗︎)
         Precision                       0.96...                     0.98...          (↗︎)
         Recall                          0.97...                     0.93...          (↗︎)
         ROC AUC                         0.99...                     0.99...          (↗︎)

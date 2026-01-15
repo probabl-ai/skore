@@ -20,7 +20,7 @@ def test_aggregate_none(comparison_cross_validation_reports_binary_classificatio
 
     assert_index_equal(result_df.columns, pd.Index(["Value"]))
     assert result_df.index.names == ["Metric", "Label / Average", "Estimator", "Split"]
-    assert len(result_df) == 80
+    assert len(result_df) == 90
 
 
 def test_aggregate_none_flat_index(
@@ -33,7 +33,7 @@ def test_aggregate_none_flat_index(
     result = report.metrics.summarize(aggregate=None, flat_index=True).frame()
 
     assert_index_equal(result.columns, pd.Index(["Value"]))
-    assert len(result) == 80
+    assert len(result) == 90
 
 
 def test_default(comparison_cross_validation_reports_binary_classification):
@@ -53,7 +53,7 @@ def test_default(comparison_cross_validation_reports_binary_classification):
             names=[None, "Estimator"],
         ),
     )
-    assert len(result) == 8
+    assert len(result) == 9
 
 
 def test_default_regression(comparison_cross_validation_reports_regression):
@@ -151,7 +151,7 @@ def test_favorability(comparison_cross_validation_reports_binary_classification)
             names=[None, "Estimator"],
         ),
     )
-    assert len(result) == 8
+    assert len(result) == 9
 
 
 def test_cache(comparison_cross_validation_reports_binary_classification):
@@ -210,7 +210,7 @@ def test_data_source_external(
             names=[None, "Estimator"],
         ),
     )
-    assert len(result) == 8
+    assert len(result) == 9
 
 
 def test_cache_poisoning(binary_classification_data):

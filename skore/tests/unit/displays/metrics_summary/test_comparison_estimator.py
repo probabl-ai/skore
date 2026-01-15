@@ -18,6 +18,7 @@ def test_data_source_external(
 
     expected_index = pd.MultiIndex.from_tuples(
         [
+            ("Accuracy", ""),
             ("Precision", 0),
             ("Precision", 1),
             ("Recall", 0),
@@ -55,6 +56,7 @@ def test_data_source_both(
 
     expected_index = pd.MultiIndex.from_tuples(
         [
+            ("Accuracy", ""),
             ("Precision", 0),
             ("Precision", 1),
             ("Recall", 0),
@@ -96,9 +98,10 @@ def test_flat_index(estimator_reports_binary_classification):
     result = report.metrics.summarize(flat_index=True)
     assert isinstance(result, MetricsSummaryDisplay)
     result_df = result.frame()
-    assert result_df.shape == (8, 2)
+    assert result_df.shape == (9, 2)
     assert isinstance(result_df.index, pd.Index)
     assert result_df.index.tolist() == [
+        "accuracy",
         "precision_0",
         "precision_1",
         "recall_0",
@@ -121,6 +124,7 @@ def test_indicator_favorability(
     result_df = result.frame()
     assert "Favorability" in result_df.columns
     indicator = result_df["Favorability"]
+    assert indicator["Accuracy"].tolist() == ["(↗︎)"]
     assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
