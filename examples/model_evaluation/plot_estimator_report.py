@@ -418,7 +418,7 @@ plt.show()
 # %%
 # More plotting options are available via ``heatmap_kwargs``, which are passed to
 # seaborn's heatmap. For example, we can customize the colormap and number format:
-cm_display.plot(heatmap_kwargs={"cmap": "Greens", "fmt": ".2e"})
+cm_display.set_style(heatmap_kwargs={"cmap": "Greens", "fmt": ".2e"}).plot()
 plt.show()
 
 # %%
