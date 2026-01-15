@@ -138,7 +138,7 @@ def test_wrong_kwargs(pyplot, fixture_name, request):
     display = report.metrics.precision_recall()
     err_msg = "Line2D.set() got an unexpected keyword argument 'invalid'"
     with pytest.raises(AttributeError, match=re.escape(err_msg)):
-        display.plot(relplot_kwargs={"invalid": "value"})
+        display.set_style(relplot_kwargs={"invalid": "value"}).plot()
 
 
 @pytest.mark.parametrize(
@@ -175,7 +175,7 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
     if multiclass:
         # For multiclass, use palette since there's a hue variable
         palette_colors = ["red", "blue", "green"]
-        display.plot(relplot_kwargs={"palette": palette_colors})
+        display.set_style(relplot_kwargs={"palette": palette_colors}).plot()
         assert len(display.lines_) == n_reports * n_splits * n_labels
         expected_colors = sum([[c] * n_splits for c in palette_colors], []) * n_reports
         for line, expected_color, default_color in zip(
@@ -184,31 +184,11 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
             assert line.get_color() == expected_color
             assert mpl.colors.to_rgb(line.get_color()) != default_color
 
-        palette_colors = ["magenta", "cyan", "yellow"]
-        display.set_style(relplot_kwargs={"palette": palette_colors}, policy="update")
-        display.plot()
-        assert len(display.lines_) == n_reports * n_splits * n_labels
-        expected_colors = sum([[c] * n_splits for c in palette_colors], []) * n_reports
-        for line, expected_color, default_color in zip(
-            display.lines_, expected_colors, default_colors, strict=True
-        ):
-            assert line.get_color() == expected_color
-            assert mpl.colors.to_rgb(line.get_color()) != default_color
     else:
         # For binary, use color since there's no hue variable
-        display.plot(relplot_kwargs={"color": "red"})
+        display.set_style(relplot_kwargs={"color": "red"}).plot()
         assert len(display.lines_) == n_reports * n_splits * n_labels
         expected_colors = ["red"] * n_splits * n_reports
-        for line, expected_color, default_color in zip(
-            display.lines_, expected_colors, default_colors, strict=True
-        ):
-            assert line.get_color() == expected_color
-            assert mpl.colors.to_rgb(line.get_color()) != default_color
-
-        display.set_style(relplot_kwargs={"color": "green"}, policy="update")
-        display.plot()
-        assert len(display.lines_) == n_reports * n_splits * n_labels
-        expected_colors = ["green"] * n_splits * n_reports
         for line, expected_color, default_color in zip(
             display.lines_, expected_colors, default_colors, strict=True
         ):
