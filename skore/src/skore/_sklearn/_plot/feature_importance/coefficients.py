@@ -160,9 +160,6 @@ class CoefficientsDisplay(DisplayMixin):
         *,
         include_intercept: bool = True,
         subplot_by: Literal["auto", "estimator", "label", "output"] | None = "auto",
-        barplot_kwargs: dict[str, Any] | None = None,
-        boxplot_kwargs: dict[str, Any] | None = None,
-        stripplot_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """Plot the coefficients for the different features.
 
@@ -179,21 +176,6 @@ class CoefficientsDisplay(DisplayMixin):
               regression problem;
             - when comparing estimators for which the input features are different.
 
-        barplot_kwargs : dict, default=None
-            Keyword arguments to be passed to :func:`seaborn.barplot` for
-            rendering the coefficients with an :class:`~skore.EstimatorReport` or
-            :class:`~skore.ComparisonReport` of :class:`~skore.EstimatorReport`.
-
-        boxplot_kwargs : dict, default=None
-            Keyword arguments to be passed to :func:`seaborn.boxplot` for
-            rendering the coefficients with a :class:`~skore.CrossValidationReport` or
-            :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
-
-        stripplot_kwargs : dict, default=None
-            Keyword arguments to be passed to :func:`seaborn.stripplot` for
-            rendering the coefficients with a :class:`~skore.CrossValidationReport` or
-            :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
-
         Examples
         --------
         >>> from sklearn.datasets import load_iris
@@ -209,37 +191,19 @@ class CoefficientsDisplay(DisplayMixin):
         >>> display = report.feature_importance.coefficients()
         >>> display.plot()
         """
-        return self._plot(
-            include_intercept=include_intercept,
-            subplot_by=subplot_by,
-            barplot_kwargs=barplot_kwargs,
-            boxplot_kwargs=boxplot_kwargs,
-            stripplot_kwargs=stripplot_kwargs,
-        )
+        return self._plot(include_intercept=include_intercept, subplot_by=subplot_by)
 
     def _plot_matplotlib(
         self,
         *,
         include_intercept: bool = True,
         subplot_by: Literal["estimator", "label", "output"] | None = None,
-        barplot_kwargs: dict[str, Any] | None = None,
-        boxplot_kwargs: dict[str, Any] | None = None,
-        stripplot_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
         # make copy of the dictionary since we are going to pop some keys later
-        if barplot_kwargs is None:
-            barplot_kwargs = self._default_barplot_kwargs.copy()
-        else:
-            barplot_kwargs = {**self._default_barplot_kwargs, **barplot_kwargs}
-        if boxplot_kwargs is None:
-            boxplot_kwargs = self._default_boxplot_kwargs.copy()
-        else:
-            boxplot_kwargs = {**self._default_boxplot_kwargs, **boxplot_kwargs}
-        if stripplot_kwargs is None:
-            stripplot_kwargs = self._default_stripplot_kwargs.copy()
-        else:
-            stripplot_kwargs = {**self._default_stripplot_kwargs, **stripplot_kwargs}
+        barplot_kwargs = self._default_barplot_kwargs.copy()
+        boxplot_kwargs = self._default_boxplot_kwargs.copy()
+        stripplot_kwargs = self._default_stripplot_kwargs.copy()
 
         if self.report_type in ("estimator", "cross-validation"):
             return self._plot_single_estimator(
@@ -661,3 +625,55 @@ class CoefficientsDisplay(DisplayMixin):
             )
 
         return cls(coefficients=coefficients, report_type=report_type)
+
+    # ignore the type signature because we override kwargs by specifying the name of
+    # the parameters for the user.
+    def set_style(  # type: ignore[override]
+        self,
+        *,
+        policy: Literal["override", "update"] = "update",
+        barplot_kwargs: dict[str, Any] | None = None,
+        boxplot_kwargs: dict[str, Any] | None = None,
+        stripplot_kwargs: dict[str, Any] | None = None,
+    ):
+        """Set the style parameters for the display.
+
+        Parameters
+        ----------
+        policy : Literal["override", "update"], default="update"
+            Policy to use when setting the style parameters.
+            If "override", existing settings are set to the provided values.
+            If "update", existing settings are not changed; only settings that were
+            previously unset are changed.
+
+        barplot_kwargs : dict, default=None
+            Keyword arguments to be passed to :func:`seaborn.barplot` for
+            rendering the coefficients with an :class:`~skore.EstimatorReport` or
+            :class:`~skore.ComparisonReport` of :class:`~skore.EstimatorReport`.
+
+        boxplot_kwargs : dict, default=None
+            Keyword arguments to be passed to :func:`seaborn.boxplot` for
+            rendering the coefficients with a :class:`~skore.CrossValidationReport` or
+            :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
+
+        stripplot_kwargs : dict, default=None
+            Keyword arguments to be passed to :func:`seaborn.stripplot` for
+            rendering the coefficients with a :class:`~skore.CrossValidationReport` or
+            :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
+
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+
+        Raises
+        ------
+        ValueError
+            If a style parameter is unknown.
+        """
+        return super().set_style(
+            policy=policy,
+            barplot_kwargs=barplot_kwargs or {},
+            boxplot_kwargs=boxplot_kwargs or {},
+            stripplot_kwargs=stripplot_kwargs or {},
+        )
