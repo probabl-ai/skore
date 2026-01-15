@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from abc import ABC
-from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cached_property, partial
 from typing import ClassVar, Generic, TypeVar, cast
@@ -119,13 +118,12 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
                 for metric in metrics
             ]
 
-            deque(
-                progress.track(
-                    as_completed(tasks),
-                    description=f"Computing {self.report.__class__.__name__} metrics",
-                    total=len(tasks),
-                )
-            )
+            for task in progress.track(
+                as_completed(tasks),
+                description=f"Computing {self.report.__class__.__name__} metrics",
+                total=len(tasks),
+            ):
+                task.result()
 
         return [metric for metric in metrics if metric.value is not None]
 

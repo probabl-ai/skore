@@ -266,26 +266,26 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             Only used when ``kind='dist'``.
 
         scatterplot_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's :func:`seaborn.scatterplot` for
+            Keyword arguments to be passed to :func:`seaborn.scatterplot` for
             rendering the distribution 2D plot, when both ``x`` and ``y`` are numeric.
 
         stripplot_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's :func:`searborn.stripplot` for
+            Keyword arguments to be passed to :func:`seaborn.stripplot` for
             rendering the distribution 2D plot, when either ``x`` or ``y`` is numeric,
             and the other is categorical. This plot is drawn on top of the boxplot.
 
         boxplot_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's :func:`seaborn.boxplot` for
+            Keyword arguments to be passed to :func:`seaborn.boxplot` for
             rendering the distribution 2D plot, when either ``x`` or ``y`` is numeric,
             and the other is categorical. This plot is drawn below the stripplot.
 
         heatmap_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's :func:`seaborn.heatmap` for
+            Keyword arguments to be passed to :func:`seaborn.heatmap` for
             rendering Cramer's V correlation matrix, when ``kind='corr'`` or when
             ``kind='dist'`` and both ``x`` and ``y`` are categorical.
 
         histplot_kwargs: dict, default=None
-            Keyword arguments to be passed to seaborn's :func:`seaborn.histplot` for
+            Keyword arguments to be passed to :func:`seaborn.histplot` for
             rendering the distribution 1D plot, when only ``x`` is provided.
 
         Examples
@@ -399,7 +399,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             The number of most frequent categories to plot.
 
         histplot_kwargs : dict, default=None
-            Keyword arguments to be passed to seaborn's :ref:`histplot
+            Keyword arguments to be passed to :ref:`histplot
             <https://seaborn.pydata.org/generated/seaborn.histplot.html>`_ for rendering
             the distribution 1D plot.
         """
@@ -495,16 +495,16 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             The number of most frequent categories to plot.
 
         heatmap_kwargs : dict, default=None
-            Keyword arguments to be passed to seaborn's heatmap.
+            Keyword arguments to be passed to heatmap.
 
         stripplot_kwargs : dict, default=None
-            Keyword arguments to be passed to seaborn's stripplot.
+            Keyword arguments to be passed to stripplot.
 
         boxplot_kwargs : dict, default=None
-            Keyword arguments to be passed to seaborn's boxplot.
+            Keyword arguments to be passed to boxplot.
 
         scatterplot_kwargs : dict, default=None
-            Keyword arguments to be passed to seaborn's scatterplot.
+            Keyword arguments to be passed to scatterplot.
         """
         x = sbd.col(self.summary["dataframe"], x) if x is not None else None
         y = sbd.col(self.summary["dataframe"], y) if y is not None else None
@@ -653,7 +653,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         Parameters
         ----------
         heatmap_kwargs : dict, default=None
-            Keyword arguments to be passed to seaborn's heatmap.
+            Keyword arguments to be passed to heatmap.
         """
         if heatmap_kwargs is None:
             heatmap_kwargs = self._default_heatmap_kwargs or {}
