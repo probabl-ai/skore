@@ -122,6 +122,18 @@ class TestEstimatorReportPayload:
             PredictTimeTrain,
         ]
 
+    def test_metrics_raises_exception(self, monkeypatch, payload):
+        def raise_exception(_):
+            raise Exception("test_metrics_with_exception")
+
+        monkeypatch.setattr(
+            "skore_hub_project.metric.metric.EstimatorReportMetric.compute",
+            raise_exception,
+        )
+
+        with raises(Exception, match="test_metrics_with_exception"):
+            list(map(type, payload.metrics))
+
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
     def test_medias(self, payload):
