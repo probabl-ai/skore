@@ -339,15 +339,20 @@ class TestCrossValidationReportPayload:
         ]
 
     def test_metrics_raises_exception(self, monkeypatch, payload):
+        """
+        Since metrics compute is multi-threaded, ensure that any exceptions thrown in a
+        sub-thread are also thrown in the main thread.
+        """
+
         def raise_exception(_):
-            raise Exception("test_metrics_with_exception")
+            raise Exception("test_metrics_raises_exception")
 
         monkeypatch.setattr(
             "skore_hub_project.metric.metric.CrossValidationReportMetric.compute",
             raise_exception,
         )
 
-        with raises(Exception, match="test_metrics_with_exception"):
+        with raises(Exception, match="test_metrics_raises_exception"):
             list(map(type, payload.metrics))
 
     @mark.filterwarnings(
