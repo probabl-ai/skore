@@ -1248,9 +1248,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                         data_source_hash=None,
                         pos_label=display_kwargs.get("pos_label"),
                     )
-                    for key, value, is_cached in results:
-                        if not is_cached:
-                            report._cache[key] = value
+                    for key, value in results:
                         if key[-1] != "predict_time":
                             y_pred.append(
                                 YPlotData(
@@ -1305,9 +1303,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                             data_source_hash=None,
                             pos_label=display_kwargs.get("pos_label"),
                         )
-                        for key, value, is_cached in results:
-                            if not is_cached:
-                                report._cache[key] = value
+                        for key, value in results:
                             if key[-1] != "predict_time":
                                 y_pred.append(
                                     YPlotData(
