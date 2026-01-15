@@ -143,9 +143,16 @@ class PredictionErrorDisplay(DisplayMixin):
 
         Parameters
         ----------
-        estimator : str
-            Name of the estimator used to plot the prediction error. If `None`,
-            we used the inferred name from the estimator.
+        subplot_by : {"auto", "data_source", "split", "estimator", None}, \
+                default="auto"
+            The variable to use for creating subplots:
+
+            - "auto" creates subplots by estimator for comparison reports, otherwise
+              uses a single plot.
+            - "data_source" creates subplots by data source (train/test).
+            - "split" creates subplots by cross-validation split.
+            - "estimator" creates subplots by estimator.
+            - None creates a single plot.
 
         kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
                 default="residual_vs_predicted"
@@ -156,14 +163,6 @@ class PredictionErrorDisplay(DisplayMixin):
             - "residual_vs_predicted" draws the residuals, i.e. difference
               between observed and predicted values, (y-axis) vs. the predicted
               values (x-axis).
-
-        data_points_kwargs : dict, default=None
-            Dictionary with keywords passed to the `matplotlib.pyplot.scatter`
-            call.
-
-        perfect_model_kwargs : dict, default=None
-            Dictionary with keyword passed to the `matplotlib.pyplot.plot`
-            call to draw the optimal line.
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
@@ -307,17 +306,16 @@ class PredictionErrorDisplay(DisplayMixin):
 
         Parameters
         ----------
-        subplot_by : Literal["auto", "estimator","data_source", "split"] | None
+        subplot_by : {"auto", "estimator", "data_source", "split", None}
             The variable to use for subplotting.
-
-        report_type : {"comparison-cross-validation", "comparison-estimator", \
-                "cross-validation", "estimator"}
-            The type of report.
 
         Returns
         -------
-        Literal["split", "estimator"] | None
-            The validated `subplot_by` parameter.
+        tuple of (str or None, str or None, str or None)
+            A tuple containing (col, hue, style) where:
+            - col: Column variable for subplots
+            - hue: Variable for color encoding
+            - style: Variable for marker style
         """
         valid_subplot_by: list[str | None] = ["auto"]
         hue_candidates = []
@@ -565,19 +563,18 @@ class PredictionErrorDisplay(DisplayMixin):
 
         Parameters
         ----------
-        policy : Literal["override", "update"], default="update"
+        policy : {"override", "update"}, default="update"
             Policy to use when setting the style parameters.
             If "override", existing settings are set to the provided values.
             If "update", existing settings are not changed; only settings that were
             previously unset are changed.
 
-        heatmap_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's
-            :func:`seaborn.heatmap`.
+        relplot_kwargs : dict, default=None
+            Additional keyword arguments to be passed to :func:`seaborn.relplot`.
 
-        facet_grid_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's
-            :class:`seaborn.FacetGrid`.
+        perfect_model_kwargs : dict, default=None
+            Additional keyword arguments to be passed to :func:`matplotlib.pyplot.plot`
+            for drawing the perfect prediction line.
 
         Returns
         -------
