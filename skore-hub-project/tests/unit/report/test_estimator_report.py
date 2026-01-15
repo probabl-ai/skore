@@ -151,6 +151,23 @@ class TestEstimatorReportPayload:
             TableReportTrain,
         ]
 
+    def test_medias_raises_exception(self, monkeypatch, payload):
+        """
+        Since medias compute is multi-threaded, ensure that any exceptions thrown in a
+        sub-thread are also thrown in the main thread.
+        """
+
+        def raise_exception(_):
+            raise Exception("test_medias_raises_exception")
+
+        monkeypatch.setattr(
+            "skore_hub_project.artifact.media.EstimatorHtmlRepr.compute",
+            raise_exception,
+        )
+
+        with raises(Exception, match="test_medias_raises_exception"):
+            list(map(type, payload.medias))
+
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
     def test_model_dump(self, binary_classification, payload):

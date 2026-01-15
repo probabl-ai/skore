@@ -172,13 +172,12 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
                 for media in medias
             ]
 
-            deque(
-                progress.track(
-                    as_completed(tasks),
-                    description=f"Uploading {self.report.__class__.__name__} media",
-                    total=len(tasks),
-                )
-            )
+            for task in progress.track(
+                as_completed(tasks),
+                description=f"Uploading {self.report.__class__.__name__} media",
+                total=len(tasks),
+            ):
+                task.result()
 
         return [media for media in medias if media.checksum is not None]
 
