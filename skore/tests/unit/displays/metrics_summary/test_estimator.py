@@ -69,6 +69,7 @@ def test_binary_classification(
     ).frame()
     assert "Favorability" not in result.columns
     expected_metrics = (
+        "accuracy",
         "precision",
         "recall",
         "roc_auc",
@@ -78,7 +79,7 @@ def test_binary_classification(
     )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 4
+    expected_nb_stats = 2 * nb_stats + 5
     _check_results_summarize(result, expected_metrics, expected_nb_stats)
 
     # Repeat the same experiment where we the target labels are not [0, 1] but
@@ -93,6 +94,7 @@ def test_binary_classification(
         pos_label=pos_label_name, data_source=data_source, **kwargs
     ).frame()
     expected_metrics = (
+        "accuracy",
         "precision",
         "recall",
         "roc_auc",
@@ -102,7 +104,7 @@ def test_binary_classification(
     )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 4
+    expected_nb_stats = 2 * nb_stats + 5
     _check_results_summarize(result, expected_metrics, expected_nb_stats)
 
     estimator, X_test, y_test = svc_binary_classification_with_test
@@ -111,10 +113,17 @@ def test_binary_classification(
     result = report.metrics.summarize(
         pos_label=pos_label, data_source=data_source, **kwargs
     ).frame()
-    expected_metrics = ("precision", "recall", "roc_auc", "fit_time", "predict_time")
+    expected_metrics = (
+        "accuracy",
+        "precision",
+        "recall",
+        "roc_auc",
+        "fit_time",
+        "predict_time",
+    )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 3
+    expected_nb_stats = 2 * nb_stats + 4
     _check_results_summarize(result, expected_metrics, expected_nb_stats)
 
 
@@ -133,6 +142,7 @@ def test_multiclass_classification(
     result = report.metrics.summarize(data_source=data_source, **kwargs).frame()
     assert "Favorability" not in result.columns
     expected_metrics = (
+        "accuracy",
         "precision",
         "recall",
         "roc_auc",
@@ -142,17 +152,17 @@ def test_multiclass_classification(
     )
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
-    expected_nb_stats = 3 * 3 + 3
+    expected_nb_stats = 3 * 3 + 4
     _check_results_summarize(result, expected_metrics, expected_nb_stats)
 
     estimator, X_test, y_test = svc_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.summarize(data_source=data_source, **kwargs).frame()
-    expected_metrics = ("precision", "recall", "fit_time", "predict_time")
+    expected_metrics = ("accuracy", "precision", "recall", "fit_time", "predict_time")
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
-    expected_nb_stats = 3 * 2 + 2
+    expected_nb_stats = 3 * 2 + 3
     _check_results_summarize(result, expected_metrics, expected_nb_stats)
 
 
@@ -186,7 +196,7 @@ def test_metric_kwargs(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "summarize")
     result = report.metrics.summarize(metric_kwargs={"average": None}).frame()
-    assert result.shape == (12, 1)
+    assert result.shape == (13, 1)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Label / Average"]
 
@@ -207,6 +217,7 @@ def test_metric_kwargs(
         (
             "forest_multiclass_classification_with_test",
             {
+                "Accuracy": "_accuracy",
                 "Precision": "_precision",
                 "Recall": "_recall",
                 "ROC AUC": "_roc_auc",
@@ -215,6 +226,7 @@ def test_metric_kwargs(
                 "Predict Time": "_predict_time",
             },
             [
+                "Accuracy",
                 "Precision",
                 "Precision",
                 "Precision",
@@ -258,6 +270,7 @@ def test_indicator_favorability(
     result = report.metrics.summarize(indicator_favorability=True).frame()
     assert "Favorability" in result.columns
     indicator = result["Favorability"]
+    assert indicator["Accuracy"].tolist() == ["(↗︎)"]
     assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["ROC AUC"].tolist() == ["(↗︎)"]

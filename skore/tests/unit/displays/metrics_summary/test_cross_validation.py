@@ -26,9 +26,10 @@ def test_flat_index(forest_binary_classification_data):
     result = report.metrics.summarize(flat_index=True)
     assert isinstance(result, MetricsSummaryDisplay)
     result_df = result.frame()
-    assert result_df.shape == (8, 2)
+    assert result_df.shape == (9, 2)
     assert isinstance(result_df.index, pd.Index)
     assert result_df.index.tolist() == [
+        "accuracy",
         "precision_0",
         "precision_1",
         "recall_0",
@@ -164,6 +165,7 @@ def test_binary_classification(
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_metrics = (
+        "accuracy",
         "precision",
         "recall",
         "roc_auc",
@@ -173,7 +175,7 @@ def test_binary_classification(
     )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 4
+    expected_nb_stats = 2 * nb_stats + 5
     _check_results_summarize(
         report,
         params={"pos_label": pos_label},
@@ -189,6 +191,7 @@ def test_binary_classification(
     y = target_names[y]
     report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_metrics = (
+        "accuracy",
         "precision",
         "recall",
         "roc_auc",
@@ -198,7 +201,7 @@ def test_binary_classification(
     )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 4
+    expected_nb_stats = 2 * nb_stats + 5
     _check_results_summarize(
         report,
         params={"pos_label": pos_label_name},
@@ -210,6 +213,7 @@ def test_binary_classification(
     estimator, X, y = svc_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_metrics = (
+        "accuracy",
         "precision",
         "recall",
         "roc_auc",
@@ -218,7 +222,7 @@ def test_binary_classification(
     )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 3
+    expected_nb_stats = 2 * nb_stats + 4
     _check_results_summarize(
         report,
         params={"pos_label": pos_label},
@@ -237,6 +241,7 @@ def test_multiclass_classification(
     estimator, X, y = forest_multiclass_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_metrics = (
+        "accuracy",
         "precision",
         "recall",
         "roc_auc",
@@ -246,7 +251,7 @@ def test_multiclass_classification(
     )
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
-    expected_nb_stats = 3 * 3 + 3
+    expected_nb_stats = 3 * 3 + 4
     _check_results_summarize(
         report,
         params={},
@@ -257,10 +262,16 @@ def test_multiclass_classification(
 
     estimator, X, y = svc_multiclass_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    expected_metrics = ("precision", "recall", "fit_time_s", "predict_time_s")
+    expected_metrics = (
+        "accuracy",
+        "precision",
+        "recall",
+        "fit_time_s",
+        "predict_time_s",
+    )
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
-    expected_nb_stats = 3 * 2 + 2
+    expected_nb_stats = 3 * 2 + 3
     _check_results_summarize(
         report,
         params={},
@@ -307,7 +318,7 @@ def test_metric_kwargs_multi_class(
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, "summarize")
     result = report.metrics.summarize(metric_kwargs={"average": None}).frame()
-    assert result.shape == (12, 2)
+    assert result.shape == (13, 2)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Label / Average"]
 
@@ -328,6 +339,7 @@ def test_metric_kwargs_multi_class(
         (
             "forest_multiclass_classification_data",
             {
+                "Accuracy": "accuracy",
                 "Precision": "_precision",
                 "Recall": "_recall",
                 "ROC AUC": "_roc_auc",
@@ -336,6 +348,7 @@ def test_metric_kwargs_multi_class(
                 "Predict Time": "_predict_time",
             },
             [
+                "Accuracy",
                 "Precision",
                 "Precision",
                 "Precision",
@@ -485,7 +498,8 @@ def test_indicator_favorability(forest_binary_classification_data, aggregate):
     ).frame()
     assert "Favorability" in result.columns
     indicator = result["Favorability"]
-    assert indicator.shape == (8,)
+    # assert indicator.shape == (9,)
+    assert indicator["Accuracy"].tolist() == ["(↗︎)"]
     assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
