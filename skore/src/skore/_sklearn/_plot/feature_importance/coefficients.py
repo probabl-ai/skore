@@ -180,17 +180,17 @@ class CoefficientsDisplay(DisplayMixin):
             - when comparing estimators for which the input features are different.
 
         barplot_kwargs : dict, default=None
-            Keyword arguments to be passed to seaborn's :func:`seaborn.barplot` for
+            Keyword arguments to be passed to :func:`seaborn.barplot` for
             rendering the coefficients with an :class:`~skore.EstimatorReport` or
             :class:`~skore.ComparisonReport` of :class:`~skore.EstimatorReport`.
 
         boxplot_kwargs : dict, default=None
-            Keyword arguments to be passed to seaborn's :func:`seaborn.boxplot` for
+            Keyword arguments to be passed to :func:`seaborn.boxplot` for
             rendering the coefficients with a :class:`~skore.CrossValidationReport` or
             :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
 
         stripplot_kwargs : dict, default=None
-            Keyword arguments to be passed to seaborn's :func:`seaborn.stripplot` for
+            Keyword arguments to be passed to :func:`seaborn.stripplot` for
             rendering the coefficients with a :class:`~skore.CrossValidationReport` or
             :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
 
@@ -391,15 +391,15 @@ class CoefficientsDisplay(DisplayMixin):
             The column to use for subplotting and dividing the coefficients into
             subplots.
         barplot_kwargs : dict
-            Keyword arguments to be passed to seaborn's :func:`seaborn.barplot` for
+            Keyword arguments to be passed to :func:`seaborn.barplot` for
             rendering the coefficients with an :class:`~skore.EstimatorReport` or
             :class:`~skore.ComparisonReport` of :class:`~skore.EstimatorReport`.
         boxplot_kwargs : dict
-            Keyword arguments to be passed to seaborn's :func:`seaborn.boxplot` for
+            Keyword arguments to be passed to :func:`seaborn.boxplot` for
             rendering the coefficients with a :class:`~skore.CrossValidationReport` or
             :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
         stripplot_kwargs : dict
-            Keyword arguments to be passed to seaborn's :func:`seaborn.stripplot` for
+            Keyword arguments to be passed to :func:`seaborn.stripplot` for
             rendering the coefficients with a :class:`~skore.CrossValidationReport` or
             :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
         """
@@ -482,15 +482,15 @@ class CoefficientsDisplay(DisplayMixin):
             subplots. If `None`, an automatic choice is made depending on the type of
             reports at hand.
         barplot_kwargs : dict
-            Keyword arguments to be passed to seaborn's :func:`seaborn.barplot` for
+            Keyword arguments to be passed to :func:`seaborn.barplot` for
             rendering the coefficients with an :class:`~skore.ComparisonReport` of
             :class:`~skore.EstimatorReport`.
         boxplot_kwargs : dict
-            Keyword arguments to be passed to seaborn's :func:`seaborn.boxplot` for
+            Keyword arguments to be passed to :func:`seaborn.boxplot` for
             rendering the coefficients with a :class:`~skore.ComparisonReport` of
             :class:`~skore.CrossValidationReport`.
         stripplot_kwargs : dict
-            Keyword arguments to be passed to seaborn's :func:`seaborn.stripplot` for
+            Keyword arguments to be passed to :func:`seaborn.stripplot` for
             rendering the coefficients with a :class:`~skore.ComparisonReport` of
             :class:`~skore.CrossValidationReport`.
         """

@@ -595,12 +595,10 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             previously unset are changed.
 
         heatmap_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's
-            :func:`seaborn.heatmap`.
+            Additional keyword arguments to be passed to :func:`seaborn.heatmap`.
 
         facet_grid_kwargs : dict, default=None
-            Additional keyword arguments to be passed to seaborn's
-            :class:`seaborn.FacetGrid`.
+            Additional keyword arguments to be passed to :class:`seaborn.FacetGrid`.
 
         Returns
         -------
