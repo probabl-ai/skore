@@ -38,7 +38,7 @@ def test_coefficients_display_barplot_kwargs(
     )
 
     display = report.feature_importance.coefficients()
-    display.plot(barplot_kwargs={"color": "red"})
+    display.set_style(barplot_kwargs={"color": "red"}).plot()
 
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
@@ -58,10 +58,10 @@ def test_coefficients_display_boxplot_kwargs(pyplot):
     )
 
     display = report.feature_importance.coefficients()
-    display.plot(
+    display.set_style(
         boxplot_kwargs={"boxprops": {"facecolor": "blue"}},
         stripplot_kwargs={"color": "red"},
-    )
+    ).plot()
 
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
