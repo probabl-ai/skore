@@ -131,6 +131,11 @@ html_title = "skore"
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
+    "announcement": (
+        "📣 Help shape the future of skore and the scikit-learn ecosystem by "
+        '<a href="https://forms.gle/2fivh6RRrBF21CTD9" target="_blank" '
+        'style="text-decoration: underline;">taking our survey</a>!'
+    ),
     "logo": {
         "image_light": "_static/images/Logo_Skore_Light@2x.svg",
         "image_dark": "_static/images/Logo_Skore_Dark@2x.svg",
