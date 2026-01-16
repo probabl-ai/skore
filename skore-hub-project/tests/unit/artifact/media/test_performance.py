@@ -37,9 +37,6 @@ def serialize(display) -> (bytes, str):
     # which is a dependency of `skore`
     "ignore:The default of observed=False is deprecated.*:FutureWarning:seaborn",
 )
-@mark.usefixtures("monkeypatch_artifact_hub_client")
-@mark.usefixtures("monkeypatch_upload_routes")
-@mark.usefixtures("monkeypatch_upload_with_mock")
 @mark.parametrize(
     "Media,report,accessor,data_source",
     (
@@ -169,6 +166,10 @@ class TestPerformance:
         assert media.computed is True
         assert media.filepath.stat().st_size == 0
 
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_upload_available_accessor(
         self, tmp_path, Media, report, accessor, data_source, upload_mock, request
     ):
@@ -230,6 +231,10 @@ class TestPerformance:
         # ensure `upload` is not called
         assert not upload_mock.called
 
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_model_dump(self, Media, report, accessor, data_source, request):
         project = Project("<tenant>", "<name>")
         report = request.getfixturevalue(report)

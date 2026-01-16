@@ -19,9 +19,6 @@ def serialize(estimator_html_repr) -> (bytes, str):
     return estimator_html_repr_bytes, f"blake3-{bytes_to_b64_str(checksum)}"
 
 
-@mark.usefixtures("monkeypatch_artifact_hub_client")
-@mark.usefixtures("monkeypatch_upload_routes")
-@mark.usefixtures("monkeypatch_upload_with_mock")
 class TestEstimatorHtmlRepr:
     def test_init_exception(self):
         project = Project("<tenant>", "<name>")
@@ -42,6 +39,10 @@ class TestEstimatorHtmlRepr:
         assert media.computed is True
         assert media.filepath.read_bytes() == content
 
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_upload(self, tmp_path, binary_classification, upload_mock):
         project = Project("<tenant>", "<name>")
         _, checksum = serialize(estimator_html_repr(binary_classification.estimator_))
@@ -68,6 +69,10 @@ class TestEstimatorHtmlRepr:
             "pool": pool,
         }
 
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_model_dump(self, binary_classification):
         project = Project("<tenant>", "<name>")
         _, checksum = serialize(estimator_html_repr(binary_classification.estimator_))
