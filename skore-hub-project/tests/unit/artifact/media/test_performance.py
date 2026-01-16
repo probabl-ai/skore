@@ -1,10 +1,12 @@
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 
+from blake3 import blake3 as Blake3
 from matplotlib import pyplot as plt
 from pydantic import ValidationError
 from pytest import mark, param, raises
 
-from skore_hub_project import Project, switch_mpl_backend
+from skore_hub_project import Project, bytes_to_b64_str
 from skore_hub_project.artifact.media import (
     PrecisionRecallTest,
     PrecisionRecallTrain,
@@ -13,18 +15,21 @@ from skore_hub_project.artifact.media import (
     RocTest,
     RocTrain,
 )
-from skore_hub_project.artifact.serializer import Serializer
 
 
-def serialize(display) -> bytes:
-    with switch_mpl_backend(), BytesIO() as stream:
+def serialize(display) -> (bytes, str):
+    with BytesIO() as stream:
         display.plot()
         display.figure_.savefig(stream, format="svg", bbox_inches="tight")
         plt.close(display.figure_)
 
         figure_bytes = stream.getvalue()
 
-    return figure_bytes
+    threads = 1 if (len(figure_bytes) < 1e6) else Blake3.AUTO
+    hasher = Blake3(max_threads=threads)
+    checksum = hasher.update(figure_bytes).digest()
+
+    return figure_bytes, f"blake3-{bytes_to_b64_str(checksum)}"
 
 
 @mark.filterwarnings(
@@ -32,9 +37,6 @@ def serialize(display) -> bytes:
     # which is a dependency of `skore`
     "ignore:The default of observed=False is deprecated.*:FutureWarning:seaborn",
 )
-@mark.usefixtures("monkeypatch_artifact_hub_client")
-@mark.usefixtures("monkeypatch_upload_routes")
-@mark.usefixtures("monkeypatch_upload_with_mock")
 @mark.parametrize(
     "Media,report,accessor,data_source",
     (
@@ -124,51 +126,140 @@ def serialize(display) -> bytes:
         ),
     ),
 )
-def test_performance(
-    monkeypatch, Media, report, accessor, data_source, upload_mock, request
-):
-    project = Project("<tenant>", "<name>")
-    report = request.getfixturevalue(report)
-    display = getattr(report.metrics, accessor)(data_source=data_source)
-    content = serialize(display)
+class TestPerformance:
+    def test_init_exception(self, Media, report, accessor, data_source, request):
+        project = Project("<tenant>", "<name>")
+        report = request.getfixturevalue(report)
 
-    with Serializer(content) as serializer:
-        checksum = serializer.checksum
+        with raises(
+            ValidationError,
+            match=f"Input should be an instance of {report.__class__.__name__}",
+        ):
+            Media(project=project, report=None)
 
-    # available accessor
-    assert Media(project=project, report=report).model_dump() == {
-        "content_type": "image/svg+xml",
-        "name": accessor,
-        "data_source": data_source,
-        "checksum": checksum,
-    }
-
-    # ensure `upload` is well called
-    assert upload_mock.called
-    assert not upload_mock.call_args.args
-    assert upload_mock.call_args.kwargs == {
-        "project": project,
-        "content": content,
-        "content_type": "image/svg+xml",
-    }
-
-    # unavailable accessor
-    monkeypatch.delattr(report.metrics.__class__, accessor)
-    upload_mock.reset_mock()
-
-    assert Media(project=project, report=report).model_dump() == {
-        "content_type": "image/svg+xml",
-        "name": accessor,
-        "data_source": data_source,
-        "checksum": None,
-    }
-
-    # ensure `upload` is not called
-    assert not upload_mock.called
-
-    # wrong type
-    with raises(
-        ValidationError,
-        match=f"Input should be an instance of {report.__class__.__name__}",
+    def test_compute_available_accessor(
+        self, Media, report, accessor, data_source, request
     ):
-        Media(project=project, report=None)
+        project = Project("<tenant>", "<name>")
+        report = request.getfixturevalue(report)
+        content, _ = serialize(
+            getattr(report.metrics, accessor)(data_source=data_source)
+        )
+
+        media = Media(project=project, report=report)
+        media.compute()
+
+        assert media.computed is True
+        assert media.filepath.read_bytes() == content
+
+    def test_compute_unavailable_accessor(
+        self, monkeypatch, Media, report, accessor, data_source, request
+    ):
+        project = Project("<tenant>", "<name>")
+        report = request.getfixturevalue(report)
+
+        monkeypatch.delattr(report.metrics.__class__, accessor)
+
+        media = Media(project=project, report=report)
+        media.compute()
+
+        assert media.computed is True
+        assert media.filepath.stat().st_size == 0
+
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
+    def test_upload_available_accessor(
+        self, tmp_path, Media, report, accessor, data_source, upload_mock, request
+    ):
+        project = Project("<tenant>", "<name>")
+        report = request.getfixturevalue(report)
+        _, checksum = serialize(
+            getattr(report.metrics, accessor)(data_source=data_source)
+        )
+
+        media = Media(project=project, report=report)
+
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            media.upload(pool=pool, checksums_being_uploaded=set())
+
+        assert media.computed is True
+        assert media.uploaded is True
+
+        # ensure that there is no residual file
+        assert not len(list(tmp_path.iterdir()))
+
+        # ensure `upload` is well called
+        assert upload_mock.called
+        assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs == {
+            "project": project,
+            "filepath": media.filepath,
+            "checksum": checksum,
+            "content_type": "image/svg+xml",
+            "pool": pool,
+        }
+
+    def test_upload_unavailable_accessor(
+        self,
+        monkeypatch,
+        tmp_path,
+        Media,
+        report,
+        accessor,
+        data_source,
+        upload_mock,
+        request,
+    ):
+        project = Project("<tenant>", "<name>")
+        report = request.getfixturevalue(report)
+
+        monkeypatch.delattr(report.metrics.__class__, accessor)
+
+        media = Media(project=project, report=report)
+
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            media.upload(pool=pool, checksums_being_uploaded=set())
+
+        assert media.computed is True
+        assert media.uploaded is True
+
+        # ensure that there is no residual file
+        assert not len(list(tmp_path.iterdir()))
+
+        # ensure `upload` is not called
+        assert not upload_mock.called
+
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
+    def test_model_dump(self, Media, report, accessor, data_source, request):
+        project = Project("<tenant>", "<name>")
+        report = request.getfixturevalue(report)
+        _, checksum = serialize(
+            getattr(report.metrics, accessor)(data_source=data_source)
+        )
+
+        media = Media(project=project, report=report)
+
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            media.upload(pool=pool, checksums_being_uploaded=set())
+
+        payload = media.model_dump()
+
+        assert payload == {
+            "content_type": "image/svg+xml",
+            "name": accessor,
+            "data_source": data_source,
+            "checksum": checksum,
+        }
+
+    def test_model_dump_exception(self, Media, report, accessor, data_source, request):
+        project = Project("<tenant>", "<name>")
+        report = request.getfixturevalue(report)
+        media = Media(project=project, report=report)
+
+        with raises(RuntimeError, match=r"Please use `artifact.upload\(\)` before"):
+            media.model_dump()

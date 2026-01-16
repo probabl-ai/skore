@@ -16,6 +16,7 @@ from skore_hub_project.authentication.login import (
 
 
 @mark.parametrize("success_uri", [None, "toto"])
+@mark.respx()
 def test_get_oauth_device_login(respx_mock, success_uri):
     respx_mock.get(urljoin(uri.DEFAULT, "identity/oauth/device/login")).mock(
         Response(
@@ -39,6 +40,7 @@ def test_get_oauth_device_login(respx_mock, success_uri):
     assert user_code == "C"
 
 
+@mark.respx()
 def test_post_oauth_device_callback(respx_mock):
     route = respx_mock.post(
         urljoin(uri.DEFAULT, "identity/oauth/device/callback")
@@ -50,6 +52,7 @@ def test_post_oauth_device_callback(respx_mock):
     assert route.calls.last.request.read() == b"state=my_state&user_code=my_user_code"
 
 
+@mark.respx()
 def test_get_oauth_device_token(respx_mock):
     respx_mock.get(urljoin(uri.DEFAULT, "identity/oauth/device/token")).mock(
         Response(
@@ -74,6 +77,7 @@ def test_get_oauth_device_token(respx_mock):
     }
 
 
+@mark.respx()
 def test_get_oauth_device_code_probe(monkeypatch, respx_mock):
     monkeypatch.setattr("skore_hub_project.authentication.login.sleep", lambda _: None)
     respx_mock.get(urljoin(uri.DEFAULT, "identity/oauth/device/code-probe")).mock(
@@ -92,6 +96,7 @@ def test_get_oauth_device_code_probe(monkeypatch, respx_mock):
     }
 
 
+@mark.respx()
 def test_get_oauth_device_code_probe_exception(respx_mock):
     respx_mock.get(urljoin(uri.DEFAULT, "identity/oauth/device/code-probe")).mock(
         side_effect=[
@@ -111,6 +116,7 @@ def test_get_oauth_device_code_probe_exception(respx_mock):
     }
 
 
+@mark.respx()
 def test_get_oauth_device_code_probe_timeout(respx_mock):
     respx_mock.get(urljoin(uri.DEFAULT, "identity/oauth/device/code-probe")).mock(
         side_effect=[
@@ -155,6 +161,7 @@ def test_login_with_token(respx_mock):
     assert token.access(refresh=False) == "A"
 
 
+@mark.respx()
 def test_login_with_expired_token(respx_mock):
     respx_mock.post(REFRESH_URL).mock(
         Response(
@@ -180,6 +187,7 @@ def test_login_with_expired_token(respx_mock):
     assert token.access(refresh=False) == "D"
 
 
+@mark.respx()
 def test_login(monkeypatch, respx_mock):
     def open_webbrowser(url):
         open_webbrowser.url = url
@@ -233,6 +241,7 @@ def test_login(monkeypatch, respx_mock):
     assert uri.URI() == uri.DEFAULT
 
 
+@mark.respx()
 def test_login_timeout(monkeypatch, respx_mock):
     monkeypatch.setattr(
         "skore_hub_project.authentication.login.open_webbrowser",
@@ -251,19 +260,6 @@ def test_login_timeout(monkeypatch, respx_mock):
         )
     )
     respx_mock.get(PROBE_URL).mock(side_effect=repeat(Response(400)))
-    respx_mock.post(CALLBACK_URL).mock(Response(200))
-    respx_mock.get(TOKEN_URL).mock(
-        Response(
-            200,
-            json={
-                "token": {
-                    "access_token": "D",
-                    "refresh_token": "E",
-                    "expires_at": DATETIME_MAX,
-                }
-            },
-        )
-    )
 
     assert not token.Filepath().exists()
 
@@ -281,6 +277,7 @@ def test_login_timeout(monkeypatch, respx_mock):
     assert not token.Filepath().exists()
 
 
+@mark.respx()
 def test_login_successively_on_different_uri(monkeypatch, respx_mock):
     def open_webbrowser(url):
         open_webbrowser.url = url
@@ -291,7 +288,6 @@ def test_login_successively_on_different_uri(monkeypatch, respx_mock):
     )
 
     for u in ("https://my-1-uri", "https://my-2-uri"):
-        respx_mock.post(urljoin(u, REFRESH_URL)).mock(Response(404))
         respx_mock.get(urljoin(u, LOGIN_URL)).mock(
             Response(
                 200,
