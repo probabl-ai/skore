@@ -20,6 +20,7 @@ REFRESH_URL = "identity/oauth/token/refresh"
 
 
 class TestClient:
+    @mark.respx()
     def test_request_without_retry(self, monkeypatch, respx_mock):
         timeouts = []
 
@@ -44,6 +45,7 @@ class TestClient:
         assert timeouts == []
         assert excinfo.value.response.status_code == 408
 
+    @mark.respx()
     def test_request_with_retry(self, monkeypatch, respx_mock):
         timeouts = []
 
@@ -70,6 +72,7 @@ class TestClient:
 
         assert timeouts == [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0]
 
+    @mark.respx()
     def test_request_with_retry_and_retry_total(self, monkeypatch, respx_mock):
         timeouts = []
 
@@ -97,6 +100,7 @@ class TestClient:
         assert timeouts == [0.25, 0.5, 1.0, 2.0, 4.0]
         assert excinfo.value.response.status_code == 429
 
+    @mark.respx()
     def test_request_with_retry_and_unretryable_status(self, monkeypatch, respx_mock):
         timeouts = []
 
@@ -126,6 +130,7 @@ def test___semver():
 
 
 class TestHUBClient:
+    @mark.respx()
     def test_request_with_api_key(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
         respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
@@ -136,6 +141,7 @@ class TestHUBClient:
         assert "authorization" not in respx_mock.calls.last.request.headers
         assert respx_mock.calls.last.request.headers["X-API-Key"] == "<api-key>"
 
+    @mark.respx()
     def test_request_with_token(self, respx_mock):
         respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
 
@@ -154,6 +160,7 @@ class TestHUBClient:
         assert "X-API-Key" not in respx_mock.calls.last.request.headers
         assert respx_mock.calls.last.request.headers["authorization"] == "Bearer A"
 
+    @mark.respx()
     def test_request_with_token_and_uri(self, respx_mock):
         respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
 
@@ -174,6 +181,7 @@ class TestHUBClient:
         assert "X-API-Key" not in respx_mock.calls.last.request.headers
         assert respx_mock.calls.last.request.headers["authorization"] == "Bearer A"
 
+    @mark.respx()
     def test_request_with_api_key_and_token_and_uri(self, monkeypatch, respx_mock):
         TOKEN_URI = "https://token.com"
         API_KEY_URI = "https://apikey.com"
@@ -235,6 +243,7 @@ class TestHUBClient:
         assert token.access(refresh=False) == "A"
         assert not respx_mock.calls
 
+    @mark.respx()
     def test_request_with_expired_token(self, tmp_path, respx_mock):
         respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))
         respx_mock.post(REFRESH_URL).mock(
@@ -263,6 +272,7 @@ class TestHUBClient:
         assert "X-API-Key" not in respx_mock.calls.last.request.headers
         assert respx_mock.calls.last.request.headers["authorization"] == "Bearer D"
 
+    @mark.respx()
     def test_request_raises(self, tmp_path, respx_mock):
         respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(404))
 
@@ -279,6 +289,7 @@ class TestHUBClient:
         assert token.Filepath().exists()
         assert token.access(refresh=False) == "A"
 
+    @mark.respx()
     def test_request_without_package_semver(self, respx_mock):
         from importlib.metadata import version
 
@@ -294,6 +305,7 @@ class TestHUBClient:
 
         assert "X-Skore-Client" not in respx_mock.calls.last.request.headers
 
+    @mark.respx()
     def test_request_with_package_semver(self, monkeypatch, respx_mock):
         monkeypatch.setattr("skore_hub_project.client.client.PACKAGE_SEMVER", "1.0.0")
         respx_mock.get(urljoin(uri.DEFAULT, "foo")).mock(Response(200))

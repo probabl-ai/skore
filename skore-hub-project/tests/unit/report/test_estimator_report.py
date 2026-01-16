@@ -77,9 +77,8 @@ class TestEstimatorReportPayload:
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
     @mark.usefixtures("monkeypatch_upload_with_mock")
-    def test_pickle(
-        self, binary_classification, project, payload, upload_mock, respx_mock
-    ):
+    @mark.respx()
+    def test_pickle(self, binary_classification, project, payload, upload_mock):
         pickle, checksum = serialize(binary_classification)
 
         # Ensure checksum is well constructed
@@ -137,6 +136,7 @@ class TestEstimatorReportPayload:
 
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
             EstimatorHtmlRepr,
@@ -170,6 +170,7 @@ class TestEstimatorReportPayload:
 
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.respx()
     def test_model_dump(self, binary_classification, payload):
         _, checksum = serialize(binary_classification)
 

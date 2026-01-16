@@ -251,6 +251,7 @@ class TestCrossValidationReportPayload:
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
     @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_estimators(self, project, payload, upload_mock):
         assert len(payload.estimators) == len(payload.report.estimator_reports_)
 
@@ -280,8 +281,9 @@ class TestCrossValidationReportPayload:
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
     @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_pickle(
-        self, small_cv_binary_classification, project, payload, upload_mock, respx_mock
+        self, small_cv_binary_classification, project, payload, upload_mock
     ):
         _, checksum = serialize(small_cv_binary_classification)
 
@@ -366,6 +368,7 @@ class TestCrossValidationReportPayload:
     )
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
             EstimatorHtmlRepr,
@@ -403,6 +406,7 @@ class TestCrossValidationReportPayload:
     )
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.respx()
     def test_model_dump_classification(self, small_cv_binary_classification, payload):
         _, checksum = serialize(small_cv_binary_classification)
 

@@ -8,9 +8,6 @@ from skore_hub_project import Project
 from skore_hub_project.artifact.media import TableReportTest, TableReportTrain
 
 
-@mark.usefixtures("monkeypatch_artifact_hub_client")
-@mark.usefixtures("monkeypatch_upload_routes")
-@mark.usefixtures("monkeypatch_upload_with_mock")
 @mark.parametrize(
     "Media,data_source",
     (
@@ -49,6 +46,10 @@ class TestTableReport:
             "top_associations",
         }.issubset(dataframe.keys())
 
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_upload(
         self, tmp_path, binary_classification, Media, data_source, upload_mock
     ):
@@ -75,6 +76,10 @@ class TestTableReport:
             "pool": pool,
         }
 
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_model_dump(self, binary_classification, Media, data_source):
         project = Project("<tenant>", "<name>")
         media = Media(project=project, report=binary_classification)

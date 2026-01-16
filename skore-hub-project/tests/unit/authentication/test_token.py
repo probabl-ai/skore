@@ -17,6 +17,7 @@ def filepath(tmp_path):
     return tmp_path / "skore.token"
 
 
+@mark.respx()
 def test_post_oauth_refresh_token(respx_mock):
     route = respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
         Response(
@@ -58,6 +59,7 @@ def test_access(filepath, respx_mock):
     assert not respx_mock.calls
 
 
+@mark.respx()
 def test_access_expired(filepath, respx_mock):
     respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
         Response(

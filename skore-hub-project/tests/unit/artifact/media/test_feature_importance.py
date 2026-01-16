@@ -44,9 +44,6 @@ def monkeypatch_permutation(monkeypatch):
     )
 
 
-@mark.usefixtures("monkeypatch_artifact_hub_client")
-@mark.usefixtures("monkeypatch_upload_routes")
-@mark.usefixtures("monkeypatch_upload_with_mock")
 @mark.parametrize(
     "Media,report,accessor,data_source",
     (
@@ -129,6 +126,10 @@ class TestFeatureImportance:
         assert media.computed is True
         assert media.filepath.stat().st_size == 0
 
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_upload_available_accessor(
         self, tmp_path, Media, report, accessor, data_source, upload_mock, request
     ):
@@ -192,6 +193,10 @@ class TestFeatureImportance:
         # ensure `upload` is not called
         assert not upload_mock.called
 
+    @mark.usefixtures("monkeypatch_artifact_hub_client")
+    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_model_dump(self, Media, report, accessor, data_source, request):
         project = Project("<tenant>", "<name>")
         report = request.getfixturevalue(report)
