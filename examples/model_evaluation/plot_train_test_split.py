@@ -144,19 +144,34 @@ print(np.allclose(X_train_explicit, X_train_explicit_inverted))
 
 # %%
 # Returning a dictionary instead of positional arguments
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# Sending the 4 arrays to skore's EstimatorReport can be done easily this an additional
-# parameter `as_dict`:
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# The default behaviour of outputting a tuple of arrays can be cumbersome and
+# error-prone, in particular when passing them to an :class:`~skore.EstimatorReport`.
+# The new `as_dict` parameter makes the output a dictionary, which makes this simpler:
 
 # %%
-
 from sklearn.linear_model import LogisticRegression
 from skore import EstimatorReport
 
 split_data = skore.train_test_split(X=X, y=y, random_state=42, as_dict=True)
+split_data.keys()
+
+# %%
 estimator = LogisticRegression(random_state=42)
 estimator_report = EstimatorReport(estimator, **split_data)
 
+# %%
+# Without the dictionary output, this would be written:
+#
+# .. code-block:: python
+#
+#     estimator_report = EstimatorReport(
+#         estimator,
+#         X_train=X_train,
+#         y_train=y_train,
+#         X_test=X_test,
+#         y_test=y_test,
+#     )
 
 # %%
 # Automatic diagnostics: raising methodological warnings
