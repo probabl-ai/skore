@@ -193,11 +193,11 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
     >>> display.plot(kind="corr")
     """
 
-    _default_heatmap_kwargs: dict[str, Any] | None = None
-    _default_boxplot_kwargs: dict[str, Any] | None = None
-    _default_scatterplot_kwargs: dict[str, Any] | None = None
-    _default_stripplot_kwargs: dict[str, Any] | None = None
-    _default_histplot_kwargs: dict[str, Any] | None = None
+    _default_heatmap_kwargs: dict[str, Any] = {}
+    _default_boxplot_kwargs: dict[str, Any] = {}
+    _default_scatterplot_kwargs: dict[str, Any] = {}
+    _default_stripplot_kwargs: dict[str, Any] = {}
+    _default_histplot_kwargs: dict[str, Any] = {}
 
     def __init__(self, summary: dict[str, Any]) -> None:
         self.summary = summary
@@ -227,11 +227,6 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         hue: str | None = None,
         kind: Literal["dist", "corr"] = "dist",
         top_k_categories: int = 20,
-        scatterplot_kwargs: dict[str, Any] | None = None,
-        stripplot_kwargs: dict[str, Any] | None = None,
-        boxplot_kwargs: dict[str, Any] | None = None,
-        heatmap_kwargs: dict[str, Any] | None = None,
-        histplot_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """Plot distribution or correlation of the columns from the dataset.
 
@@ -265,29 +260,6 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             For categorical columns, the number of most frequent elements to display.
             Only used when ``kind='dist'``.
 
-        scatterplot_kwargs: dict, default=None
-            Keyword arguments to be passed to :func:`seaborn.scatterplot` for
-            rendering the distribution 2D plot, when both ``x`` and ``y`` are numeric.
-
-        stripplot_kwargs: dict, default=None
-            Keyword arguments to be passed to :func:`seaborn.stripplot` for
-            rendering the distribution 2D plot, when either ``x`` or ``y`` is numeric,
-            and the other is categorical. This plot is drawn on top of the boxplot.
-
-        boxplot_kwargs: dict, default=None
-            Keyword arguments to be passed to :func:`seaborn.boxplot` for
-            rendering the distribution 2D plot, when either ``x`` or ``y`` is numeric,
-            and the other is categorical. This plot is drawn below the stripplot.
-
-        heatmap_kwargs: dict, default=None
-            Keyword arguments to be passed to :func:`seaborn.heatmap` for
-            rendering Cramer's V correlation matrix, when ``kind='corr'`` or when
-            ``kind='dist'`` and both ``x`` and ``y`` are categorical.
-
-        histplot_kwargs: dict, default=None
-            Keyword arguments to be passed to :func:`seaborn.histplot` for
-            rendering the distribution 1D plot, when only ``x`` is provided.
-
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -307,11 +279,6 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             hue=hue,
             kind=kind,
             top_k_categories=top_k_categories,
-            scatterplot_kwargs=scatterplot_kwargs,
-            stripplot_kwargs=stripplot_kwargs,
-            boxplot_kwargs=boxplot_kwargs,
-            heatmap_kwargs=heatmap_kwargs,
-            histplot_kwargs=histplot_kwargs,
         )
 
     def _plot_matplotlib(
@@ -322,11 +289,6 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         hue: str | None = None,
         kind: Literal["dist", "corr"] = "dist",
         top_k_categories: int = 20,
-        scatterplot_kwargs: dict[str, Any] | None = None,
-        stripplot_kwargs: dict[str, Any] | None = None,
-        boxplot_kwargs: dict[str, Any] | None = None,
-        heatmap_kwargs: dict[str, Any] | None = None,
-        histplot_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
         self.figure_, self.ax_ = plt.subplots()
@@ -338,28 +300,22 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                         "optionally hue. Got x=None, y=None."
                     )
                 case (False, True, True) | (True, False, True):
-                    if histplot_kwargs is None:
-                        histplot_kwargs = self._default_histplot_kwargs
-
                     self._plot_distribution_1d(
-                        x=x, y=y, k=top_k_categories, histplot_kwargs=histplot_kwargs
+                        x=x,
+                        y=y,
+                        k=top_k_categories,
+                        histplot_kwargs=self._default_histplot_kwargs,
                     )
                 case _:
-                    if scatterplot_kwargs is None:
-                        scatterplot_kwargs = self._default_scatterplot_kwargs
-                    if stripplot_kwargs is None:
-                        stripplot_kwargs = self._default_stripplot_kwargs
-                    if boxplot_kwargs is None:
-                        boxplot_kwargs = self._default_boxplot_kwargs
                     self._plot_distribution_2d(
                         x=x,
                         y=y,
                         hue=hue,
                         k=top_k_categories,
-                        scatterplot_kwargs=scatterplot_kwargs,
-                        stripplot_kwargs=stripplot_kwargs,
-                        boxplot_kwargs=boxplot_kwargs,
-                        heatmap_kwargs=heatmap_kwargs,
+                        scatterplot_kwargs=self._default_scatterplot_kwargs,
+                        stripplot_kwargs=self._default_stripplot_kwargs,
+                        boxplot_kwargs=self._default_boxplot_kwargs,
+                        heatmap_kwargs=self._default_heatmap_kwargs,
                     )
 
         elif kind == "corr":
@@ -370,9 +326,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                     raise ValueError(
                         f"When {kind=!r}, {param_name!r} argument must be None."
                     )
-            if heatmap_kwargs is None:
-                heatmap_kwargs = self._default_heatmap_kwargs
-            self._plot_cramer(heatmap_kwargs=heatmap_kwargs)
+            self._plot_cramer(heatmap_kwargs=self._default_heatmap_kwargs)
 
         else:
             raise ValueError(f"'kind' options are 'dist', 'corr', got {kind!r}.")
@@ -383,7 +337,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         x: str | None,
         y: str | None,
         k: int,
-        histplot_kwargs: dict[str, Any] | None,
+        histplot_kwargs: dict[str, Any],
     ) -> None:
         """Plot 1-dimensional distribution of a feature.
 
@@ -398,7 +352,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         k : int
             The number of most frequent categories to plot.
 
-        histplot_kwargs : dict, default=None
+        histplot_kwargs : dict
             Keyword arguments to be passed to :ref:`histplot
             <https://seaborn.pydata.org/generated/seaborn.histplot.html>`_ for rendering
             the distribution 1D plot.
@@ -425,7 +379,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             default_histplot_kwargs["discrete"] = True
 
         histplot_kwargs_validated = _validate_style_kwargs(
-            default_histplot_kwargs, histplot_kwargs or {}
+            default_histplot_kwargs, histplot_kwargs
         )
 
         if x is not None:
@@ -468,12 +422,12 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         *,
         x: str | None,
         y: str | None,
+        heatmap_kwargs: dict[str, Any],
+        stripplot_kwargs: dict[str, Any],
+        boxplot_kwargs: dict[str, Any],
+        scatterplot_kwargs: dict[str, Any],
         hue: str | None = None,
         k: int = 20,
-        heatmap_kwargs: dict[str, Any] | None = None,
-        stripplot_kwargs: dict[str, Any] | None = None,
-        boxplot_kwargs: dict[str, Any] | None = None,
-        scatterplot_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """Plot 2-dimensional distribution of two features.
 
@@ -488,23 +442,23 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         y : str or None
             The name of the column to use for the y-axis of the plot.
 
+        heatmap_kwargs : dict
+            Keyword arguments to be passed to heatmap.
+
+        stripplot_kwargs : dict
+            Keyword arguments to be passed to stripplot.
+
+        boxplot_kwargs : dict
+            Keyword arguments to be passed to boxplot.
+
+        scatterplot_kwargs : dict
+            Keyword arguments to be passed to scatterplot.
+
         hue : str, default=None
             The name of the column to use for the color or hue axis of the plot.
 
         k : int, default=20
             The number of most frequent categories to plot.
-
-        heatmap_kwargs : dict, default=None
-            Keyword arguments to be passed to heatmap.
-
-        stripplot_kwargs : dict, default=None
-            Keyword arguments to be passed to stripplot.
-
-        boxplot_kwargs : dict, default=None
-            Keyword arguments to be passed to boxplot.
-
-        scatterplot_kwargs : dict, default=None
-            Keyword arguments to be passed to scatterplot.
         """
         x = sbd.col(self.summary["dataframe"], x) if x is not None else None
         y = sbd.col(self.summary["dataframe"], y) if y is not None else None
@@ -517,7 +471,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
 
         if is_x_num and is_y_num:
             scatterplot_kwargs_validated = _validate_style_kwargs(
-                {"alpha": 0.1}, scatterplot_kwargs or {}
+                {"alpha": 0.1}, scatterplot_kwargs
             )
             sns.scatterplot(
                 x=x,
@@ -534,7 +488,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                     "alpha": 0.5,
                     "zorder": 0,
                 },
-                stripplot_kwargs or {},
+                stripplot_kwargs,
             )
             boxplot_kwargs_validated = _validate_style_kwargs(
                 {
@@ -549,7 +503,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                     "capprops": {"alpha": 0.5},
                     "medianprops": {"alpha": 0.5},
                 },
-                boxplot_kwargs or {},
+                boxplot_kwargs,
             )
 
             if is_x_num:
@@ -619,7 +573,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                     "fmt": annotation_format,
                     "cbar_kws": cbar_kwargs,
                 },
-                heatmap_kwargs or {},
+                heatmap_kwargs,
             )
             sns.heatmap(contingency_table, ax=self.ax_, **heatmap_kwargs_validated)
             despine_params.update(left=True, bottom=True)
@@ -647,7 +601,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         if self.ax_.legend_ is not None:
             sns.move_legend(self.ax_, (1.05, 0.0))
 
-    def _plot_cramer(self, *, heatmap_kwargs: dict[str, Any] | None) -> None:
+    def _plot_cramer(self, *, heatmap_kwargs: dict[str, Any]) -> None:
         """Plot Cramer's V correlation among all columns.
 
         Parameters
@@ -655,9 +609,6 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         heatmap_kwargs : dict, default=None
             Keyword arguments to be passed to heatmap.
         """
-        if heatmap_kwargs is None:
-            heatmap_kwargs = self._default_heatmap_kwargs or {}
-
         heatmap_kwargs_validated = _validate_style_kwargs(
             {
                 "xticklabels": True,
@@ -668,7 +619,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 "annot_kws": {"size": 10},
                 "fmt": ".2f",
             },
-            heatmap_kwargs or {},
+            heatmap_kwargs,
         )
 
         cramer_v_table = pd.DataFrame(
@@ -711,3 +662,67 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}(...)>"
+
+    # ignore the type signature because we override kwargs by specifying the name of
+    # the parameters for the user.
+    def set_style(  # type: ignore[override]
+        self,
+        *,
+        policy: Literal["override", "update"] = "update",
+        scatterplot_kwargs: dict[str, Any] | None = None,
+        stripplot_kwargs: dict[str, Any] | None = None,
+        boxplot_kwargs: dict[str, Any] | None = None,
+        heatmap_kwargs: dict[str, Any] | None = None,
+        histplot_kwargs: dict[str, Any] | None = None,
+    ):
+        """Set the style parameters for the display.
+
+        Parameters
+        ----------
+        policy : Literal["override", "update"], default="update"
+            Policy to use when setting the style parameters.
+            If "override", existing settings are set to the provided values.
+            If "update", existing settings are not changed; only settings that were
+            previously unset are changed.
+
+        scatterplot_kwargs: dict, default=None
+            Keyword arguments to be passed to :func:`seaborn.scatterplot` for
+            rendering the distribution 2D plot, when both ``x`` and ``y`` are numeric.
+
+        stripplot_kwargs: dict, default=None
+            Keyword arguments to be passed to :func:`seaborn.stripplot` for
+            rendering the distribution 2D plot, when either ``x`` or ``y`` is numeric,
+            and the other is categorical. This plot is drawn on top of the boxplot.
+
+        boxplot_kwargs: dict, default=None
+            Keyword arguments to be passed to :func:`seaborn.boxplot` for
+            rendering the distribution 2D plot, when either ``x`` or ``y`` is numeric,
+            and the other is categorical. This plot is drawn below the stripplot.
+
+        heatmap_kwargs: dict, default=None
+            Keyword arguments to be passed to :func:`seaborn.heatmap` for
+            rendering Cramer's V correlation matrix, when ``kind='corr'`` or when
+            ``kind='dist'`` and both ``x`` and ``y`` are categorical.
+
+        histplot_kwargs: dict, default=None
+            Keyword arguments to be passed to :func:`seaborn.histplot` for
+            rendering the distribution 1D plot, when only ``x`` is provided.
+
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+
+        Raises
+        ------
+        ValueError
+            If a style parameter is unknown.
+        """
+        return super().set_style(
+            policy=policy,
+            scatterplot_kwargs=scatterplot_kwargs or {},
+            stripplot_kwargs=stripplot_kwargs or {},
+            boxplot_kwargs=boxplot_kwargs or {},
+            heatmap_kwargs=heatmap_kwargs or {},
+            histplot_kwargs=histplot_kwargs or {},
+        )
