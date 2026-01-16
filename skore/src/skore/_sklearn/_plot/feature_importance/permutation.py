@@ -1,14 +1,17 @@
 from collections.abc import Callable
-from typing import Literal
+from typing import Any, Literal
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.inspection import permutation_importance
 
-from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn.types import Aggregate
+from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
+from skore._sklearn._plot.feature_importance.utils import _decorate_matplotlib_axis
+from skore._sklearn.types import Aggregate, DataSource, ReportType
 
 
 class PermutationImportanceDisplay(DisplayMixin):
@@ -19,10 +22,11 @@ class PermutationImportanceDisplay(DisplayMixin):
     scores : pd.DataFrame
         The scores computed after permuting the input features. The columns are:
 
+        - `data_source`
+        - `metric`
         - `feature`
         - `label` or `output` (classification vs. regression)
         - `repetition`
-        - `metric`
         - `value`
 
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
@@ -30,13 +34,21 @@ class PermutationImportanceDisplay(DisplayMixin):
         Report type from which the display is created.
     """
 
-    def __init__(self, scores: pd.DataFrame):
-        self.scores = scores
+    _default_boxplot_kwargs: dict[str, Any] = {
+        "whis": 1e10,
+        **BOXPLOT_STYLE,
+    }
+    _default_stripplot_kwargs: dict[str, Any] = {"palette": "tab10", "alpha": 0.5}
+
+    def __init__(self, *, importances: pd.DataFrame, report_type: ReportType):
+        self.importances = importances
+        self.report_type = report_type
 
     @classmethod
     def _compute_data_for_display(
         self,
         *,
+        data_source: DataSource,
         estimator: BaseEstimator,
         X: ArrayLike,
         y: ArrayLike,
@@ -46,6 +58,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         max_samples: float,
         n_jobs: int | None,
         seed: int | None,
+        report_type: ReportType,
     ) -> "PermutationImportanceDisplay":
         scores = permutation_importance(
             estimator=estimator,
@@ -61,7 +74,12 @@ class PermutationImportanceDisplay(DisplayMixin):
         if "importances" in scores:
             # single metric case -> switch to multi-metric case by wrapping in a dict
             # with the name of the metric
-            metric_name = metric if isinstance(metric, str) else metric.__name__
+            if metric is None:
+                metric_name = "accuracy" if is_classifier(estimator) else "r2"
+            elif isinstance(metric, str):
+                metric_name = metric
+            else:
+                metric_name = metric.__name__
             scores = {metric_name: scores}
 
         df_importances = []
@@ -69,11 +87,11 @@ class PermutationImportanceDisplay(DisplayMixin):
             metric_importances = np.atleast_3d(metric_values["importances"])
 
             df_metric_importances = []
-            for output_index, output_importances in enumerate(
+            for target_index, target_importances in enumerate(
                 np.moveaxis(metric_importances, -1, 0)
             ):
                 df = pd.DataFrame(
-                    output_importances,
+                    target_importances,
                     index=feature_names,
                     columns=range(1, n_repeats + 1),
                 ).melt(var_name="repetition")
@@ -82,10 +100,10 @@ class PermutationImportanceDisplay(DisplayMixin):
                     df["label"], df["output"] = np.nan, np.nan
                 else:
                     if is_classifier(estimator):
-                        df["label"] = estimator.classes_[output_index]
+                        df["label"] = estimator.classes_[target_index]
                         df["output"] = np.nan
                     else:
-                        df["output"], df["label"] = output_index, np.nan
+                        df["output"], df["label"] = target_index, np.nan
 
                 df["metric"] = metric_name
                 df["feature"] = np.tile(feature_names, n_repeats)
@@ -95,28 +113,117 @@ class PermutationImportanceDisplay(DisplayMixin):
             df_importances.append(df_metric_importances)
 
         ordered_columns = [
+            "data_source",
+            "metric",
             "feature",
             "label",
             "output",
             "repetition",
-            "metric",
             "value",
         ]
         df_importances = pd.concat(df_importances, axis="index")
+        df_importances["data_source"] = data_source
 
-        return PermutationImportanceDisplay(scores=df_importances[ordered_columns])
+        return PermutationImportanceDisplay(
+            importances=df_importances[ordered_columns], report_type=report_type
+        )
 
+    @DisplayMixin.style_plot
     def plot(
         self,
         *,
-        subplot_by: Literal["auto", "estimator", "label", "output"] | None = "auto",
+        subplot_by: str | list[str] | None = "auto",
     ) -> None:
-        pass
+        return self._plot(subplot_by=subplot_by)
+
+    def _plot_matplotlib(
+        self,
+        *,
+        subplot_by: str | list[str] | None = "auto",
+    ) -> None:
+        boxplot_kwargs = self._default_boxplot_kwargs.copy()
+        stripplot_kwargs = self._default_stripplot_kwargs.copy()
+        frame = self.frame(aggregate=None)
+
+        if subplot_by == "auto":
+            is_multi_metric = frame["metric"].nunique() > 1
+            is_multi_target = any(
+                [name in frame.columns for name in ["label", "output"]]
+            )
+            if is_multi_metric and is_multi_target:
+                hue, col = "label" if "label" in frame.columns else "output", "metric"
+            elif is_multi_metric:
+                hue, col = None, "metric"
+            elif is_multi_target:
+                hue, col = "label" if "label" in frame.columns else "output", None
+            else:
+                hue, col = None, None
+
+        if hue is None:
+            # we don't need the palette and we are at risk of raising an error or
+            # deprecation warning if passing palette without a hue
+            stripplot_kwargs.pop("palette", None)
+
+        facet = sns.catplot(
+            data=frame,
+            x="value",
+            y="feature",
+            hue=hue,
+            col=col,
+            kind="strip",
+            dodge=True,
+            **stripplot_kwargs,
+        ).map_dataframe(
+            sns.boxplot,
+            x="value",
+            y="feature",
+            hue=hue,
+            dodge=True,
+            **boxplot_kwargs,
+        )
+        add_background_features = hue is not None
+
+        self.figure_, self.ax_ = facet.figure, facet.axes.squeeze()
+        for ax in self.ax_.flatten():
+            _decorate_matplotlib_axis(
+                ax=ax,
+                add_background_features=add_background_features,
+                n_features=frame["feature"].nunique(),
+                xlabel="Decrease of score",
+                ylabel="",
+            )
+        if len(self.ax_.flatten()) == 1:
+            self.ax_ = self.ax_.flatten()[0]
 
     def frame(
-        self, *, aggregate: Aggregate | None = None, flat_index: bool = False
+        self,
+        *,
+        aggregate: Aggregate | None = "mean",
     ) -> pd.DataFrame:
-        pass
+
+        group_by = ["metric", "feature"]
+
+        columns_to_drop = []
+        if self.importances["label"].isna().all():
+            # regression problem or averaged classification metric
+            columns_to_drop.append("label")
+        else:
+            group_by.append("label")
+        if self.importances["output"].isna().all():
+            # classification problem or averaged regression metric
+            columns_to_drop.append("output")
+        else:
+            group_by.append("output")
+
+        frame = self.importances.drop(columns=columns_to_drop)
+
+        if aggregate is not None:
+            return (
+                frame.drop(columns=["repetition"])
+                .groupby(group_by)
+                .aggregate(aggregate)
+            ).reset_index()
+        return frame
 
     # ignore the type signature because we override kwargs by specifying the name of
     # the parameters for the user.
@@ -124,6 +231,8 @@ class PermutationImportanceDisplay(DisplayMixin):
         self,
         *,
         policy: Literal["override", "update"] = "update",
+        boxplot_kwargs: dict[str, Any] | None = None,
+        stripplot_kwargs: dict[str, Any] | None = None,
     ):
         """Set the style parameters for the display.
 
@@ -134,6 +243,16 @@ class PermutationImportanceDisplay(DisplayMixin):
             If "override", existing settings are set to the provided values.
             If "update", existing settings are not changed; only settings that were
             previously unset are changed.
+
+        boxplot_kwargs : dict, default=None
+            Keyword arguments to be passed to :func:`seaborn.boxplot` for
+            rendering the coefficients with a :class:`~skore.CrossValidationReport` or
+            :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
+
+        stripplot_kwargs : dict, default=None
+            Keyword arguments to be passed to :func:`seaborn.stripplot` for
+            rendering the coefficients with a :class:`~skore.CrossValidationReport` or
+            :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
 
         Returns
         -------
@@ -147,4 +266,6 @@ class PermutationImportanceDisplay(DisplayMixin):
         """
         return super().set_style(
             policy=policy,
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
         )

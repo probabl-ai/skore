@@ -23,6 +23,9 @@ from skore._sklearn import (
 )
 from skore._sklearn._plot.base import Display
 from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
+from skore._sklearn._plot.feature_importance.permutation import (
+    PermutationImportanceDisplay,
+)
 from skore._utils._patch import setup_jupyter_display
 from skore._utils._show_versions import show_versions
 from skore.project import Project
@@ -45,6 +48,7 @@ __all__ = [
     "set_config",
     "TableReportDisplay",
     "CoefficientsDisplay",
+    "PermutationImportanceDisplay",
 ]
 
 logger = logging.getLogger(__name__)
