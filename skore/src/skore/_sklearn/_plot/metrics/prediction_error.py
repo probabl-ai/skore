@@ -98,8 +98,6 @@ class PredictionErrorDisplay(DisplayMixin):
         "alpha": 0.3,
         "s": 15,
         "marker": "o",
-        "x": "y_pred",
-        "kind": "scatter",
         "aspect": 1.0,
     }
     _default_perfect_model_kwargs = {
@@ -221,7 +219,6 @@ class PredictionErrorDisplay(DisplayMixin):
 
         col, hue, style = self._get_plot_columns(subplot_by)
         relplot_kwargs = {
-            "y": y_plot,
             "col": col,
             "hue": hue,
             "style": style,
@@ -233,6 +230,9 @@ class PredictionErrorDisplay(DisplayMixin):
 
         facet_grid = sns.relplot(
             data=self.frame(),
+            x="y_pred",
+            y=y_plot,
+            kind="scatter",
             **_validate_style_kwargs(relplot_kwargs, {}),
         )
         self.figure_, self.ax_ = facet_grid.figure, facet_grid.axes.flatten()
