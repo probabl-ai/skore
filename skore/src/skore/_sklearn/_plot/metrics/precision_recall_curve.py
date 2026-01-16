@@ -87,7 +87,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     >>> classifier = LogisticRegression(max_iter=10_000)
     >>> report = EstimatorReport(classifier, **split_data)
     >>> display = report.metrics.precision_recall()
-    >>> display.plot(relplot_kwargs={"palette": "Set2"})
+    >>> display.set_style(relplot_kwargs={"palette": "Set2"}).plot()
     """
 
     _default_relplot_kwargs: dict[str, Any] = {
@@ -125,7 +125,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         self,
         *,
         subplot_by: Literal["auto", "label", "estimator"] | None = "auto",
-        relplot_kwargs: dict[str, Any] | None = None,
         despine: bool = True,
     ) -> None:
         """Plot visualization.
@@ -140,11 +139,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             - "label": one subplot per class (multiclass only)
             - "estimator": one subplot per estimator (comparison only)
             - None: no subplots (Not available for comparison in multiclass)
-
-        relplot_kwargs : dict, default=None
-            Keyword arguments to be passed to :func:`seaborn.relplot` for rendering
-            the precision-recall curve(s). Common options include `palette`,
-            `alpha`, `linewidth`, etc.
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
@@ -167,19 +161,14 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.precision_recall()
-        >>> display.plot(relplot_kwargs={"palette": "Set2", "alpha": 0.8})
+        >>> display.set_style(relplot_kwargs={"palette": "Set2", "alpha": 0.8}).plot()
         """
-        return self._plot(
-            subplot_by=subplot_by,
-            relplot_kwargs=relplot_kwargs,
-            despine=despine,
-        )
+        return self._plot(subplot_by=subplot_by, despine=despine)
 
     def _plot_matplotlib(
         self,
         *,
         subplot_by: Literal["auto", "label", "estimator"] | None = "auto",
-        relplot_kwargs: dict[str, Any] | None = None,
         despine: bool = True,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
@@ -216,10 +205,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         if style:
             kwargs["dashes"] = {"train": (5, 5), "test": ""}
 
-        kwargs = _validate_style_kwargs(
-            {**kwargs, **self._default_relplot_kwargs},
-            relplot_kwargs or {},
-        )
+        kwargs = _validate_style_kwargs({**kwargs, **self._default_relplot_kwargs}, {})
 
         facet_grid = sns.relplot(
             **kwargs,
@@ -678,3 +664,41 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             columns = indexing_columns + ["label"] + statistical_columns
 
         return df[columns]
+
+    # ignore the type signature because we override kwargs by specifying the name of
+    # the parameters for the user.
+    def set_style(  # type: ignore[override]
+        self,
+        *,
+        policy: Literal["override", "update"] = "update",
+        relplot_kwargs: dict[str, Any] | None = None,
+    ):
+        """Set the style parameters for the display.
+
+        Parameters
+        ----------
+        policy : Literal["override", "update"], default="update"
+            Policy to use when setting the style parameters.
+            If "override", existing settings are set to the provided values.
+            If "update", existing settings are not changed; only settings that were
+            previously unset are changed.
+
+        relplot_kwargs : dict, default=None
+            Keyword arguments to be passed to :func:`seaborn.relplot` for rendering
+            the precision-recall curve(s). Common options include `palette`,
+            `alpha`, `linewidth`, etc.
+
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+
+        Raises
+        ------
+        ValueError
+            If a style parameter is unknown.
+        """
+        return super().set_style(
+            policy=policy,
+            relplot_kwargs=relplot_kwargs or {},
+        )
