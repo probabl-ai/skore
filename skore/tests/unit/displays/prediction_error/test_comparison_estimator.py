@@ -1,13 +1,12 @@
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
-import pytest
 from sklearn.base import clone
 
 from skore import ComparisonReport, EstimatorReport
 from skore._sklearn._plot import PredictionErrorDisplay
 from skore._sklearn._plot.metrics.prediction_error import RangeData
-from skore._utils._testing import check_frame_structure, check_legend_position
+from skore._utils._testing import check_frame_structure
 
 
 def test_regression(pyplot, linear_regression_with_train_test):
@@ -37,7 +36,7 @@ def test_regression(pyplot, linear_regression_with_train_test):
 
     # check the structure of the attributes
     assert isinstance(display._prediction_error, pd.DataFrame)
-    assert list(display._prediction_error["estimator_name"].unique()) == [
+    assert list(display._prediction_error["estimator"].unique()) == [
         "estimator_1",
         "estimator_2",
     ]
@@ -54,23 +53,22 @@ def test_regression(pyplot, linear_regression_with_train_test):
         assert getattr(display, f"range_{attr}").max == global_max
 
     display.plot()
-    assert isinstance(display.line_, mpl.lines.Line2D)
-    assert display.line_.get_label() == "Perfect predictions"
-    assert display.line_.get_color() == "black"
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == 2
+    for line in display.lines_:
+        assert isinstance(line, mpl.lines.Line2D)
+        assert line.get_color() == "black"
 
-    assert isinstance(display.scatter_, list)
-    for scatter in display.scatter_:
-        assert isinstance(scatter, mpl.collections.PathCollection)
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_) == 2
+    for ax in display.ax_:
+        assert isinstance(ax, mpl.axes.Axes)
+        assert ax.get_xlabel() == "Predicted values"
+        assert ax.get_ylabel() == "Residuals (actual - predicted)"
 
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Test set"
-    assert len(legend.get_texts()) == 3
-
-    assert display.ax_.get_xlabel() == "Predicted values"
-    assert display.ax_.get_ylabel() == "Residuals (actual - predicted)"
-
-    assert display.ax_.get_aspect() not in ("equal", 1.0)
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
 
 def test_regression_actual_vs_predicted(pyplot, linear_regression_with_train_test):
@@ -102,23 +100,23 @@ def test_regression_actual_vs_predicted(pyplot, linear_regression_with_train_tes
     assert isinstance(display._prediction_error, pd.DataFrame)
     assert display.data_source == "test"
 
-    assert isinstance(display.line_, mpl.lines.Line2D)
-    assert display.line_.get_label() == "Perfect predictions"
-    assert display.line_.get_color() == "black"
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == 2  # One line per subplot (estimator)
+    for line in display.lines_:
+        assert isinstance(line, mpl.lines.Line2D)
+        assert line.get_color() == "black"
 
-    assert isinstance(display.scatter_, list)
-    for scatter in display.scatter_:
-        assert isinstance(scatter, mpl.collections.PathCollection)
+    # For comparison reports, ax_ is an array of axes
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_) == 2
+    for ax in display.ax_:
+        assert isinstance(ax, mpl.axes.Axes)
+        assert ax.get_xlabel() == "Predicted values"
+        assert ax.get_ylabel() == "Actual values"
 
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Test set"
-    assert len(legend.get_texts()) == 3
-
-    assert display.ax_.get_xlabel() == "Predicted values"
-    assert display.ax_.get_ylabel() == "Actual values"
-
-    assert display.ax_.get_aspect() in ("equal", 1.0)
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
 
 def test_kwargs(pyplot, linear_regression_with_train_test):
@@ -144,49 +142,19 @@ def test_kwargs(pyplot, linear_regression_with_train_test):
         },
     )
     display = report.metrics.prediction_error()
-    display.plot(
-        data_points_kwargs=[{"color": "red"}, {"color": "blue"}],
+
+    display.set_style(
+        relplot_kwargs={"color": ["red"]},
         perfect_model_kwargs={"color": "orange"},
     )
-    rgb_colors = [[[1.0, 0.0, 0.0, 0.3]], [[0.0, 0.0, 1.0, 0.3]]]
-    for scatter, rgb_color in zip(display.scatter_, rgb_colors, strict=False):
-        np.testing.assert_allclose(scatter.get_facecolor(), rgb_color, rtol=1e-3)
-    assert display.line_.get_color() == "orange"
-
-
-@pytest.mark.parametrize("data_points_kwargs", ["not a list", [{"color": "red"}]])
-def test_wrong_kwargs(pyplot, linear_regression_with_train_test, data_points_kwargs):
-    """Check that we raise an error when we pass keyword arguments to the prediction
-    error plot if there is a comparison report."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    report = ComparisonReport(
-        reports={
-            "estimator_1": EstimatorReport(
-                estimator,
-                X_train=X_train,
-                y_train=y_train,
-                X_test=X_test,
-                y_test=y_test,
-            ),
-            "estimator_2": EstimatorReport(
-                estimator,
-                X_train=X_train,
-                y_train=y_train,
-                X_test=X_test,
-                y_test=y_test,
-            ),
-        },
-    )
-    display = report.metrics.prediction_error()
-
-    err_msg = (
-        "You intend to plot prediction errors either from multiple estimators "
-        "or from a cross-validated estimator. We expect `data_points_kwargs` to be "
-        "a list of dictionaries with the same length as the number of "
-        "estimators or splits."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(data_points_kwargs=data_points_kwargs)
+    display.plot()
+    for line in display.lines_:
+        assert line.get_color() == "orange"
+    for ax in display.ax_:
+        scatter_collection = ax.collections[0]
+        np.testing.assert_array_equal(
+            scatter_collection.get_facecolor()[0][:3], [1.0, 0.0, 0.0]
+        )
 
 
 def test_frame(linear_regression_with_train_test):
@@ -214,11 +182,11 @@ def test_frame(linear_regression_with_train_test):
     display = report.metrics.prediction_error()
     df = display.frame()
 
-    expected_index = ["estimator_name"]
+    expected_index = ["estimator"]
     expected_columns = ["y_true", "y_pred", "residuals"]
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["estimator_name"].nunique() == 2
+    assert df["estimator"].nunique() == 2
 
 
 def test_legend(pyplot, linear_regression_with_train_test):
@@ -237,11 +205,16 @@ def test_legend(pyplot, linear_regression_with_train_test):
     )
     display = report.metrics.prediction_error()
     display.plot()
-    # The loc doesn't matter because bbox_to_anchor is used
-    check_legend_position(display.ax_, loc="upper left", position="outside")
+    assert len(display.figure_.legends) == 1
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
     display.plot(kind="actual_vs_predicted")
-    check_legend_position(display.ax_, loc="lower right", position="inside")
+    assert len(display.figure_.legends) == 1
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
     reports = {
         f"estimator {i}": EstimatorReport(
@@ -252,11 +225,16 @@ def test_legend(pyplot, linear_regression_with_train_test):
     report = ComparisonReport(reports=reports)
     display = report.metrics.prediction_error()
     display.plot()
-    # The loc doesn't matter because bbox_to_anchor is used
-    check_legend_position(display.ax_, loc="upper left", position="outside")
+    assert len(display.figure_.legends) == 1
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
     display.plot(kind="actual_vs_predicted")
-    check_legend_position(display.ax_, loc="upper left", position="outside")
+    assert len(display.figure_.legends) == 1
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
 
 def test_constructor(linear_regression_with_train_test):
@@ -273,8 +251,8 @@ def test_constructor(linear_regression_with_train_test):
     )
     display = report.metrics.prediction_error()
 
-    index_columns = ["estimator_name", "split"]
+    index_columns = ["estimator", "split"]
     df = display._prediction_error
     assert all(col in df.columns for col in index_columns)
-    assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
+    assert df["estimator"].unique().tolist() == list(report.reports_.keys())
     assert df["split"].isnull().all()

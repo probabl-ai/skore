@@ -100,6 +100,7 @@ class PredictionErrorDisplay(DisplayMixin):
         "marker": "o",
         "x": "y_pred",
         "kind": "scatter",
+        "aspect": 1.0,
     }
     _default_perfect_model_kwargs = {
         "color": "black",
@@ -570,11 +571,14 @@ class PredictionErrorDisplay(DisplayMixin):
             previously unset are changed.
 
         relplot_kwargs : dict, default=None
-            Additional keyword arguments to be passed to :func:`seaborn.relplot`.
+            Additional keyword arguments to be passed to :func:`seaborn.relplot` for
+            rendering the scatter plot(s). Common options include `palette`, `alpha`,
+            `s`, `marker`, etc.
 
         perfect_model_kwargs : dict, default=None
             Additional keyword arguments to be passed to :func:`matplotlib.pyplot.plot`
-            for drawing the perfect prediction line.
+            for drawing the perfect prediction line. Common options include `color`,
+            `alpha`, `linestyle`, etc.
 
         Returns
         -------

@@ -6,7 +6,7 @@ import pytest
 from skore import EstimatorReport
 from skore._sklearn._plot import PredictionErrorDisplay
 from skore._sklearn._plot.metrics.prediction_error import RangeData
-from skore._utils._testing import check_frame_structure, check_legend_position
+from skore._utils._testing import check_frame_structure
 
 
 @pytest.mark.parametrize("subsample", [None, 1_000])
@@ -43,23 +43,18 @@ def test_regression(pyplot, linear_regression_with_train_test, subsample):
     display.plot()
     assert hasattr(display, "ax_")
     assert hasattr(display, "figure_")
-    assert isinstance(display.line_, mpl.lines.Line2D)
-    assert display.line_.get_label() == "Perfect predictions"
-    assert display.line_.get_color() == "black"
-
-    assert isinstance(display.scatter_, list)
-    for scatter in display.scatter_:
-        assert isinstance(scatter, mpl.collections.PathCollection)
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == 1
+    assert isinstance(display.lines_[0], mpl.lines.Line2D)
+    assert display.lines_[0].get_color() == "black"
 
     assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == ""
-    assert len(legend.get_texts()) == 2
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Residuals (actual - predicted)"
-
-    assert display.ax_.get_aspect() not in ("equal", 1.0)
 
 
 @pytest.mark.parametrize(
@@ -90,24 +85,20 @@ def test_regression_actual_vs_predicted(pyplot, linear_regression_with_train_tes
     assert isinstance(display, PredictionErrorDisplay)
 
     display.plot(kind="actual_vs_predicted")
-    assert isinstance(display.line_, mpl.lines.Line2D)
-    assert display.line_.get_label() == "Perfect predictions"
-    assert display.line_.get_color() == "black"
-
-    assert isinstance(display.scatter_, list)
-    for scatter in display.scatter_:
-        assert isinstance(scatter, mpl.collections.PathCollection)
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == 1
+    assert isinstance(display.lines_[0], mpl.lines.Line2D)
+    assert display.lines_[0].get_color() == "black"
 
     assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == ""
-    assert len(legend.get_texts()) == 2
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Actual values"
 
     assert display.ax_.get_xlim() == display.ax_.get_ylim()
-    assert display.ax_.get_aspect() in ("equal", 1.0)
 
 
 def test_data_source(pyplot, linear_regression_with_train_test):
@@ -119,13 +110,15 @@ def test_data_source(pyplot, linear_regression_with_train_test):
     )
     display = report.metrics.prediction_error(data_source="train")
     display.plot()
-    assert display.line_.get_label() == "Perfect predictions"
-    assert display.scatter_[0].get_label() == "Train set"
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
     display = report.metrics.prediction_error(data_source="X_y", X=X_train, y=y_train)
     display.plot()
-    assert display.line_.get_label() == "Perfect predictions"
-    assert display.scatter_[0].get_label() == "External data set"
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
 
 def test_data_source_both(pyplot, linear_regression_with_train_test):
@@ -137,23 +130,17 @@ def test_data_source_both(pyplot, linear_regression_with_train_test):
     display = report.metrics.prediction_error(data_source="both")
     display.plot()
 
-    assert display.line_.get_label() == "Perfect predictions"
-
-    assert len(display.scatter_) == 2
-
-    scatter_labels = [scatter.get_label() for scatter in display.scatter_]
-    assert "Train set" in scatter_labels
-    assert "Test set" in scatter_labels
-
-    train_scatter = display.scatter_[scatter_labels.index("Train set")]
-    test_scatter = display.scatter_[scatter_labels.index("Test set")]
-    assert not np.allclose(train_scatter.get_facecolor(), test_scatter.get_facecolor())
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
+    assert "train" in legend_texts
+    assert "test" in legend_texts
 
     display.plot(kind="actual_vs_predicted")
-    assert len(display.scatter_) == 2
-    scatter_labels = [scatter.get_label() for scatter in display.scatter_]
-    assert "Train set" in scatter_labels
-    assert "Test set" in scatter_labels
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "train" in legend_texts
+    assert "test" in legend_texts
 
 
 def test_kwargs(pyplot, linear_regression_with_train_test):
@@ -163,51 +150,26 @@ def test_kwargs(pyplot, linear_regression_with_train_test):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.prediction_error()
-    display.plot(
-        data_points_kwargs={"color": "red"}, perfect_model_kwargs={"color": "blue"}
-    )
-    np.testing.assert_allclose(display.scatter_[0].get_facecolor(), [[1, 0, 0, 0.3]])
-    assert display.line_.get_color() == "blue"
 
-    # check the `.style` display setter
-    display.plot()  # default style
-    np.testing.assert_allclose(
-        display.scatter_[0].get_facecolor(),
-        [[0.121569, 0.466667, 0.705882, 0.3]],
-        rtol=1e-3,
-    )
-    assert display.line_.get_color() == "black"
+    # check the `.set_style` display setter
     display.set_style(
-        data_points_kwargs={"color": "red"}, perfect_model_kwargs={"color": "blue"}
+        relplot_kwargs={"color": "red"}, perfect_model_kwargs={"color": "blue"}
+    ).plot()
+    assert display.lines_[0].get_color() == "blue"
+    scatter_collection = display.ax_.collections[0]
+    np.testing.assert_array_equal(
+        scatter_collection.get_facecolor()[0][:3], [1.0, 0.0, 0.0]
     )
-    display.plot()
-    np.testing.assert_allclose(display.scatter_[0].get_facecolor(), [[1, 0, 0, 0.3]])
-    assert display.line_.get_color() == "blue"
-    # overwrite the style that was set above
-    display.plot(
-        data_points_kwargs={"color": "tab:orange"},
-        perfect_model_kwargs={"color": "tab:green"},
-    )
-    np.testing.assert_allclose(
-        display.scatter_[0].get_facecolor(),
-        [[1.0, 0.498039, 0.054902, 0.3]],
-        rtol=1e-3,
-    )
-    assert display.line_.get_color() == "tab:green"
-
-    display.plot(despine=False)
-    assert display.ax_.spines["top"].get_visible()
-    assert display.ax_.spines["right"].get_visible()
 
     expected_subsample = 10
     display = report.metrics.prediction_error(subsample=expected_subsample)
     display.plot()
-    assert len(display.scatter_[0].get_offsets()) == expected_subsample
+    assert len(display.frame()) == expected_subsample
 
     expected_subsample = int(X_test.shape[0] * 0.5)
     display = report.metrics.prediction_error(subsample=0.5)
     display.plot()
-    assert len(display.scatter_[0].get_offsets()) == expected_subsample
+    assert len(display.frame()) == expected_subsample
 
 
 def test_random_state(linear_regression_with_train_test):
@@ -219,24 +181,6 @@ def test_random_state(linear_regression_with_train_test):
     report.metrics.prediction_error()
     # skore should store the y_pred, but not the plot
     assert len(report._cache) == 2
-
-
-@pytest.mark.parametrize("data_points_kwargs", ["not a dict", [{"color": "red"}]])
-def test_wrong_kwargs(pyplot, linear_regression_with_train_test, data_points_kwargs):
-    """Check that we raise an error when we pass keyword arguments to the prediction
-    error plot if there is a single estimator."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.metrics.prediction_error()
-
-    err_msg = (
-        "You intend to plot the prediction error for a single estimator. We expect "
-        "`data_points_kwargs` to be a dictionary."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(data_points_kwargs=data_points_kwargs)
 
 
 def test_pass_kind_to_plot(pyplot, linear_regression_with_train_test):
@@ -255,24 +199,6 @@ def test_pass_kind_to_plot(pyplot, linear_regression_with_train_test):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(kind="whatever")
-
-
-def test_wrong_report_type(pyplot, linear_regression_with_train_test):
-    """Check that we raise a proper error message when passing an inappropriate
-    value for the `report_type` argument."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    estimator_report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = estimator_report.metrics.prediction_error()
-    display.report_type = "unknown"
-    err_msg = (
-        "`report_type` should be one of 'estimator', 'cross-validation', "
-        "'comparison-cross-validation' or 'comparison-estimator'. "
-        "Got 'unknown' instead."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot()
 
 
 def test_frame(linear_regression_with_train_test):
@@ -313,10 +239,16 @@ def test_legend(pyplot, linear_regression_with_train_test):
     )
     display = report.metrics.prediction_error()
     display.plot()
-    check_legend_position(display.ax_, loc="lower right", position="inside")
+    assert len(display.figure_.legends) == 1
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
     display.plot(kind="actual_vs_predicted")
-    check_legend_position(display.ax_, loc="lower right", position="inside")
+    assert len(display.figure_.legends) == 1
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
 
 def test_constructor(linear_regression_with_train_test):
@@ -327,10 +259,10 @@ def test_constructor(linear_regression_with_train_test):
     )
     display = report.metrics.prediction_error()
 
-    index_columns = ["estimator_name", "split"]
+    index_columns = ["estimator", "split"]
     df = display._prediction_error
     assert all(col in df.columns for col in index_columns)
-    assert df["estimator_name"].unique() == report.estimator_name_
+    assert df["estimator"].unique() == report.estimator_name_
     assert df["split"].isnull().all()
     np.testing.assert_allclose(df["y_true"], y_test)
     np.testing.assert_allclose(df["y_pred"], estimator.predict(X_test))

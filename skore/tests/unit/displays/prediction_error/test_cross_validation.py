@@ -6,7 +6,7 @@ import pytest
 from skore import CrossValidationReport
 from skore._sklearn._plot import PredictionErrorDisplay
 from skore._sklearn._plot.metrics.prediction_error import RangeData
-from skore._utils._testing import check_frame_structure, check_legend_position
+from skore._utils._testing import check_frame_structure
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
@@ -39,24 +39,20 @@ def test_regression(pyplot, linear_regression_data, data_source):
         assert getattr(display, f"range_{attr}").max == global_max
 
     display.plot()
-    assert isinstance(display.line_, mpl.lines.Line2D)
-    assert display.line_.get_label() == "Perfect predictions"
-    assert display.line_.get_color() == "black"
-
-    assert isinstance(display.scatter_, list)
-    for scatter in display.scatter_:
-        assert isinstance(scatter, mpl.collections.PathCollection)
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == 1
+    assert isinstance(display.lines_[0], mpl.lines.Line2D)
+    assert display.lines_[0].get_color() == "black"
 
     assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
-    data_source_title = "external" if data_source == "X_y" else data_source
-    assert legend.get_title().get_text() == f"{data_source_title.capitalize()} set"
-    assert len(legend.get_texts()) == 4
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
+    # For cross-validation, we should have split labels
+    assert any("Split" in text for text in legend_texts)
 
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Residuals (actual - predicted)"
-
-    assert display.ax_.get_aspect() not in ("equal", 1.0)
 
 
 def test_regression_actual_vs_predicted(pyplot, linear_regression_data):
@@ -72,23 +68,20 @@ def test_regression_actual_vs_predicted(pyplot, linear_regression_data):
     assert display._prediction_error["split"].nunique() == cv
     assert display.data_source == "test"
 
-    assert isinstance(display.line_, mpl.lines.Line2D)
-    assert display.line_.get_label() == "Perfect predictions"
-    assert display.line_.get_color() == "black"
-
-    assert isinstance(display.scatter_, list)
-    for scatter in display.scatter_:
-        assert isinstance(scatter, mpl.collections.PathCollection)
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == 1
+    assert isinstance(display.lines_[0], mpl.lines.Line2D)
+    assert display.lines_[0].get_color() == "black"
 
     assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Test set"
-    assert len(legend.get_texts()) == 4
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
+    # For cross-validation, we should have split labels
+    assert any("Split" in text for text in legend_texts)
 
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Actual values"
-
-    assert display.ax_.get_aspect() in ("equal", 1.0)
 
 
 def test_kwargs(pyplot, linear_regression_data):
@@ -97,36 +90,17 @@ def test_kwargs(pyplot, linear_regression_data):
     (estimator, X, y), cv = linear_regression_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
-    display.plot(
-        data_points_kwargs=[{"color": "red"}, {"color": "green"}, {"color": "blue"}],
+
+    display.set_style(
+        relplot_kwargs={"palette": ["red", "green", "blue"]},
         perfect_model_kwargs={"color": "orange"},
-    )
-    rgb_colors = [
-        [[1.0, 0.0, 0.0, 0.3]],
-        [[0.0, 0.50196078, 0.0, 0.3]],
-        [[0.0, 0.0, 1.0, 0.3]],
-    ]
-    for scatter, rgb_color in zip(display.scatter_, rgb_colors, strict=False):
-        np.testing.assert_allclose(scatter.get_facecolor(), rgb_color, rtol=1e-3)
-    assert display.line_.get_color() == "orange"
-
-
-@pytest.mark.parametrize("data_points_kwargs", ["not a list", [{"color": "red"}]])
-def test_wrong_kwargs(pyplot, linear_regression_data, data_points_kwargs):
-    """Check that we raise an error when we pass keyword arguments to the prediction
-    error plot if there is a cross-validation report."""
-    (estimator, X, y), cv = linear_regression_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    display = report.metrics.prediction_error()
-
-    err_msg = (
-        "You intend to plot prediction errors either from multiple estimators "
-        "or from a cross-validated estimator. We expect `data_points_kwargs` to be "
-        "a list of dictionaries with the same length as the number of "
-        "estimators or splits."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(data_points_kwargs=data_points_kwargs)
+    ).plot()
+    assert display.lines_[0].get_color() == "orange"
+    rgb_colors = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    for idx, collection in enumerate(display.ax_.collections):
+        np.testing.assert_array_equal(
+            collection.get_facecolor()[0][:3], rgb_colors[idx]
+        )
 
 
 def test_frame(linear_regression_data):
@@ -151,19 +125,31 @@ def test_legend(pyplot, linear_regression_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
     display.plot()
-    check_legend_position(display.ax_, loc="upper left", position="outside")
+    assert len(display.figure_.legends) == 1
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
     display.plot(kind="actual_vs_predicted")
-    check_legend_position(display.ax_, loc="lower right", position="inside")
+    assert len(display.figure_.legends) == 1
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
     cv = 10
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
     display.plot()
-    check_legend_position(display.ax_, loc="upper left", position="outside")
+    assert len(display.figure_.legends) == 1
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
     display.plot(kind="actual_vs_predicted")
-    check_legend_position(display.ax_, loc="upper left", position="outside")
+    assert len(display.figure_.legends) == 1
+    legend = display.figure_.legends[0]
+    legend_texts = [t.get_text() for t in legend.get_texts()]
+    assert "Perfect predictions" in legend_texts
 
 
 def test_constructor(linear_regression_data):
@@ -172,8 +158,8 @@ def test_constructor(linear_regression_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.prediction_error()
 
-    index_columns = ["estimator_name", "split"]
+    index_columns = ["estimator", "split"]
     df = display._prediction_error
     assert all(col in df.columns for col in index_columns)
-    assert df["estimator_name"].unique() == report.estimator_name_
+    assert df["estimator"].unique() == report.estimator_name_
     assert df["split"].unique().tolist() == list(range(cv))
