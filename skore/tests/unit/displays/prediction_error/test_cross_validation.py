@@ -163,3 +163,37 @@ def test_constructor(linear_regression_data):
     assert all(col in df.columns for col in index_columns)
     assert df["estimator"].unique() == report.estimator_name_
     assert df["split"].unique().tolist() == list(range(cv))
+
+
+@pytest.mark.parametrize("subplot_by", [None, "split", "auto", "invalid"])
+def test_subplot_by(pyplot, linear_regression_data, subplot_by):
+    """Check that the subplot_by parameter works correctly for cross-val reports."""
+    (estimator, X, y), cv = linear_regression_data, 3
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
+    display = report.metrics.prediction_error()
+    if subplot_by == "invalid":
+        err_msg = (
+            "Invalid `subplot_by` parameter. Valid options are: auto, split, None. "
+            f"Got '{subplot_by}' instead."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            display.plot(subplot_by=subplot_by)
+    elif subplot_by == "split":
+        display.plot(subplot_by=subplot_by)
+        assert isinstance(display.ax_[0], mpl.axes.Axes)
+        assert len(display.ax_) == cv
+    else:
+        display.plot(subplot_by=subplot_by)
+        assert isinstance(display.ax_, mpl.axes.Axes)
+
+
+def test_title(pyplot, linear_regression_data):
+    """Check that the title contains expected elements."""
+    (estimator, X, y), cv = linear_regression_data, 3
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
+    display = report.metrics.prediction_error()
+    display.plot()
+    title = display.figure_._suptitle.get_text()
+    assert "Prediction Error" in title
+    assert report.estimator_name_ in title
+    assert "Data source: Test set" in title

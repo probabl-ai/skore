@@ -1,6 +1,7 @@
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
+import pytest
 
 from skore import ComparisonReport, CrossValidationReport
 from skore._sklearn._plot import PredictionErrorDisplay
@@ -144,3 +145,40 @@ def test_frame(comparison_cross_validation_reports_regression):
 
     check_frame_structure(df, expected_index, expected_columns)
     assert df["estimator"].nunique() == len(report.reports_)
+
+
+@pytest.mark.parametrize("subplot_by", [None, "estimator", "auto", "invalid", "split"])
+def test_subplot_by(pyplot, comparison_cross_validation_reports_regression, subplot_by):
+    """Check that the subplot_by parameter works correctly for comparison
+    cross-validation reports."""
+    report = comparison_cross_validation_reports_regression
+    display = report.metrics.prediction_error()
+    if subplot_by in ["invalid", None]:
+        err_msg = (
+            "Invalid `subplot_by` parameter. Valid options are: "
+            "auto, split, estimator."
+            f"Got '{subplot_by}' instead."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            display.plot(subplot_by=subplot_by)
+    elif subplot_by == "split":
+        display.plot(subplot_by=subplot_by)
+        assert isinstance(display.ax_[0], mpl.axes.Axes)
+        assert len(display.ax_) == len(
+            report.reports_["DummyRegressor_1"].estimator_reports_
+        )
+    else:
+        display.plot(subplot_by=subplot_by)
+        assert isinstance(display.ax_[0], mpl.axes.Axes)
+        assert len(display.ax_) == len(report.reports_)
+
+
+def test_title(pyplot, comparison_cross_validation_reports_regression):
+    """Check that the title contains expected elements."""
+    report = comparison_cross_validation_reports_regression
+    display = report.metrics.prediction_error()
+    display.plot()
+    title = display.figure_._suptitle.get_text()
+    assert "Prediction Error" in title
+    assert "DummyRegressor_1" not in title
+    assert "Data source: Test set" in title
