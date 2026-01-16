@@ -364,7 +364,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 default="predict"
             The response method to use to get the predictions.
 
-        X : array-like of shape (n_samples, n_features), optional
+        X : array-like of shape (n_samples, n_features), default=None
             When `data_source` is "X_y", the input features on which to compute the
             response method.
 
