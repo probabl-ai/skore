@@ -278,7 +278,7 @@ def test_subplot_by(pyplot, linear_regression_with_train_test, subplot_by):
     )
     if subplot_by == "invalid":
         err_msg = (
-            "Invalid `subplot_by` parameter. Valid options are: auto, None."
+            "Invalid `subplot_by` parameter. Valid options are: auto, None. "
             f"Got '{subplot_by}' instead."
         )
         display = report.metrics.prediction_error()

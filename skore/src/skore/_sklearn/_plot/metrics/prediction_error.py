@@ -335,7 +335,7 @@ class PredictionErrorDisplay(DisplayMixin):
         if subplot_by not in valid_subplot_by:
             raise ValueError(
                 f"Invalid `subplot_by` parameter. Valid options are: "
-                f"{', '.join(str(s) for s in valid_subplot_by)}."
+                f"{', '.join(str(s) for s in valid_subplot_by)}. "
                 f"Got '{subplot_by}' instead."
             )
 

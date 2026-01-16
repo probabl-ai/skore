@@ -156,8 +156,7 @@ def test_subplot_by(pyplot, comparison_cross_validation_reports_regression, subp
     if subplot_by in ["invalid", None]:
         err_msg = (
             "Invalid `subplot_by` parameter. Valid options are: "
-            "auto, split, estimator."
-            f"Got '{subplot_by}' instead."
+            f"auto, split, estimator. Got '{subplot_by}' instead."
         )
         with pytest.raises(ValueError, match=err_msg):
             display.plot(subplot_by=subplot_by)
