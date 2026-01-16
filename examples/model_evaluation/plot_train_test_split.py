@@ -160,14 +160,18 @@ split_data.keys()
 estimator = LogisticRegression(random_state=42)
 estimator_report = EstimatorReport(estimator, **split_data)
 
-# Without the dict output, this would be written:
-# estimator_report = EstimatorReport(
-#     estimator,
-#     X_train=X_train,
-#     y_train=y_train,
-#     X_test=X_test,
-#     y_test=y_test,
-# )
+# %%
+# Without the dictionary output, this would be written:
+#
+# .. code-block:: python
+#
+#     estimator_report = EstimatorReport(
+#         estimator,
+#         X_train=X_train,
+#         y_train=y_train,
+#         X_test=X_test,
+#         y_test=y_test,
+#     )
 
 # %%
 # Automatic diagnostics: raising methodological warnings
