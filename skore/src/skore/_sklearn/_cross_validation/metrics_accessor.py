@@ -1391,8 +1391,8 @@ class _MetricsAccessor(
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
         >>> display = report.metrics.prediction_error()
-        >>> display.plot(
-        ...     kind="actual_vs_predicted", perfect_model_kwargs={"color": "tab:red"}
+        >>> display.set_style(perfect_model_kwargs={"color": "tab:red"}).plot(
+        ...     kind="actual_vs_predicted"
         ... )
         """
         display_kwargs = {"subsample": subsample, "seed": seed}

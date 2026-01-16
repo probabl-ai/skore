@@ -2057,7 +2057,7 @@ class _MetricsAccessor(
         >>> regressor = Ridge()
         >>> report = EstimatorReport(regressor, **split_data)
         >>> display = report.metrics.prediction_error()
-        >>> display.plot(perfect_model_kwargs={"color": "tab:red"})
+        >>> display.set_style(perfect_model_kwargs={"color": "tab:red"}).plot()
         """
         display_kwargs = {"subsample": subsample, "seed": seed}
         display = cast(
