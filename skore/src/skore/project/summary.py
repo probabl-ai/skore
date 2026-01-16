@@ -85,11 +85,10 @@ class Summary(DataFrame):
 
         Parameters
         ----------
-        filter : bool, optional
-            Filter the reports to return with the user query string selection, default
-            True.
-        return_as : Literal["list", "comparison"], optional
-            Return reports as flat list or comparison report, default list.
+        filter : bool, default=True
+            Filter the reports to return with the user query string selection.
+        return_as : {"list", "comparison"}, default="list"
+            In what form the reports should be returned.
         """
         if self.empty:
             return []
