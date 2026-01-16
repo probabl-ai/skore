@@ -10,7 +10,6 @@ from skore._sklearn._cross_validation.report import (
 
 _register_accessor("metrics", CrossValidationReport)(_MetricsAccessor)
 _register_accessor("data", CrossValidationReport)(_DataAccessor)
-
 _register_accessor("feature_importance", CrossValidationReport)(
     _FeatureImportanceAccessor
 )
