@@ -277,8 +277,10 @@ project.put("final_model", final_report)
 
 # %%
 # Now we can retrieve a summary of our stored reports
+from pprint import pprint
+
 summary = project.summarize()
-print(f"Number of reports: {len(summary.reports())}")
+pprint(summary.reports())
 
 # %%
 # The :class:`~skore.project.summary.Summary` object provides an interactive widget in Jupyter notebooks
@@ -297,12 +299,19 @@ print(f"Number of reports: {len(summary.reports())}")
 
 # sphinx_gallery_start_ignore
 # Pretend that the cross-validation reports were selected in the widget
-summary.query('report_type == "cross-validation"')
+import contextlib
+import io
+
+# XXX: Suppress the Jupyter widget output
+with contextlib.redirect_stdout(io.StringIO()):
+    summary._repr_mimebundle_()
+summary._plot_widget._report_type_dropdown.value = "cross-validation"
+summary._plot_widget._on_report_type_change({"new": "cross-validation"})
 # sphinx_gallery_end_ignore
 
 # Supposing you selected "Cross-validation" in the "Report type" tab,
 # if you now call `reports()`, you get only the CrossValidationReports
-print(summary.reports())
+pprint(summary.reports())
 
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
