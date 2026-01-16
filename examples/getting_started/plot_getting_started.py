@@ -107,8 +107,14 @@ simple_cv_report = CrossValidationReport(
 simple_cv_report.help()
 
 # %%
-# We now examine the performance metrics for our simple model.
-# The `metrics.summarize()` method provides a comprehensive overview of model performance:
+# For example, we can examine the training data, which excludes the held-out data:
+
+# %%
+simple_cv_report.data.analyze()
+
+# %%
+# But we can also quickly get an overview of the performance of our model,
+# using :meth:`~skore.CrossValidation.metrics.summarize()`:
 
 # %%
 
@@ -125,7 +131,7 @@ precision_recall
 
 # %%
 # Note: The output of ``precision_recall()`` is a ``Display`` object. This is a
-# common pattern in skore, and it allows us to access the information in several
+# common pattern in skore which allows us to access the information in several
 # ways.
 
 # %%
@@ -146,6 +152,34 @@ precision_recall.frame()
 # %%
 confusion_matrix = simple_cv_report.metrics.confusion_matrix()
 confusion_matrix.plot()
+
+# %%
+# Since our model is a linear model, we can study the importance that it gives
+# to each feature:
+
+# %%
+coefficients = simple_cv_report.feature_importance.coefficients()
+coefficients.frame()
+
+# %%
+
+# sphinx_gallery_start_ignore
+# TODO: Replace with top_k argument when available
+# sphinx_gallery_end_ignore
+
+(
+    coefficients.frame()
+    .groupby("feature")
+    .mean()
+    .drop(columns=["split"])
+    .sort_values(by="coefficients", key=abs, ascending=False)
+    .head(15)[::-1]
+    .plot.barh(
+        title="Mean model weights",
+        xlabel="Coefficient",
+        ylabel="Feature",
+    )
+)
 
 # %%
 # Model no. 2: gradient boosting
@@ -241,6 +275,38 @@ pd.concat(
 # As expected, our final model gets better performance, likely thanks to the
 # larger training set.
 
+# %%
+# Our final sanity check is to compare the features considered most impactful
+# between our final model and the cross-validation
+ 
+# %%
+final_coefficients = final_report.feature_importance.coefficients()
+final_top_15_features = (
+    final_coefficients.frame()
+    .sort_values(by="coefficients", key=abs, ascending=False)
+    .head(15)["feature"]
+    .reset_index(drop=True)
+)
+
+simple_coefficients = simple_cv_report.feature_importance.coefficients()
+cv_top_15_features = (
+    simple_coefficients.frame()
+    .groupby("feature")
+    .mean()
+    .reset_index()
+    .drop(columns=["split"])
+    .sort_values(by="coefficients", key=abs, ascending=False)
+    .head(15)["feature"]
+    .reset_index(drop=True)
+)
+
+pd.concat(
+    [final_top_15_features, cv_top_15_features], axis="columns", ignore_index=True
+)
+
+# %%
+# They seem very similar, so we are done!
+ 
 # %%
 # Tracking our work with a skore Project
 # ======================================
