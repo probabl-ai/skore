@@ -132,9 +132,9 @@ html_title = "skore"
 # documentation.
 html_theme_options = {
     "announcement": (
-        "📣 Help shape the future of skore and the scikit-learn ecosystem! "
+        "📣 Help shape the future of skore and the scikit-learn ecosystem by "
         '<a href="https://forms.gle/2fivh6RRrBF21CTD9" target="_blank" '
-        'style="text-decoration: underline;">Take our survey</a>'
+        'style="text-decoration: underline;">taking our survey</a>!'
     ),
     "logo": {
         "image_light": "_static/images/Logo_Skore_Light@2x.svg",
