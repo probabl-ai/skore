@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
-from typing import Any, Literal, cast
+from collections.abc import Callable
+from typing import Any
 
 import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from scipy.sparse import issparse
-from sklearn import metrics
-from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import _num_features
@@ -21,132 +19,14 @@ from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDis
 from skore._sklearn._plot.feature_importance.permutation import (
     PermutationImportanceDisplay,
 )
+from skore._sklearn.types import DataSource
 from skore._sklearn.feature_names import _get_feature_names
 from skore._utils._accessor import (
     _check_estimator_has_coef,
     _check_has_feature_importances,
 )
 
-DataSource = Literal["test", "train", "X_y"]
-
-
-MetricNames = Literal[
-    "accuracy",
-    "precision",
-    "recall",
-    "brier_score",
-    "roc_auc",
-    "log_loss",
-    "r2",
-    "rmse",
-]
-
-# If the metric parameter represents a single metric, one can use:
-#   - a single string (see The metric parameter: defining model evaluation rules);
-#   - a callable (see Callable scorers) that returns a single value.
-# If the metric parameter represents multiple metrics, one can use:
-#   - a list or tuple of unique strings;
-#   - a callable returning a dictionary where the keys are the metric names
-#   and the values are the metric scores;
-#   - a dictionary with metric names as keys and callables a values.
-Metric = MetricNames | Callable | Iterable[MetricNames] | dict[str, Callable]
-
-metric_to_scorer: dict[MetricNames, Callable] = {
-    "accuracy": make_scorer(metrics.accuracy_score),
-    "precision": make_scorer(metrics.precision_score),
-    "recall": make_scorer(metrics.recall_score),
-    "brier_score": make_scorer(metrics.brier_score_loss),
-    "roc_auc": make_scorer(metrics.roc_auc_score),
-    "log_loss": make_scorer(metrics.log_loss),
-    "r2": make_scorer(metrics.r2_score),
-    "rmse": make_scorer(metrics.root_mean_squared_error),
-}
-
-
-def _check_metric(metric: Any) -> Metric | None:
-    """Check that `metric` is valid, and convert it to a suitable form as needed.
-
-    If `metric` is a list of strings, it is checked against our own metric names.
-    For example, "rmse" is recognized as root-mean-square error, even though sklearn
-    itself does not recognize this name.
-    Similarly, "neg_root_mean_square_error" is not recognized, and leads to an error.
-
-    Parameters
-    ----------
-    metric : str, callable, list, tuple, dict, or None
-        The metric to check.
-
-    Returns
-    -------
-    metric
-        A scoring hopefully suitable for passing to `permutation_importance`.
-        Can be equal to the original metric.
-
-    Raises
-    ------
-    TypeError
-        If `metric` does not type-check.
-
-    Examples
-    --------
-    >>> from sklearn.metrics import make_scorer, root_mean_squared_error
-    >>> from skore._sklearn._estimator.feature_importance_accessor import _check_metric
-
-    >>> _check_metric(None)  # Returns None
-
-    >>> _check_metric(make_scorer(root_mean_squared_error))
-    make_scorer(root_mean_squared_error, ...)
-
-    >>> _check_metric({"rmse": make_scorer(root_mean_squared_error)})
-    {'rmse': make_scorer(root_mean_squared_error, ...)}
-
-    >>> _check_metric("rmse")
-    {'rmse': make_scorer(root_mean_squared_error, ...)}
-
-    >>> _check_metric(["r2", "rmse"])
-    {'r2': make_scorer(r2_score, ...),
-    'rmse': make_scorer(root_mean_squared_error, ...)}
-
-    >>> _check_metric("neg_root_mean_squared_error")
-    Traceback (most recent call last):
-    TypeError: If metric is a string, it must be one of ...;
-    got 'neg_root_mean_squared_error'
-
-    >>> _check_metric(["r2", make_scorer(root_mean_squared_error)])
-    Traceback (most recent call last):
-    TypeError: If metric is a list or tuple, it must contain only strings; ...
-
-    >>> _check_metric(3)
-    Traceback (most recent call last):
-    TypeError: metric must be a string, callable, list, tuple or dict;
-    got <class 'int'>
-    """
-    if metric is None or callable(metric) or isinstance(metric, dict):
-        return metric
-    elif isinstance(metric, str):
-        if metric in metric_to_scorer:
-            # Convert to scorer
-            return {metric: metric_to_scorer[cast(MetricNames, metric)]}
-        raise TypeError(
-            "If metric is a string, it must be one of "
-            f"{list(metric_to_scorer.keys())}; got '{metric}'"
-        )
-    elif isinstance(metric, list | tuple):
-        result: dict[str, Callable] = {}
-        for s in metric:
-            if isinstance(s, str):
-                result |= cast(dict[str, Callable], _check_metric(s))
-            else:
-                raise TypeError(
-                    "If metric is a list or tuple, it must contain only strings; "
-                    f"got {s} of type {type(s)}"
-                )
-        return result
-    else:
-        raise TypeError(
-            "metric must be a string, callable, list, tuple or dict; "
-            f"got {type(metric)}"
-        )
+Metric = str | Callable | list[str] | tuple[str] | dict[str, Callable] | None
 
 
 class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -263,7 +143,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         at_step: int | str = 0,
-        metric: Metric | None = None,
+        metric: Metric = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
         n_jobs: int | None = None,

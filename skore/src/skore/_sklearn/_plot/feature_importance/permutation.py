@@ -19,8 +19,8 @@ class PermutationImportanceDisplay(DisplayMixin):
 
     Parameters
     ----------
-    scores : pd.DataFrame
-        The scores computed after permuting the input features. The columns are:
+    importances : pd.DataFrame
+        The importances computed after permuting the input features. The columns are:
 
         - `data_source`
         - `metric`
@@ -29,8 +29,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         - `repetition`
         - `value`
 
-    report_type : {"estimator", "cross-validation", "comparison-estimator", \
-            "comparison-cross-validation"}
+    report_type : {"estimator"}
         Report type from which the display is created.
     """
 
@@ -291,6 +290,8 @@ class PermutationImportanceDisplay(DisplayMixin):
         pd.DataFrame
             Dataframe containing the importances.
         """
+        if self.report_type != "estimator":
+            raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
         group_by = ["metric", "feature"]
 
