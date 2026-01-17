@@ -10,9 +10,9 @@ from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
-from skore._sklearn._plot.utils import _despine_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import ReportType
+from skore._sklearn._plot.feature_importance.utils import _decorate_matplotlib_axis
 
 
 class CoefficientsDisplay(DisplayMixin):
@@ -75,7 +75,7 @@ class CoefficientsDisplay(DisplayMixin):
 
     _default_barplot_kwargs: dict[str, Any] = {"palette": "tab10"}
     _default_boxplot_kwargs: dict[str, Any] = {
-        "whis": 100_000,
+        "whis": 1e10,
         **BOXPLOT_STYLE,
     }
     _default_stripplot_kwargs: dict[str, Any] = {"palette": "tab10", "alpha": 0.5}
@@ -231,40 +231,6 @@ class CoefficientsDisplay(DisplayMixin):
             raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
     @staticmethod
-    def _decorate_matplotlib_axis(
-        *, ax: plt.Axes, add_background_features: bool = False, n_features: int
-    ) -> None:
-        """Decorate the matplotlib axis.
-
-        Parameters
-        ----------
-        ax : plt.Axes
-            The matplotlib axis to decorate.
-        add_background_features : bool, default=False
-            Whether to add a background color for each group of features.
-        n_features : int
-            The number of features to displayed.
-        """
-        ax.axvline(x=0, color=".5", linestyle="--")
-        ax.set(xlabel="Magnitude of coefficient", ylabel="")
-        _despine_matplotlib_axis(
-            ax,
-            axis_to_despine=("top", "right", "left"),
-            remove_ticks=True,
-            x_range=None,
-            y_range=None,
-        )
-        if add_background_features:
-            for feature_idx in range(0, n_features, 2):
-                ax.axhspan(
-                    feature_idx - 0.5,
-                    feature_idx + 0.5,
-                    color="lightgray",
-                    alpha=0.1,
-                    zorder=0,
-                )
-
-    @staticmethod
     def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
         """Get the available columns from which to group by."""
         columns_to_groupby = list[str]()
@@ -319,10 +285,12 @@ class CoefficientsDisplay(DisplayMixin):
 
         self.figure_, self.ax_ = facet.figure, facet.axes.squeeze()
         for ax in self.ax_.flatten():
-            self._decorate_matplotlib_axis(
+            _decorate_matplotlib_axis(
                 ax=ax,
                 add_background_features=add_background_features,
                 n_features=frame["feature"].nunique(),
+                xlabel="Magnitude of coefficient",
+                ylabel="",
             )
         if len(self.ax_.flatten()) == 1:
             self.ax_ = self.ax_.flatten()[0]
