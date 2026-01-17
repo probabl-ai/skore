@@ -198,7 +198,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             else:
                 hue, col, row = None, None, None
         elif subplot_by is None:
-            {"metric"}, {"label"}, {"output"}
+            # Posssible accepted values: {"metric"}, {"label"}, {"output"}
             columns_to_groupby = self._get_columns_to_groupby(frame=frame)
             if len(columns_to_groupby) > 1:
                 raise ValueError(
@@ -209,7 +209,8 @@ class PermutationImportanceDisplay(DisplayMixin):
                 )
             hue, col, row = columns_to_groupby[0], None, None
         else:
-            # {"metric"}, {"metric", "label"}, {"metric", "output"}
+            # Posssible accepted values: {"metric"}, {"metric", "label"},
+            # {"metric", "output"}
             columns_to_groupby = self._get_columns_to_groupby(frame=frame)
             if isinstance(subplot_by, str):
                 if subplot_by not in columns_to_groupby:
