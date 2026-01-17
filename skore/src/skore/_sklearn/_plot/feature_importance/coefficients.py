@@ -160,6 +160,8 @@ class CoefficientsDisplay(DisplayMixin):
         *,
         include_intercept: bool = True,
         subplot_by: Literal["auto", "estimator", "label", "output"] | None = "auto",
+        top_k: int | None = None,
+        bottom_k: int | None = None,
     ) -> None:
         """Plot the coefficients for the different features.
 
@@ -176,6 +178,52 @@ class CoefficientsDisplay(DisplayMixin):
               regression problem;
             - when comparing estimators for which the input features are different.
 
+        top_k : int, default=None
+            Select and display only the top `k` features with the largest absolute
+            coefficient values.
+
+            Feature selection is performed independently within each group:
+
+            - Single estimator reports:
+              For binary classification or single-output regression, selection is
+              global.
+              For multiclass classification or multi-output regression, selection is
+              performed independently per class/output.
+
+            - Cross-validation reports:
+              Grouping follows the same rules as single estimator reports.
+              Within each group, features are ranked by the mean absolute coefficient
+              values across folds, and the top `top_k` features are selected.
+
+            - Comparison reports:
+              Selection is performed independently per estimator, and per class/output
+              if applicable, using the same ranking rules as above.
+
+            Cannot be used together with `bottom_k`.
+
+        bottom_k : int, default=None
+            Select and display only the bottom `k` features with the smallest absolute
+            coefficient values.
+
+            Feature selection is performed independently within each group:
+
+            - Single estimator reports:
+              For binary classification or single-output regression, selection is
+              global.
+              For multiclass classification or multi-output regression, selection is
+              performed independently per class/output.
+
+            - Cross-validation reports:
+              Grouping follows the same rules as single estimator reports.
+              Within each group, features are ranked by the mean absolute coefficient
+              values across folds, and the bottom `bottom_k` features are selected.
+
+            - Comparison reports:
+              Selection is performed independently per estimator, and per class/output
+              if applicable, using the same ranking rules as above.
+
+            Cannot be used together with `top_k`.
+
         Examples
         --------
         >>> from sklearn.datasets import load_iris
@@ -191,23 +239,113 @@ class CoefficientsDisplay(DisplayMixin):
         >>> display = report.feature_importance.coefficients()
         >>> display.plot()
         """
-        return self._plot(include_intercept=include_intercept, subplot_by=subplot_by)
+        return self._plot(
+            include_intercept=include_intercept,
+            subplot_by=subplot_by,
+            top_k=top_k,
+            bottom_k=bottom_k,
+        )
 
     def _plot_matplotlib(
         self,
         *,
         include_intercept: bool = True,
         subplot_by: Literal["estimator", "label", "output"] | None = None,
+        top_k: int | None = None,
+        bottom_k: int | None = None,
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
+        if top_k is not None and bottom_k is not None:
+            raise ValueError("Only one of `top_k` or `bottom_k` can be provided.")
+        if top_k is not None and top_k <= 0:
+            raise ValueError("`top_k` must be a positive integer.")
+        if bottom_k is not None and bottom_k <= 0:
+            raise ValueError("`bottom_k` must be a positive integer.")
+
         # make copy of the dictionary since we are going to pop some keys later
         barplot_kwargs = self._default_barplot_kwargs.copy()
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
 
+        frame = self.frame(include_intercept=include_intercept)
+
+        # Apply feature selection if top_k or bottom_k is specified
+        if top_k is not None or bottom_k is not None:
+            # Determine grouping strategy based on report type
+
+            # For single estimator: group by label/output if present
+            group_cols = [
+                col
+                for col in ("label", "output")
+                if col in frame.columns and not frame[col].isna().all()
+            ]
+            if self.report_type not in ("estimator", "cross-validation"):
+                # For comparison: group by estimator first (and label/output if present)
+                group_cols.insert(0, "estimator")
+
+            def _select_and_sort(group: pd.DataFrame) -> pd.DataFrame:
+                is_cv = "split" in group.columns
+
+                if is_cv:
+                    # For CV: select based on mean absolute values
+                    scores = group.groupby("feature")["coefficients"].apply(
+                        lambda x: x.abs().mean()
+                    )
+                else:
+                    # For non-CV: select based on individual absolute values
+                    scores = group["coefficients"].abs()
+
+                # Select the top/bottom k features based on scores
+                if top_k is not None:
+                    selected_features = scores.nlargest(min(top_k, len(scores))).index
+                    ascending = False  # Sort largest to smallest
+                elif bottom_k is not None:
+                    selected_features = scores.nsmallest(
+                        min(bottom_k, len(scores))
+                    ).index
+                    ascending = True  # Sort smallest to largest
+
+                # Filter the group to keep only selected features
+                if is_cv:
+                    # For CV: filter by feature name
+                    selected = group[group["feature"].isin(selected_features)]
+                    # Sort features by their mean absolute coefficient values
+                    feature_order = (
+                        scores.loc[selected_features]
+                        .sort_values(ascending=ascending)
+                        .index
+                    )
+                    selected = (
+                        selected.set_index("feature").loc[feature_order].reset_index()
+                    )
+                else:
+                    # For non-CV: filter rows directly
+                    selected = group.loc[selected_features]
+                    # Sort by individual absolute coefficient values
+                    selected = selected.sort_values(
+                        by="coefficients",
+                        key=lambda s: s.abs(),
+                        ascending=ascending,
+                    )
+
+                return selected
+
+            # Apply feature selection, grouping if necessary
+            if group_cols:
+                # Group by estimator/label/output and select features independently
+                # per group
+                frame = frame.groupby(
+                    group_cols, group_keys=False, observed=True
+                ).apply(
+                    _select_and_sort,
+                )
+            else:
+                # No grouping: global feature selection
+                frame = _select_and_sort(frame)
+
         if self.report_type in ("estimator", "cross-validation"):
             return self._plot_single_estimator(
-                frame=self.frame(include_intercept=include_intercept),
+                frame=frame,
                 estimator_name=self.coefficients["estimator"][0],
                 report_type=self.report_type,
                 subplot_by=subplot_by,
@@ -220,7 +358,7 @@ class CoefficientsDisplay(DisplayMixin):
             "comparison-cross-validation",
         ):
             return self._plot_comparison(
-                frame=self.frame(include_intercept=include_intercept),
+                frame=frame,
                 report_type=self.report_type,
                 subplot_by=subplot_by,
                 barplot_kwargs=barplot_kwargs,
