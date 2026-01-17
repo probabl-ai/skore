@@ -128,12 +128,43 @@ class PermutationImportanceDisplay(DisplayMixin):
             importances=df_importances[ordered_columns], report_type=report_type
         )
 
+    @staticmethod
+    def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
+        """Get the available columns from which to group by."""
+        columns_to_groupby = list[str]()
+        if "metric" in frame.columns:
+            columns_to_groupby.append("metric")
+        if "label" in frame.columns:
+            columns_to_groupby.append("label")
+        if "output" in frame.columns:
+            columns_to_groupby.append("output")
+        return columns_to_groupby
+
     @DisplayMixin.style_plot
     def plot(
         self,
         *,
-        subplot_by: str | list[str] | None = "auto",
+        subplot_by: str | tuple[str, str] | None = "auto",
     ) -> None:
+        """Plot the permutation importance.
+
+        Parameters
+        ----------
+        subplot_by : str | tuple[str, str] | None, default="auto"
+            Column(s) to use for subplotting. The possible values are:
+
+            - if `"auto"`, depending of the information available, a meaningful decision
+              is made to create subplots.
+            - if a string, the corresponding column of the dataframe is used to create
+              several subplots. Those plots will be a organized in a grid of a single
+              row and several columns.
+            - if a tuple of strings, the corresponding columns of the dataframe are used
+              to create several subplots. Those plots will be a organized in a grid of
+              several rows and columns. The first element of the tuple is the row and
+              the second element is the column.
+            - if `None`, all information is plotted on a single plot. An error is raised
+              if there is too much information to plot on a single plot.
+        """
         return self._plot(subplot_by=subplot_by)
 
     def _plot_matplotlib(
@@ -151,13 +182,55 @@ class PermutationImportanceDisplay(DisplayMixin):
                 [name in frame.columns for name in ["label", "output"]]
             )
             if is_multi_metric and is_multi_target:
-                hue, col = "label" if "label" in frame.columns else "output", "metric"
+                hue, col, row = (
+                    "label" if "label" in frame.columns else "output",
+                    "metric",
+                    None,
+                )
             elif is_multi_metric:
-                hue, col = None, "metric"
+                hue, col, row = None, "metric", None
             elif is_multi_target:
-                hue, col = "label" if "label" in frame.columns else "output", None
+                hue, col, row = (
+                    "label" if "label" in frame.columns else "output",
+                    None,
+                    None,
+                )
             else:
-                hue, col = None, None
+                hue, col, row = None, None, None
+        elif subplot_by is None:
+            {"metric"}, {"label"}, {"output"}
+            columns_to_groupby = self._get_columns_to_groupby(frame=frame)
+            if len(columns_to_groupby) > 1:
+                raise ValueError(
+                    "Cannot plot all the available information available on a single "
+                    "plot. Please set `subplot_by` to a string or a tuple of strings."
+                    "You can use the following values to create subplots: "
+                    f"{", ".join(columns_to_groupby)}"
+                )
+            hue, col, row = columns_to_groupby[0], None, None
+        else:
+            # {"metric"}, {"metric", "label"}, {"metric", "output"}
+            columns_to_groupby = self._get_columns_to_groupby(frame=frame)
+            if isinstance(subplot_by, str):
+                if subplot_by not in columns_to_groupby:
+                    raise ValueError(
+                        f"The column {subplot_by} is not available. You can use the "
+                        "following values to create subplots: "
+                        f"{", ".join(columns_to_groupby)}"
+                    )
+                col, row = subplot_by, None
+                if remaing_column := set(columns_to_groupby) - set([subplot_by]):
+                    hue = list(remaing_column)[0]
+                else:
+                    hue = None
+            else:
+                if not all(item in columns_to_groupby for item in subplot_by):
+                    raise ValueError(
+                        f"The columns {subplot_by} are not available. You can use the "
+                        "following values to create subplots: "
+                        f"{", ".join(columns_to_groupby)}"
+                    )
+                (row, col), hue = subplot_by, None
 
         if hue is None:
             # we don't need the palette and we are at risk of raising an error or
@@ -170,6 +243,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             y="feature",
             hue=hue,
             col=col,
+            row=row,
             kind="strip",
             dodge=True,
             **stripplot_kwargs,
@@ -194,12 +268,28 @@ class PermutationImportanceDisplay(DisplayMixin):
             )
         if len(self.ax_.flatten()) == 1:
             self.ax_ = self.ax_.flatten()[0]
+        data_source = frame["data_source"].unique()[0]
+        self.figure_.suptitle(
+            f"Permutation importance on {data_source} set"
+        )
 
     def frame(
         self,
         *,
-        aggregate: Aggregate | None = "mean",
+        aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
+        """Get the feature importance in a dataframe format.
+
+        Parameters
+        ----------
+        aggregate : Aggregate | None, default=("mean", "std")
+            Aggregate the importances by the given metric.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe containing the importances.
+        """
 
         group_by = ["metric", "feature"]
 
