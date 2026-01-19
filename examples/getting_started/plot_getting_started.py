@@ -34,8 +34,8 @@ Skore: getting started
 
 # %%
 import pandas as pd
-from sklearn.datasets import fetch_openml
 import skore
+from sklearn.datasets import fetch_openml
 from skrub import TableReport
 
 german_credit = fetch_openml(data_id=31, as_frame=True, parser="pandas")
@@ -51,7 +51,7 @@ TableReport(german_credit.frame)
 # cross-validation, while the left-out set will only be used at the end to validate
 # our final model.
 #
-# Unlike scikit-learn's train_test_split, skore's version provides helpful diagnostics
+# Unlike scikit-learn's `train_test_split`, skore's version provides helpful diagnostics
 # about potential issues with your data split, such as class imbalance.
 
 # %%
@@ -61,7 +61,8 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 
 # %%
 # skore tells us we have class-imbalance issues with our data, which we confirm
-# with the TableReport above: there are only 300 examples where the target is "bad".
+# with the `TableReport` above by clicking on the "class" column and looking at the
+# class distribution: there are only 300 examples where the target is "bad".
 
 # %%
 # Model development with cross-validation
@@ -69,24 +70,25 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 #
 # We will investigate two different models using cross-validation:
 #
-# 1. A simple logistic regression model with some preprocessing, powered by
-# :func:`skrub.tabular_pipeline`
-# 2. A more advanced model which includes preprocessing, sklearn's :class:`~sklearn.ensemble.HistGradientBoostingClassifier`
+# 1. A simple linear model with some preprocessing, powered by
+#    :func:`skrub.tabular_pipeline`
+# 2. A more advanced model which includes preprocessing, sklearn's
+#    :class:`~sklearn.ensemble.HistGradientBoostingClassifier`
 #
 # Cross-validation is necessary to get a more reliable estimate of model performance.
 # skore makes it easy through :class:`skore.CrossValidationReport`.
 
 # %%
-# Model no. 1: logistic regression
-# --------------------------------
+# Model no. 1: linear regression with preprocessing
+# -------------------------------------------------
 #
-# Our first model will be a logistic regression model.
+# Our first model will be a linear model.
 
 # %%
 from sklearn.linear_model import LogisticRegression
 from skrub import tabular_pipeline
 
-simple_model = tabular_pipeline(LogisticRegression(random_state=42))
+simple_model = tabular_pipeline(LogisticRegression())
 simple_model
 
 # %%
@@ -95,13 +97,16 @@ simple_model
 # %%
 from skore import CrossValidationReport
 
-# Cross-validate our model with 5 folds (the default)
 simple_cv_report = CrossValidationReport(
-    simple_model, X=X_experiment, y=y_experiment, pos_label="good"
+    simple_model,
+    X=X_experiment,
+    y=y_experiment,
+    pos_label="good",
+    splitter=5,
 )
 
 # %%
-# The :meth:`~skore.CrossValidationReport.help()` method shows all available methods and properties:
+# The :meth:`~skore.CrossValidationReport.help` method shows all available methods and properties:
 
 # %%
 simple_cv_report.help()
@@ -114,7 +119,7 @@ simple_cv_report.data.analyze()
 
 # %%
 # But we can also quickly get an overview of the performance of our model,
-# using :meth:`~skore.CrossValidation.metrics.summarize()`:
+# using :meth:`~skore.CrossValidation.metrics.summarize`:
 
 # %%
 
@@ -130,18 +135,21 @@ precision_recall = simple_cv_report.metrics.precision_recall()
 precision_recall
 
 # %%
-# Note: The output of ``precision_recall()`` is a ``Display`` object. This is a
-# common pattern in skore which allows us to access the information in several
-# ways.
+#
+# .. note::
+#
+#     The output of :meth:`~skore.CrossValidation.precision_recall` is a
+#     :class:`~skore.Display` object. This is a common pattern in skore which allows us
+#     to access the information in several ways.
 
 # %%
-# As a plot:
+# As a plot to visualize the critical information:
 
 # %%
 precision_recall.plot()
 
 # %%
-# Or in a table:
+# Or as a dataframe to access the raw information:
 
 # %%
 precision_recall.frame()
@@ -200,6 +208,9 @@ advanced_cv_report = CrossValidationReport(
 )
 
 # %%
+# We will now compare this new model with the previous one.
+
+# %%
 # Comparing our models
 # ====================
 #
@@ -211,7 +222,7 @@ from skore import ComparisonReport
 
 comparison = ComparisonReport(
     {
-        "Simple Logistic Regression": simple_cv_report,
+        "Simple Linear Model": simple_cv_report,
         "Advanced Pipeline": advanced_cv_report,
     },
 )
@@ -221,7 +232,8 @@ comparison = ComparisonReport(
 comparison.help()
 
 # %%
-# In fact, it has mostly the same API as CrossValidationReport:
+# In fact, it has mostly the same API as `CrossValidationReport` and we have access to
+# the same tools to make statistical analysis and compare both models:
 comparison_metrics = comparison.metrics.summarize(favorability=True)
 comparison_metrics.frame()
 
@@ -229,13 +241,15 @@ comparison_metrics.frame()
 comparison.metrics.precision_recall().plot()
 
 # %%
-# Based on the previous tables and plots, it seems that both models have similar performance. We will deploy the logistic regression because it is more interpretable.
+# Based on the previous tables and plots, it seems that both models have similar
+# performance. For the purposes of this guide, we make the arbitrary choice to deploy
+# the linear model because it is more interpretable.
 
 # %%
 # Final model evaluation on held-out data
 # =======================================
 #
-# Now that we have chosen to deploy the logistic regression model, we will train it on
+# Now that we have chosen to deploy the linear model, we will train it on
 # the full experiment set and evaluate it on our held-out data: training on more data
 # should help performance and we can also validate that our model generalizes well to
 # new data.
@@ -337,7 +351,7 @@ project = skore.Project("german_credit_classification")
 
 # %%
 # Store our reports with descriptive keys
-project.put("simple_logistic_regression_cv", simple_cv_report)
+project.put("simple_linear_model_cv", simple_cv_report)
 project.put("advanced_pipeline_cv", advanced_cv_report)
 project.put("final_model", final_report)
 
