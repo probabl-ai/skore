@@ -603,7 +603,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         Returns
         -------
         self : object
-            Returns the instance itself.
+            The instance with a modified style.
 
         Raises
         ------

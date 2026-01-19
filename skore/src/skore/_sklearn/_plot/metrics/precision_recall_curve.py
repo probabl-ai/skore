@@ -691,7 +691,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         Returns
         -------
         self : object
-            Returns the instance itself.
+            The instance with a modified style.
 
         Raises
         ------
