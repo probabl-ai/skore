@@ -26,10 +26,6 @@ repos:
     hooks:
       - id: ruff-check
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
-        args: [--fix]
-      - id: ruff-check
-        alias: ruff check imports
-        files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
         args: [--fix, --select, I]
       - id: ruff-format
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
