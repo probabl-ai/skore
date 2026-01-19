@@ -47,7 +47,6 @@ Skore: getting started
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-
 from skore import EstimatorReport
 
 X, y = make_classification(

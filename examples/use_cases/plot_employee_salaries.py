@@ -83,9 +83,9 @@ TableReport(y)
 # ^^^^^^^^^
 
 # %%
-from skrub import TableVectorizer, StringEncoder
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
+from skrub import StringEncoder, TableVectorizer
 
 model = make_pipeline(
     TableVectorizer(high_cardinality=StringEncoder()),
@@ -177,10 +177,10 @@ hgbt_split_1.metrics.summarize(indicator_favorability=True).frame()
 # %%
 import numpy as np
 from sklearn.compose import make_column_transformer
+from sklearn.linear_model import RidgeCV
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, SplineTransformer
-from sklearn.linear_model import RidgeCV
-from skrub import DatetimeEncoder, ToDatetime, DropCols, GapEncoder
+from skrub import DatetimeEncoder, DropCols, GapEncoder, ToDatetime
 
 
 def periodic_spline_transformer(period, n_splines=None, degree=3):
