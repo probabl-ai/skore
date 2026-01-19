@@ -74,7 +74,7 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 # 1. A simple linear model coupled with preprocessing powered by
 #    :func:`skrub.tabular_pipeline`
 # 2. A more advanced model, sklearn's
-#    :class:`~sklearn.ensemble.HistGradientBoostingClassifier`,
+#    :class:`~sklearn.ensemble.RandomForestClassifier`,
 #    where preprocessing is handled automatically.
 #
 # Cross-validation is necessary to get a more reliable estimate of model performance.
@@ -199,13 +199,13 @@ coefficients.frame()
 # Model no. 2: gradient boosting
 # ------------------------------
 #
-# Now, we cross-validate a more advanced model using :class:`~sklearn.ensemble.HistGradientBoostingClassifier`.
+# Now, we cross-validate a more advanced model using :class:`~sklearn.ensemble.RandomForestClassifier`.
 # This model automatically handles preprocessing for different column types.
 
 # %%
-from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
 
-advanced_model = HistGradientBoostingClassifier()
+advanced_model = tabular_pipeline(RandomForestClassifier())
 advanced_model
 
 # %%
@@ -247,8 +247,8 @@ comparison_metrics.frame()
 comparison.metrics.precision_recall().plot()
 
 # %%
-# Based on the previous tables and plots, it seems that both models have similar
-# performance. For the purposes of this guide, we make the arbitrary choice to deploy
+# Based on the previous tables and plots, it seems that the `RandomForest` model has slightly better
+# performance. For the purposes of this guide however, we make the arbitrary choice to deploy
 # the linear model because it is more interpretable.
 
 # %%
