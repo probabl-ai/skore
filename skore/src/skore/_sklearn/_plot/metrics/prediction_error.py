@@ -276,6 +276,9 @@ class PredictionErrorDisplay(DisplayMixin):
                     ax, x_range=ax.get_xlim(), y_range=ax.get_ylim()
                 )
 
+        # Add the perfect model line to the legend
+        # We retrieve the legend elements created by seaborn, add the perfect model line
+        # and create a new legend manually.
         handles = []
         labels = []
         if facet_grid._legend is not None:
@@ -583,7 +586,7 @@ class PredictionErrorDisplay(DisplayMixin):
         Returns
         -------
         self : object
-            Returns the instance itself.
+            The instance with a modified style.
 
         Raises
         ------
