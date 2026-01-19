@@ -1,7 +1,6 @@
 from collections.abc import Callable
 from typing import Any, Literal
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -12,6 +11,7 @@ from sklearn.inspection import permutation_importance
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
 from skore._sklearn._plot.feature_importance.utils import _decorate_matplotlib_axis
 from skore._sklearn.types import Aggregate, DataSource, ReportType
+from skore._utils._index import flatten_multi_index
 
 
 class PermutationImportanceDisplay(DisplayMixin):
@@ -22,6 +22,7 @@ class PermutationImportanceDisplay(DisplayMixin):
     importances : pd.DataFrame
         The importances computed after permuting the input features. The columns are:
 
+        - `estimator`
         - `data_source`
         - `metric`
         - `feature`
@@ -49,6 +50,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         *,
         data_source: DataSource,
         estimator: BaseEstimator,
+        estimator_name: str,
         X: ArrayLike,
         y: ArrayLike,
         feature_names: list[str],
@@ -112,6 +114,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             df_importances.append(df_metric_importances)
 
         ordered_columns = [
+            "estimator",
             "data_source",
             "metric",
             "feature",
@@ -122,6 +125,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         ]
         df_importances = pd.concat(df_importances, axis="index")
         df_importances["data_source"] = data_source
+        df_importances["estimator"] = estimator_name
 
         return PermutationImportanceDisplay(
             importances=df_importances[ordered_columns], report_type=report_type
@@ -171,15 +175,32 @@ class PermutationImportanceDisplay(DisplayMixin):
         *,
         subplot_by: str | list[str] | None = "auto",
     ) -> None:
+        """Dispatch the plotting function for matplotlib backend."""
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
         frame = self.frame(aggregate=None)
 
+        self._plot_single_estimator(
+            subplot_by=subplot_by,
+            frame=frame,
+            estimator_name=self.importances["estimator"].unique()[0],
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
+        )
+
+    def _plot_single_estimator(
+        self,
+        *,
+        subplot_by: str | list[str] | None,
+        frame: pd.DataFrame,
+        estimator_name: str,
+        boxplot_kwargs: dict[str, Any],
+        stripplot_kwargs: dict[str, Any],
+    ) -> None:
+        """Plot the permutation importance for an `EstimatorReport`."""
         if subplot_by == "auto":
             is_multi_metric = frame["metric"].nunique() > 1
-            is_multi_target = any(
-                [name in frame.columns for name in ["label", "output"]]
-            )
+            is_multi_target = any(name in frame.columns for name in ["label", "output"])
             if is_multi_metric and is_multi_target:
                 hue, col, row = (
                     "label" if "label" in frame.columns else "output",
@@ -197,18 +218,18 @@ class PermutationImportanceDisplay(DisplayMixin):
             else:
                 hue, col, row = None, None, None
         elif subplot_by is None:
-            # Posssible accepted values: {"metric"}, {"label"}, {"output"}
+            # Possible accepted values: {"metric"}, {"label"}, {"output"}
             columns_to_groupby = self._get_columns_to_groupby(frame=frame)
             if len(columns_to_groupby) > 1:
                 raise ValueError(
                     "Cannot plot all the available information available on a single "
                     "plot. Please set `subplot_by` to a string or a tuple of strings."
                     "You can use the following values to create subplots: "
-                    f"{", ".join(columns_to_groupby)}"
+                    f"{', '.join(columns_to_groupby)}"
                 )
             hue, col, row = columns_to_groupby[0], None, None
         else:
-            # Posssible accepted values: {"metric"}, {"metric", "label"},
+            # Possible accepted values: {"metric"}, {"metric", "label"},
             # {"metric", "output"}
             columns_to_groupby = self._get_columns_to_groupby(frame=frame)
             if isinstance(subplot_by, str):
@@ -216,11 +237,11 @@ class PermutationImportanceDisplay(DisplayMixin):
                     raise ValueError(
                         f"The column {subplot_by} is not available. You can use the "
                         "following values to create subplots: "
-                        f"{", ".join(columns_to_groupby)}"
+                        f"{', '.join(columns_to_groupby)}"
                     )
                 col, row = subplot_by, None
-                if remaing_column := set(columns_to_groupby) - set([subplot_by]):
-                    hue = list(remaing_column)[0]
+                if remaining_column := set(columns_to_groupby) - {subplot_by}:
+                    hue = next(iter(remaining_column))
                 else:
                     hue = None
             else:
@@ -228,7 +249,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                     raise ValueError(
                         f"The columns {subplot_by} are not available. You can use the "
                         "following values to create subplots: "
-                        f"{", ".join(columns_to_groupby)}"
+                        f"{', '.join(columns_to_groupby)}"
                     )
                 (row, col), hue = subplot_by, None
 
@@ -270,7 +291,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             self.ax_ = self.ax_.flatten()[0]
         data_source = frame["data_source"].unique()[0]
         self.figure_.suptitle(
-            f"Permutation importance on {data_source} set"
+            f"Permutation importance of {estimator_name} on {data_source} set"
         )
 
     def frame(
@@ -290,12 +311,12 @@ class PermutationImportanceDisplay(DisplayMixin):
         pd.DataFrame
             Dataframe containing the importances.
         """
-        if self.report_type != "estimator":
+        if self.report_type == "estimator":
+            columns_to_drop = ["estimator"]
+            group_by = ["data_source", "metric", "feature"]
+        else:
             raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
-        group_by = ["metric", "feature"]
-
-        columns_to_drop = []
         if self.importances["label"].isna().all():
             # regression problem or averaged classification metric
             columns_to_drop.append("label")
@@ -310,11 +331,12 @@ class PermutationImportanceDisplay(DisplayMixin):
         frame = self.importances.drop(columns=columns_to_drop)
 
         if aggregate is not None:
-            return (
+            frame = (
                 frame.drop(columns=["repetition"])
-                .groupby(group_by)
+                .groupby(group_by, sort=False)  # avoid sorting the features by name
                 .aggregate(aggregate)
             ).reset_index()
+            frame.columns = flatten_multi_index(frame.columns)
         return frame
 
     # ignore the type signature because we override kwargs by specifying the name of
@@ -338,13 +360,11 @@ class PermutationImportanceDisplay(DisplayMixin):
 
         boxplot_kwargs : dict, default=None
             Keyword arguments to be passed to :func:`seaborn.boxplot` for
-            rendering the coefficients with a :class:`~skore.CrossValidationReport` or
-            :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
+            rendering the importances with a :class:`~skore.EstimatorReport`.
 
         stripplot_kwargs : dict, default=None
             Keyword arguments to be passed to :func:`seaborn.stripplot` for
-            rendering the coefficients with a :class:`~skore.CrossValidationReport` or
-            :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
+            rendering the importances with a :class:`~skore.EstimatorReport`.
 
         Returns
         -------

@@ -19,8 +19,8 @@ from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDis
 from skore._sklearn._plot.feature_importance.permutation import (
     PermutationImportanceDisplay,
 )
-from skore._sklearn.types import DataSource
 from skore._sklearn.feature_names import _get_feature_names
+from skore._sklearn.types import DataSource
 from skore._utils._accessor import (
     _check_estimator_has_coef,
     _check_has_feature_importances,
@@ -413,6 +413,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             display = PermutationImportanceDisplay._compute_data_for_display(
                 data_source=data_source,
                 estimator=estimator,
+                estimator_name=self._parent.estimator_name_,
                 X=X_transformed,
                 y=y_true,
                 feature_names=feature_names,

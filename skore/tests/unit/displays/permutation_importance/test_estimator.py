@@ -1,0 +1,150 @@
+import matplotlib as mpl
+import numpy as np
+import pytest
+from sklearn.base import clone
+from sklearn.metrics import make_scorer, precision_score, recall_score
+from sklearn.utils._testing import _convert_container
+
+from skore import EstimatorReport, PermutationImportanceDisplay
+
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_binary_classification_averaged_metrics(
+    pyplot,
+    logistic_binary_classification_with_train_test,
+    data_source,
+):
+    """Check the attributes and default plotting behaviour of the permutation
+    importance plot with binary classification data and averaged metrics returning
+    a single value."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    estimator = clone(estimator)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    n_repeats = 2
+    display = report.feature_importance.permutation(
+        n_repeats=n_repeats, data_source=data_source
+    )
+    assert isinstance(display, PermutationImportanceDisplay)
+
+    expected_columns = [
+        "estimator",
+        "data_source",
+        "metric",
+        "feature",
+        "label",
+        "output",
+        "repetition",
+        "value",
+    ]
+    df = display.importances
+    assert sorted(df.columns.tolist()) == sorted(expected_columns)
+    for col in ("label", "output"):
+        assert df[col].isna().all()
+    assert df["data_source"].unique() == [data_source]
+    assert df["metric"].unique() == ["accuracy"]
+    assert df["estimator"].unique() == [report.estimator_name_]
+    assert df["feature"].tolist() == columns_names * n_repeats
+
+    df = display.frame()
+    expected_columns = ["data_source", "metric", "feature", "value_mean", "value_std"]
+    assert sorted(df.columns.tolist()) == sorted(expected_columns)
+
+    display.plot()
+    assert hasattr(display, "figure_")
+    assert hasattr(display, "ax_")
+    assert isinstance(display.ax_, mpl.axes.Axes)
+
+    assert display.ax_.get_xlabel() == "Decrease of score"
+    assert display.ax_.get_ylabel() == ""
+    estimator_name = display.importances["estimator"].unique()[0]
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {estimator_name} on {data_source} set"
+    )
+
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_binary_classification_per_label_metrics(
+    pyplot,
+    logistic_binary_classification_with_train_test,
+    data_source,
+):
+    """Check the attributes and default plotting behaviour of the permutation
+    importance plot with binary classification data and per-label metrics returning
+    a value for each label."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    estimator = clone(estimator)
+    metric = {
+        "precision": make_scorer(precision_score, average=None),
+        "recall": make_scorer(recall_score, average=None),
+    }
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    n_repeats = 2
+    display = report.feature_importance.permutation(
+        n_repeats=n_repeats, data_source=data_source, metric=metric
+    )
+    assert isinstance(display, PermutationImportanceDisplay)
+
+    expected_columns = [
+        "estimator",
+        "data_source",
+        "metric",
+        "feature",
+        "label",
+        "output",
+        "repetition",
+        "value",
+    ]
+    df = display.importances
+    assert sorted(df.columns.tolist()) == sorted(expected_columns)
+    np.testing.assert_array_equal(df["label"].unique(), report.estimator_.classes_)
+    assert df["output"].isna().all()
+    assert df["data_source"].unique() == [data_source]
+    assert df["metric"].unique().tolist() == ["precision", "recall"]
+    assert df["estimator"].unique() == [report.estimator_name_]
+    assert df["feature"].tolist() == columns_names * n_repeats * len(
+        report.estimator_.classes_
+    ) * len(metric)
+
+    df = display.frame()
+    expected_columns = [
+        "data_source",
+        "metric",
+        "feature",
+        "label",
+        "value_mean",
+        "value_std",
+    ]
+    assert sorted(df.columns.tolist()) == sorted(expected_columns)
+
+    display.plot()
+    assert hasattr(display, "figure_")
+    assert hasattr(display, "ax_")
+    assert isinstance(display.ax_, np.ndarray)
+    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
+        assert isinstance(ax, mpl.axes.Axes)
+
+        assert ax.get_xlabel() == "Decrease of score"
+        assert ax.get_ylabel() == ""
+        assert ax.get_title() == f"metric = {metric_name}"
+    estimator_name = display.importances["estimator"].unique()[0]
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {estimator_name} on {data_source} set"
+    )
