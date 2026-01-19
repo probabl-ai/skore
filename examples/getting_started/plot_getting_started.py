@@ -403,5 +403,5 @@ temp_dir.cleanup()
 #   * Organized experiment tracking
 #   * Seamless integration with scikit-learn
 #
-#   Feel free to join our community on `Discord <http://discord.probabl.ai>`_
+#   Feel free to join our community on `Discord <https://discord.probabl.ai>`_
 #   or `create an issue <https://github.com/probabl-ai/skore/issues>`_.
