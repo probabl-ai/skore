@@ -82,7 +82,9 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 # Model no. 1: linear regression with preprocessing
 # -------------------------------------------------
 #
-# Our first model will be a linear model.
+# Our first model will be a linear model, with automatic preprocessing of non-numeric
+# data. Under the hood, skrub's :class:`~skrub.TableVectorizer` will adapt the
+# preprocessing based on our choice to use a linear model.
 
 # %%
 from sklearn.linear_model import LogisticRegression
@@ -135,7 +137,6 @@ precision_recall = simple_cv_report.metrics.precision_recall()
 precision_recall
 
 # %%
-#
 # .. note::
 #
 #     The output of :meth:`~skore.CrossValidation.precision_recall` is a
@@ -357,23 +358,23 @@ project.put("final_model", final_report)
 
 # %%
 # Now we can retrieve a summary of our stored reports
-from pprint import pprint
-
-summary = project.summarize()
-pprint(summary.reports())
 
 # %%
-# The :class:`~skore.project.summary.Summary` object provides an interactive widget in Jupyter notebooks
-# that allows us to explore and filter your reports visually.
+summary = project.summarize()
+
+# %%
+# .. note::
+#     Calling `summary` in a Jupyter notebook cell will show the following parallel
+#     coordinate plot to help you select models that you want to retrieve:
 #
-# Each line represents a model, and we can select models by clicking on lines
-# or dragging on metric axes to filter by performance.
+#     .. image:: /_static/images/screenshot_getting_started.png
+#       :alt: Screenshot of the widget in a Jupyter notebook
 #
-# In the following screenshot, we selected only the cross-validation reports;
-# we will see that this allows us to retrieve exactly those reports.
+#     Each line represents a model, and we can select models by clicking on lines
+#     or dragging on metric axes to filter by performance.
 #
-# .. image:: /_static/images/screenshot_getting_started.png
-#   :alt: Screenshot of the widget in a Jupyter notebook
+#     In the screenshot, we selected only the cross-validation reports;
+#     this allows us to retrieve exactly those reports programmatically.
 
 # %%
 
@@ -384,7 +385,7 @@ summary = summary.query('report_type == "cross-validation"')
 
 # Supposing you selected "Cross-validation" in the "Report type" tab,
 # if you now call `reports()`, you get only the CrossValidationReports
-pprint(summary.reports())
+summary.reports(return_as="comparison")
 
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
