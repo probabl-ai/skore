@@ -278,7 +278,7 @@ pd.concat(
 # %%
 # Our final sanity check is to compare the features considered most impactful
 # between our final model and the cross-validation
- 
+
 # %%
 final_coefficients = final_report.feature_importance.coefficients()
 final_top_15_features = (
@@ -306,7 +306,7 @@ pd.concat(
 
 # %%
 # They seem very similar, so we are done!
- 
+
 # %%
 # Tracking our work with a skore Project
 # ======================================
@@ -365,14 +365,7 @@ pprint(summary.reports())
 
 # sphinx_gallery_start_ignore
 # Pretend that the cross-validation reports were selected in the widget
-import contextlib
-import io
-
-# XXX: Suppress the Jupyter widget output
-with contextlib.redirect_stdout(io.StringIO()):
-    summary._repr_mimebundle_()
-summary._plot_widget._report_type_dropdown.value = "cross-validation"
-summary._plot_widget._on_report_type_change({"new": "cross-validation"})
+summary = summary.query('report_type == "cross-validation"')
 # sphinx_gallery_end_ignore
 
 # Supposing you selected "Cross-validation" in the "Report type" tab,
