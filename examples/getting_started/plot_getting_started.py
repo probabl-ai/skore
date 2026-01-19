@@ -149,13 +149,13 @@ precision_recall
 #     to access the information in several ways.
 
 # %%
-# As a plot to visualize the critical information:
+# We can visualize the critical information as a plot:
 
 # %%
 precision_recall.plot()
 
 # %%
-# Or as a dataframe to access the raw information:
+# Or we can access the raw information as a dataframe:
 
 # %%
 precision_recall.frame()
@@ -343,6 +343,9 @@ pd.concat(
 # in the interest of simplicity we kept this until the end.
 
 # %%
+# We load or create a local project
+
+# %%
 
 # sphinx_gallery_start_ignore
 import os
@@ -352,10 +355,6 @@ temp_dir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 os.environ["SKORE_WORKSPACE"] = temp_dir.name
 # sphinx_gallery_end_ignore
 
-# %%
-# We load or create a local project
-
-# %%
 project = skore.Project("german_credit_classification")
 
 # %%
@@ -387,17 +386,16 @@ summary = project.summarize()
 #     this allows us to retrieve exactly those reports programmatically.
 
 # %%
+# Supposing you selected "Cross-validation" in the "Report type" tab,
+# if you now call `reports()`, you get only the `CrossValidationReport`s
+
+# %%
 
 # sphinx_gallery_start_ignore
 # Pretend that the cross-validation reports were selected in the widget
 summary = summary.query('report_type == "cross-validation"')
 # sphinx_gallery_end_ignore
 
-# %%
-# Supposing you selected "Cross-validation" in the "Report type" tab,
-# if you now call `reports()`, you get only the CrossValidationReports
-
-# %%
 print(summary.reports(return_as="comparison"))
 
 # sphinx_gallery_start_ignore
