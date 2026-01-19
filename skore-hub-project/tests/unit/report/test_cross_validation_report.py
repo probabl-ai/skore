@@ -338,6 +338,11 @@ class TestCrossValidationReportPayload:
             PredictTimeTrainStd,
         ]
 
+    @mark.filterwarnings(
+        # ignore precision warning due to the low number of labels in
+        # `small_cv_binary_classification`, raised by `scikit-learn`
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
     def test_metrics_raises_exception(self, monkeypatch, payload):
         """
         Since metrics compute is multi-threaded, ensure that any exceptions thrown in a
