@@ -63,6 +63,7 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 # skore tells us we have class-imbalance issues with our data, which we confirm
 # with the `TableReport` above by clicking on the "class" column and looking at the
 # class distribution: there are only 300 examples where the target is "bad".
+# The second warning concerns time-ordered data, but our data does not contain time-ordered columns so we can safely ignore it.
 
 # %%
 # Model development with cross-validation
@@ -70,10 +71,11 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 #
 # We will investigate two different models using cross-validation:
 #
-# 1. A simple linear model with some preprocessing, powered by
+# 1. A simple linear model coupled with preprocessing powered by
 #    :func:`skrub.tabular_pipeline`
-# 2. A more advanced model which includes preprocessing, sklearn's
-#    :class:`~sklearn.ensemble.HistGradientBoostingClassifier`
+# 2. A more advanced model, sklearn's
+#    :class:`~sklearn.ensemble.HistGradientBoostingClassifier`,
+#    where preprocessing is handled automatically.
 #
 # Cross-validation is necessary to get a more reliable estimate of model performance.
 # skore makes it easy through :class:`skore.CrossValidationReport`.
@@ -124,10 +126,13 @@ simple_cv_report.data.analyze()
 # using :meth:`~skore.CrossValidation.metrics.summarize`:
 
 # %%
-
-# `indicator_favorability=True` highlights whether higher or lower values are better
 simple_metrics = simple_cv_report.metrics.summarize(indicator_favorability=True)
 simple_metrics.frame()
+
+# %%
+# .. note::
+#
+#     `indicator_favorability=True` adds a "Favorability" column showing whether higher or lower values are better.
 
 # %%
 # More complex metrics are available, such as the precision-recall curve:
@@ -327,7 +332,7 @@ pd.concat(
 # ======================================
 #
 # Now that we have completed our modeling workflow, we should store our models in a
-# safe place for future work; for example, if this research notebook were modified
+# safe place for future work. Indeed, if this research notebook were modified,
 # we would no longer be able to relate the current production model to the code that
 # generated it.
 #
@@ -347,11 +352,16 @@ temp_dir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 os.environ["SKORE_WORKSPACE"] = temp_dir.name
 # sphinx_gallery_end_ignore
 
-# Load or create a local project
+# %%
+# We load or create a local project
+
+# %%
 project = skore.Project("german_credit_classification")
 
 # %%
-# Store our reports with descriptive keys
+# We store our reports with descriptive keys
+
+# %%
 project.put("simple_linear_model_cv", simple_cv_report)
 project.put("advanced_pipeline_cv", advanced_cv_report)
 project.put("final_model", final_report)
@@ -383,9 +393,12 @@ summary = project.summarize()
 summary = summary.query('report_type == "cross-validation"')
 # sphinx_gallery_end_ignore
 
+# %%
 # Supposing you selected "Cross-validation" in the "Report type" tab,
 # if you now call `reports()`, you get only the CrossValidationReports
-summary.reports(return_as="comparison")
+
+# %%
+print(summary.reports(return_as="comparison"))
 
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
@@ -398,6 +411,7 @@ temp_dir.cleanup()
 #   to make it the best tool for end-to-end data science.
 #
 #   Key benefits of using skore in your ML workflow:
+#
 #   * Standardized evaluation and comparison of models
 #   * Rich visualizations and diagnostics
 #   * Organized experiment tracking
