@@ -1,11 +1,13 @@
+import re
+
 import matplotlib as mpl
 import numpy as np
 import pytest
+import seaborn as sns
 from sklearn.base import clone
 
 from skore import ComparisonReport, EstimatorReport
 from skore._sklearn._plot import RocCurveDisplay
-from skore._sklearn._plot.utils import sample_mpl_colormap
 from skore._utils._testing import check_frame_structure, check_legend_position
 from skore._utils._testing import check_roc_curve_display_data as check_display_data
 
@@ -38,41 +40,36 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
     display = report.metrics.roc()
     assert isinstance(display, RocCurveDisplay)
     check_display_data(display)
-
-    assert (
-        list(display.roc_curve["label"].unique())
-        == list(display.roc_auc["label"].unique())
-        == [estimator.classes_[1]]
-        == [display.pos_label]
-    )
+    n_reports = len(report.reports_)
 
     display.plot()
-    expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for idx, (estimator_name, line) in enumerate(
-        zip(report.reports_.keys(), display.lines_, strict=False)
-    ):
+    assert len(display.ax_) == n_reports
+
+    expected_colors = sns.color_palette()[:1]
+    for idx, estimator_name in enumerate(report.reports_):
+        ax = display.ax_[idx]
+        assert isinstance(ax, mpl.axes.Axes)
+        legend = ax.get_legend()
+        assert legend is not None
+        legend_texts = [text.get_text() for text in legend.get_texts()]
+
+        plot_data = display.frame(with_roc_auc=True)
+        roc_auc = plot_data.query(f"estimator == '{estimator_name}'")["roc_auc"].iloc[0]
+        assert legend_texts[0] == f"AUC={roc_auc:.2f}"
+
+        line = display.lines_[idx]
         assert isinstance(line, mpl.lines.Line2D)
-        roc_auc_class = display.roc_auc.query(
-            f"label == {display.pos_label} & estimator_name == '{estimator_name}'"
-        )["roc_auc"].item()
-        assert line.get_label() == (f"{estimator_name} (AUC = {roc_auc_class:0.2f})")
-        assert mpl.colors.to_rgba(line.get_color()) == expected_colors[idx]
+        assert line.get_color() == expected_colors[0]
 
-    assert isinstance(display.chance_level_, mpl.lines.Line2D)
-    assert display.chance_level_.get_label() == "Chance level (AUC = 0.5)"
-    assert display.chance_level_.get_color() == "k"
-
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Test set"
-    assert len(legend.get_texts()) == 2 + 1
-
-    assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
-    assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
-    assert display.ax_.get_adjustable() == "box"
-    assert display.ax_.get_aspect() in ("equal", 1.0)
-    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
-    assert display.ax_.get_title() == "ROC Curve"
+        assert len(legend_texts) == 1
+        assert ax.get_xlabel() == "False Positive Rate"
+        assert ax.get_ylabel() in ("True Positive Rate", "")
+        assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
+    assert (
+        display.figure_.get_suptitle() == f"ROC Curve"
+        f"\nPositive label: {display.pos_label}"
+        f"\nData source: Test set"
+    )
 
 
 def test_multiclass_classification(
@@ -103,84 +100,40 @@ def test_multiclass_classification(
         }
     )
     display = report.metrics.roc()
-
     assert isinstance(display, RocCurveDisplay)
     check_display_data(display)
+
     class_labels = next(iter(report.reports_.values())).estimator_.classes_
-    assert (
-        list(display.roc_curve["label"].unique())
-        == list(display.roc_auc["label"].unique())
-        == list(class_labels)
-    )
+    n_reports = len(report.reports_)
 
     display.plot()
     assert isinstance(display.lines_, list)
-    assert len(display.lines_) == len(class_labels) * 2
-    default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-    for idx, (estimator_name, expected_color) in enumerate(
-        zip(report.reports_.keys(), default_colors, strict=False)
-    ):
+    assert len(display.lines_) == len(class_labels) * n_reports + n_reports
+    expected_colors = sns.color_palette()[: len(class_labels)]
+    assert len(display.ax_) == n_reports
+
+    for idx, estimator_name in enumerate(report.reports_):
+        ax = display.ax_[idx]
+        assert isinstance(ax, mpl.axes.Axes)
+        legend = ax.get_legend()
+        assert legend is not None
+        legend_texts = [text.get_text() for text in legend.get_texts()]
+
         for class_label_idx, class_label in enumerate(class_labels):
-            roc_curve_mpl = display.lines_[idx * len(class_labels) + class_label_idx]
-            assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
-            roc_auc_class = display.roc_auc.query(
-                f"label == {class_label} & estimator_name == '{estimator_name}'"
-            )["roc_auc"].item()
-            assert roc_curve_mpl.get_label() == (
-                f"{estimator_name} - {str(class_label).title()} "
-                f"(AUC = {roc_auc_class:0.2f})"
-            )
-            assert roc_curve_mpl.get_color() == expected_color
+            plot_data = display.frame(with_roc_auc=True)
+            roc_auc = plot_data.query(
+                f"label == {class_label} & estimator == '{estimator_name}'"
+            )["roc_auc"].iloc[0]
+            assert legend_texts[class_label_idx] == f"{class_label} (AUC={roc_auc:.2f})"
+            line = ax.get_lines()[class_label_idx]
+            assert line.get_color() == expected_colors[class_label_idx]
 
-    assert isinstance(display.chance_level_, mpl.lines.Line2D)
-    assert display.chance_level_.get_label() == "Chance level (AUC = 0.5)"
-    assert display.chance_level_.get_color() == "k"
+        assert len(legend_texts) == len(class_labels)
+        assert ax.get_xlabel() == "False Positive Rate"
+        assert ax.get_ylabel() in ("True Positive Rate", "")
+        assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
 
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "Test set"
-    assert len(legend.get_texts()) == 6 + 1
-
-    assert display.ax_.get_xlabel() == "False Positive Rate"
-    assert display.ax_.get_ylabel() == "True Positive Rate"
-    assert display.ax_.get_adjustable() == "box"
-    assert display.ax_.get_aspect() in ("equal", 1.0)
-    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
-    assert display.ax_.get_title() == "ROC Curve"
-
-
-def test_binary_classification_kwargs(
-    pyplot, logistic_binary_classification_with_train_test
-):
-    """Check that we can pass keyword arguments to the ROC curve plot for
-    cross-validation."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
-    report = ComparisonReport(
-        reports={
-            "estimator_1": EstimatorReport(
-                estimator,
-                X_train=X_train,
-                y_train=y_train,
-                X_test=X_test,
-                y_test=y_test,
-            ),
-            "estimator_2": EstimatorReport(
-                estimator_2,
-                X_train=X_train,
-                y_train=y_train,
-                X_test=X_test,
-                y_test=y_test,
-            ),
-        }
-    )
-    display = report.metrics.roc()
-    roc_curve_kwargs = [{"color": "red"}, {"color": "blue"}]
-    display.plot(roc_curve_kwargs=roc_curve_kwargs)
-    assert display.lines_[0].get_color() == "red"
-    assert display.lines_[1].get_color() == "blue"
+    assert display.figure_.get_suptitle() == "ROC Curve\nData source: Test set"
 
 
 @pytest.mark.parametrize(
@@ -190,12 +143,9 @@ def test_binary_classification_kwargs(
         "logistic_multiclass_classification_with_train_test",
     ],
 )
-@pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}], "unknown"])
-def test_multiple_roc_curve_kwargs_error(
-    pyplot, fixture_name, request, roc_curve_kwargs
-):
+def test_wrong_kwargs(pyplot, fixture_name, request):
     """Check that we raise a proper error message when passing an inappropriate
-    value for the `roc_curve_kwargs` argument."""
+    value for the `relplot_kwargs` argument."""
     estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
 
     report = ComparisonReport(
@@ -217,9 +167,73 @@ def test_multiple_roc_curve_kwargs_error(
         }
     )
     display = report.metrics.roc()
-    err_msg = "You intend to plot multiple curves"
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(roc_curve_kwargs=roc_curve_kwargs)
+    err_msg = "Line2D.set() got an unexpected keyword argument 'invalid'"
+    with pytest.raises(AttributeError, match=re.escape(err_msg)):
+        display.set_style(relplot_kwargs={"invalid": "value"}).plot()
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "logistic_binary_classification_with_train_test",
+        "logistic_multiclass_classification_with_train_test",
+    ],
+)
+def test_relplot_kwargs(pyplot, fixture_name, request):
+    """Check that we can pass keyword arguments to the ROC curve plot."""
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+    multiclass = "multiclass" in fixture_name
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.roc()
+    n_reports = len(report.reports_)
+    n_labels = len(display.roc_curve["label"].cat.categories) if multiclass else 1
+
+    display.plot()
+    n_roc_lines = n_reports * n_labels
+    default_colors = [line.get_color() for line in display.lines_[:n_roc_lines]]
+    if multiclass:
+        palette_colors = sns.color_palette()[:n_labels]
+        expected_default = palette_colors * n_reports
+    else:
+        expected_default = [sns.color_palette()[0]] * n_reports
+    assert default_colors == expected_default
+
+    if multiclass:
+        palette_colors = ["red", "blue", "green"]
+        display.set_style(relplot_kwargs={"palette": palette_colors}).plot()
+        expected_colors = palette_colors * n_reports
+        for line, expected_color, default_color in zip(
+            display.lines_[:n_roc_lines], expected_colors, default_colors, strict=True
+        ):
+            assert line.get_color() == expected_color
+            assert mpl.colors.to_rgb(line.get_color()) != default_color
+
+    else:
+        display.set_style(relplot_kwargs={"color": "red"}).plot()
+        expected_colors = ["red"] * n_reports
+        for line, expected_color, default_color in zip(
+            display.lines_[:n_roc_lines], expected_colors, default_colors, strict=True
+        ):
+            assert line.get_color() == expected_color
+            assert mpl.colors.to_rgb(line.get_color()) != default_color
 
 
 @pytest.mark.parametrize("with_roc_auc", [False, True])
@@ -252,16 +266,16 @@ def test_frame_binary_classification(
     display = report.metrics.roc()
     df = display.frame(with_roc_auc=with_roc_auc)
 
-    expected_index = ["estimator_name"]
+    expected_index = ["estimator"]
     expected_columns = ["threshold", "fpr", "tpr"]
     if with_roc_auc:
         expected_columns.append("roc_auc")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["estimator_name"].nunique() == 2
+    assert df["estimator"].nunique() == 2
 
     if with_roc_auc:
-        for (_), group in df.groupby(["estimator_name"], observed=True):
+        for (_), group in df.groupby(["estimator"], observed=True):
             assert group["roc_auc"].nunique() == 1
 
 
@@ -295,17 +309,17 @@ def test_frame_multiclass_classification(
     display = report.metrics.roc()
     df = display.frame(with_roc_auc=with_roc_auc)
 
-    expected_index = ["estimator_name", "label"]
+    expected_index = ["estimator", "label"]
     expected_columns = ["threshold", "fpr", "tpr"]
     if with_roc_auc:
         expected_columns.append("roc_auc")
 
     check_frame_structure(df, expected_index, expected_columns)
-    assert df["estimator_name"].nunique() == 2
+    assert df["estimator"].nunique() == 2
     assert df["label"].nunique() == len(estimator.classes_)
 
     if with_roc_auc:
-        for (_, _), group in df.groupby(["estimator_name", "label"], observed=True):
+        for (_, _), group in df.groupby(["estimator", "label"], observed=True):
             assert group["roc_auc"].nunique() == 1
 
 
@@ -315,8 +329,6 @@ def test_legend(
     logistic_multiclass_classification_with_train_test,
 ):
     """Check the rendering of the legend for ROC curves with a `ComparisonReport`."""
-
-    # binary classification
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -331,9 +343,8 @@ def test_legend(
     )
     display = report.metrics.roc()
     display.plot()
-    check_legend_position(display.ax_, loc="lower right", position="inside")
+    check_legend_position(display.ax_[0], loc="upper center", position="inside")
 
-    # multiclass classification <= 5 classes
     estimator, X_train, X_test, y_train, y_test = (
         logistic_multiclass_classification_with_train_test
     )
@@ -348,7 +359,7 @@ def test_legend(
     )
     display = report.metrics.roc()
     display.plot()
-    check_legend_position(display.ax_, loc="upper left", position="outside")
+    check_legend_position(display.ax_[0], loc="upper center", position="inside")
 
 
 def test_binary_classification_constructor(
@@ -369,10 +380,10 @@ def test_binary_classification_constructor(
     )
     display = report.metrics.roc()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     for df in [display.roc_curve, display.roc_auc]:
         assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
+        assert df["estimator"].unique().tolist() == list(report.reports_.keys())
         assert df["split"].isnull().all()
         assert df["label"].unique() == 1
 
@@ -397,11 +408,79 @@ def test_multiclass_classification_constructor(
     )
     display = report.metrics.roc()
 
-    index_columns = ["estimator_name", "split", "label"]
+    index_columns = ["estimator", "split", "label"]
     for df in [display.roc_curve, display.roc_auc]:
         assert all(col in df.columns for col in index_columns)
-        assert df["estimator_name"].unique().tolist() == list(report.reports_.keys())
+        assert df["estimator"].unique().tolist() == list(report.reports_.keys())
         assert df["split"].isnull().all()
         np.testing.assert_array_equal(df["label"].unique(), np.unique(y_train))
 
     assert len(display.roc_auc) == len(np.unique(y_train)) * 2
+
+
+@pytest.mark.parametrize(
+    "fixture_name, valid_values",
+    [
+        (
+            "logistic_binary_classification_with_train_test",
+            ["None", "auto", "estimator"],
+        ),
+        (
+            "logistic_multiclass_classification_with_train_test",
+            ["auto", "estimator", "label"],
+        ),
+    ],
+)
+def test_invalid_subplot_by(fixture_name, valid_values, request):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `subplot_by` argument.
+    """
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.roc()
+    valid_values_str = ", ".join(valid_values)
+    err_msg = f"subplot_by must be one of {valid_values_str}. Got 'invalid' instead."
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="invalid")
+
+
+@pytest.mark.parametrize(
+    "fixture_name, subplot_by_tuples",
+    [
+        (
+            "logistic_binary_classification_with_train_test",
+            [(None, 0), ("estimator", 2)],
+        ),
+        (
+            "logistic_multiclass_classification_with_train_test",
+            [("label", 3), ("estimator", 2)],
+        ),
+    ],
+)
+def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
+    """Check that we can pass non default values to `subplot_by`."""
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+    display = report.metrics.roc()
+    for subplot_by, expected_len in subplot_by_tuples:
+        display.plot(subplot_by=subplot_by)
+        if subplot_by is None:
+            assert isinstance(display.ax_, mpl.axes.Axes)
+        else:
+            assert len(display.ax_) == expected_len
