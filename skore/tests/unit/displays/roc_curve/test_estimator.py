@@ -105,7 +105,8 @@ def test_multiclass_classification(
         assert legend_texts[class_label_idx] == expected_text
         assert roc_curve_mpl.get_color() == expected_colors[class_label_idx]
 
-    assert len(legend_texts) == len(estimator.classes_)
+    assert len(legend_texts) == len(estimator.classes_) + 1
+    assert "Chance level (AUC = 0.5)" in legend_texts
     assert ax.get_xlabel() == "False Positive Rate"
     assert ax.get_ylabel() == "True Positive Rate"
     assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
@@ -312,7 +313,8 @@ def test_multiclass_classification_data_source_both(
 
     legend = ax.get_legend()
     legend_texts = [text.get_text() for text in legend.get_texts()]
-    assert len(legend_texts) == n_classes * 2
+    assert len(legend_texts) == n_classes * 2 + 1
+    assert "Chance level (AUC = 0.5)" in legend_texts
 
     for class_label_idx, class_label in enumerate(estimator.classes_):
         plot_data = display.frame(with_roc_auc=True)
@@ -549,16 +551,16 @@ def test_plot_chance_level(pyplot, logistic_binary_classification_with_train_tes
     display = report.metrics.roc()
 
     display.plot(plot_chance_level=True)
-    chance_level_exists = any(
-        line.get_label() == "Chance level (AUC = 0.5)" for line in display.lines_
-    )
-    assert chance_level_exists
+    legend = display.ax_.get_legend()
+    legend_texts = [text.get_text() for text in legend.get_texts()]
+    assert "Chance level (AUC = 0.5)" in legend_texts
+    assert len(legend_texts) == 2
 
     display.plot(plot_chance_level=False)
-    chance_level_exists = any(
-        line.get_label() == "Chance level (AUC = 0.5)" for line in display.lines_
-    )
-    assert not chance_level_exists
+    legend = display.ax_.get_legend()
+    legend_texts = [text.get_text() for text in legend.get_texts()]
+    assert "Chance level (AUC = 0.5)" not in legend_texts
+    assert len(legend_texts) == 1
 
 
 def test_despine(pyplot, logistic_binary_classification_with_train_test):

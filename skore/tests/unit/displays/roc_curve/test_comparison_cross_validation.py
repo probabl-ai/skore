@@ -47,7 +47,8 @@ def test_binary_classification(
         for line in ax.get_lines()[:-1]:
             assert line.get_color() == expected_colors[0]
 
-        assert len(legend_texts) == 1
+        assert len(legend_texts) == 2
+        assert "Chance level (AUC = 0.5)" in legend_texts
         assert ax.get_xlabel() == "False Positive Rate"
         assert ax.get_ylabel() in ("True Positive Rate", "")
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
@@ -101,7 +102,8 @@ def test_multiclass_classification(
             for line in lines_slice:
                 assert line.get_color() == expected_colors[label_idx]
 
-        assert len(legend_texts) == len(labels)
+        assert len(legend_texts) == len(labels) + 1
+        assert "Chance level (AUC = 0.5)" in legend_texts
         assert ax.get_xlabel() == "False Positive Rate"
         assert ax.get_ylabel() in ("True Positive Rate", "")
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)

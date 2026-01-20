@@ -61,7 +61,8 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
         assert isinstance(line, mpl.lines.Line2D)
         assert line.get_color() == expected_colors[0]
 
-        assert len(legend_texts) == 1
+        assert len(legend_texts) == 2
+        assert "Chance level (AUC = 0.5)" in legend_texts
         assert ax.get_xlabel() == "False Positive Rate"
         assert ax.get_ylabel() in ("True Positive Rate", "")
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
@@ -128,7 +129,8 @@ def test_multiclass_classification(
             line = ax.get_lines()[class_label_idx]
             assert line.get_color() == expected_colors[class_label_idx]
 
-        assert len(legend_texts) == len(class_labels)
+        assert len(legend_texts) == len(class_labels) + 1
+        assert "Chance level (AUC = 0.5)" in legend_texts
         assert ax.get_xlabel() == "False Positive Rate"
         assert ax.get_ylabel() in ("True Positive Rate", "")
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
