@@ -444,6 +444,7 @@ def _build_custom_legend_with_stats(
     is_cross_validation: bool = False,
     statistic_column_name: Literal["average_precision", "roc_auc"],
     statistic_acronym: Literal["AP", "AUC"],
+    chance_level_label: str | None = None,
 ) -> None:
     """Build custom legend with a custom statistic for a single axis."""
     legend_labels = []
@@ -479,6 +480,8 @@ def _build_custom_legend_with_stats(
                         statistic=statistic,
                     )
                 )
+    if chance_level_label is not None:
+        legend_labels.append(chance_level_label)
 
     n_entries = len(legend_labels)
     lines = ax.get_lines()

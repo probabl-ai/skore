@@ -106,7 +106,6 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         "legend": False,
     }
     _default_chance_level_kwargs = {
-        "label": "Chance level (AUC = 0.5)",
         "color": "k",
         "linestyle": "--",
     }
@@ -239,7 +238,9 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         # Create space under the plot to fit the manually created legends.
         n_legend_rows = plot_data[hue].nunique() if hue else 1
-        legend_height_inches = n_legend_rows * 0.25 + 1
+        legend_height_inches = (
+            n_legend_rows * 0.25 + 1 + (0.25 if plot_chance_level else 0)
+        )
         current_height = self.figure_.get_figheight()
         new_height = current_height + legend_height_inches
         self.figure_.set_figheight(new_height)
@@ -266,6 +267,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 is_cross_validation=is_cross_validation,
                 statistic_column_name="roc_auc",
                 statistic_acronym="AUC",
+                chance_level_label="Chance level (AUC = 0.5)",
             )
 
         if self.ml_task == "binary-classification":
