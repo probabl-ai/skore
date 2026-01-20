@@ -132,8 +132,11 @@ class TestEstimatorReportPayload:
             raise Exception("test_metrics_raises_exception")
 
         monkeypatch.setattr(
-            "skore_hub_project.metric.metric.EstimatorReportMetric.compute",
-            raise_exception,
+            "skore_hub_project.report.estimator_report.EstimatorReportPayload.METRICS",
+            [AccuracyTest],
+        )
+        monkeypatch.setattr(
+            "skore_hub_project.metric.AccuracyTest.compute", raise_exception
         )
 
         with raises(Exception, match="test_metrics_raises_exception"):
