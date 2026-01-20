@@ -161,6 +161,10 @@ class TestEstimatorReportPayload:
             raise Exception("test_medias_raises_exception")
 
         monkeypatch.setattr(
+            "skore_hub_project.report.estimator_report.EstimatorReportPayload.MEDIAS",
+            [EstimatorHtmlRepr],
+        )
+        monkeypatch.setattr(
             "skore_hub_project.artifact.media.EstimatorHtmlRepr.compute",
             raise_exception,
         )
