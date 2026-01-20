@@ -9,7 +9,7 @@ from skore._sklearn.types import Aggregate, DataSource
 def _combine_estimator_results(
     individual_results: list[pd.DataFrame],
     estimator_names: list[str],
-    indicator_favorability: bool,
+    favorability: bool,
     data_source: DataSource | Literal["both"],
 ) -> pd.DataFrame:
     """Combine a list of dataframes provided by `EstimatorReport`s.
@@ -23,7 +23,7 @@ def _combine_estimator_results(
     estimator_names : list of str of len (len(results))
         The name to give the estimator for each dataframe.
 
-    indicator_favorability : bool
+    favorability : bool
         Whether to keep the Favorability column.
 
     data_source : {"test", "train", "X_y", "both"}
@@ -59,7 +59,7 @@ def _combine_estimator_results(
     >>> _combine_estimator_results(
     ...     individual_results,
     ...     estimator_names,
-    ...     indicator_favorability=False,
+    ...     favorability=False,
     ...     data_source="test",
     ... )
     Estimator    LogisticRegression_1  LogisticRegression_2
@@ -71,13 +71,13 @@ def _combine_estimator_results(
     # Pop the favorability column if it exists, to:
     # - not use it in the aggregate operation
     # - later to only report a single column and not by split columns
-    if indicator_favorability:
+    if favorability:
         # Some metrics can be undefined for some estimators and NaN are
         # introduced after the concatenation. We fill the NaN using the
         # valid favorability
-        favorability = results.pop("Favorability").bfill(axis=1).iloc[:, 0]
+        favorability_ = results.pop("Favorability").bfill(axis=1).iloc[:, 0]
     else:
-        favorability = None
+        favorability_ = None
 
     if data_source == "both":
         results.columns = pd.Index(
@@ -91,8 +91,8 @@ def _combine_estimator_results(
     else:
         results.columns = pd.Index(estimator_names, name="Estimator")
 
-    if favorability is not None:
-        results["Favorability"] = favorability
+    if favorability_ is not None:
+        results["Favorability"] = favorability_
 
     return results
 
@@ -100,7 +100,7 @@ def _combine_estimator_results(
 def _combine_cross_validation_results(
     individual_results: list[pd.DataFrame],
     estimator_names: list[str],
-    indicator_favorability: bool,
+    favorability: bool,
     aggregate: Aggregate | None,
 ) -> pd.DataFrame:
     """Combine a list of dataframes provided by `CrossValidationReport`s.
@@ -123,7 +123,7 @@ def _combine_cross_validation_results(
     estimator_names : list of str of length `len(results)`
         The name to give the estimator for each dataframe.
 
-    indicator_favorability : bool
+    favorability : bool
         Whether to keep the Favorability column.
 
     aggregate : Aggregate
@@ -171,7 +171,7 @@ def _combine_cross_validation_results(
     >>> _combine_cross_validation_results(
     ...     individual_results,
     ...     estimator_names,
-    ...     indicator_favorability=False,
+    ...     favorability=False,
     ...     aggregate=None,
     ... )
                                             Value
@@ -187,7 +187,7 @@ def _combine_cross_validation_results(
     >>> _combine_cross_validation_results(
     ...     individual_results,
     ...     estimator_names,
-    ...     indicator_favorability=False,
+    ...     favorability=False,
     ...     aggregate=["mean", "std"],
     ... )
                            mean                                 std
@@ -309,17 +309,17 @@ def _combine_cross_validation_results(
     # Pop the favorability column if it exists, to:
     # - not use it in the aggregate operation
     # - later to only report a single column and not by split columns
-    if indicator_favorability:
+    if favorability:
         # Some metrics can be undefined for some estimators and NaN are
         # introduced after the concatenation. We fill the NaN using the
         # valid favorability
-        favorability = (
+        favorability_ = (
             pd.concat([result.pop("Favorability") for result in results], axis=1)
             .bfill(axis=1)
             .iloc[:, 0]
         )
     else:
-        favorability = None
+        favorability_ = None
 
     df = pd.concat(
         [
@@ -349,7 +349,7 @@ def _combine_cross_validation_results(
         df = sort_by_split(df)
         df = df.set_index(list(df.columns.drop("Value")))
 
-    if favorability is not None:
-        df["Favorability"] = favorability
+    if favorability_ is not None:
+        df["Favorability"] = favorability_
 
     return df

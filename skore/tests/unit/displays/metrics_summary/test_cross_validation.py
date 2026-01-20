@@ -489,13 +489,11 @@ def test_invalid_metric_type(linear_regression_data):
 
 
 @pytest.mark.parametrize("aggregate", [None, "mean", ["mean", "std"]])
-def test_indicator_favorability(forest_binary_classification_data, aggregate):
-    """Check that the behaviour of `indicator_favorability` is correct."""
+def test_favorability(forest_binary_classification_data, aggregate):
+    """Check that the behaviour of `favorability` is correct."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    result = report.metrics.summarize(
-        indicator_favorability=True, aggregate=aggregate
-    ).frame()
+    result = report.metrics.summarize(favorability=True, aggregate=aggregate).frame()
     assert "Favorability" in result.columns
     indicator = result["Favorability"]
     # assert indicator.shape == (9,)
