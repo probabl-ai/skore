@@ -1,17 +1,19 @@
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
+from pandas import DataFrame
 from sklearn.utils.validation import (
     _check_pos_label_consistency,
     check_consistent_length,
 )
 
 from skore._sklearn.types import (
+    DataSource,
     MLTask,
     PositiveLabel,
     ReportType,
@@ -359,3 +361,163 @@ def sample_mpl_colormap(
     """
     indices = np.linspace(0, 1, n)
     return [cmap(i) for i in indices]
+
+
+def _get_curve_plot_columns(
+    plot_data: DataFrame,
+    report_type: ReportType,
+    ml_task: MLTask,
+    data_source: DataSource | Literal["both"],
+    subplot_by: Literal["auto", "label", "estimator", "data_source"] | None = "auto",
+) -> tuple[str | None, str | None, str | None]:
+    """Determine col, hue, and style columns for precision-recall and ROC.
+
+    Rules:
+    - Default ("auto"): None for EstimatorReport and Cross-Validation Report,
+        "estimator" for ComparisonReport
+    - subplot_by=None disallowed for comparison in multiclass
+    - subplot_by="estimator" only allowed for comparison reports
+    - subplot_by="label" only allowed for multiclass classification
+    - subplot_by="data_source" only allowed for EstimatorReport with both data \
+        sources
+    - hue priority: estimator > label > data_source (excluding col)
+
+    Returns (col, hue, style) tuple where each can be None if not applicable.
+    """
+    has_multiple_estimators = (
+        "estimator" in plot_data.columns and plot_data["estimator"].nunique() > 1
+    )
+    is_comparison = report_type in (
+        "comparison-estimator",
+        "comparison-cross-validation",
+    )
+    is_multiclass = ml_task == "multiclass-classification"
+    has_both_data_sources = data_source == "both"
+
+    allowed_values: set[str | None] = {"auto"}
+    if is_multiclass:
+        allowed_values.add("label")
+        if report_type in ["estimator", "cross-validation"]:
+            allowed_values.add(None)
+    else:
+        allowed_values.add(None)
+    if is_comparison and has_multiple_estimators:
+        allowed_values.add("estimator")
+    if has_both_data_sources:
+        allowed_values.add("data_source")
+
+    if subplot_by not in allowed_values:
+        allowed_str = ", ".join(sorted([str(s) for s in allowed_values]))
+        raise ValueError(
+            f"subplot_by must be one of {allowed_str}. Got {subplot_by!r} instead."
+        )
+
+    if subplot_by == "auto":
+        col = "estimator" if is_comparison else None
+    else:
+        col = subplot_by
+    has_multiple_labels = (
+        "label" in plot_data.columns and plot_data["label"].nunique() > 1
+    )
+
+    hue_candidates = []
+    if has_multiple_estimators:
+        hue_candidates.append("estimator")
+    if has_multiple_labels:
+        hue_candidates.append("label")
+
+    hue = hue[0] if (hue := [c for c in hue_candidates if c != col]) else None
+
+    style = "data_source" if has_both_data_sources else None
+
+    return col, hue, style
+
+
+def _build_custom_legend_with_stats(
+    *,
+    ax: Axes,
+    subplot_data: DataFrame,
+    hue: str | None,
+    style: str | None,
+    hue_order: list[Any] | None,
+    style_order: list[Any] | None,
+    is_cross_validation: bool = False,
+    statistic_column_name: Literal["average_precision", "roc_auc"],
+    statistic_acronym: Literal["AP", "AUC"],
+) -> None:
+    """Build custom legend with a custom statistic for a single axis."""
+    legend_labels = []
+    for hue_value in hue_order or [None]:
+        hue_value_str = (
+            f"'{hue_value}'" if isinstance(hue_value, str) else str(hue_value)
+        )
+        hue_group = (
+            subplot_data.query(f"{hue} == {hue_value_str}")
+            if hue_value is not None
+            else subplot_data
+        )
+        for style_value in style_order or [None]:
+            style_value_str = (
+                f"'{style_value}'" if isinstance(style_value, str) else str(style_value)
+            )
+            statistic_group = (
+                hue_group.query(f"{style} == {style_value_str}")[statistic_column_name]
+                if style_value is not None
+                else hue_group[statistic_column_name]
+            )
+            if not statistic_group.empty:
+                statistic = (
+                    f"{statistic_acronym}={statistic_group.mean():.2f}±{statistic_group.std():.2f}"
+                    if is_cross_validation and len(statistic_group) > 1
+                    else f"{statistic_acronym}={statistic_group.iloc[0]:.2f}"
+                )
+                legend_labels.append(
+                    _format_legend_label(
+                        style_column_name=style,
+                        style_value=style_value,
+                        hue_value=hue_value,
+                        statistic=statistic,
+                    )
+                )
+
+    n_entries = len(legend_labels)
+    lines = ax.get_lines()
+    handles = []
+    seen_line_attributes = []
+    for line in lines:
+        line_attributes = (line.get_color(), line.get_linestyle())
+        if line_attributes not in seen_line_attributes:
+            seen_line_attributes.append(line_attributes)
+            handles.append(line)
+
+    fontsize = "small" if n_entries > 4 else "medium"
+
+    ax.legend(
+        handles,
+        legend_labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.15),
+        ncol=1,
+        frameon=False,
+        fontsize=fontsize,
+    )
+
+
+def _format_legend_label(
+    style_column_name: str | None,
+    style_value: str | None,
+    hue_value: str | None,
+    statistic: str,
+) -> str:
+    """Format a legend label based on style and hue."""
+    if style_value is None and hue_value is None:
+        return statistic
+    if style_column_name == "data_source":
+        style_value = cast(str, style_value)
+        style_value = style_value.title() + " set"
+    return (
+        " - ".join(
+            str(s) for s in filter(lambda x: x is not None, [hue_value, style_value])
+        )
+        + f" ({statistic})"
+    )
