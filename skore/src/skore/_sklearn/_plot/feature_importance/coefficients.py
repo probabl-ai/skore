@@ -84,7 +84,180 @@ class CoefficientsDisplay(DisplayMixin):
         self.coefficients = coefficients
         self.report_type = report_type
 
-    def frame(self, *, include_intercept: bool = True):
+    def _get_grouping_columns(self, frame: pd.DataFrame) -> list[str]:
+        """Get columns to group by for feature selection/sorting."""
+        group_cols = []
+
+        if self.report_type not in ("estimator", "cross-validation"):
+            # For comparison reports, always group by estimator first
+            group_cols.append("estimator")
+
+        for col in ("label", "output"):
+            if col in frame.columns and not frame[col].isna().all():
+                # Add label/output if present and not all NaN
+                group_cols.append(col)
+                break  # Only one of label/output will be present
+
+        return group_cols
+
+    def _compute_feature_scores(self, group: pd.DataFrame, is_cv: bool) -> pd.Series:
+        """Compute feature importance scores.
+
+        Parameters
+        ----------
+        group : pd.DataFrame
+            Group of data to compute scores for.
+        is_cv : bool
+            Whether this is cross-validation data (has 'split' column).
+
+        Returns
+        -------
+        pd.Series
+            Series with feature names as index and scores as values.
+        """
+        if is_cv:
+            # For CV: compute mean absolute coefficient across splits
+            return group.groupby("feature")["coefficients"].apply(
+                lambda x: x.abs().mean()
+            )
+        else:
+            # For non-CV: use absolute coefficient values directly
+            if "feature" in group.index.names:
+                return group["coefficients"].abs()
+            else:  # Group by feature in case there are duplicates
+                return group.set_index("feature")["coefficients"].abs()
+
+    def _select_features_from_group(
+        self, group: pd.DataFrame, select_k: int
+    ) -> pd.DataFrame:
+        """Select top k or bottom k features from a group.
+
+        Parameters
+        ----------
+        group : pd.DataFrame
+            Group of data to select features from.
+        select_k : int
+            Number of features to select (positive for top, negative for bottom).
+
+        Returns
+        -------
+        pd.DataFrame
+            Filtered group with only selected features.
+        """
+        is_cv = "split" in group.columns
+        scores = self._compute_feature_scores(group, is_cv)
+
+        # Select features based on sign of select_k
+        k = abs(select_k)
+        if k > len(scores):
+            import warnings
+
+            warnings.warn(
+                f"Requested {k} features but only {len(scores)} features available. "
+                f"Showing all {len(scores)} features.",
+                UserWarning,
+                stacklevel=2,
+            )
+            k = len(scores)
+        if select_k > 0:
+            selected_features = scores.nlargest(k).index
+        else:
+            selected_features = scores.nsmallest(k).index
+
+        # Filter group to selected features
+        if is_cv:
+            return group[group["feature"].isin(selected_features)]
+        else:
+            if "feature" in group.index.names:
+                return group[group.index.isin(selected_features)]
+            else:
+                return group[group["feature"].isin(selected_features)]
+
+    def _sort_features_in_group(
+        self,
+        group: pd.DataFrame,
+        sorting_order: Literal["descending", "ascending"],
+    ) -> pd.DataFrame:
+        """Sort features in a group by absolute coefficient values.
+
+        Parameters
+        ----------
+        group : pd.DataFrame
+            Group of data to sort.
+        ascending : bool
+            Whether to sort in ascending order.
+
+        Returns
+        -------
+        pd.DataFrame
+            Sorted group.
+        """
+        is_cv = "split" in group.columns
+        ascending = sorting_order == "ascending"
+
+        if is_cv:
+            # Sort by mean absolute coefficient across splits
+            scores = self._compute_feature_scores(group, is_cv)
+            feature_order = scores.sort_values(ascending=ascending).index
+            return group.set_index("feature").loc[feature_order].reset_index()
+        else:
+            # Sort by individual absolute coefficient values
+            return group.sort_values(
+                by="coefficients", key=lambda s: s.abs(), ascending=ascending
+            )
+
+    def _apply_groupwise_operation(
+        self, frame: pd.DataFrame, operation: Literal["select", "sort"], **kwargs
+    ) -> pd.DataFrame:
+        """Apply an operation (select or sort) to groups in the dataframe.
+
+        Parameters
+        ----------
+        frame : pd.DataFrame
+            The dataframe to operate on.
+        operation : {"select", "sort"}
+            The operation to apply.
+        **kwargs
+            Additional arguments for the operation:
+            - For "select": select_k (int)
+            - For "sort": ascending (bool)
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe with operation applied.
+        """
+        group_cols = self._get_grouping_columns(frame)
+
+        # Define the operation function
+        if operation == "select":
+            select_k = kwargs["select_k"]
+
+            def op_func(group: pd.DataFrame) -> pd.DataFrame:
+                return self._select_features_from_group(group, select_k)
+        elif operation == "sort":
+            sorting_order = kwargs["sorting_order"]
+
+            def op_func(group: pd.DataFrame) -> pd.DataFrame:
+                return self._sort_features_in_group(group, sorting_order)
+        else:
+            raise ValueError(f"Unknown operation: {operation}")
+
+        # Apply operation with or without grouping
+        if group_cols:
+            return frame.groupby(group_cols, group_keys=False, observed=True).apply(
+                op_func
+            )
+        else:
+            return op_func(frame)
+
+    def frame(
+        self,
+        *,
+        include_intercept: bool = True,
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = "descending",
+    ):
         """Get the coefficients in a dataframe format.
 
         The returned dataframe is not going to contain constant columns or columns
@@ -94,6 +267,35 @@ class CoefficientsDisplay(DisplayMixin):
         ----------
         include_intercept : bool, default=True
             Whether or not to include the intercept in the dataframe.
+
+        select_k : int, default=None
+            Select features based on absolute coefficient values:
+
+            - Positive values: select the k features with largest absolute coefficients
+            - Negative values: select the |k| features with smallest absolute
+              coefficients
+
+            Selection is performed independently within each group:
+
+            - Single estimator reports: For binary classification or single-output
+              regression, selection is global. For multiclass classification or
+              multi-output regression, selection is performed independently per
+              class/output.
+            - Cross-validation reports: Grouping follows the same rules as single
+              estimator reports. Within each group, features are ranked by the mean
+              absolute coefficient values across folds.
+            - Comparison reports: Selection is performed independently per estimator,
+              and per class/output if applicable.
+
+        sorting_order : {"descending", "ascending", None}, default="descending"
+            Sort features by absolute coefficient values:
+
+            - "descending": largest absolute values first (default)
+            - "ascending": smallest absolute values first
+            - None: preserve original order
+
+            Can be used independently of `select_k`. Sorting is performed within the
+            same groups as selection.
 
         Returns
         -------
@@ -131,6 +333,13 @@ class CoefficientsDisplay(DisplayMixin):
         13  petal length (cm)   virginica      2.5...
         14   petal width (cm)   virginica      1.7...
         """
+        if select_k is not None and select_k == 0:
+            raise ValueError(
+                "`select_k` must be a non-zero integer. "
+                "Use positive values for top-k features or "
+                "negative values for bottom-k features."
+            )
+
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
         elif self.report_type == "cross-validation":
@@ -152,6 +361,19 @@ class CoefficientsDisplay(DisplayMixin):
         coefficients = self.coefficients.drop(columns=columns_to_drop)
         if not include_intercept:
             coefficients = coefficients.query("feature != 'Intercept'")
+
+        # Apply feature selection if requested
+        if select_k is not None:
+            coefficients = self._apply_groupwise_operation(
+                coefficients, operation="select", select_k=select_k
+            )
+
+        # Apply sorting if requested
+        if sorting_order is not None:
+            coefficients = self._apply_groupwise_operation(
+                coefficients, operation="sort", sorting_order=sorting_order
+            )
+
         return coefficients
 
     @DisplayMixin.style_plot
@@ -160,6 +382,8 @@ class CoefficientsDisplay(DisplayMixin):
         *,
         include_intercept: bool = True,
         subplot_by: Literal["auto", "estimator", "label", "output"] | None = "auto",
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = "descending",
     ) -> None:
         """Plot the coefficients for the different features.
 
@@ -176,6 +400,26 @@ class CoefficientsDisplay(DisplayMixin):
               regression problem;
             - when comparing estimators for which the input features are different.
 
+        select_k : int, default=None
+            Select features based on absolute coefficient values:
+
+            - Positive values: select the k features with largest absolute coefficients
+            - Negative values: select the |k| features with smallest absolute
+              coefficients
+
+            Selection is performed independently within each group as described in
+            the `frame` method.
+
+        sorting_order : {"descending", "ascending", None}, default="descending"
+            Sort features by absolute coefficient values:
+
+            - "descending": largest absolute values first (default)
+            - "ascending": smallest absolute values first
+            - None: preserve original order
+
+            Can be used independently of `select_k`. Sorting is performed within the
+            same groups as selection.
+
         Examples
         --------
         >>> from sklearn.datasets import load_iris
@@ -191,15 +435,29 @@ class CoefficientsDisplay(DisplayMixin):
         >>> display = report.feature_importance.coefficients()
         >>> display.plot()
         """
-        return self._plot(include_intercept=include_intercept, subplot_by=subplot_by)
+        return self._plot(
+            include_intercept=include_intercept,
+            subplot_by=subplot_by,
+            select_k=select_k,
+            sorting_order=sorting_order,
+        )
 
     def _plot_matplotlib(
         self,
         *,
         include_intercept: bool = True,
         subplot_by: Literal["estimator", "label", "output"] | None = None,
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = "descending",
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
+        # Get filtered and sorted frame using .frame() method
+        frame = self.frame(
+            include_intercept=include_intercept,
+            select_k=select_k,
+            sorting_order=sorting_order,
+        )
+
         # make copy of the dictionary since we are going to pop some keys later
         barplot_kwargs = self._default_barplot_kwargs.copy()
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
@@ -207,7 +465,7 @@ class CoefficientsDisplay(DisplayMixin):
 
         if self.report_type in ("estimator", "cross-validation"):
             return self._plot_single_estimator(
-                frame=self.frame(include_intercept=include_intercept),
+                frame=frame,
                 estimator_name=self.coefficients["estimator"][0],
                 report_type=self.report_type,
                 subplot_by=subplot_by,
@@ -220,7 +478,7 @@ class CoefficientsDisplay(DisplayMixin):
             "comparison-cross-validation",
         ):
             return self._plot_comparison(
-                frame=self.frame(include_intercept=include_intercept),
+                frame=frame,
                 report_type=self.report_type,
                 subplot_by=subplot_by,
                 barplot_kwargs=barplot_kwargs,
