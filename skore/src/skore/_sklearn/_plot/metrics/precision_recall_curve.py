@@ -192,11 +192,9 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             kwargs["units"] = "split"
             kwargs["alpha"] = 0.4
 
-            # Convert categorical columns to strings to avoid pandas future warning.
-            # See: https://github.com/mwaskom/seaborn/issues/3891
-            # Only needed in cross val as its aggregation that causes the future warning
-            columns_to_convert = plot_data.select_dtypes(include="category").columns
-            plot_data[columns_to_convert].astype(str)
+            # Convert the "split" column from category to string to avoid pandas future
+            # warning. See: https://github.com/mwaskom/seaborn/issues/3891
+            plot_data["split"] = plot_data["split"].astype(str)
 
         kwargs["col_order"] = plot_data[col].unique().tolist() if col else None
         kwargs["hue_order"] = plot_data[hue].unique().tolist() if hue else None
