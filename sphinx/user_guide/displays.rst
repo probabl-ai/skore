@@ -40,21 +40,8 @@ not modify the display object nor require heavy computation.
 
     disp.plot()
 
-The `plot` method accepts parameters to tweak the rendering of the display. For
-instance, customize the appearance of the chance level:
-
-.. plot::
-    :context: close-figs
-    :align: center
-
-    disp.plot(
-        chance_level_kwargs=dict(
-            linestyle="-", linewidth=5, color="tab:purple"
-        )
-    )
-
-To avoid passing parameters at each call to `plot`, use the `set_style` method to
-persist style settings.
+The `plot` method can be preceded by the `set_style` method which accepts parameters to
+tweak the rendering of the display. For instance, customize the appearance of the chance level:
 
 .. plot::
     :context: close-figs
@@ -62,7 +49,6 @@ persist style settings.
 
     disp.set_style(
         chance_level_kwargs=dict(linestyle="-", linewidth=5, color="tab:purple")
-    )
-    disp.plot()
+    ).plot()
 
 Any subsequent call to `plot` uses the style settings set by `set_style`.

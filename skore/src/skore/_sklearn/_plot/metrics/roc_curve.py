@@ -544,6 +544,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             If "update", existing settings are not changed; only settings that were
             previously unset are changed.
 
+        relplot_kwargs : dict, default=None
         Keyword arguments to be passed to :func:`seaborn.relplot` for rendering
             the ROC curve(s). Common options include `palette`, `alpha`, `linewidth`,
             etc.
