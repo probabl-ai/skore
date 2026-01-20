@@ -61,7 +61,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
-        indicator_favorability: bool = False,
+        favorability: bool = False,
         flat_index: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> MetricsSummaryDisplay:
@@ -118,7 +118,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             class is set to the one provided when creating the report. If `None`,
             the metric is computed considering each class as a positive class.
 
-        indicator_favorability : bool, default=False
+        favorability : bool, default=False
             Whether or not to add an indicator of the favorability of the metric as
             an extra column in the returned DataFrame.
 
@@ -168,7 +168,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             metric=metric,
             pos_label=pos_label,
             metric_kwargs=metric_kwargs,
-            indicator_favorability=indicator_favorability,
+            favorability=favorability,
             aggregate=aggregate,
             response_method=response_method,
         )
@@ -261,18 +261,14 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 results = _combine_estimator_results(
                     individual_results,
                     estimator_names=self._parent.reports_.keys(),
-                    indicator_favorability=metric_kwargs.get(
-                        "indicator_favorability", False
-                    ),
+                    favorability=metric_kwargs.get("favorability", False),
                     data_source=data_source,
                 )
             else:  # "CrossValidationReport"
                 results = _combine_cross_validation_results(
                     individual_results,
                     estimator_names=self._parent.reports_.keys(),
-                    indicator_favorability=metric_kwargs.get(
-                        "indicator_favorability", False
-                    ),
+                    favorability=metric_kwargs.get("favorability", False),
                     aggregate=aggregate,
                 )
 
@@ -360,7 +356,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             timings = _combine_cross_validation_results(
                 results,
                 self._parent.reports_.keys(),
-                indicator_favorability=False,
+                favorability=False,
                 aggregate=aggregate,
             )
             return timings

@@ -114,12 +114,12 @@ def test_flat_index(estimator_reports_binary_classification):
     assert result_df.columns.tolist() == ["report_1", "report_2"]
 
 
-def test_indicator_favorability(
+def test_favorability(
     comparison_cross_validation_reports_binary_classification,
 ):
-    """Check that the behaviour of `indicator_favorability` is correct."""
+    """Check that the behaviour of `favorability` is correct."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(indicator_favorability=True)
+    result = report.metrics.summarize(favorability=True)
     assert isinstance(result, MetricsSummaryDisplay)
     result_df = result.frame()
     assert "Favorability" in result_df.columns

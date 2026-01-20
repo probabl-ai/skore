@@ -261,13 +261,13 @@ def test_overwrite_scoring_names_with_dict(
     assert result_index == expected_columns
 
 
-def test_indicator_favorability(
+def test_favorability(
     forest_binary_classification_with_test,
 ):
-    """Check that the behaviour of `indicator_favorability` is correct."""
+    """Check that the behaviour of `favorability` is correct."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(indicator_favorability=True).frame()
+    result = report.metrics.summarize(favorability=True).frame()
     assert "Favorability" in result.columns
     indicator = result["Favorability"]
     assert indicator["Accuracy"].tolist() == ["(↗︎)"]
@@ -462,7 +462,7 @@ def test_sklearn_scoring_strings(
     assert "Log Loss" in result.index.get_level_values(0)
 
     result_multi = class_report.metrics.summarize(
-        metric=["accuracy", "neg_log_loss", "roc_auc"], indicator_favorability=True
+        metric=["accuracy", "neg_log_loss", "roc_auc"], favorability=True
     ).frame()
     assert "Accuracy" in result_multi.index.get_level_values(0)
     assert "Log Loss" in result_multi.index.get_level_values(0)
@@ -483,7 +483,7 @@ def test_sklearn_scoring_strings_regression(
 
     reg_result = reg_report.metrics.summarize(
         metric=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
-        indicator_favorability=True,
+        favorability=True,
     ).frame()
 
     assert "Mean Squared Error" in reg_result.index.get_level_values(0)
@@ -500,7 +500,7 @@ def test_metric_strings_regression(linear_regression_with_test):
     reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
 
     reg_result = reg_report.metrics.summarize(
-        metric=["rmse", "r2"], indicator_favorability=True
+        metric=["rmse", "r2"], favorability=True
     ).frame()
 
     assert "RMSE" in reg_result.index.get_level_values(0)

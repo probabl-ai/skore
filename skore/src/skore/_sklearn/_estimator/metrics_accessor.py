@@ -68,7 +68,7 @@ class _MetricsAccessor(
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
-        indicator_favorability: bool = False,
+        favorability: bool = False,
         flat_index: bool = False,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
@@ -128,7 +128,7 @@ class _MetricsAccessor(
             class is set to the one provided when creating the report. If `None`,
             the metric is computed considering each class as a positive class.
 
-        indicator_favorability : bool, default=False
+        favorability : bool, default=False
             Whether or not to add an indicator of the favorability of the metric as
             an extra column in the returned DataFrame.
 
@@ -152,7 +152,7 @@ class _MetricsAccessor(
         ...
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
-        >>> report.metrics.summarize(indicator_favorability=True).frame()
+        >>> report.metrics.summarize(favorability=True).frame()
                     LogisticRegression Favorability
         Metric
         Accuracy               0.95...         (↗︎)
@@ -163,13 +163,13 @@ class _MetricsAccessor(
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
         ...     metric=["f1"],
-        ...     indicator_favorability=True,
+        ...     favorability=True,
         ... ).frame()
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
         >>> report.metrics.summarize(
-        ...    indicator_favorability=True,
+        ...    favorability=True,
         ...    data_source="both"
         ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
@@ -182,7 +182,7 @@ class _MetricsAccessor(
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
         ...     metric=["f1"],
-        ...     indicator_favorability=True,
+        ...     favorability=True,
         ... ).frame()
                                   LogisticRegression Favorability
         Metric   Label / Average
@@ -194,7 +194,7 @@ class _MetricsAccessor(
                 metric=metric,
                 metric_kwargs=metric_kwargs,
                 pos_label=pos_label,
-                indicator_favorability=False,
+                favorability=False,
                 flat_index=flat_index,
                 response_method=response_method,
             )
@@ -203,7 +203,7 @@ class _MetricsAccessor(
                 metric=metric,
                 metric_kwargs=metric_kwargs,
                 pos_label=pos_label,
-                indicator_favorability=indicator_favorability,
+                favorability=favorability,
                 flat_index=flat_index,
                 response_method=response_method,
             )
@@ -446,7 +446,7 @@ class _MetricsAccessor(
             score_df = pd.DataFrame(
                 score_array, index=index, columns=[self._parent.estimator_name_]
             )
-            if indicator_favorability:
+            if favorability:
                 score_df["Favorability"] = metric_favorability
 
             scores.append(score_df)
