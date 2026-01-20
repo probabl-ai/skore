@@ -338,11 +338,6 @@ class TestCrossValidationReportPayload:
             PredictTimeTrainStd,
         ]
 
-    @mark.filterwarnings(
-        # ignore precision warning due to the low number of labels in
-        # `small_cv_binary_classification`, raised by `scikit-learn`
-        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
-    )
     def test_metrics_raises_exception(self, monkeypatch, payload):
         """
         Since metrics compute is multi-threaded, ensure that any exceptions thrown in a
@@ -353,7 +348,11 @@ class TestCrossValidationReportPayload:
             raise Exception("test_metrics_raises_exception")
 
         monkeypatch.setattr(
-            "skore_hub_project.metric.metric.CrossValidationReportMetric.compute",
+            "skore_hub_project.report.cross_validation_report.CrossValidationReportPayload.METRICS",
+            [AccuracyTestMean],
+        )
+        monkeypatch.setattr(
+            "skore_hub_project.metric.AccuracyTestMean.compute",
             raise_exception,
         )
 
