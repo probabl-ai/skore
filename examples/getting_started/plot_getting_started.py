@@ -387,7 +387,8 @@ summary = project.summarize()
 
 # %%
 # Supposing you selected "Cross-validation" in the "Report type" tab,
-# if you now call `reports()`, you get only the `CrossValidationReport`s
+# if you now call `reports()`, you get only the the `CrossValidationReport`
+# objects, which you can directly put in the form of a `ComparisonReport`
 
 # %%
 
