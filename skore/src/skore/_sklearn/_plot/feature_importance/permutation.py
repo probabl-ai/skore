@@ -7,6 +7,7 @@ import seaborn as sns
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.inspection import permutation_importance
+from sklearn.metrics._scorer import _BaseScorer
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
 from skore._sklearn._plot.feature_importance.utils import _decorate_matplotlib_axis
@@ -79,6 +80,8 @@ class PermutationImportanceDisplay(DisplayMixin):
                 metric_name = "accuracy" if is_classifier(estimator) else "r2"
             elif isinstance(metric, str):
                 metric_name = metric
+            elif isinstance(metric, _BaseScorer):
+                metric_name = metric._score_func.__name__
             else:
                 metric_name = metric.__name__
             scores = {metric_name: scores}
@@ -135,11 +138,11 @@ class PermutationImportanceDisplay(DisplayMixin):
     def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
         """Get the available columns from which to group by."""
         columns_to_groupby = list[str]()
-        if "metric" in frame.columns:
+        if "metric" in frame.columns and frame["metric"].nunique() > 1:
             columns_to_groupby.append("metric")
-        if "label" in frame.columns:
+        if "label" in frame.columns and frame["label"].nunique() > 1:
             columns_to_groupby.append("label")
-        if "output" in frame.columns:
+        if "output" in frame.columns and frame["output"].nunique() > 1:
             columns_to_groupby.append("output")
         return columns_to_groupby
 
@@ -258,7 +261,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             # deprecation warning if passing palette without a hue
             stripplot_kwargs.pop("palette", None)
 
-        facet = sns.catplot(
+        self.facet_ = sns.catplot(
             data=frame,
             x="value",
             y="feature",
@@ -278,7 +281,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         )
         add_background_features = hue is not None
 
-        self.figure_, self.ax_ = facet.figure, facet.axes.squeeze()
+        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
         for ax in self.ax_.flatten():
             _decorate_matplotlib_axis(
                 ax=ax,
