@@ -825,11 +825,9 @@ class _BaseMetricsAccessor:
         return method_name.ljust(29)
 
     def _get_help_panel_title(self) -> str:
-        """Return plain text title - Rich markup is added during Rich rendering."""
         return "Available metrics methods"
 
     def _get_help_tree_title(self) -> str:
-        """Return plain text title - Rich markup is added during Rich rendering."""
         return f"{self._parent.__class__.__name__}.metrics"
 
     def _get_favorability_text(self, name: str) -> str | None:

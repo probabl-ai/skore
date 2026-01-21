@@ -466,7 +466,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     ####################################################################################
 
     def _get_help_panel_title(self) -> str:
-        """Return plain text title - Rich markup is added during Rich rendering."""
         return f"Tools to diagnose estimator {self.estimator_name_}"
 
     def _get_help_legend(self) -> str:

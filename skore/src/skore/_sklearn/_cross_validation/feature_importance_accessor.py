@@ -81,11 +81,9 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
         return super()._format_method_name(name, method).ljust(29)
 
     def _get_help_panel_title(self) -> str:
-        """Return plain text title - Rich markup is added during Rich rendering."""
         return "Available feature importance methods"
 
     def _get_help_tree_title(self) -> str:
-        """Return plain text title - Rich markup is added during Rich rendering."""
         return f"{self._parent.__class__.__name__}.feature_importance"
 
     def __repr__(self) -> str:
