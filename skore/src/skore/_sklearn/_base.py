@@ -53,25 +53,6 @@ def _get_documentation_url(
     return f"{base_url}/{'.'.join(path_parts)}.html"
 
 
-def _strip_rich_markup(text: str) -> str:
-    """Strip all Rich markup tags from a string.
-
-    Rich markup uses the format [tag]content[/tag]. This function removes
-    all such tags including self-closing tags.
-    """
-    # Remove all Rich markup tags: [tag] or [/tag] or [tag]content[/tag]
-    # This regex handles:
-    # - Opening tags: [tag]
-    # - Closing tags: [/tag]
-    # - Self-contained tags: [tag]content[/tag]
-    # We need to handle nested brackets and escaped brackets
-    while True:
-        # Remove Rich markup tags - [anything] or [/anything]
-        new_text = re.sub(r"\[/?[^\]]*\]", "", text)
-        if new_text == text:
-            break
-        text = new_text
-    return text
 
 
 def _get_jinja_env():
@@ -128,6 +109,7 @@ class _RichHelpMixin(ABC):
             # Add accessor methods first
             for accessor_attr, config in self._ACCESSOR_CONFIG.items():
                 accessor = getattr(self, accessor_attr)
+                # Add Rich markup for display (plain text is in config['name'])
                 branch = tree.add(f"[bold cyan].{config['name']}[/bold cyan]")
 
                 # Add main accessor methods first
@@ -165,6 +147,7 @@ class _RichHelpMixin(ABC):
             base_methods = self._sort_methods_for_help(base_methods)
 
             if base_methods:
+                # Add Rich markup for display (plain text is "Methods")
                 methods_branch = tree.add("[bold cyan]Methods[/bold cyan]")
                 for name, method in base_methods:
                     description = self._get_method_description(method)
@@ -178,6 +161,7 @@ class _RichHelpMixin(ABC):
             if hasattr(self, "_get_attributes_for_help"):
                 attributes = self._get_attributes_for_help()
                 if attributes:
+                    # Add Rich markup for display (plain text is "Attributes")
                     attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
                     # Group attributes: those without `_` first, then those with `_`
                     attrs_without_underscore = [
@@ -191,12 +175,14 @@ class _RichHelpMixin(ABC):
             return tree
         else:
             # Accessor implementation
-            tree_title = (
-                self._get_help_tree_title()
-                if hasattr(self, "_get_help_tree_title")
-                else self.__class__.__name__
-            )
-            tree = Tree(tree_title)
+            # Get plain text title
+            if hasattr(self, "_get_help_tree_title"):
+                tree_title_plain = self._get_help_tree_title()
+            else:
+                tree_title_plain = self.__class__.__name__
+            # Add Rich markup for display
+            tree_title_rich = f"[bold cyan]{tree_title_plain}[/bold cyan]"
+            tree = Tree(tree_title_rich)
 
             methods = self._get_methods_for_help()
             methods = self._sort_methods_for_help(methods)
@@ -214,9 +200,14 @@ class _RichHelpMixin(ABC):
         # Legend removed - favorability info now in HTML tooltips only
         content = self._create_help_tree()
 
+        # Get plain text title and add Rich markup for display
+        title_plain = self._get_help_panel_title()
+        # Add Rich markup for display (if title is not empty)
+        title_rich = f"[bold cyan]{title_plain}[/bold cyan]" if title_plain else title_plain
+
         return Panel(
             content,
-            title=self._get_help_panel_title(),
+            title=title_rich,
             expand=False,
             border_style="orange1",
         )
@@ -225,16 +216,17 @@ class _RichHelpMixin(ABC):
 class _HTMLHelpMixin(ABC):
     """Mixin for HTML-based help rendering with Shadow DOM isolation."""
 
+
     def _build_help_data(self) -> dict[str, Any]:
         """Build data structure for Jinja2 template rendering."""
         import uuid
 
+        # Get plain text title (base methods should return plain text)
         title = self._get_help_panel_title()
-        title_clean = _strip_rich_markup(title)
         class_name = self.__class__.__name__
 
         data: dict[str, Any] = {
-            "title": title_clean,
+            "title": title,
             "is_report": hasattr(self, "_ACCESSOR_CONFIG"),
         }
 
@@ -327,8 +319,8 @@ class _HTMLHelpMixin(ABC):
                     data["attributes"] = []
                     for attr_name in attrs_without_underscore + attrs_with_underscore:
                         description = self._get_attribute_description(attr_name)
-                        description_clean = _strip_rich_markup(description)
-                        tooltip_html = _create_method_tooltip_html(description_clean)
+                        # Descriptions are already plain text from docstrings
+                        tooltip_html = _create_method_tooltip_html(description)
                         doc_url = _get_documentation_url(class_name, None, attr_name)
                         data["attributes"].append(
                             {
@@ -339,13 +331,12 @@ class _HTMLHelpMixin(ABC):
                         )
         else:
             # Accessor implementation
-            tree_title = (
-                self._get_help_tree_title()
-                if hasattr(self, "_get_help_tree_title")
-                else self.__class__.__name__
-            )
-            tree_title_clean = _strip_rich_markup(tree_title)
-            data["tree_title"] = tree_title_clean
+            # Get plain text title (base methods should return plain text)
+            if hasattr(self, "_get_help_tree_title"):
+                tree_title = self._get_help_tree_title()
+            else:
+                tree_title = self.__class__.__name__
+            data["tree_title"] = tree_title
             data["methods"] = []
 
             methods = self._get_methods_for_help()
@@ -367,18 +358,21 @@ class _HTMLHelpMixin(ABC):
         class_name: str,
         accessor_path: str | None,
     ) -> dict[str, Any]:
-        """Build data structure for a single method."""
+        """Build data structure for a single method.
+        
+        Note: This method works with plain text. Method names and descriptions
+        from _format_method_name and _get_method_description are already plain text.
+        """
         displayed_name = obj._format_method_name(name, method)
         description = obj._get_method_description(method)
-        displayed_name_clean = _strip_rich_markup(displayed_name)
-        description_clean = _strip_rich_markup(description)
+        # Both displayed_name and description are already plain text (no Rich markup)
 
         # Split method name from parameters
-        if "(" in displayed_name_clean:
-            method_name_only, params_part = displayed_name_clean.split("(", 1)
+        if "(" in displayed_name:
+            method_name_only, params_part = displayed_name.split("(", 1)
             params_part = "(" + params_part
         else:
-            method_name_only = displayed_name_clean
+            method_name_only = displayed_name
             params_part = ""
 
         # Get favorability text if applicable
@@ -386,7 +380,7 @@ class _HTMLHelpMixin(ABC):
         if hasattr(obj, "_get_favorability_text"):
             favorability_text = obj._get_favorability_text(name)
 
-        tooltip_html = _create_method_tooltip_html(description_clean, favorability_text)
+        tooltip_html = _create_method_tooltip_html(description, favorability_text)
 
         # Generate documentation URL
         doc_url = _get_documentation_url(class_name, accessor_path, name)
@@ -867,10 +861,12 @@ class _BaseMetricsAccessor:
         return method_name.ljust(29)
 
     def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available metrics methods[/bold cyan]"
+        """Return plain text title - Rich markup is added during Rich rendering."""
+        return "Available metrics methods"
 
     def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.metrics[/bold cyan]"
+        """Return plain text title - Rich markup is added during Rich rendering."""
+        return "report.metrics"
 
     def _get_favorability_text(self, name: str) -> str | None:
         """Get favorability text for a method, or None if not applicable."""

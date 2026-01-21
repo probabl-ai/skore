@@ -428,7 +428,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ####################################################################################
 
     def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Tools to compare estimators[/bold cyan]"
+        """Return plain text title - Rich markup is added during Rich rendering."""
+        return "Tools to compare estimators"
 
     def _get_help_legend(self) -> str:
         return (

@@ -134,10 +134,12 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         return super()._format_method_name(name, method).ljust(29)
 
     def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available data methods[/bold cyan]"
+        """Return plain text title - Rich markup is added during Rich rendering."""
+        return "Available data methods"
 
     def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.data[/bold cyan]"
+        """Return plain text title - Rich markup is added during Rich rendering."""
+        return "report.data"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
