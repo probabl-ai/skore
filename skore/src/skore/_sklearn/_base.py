@@ -61,45 +61,7 @@ def _get_jinja_env():
     return Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
 
 
-def _create_method_tooltip_html(
-    description: str, favorability_text: str | None = None
-) -> str:
-    """Create HTML for tooltip text content, optionally including favorability info."""
-    # Escape HTML special characters in description for tooltip
-    description_escaped = (
-        description.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-        .replace("'", "&#39;")
-    )
-
-    # Build tooltip content
-    tooltip_content = description_escaped
-    if favorability_text:
-        # Don't escape HTML in favorability_text if it contains HTML tags (like span for arrows)
-        # Only escape if it doesn't already contain HTML
-        if "<span" in favorability_text:
-            favorability_escaped = favorability_text
-        else:
-            favorability_escaped = (
-                favorability_text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace('"', "&quot;")
-                .replace("'", "&#39;")
-            )
-        tooltip_content = f"{description_escaped} {favorability_escaped}"
-
-    # Add documentation link text at the bottom
-    tooltip_content = (
-        f"{tooltip_content}<br><br>Click to access the online documentation"
-    )
-
-    return f'<span class="skore-help-tooltip-text">{tooltip_content}</span>'
-
-
-class _RichHelpMixin(ABC):
+class _RichHelpMixin:
     """Mixin for Rich-based help rendering."""
 
     def _create_help_tree(self) -> Tree:
@@ -218,7 +180,7 @@ class _RichHelpMixin(ABC):
         )
 
 
-class _HTMLHelpMixin(ABC):
+class _HTMLHelpMixin:
     """Mixin for HTML-based help rendering with Shadow DOM isolation."""
 
     def _build_help_data(self) -> dict[str, Any]:
@@ -324,12 +286,11 @@ class _HTMLHelpMixin(ABC):
                     for attr_name in attrs_without_underscore + attrs_with_underscore:
                         description = self._get_attribute_description(attr_name)
                         # Descriptions are already plain text from docstrings
-                        tooltip_html = _create_method_tooltip_html(description)
                         doc_url = _get_documentation_url(class_name, None, attr_name)
                         data["attributes"].append(
                             {
                                 "name": attr_name,
-                                "tooltip_html": tooltip_html,
+                                "description": description,
                                 "doc_url": doc_url,
                             }
                         )
@@ -384,15 +345,14 @@ class _HTMLHelpMixin(ABC):
         if hasattr(obj, "_get_favorability_text"):
             favorability_text = obj._get_favorability_text(name)
 
-        tooltip_html = _create_method_tooltip_html(description, favorability_text)
-
         # Generate documentation URL
         doc_url = _get_documentation_url(class_name, accessor_path, name)
 
         return {
             "name_only": method_name_only,
             "params_part": params_part,
-            "tooltip_html": tooltip_html,
+            "description": description,
+            "favorability_text": favorability_text,
             "doc_url": doc_url,
         }
 
