@@ -121,7 +121,11 @@ class Summary(DataFrame):
     def _repr_mimebundle_(self, include=None, exclude=None):
         """Display the interactive plot and controls."""
         self._plot_widget = ModelExplorerWidget(dataframe=self)
-        return {"text/html": self._plot_widget.display()}
+        bundle = (
+            self._plot_widget._repr_mimebundle_(include=include, exclude=exclude) or {}
+        )
+        bundle["text/plain"] = super().__repr__()
+        return bundle
 
     def _query_string_selection(self) -> str | None:
         """
