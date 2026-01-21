@@ -1,0 +1,205 @@
+/* Light theme (default) */
+.skore-help-container,
+:host {
+    --color-blue: #3043f0;
+    --color-orange: #f97316;
+    --color-text: #000;
+    --color-background: #fff;
+    --color-orange-hover: rgba(249, 115, 22, 0.1);
+    --color-blue-hover: rgba(48, 67, 240, 0.1);
+}
+
+:root {
+    --color-blue: #3043f0;
+    --color-orange: #f97316;
+    --color-text: #000;
+    --color-background: #fff;
+    --color-orange-hover: rgba(249, 115, 22, 0.1);
+    --color-blue-hover: rgba(48, 67, 240, 0.1);
+}
+
+/* Dark theme */
+.skore-help-container.dark-theme,
+.skore-help-container[data-theme="dark"],
+:host(.dark-theme),
+:host([data-theme="dark"]) {
+    --color-blue: #3043f0;
+    --color-orange: #f97316;
+    --color-text: #fff;
+    --color-background: #000;
+    --color-orange-hover: rgba(249, 115, 22, 0.2);
+    --color-blue-hover: rgba(48, 67, 240, 0.2);
+}
+
+:root[data-theme="dark"] {
+    --color-blue: #3043f0;
+    --color-orange: #f97316;
+    --color-text: #fff;
+    --color-background: #000;
+    --color-orange-hover: rgba(249, 115, 22, 0.2);
+    --color-blue-hover: rgba(48, 67, 240, 0.2);
+}
+
+.skore-help-container {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px;
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    background-color: var(--color-background);
+    margin: 10px 0;
+}
+
+.skore-help-title {
+    font-weight: bold;
+    color: var(--color-text);
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.skore-help-tree {
+    margin-left: 0;
+}
+
+.skore-help-node {
+    margin: 2px 0;
+}
+
+.skore-help-label {
+    color: var(--color-text);
+    font-weight: bold;
+}
+
+.skore-help-toggle {
+    display: none;
+}
+
+.skore-help-folder-label {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    color: var(--color-blue);
+    font-weight: bold;
+}
+
+/* Orange hover for accessors */
+.skore-help-folder-label:has(.skore-help-name):hover {
+    background-color: var(--color-orange-hover);
+}
+
+/* Blue hover for Methods and Attributes sections */
+.skore-help-folder-label:has(.skore-help-section-name):hover {
+    background-color: var(--color-blue-hover);
+}
+
+.skore-help-icon {
+    margin-right: 5px;
+    color: var(--color-orange);
+}
+
+.skore-help-name {
+    color: var(--color-orange);
+}
+
+.skore-help-section-name {
+    color: var(--color-blue);
+}
+
+.skore-help-folder-label:has(.skore-help-section-name) .skore-help-icon {
+    color: var(--color-blue);
+}
+
+.skore-help-toggle:checked + .skore-help-folder-label + .skore-help-folder-content {
+    display: block;
+}
+
+.skore-help-toggle:not(:checked) + .skore-help-folder-label + .skore-help-folder-content {
+    display: none;
+}
+
+.skore-help-toggle:checked + .skore-help-folder-label .skore-help-icon::before {
+    content: '▼';
+}
+
+.skore-help-toggle:not(:checked) + .skore-help-folder-label .skore-help-icon::before {
+    content: '▶';
+}
+
+.skore-help-folder-content {
+    margin-left: 20px;
+}
+
+.skore-help-method {
+    margin-left: 20px;
+    color: var(--color-text);
+}
+
+.skore-help-method-name {
+    color: var(--color-text);
+}
+
+.skore-help-method-tooltip {
+    position: relative;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-underline-offset: 0.3em;
+    cursor: help;
+    color: inherit;
+    text-decoration-color: inherit;
+}
+
+.skore-help-method-tooltip:hover {
+    color: inherit;
+}
+
+.skore-help-method-tooltip:hover .skore-help-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.skore-help-tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    background-color: var(--color-text);
+    color: var(--color-background);
+    text-align: left;
+    border-radius: 4px;
+    padding: 8px 10px;
+    position: absolute;
+    z-index: 1000;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    margin-left: 8px;
+    white-space: normal;
+    width: 250px;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: opacity 0.2s, visibility 0.2s;
+}
+
+.skore-help-arrow {
+    vertical-align: text-top;
+}
+
+.skore-help-tooltip-text::before {
+    content: "";
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: var(--color-text);
+}
+
+.skore-help-legend {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-text);
+    font-size: 12px;
+    color: var(--color-text);
+}

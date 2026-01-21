@@ -77,8 +77,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
     # Methods related to the help tree
     ####################################################################################
 
-    def _format_method_name(self, name: str) -> str:
-        return f"{name}(...)".ljust(29)
+    def _format_method_name(self, name: str, method: Any | None = None) -> str:
+        return super()._format_method_name(name, method).ljust(29)
 
     def _get_help_panel_title(self) -> str:
         return "[bold cyan]Available feature importance methods[/bold cyan]"

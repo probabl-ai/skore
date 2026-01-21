@@ -22,7 +22,7 @@ from skore._sklearn._plot.utils import (
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
-from skore._utils._repr_html import ReprHTMLMixin
+from skore._utils.repr_html import ReprHTMLMixin
 
 
 def _truncate_top_k_categories(
