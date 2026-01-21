@@ -490,9 +490,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             A DataFrame with one row per metric and hierarchical columns for each
             split. For each split, three sub-columns are provided:
 
-            - "Value": the raw metric value for that split
-            - "Modified Z-score": the MAD-based z-score (0.6745 * (x - median) / MAD)
-            - "Is Outlier (|z|>{threshold})": boolean indicating if the split is
+            - `Value`: the raw metric value for that split
+            - `Modified Z-score`: the MAD-based z-score (0.6745 * (x - median) / MAD)
+            - `Is Outlier (|z|>{threshold})`: boolean indicating if the split is
               an outlier
 
         Examples
