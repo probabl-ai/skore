@@ -17,6 +17,7 @@ from sklearn.utils._response import _check_response_method, _get_response_values
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
+from skore._utils._environment import is_environment_notebook_like
 from skore._utils._measure_time import MeasureTime
 
 
@@ -461,35 +462,13 @@ class _HelpMixin(_RichHelpMixin, _HTMLHelpMixin, ABC):
     def _get_help_panel_title(self) -> str:
         """Get the help panel title."""
 
-    def _is_interactive_environment(self) -> bool:
-        """Check if we are in an interactive environment (IPython/Jupyter)."""
-        try:
-            from IPython import get_ipython
-
-            ipython = get_ipython()
-            return ipython is not None
-        except ImportError:
-            return False
-
     def help(self) -> None:
-        """Display available methods using rich or HTML.
+        """Display a rich help."""
+        if is_environment_notebook_like():
+            from IPython.display import HTML, display
 
-        In interactive environments (Jupyter/IPython), displays HTML representation
-        with collapsible sections. Otherwise, displays Rich formatted output.
-        """
-        if self._is_interactive_environment():
-            # Display HTML in interactive environments
-            try:
-                from IPython.display import HTML, display
-
-                display(HTML(self._create_help_html()))
-            except ImportError:
-                # Fallback to Rich if IPython is not available
-                from skore import console  # avoid circular import
-
-                console.print(self._create_help_panel())
+            display(HTML(self._create_help_html()))
         else:
-            # Display Rich in terminal
             from skore import console  # avoid circular import
 
             console.print(self._create_help_panel())
