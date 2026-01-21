@@ -31,7 +31,9 @@ functionalities of the report are exposed through accessors.
    :template: autosummary/accessor.rst
 
    CrossValidationReport.data
+   CrossValidationReport.feature_importance
    CrossValidationReport.metrics
+
 
 
 .. _cross_validation_data:
