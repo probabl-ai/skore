@@ -7,13 +7,18 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 import joblib
 import numpy as np
+import pandas as pd
 from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.types import _DEFAULT, PositiveLabel
+from skore._sklearn.types import (
+    _DEFAULT,
+    Metric,
+    PositiveLabel,
+)
 from skore._utils._cache import Cache
 from skore._utils._progress_bar import progress_decorator
 
@@ -422,6 +427,153 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     @property
     def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
+
+    def get_best_model(
+        self,
+        *,
+        data_source: Literal["train", "test", "X_y"] = "test",
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        metric: Metric | None = None,
+        metric_kwargs: dict[str, Any] | None = None,
+        response_method: str | list[str] | None = None,
+        pos_label: PositiveLabel | None = _DEFAULT,
+        aggregate: str | None = "mean",
+    ) -> EstimatorReport | CrossValidationReport:
+        """Get the best model from the comparison based on a metric.
+
+        The best model is determined by computing the specified metric for all
+        models and selecting the one with the best value (highest or lowest
+        depending on the metric).
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use for computing the metric.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            Data on which to compute the metric when `data_source="X_y"`.
+
+        y : array-like of shape (n_samples,), default=None
+            Target on which to compute the metric when `data_source="X_y"`.
+
+        metric : str or callable, default=None
+            The metric to use for comparison. If None, a default metric is
+            automatically selected based on the machine learning task:
+
+            - For classification tasks: "accuracy"
+            - For regression tasks: "r2"
+
+            Valid metrics include: "accuracy", "precision", "recall", "roc_auc",
+            "log_loss", "brier_score", "r2", "rmse", and any custom metric
+            accessible via the metrics accessor.
+
+            Can also be a callable with signature ``metric(y_true, y_pred)`` that
+            returns a scalar score; in this case it is assumed that higher values are
+            better, as per the scikit-learn convention.
+
+        metric_kwargs : dict
+            The keyword arguments to pass to the metric functions.
+
+        response_method : {"predict", "predict_proba", "predict_log_proba", \
+            "decision_function"} or list of such str, default=None
+            The estimator's method to be invoked to get the predictions. Only necessary
+            for custom metrics.
+
+        pos_label : int, float, bool, str or None, default=_DEFAULT
+            The label to consider as the positive class when computing the metric. Use
+            this parameter to override the positive class. By default, the positive
+            class is set to the one provided when creating the report. If `None`,
+            the metric is computed considering each class as a positive class.
+
+        aggregate : str or None, default="mean"
+            The aggregation function to use across cross-validation splits.
+            Only valid for `CrossValidationReport` comparisons, ignored when comparison
+            is between `EstimatorReport` instances.
+
+        Returns
+        -------
+        EstimatorReport or CrossValidationReport
+            The report object corresponding to the best model according to the
+            specified metric.
+
+        Raises
+        ------
+        ValueError
+            If the metric computation results in invalid data or if the metric
+            is not available for the given task.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.tree import DecisionTreeClassifier
+        >>> from skore import ComparisonReport, EstimatorReport, train_test_split
+        >>> X, y = make_classification(random_state=42)
+        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
+        >>> report_1 = EstimatorReport(LogisticRegression(), **split_data)
+        >>> report_2 = EstimatorReport(DecisionTreeClassifier(), **split_data)
+        >>> report = ComparisonReport([report_1, report_2])
+        >>> report.get_best_model()
+        EstimatorReport(...)
+
+        Using a custom metric:
+
+        >>> report.get_best_model(metric="roc_auc")
+        EstimatorReport(...)
+        """
+        # TODO: We can probably reuse the method in EstimatorReport.metrics.summarize()
+        if metric is None:
+            if "classification" in self._ml_task:
+                metric = "accuracy"
+            elif "regression" in self._ml_task:
+                metric = "r2"
+            else:
+                raise ValueError(
+                    f"Cannot infer default metric for ML task '{self._ml_task}'. "
+                    "Please specify a metric explicitly."
+                )
+
+        metrics_display = self.metrics.summarize(
+            metric=metric,
+            data_source=data_source,
+            X=X,
+            y=y,
+            response_method=response_method,
+            pos_label=pos_label,
+            favorability=True,
+            aggregate=aggregate,
+            metric_kwargs=metric_kwargs,
+        )
+
+        results = metrics_display.frame()
+
+        favorability = results["Favorability"].iloc[0]
+        results = results.drop(columns=["Favorability"])
+
+        # The columns can be multi-level e.g. ("mean", model_name)
+        if isinstance(results.columns, pd.MultiIndex):
+            results.columns = results.columns.droplevel(0)
+
+        if isinstance(results.index, pd.MultiIndex):
+            # For metrics like precision or recall with multiple labels,
+            # we average across labels
+            comparison_values = results.mean(axis=0)
+        else:
+            comparison_values = results.iloc[0]
+
+        best_model_name = (
+            comparison_values.idxmin()
+            if favorability == "(↘︎)"
+            else comparison_values.idxmax()
+        )
+
+        # Return the corresponding report
+        return self.reports_[best_model_name]
 
     ####################################################################################
     # Methods related to the help and repr
