@@ -1,91 +1,38 @@
-<div class="skore-help-container">
-    <div class="skore-help-title">{{ title }}</div>
-    <div class="skore-help-tree">
-        {% if is_report %}
-            {# Root node #}
-            <div class="skore-help-node">
-                <span class="skore-help-label">{{ class_name }}</span>
-            </div>
-            <div class="skore-help-root-content">
-            {# Accessors #}
-            {% for accessor in accessors %}
-                <div class="skore-help-node skore-help-folder">
-                    <input type="checkbox" id="{{ accessor.id }}" class="skore-help-toggle">
-                    <label for="{{ accessor.id }}" class="skore-help-folder-label">
-                        <span class="skore-help-name">.{{ accessor.name }}</span>
-                    </label>
-                    <div class="skore-help-folder-content" id="{{ accessor.folder_id }}">
-                        {# Main accessor methods #}
-                        {% for method in accessor.methods %}
-                            <div class="skore-help-node skore-help-method">
-                                <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
-                                </div>
-                        {% endfor %}
+<div id="{{ container_id }}-wrapper">
+    <template id="{{ container_id }}-template">
+        <style>
+{% include "help.css" %}
+        </style>
+        {% include "help-content.html.j2" %}
+    </template>
 
-                        {# Sub-accessors #}
-                        {% for sub_accessor in accessor.sub_accessors %}
-                            <div class="skore-help-node skore-help-folder">
-                                <input type="checkbox" id="{{ sub_accessor.id }}" class="skore-help-toggle">
-                                <label for="{{ sub_accessor.id }}" class="skore-help-folder-label">
-                                    <span class="skore-help-name">.{{ sub_accessor.name }}</span>
-                                </label>
-                                <div class="skore-help-folder-content" id="{{ sub_accessor.folder_id }}">
-                                    {% for method in sub_accessor.methods %}
-                                        <div class="skore-help-node skore-help-method">
-                                            <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
-                                            </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endfor %}
+    <div id="{{ container_id }}"></div>
 
-            {# Methods section #}
-            {% if base_methods %}
-                <div class="skore-help-node skore-help-folder">
-                    <input type="checkbox" id="{{ methods_section.id }}" class="skore-help-toggle">
-                    <label for="{{ methods_section.id }}" class="skore-help-folder-label">
-                        <span class="skore-help-section-name">Methods</span>
-                    </label>
-                    <div class="skore-help-folder-content" id="{{ methods_section.folder_id }}">
-                        {% for method in base_methods %}
-                            <div class="skore-help-node skore-help-method">
-                                <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
-                                </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-
-            {# Attributes section #}
-            {% if attributes %}
-                <div class="skore-help-node skore-help-folder">
-                    <input type="checkbox" id="{{ attributes_section.id }}" class="skore-help-toggle">
-                    <label for="{{ attributes_section.id }}" class="skore-help-folder-label">
-                        <span class="skore-help-section-name">Attributes</span>
-                    </label>
-                    <div class="skore-help-folder-content" id="{{ attributes_section.folder_id }}">
-                        {% for attr in attributes %}
-                            <div class="skore-help-node skore-help-method">
-                                <span class="skore-help-method-name">.<a href="{{ attr.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ attr.name }}{{ attr.tooltip_html|safe }}</a></span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-            </div>
-        {% else %}
-            {# Accessor-only implementation #}
-            <div class="skore-help-node">
-                <span class="skore-help-label">{{ tree_title }}</span>
-            </div>
-            {% for method in methods %}
-                <div class="skore-help-node skore-help-method">
-                    <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
-                    </div>
-            {% endfor %}
-        {% endif %}
-    </div>
+    <script type="module">
+{% include "help.js" %}
+    </script>
 </div>
+
+<script>
+(function() {
+    const container = document.getElementById('{{ container_id }}');
+    if (!container) {
+        return;
+    }
+
+    const template = document.getElementById('{{ container_id }}-template');
+    if (!template) {
+        return;
+    }
+
+    // Create shadow root with closed mode for better isolation
+    const shadowRoot = container.attachShadow({ mode: 'closed' });
+    shadowRoot.appendChild(template.content.cloneNode(true));
+
+    // Apply theme to the container
+    const helpContainer = shadowRoot.querySelector('.skore-help-container');
+    if (helpContainer) {
+        applyThemeToHelpContainer(helpContainer);
+    }
+})();
+</script>

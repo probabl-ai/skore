@@ -74,24 +74,6 @@ def _strip_rich_markup(text: str) -> str:
     return text
 
 
-def _load_help_css() -> str:
-    """Load the CSS content from the help.css file."""
-    # Import here to avoid circular imports
-    from skore._utils import repr_html
-
-    css_path = Path(repr_html.__file__).parent / "help.css"
-    return css_path.read_text()
-
-
-def _load_help_js() -> str:
-    """Load the JavaScript content from the help.js file."""
-    # Import here to avoid circular imports
-    from skore._utils import repr_html
-
-    js_path = Path(repr_html.__file__).parent / "help.js"
-    return js_path.read_text()
-
-
 def _get_jinja_env():
     """Get Jinja2 environment for loading templates."""
     from skore._utils import repr_html
@@ -423,60 +405,19 @@ class _HTMLHelpMixin(ABC):
         # Build data structure for template
         template_data = self._build_help_data()
 
-        # Load and render template
+        # Load template
         env = _get_jinja_env()
         template = env.get_template("help.html.j2")
-        html_content = template.render(**template_data)
 
         # Generate unique ID for this instance
         container_id = f"skore-help-{uuid.uuid4().hex[:8]}"
 
-        # Get CSS and JS content
-        css_content = _load_help_css()
-        js_content = _load_help_js()
-
-        # Escape content for JavaScript string (escape backticks, backslashes, and template literals)
-        escaped_css = (
-            css_content.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
+        # Render the template with all data
+        # CSS and JS are included directly via {% include %} in the template
+        shadow_dom_html = template.render(
+            container_id=container_id,
+            **template_data,
         )
-        escaped_html = (
-            html_content.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
-        )
-        escaped_js = (
-            js_content.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
-        )
-
-        # Wrap in Shadow DOM using JavaScript
-        shadow_dom_html = f"""<div id="{container_id}"></div>
-<script>
-{escaped_js}
-
-(function() {{
-    const container = document.getElementById('{container_id}');
-    if (!container) {{
-        return;
-    }}
-
-    // Create shadow root with closed mode for better isolation
-    const shadowRoot = container.attachShadow({{ mode: 'closed' }});
-
-    // Create style element with CSS
-    const style = document.createElement('style');
-    style.textContent = `{escaped_css}`;
-    shadowRoot.appendChild(style);
-
-    // Create wrapper div for HTML content
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = `{escaped_html}`;
-    shadowRoot.appendChild(wrapper);
-
-    // Apply theme to the container
-    const helpContainer = wrapper.querySelector('.skore-help-container');
-    if (helpContainer) {{
-        applyThemeToHelpContainer(helpContainer);
-    }}
-}})();
-</script>"""
 
         return shadow_dom_html
 
