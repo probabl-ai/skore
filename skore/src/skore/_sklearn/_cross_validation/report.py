@@ -5,6 +5,7 @@ from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
+import pandas as pd
 from numpy.typing import ArrayLike
 from rich.panel import Panel
 from sklearn.base import BaseEstimator, clone, is_classifier
@@ -16,7 +17,13 @@ from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.find_ml_task import _find_ml_task
-from skore._sklearn.types import _DEFAULT, MLTask, PositiveLabel, SKLearnCrossValidator
+from skore._sklearn.types import (
+    _DEFAULT,
+    Metric,
+    MLTask,
+    PositiveLabel,
+    SKLearnCrossValidator,
+)
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import Parallel, delayed
@@ -445,6 +452,103 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
             for report in self.estimator_reports_
         ]
+
+    def check_split_consistency(
+        self,
+        *,
+        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        data_source: Literal["train", "test"] = "test",
+        threshold: float = 3.5,
+    ) -> dict[str, list[int]]:
+        """Check whether the splits produce consistent results.
+
+        Uses the Modified Z-score with Median Absolute Deviation (MAD) to detect
+        outlier splits that have unexpectedly good or bad performance.
+
+        Parameters
+        ----------
+        metric : str, callable, scorer, list or dict of such, default=None
+            The metric(s) to check for consistency. Follows the same format as
+            `metrics.summarize()`. If None, uses the default metrics from
+            `summarize()`, excluding timing metrics (fit time, predict time).
+
+        data_source : {"train", "test"}, default="test"
+            The data source to use for computing the metrics.
+
+        threshold : float, default=3.5
+            The threshold for the Modified Z-score. Splits with absolute Modified
+            Z-scores above this threshold are flagged as potential outliers.
+            Common values:
+
+            - 3.5 (conservative, catches only clear outliers)
+            - 2.5 (moderately sensitive)
+            - 1.5 (very sensitive, may flag normal variation)
+
+        Returns
+        -------
+        dict[str, list[int]]
+            A dictionary where each key is a metric name and each value is a list
+            of split indices that are outliers (empty list if no outliers).
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=5)
+        >>> report.check_split_consistency(metric="roc_auc")
+        {'ROC AUC': []}
+        """
+        summary = self.metrics.summarize(
+            metric=metric,
+            data_source=data_source,
+            aggregate=None,
+        ).frame()
+
+        # Filter out speed/timing metrics
+        speed_metrics = ("Fit time", "Predict time")
+        summary = summary[
+            ~summary.index.get_level_values(0).str.startswith(speed_metrics)
+        ]
+
+        n_splits = len(self.estimator_reports_)
+        split_cols = [f"Split #{i}" for i in range(n_splits)]
+
+        results: dict[str, list[int]] = {}
+
+        for metric_row_key in summary.index:
+            scores = np.array(
+                [
+                    summary.loc[metric_row_key, (self.estimator_name_, col)]
+                    for col in split_cols
+                ]
+            )
+
+            median = np.median(scores)
+            mad = np.median(np.abs(scores - median))
+
+            if mad == 0:
+                outlier_indices: list[int] = []
+            else:
+                modified_z_scores = 0.6745 * (scores - median) / mad
+                outlier_indices = np.where(np.abs(modified_z_scores) > threshold)[
+                    0
+                ].tolist()
+
+            if isinstance(metric_row_key, tuple):
+                metric_name, label = metric_row_key
+                if label == "" or pd.isna(label):
+                    row_key = metric_name
+                else:
+                    row_key = f"{metric_name} ({label})"
+            else:
+                row_key = metric_row_key
+
+            results[row_key] = outlier_indices
+
+        return results
 
     @property
     def ml_task(self) -> MLTask:
