@@ -58,6 +58,7 @@ get the common performance metric representations.
     ComparisonReport.metrics.rmse
     ComparisonReport.metrics.roc_auc
     ComparisonReport.metrics.timings
+    ComparisonReport.metrics.confusion_matrix
 
 Inspection
 ----------
