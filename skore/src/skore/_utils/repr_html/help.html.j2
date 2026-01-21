@@ -6,21 +6,19 @@
             <div class="skore-help-node">
                 <span class="skore-help-label">{{ class_name }}</span>
             </div>
-
+            <div class="skore-help-root-content">
             {# Accessors #}
             {% for accessor in accessors %}
                 <div class="skore-help-node skore-help-folder">
                     <input type="checkbox" id="{{ accessor.id }}" class="skore-help-toggle">
                     <label for="{{ accessor.id }}" class="skore-help-folder-label">
-                        <span class="skore-help-icon"></span>
                         <span class="skore-help-name">.{{ accessor.name }}</span>
                     </label>
                     <div class="skore-help-folder-content" id="{{ accessor.folder_id }}">
                         {# Main accessor methods #}
                         {% for method in accessor.methods %}
                             <div class="skore-help-node skore-help-method">
-                                <span class="skore-help-method-name">.
-                                    <a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
+                                <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
                                 </div>
                         {% endfor %}
 
@@ -29,14 +27,12 @@
                             <div class="skore-help-node skore-help-folder">
                                 <input type="checkbox" id="{{ sub_accessor.id }}" class="skore-help-toggle">
                                 <label for="{{ sub_accessor.id }}" class="skore-help-folder-label">
-                                    <span class="skore-help-icon"></span>
                                     <span class="skore-help-name">.{{ sub_accessor.name }}</span>
                                 </label>
                                 <div class="skore-help-folder-content" id="{{ sub_accessor.folder_id }}">
                                     {% for method in sub_accessor.methods %}
                                         <div class="skore-help-node skore-help-method">
-                                            <span class="skore-help-method-name">.
-                                                <a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
+                                            <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
                                             </div>
                                     {% endfor %}
                                 </div>
@@ -51,14 +47,12 @@
                 <div class="skore-help-node skore-help-folder">
                     <input type="checkbox" id="{{ methods_section.id }}" class="skore-help-toggle">
                     <label for="{{ methods_section.id }}" class="skore-help-folder-label">
-                        <span class="skore-help-icon"></span>
                         <span class="skore-help-section-name">Methods</span>
                     </label>
                     <div class="skore-help-folder-content" id="{{ methods_section.folder_id }}">
                         {% for method in base_methods %}
                             <div class="skore-help-node skore-help-method">
-                                <span class="skore-help-method-name">.
-                                    <a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
+                                <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
                                 </div>
                         {% endfor %}
                     </div>
@@ -70,20 +64,18 @@
                 <div class="skore-help-node skore-help-folder">
                     <input type="checkbox" id="{{ attributes_section.id }}" class="skore-help-toggle">
                     <label for="{{ attributes_section.id }}" class="skore-help-folder-label">
-                        <span class="skore-help-icon"></span>
                         <span class="skore-help-section-name">Attributes</span>
                     </label>
                     <div class="skore-help-folder-content" id="{{ attributes_section.folder_id }}">
                         {% for attr in attributes %}
                             <div class="skore-help-node skore-help-method">
-                                <span class="skore-help-method-name">.
-                                    <a href="{{ attr.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ attr.name }}{{ attr.tooltip_html|safe }}</a>
-                                </span>
+                                <span class="skore-help-method-name">.<a href="{{ attr.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ attr.name }}{{ attr.tooltip_html|safe }}</a></span>
                             </div>
                         {% endfor %}
                     </div>
                 </div>
             {% endif %}
+            </div>
         {% else %}
             {# Accessor-only implementation #}
             <div class="skore-help-node">
@@ -91,8 +83,7 @@
             </div>
             {% for method in methods %}
                 <div class="skore-help-node skore-help-method">
-                    <span class="skore-help-method-name">.
-                        <a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
+                    <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
                     </div>
             {% endfor %}
         {% endif %}

@@ -8,7 +8,7 @@ from typing import Any, Generic, Literal, TypeVar, cast
 import joblib
 from jinja2 import Environment, FileSystemLoader
 from numpy.typing import ArrayLike, NDArray
-from rich.console import Console, Group
+from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
 from sklearn.base import BaseEstimator
@@ -131,23 +131,6 @@ def _create_method_tooltip_html(
         tooltip_content = f"{description_escaped}<br><br>{favorability_escaped}"
 
     return f'<span class="skore-help-tooltip-text">{tooltip_content}</span>'
-
-
-def _create_favorability_tooltip_html(favorability_text: str) -> str:
-    """Create HTML for a favorability tooltip with a chart icon."""
-    # Escape HTML special characters in favorability text for tooltip
-    favorability_escaped = (
-        favorability_text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-        .replace("'", "&#39;")
-    )
-    return (
-        f'<span class="skore-help-method-tooltip skore-help-favorability-tooltip">📊'
-        f'<span class="skore-help-tooltip-text">{favorability_escaped}</span>'
-        f"</span>"
-    )
 
 
 class _RichHelpMixin(ABC):
@@ -575,10 +558,6 @@ class _HelpMixin(_RichHelpMixin, _HTMLHelpMixin, ABC):
         search_result = re.search(regex_pattern, self.__doc__)
         return search_result.group(1) if search_result else "No description available"
 
-    def _get_help_legend(self) -> str | None:
-        """Get the help legend."""
-        return None
-
     @abstractmethod
     def _get_help_panel_title(self) -> str:
         """Get the help panel title."""
@@ -643,9 +622,6 @@ class _BaseReport(_HelpMixin):
     estimator_: BaseEstimator
 
     def _get_help_panel_title(self) -> str:
-        return ""
-
-    def _get_help_legend(self) -> str:
         return ""
 
     def _get_attributes_for_help(self) -> list[str]:
@@ -954,9 +930,6 @@ class _BaseMetricsAccessor:
 
     def _get_help_tree_title(self) -> str:
         return "[bold cyan]report.metrics[/bold cyan]"
-
-    def _get_help_legend(self) -> str:
-        return ""  # No legend needed - favorability shown in tooltips
 
     def _get_favorability_text(self, name: str) -> str | None:
         """Get favorability text for a method, or None if not applicable."""
