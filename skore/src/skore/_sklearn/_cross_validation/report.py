@@ -459,7 +459,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         metric: Metric | list[Metric] | dict[str, Metric] | None = None,
         data_source: Literal["train", "test"] = "test",
         threshold: float = 3.5,
-    ) -> dict[str, list[int]]:
+    ) -> pd.DataFrame:
         """Check whether the splits produce consistent results.
 
         Uses the Modified Z-score with Median Absolute Deviation (MAD) to detect
@@ -486,9 +486,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Returns
         -------
-        dict[str, list[int]]
-            A dictionary where each key is a metric name and each value is a list
-            of split indices that are outliers (empty list if no outliers).
+        pd.DataFrame
+            A DataFrame with one row per metric and hierarchical columns for each
+            split. For each split, three sub-columns are provided:
+
+            - "Value": the raw metric value for that split
+            - "Modified Z-score": the MAD-based z-score (0.6745 * (x - median) / MAD)
+            - "Is Outlier (|z|>{threshold})": boolean indicating if the split is
+              an outlier
 
         Examples
         --------
@@ -499,7 +504,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=5)
         >>> report.check_split_consistency(metric="roc_auc")
-        {'ROC AUC': []}
         """
         summary = self.metrics.summarize(
             metric=metric,
@@ -515,8 +519,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         n_splits = len(self.estimator_reports_)
         split_cols = [f"Split #{i}" for i in range(n_splits)]
+        outlier_col_name = f"Is Outlier (|z|>{threshold})"
 
-        results: dict[str, list[int]] = {}
+        result_data: dict[str, dict[tuple[str, str], str | bool]] = {}
 
         for metric_row_key in summary.index:
             scores = np.array(
@@ -530,12 +535,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             mad = np.median(np.abs(scores - median))
 
             if mad == 0:
-                outlier_indices: list[int] = []
+                modified_z_scores = np.zeros_like(scores, dtype=float)
             else:
                 modified_z_scores = 0.6745 * (scores - median) / mad
-                outlier_indices = np.where(np.abs(modified_z_scores) > threshold)[
-                    0
-                ].tolist()
+
+            is_outlier = np.abs(modified_z_scores) > threshold
 
             if isinstance(metric_row_key, tuple):
                 metric_name, label = metric_row_key
@@ -546,9 +550,28 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             else:
                 row_key = metric_row_key
 
-            results[row_key] = outlier_indices
+            row_data: dict[tuple[str, str], str | bool] = {}
+            for i, split_col in enumerate(split_cols):
+                row_data[(split_col, "Value")] = f"{scores[i]:.3f}"
+                row_data[(split_col, "Modified Z-score")] = (
+                    f"{modified_z_scores[i]:.3f}"
+                )
+                row_data[(split_col, outlier_col_name)] = is_outlier[i]
 
-        return results
+            result_data[row_key] = row_data
+
+        result_df = pd.DataFrame.from_dict(result_data, orient="index")
+        result_df.index.name = "Metric"
+
+        column_order = [
+            (split, subcol)
+            for split in split_cols
+            for subcol in ["Value", "Modified Z-score", outlier_col_name]
+        ]
+        result_df = result_df[column_order]
+        result_df.columns = pd.MultiIndex.from_tuples(result_df.columns)
+
+        return result_df
 
     @property
     def ml_task(self) -> MLTask:
