@@ -190,7 +190,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def _get_help_tree_title(self) -> str:
         """Return plain text title - Rich markup is added during Rich rendering."""
-        return "report.data"
+        return f"{self._parent.__class__.__name__}.data"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""

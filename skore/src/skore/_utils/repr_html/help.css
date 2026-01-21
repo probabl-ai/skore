@@ -31,6 +31,9 @@
     border-radius: 4px;
     background-color: var(--color-background);
     margin: 10px 0;
+    width: fit-content;
+    min-width: 500px;
+    max-width: 800px;
 }
 
 .skore-help-title {
@@ -61,7 +64,8 @@
 }
 
 /* Vertical lines for root content items - using border-left pattern */
-.skore-help-root-content > .skore-help-node {
+.skore-help-root-content > .skore-help-node,
+.skore-help-root-content > .skore-help-method {
     border-left: 2px solid var(--color-text);
     padding-left: 16px;
     position: relative;
@@ -71,7 +75,8 @@
 }
 
 /* Extend border to connect with previous element */
-.skore-help-root-content > .skore-help-node:not(:first-child) {
+.skore-help-root-content > .skore-help-node:not(:first-child),
+.skore-help-root-content > .skore-help-method:not(:first-child) {
     border-top: 2px solid transparent;
     margin-top: -2px;
     padding-top: 2px;
@@ -84,7 +89,8 @@
 }
 
 /* Add half-height vertical line for last item */
-.skore-help-root-content > .skore-help-node:last-child::after {
+.skore-help-root-content > .skore-help-node:last-child::after,
+.skore-help-root-content > .skore-help-method:last-child::after {
     content: '';
     position: absolute;
     left: -2px;
@@ -95,12 +101,14 @@
 }
 
 /* Hide border below middle for last item */
-.skore-help-root-content > .skore-help-node:last-child {
+.skore-help-root-content > .skore-help-node:last-child,
+.skore-help-root-content > .skore-help-method:last-child {
     border-left-color: transparent;
 }
 
 /* Horizontal connector lines for root content items */
-.skore-help-root-content > .skore-help-node::before {
+.skore-help-root-content > .skore-help-node::before,
+.skore-help-root-content > .skore-help-method::before {
     content: '';
     position: absolute;
     left: -2px;
@@ -218,6 +226,7 @@
 .skore-help-method-name {
     color: var(--color-text);
 }
+
 
 .skore-help-method-tooltip {
     position: relative;

@@ -53,8 +53,6 @@ def _get_documentation_url(
     return f"{base_url}/{'.'.join(path_parts)}.html"
 
 
-
-
 def _get_jinja_env():
     """Get Jinja2 environment for loading templates."""
     from skore._utils import repr_html
@@ -91,7 +89,12 @@ def _create_method_tooltip_html(
                 .replace('"', "&quot;")
                 .replace("'", "&#39;")
             )
-        tooltip_content = f"{description_escaped}<br><br>{favorability_escaped}"
+        tooltip_content = f"{description_escaped} {favorability_escaped}"
+
+    # Add documentation link text at the bottom
+    tooltip_content = (
+        f"{tooltip_content}<br><br>Click to access the online documentation"
+    )
 
     return f'<span class="skore-help-tooltip-text">{tooltip_content}</span>'
 
@@ -203,7 +206,9 @@ class _RichHelpMixin(ABC):
         # Get plain text title and add Rich markup for display
         title_plain = self._get_help_panel_title()
         # Add Rich markup for display (if title is not empty)
-        title_rich = f"[bold cyan]{title_plain}[/bold cyan]" if title_plain else title_plain
+        title_rich = (
+            f"[bold cyan]{title_plain}[/bold cyan]" if title_plain else title_plain
+        )
 
         return Panel(
             content,
@@ -215,7 +220,6 @@ class _RichHelpMixin(ABC):
 
 class _HTMLHelpMixin(ABC):
     """Mixin for HTML-based help rendering with Shadow DOM isolation."""
-
 
     def _build_help_data(self) -> dict[str, Any]:
         """Build data structure for Jinja2 template rendering."""
@@ -359,7 +363,7 @@ class _HTMLHelpMixin(ABC):
         accessor_path: str | None,
     ) -> dict[str, Any]:
         """Build data structure for a single method.
-        
+
         Note: This method works with plain text. Method names and descriptions
         from _format_method_name and _get_method_description are already plain text.
         """
@@ -866,7 +870,7 @@ class _BaseMetricsAccessor:
 
     def _get_help_tree_title(self) -> str:
         """Return plain text title - Rich markup is added during Rich rendering."""
-        return "report.metrics"
+        return f"{self._parent.__class__.__name__}.metrics"
 
     def _get_favorability_text(self, name: str) -> str | None:
         """Get favorability text for a method, or None if not applicable."""
@@ -874,7 +878,7 @@ class _BaseMetricsAccessor:
             return None
         icon = self._score_or_loss_info[name]["icon"]
         if icon == "(↗︎)":
-            return 'higher is better <span class="skore-help-arrow">↗</span>'
+            return "Higher value is better."
         elif icon == "(↘︎)":
-            return 'lower is better <span class="skore-help-arrow">↘</span>'
+            return "Lower value is better."
         return None

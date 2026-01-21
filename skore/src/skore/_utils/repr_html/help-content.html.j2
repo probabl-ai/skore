@@ -81,11 +81,13 @@
             <div class="skore-help-node">
                 <span class="skore-help-label">{{ tree_title }}</span>
             </div>
-            {% for method in methods %}
-                <div class="skore-help-node skore-help-method">
-                    <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
-                    </div>
-            {% endfor %}
+            <div class="skore-help-root-content">
+                {% for method in methods %}
+                    <div class="skore-help-node skore-help-method">
+                        <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name_only }}{{ method.tooltip_html|safe }}</a>{{ method.params_part }}</span>
+                        </div>
+                {% endfor %}
+            </div>
         {% endif %}
     </div>
 </div>

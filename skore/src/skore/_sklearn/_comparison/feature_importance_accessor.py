@@ -126,7 +126,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
 
     def _get_help_tree_title(self) -> str:
         """Return plain text title - Rich markup is added during Rich rendering."""
-        return "report.feature_importance"
+        return f"{self._parent.__class__.__name__}.feature_importance"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
