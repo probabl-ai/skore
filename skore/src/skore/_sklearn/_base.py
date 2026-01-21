@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Generic, Literal, TypeVar, cast
 
 import joblib
+from jinja2 import Environment, FileSystemLoader
 from numpy.typing import ArrayLike, NDArray
 from rich.console import Console, Group
 from rich.panel import Panel
@@ -89,6 +90,14 @@ def _load_help_js() -> str:
 
     js_path = Path(repr_html.__file__).parent / "help.js"
     return js_path.read_text()
+
+
+def _get_jinja_env():
+    """Get Jinja2 environment for loading templates."""
+    from skore._utils import repr_html
+
+    template_dir = Path(repr_html.__file__).parent
+    return Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
 
 
 def _create_method_tooltip_html(
@@ -251,292 +260,118 @@ class _RichHelpMixin(ABC):
 class _HTMLHelpMixin(ABC):
     """Mixin for HTML-based help rendering with Shadow DOM isolation."""
 
-    def _create_help_html(self) -> str:
-        """Create the HTML representation of the help tree."""
+    def _build_help_data(self) -> dict[str, Any]:
+        """Build data structure for Jinja2 template rendering."""
         import uuid
 
-        html_parts = []
         title = self._get_help_panel_title()
-        # Strip Rich markup from title
         title_clean = _strip_rich_markup(title)
+        class_name = self.__class__.__name__
 
-        html_parts.append('<div class="skore-help-container">')
-        html_parts.append(f'<div class="skore-help-title">{title_clean}</div>')
+        data: dict[str, Any] = {
+            "title": title_clean,
+            "is_report": hasattr(self, "_ACCESSOR_CONFIG"),
+        }
 
-        # Build the tree structure as HTML
-        html_parts.append('<div class="skore-help-tree">')
-
-        # Check if this is a report (has _ACCESSOR_CONFIG) or an accessor
-        if hasattr(self, "_ACCESSOR_CONFIG"):
+        if data["is_report"]:
             # Report implementation
-            # Root node
-            html_parts.append(f'<div class="skore-help-node">')
-            html_parts.append(
-                f'<span class="skore-help-label">{self.__class__.__name__}</span>'
-            )
-            html_parts.append("</div>")
+            data["class_name"] = class_name
+            data["accessors"] = []
+            data["base_methods"] = []
+            data["attributes"] = None
+            data["methods_section"] = None
+            data["attributes_section"] = None
 
-            # Add accessor methods first
+            # Build accessors data
             for accessor_attr, config in self._ACCESSOR_CONFIG.items():
                 accessor = getattr(self, accessor_attr)
-                accessor_id = str(uuid.uuid4())
-                folder_id = str(uuid.uuid4())
-
-                # Accessor folder (collapsed by default)
-                html_parts.append('<div class="skore-help-node skore-help-folder">')
-                html_parts.append(
-                    f'<input type="checkbox" id="{accessor_id}" class="skore-help-toggle">'
-                )
-                html_parts.append(
-                    f'<label for="{accessor_id}" class="skore-help-folder-label">'
-                    f'<span class="skore-help-icon"></span>'
-                    f'<span class="skore-help-name">.{config["name"]}</span>'
-                    f"</label>"
-                )
-                html_parts.append(
-                    f'<div class="skore-help-folder-content" id="{folder_id}">'
-                )
+                accessor_data = {
+                    "id": str(uuid.uuid4()),
+                    "folder_id": str(uuid.uuid4()),
+                    "name": config["name"],
+                    "methods": [],
+                    "sub_accessors": [],
+                }
 
                 # Add main accessor methods
                 methods = accessor._get_methods_for_help()
                 methods = accessor._sort_methods_for_help(methods)
 
                 for name, method in methods:
-                    displayed_name = accessor._format_method_name(name, method)
-                    description = accessor._get_method_description(method)
-                    # Strip Rich markup from method name and description
-                    displayed_name_clean = _strip_rich_markup(displayed_name)
-                    description_clean = _strip_rich_markup(description)
-
-                    # Split method name from parameters
-                    if "(" in displayed_name_clean:
-                        method_name_only, params_part = displayed_name_clean.split(
-                            "(", 1
-                        )
-                        params_part = (
-                            "(" + params_part
-                        )  # Include the opening parenthesis
-                    else:
-                        method_name_only = displayed_name_clean
-                        params_part = ""
-
-                    # Get favorability text if applicable (for metrics accessor)
-                    favorability_text = None
-                    if hasattr(accessor, "_get_favorability_text"):
-                        favorability_text = accessor._get_favorability_text(name)
-
-                    tooltip_html = _create_method_tooltip_html(
-                        description_clean, favorability_text
+                    method_data = self._build_method_data(
+                        name, method, accessor, class_name, config["name"]
                     )
-
-                    # Generate documentation URL
-                    class_name = self.__class__.__name__
-                    accessor_name = config["name"]
-                    doc_url = _get_documentation_url(class_name, accessor_name, name)
-
-                    html_parts.append(
-                        '<div class="skore-help-node skore-help-method">'
-                        f'<span class="skore-help-method-name">.'
-                        f'<a href="{doc_url}" target="_blank" class="skore-help-method-tooltip">{method_name_only}'
-                        f"{tooltip_html}"
-                        f"</a>{params_part}</span>"
-                        "</div>"
-                    )
+                    accessor_data["methods"].append(method_data)
 
                 # Add sub-accessors
                 for sub_attr, sub_obj in inspect.getmembers(accessor):
                     if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith(
                         "_"
                     ):
-                        sub_id = str(uuid.uuid4())
-                        sub_folder_id = str(uuid.uuid4())
-
-                        html_parts.append(
-                            '<div class="skore-help-node skore-help-folder">'
-                        )
-                        html_parts.append(
-                            f'<input type="checkbox" id="{sub_id}" class="skore-help-toggle">'
-                        )
-                        html_parts.append(
-                            f'<label for="{sub_id}" class="skore-help-folder-label">'
-                            f'<span class="skore-help-icon"></span>'
-                            f'<span class="skore-help-name">.{sub_attr}</span>'
-                            f"</label>"
-                        )
-                        html_parts.append(
-                            f'<div class="skore-help-folder-content" id="{sub_folder_id}">'
-                        )
+                        sub_accessor_data = {
+                            "id": str(uuid.uuid4()),
+                            "folder_id": str(uuid.uuid4()),
+                            "name": sub_attr,
+                            "methods": [],
+                        }
 
                         sub_methods = sub_obj._get_methods_for_help()
                         sub_methods = sub_obj._sort_methods_for_help(sub_methods)
 
                         for name, method in sub_methods:
-                            displayed_name = sub_obj._format_method_name(name, method)
-                            description = sub_obj._get_method_description(method)
-                            # Strip Rich markup from method name and description
-                            displayed_name_clean = _strip_rich_markup(displayed_name)
-                            description_clean = _strip_rich_markup(description)
-
-                            # Split method name from parameters
-                            if "(" in displayed_name_clean:
-                                method_name_only, params_part = (
-                                    displayed_name_clean.split("(", 1)
-                                )
-                                params_part = (
-                                    "(" + params_part
-                                )  # Include the opening parenthesis
-                            else:
-                                method_name_only = displayed_name_clean
-                                params_part = ""
-
-                            # Get favorability text if applicable (for metrics accessor)
-                            favorability_text = None
-                            if hasattr(sub_obj, "_get_favorability_text"):
-                                favorability_text = sub_obj._get_favorability_text(name)
-
-                            tooltip_html = _create_method_tooltip_html(
-                                description_clean, favorability_text
+                            method_data = self._build_method_data(
+                                name,
+                                method,
+                                sub_obj,
+                                class_name,
+                                f"{config['name']}.{sub_attr}",
                             )
+                            sub_accessor_data["methods"].append(method_data)
 
-                            # Generate documentation URL for sub-accessor methods
-                            class_name = self.__class__.__name__
-                            parent_accessor_name = config["name"]
-                            # For sub-accessors, the path is: class_name.parent_accessor.sub_accessor.method_name
-                            # Build it by combining accessor names with dots
-                            doc_url = _get_documentation_url(
-                                class_name, f"{parent_accessor_name}.{sub_attr}", name
-                            )
+                        accessor_data["sub_accessors"].append(sub_accessor_data)
 
-                            html_parts.append(
-                                '<div class="skore-help-node skore-help-method">'
-                                f'<span class="skore-help-method-name">.'
-                                f'<a href="{doc_url}" target="_blank" class="skore-help-method-tooltip">{method_name_only}'
-                                f"{tooltip_html}"
-                                f"</a>{params_part}</span>"
-                                "</div>"
-                            )
+                data["accessors"].append(accessor_data)
 
-                        html_parts.append("</div>")  # Close sub-accessor folder content
-                        html_parts.append("</div>")  # Close sub-accessor node
-
-                html_parts.append("</div>")  # Close accessor folder content
-                html_parts.append("</div>")  # Close accessor node
-
-            # Add base methods section
+            # Build base methods data
             base_methods = self._get_methods_for_help()
             base_methods = self._sort_methods_for_help(base_methods)
 
             if base_methods:
-                methods_id = str(uuid.uuid4())
-                methods_folder_id = str(uuid.uuid4())
-
-                html_parts.append('<div class="skore-help-node skore-help-folder">')
-                html_parts.append(
-                    f'<input type="checkbox" id="{methods_id}" class="skore-help-toggle">'
-                )
-                html_parts.append(
-                    f'<label for="{methods_id}" class="skore-help-folder-label">'
-                    '<span class="skore-help-icon"></span>'
-                    '<span class="skore-help-section-name">Methods</span>'
-                    "</label>"
-                )
-                html_parts.append(
-                    f'<div class="skore-help-folder-content" id="{methods_folder_id}">'
-                )
-
+                data["methods_section"] = {
+                    "id": str(uuid.uuid4()),
+                    "folder_id": str(uuid.uuid4()),
+                }
                 for name, method in base_methods:
-                    description = self._get_method_description(method)
-                    # Strip Rich markup from description
-                    description_clean = _strip_rich_markup(description)
-                    displayed_name = self._format_method_name(name, method)
-                    # Strip Rich markup from method name
-                    displayed_name_clean = _strip_rich_markup(displayed_name)
-
-                    # Split method name from parameters
-                    if "(" in displayed_name_clean:
-                        method_name_only, params_part = displayed_name_clean.split(
-                            "(", 1
-                        )
-                        params_part = (
-                            "(" + params_part
-                        )  # Include the opening parenthesis
-                    else:
-                        method_name_only = displayed_name_clean
-                        params_part = ""
-
-                    # Get favorability text if applicable (for metrics accessor)
-                    favorability_text = None
-                    if hasattr(self, "_get_favorability_text"):
-                        favorability_text = self._get_favorability_text(name)
-
-                    tooltip_html = _create_method_tooltip_html(
-                        description_clean, favorability_text
+                    method_data = self._build_method_data(
+                        name, method, self, class_name, None
                     )
+                    data["base_methods"].append(method_data)
 
-                    # Generate documentation URL for base methods
-                    class_name = self.__class__.__name__
-                    doc_url = _get_documentation_url(class_name, None, name)
-
-                    html_parts.append(
-                        '<div class="skore-help-node skore-help-method">'
-                        f'<span class="skore-help-method-name">.'
-                        f'<a href="{doc_url}" target="_blank" class="skore-help-method-tooltip">{method_name_only}'
-                        f"{tooltip_html}"
-                        f"</a>{params_part}</span>"
-                        "</div>"
-                    )
-
-                html_parts.append("</div>")  # Close methods folder content
-                html_parts.append("</div>")  # Close methods node
-
-            # Add attributes section
+            # Build attributes data
             if hasattr(self, "_get_attributes_for_help"):
                 attributes = self._get_attributes_for_help()
                 if attributes:
-                    attr_id = str(uuid.uuid4())
-                    attr_folder_id = str(uuid.uuid4())
-
-                    html_parts.append('<div class="skore-help-node skore-help-folder">')
-                    html_parts.append(
-                        f'<input type="checkbox" id="{attr_id}" class="skore-help-toggle">'
-                    )
-                    html_parts.append(
-                        f'<label for="{attr_id}" class="skore-help-folder-label">'
-                        '<span class="skore-help-icon"></span>'
-                        '<span class="skore-help-section-name">Attributes</span>'
-                        "</label>"
-                    )
-                    html_parts.append(
-                        f'<div class="skore-help-folder-content" id="{attr_folder_id}">'
-                    )
-
-                    # Group attributes: those without `_` first, then those with `_`
+                    data["attributes_section"] = {
+                        "id": str(uuid.uuid4()),
+                        "folder_id": str(uuid.uuid4()),
+                    }
                     attrs_without_underscore = [
                         a for a in attributes if not a.endswith("_")
                     ]
                     attrs_with_underscore = [a for a in attributes if a.endswith("_")]
+                    data["attributes"] = []
                     for attr_name in attrs_without_underscore + attrs_with_underscore:
                         description = self._get_attribute_description(attr_name)
-                        # Strip Rich markup from description
                         description_clean = _strip_rich_markup(description)
                         tooltip_html = _create_method_tooltip_html(description_clean)
-
-                        # Generate documentation URL for attributes
-                        class_name = self.__class__.__name__
                         doc_url = _get_documentation_url(class_name, None, attr_name)
-
-                        html_parts.append(
-                            '<div class="skore-help-node skore-help-method">'
-                            f'<span class="skore-help-method-name">.'
-                            f'<a href="{doc_url}" target="_blank" class="skore-help-method-tooltip">{attr_name}'
-                            f"{tooltip_html}"
-                            f"</a>"
-                            "</span>"
-                            "</div>"
+                        data["attributes"].append(
+                            {
+                                "name": attr_name,
+                                "tooltip_html": tooltip_html,
+                                "doc_url": doc_url,
+                            }
                         )
-
-                    html_parts.append("</div>")  # Close attributes folder content
-                    html_parts.append("</div>")  # Close attributes node
         else:
             # Accessor implementation
             tree_title = (
@@ -544,60 +379,71 @@ class _HTMLHelpMixin(ABC):
                 if hasattr(self, "_get_help_tree_title")
                 else self.__class__.__name__
             )
-            # Strip Rich markup from tree title
             tree_title_clean = _strip_rich_markup(tree_title)
-            html_parts.append(f'<div class="skore-help-node">')
-            html_parts.append(
-                f'<span class="skore-help-label">{tree_title_clean}</span>'
-            )
-            html_parts.append("</div>")
+            data["tree_title"] = tree_title_clean
+            data["methods"] = []
 
-            # Add methods
             methods = self._get_methods_for_help()
             methods = self._sort_methods_for_help(methods)
 
             for name, method in methods:
-                displayed_name = self._format_method_name(name, method)
-                description = self._get_method_description(method)
-                # Strip Rich markup from method name and description
-                displayed_name_clean = _strip_rich_markup(displayed_name)
-                description_clean = _strip_rich_markup(description)
-
-                # Split method name from parameters
-                if "(" in displayed_name_clean:
-                    method_name_only, params_part = displayed_name_clean.split("(", 1)
-                    params_part = "(" + params_part  # Include the opening parenthesis
-                else:
-                    method_name_only = displayed_name_clean
-                    params_part = ""
-
-                # Get favorability text if applicable (for metrics accessor)
-                favorability_text = None
-                if hasattr(self, "_get_favorability_text"):
-                    favorability_text = self._get_favorability_text(name)
-
-                tooltip_html = _create_method_tooltip_html(
-                    description_clean, favorability_text
+                method_data = self._build_method_data(
+                    name, method, self, class_name, None
                 )
+                data["methods"].append(method_data)
 
-                # Generate documentation URL for accessor-only methods
-                class_name = self.__class__.__name__
-                doc_url = _get_documentation_url(class_name, None, name)
+        return data
 
-                html_parts.append(
-                    '<div class="skore-help-node skore-help-method">'
-                    f'<span class="skore-help-method-name">.'
-                    f'<a href="{doc_url}" target="_blank" class="skore-help-method-tooltip">{method_name_only}'
-                    f"{tooltip_html}"
-                    f"</a>{params_part}</span>"
-                    "</div>"
-                )
+    def _build_method_data(
+        self,
+        name: str,
+        method: Any,
+        obj: Any,
+        class_name: str,
+        accessor_path: str | None,
+    ) -> dict[str, Any]:
+        """Build data structure for a single method."""
+        displayed_name = obj._format_method_name(name, method)
+        description = obj._get_method_description(method)
+        displayed_name_clean = _strip_rich_markup(displayed_name)
+        description_clean = _strip_rich_markup(description)
 
-        html_parts.append("</div>")  # Close tree
+        # Split method name from parameters
+        if "(" in displayed_name_clean:
+            method_name_only, params_part = displayed_name_clean.split("(", 1)
+            params_part = "(" + params_part
+        else:
+            method_name_only = displayed_name_clean
+            params_part = ""
 
-        # Legend removed - favorability now shown in tooltips
+        # Get favorability text if applicable
+        favorability_text = None
+        if hasattr(obj, "_get_favorability_text"):
+            favorability_text = obj._get_favorability_text(name)
 
-        html_parts.append("</div>")  # Close container
+        tooltip_html = _create_method_tooltip_html(description_clean, favorability_text)
+
+        # Generate documentation URL
+        doc_url = _get_documentation_url(class_name, accessor_path, name)
+
+        return {
+            "name_only": method_name_only,
+            "params_part": params_part,
+            "tooltip_html": tooltip_html,
+            "doc_url": doc_url,
+        }
+
+    def _create_help_html(self) -> str:
+        """Create the HTML representation of the help tree."""
+        import uuid
+
+        # Build data structure for template
+        template_data = self._build_help_data()
+
+        # Load and render template
+        env = _get_jinja_env()
+        template = env.get_template("help.html.j2")
+        html_content = template.render(**template_data)
 
         # Generate unique ID for this instance
         container_id = f"skore-help-{uuid.uuid4().hex[:8]}"
@@ -605,9 +451,6 @@ class _HTMLHelpMixin(ABC):
         # Get CSS and JS content
         css_content = _load_help_css()
         js_content = _load_help_js()
-
-        # Create HTML content (without CSS)
-        html_content = "\n".join(html_parts)
 
         # Escape content for JavaScript string (escape backticks, backslashes, and template literals)
         escaped_css = (
