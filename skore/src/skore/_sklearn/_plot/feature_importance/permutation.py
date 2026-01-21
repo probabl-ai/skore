@@ -223,14 +223,18 @@ class PermutationImportanceDisplay(DisplayMixin):
         elif subplot_by is None:
             # Possible accepted values: {"metric"}, {"label"}, {"output"}
             columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-            if len(columns_to_groupby) > 1:
+            n_columns_to_groupby = len(columns_to_groupby)
+            if n_columns_to_groupby > 1:
                 raise ValueError(
                     "Cannot plot all the available information available on a single "
                     "plot. Please set `subplot_by` to a string or a tuple of strings."
                     "You can use the following values to create subplots: "
                     f"{', '.join(columns_to_groupby)}"
                 )
-            hue, col, row = columns_to_groupby[0], None, None
+            elif n_columns_to_groupby == 1:
+                hue, col, row = columns_to_groupby[0], None, None
+            else:
+                hue, col, row = None, None, None
         else:
             # Possible accepted values: {"metric"}, {"metric", "label"},
             # {"metric", "output"}
