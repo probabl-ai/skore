@@ -35,7 +35,6 @@ functionalities of the report are exposed through accessors.
    CrossValidationReport.metrics
 
 
-
 .. _cross_validation_data:
 
 Data
