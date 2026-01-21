@@ -162,9 +162,10 @@ class _RichHelpMixin(ABC):
 
                 # Add methods
                 for name, method in methods:
-                    displayed_name = accessor._format_method_name(name, method)
+                    # For Rich, show only method name with ellipsis
+                    displayed_name = f"{name}(...)"
                     description = accessor._get_method_description(method)
-                    branch.add(f".{displayed_name} - {description}")
+                    branch.add(f".{displayed_name.ljust(25)} - {description}")
 
                 # Add sub-accessors after main methods
                 for sub_attr, sub_obj in inspect.getmembers(accessor):
@@ -178,7 +179,8 @@ class _RichHelpMixin(ABC):
                         sub_methods = sub_obj._sort_methods_for_help(sub_methods)
 
                         for name, method in sub_methods:
-                            displayed_name = sub_obj._format_method_name(name, method)
+                            # For Rich, show only method name with ellipsis
+                            displayed_name = f"{name}(...)"
                             description = sub_obj._get_method_description(method)
                             sub_branch.add(
                                 f".{displayed_name.ljust(25)} - {description}"
@@ -192,7 +194,8 @@ class _RichHelpMixin(ABC):
                 methods_branch = tree.add("[bold cyan]Methods[/bold cyan]")
                 for name, method in base_methods:
                     description = self._get_method_description(method)
-                    displayed_name = self._format_method_name(name, method)
+                    # For Rich, show only method name with ellipsis
+                    displayed_name = f"{name}(...)"
                     methods_branch.add(
                         f".{displayed_name}".ljust(34) + f" - {description}"
                     )
@@ -224,10 +227,11 @@ class _RichHelpMixin(ABC):
             methods = self._get_methods_for_help()
             methods = self._sort_methods_for_help(methods)
 
-        for name, method in methods:
-            displayed_name = self._format_method_name(name, method)
-            description = self._get_method_description(method)
-            tree.add(f".{displayed_name}".ljust(26) + f" - {description}")
+            for name, method in methods:
+                # For Rich, show only method name with ellipsis
+                displayed_name = f"{name}(...)"
+                description = self._get_method_description(method)
+                tree.add(f".{displayed_name}".ljust(26) + f" - {description}")
 
             return tree
 
