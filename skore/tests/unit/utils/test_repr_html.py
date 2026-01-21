@@ -1,6 +1,6 @@
 import pytest
 
-from skore._utils._repr_html import ReprHTMLMixin
+from skore._utils.repr_html.base import ReprHTMLMixin
 
 
 @pytest.fixture
