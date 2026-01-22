@@ -190,17 +190,15 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
         palette_colors = ["red", "blue", "green"]
         display.set_style(relplot_kwargs={"palette": palette_colors}).plot()
         expected_colors = palette_colors
-        for line, expected_color, default_color in zip(
-            display.lines_[:n_labels], expected_colors, default_colors, strict=True
-        ):
-            assert line.get_color() == expected_color
-            assert mpl.colors.to_rgb(line.get_color()) != default_color
-
     else:
         display.set_style(relplot_kwargs={"color": "red"}).plot()
-        for line in display.lines_[:n_labels]:
-            assert line.get_color() == "red"
-            assert mpl.colors.to_rgb(line.get_color()) != default_colors[0]
+        expected_colors = ["red"] * n_labels
+
+    for line, expected_color, default_color in zip(
+        display.lines_[:n_labels], expected_colors, default_colors, strict=True
+    ):
+        assert line.get_color() == expected_color
+        assert mpl.colors.to_rgb(line.get_color()) != default_color
 
 
 def test_binary_classification_data_source(
@@ -513,8 +511,9 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.roc()
-    valid_values_str = ", ".join(valid_values)
-    err_msg = f"subplot_by must be one of {valid_values_str}. Got 'invalid' instead."
+    err_msg = (
+        f"subplot_by must be one of {', '.join(valid_values)}. Got 'invalid' instead."
+    )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
 

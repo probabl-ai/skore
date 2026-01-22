@@ -49,6 +49,7 @@ tweak the rendering of the display. For instance, customize the appearance of th
 
     disp.set_style(
         chance_level_kwargs=dict(linestyle="-", linewidth=5, color="tab:purple")
-    ).plot()
+    )
+    disp.plot()
 
 Any subsequent call to `plot` uses the style settings set by `set_style`.

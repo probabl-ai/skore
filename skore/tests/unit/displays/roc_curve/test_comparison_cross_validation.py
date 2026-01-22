@@ -159,21 +159,16 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
         display.set_style(relplot_kwargs={"palette": palette_colors}).plot()
         assert len(display.lines_) == n_roc_lines + n_reports
         expected_colors = sum([[c] * n_splits for c in palette_colors], []) * n_reports
-        for line, expected_color, default_color in zip(
-            display.lines_[:n_roc_lines], expected_colors, default_colors, strict=True
-        ):
-            assert line.get_color() == expected_color
-            assert mpl.colors.to_rgb(line.get_color()) != default_color
-
     else:
         display.set_style(relplot_kwargs={"color": "red"}).plot()
         assert len(display.lines_) == n_roc_lines + n_reports
         expected_colors = ["red"] * n_splits * n_reports
-        for line, expected_color, default_color in zip(
-            display.lines_[:n_roc_lines], expected_colors, default_colors, strict=True
-        ):
-            assert line.get_color() == expected_color
-            assert mpl.colors.to_rgb(line.get_color()) != default_color
+
+    for line, expected_color, default_color in zip(
+        display.lines_[:n_roc_lines], expected_colors, default_colors, strict=True
+    ):
+        assert line.get_color() == expected_color
+        assert mpl.colors.to_rgb(line.get_color()) != default_color
 
 
 def test_binary_classification_constructor(logistic_binary_classification_data):
@@ -296,8 +291,9 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     """
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.roc()
-    valid_values_str = ", ".join(valid_values)
-    err_msg = f"subplot_by must be one of {valid_values_str}. Got 'invalid' instead."
+    err_msg = (
+        f"subplot_by must be one of {', '.join(valid_values)}. Got 'invalid' instead."
+    )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
 
