@@ -178,8 +178,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         despine: bool = True,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
-        is_cross_validation = "cross-validation" in self.report_type
-
         plot_data = self.frame(with_average_precision=True)
 
         col, hue, style = _get_curve_plot_columns(
@@ -196,7 +194,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
             "style": style,
         }
 
-        if is_cross_validation:
+        if "cross-validation" in self.report_type:
             relplot_kwargs["units"] = "split"
             relplot_kwargs["alpha"] = 0.4
 
@@ -247,7 +245,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 style=style,
                 hue_order=relplot_kwargs["hue_order"],
                 style_order=relplot_kwargs["style_order"],
-                is_cross_validation=is_cross_validation,
+                is_cross_validation="cross-validation" in self.report_type,
                 statistic_column_name="average_precision",
                 statistic_acronym="AP",
             )
