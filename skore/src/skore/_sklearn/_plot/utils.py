@@ -446,8 +446,11 @@ def _build_custom_legend_with_stats(
     """Build custom legend with a custom statistic for a single axis."""
     legend_labels = []
     for hue_value in hue_order or [None]:
+        hue_value_str = (
+            f"'{hue_value}'" if isinstance(hue_value, str) else str(hue_value)
+        )
         hue_group = (
-            subplot_data.query(f"{hue} == {hue_value!r}")
+            subplot_data.query(f"{hue} == {hue_value_str}")
             if hue_value is not None
             else subplot_data
         )
