@@ -11,7 +11,7 @@ from sklearn.preprocessing import LabelBinarizer
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _build_custom_legend_with_stats,
-    _ClassifierCurveDisplayMixin,
+    _ClassifierDisplayMixin,
     _despine_matplotlib_axis,
     _get_curve_plot_columns,
     _validate_style_kwargs,
@@ -25,7 +25,7 @@ from skore._sklearn.types import (
 )
 
 
-class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
+class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     """Precision Recall visualization.
 
     An instance of this class should be created by
