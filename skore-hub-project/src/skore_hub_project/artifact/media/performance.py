@@ -6,7 +6,7 @@ from abc import ABC
 from collections.abc import Callable
 from functools import reduce
 from io import BytesIO
-from threading import RLock
+from multiprocessing import Event, get_context
 from typing import ClassVar, Literal, cast
 
 from matplotlib import pyplot as plt
@@ -14,7 +14,34 @@ from matplotlib import pyplot as plt
 from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.protocol import Display
 
-MATPLOTLIB_LOCK = RLock()
+# Matplotlib is not thread-safe: https://matplotlib.org/stable/users/faq.html#work-with-threads.
+#
+# Even with the non-interactive backend ``Agg``, when we try to create the same
+# plot from different threads, we encounter problems with auto-scaling and they
+# have inconsistent axis scales.
+
+
+def plot(queue, /):
+    while task := queue.get():
+        # raise Exception()
+        # how to interrupt main on exception?
+
+        filepath, display = task
+
+        with BytesIO() as stream:
+            display.plot()
+            display.figure_.savefig(stream, format="svg", bbox_inches="tight")
+            plt.close(display.figure_)
+
+            filepath.write_bytes(stream.getvalue())
+
+        queue.task_done()
+
+
+ctx = get_context("fork")
+PLOTTER_QUEUE = ctx.JoinableQueue()
+PLOTTER = ctx.Process(target=plot, args=(PLOTTER_QUEUE,), daemon=True)
+PLOTTER.start()
 
 
 class Performance(Media[Report], ABC):  # noqa: D101
@@ -35,23 +62,23 @@ class Performance(Media[Report], ABC):  # noqa: D101
         except AttributeError:
             return
 
-        display = (
-            function()
-            if self.data_source is None
-            else function(data_source=self.data_source)
+        PLOTTER_QUEUE.put(
+            (
+                self.filepath,
+                (
+                    function()
+                    if self.data_source is None
+                    else function(data_source=self.data_source)
+                ),
+            )
         )
 
-        # Matplotlib is not thread-safe: https://matplotlib.org/stable/users/faq.html#work-with-threads.
-        #
-        # Even with the non-interactive backend ``Agg``, when we try to create the same
-        # plot from different threads, we encounter problems with auto-scaling and they
-        # have inconsistent axis scales.
-        with MATPLOTLIB_LOCK, BytesIO() as stream:
-            display.plot()
-            display.figure_.savefig(stream, format="svg", bbox_inches="tight")  # type: ignore[attr-defined]
-            plt.close(display.figure_)  # type: ignore[attr-defined]
+        # assert self.filepath.stat().st_size
 
-            self.filepath.write_bytes(stream.getvalue())
+        while not self.filepath.stat().st_size:
+            ...
+
+        # timeout raise exception
 
 
 class PrecisionRecall(Performance[Report], ABC):  # noqa: D101
