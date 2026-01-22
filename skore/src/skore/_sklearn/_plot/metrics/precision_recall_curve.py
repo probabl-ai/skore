@@ -178,10 +178,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         despine: bool = True,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
-        is_cross_validation = self.report_type in (
-            "cross-validation",
-            "comparison-cross-validation",
-        )
+        is_cross_validation = "cross-validation" in self.report_type
 
         plot_data = self.frame(with_average_precision=True)
 
@@ -273,7 +270,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         )
 
         title = "Precision-Recall Curve"
-        if self.report_type in ("estimator", "cross-validation"):
+        if "comparison" not in self.report_type:
             title += f" for {self.precision_recall['estimator'].cat.categories.item()}"
         self.figure_.suptitle(
             "\n".join(filter(None, [title, info_pos_label, info_data_source]))
@@ -527,7 +524,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         Parameters
         ----------
-        policy : Literal["override", "update"], default="update"
+        policy : {"override", "update"}, default="update"
             Policy to use when setting the style parameters.
             If "override", existing settings are set to the provided values.
             If "update", existing settings are not changed; only settings that were

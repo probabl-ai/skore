@@ -144,17 +144,18 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         Parameters
         ----------
-        subplot_by : Literal["auto", "label", "estimator", "data_source"] | None, \
+        subplot_by : {"auto", "label", "estimator", "data_source"} or None, \
             default="auto"
             Column to use for creating subplots. Options:
 
-            - "auto": None for EstimatorReport and Cross-Validation Report, \
-              "estimator" for ComparisonReport
+            - "auto": None for :class:`~skore.EstimatorReport` and \
+              :class:`~skore.CrossValidationReport`, "estimator" for \
+              :class:`~skore.ComparisonReport`
             - "label": one subplot per class (multiclass only)
             - "estimator": one subplot per estimator (comparison only)
-            - "data_source": one subplot per data source (EstimatorReport with both \
-                data sources only)
-            - None: no subplots (Not available for comparison in multiclass)
+            - "data_source": one subplot per data source \
+              (:class:`~skore.EstimatorReport` with both data sources only)
+            - None: no subplots (not available for comparison in multiclass)
 
         plot_chance_level : bool, default=True
             Whether to plot the chance level.
@@ -215,8 +216,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         if style:
             relplot_kwargs["dashes"] = {"train": (5, 5), "test": ""}
 
-        is_cross_validation = "cross-validation" in self.report_type
-        if is_cross_validation:
+        if "cross-validation" in self.report_type:
             relplot_kwargs["units"] = "split"
             relplot_kwargs["alpha"] = 0.4
 
@@ -264,18 +264,14 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
                 style=style,
                 hue_order=relplot_kwargs["hue_order"],
                 style_order=relplot_kwargs["style_order"],
-                is_cross_validation=is_cross_validation,
+                is_cross_validation="cross-validation" in self.report_type,
                 statistic_column_name="roc_auc",
                 statistic_acronym="AUC",
                 chance_level_label="Chance level (AUC = 0.5)",
             )
 
-        if self.ml_task == "binary-classification":
-            info_pos_label = (
-                f"Positive label: {self.pos_label}"
-                if self.pos_label is not None
-                else None
-            )
+        if self.ml_task == "binary-classification" and self.pos_label is not None:
+            info_pos_label = f"Positive label: {self.pos_label}"
         else:
             info_pos_label = None
 
@@ -288,7 +284,7 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         )
 
         title = "ROC Curve"
-        if self.report_type in ("estimator", "cross-validation"):
+        if "comparison" not in self.report_type:
             title += f" for {self.roc_curve['estimator'].cat.categories.item()}"
         self.figure_.suptitle(
             "\n".join(filter(None, [title, info_pos_label, info_data_source]))
@@ -538,14 +534,14 @@ class RocCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         Parameters
         ----------
-        policy : Literal["override", "update"], default="update"
+        policy : {"override", "update"}, default="update"
             Policy to use when setting the style parameters.
             If "override", existing settings are set to the provided values.
             If "update", existing settings are not changed; only settings that were
             previously unset are changed.
 
         relplot_kwargs : dict, default=None
-        Keyword arguments to be passed to :func:`seaborn.relplot` for rendering
+            Keyword arguments to be passed to :func:`seaborn.relplot` for rendering
             the ROC curve(s). Common options include `palette`, `alpha`, `linewidth`,
             etc.
 

@@ -387,17 +387,14 @@ def _get_curve_plot_columns(
     has_multiple_estimators = (
         "estimator" in plot_data.columns and plot_data["estimator"].nunique() > 1
     )
-    is_comparison = report_type in (
-        "comparison-estimator",
-        "comparison-cross-validation",
-    )
+    is_comparison = "comparison" in report_type
     is_multiclass = ml_task == "multiclass-classification"
     has_both_data_sources = data_source == "both"
 
     allowed_values: set[str | None] = {"auto"}
     if is_multiclass:
         allowed_values.add("label")
-        if report_type in ["estimator", "cross-validation"]:
+        if not is_comparison:
             allowed_values.add(None)
     else:
         allowed_values.add(None)
@@ -449,11 +446,8 @@ def _build_custom_legend_with_stats(
     """Build custom legend with a custom statistic for a single axis."""
     legend_labels = []
     for hue_value in hue_order or [None]:
-        hue_value_str = (
-            f"'{hue_value}'" if isinstance(hue_value, str) else str(hue_value)
-        )
         hue_group = (
-            subplot_data.query(f"{hue} == {hue_value_str}")
+            subplot_data.query(f"{hue} == {hue_value!r}")
             if hue_value is not None
             else subplot_data
         )
