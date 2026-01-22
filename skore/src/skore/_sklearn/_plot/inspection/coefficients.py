@@ -57,22 +57,13 @@ class CoefficientsDisplay(DisplayMixin):
     >>> report = EstimatorReport(LogisticRegression(), **split_data)
     >>> display = report.inspection.coefficients()
     >>> display.frame()
-                  feature       label  coefficient
-    0           Intercept      setosa        9.2...
-    1   sepal length (cm)      setosa       -0.4...
-    2    sepal width (cm)      setosa        0.8...
-    3   petal length (cm)      setosa       -2.3...
-    4    petal width (cm)      setosa       -0.9...
-    5           Intercept  versicolor        1.7...
-    6   sepal length (cm)  versicolor        0.5...
-    7    sepal width (cm)  versicolor       -0.2...
-    8   petal length (cm)  versicolor       -0.2...
-    9    petal width (cm)  versicolor       -0.7...
-    10          Intercept   virginica      -11.0...
-    11  sepal length (cm)   virginica       -0.1...
-    12   sepal width (cm)   virginica       -0.5...
-    13  petal length (cm)   virginica        2.5...
-    14   petal width (cm)   virginica        1.7...
+    label                   setosa  versicolor  virginica
+    feature
+    Intercept                 9.2...       1.7...    -11.0...
+    petal length (cm)        -2.3...      -0.2...      2.5...
+    petal width (cm)         -0.9...      -0.7...      1.7...
+    sepal width (cm)          0.8...      -0.2...     -0.5...
+    sepal length (cm)        -0.4...       0.5...     -0.1...
     """
 
     _default_barplot_kwargs: dict[str, Any] = {
@@ -171,18 +162,20 @@ class CoefficientsDisplay(DisplayMixin):
         self,
         *,
         include_intercept: bool = True,
+        format: Literal["long", "wide"] = "wide",
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
-    ):
+    ) -> pd.DataFrame:
         """Get the coefficients in a dataframe format.
-
-        The returned dataframe is not going to contain constant columns or columns
-        containing only NaN values.
 
         Parameters
         ----------
         include_intercept : bool, default=True
-            Whether or not to include the intercept in the dataframe.
+            Whether to include the intercept in the dataframe.
+
+        format : {"long", "wide"}, default="wide"
+            Output format. "wide" pivots features as rows with labels/splits as
+            columns. "long" returns raw data with one row per observation.
 
         select_k : int, default=None
             Select features based on absolute coefficient values:
@@ -217,7 +210,7 @@ class CoefficientsDisplay(DisplayMixin):
         Returns
         -------
         DataFrame
-            Dataframe containing the coefficients of the linear model.
+            Coefficients of the linear model.
 
         Examples
         --------
@@ -232,9 +225,22 @@ class CoefficientsDisplay(DisplayMixin):
         ... )
         >>> report = EstimatorReport(LogisticRegression(), **split_data)
         >>> display = report.inspection.coefficients()
+
+        Get coefficients in wide format (default):
+
         >>> display.frame()
-                      feature       label  coefficient
-        0           Intercept      setosa        9.2...
+        label                   setosa  versicolor  virginica
+        feature
+        Intercept                 9.2...       1.7...    -11.0...
+        petal length (cm)        -2.3...      -0.2...      2.5...
+        petal width (cm)         -0.9...      -0.7...      1.7...
+        sepal width (cm)          0.8...      -0.2...     -0.5...
+        sepal length (cm)        -0.4...       0.5...     -0.1...
+
+        Get coefficients in long format:
+
+        >>> display.frame(format="long")
+                     feature       label  coefficient
         1   sepal length (cm)      setosa       -0.4...
         2    sepal width (cm)      setosa        0.8...
         3   petal length (cm)      setosa       -2.3...
@@ -256,29 +262,57 @@ class CoefficientsDisplay(DisplayMixin):
             columns_to_drop = ["estimator"]
         elif self.report_type == "comparison-estimator":
             columns_to_drop = ["split"]
-        elif self.report_type == "comparison-cross-validation":
+        else:  # comparison-cross-validation
             columns_to_drop = []
-        else:
-            raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
         if self.coefficients["label"].isna().all():
-            # regression problem
             columns_to_drop.append("label")
         if self.coefficients["output"].isna().all():
-            # classification problem
             columns_to_drop.append("output")
 
-        coefficients = self.coefficients.drop(columns=columns_to_drop)
+        frame = self.coefficients.drop(columns=columns_to_drop)
+
         if not include_intercept:
-            coefficients = coefficients.query("feature != 'Intercept'")
+            frame = frame.query("feature != 'Intercept'")
 
         if sorting_order is not None:
-            coefficients = self._sort_features(coefficients, sorting_order)
+            frame = self._sort_features(frame, sorting_order)
 
         if select_k is not None:
-            coefficients = self._select_k_features(coefficients, select_k)
+            frame = self._select_k_features(frame, select_k)
 
-        return coefficients
+        if format == "long":
+            return frame.reset_index(drop=True)
+
+        if self.report_type.startswith("comparison") and not self._has_same_features(
+            frame=frame
+        ):
+            raise ValueError(
+                "Cannot use wide format when estimators have different features. "
+                "Use format='long' instead."
+            )
+
+        index = ["feature"]
+        values = ["coefficients"]
+        columns = [col for col in frame.columns if col not in index + values]
+
+        if columns:
+            label_col = columns[0] if len(columns) == 1 else None
+
+            frame = frame.pivot_table(
+                index=index,
+                columns=columns,
+                values=values,
+                aggfunc="first",
+                sort=False,
+            )
+            if isinstance(frame.columns, pd.MultiIndex):
+                frame.columns = frame.columns.droplevel(0)
+            frame.columns.name = label_col
+        else:
+            frame = frame.set_index(index)[values]
+
+        return frame
 
     @DisplayMixin.style_plot
     def plot(
@@ -360,6 +394,7 @@ class CoefficientsDisplay(DisplayMixin):
             include_intercept=include_intercept,
             select_k=select_k,
             sorting_order=sorting_order,
+            format="long",
         )
 
         # Make copy of the dictionary since we are going to pop some keys later
