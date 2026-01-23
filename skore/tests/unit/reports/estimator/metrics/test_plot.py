@@ -43,17 +43,11 @@ def test_display_binary_classification_pos_label(pyplot, metric):
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="A")
     display = getattr(report.metrics, metric)()
     display.plot()
-    if metric == "precision_recall":
-        assert "Positive label: A" in display.figure_.get_suptitle()
-    else:
-        assert "Positive label: A" in display.ax_.get_xlabel()
+    assert "Positive label: A" in display.figure_.get_suptitle()
 
     display = getattr(report.metrics, metric)(pos_label="B")
     display.plot()
-    if metric == "precision_recall":
-        assert "Positive label: B" in display.figure_.get_suptitle()
-    else:
-        assert "Positive label: B" in display.ax_.get_xlabel()
+    assert "Positive label: B" in display.figure_.get_suptitle()
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])

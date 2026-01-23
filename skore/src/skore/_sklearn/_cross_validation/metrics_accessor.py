@@ -1248,7 +1248,7 @@ class _MetricsAccessor(
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> display = report.metrics.roc()
-        >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
+        >>> display.set_style(relplot_kwargs={"color": "tab:red"}).plot()
         """
         if pos_label == _DEFAULT:
             pos_label = self._parent.pos_label

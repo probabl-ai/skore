@@ -306,8 +306,8 @@ def test_multiclass_str_labels_precision_recall_plot(pyplot):
     X, y_int = iris.data, iris.target
     y = iris.target_names[y_int]
 
-    report_1 = CrossValidationReport(LogisticRegression(), X=X, y=y)
-    report_2 = CrossValidationReport(LogisticRegression(max_iter=500), X=X, y=y)
+    report_1 = CrossValidationReport(LogisticRegression(max_iter=500), X=X, y=y)
+    report_2 = CrossValidationReport(LogisticRegression(max_iter=1000), X=X, y=y)
     report = ComparisonReport([report_1, report_2])
 
     display = report.metrics.precision_recall()
