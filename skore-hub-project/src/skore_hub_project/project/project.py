@@ -6,13 +6,14 @@ import itertools
 import re
 import warnings
 from collections.abc import Callable
-from functools import cached_property, wraps
+from functools import wraps
 from operator import itemgetter
 from re import sub as substitute
 from tempfile import TemporaryFile
 from typing import (
     TYPE_CHECKING,
     Any,
+    Literal,
     ParamSpec,
     Protocol,
     TypedDict,
@@ -20,7 +21,6 @@ from typing import (
     runtime_checkable,
 )
 from unicodedata import normalize
-from urllib.parse import quote
 
 import joblib
 import orjson
@@ -59,17 +59,19 @@ def slugify(string: str) -> str:
     """
     Slugify string.
 
-    The string can only contain unicode letters, digits, and characters ``.``, ``-``,
-    and ``_``.
+    The string must be lower-case and contain only ASCII letters, digits, and characters
+    ``.``, ``-``, and ``_``.
 
     In order:
+    - convert to ASCII and ignore characters in error,
     - replace characters that aren't alphanumerics, dots, dashes or underscores by dash,
     - convert repeated dots to single dots,
     - convert repeated dashes to single dash,
     - convert repeated underscores to single underscore,
     - strip leading and trailing dots, dashes, and underscores.
     """
-    string = normalize("NFKC", string)
+    string = normalize("NFKD", string).encode("ascii", "ignore").decode("ascii")
+
     string = string.lower()
     string = substitute(r"[^\w.-]", "-", string)
     string = substitute(r"[.]+", ".", string)
@@ -79,14 +81,39 @@ def slugify(string: str) -> str:
     return string.strip(".-_")
 
 
+def slugify_and_warn(string: str, type: Literal["tenant", "name"]) -> str:
+    """Slugify tenant or name string, and warn if the result differs."""
+    slug = slugify(string)
+
+    if slug != string:
+        warnings.warn(
+            (
+                (
+                    f"Your project will be addressed under the '{slug}' tenant."
+                    "The tenant name must be lower-case and contain only ASCII letters"
+                    ", digits, and characters '.', '-', and '_'."
+                )
+                if type == "tenant"
+                else (
+                    f"Your project will be created as '{slug}'."
+                    "The project name must be lower-case and contain only ASCII letters"
+                    ", digits, and characters '.', '-', and '_'."
+                )
+            ),
+            stacklevel=2,
+        )
+
+    return slug
+
+
 def ensure_project_is_created(method: Callable[P, R]) -> Callable[P, R]:
     """Ensure project is created before executing any other operation."""
 
     @runtime_checkable
     class Project(Protocol):
         created: bool
-        quoted_tenant: str
-        quoted_name: str
+        tenant: str
+        name: str
 
     @wraps(method)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
@@ -96,9 +123,7 @@ def ensure_project_is_created(method: Callable[P, R]) -> Callable[P, R]:
 
         if not project.created:
             with HUBClient() as hub_client:
-                hub_client.post(
-                    f"projects/{project.quoted_tenant}/{project.quoted_name}"
-                )
+                hub_client.post(f"projects/{project.tenant}/{project.name}")
 
             project.created = True
 
@@ -163,25 +188,9 @@ class Project:
         name : str
             The name of the project.
         """
-        if (slugified_tenant := slugify(tenant)) != tenant:
-            warnings.warn(
-                f"Your project will be addressed under the '{slugified_tenant}' tenant."
-                "The tenant name can only contain unicode letters, digits, and the "
-                "characters '.', '-', and '_'.",
-                stacklevel=2,
-            )
-
-        if (slugified_name := slugify(name)) != name:
-            warnings.warn(
-                f"Your project will be created as '{slugified_name}'."
-                "The project name can only contain unicode letters, digits, and the "
-                "characters '.', '-', and '_'.",
-                stacklevel=2,
-            )
-
         self.created = False
-        self.__tenant = slugified_tenant
-        self.__name = slugified_name
+        self.__tenant = slugify_and_warn(tenant, "tenant")
+        self.__name = slugify_and_warn(name, "name")
 
     @property
     def tenant(self) -> str:
@@ -192,16 +201,6 @@ class Project:
     def name(self) -> str:
         """The name of the project."""
         return self.__name
-
-    @cached_property
-    def quoted_tenant(self) -> str:
-        """The quoted tenant of the project."""
-        return quote(self.__tenant, safe="")
-
-    @cached_property
-    def quoted_name(self) -> str:
-        """The quoted name of the project."""
-        return quote(self.__name, safe="")
 
     @ensure_project_is_created
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
@@ -247,7 +246,7 @@ class Project:
 
         with HUBClient() as hub_client:
             hub_client.post(
-                url=f"projects/{self.quoted_tenant}/{self.quoted_name}/{endpoint}",
+                url=f"projects/{self.tenant}/{self.name}/{endpoint}",
                 content=payload_json_bytes,
                 headers={
                     "Content-Length": str(len(payload_json_bytes)),
@@ -259,8 +258,8 @@ class Project:
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its URN."""
         if m := re.match(Project.__REPORT_URN_PATTERN, urn):
-            tenant = self.quoted_tenant
-            name = self.quoted_name
+            tenant = self.tenant
+            name = self.name
             type = m["type"]
             id = m["id"]
             url = f"projects/{tenant}/{name}/{type}-reports/{id}"
@@ -332,13 +331,13 @@ class Project:
                 zip(
                     itertools.repeat("estimator"),
                     hub_client.get(
-                        f"projects/{self.quoted_tenant}/{self.quoted_name}/estimator-reports/"
+                        f"projects/{self.tenant}/{self.name}/estimator-reports/"
                     ).json(),
                 ),
                 zip(
                     itertools.repeat("cross-validation"),
                     hub_client.get(
-                        f"projects/{self.quoted_tenant}/{self.quoted_name}/cross-validation-reports/"
+                        f"projects/{self.tenant}/{self.name}/cross-validation-reports/"
                     ).json(),
                 ),
             )
@@ -365,11 +364,12 @@ class Project:
         name : str
             The name of the project.
         """
+        tenant = slugify_and_warn(tenant, "tenant")
+        name = slugify_and_warn(name, "name")
+
         with HUBClient() as hub_client:
             try:
-                hub_client.delete(
-                    f"projects/{quote(tenant, safe='')}/{quote(name, safe='')}"
-                )
+                hub_client.delete(f"projects/{tenant}/{name}")
             except HTTPStatusError as e:
                 if e.response.status_code == 403:
                     raise PermissionError(

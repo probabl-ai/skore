@@ -85,16 +85,17 @@ class TestProject:
         "input,output,warning",
         (
             ("mytenant", "mytenant", False),
-            ("mytënant", "mytënant", False),
             ("my.tenant", "my.tenant", False),
             ("my-tenant", "my-tenant", False),
             ("my_tenant", "my_tenant", False),
             ("my tenant", "my-tenant", True),
+            ("mytënant", "mytenant", True),
             ("my/tenant", "my-tenant", True),
             ("my:tenant", "my-tenant", True),
             ("my?tenant", "my-tenant", True),
             ("my#tenant", "my-tenant", True),
-            ("my/:?#tënant", "my-tënant", True),
+            ("my/:?#tënant", "my-tenant", True),
+            ("👽👾😸👨 ? # @ mÿ-tenant ßß œπ æµ∂ƒ", "my-tenant", True),
         ),
     )
     def test_tenant(self, input, output, warning):
@@ -108,16 +109,17 @@ class TestProject:
         "input,output,warning",
         (
             ("myname", "myname", False),
-            ("mynäme", "mynäme", False),
             ("my.name", "my.name", False),
             ("my-name", "my-name", False),
             ("my_name", "my_name", False),
             ("my name", "my-name", True),
+            ("mynäme", "myname", True),
             ("my/name", "my-name", True),
             ("my:name", "my-name", True),
             ("my?name", "my-name", True),
             ("my#name", "my-name", True),
-            ("my/:?#näme", "my-näme", True),
+            ("my/:?#näme", "my-name", True),
+            ("👽👾😸👨 ? # @ mÿ-name ßß œπ æµ∂ƒ", "my-name", True),
         ),
     )
     def test_name(self, input, output, warning):
@@ -126,52 +128,6 @@ class TestProject:
                 assert Project("mytenant", input).name == output
         else:
             assert Project("mytenant", input).name == output
-
-    @mark.parametrize(
-        "input,output,warning",
-        (
-            ("mytenant", "mytenant", False),
-            ("mytënant", "myt%C3%ABnant", False),
-            ("my.tenant", "my.tenant", False),
-            ("my-tenant", "my-tenant", False),
-            ("my_tenant", "my_tenant", False),
-            ("my tenant", "my-tenant", True),
-            ("my/tenant", "my-tenant", True),
-            ("my:tenant", "my-tenant", True),
-            ("my?tenant", "my-tenant", True),
-            ("my#tenant", "my-tenant", True),
-            ("my/:?#tënant", "my-t%C3%ABnant", True),
-        ),
-    )
-    def test_quoted_tenant(self, input, output, warning):
-        if warning:
-            with warns(UserWarning, match=f".*'{unquote(output)}'.*"):
-                assert Project(input, "myname").quoted_tenant == output
-        else:
-            assert Project(input, "myname").quoted_tenant == output
-
-    @mark.parametrize(
-        "input,output,warning",
-        (
-            ("myname", "myname", False),
-            ("mynäme", "myn%C3%A4me", False),
-            ("my.name", "my.name", False),
-            ("my-name", "my-name", False),
-            ("my_name", "my_name", False),
-            ("my name", "my-name", True),
-            ("my/name", "my-name", True),
-            ("my:name", "my-name", True),
-            ("my?name", "my-name", True),
-            ("my#name", "my-name", True),
-            ("my/:?#näme", "my-n%C3%A4me", True),
-        ),
-    )
-    def test_quoted_name(self, input, output, warning):
-        if warning:
-            with warns(UserWarning, match=f".*'{unquote(output)}'.*"):
-                assert Project("mytenant", input).quoted_name == output
-        else:
-            assert Project("mytenant", input).quoted_name == output
 
     def test_put_exception(self, respx_mock):
         respx_mock.post("projects/mytenant/myname").mock(Response(200))
