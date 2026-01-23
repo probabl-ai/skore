@@ -478,7 +478,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             y_test=y_test,
             pos_label=self._pos_label,
         )
-        return_report._parent = self._hash
+        return_report._parent_hash = self._hash
         return return_report
 
     @property

@@ -178,7 +178,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_test = y_test
         self._pos_label = pos_label
         self.fit_time_ = fit_time
-        self._parent: np.int64 | None = None
+        self._parent_hash: np.int64 | None = None
 
         self._initialize_state()
 
