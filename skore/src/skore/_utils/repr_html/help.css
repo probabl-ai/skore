@@ -14,12 +14,12 @@
 .skore-help-container[data-theme="dark"],
 :host(.dark-theme),
 :host([data-theme="dark"]) {
-    --color-blue: #61459d;
+    --color-blue: #6b42f6;
     --color-orange: #f97316;
     --color-text: #fff;
     --color-background: #000;
     --color-orange-hover: rgba(249, 115, 22, 0.2);
-    --color-blue-hover: rgba(97, 69, 157, 0.2);
+    --color-blue-hover: rgba(107, 66, 246, 0.2);
 }
 
 .skore-help-container {
