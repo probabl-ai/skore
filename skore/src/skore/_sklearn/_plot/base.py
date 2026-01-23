@@ -1,17 +1,14 @@
 import inspect
 from collections.abc import Callable
 from functools import wraps
-from io import StringIO
 from typing import Any, Literal, Protocol, runtime_checkable
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from rich.console import Console
-from rich.panel import Panel
-from rich.tree import Tree
 
 from skore._config import get_config
 from skore._sklearn.types import PlotBackend
+from skore._utils.repr_html.base import HelpDisplayMixin
 
 ########################################################################################
 # Display protocol
@@ -222,101 +219,6 @@ class StyleDisplayMixin:
             return result
 
         return wrapper
-
-
-########################################################################################
-# General purpose mixins
-########################################################################################
-
-
-class HelpDisplayMixin:
-    """Mixin class to add help functionality to a class."""
-
-    estimator_name: str  # defined in the concrete display class
-
-    def _get_attributes_for_help(self) -> list[str]:
-        """Get the attributes ending with '_' to display in help."""
-        return sorted(
-            f".{name}"
-            for name in dir(self)
-            if name.endswith("_") and not name.startswith("_")
-        )
-
-    def _get_methods_for_help(self) -> list[tuple[str, Any]]:
-        """Get the public methods to display in help."""
-        methods = inspect.getmembers(self, predicate=inspect.ismethod)
-        filtered_methods = []
-        for name, method in methods:
-            is_private = name.startswith("_")
-            is_class_method = inspect.ismethod(method) and method.__self__ is type(self)
-            is_help_method = name == "help"
-            if not (is_private or is_class_method or is_help_method):
-                filtered_methods.append((f".{name}(...)", method))
-        return sorted(filtered_methods)
-
-    def _create_help_tree(self) -> Tree:
-        """Create a rich Tree with attributes and methods."""
-        tree = Tree("display")
-
-        attributes = self._get_attributes_for_help()
-        attr_branch = tree.add("[bold cyan] Attributes[/bold cyan]")
-        # Ensure figure_ and ax_ are first
-        sorted_attrs = sorted(attributes)
-        if ("figure_" in sorted_attrs) and ("ax_" in sorted_attrs):
-            sorted_attrs.remove(".ax_")
-            sorted_attrs.remove(".figure_")
-            sorted_attrs = [".figure_", ".ax_"] + [
-                attr for attr in sorted_attrs if attr not in [".figure_", ".ax_"]
-            ]
-        for attr in sorted_attrs:
-            attr_branch.add(attr)
-
-        methods = self._get_methods_for_help()
-        method_branch = tree.add("[bold cyan]Methods[/bold cyan]")
-        for name, method in methods:
-            description = (
-                method.__doc__.split("\n")[0]
-                if method.__doc__
-                else "No description available"
-            )
-            method_branch.add(f"{name} - {description}")
-
-        return tree
-
-    def _create_help_panel(self) -> Panel:
-        return Panel(
-            self._create_help_tree(),
-            title=f"[bold cyan]{self.__class__.__name__} [/bold cyan]",
-            border_style="orange1",
-            expand=False,
-        )
-
-    def help(self) -> None:
-        """Display available attributes and methods using rich."""
-        from skore import console  # avoid circular import
-
-        console.print(self._create_help_panel())
-
-    def __str__(self) -> str:
-        """Return a string representation using rich."""
-        string_buffer = StringIO()
-        console = Console(file=string_buffer, force_terminal=False)
-        console.print(
-            Panel(
-                "Get guidance using the help() method",
-                title=f"[cyan]{self.__class__.__name__}[/cyan]",
-                border_style="orange1",
-                expand=False,
-            )
-        )
-        return string_buffer.getvalue()
-
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        string_buffer = StringIO()
-        console = Console(file=string_buffer, force_terminal=False)
-        console.print(f"[cyan]skore.{self.__class__.__name__}(...)[/cyan]")
-        return string_buffer.getvalue()
 
 
 ########################################################################################

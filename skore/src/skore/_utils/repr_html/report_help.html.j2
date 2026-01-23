@@ -1,0 +1,38 @@
+<div id="{{ container_id }}-wrapper">
+    <template id="{{ container_id }}-template">
+        <style>
+{% include "help.css" %}
+        </style>
+        {% include "report_help-content.html.j2" %}
+    </template>
+
+    <div id="{{ container_id }}"></div>
+
+    <script type="module">
+{% include "help.js" %}
+    </script>
+</div>
+
+<script>
+(function() {
+    const container = document.getElementById('{{ container_id }}');
+    if (!container) {
+        return;
+    }
+
+    const template = document.getElementById('{{ container_id }}-template');
+    if (!template) {
+        return;
+    }
+
+    // Create shadow root with closed mode for better isolation
+    const shadowRoot = container.attachShadow({ mode: 'closed' });
+    shadowRoot.appendChild(template.content.cloneNode(true));
+
+    // Apply theme to the container
+    const helpContainer = shadowRoot.querySelector('.skore-help-container');
+    if (helpContainer) {
+        applyThemeToHelpContainer(helpContainer);
+    }
+})();
+</script>
