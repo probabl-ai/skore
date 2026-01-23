@@ -2,6 +2,7 @@ import inspect
 import re
 import uuid
 from abc import ABC, abstractmethod
+from importlib.metadata import version
 from io import StringIO
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
 
+from skore._externals._sklearn_compat import parse_version
 from skore._utils._environment import is_environment_notebook_like
 
 
@@ -58,7 +60,13 @@ def _get_documentation_url(
     str
         The full documentation URL
     """
-    base_url = "https://docs.skore.probabl.ai/0.11/reference/api"
+    skore_version = parse_version(version("skore"))
+    if skore_version < parse_version("0.1"):
+        url_version = "dev"
+    else:
+        url_version = f"{skore_version.major}.{skore_version.minor}"
+
+    base_url = f"https://docs.skore.probabl.ai/{url_version}/reference/api"
     path_parts = ["skore", class_name]
 
     if accessor_name:
