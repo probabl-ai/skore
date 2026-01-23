@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cached_property, partial
+from threading import RLock
 from typing import ClassVar, Generic, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
@@ -139,15 +140,46 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         -----
         Unavailable medias have been filtered out.
         """
-        payloads = []
 
-        for media_cls in self.MEDIAS:
-            payload = media_cls(project=self.project, report=self.report)
+        class ThreadSafeSet(set[str]):
+            def __init__(self) -> None:
+                self.__lock = RLock()
 
-            if payload.checksum is not None:
-                payloads.append(payload)
+            def add(self, item: str) -> None:
+                with self.__lock:
+                    super().add(item)
 
-        return payloads
+        checksums_being_uploaded = ThreadSafeSet()
+        medias = [
+            media_cls(project=self.project, report=self.report)
+            for media_cls in self.MEDIAS
+        ]
+
+        with (
+            switch_mpl_backend(),
+            SkinnedProgress() as progress,
+            ThreadPoolExecutor() as compute_pool,
+            ThreadPoolExecutor(max_workers=6) as upload_pool,
+        ):
+            tasks = [
+                compute_pool.submit(
+                    lambda media: media.upload(
+                        pool=upload_pool,
+                        checksums_being_uploaded=checksums_being_uploaded,
+                    ),
+                    media,
+                )
+                for media in medias
+            ]
+
+            for task in progress.track(
+                as_completed(tasks),
+                description=f"Uploading {self.report.__class__.__name__} media",
+                total=len(tasks),
+            ):
+                task.result()
+
+        return [media for media in medias if media.checksum is not None]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -159,4 +191,9 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         artifact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artifacts storage.
         """
-        return Pickle(project=self.project, report=self.report)
+        pickle = Pickle(project=self.project, report=self.report)
+
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            pickle.upload(pool=pool, checksums_being_uploaded=set())
+
+        return pickle

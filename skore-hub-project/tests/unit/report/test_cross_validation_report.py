@@ -18,7 +18,6 @@ from skore_hub_project.artifact.media import (
     RocTrain,
 )
 from skore_hub_project.artifact.media.data import TableReport
-from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
@@ -71,10 +70,7 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
         for report, cache in zip(reports, caches, strict=True):
             report._cache = cache
 
-    with Serializer(pickle_bytes) as serializer:
-        checksum = serializer.checksum
-
-    return pickle_bytes, checksum
+    return pickle_bytes, f"skore-{object.__class__.__name__}-{object._hash}"
 
 
 @fixture
@@ -255,6 +251,7 @@ class TestCrossValidationReportPayload:
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
     @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_estimators(self, project, payload, upload_mock):
         assert len(payload.estimators) == len(payload.report.estimator_reports_)
 
@@ -265,15 +262,17 @@ class TestCrossValidationReportPayload:
             assert estimator.report == payload.report.estimator_reports_[i]
 
             # ensure `upload` is well called
-            pickle, checksum = serialize(payload.report.estimator_reports_[i])
+            _, checksum = serialize(payload.report.estimator_reports_[i])
 
             estimator.model_dump()
 
             assert upload_mock.called
             assert not upload_mock.call_args.args
+            assert upload_mock.call_args.kwargs.pop("pool")
             assert upload_mock.call_args.kwargs == {
                 "project": project,
-                "content": pickle,
+                "filepath": estimator.pickle.filepath,
+                "checksum": checksum,
                 "content_type": "application/octet-stream",
             }
 
@@ -282,20 +281,23 @@ class TestCrossValidationReportPayload:
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
     @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_pickle(
-        self, small_cv_binary_classification, project, payload, upload_mock, respx_mock
+        self, small_cv_binary_classification, project, payload, upload_mock
     ):
-        pickle, checksum = serialize(small_cv_binary_classification)
+        _, checksum = serialize(small_cv_binary_classification)
 
-        # Ensure payload is well constructed
+        # Ensure checksum is well constructed
         assert payload.pickle.checksum == checksum
 
         # ensure `upload` is well called
         assert upload_mock.called
         assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs.pop("pool")
         assert upload_mock.call_args.kwargs == {
             "project": project,
-            "content": pickle,
+            "filepath": payload.pickle.filepath,
+            "checksum": checksum,
             "content_type": "application/octet-stream",
         }
 
@@ -366,6 +368,7 @@ class TestCrossValidationReportPayload:
     )
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
             EstimatorHtmlRepr,
@@ -375,6 +378,27 @@ class TestCrossValidationReportPayload:
             RocTrain,
             TableReport,
         ]
+
+    def test_medias_raises_exception(self, monkeypatch, payload):
+        """
+        Since medias compute is multi-threaded, ensure that any exceptions thrown in a
+        sub-thread are also thrown in the main thread.
+        """
+
+        def raise_exception(_):
+            raise Exception("test_medias_raises_exception")
+
+        monkeypatch.setattr(
+            "skore_hub_project.report.cross_validation_report.CrossValidationReportPayload.MEDIAS",
+            [EstimatorHtmlRepr],
+        )
+        monkeypatch.setattr(
+            "skore_hub_project.artifact.media.EstimatorHtmlRepr.compute",
+            raise_exception,
+        )
+
+        with raises(Exception, match="test_medias_raises_exception"):
+            list(map(type, payload.medias))
 
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
@@ -386,6 +410,7 @@ class TestCrossValidationReportPayload:
     )
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.respx()
     def test_model_dump_classification(self, small_cv_binary_classification, payload):
         _, checksum = serialize(small_cv_binary_classification)
 

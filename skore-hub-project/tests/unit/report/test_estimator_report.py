@@ -1,4 +1,6 @@
-from joblib import hash
+from io import BytesIO
+
+from joblib import dump, hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from skore import CrossValidationReport, EstimatorReport
@@ -16,7 +18,6 @@ from skore_hub_project.artifact.media import (
     TableReportTest,
     TableReportTrain,
 )
-from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.metric import (
     AccuracyTest,
     AccuracyTrain,
@@ -38,27 +39,20 @@ from skore_hub_project.report import EstimatorReportPayload
 
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
-    import io
-
-    import joblib
-
     reports = [object] + getattr(object, "estimator_reports_", [])
     caches = [report_to_clear._cache for report_to_clear in reports]
 
     object.clear_cache()
 
     try:
-        with io.BytesIO() as stream:
-            joblib.dump(object, stream)
+        with BytesIO() as stream:
+            dump(object, stream)
             pickle_bytes = stream.getvalue()
     finally:
         for report, cache in zip(reports, caches, strict=True):
             report._cache = cache
 
-    with Serializer(pickle_bytes) as serializer:
-        checksum = serializer.checksum
-
-    return pickle_bytes, checksum
+    return pickle_bytes, f"skore-{object.__class__.__name__}-{object._hash}"
 
 
 @fixture
@@ -83,23 +77,21 @@ class TestEstimatorReportPayload:
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
     @mark.usefixtures("monkeypatch_upload_with_mock")
-    def test_pickle(
-        self, binary_classification, project, payload, upload_mock, respx_mock
-    ):
+    @mark.respx()
+    def test_pickle(self, binary_classification, project, payload, upload_mock):
         pickle, checksum = serialize(binary_classification)
 
-        # Ensure payload is well constructed
-        assert payload.pickle.checksum == checksum
-
-        # Ensure payload is well constructed
+        # Ensure checksum is well constructed
         assert payload.pickle.checksum == checksum
 
         # ensure `upload` is well called
         assert upload_mock.called
         assert not upload_mock.call_args.args
+        assert upload_mock.call_args.kwargs.pop("pool")
         assert upload_mock.call_args.kwargs == {
             "project": project,
-            "content": pickle,
+            "filepath": payload.pickle.filepath,
+            "checksum": checksum,
             "content_type": "application/octet-stream",
         }
 
@@ -144,6 +136,7 @@ class TestEstimatorReportPayload:
 
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
             EstimatorHtmlRepr,
@@ -158,8 +151,30 @@ class TestEstimatorReportPayload:
             TableReportTrain,
         ]
 
+    def test_medias_raises_exception(self, monkeypatch, payload):
+        """
+        Since medias compute is multi-threaded, ensure that any exceptions thrown in a
+        sub-thread are also thrown in the main thread.
+        """
+
+        def raise_exception(_):
+            raise Exception("test_medias_raises_exception")
+
+        monkeypatch.setattr(
+            "skore_hub_project.report.estimator_report.EstimatorReportPayload.MEDIAS",
+            [EstimatorHtmlRepr],
+        )
+        monkeypatch.setattr(
+            "skore_hub_project.artifact.media.EstimatorHtmlRepr.compute",
+            raise_exception,
+        )
+
+        with raises(Exception, match="test_medias_raises_exception"):
+            list(map(type, payload.medias))
+
     @mark.usefixtures("monkeypatch_artifact_hub_client")
     @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.respx()
     def test_model_dump(self, binary_classification, payload):
         _, checksum = serialize(binary_classification)
 

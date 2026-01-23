@@ -33,6 +33,10 @@ def monkeypatch_client(monkeypatch):
         FakeClient,
     )
     monkeypatch.setattr(
+        "skore_hub_project.artifact.artifact.HUBClient",
+        FakeClient,
+    )
+    monkeypatch.setattr(
         "skore_hub_project.artifact.upload.HUBClient",
         FakeClient,
     )
@@ -72,9 +76,11 @@ def monkeypatch_permutation(monkeypatch):
 
 @fixture(autouse=True)
 def monkeypatch_table_report_representation(monkeypatch):
+    def compute(artifact):
+        artifact.computed = True
+
     monkeypatch.setattr(
-        "skore_hub_project.artifact.media.data.TableReport.content_to_upload",
-        lambda self: None,
+        "skore_hub_project.artifact.media.data.TableReport.compute", compute
     )
 
 
@@ -91,6 +97,7 @@ class TestProject:
     def test_quoted_name(self):
         assert Project("my/ tenant", "my/ name").quoted_name == "my%2F%20name"
 
+    @mark.respx()
     def test_put_exception(self, respx_mock):
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
 
@@ -103,11 +110,10 @@ class TestProject:
         ):
             Project("<tenant>", "<name>").put("<key>", "<value>")
 
+    @mark.respx()
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
-        respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
-            Response(200, json=[])
-        )
+        respx_mock.get("projects/<tenant>/<name>/artifacts").mock(Response(200, json=1))
         respx_mock.post("projects/<tenant>/<name>/estimator-reports").mock(
             Response(200)
         )
@@ -136,13 +142,12 @@ class TestProject:
         # `searborn`, which is a dependency of `skore`
         "ignore:The default of observed=False is deprecated.*:FutureWarning:seaborn",
     )
+    @mark.respx()
     def test_put_cross_validation_report(
         self, monkeypatch, small_cv_binary_classification, respx_mock
     ):
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
-        respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
-            Response(200, json=[])
-        )
+        respx_mock.get("projects/<tenant>/<name>/artifacts").mock(Response(200, json=1))
         respx_mock.post("projects/<tenant>/<name>/cross-validation-reports").mock(
             Response(200)
         )
@@ -163,6 +168,7 @@ class TestProject:
         # Compare content with the desired output
         assert content == desired
 
+    @mark.respx()
     def test_get_estimator_report(self, respx_mock, regression):
         # Mock hub routes that will be called
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
@@ -186,6 +192,7 @@ class TestProject:
         assert report.estimator_name_ == regression.estimator_name_
         assert report.ml_task == regression.ml_task
 
+    @mark.respx()
     def test_reports_get_cross_validation_report(self, respx_mock, cv_regression):
         # Mock hub routes that will be called
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
@@ -209,6 +216,7 @@ class TestProject:
         assert report.estimator_name_ == cv_regression.estimator_name_
         assert report.ml_task == cv_regression.ml_task
 
+    @mark.respx()
     def test_summarize(self, nowstr, respx_mock):
         respx_mock.post("projects/<tenant>/<name>").mock(Response(200))
 
@@ -332,10 +340,12 @@ class TestProject:
             },
         ]
 
+    @mark.respx()
     def test_delete(self, respx_mock):
         respx_mock.delete("projects/<tenant>/<name>").mock(Response(204))
         Project.delete("<tenant>", "<name>")
 
+    @mark.respx()
     def test_delete_exception(self, respx_mock):
         respx_mock.delete("projects/<tenant>/<name>").mock(Response(403))
 

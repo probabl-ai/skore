@@ -22,11 +22,14 @@ def upload_mock():
 
 @fixture
 def monkeypatch_upload_with_mock(monkeypatch, upload_mock):
-    monkeypatch.setattr("skore_hub_project.artifact.artifact.upload", upload_mock)
+    monkeypatch.setattr(
+        "skore_hub_project.artifact.artifact.upload_content", upload_mock
+    )
 
 
 @fixture
 def monkeypatch_upload_routes(respx_mock):
+    respx_mock.get("projects/<tenant>/<name>/artifacts").mock(Response(201, json=[]))
     respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
         Response(201, json=[{"upload_url": "http://chunk1.com/", "chunk_id": 1}])
     )
@@ -54,6 +57,7 @@ def monkeypatch_project_hub_client(monkeypatch):
 
 @fixture
 def monkeypatch_artifact_hub_client(monkeypatch):
+    monkeypatch.setattr("skore_hub_project.artifact.artifact.HUBClient", FakeClient)
     monkeypatch.setattr("skore_hub_project.artifact.upload.HUBClient", FakeClient)
 
 
