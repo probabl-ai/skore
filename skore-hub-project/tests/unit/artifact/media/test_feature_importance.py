@@ -90,7 +90,7 @@ def test_feature_importance(
     upload_mock,
     request,
 ):
-    project = Project("<tenant>", "<name>")
+    project = Project("mytenant", "myname")
     report = request.getfixturevalue(report)
 
     function = getattr(report.feature_importance, accessor)
