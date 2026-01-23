@@ -127,7 +127,7 @@ def serialize(display) -> bytes:
 def test_performance(
     monkeypatch, Media, report, accessor, data_source, upload_mock, request
 ):
-    project = Project("<tenant>", "<name>")
+    project = Project("mytenant", "myname")
     report = request.getfixturevalue(report)
     display = getattr(report.metrics, accessor)(data_source=data_source)
     content = serialize(display)

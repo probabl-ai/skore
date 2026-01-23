@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import itertools
 import re
+import warnings
 from collections.abc import Callable
 from functools import cached_property, wraps
 from operator import itemgetter
+from re import sub as substitute
 from tempfile import TemporaryFile
 from typing import (
     TYPE_CHECKING,
@@ -17,6 +19,7 @@ from typing import (
     TypeVar,
     runtime_checkable,
 )
+from unicodedata import normalize
 from urllib.parse import quote
 
 import joblib
@@ -50,6 +53,30 @@ if TYPE_CHECKING:
         roc_auc_mean: float | None
         fit_time_mean: float | None
         predict_time_mean: float | None
+
+
+def slugify(string: str) -> str:
+    """
+    Slugify string.
+
+    The string can only contain unicode letters, digits, and characters ``.``, ``-``,
+    and ``_``.
+
+    In order:
+    - replace characters that aren't alphanumerics, dots, dashes or underscores by dash,
+    - convert repeated dots to single dots,
+    - convert repeated dashes to single dash,
+    - convert repeated underscores to single underscore,
+    - strip leading and trailing dots, dashes, and underscores.
+    """
+    string = normalize("NFKC", string)
+    string = string.lower()
+    string = substitute(r"[^\w.-]", "-", string)
+    string = substitute(r"[.]+", ".", string)
+    string = substitute(r"[-]+", "-", string)
+    string = substitute(r"[_]+", "_", string)
+
+    return string.strip(".-_")
 
 
 def ensure_project_is_created(method: Callable[P, R]) -> Callable[P, R]:
@@ -136,10 +163,25 @@ class Project:
         name : str
             The name of the project.
         """
-        self.created = False
+        if (slugified_tenant := slugify(tenant)) != tenant:
+            warnings.warn(
+                f"Your project will be addressed under the '{slugified_tenant}' tenant."
+                "The tenant name can only contain unicode letters, digits, and the "
+                "characters '.', '-', and '_'.",
+                stacklevel=2,
+            )
 
-        self.__tenant = tenant
-        self.__name = name
+        if (slugified_name := slugify(name)) != name:
+            warnings.warn(
+                f"Your project will be created as '{slugified_name}'."
+                "The project name can only contain unicode letters, digits, and the "
+                "characters '.', '-', and '_'.",
+                stacklevel=2,
+            )
+
+        self.created = False
+        self.__tenant = slugified_tenant
+        self.__name = slugified_name
 
     @property
     def tenant(self) -> str:
