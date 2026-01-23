@@ -165,6 +165,7 @@ exclude = ["src/skore/_externals/", "hatch/", "tests/"]
 ignore_missing_imports = true
 module = [
   "ipywidgets.*",
+  "jinja2.*",
   "joblib.*",
   "pandas.*",
   "plotly.*",
