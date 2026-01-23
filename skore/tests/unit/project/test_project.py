@@ -106,7 +106,7 @@ class TestProject:
         }
 
     def test_init_hub(self, FakeHubProject):
-        project = Project("hub://<tenant>/<name>")
+        project = Project("hub://<workspace>/<name>")
 
         assert isinstance(project, Project)
         assert project._Project__mode == "hub"
@@ -114,7 +114,7 @@ class TestProject:
         assert FakeHubProject.called
         assert not FakeHubProject.call_args.args
         assert FakeHubProject.call_args.kwargs == {
-            "tenant": "<tenant>",
+            "workspace": "<workspace>",
             "name": "<name>",
         }
 
@@ -183,11 +183,11 @@ class TestProject:
 
     def test_mode(self):
         assert Project("<name>").mode == "local"
-        assert Project("hub://<tenant>/<name>").mode == "hub"
+        assert Project("hub://<workspace>/<name>").mode == "hub"
 
     def test_name(self):
         assert Project("<name>").name == "<name>"
-        assert Project("hub://<tenant>/<name>").name == "<name>"
+        assert Project("hub://<workspace>/<name>").name == "<name>"
 
     @mark.parametrize(
         "report",
@@ -321,12 +321,12 @@ class TestProject:
         }
 
     def test_delete_hub(self, FakeHubProject):
-        Project.delete("hub://<tenant>/<name>")
+        Project.delete("hub://<workspace>/<name>")
 
         assert not FakeHubProject.called
         assert FakeHubProject.delete.called
         assert not FakeHubProject.delete.call_args.args
         assert FakeHubProject.delete.call_args.kwargs == {
-            "tenant": "<tenant>",
+            "workspace": "<workspace>",
             "name": "<name>",
         }
