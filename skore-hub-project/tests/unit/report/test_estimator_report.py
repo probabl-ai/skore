@@ -63,7 +63,7 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
 
 @fixture
 def project():
-    return Project("mytenant", "myname")
+    return Project("myworkspace", "myname")
 
 
 @fixture
@@ -182,5 +182,5 @@ class TestEstimatorReportPayload:
     def test_exception(self):
         with raises(ValidationError):
             EstimatorReportPayload(
-                project=Project("mytenant", "myname"), report=None, key="<key>"
+                project=Project("myworkspace", "myname"), report=None, key="<key>"
             )

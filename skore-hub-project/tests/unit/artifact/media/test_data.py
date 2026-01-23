@@ -21,7 +21,7 @@ from skore_hub_project.artifact.serializer import Serializer
 def test_table_report(
     respx_mock, binary_classification, Media, data_source, upload_mock
 ):
-    project = Project("mytenant", "myname")
+    project = Project("myworkspace", "myname")
     media = Media(project=project, report=binary_classification)
     media.model_dump()
 

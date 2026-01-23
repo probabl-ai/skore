@@ -78,32 +78,34 @@ def monkeypatch_table_report_representation(monkeypatch):
     )
 
 
-@mark.filterwarnings("ignore:.*The tenant name can only contain unicode.*:UserWarning")
+@mark.filterwarnings(
+    "ignore:.*The workspace name can only contain unicode.*:UserWarning"
+)
 @mark.filterwarnings("ignore:.*The project name can only contain unicode.*:UserWarning")
 class TestProject:
     @mark.parametrize(
         "input,output,warning",
         (
-            ("mytenant", "mytenant", False),
-            ("my.tenant", "my.tenant", False),
-            ("my-tenant", "my-tenant", False),
-            ("my_tenant", "my_tenant", False),
-            ("my tenant", "my-tenant", True),
-            ("mytënant", "mytenant", True),
-            ("my/tenant", "my-tenant", True),
-            ("my:tenant", "my-tenant", True),
-            ("my?tenant", "my-tenant", True),
-            ("my#tenant", "my-tenant", True),
-            ("my/:?#tënant", "my-tenant", True),
-            ("👽👾😸👨 ? # @ mÿ-tenant ßß œπ æµ∂ƒ", "my-tenant", True),
+            ("myworkspace", "myworkspace", False),
+            ("my.workspace", "my.workspace", False),
+            ("my-workspace", "my-workspace", False),
+            ("my_workspace", "my_workspace", False),
+            ("my workspace", "my-workspace", True),
+            ("myworkspacë", "myworkspace", True),
+            ("my/workspace", "my-workspace", True),
+            ("my:workspace", "my-workspace", True),
+            ("my?workspace", "my-workspace", True),
+            ("my#workspace", "my-workspace", True),
+            ("my/:?#workspacë", "my-workspace", True),
+            ("👽👾😸👨 ? # @ mÿ-workspace ßß œπ æµ∂ƒ", "my-workspace", True),
         ),
     )
-    def test_tenant(self, input, output, warning):
+    def test_workspace(self, input, output, warning):
         if warning:
             with warns(UserWarning, match=f".*'{output}'.*"):
-                assert Project(input, "myname").tenant == output
+                assert Project(input, "myname").workspace == output
         else:
-            assert Project(input, "myname").tenant == output
+            assert Project(input, "myname").workspace == output
 
     @mark.parametrize(
         "input,output,warning",
@@ -125,32 +127,32 @@ class TestProject:
     def test_name(self, input, output, warning):
         if warning:
             with warns(UserWarning, match=f".*'{output}'.*"):
-                assert Project("mytenant", input).name == output
+                assert Project("myworkspace", input).name == output
         else:
-            assert Project("mytenant", input).name == output
+            assert Project("myworkspace", input).name == output
 
     def test_put_exception(self, respx_mock):
-        respx_mock.post("projects/mytenant/myname").mock(Response(200))
+        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
 
         with raises(TypeError, match="Key must be a string"):
-            Project("mytenant", "myname").put(None, "<value>")
+            Project("myworkspace", "myname").put(None, "<value>")
 
         with raises(
             TypeError,
             match="must be a `skore.EstimatorReport` or `skore.CrossValidationReport`",
         ):
-            Project("mytenant", "myname").put("<key>", "<value>")
+            Project("myworkspace", "myname").put("<key>", "<value>")
 
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
-        respx_mock.post("projects/mytenant/myname").mock(Response(200))
-        respx_mock.post("projects/mytenant/myname/artifacts").mock(
+        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
+        respx_mock.post("projects/myworkspace/myname/artifacts").mock(
             Response(200, json=[])
         )
-        respx_mock.post("projects/mytenant/myname/estimator-reports").mock(
+        respx_mock.post("projects/myworkspace/myname/estimator-reports").mock(
             Response(200)
         )
 
-        project = Project("mytenant", "myname")
+        project = Project("myworkspace", "myname")
         project.put("<key>", binary_classification)
 
         # Retrieve the content of the request
@@ -177,15 +179,15 @@ class TestProject:
     def test_put_cross_validation_report(
         self, monkeypatch, small_cv_binary_classification, respx_mock
     ):
-        respx_mock.post("projects/mytenant/myname").mock(Response(200))
-        respx_mock.post("projects/mytenant/myname/artifacts").mock(
+        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
+        respx_mock.post("projects/myworkspace/myname/artifacts").mock(
             Response(200, json=[])
         )
-        respx_mock.post("projects/mytenant/myname/cross-validation-reports").mock(
+        respx_mock.post("projects/myworkspace/myname/cross-validation-reports").mock(
             Response(200)
         )
 
-        project = Project("mytenant", "myname")
+        project = Project("myworkspace", "myname")
         project.put("<key>", small_cv_binary_classification)
 
         # Retrieve the content of the request
@@ -203,9 +205,9 @@ class TestProject:
 
     def test_get_estimator_report(self, respx_mock, regression):
         # Mock hub routes that will be called
-        respx_mock.post("projects/mytenant/myname").mock(Response(200))
+        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
 
-        url = "projects/mytenant/myname/estimator-reports/<report_id>"
+        url = "projects/myworkspace/myname/estimator-reports/<report_id>"
         response = Response(200, json={"pickle": {"presigned_url": "http://url.com"}})
         respx_mock.get(url).mock(response)
 
@@ -217,7 +219,7 @@ class TestProject:
             respx_mock.get(url).mock(response)
 
         # Test
-        project = Project("mytenant", "myname")
+        project = Project("myworkspace", "myname")
         report = project.get("skore:report:estimator:<report_id>")
 
         assert isinstance(report, EstimatorReport)
@@ -226,9 +228,9 @@ class TestProject:
 
     def test_reports_get_cross_validation_report(self, respx_mock, cv_regression):
         # Mock hub routes that will be called
-        respx_mock.post("projects/mytenant/myname").mock(Response(200))
+        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
 
-        url = "projects/mytenant/myname/cross-validation-reports/<report_id>"
+        url = "projects/myworkspace/myname/cross-validation-reports/<report_id>"
         response = Response(200, json={"pickle": {"presigned_url": "http://url.com"}})
         respx_mock.get(url).mock(response)
 
@@ -240,7 +242,7 @@ class TestProject:
             respx_mock.get(url).mock(response)
 
         # Test
-        project = Project("mytenant", "myname")
+        project = Project("myworkspace", "myname")
         report = project.get("skore:report:cross-validation:<report_id>")
 
         assert isinstance(report, CrossValidationReport)
@@ -248,9 +250,9 @@ class TestProject:
         assert report.ml_task == cv_regression.ml_task
 
     def test_summarize(self, nowstr, respx_mock):
-        respx_mock.post("projects/mytenant/myname").mock(Response(200))
+        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
 
-        url = "projects/mytenant/myname/estimator-reports/"
+        url = "projects/myworkspace/myname/estimator-reports/"
         respx_mock.get(url).mock(
             Response(
                 200,
@@ -285,7 +287,7 @@ class TestProject:
             )
         )
 
-        url = "projects/mytenant/myname/cross-validation-reports/"
+        url = "projects/myworkspace/myname/cross-validation-reports/"
         respx_mock.get(url).mock(
             Response(
                 200,
@@ -307,7 +309,7 @@ class TestProject:
             )
         )
 
-        project = Project("mytenant", "myname")
+        project = Project("myworkspace", "myname")
         summary = project.summarize()
 
         assert summary == [
@@ -371,17 +373,17 @@ class TestProject:
         ]
 
     def test_delete(self, respx_mock):
-        respx_mock.delete("projects/mytenant/myname").mock(Response(204))
-        Project.delete("mytenant", "myname")
+        respx_mock.delete("projects/myworkspace/myname").mock(Response(204))
+        Project.delete("myworkspace", "myname")
 
     def test_delete_exception(self, respx_mock):
-        respx_mock.delete("projects/mytenant/myname").mock(Response(403))
+        respx_mock.delete("projects/myworkspace/myname").mock(Response(403))
 
         with raises(
             PermissionError,
             match=(
                 "Failed to delete the project 'myname'; "
-                "please contact the 'mytenant' owner"
+                "please contact the 'myworkspace' owner"
             ),
         ):
-            Project.delete("mytenant", "myname")
+            Project.delete("myworkspace", "myname")

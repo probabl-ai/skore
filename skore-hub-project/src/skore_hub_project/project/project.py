@@ -81,19 +81,19 @@ def slugify(string: str) -> str:
     return string.strip(".-_")
 
 
-def slugify_and_warn(string: str, type: Literal["tenant", "name"]) -> str:
-    """Slugify tenant or name string, and warn if the result differs."""
+def slugify_and_warn(string: str, type: Literal["workspace", "name"]) -> str:
+    """Slugify workspace or name string, and warn if the result differs."""
     slug = slugify(string)
 
     if slug != string:
         warnings.warn(
             (
                 (
-                    f"Your project will be addressed under the '{slug}' tenant."
-                    "The tenant name must be lower-case and contain only ASCII letters"
+                    f"Your project will be addressed under the '{slug}' workspace."
+                    "The workspace name must be lower-case and contain only ASCII letters"
                     ", digits, and characters '.', '-', and '_'."
                 )
-                if type == "tenant"
+                if type == "workspace"
                 else (
                     f"Your project will be created as '{slug}'."
                     "The project name must be lower-case and contain only ASCII letters"
@@ -112,7 +112,7 @@ def ensure_project_is_created(method: Callable[P, R]) -> Callable[P, R]:
     @runtime_checkable
     class Project(Protocol):
         created: bool
-        tenant: str
+        workspace: str
         name: str
 
     @wraps(method)
@@ -123,7 +123,7 @@ def ensure_project_is_created(method: Callable[P, R]) -> Callable[P, R]:
 
         if not project.created:
             with HUBClient() as hub_client:
-                hub_client.post(f"projects/{project.tenant}/{project.name}")
+                hub_client.post(f"projects/{project.workspace}/{project.name}")
 
             project.created = True
 
@@ -138,7 +138,7 @@ class Project:
 
     It communicates with the Probabl's ``skore hub`` storage, based on the pickle
     representation. Its constructor initializes a hub project by creating a new
-    project or by loading an existing one from a defined tenant.
+    project or by loading an existing one from a defined workspace.
 
     The class main methods are :func:`~skore_hub_project.Project.put`,
     :func:`~skore_hub_project.reports.metadata` and
@@ -147,10 +147,10 @@ class Project:
 
     Parameters
     ----------
-    tenant : str
-        The tenant of the project.
+    workspace : str
+        The workspace of the project.
 
-        A tenant is a ``skore hub`` concept that must be configured on the
+        A workspace is a ``skore hub`` concept that must be configured on the
         ``skore hub`` interface. It represents an isolated entity managing users,
         projects, and resources. It can be a company, organization, or team that
         operates independently within the system.
@@ -159,8 +159,8 @@ class Project:
 
     Attributes
     ----------
-    tenant : str
-        The tenant of the project.
+    workspace : str
+        The workspace of the project.
     name : str
         The name of the project.
     """
@@ -169,19 +169,19 @@ class Project:
         r"skore:report:(?P<type>(estimator|cross-validation)):(?P<id>.+)"
     )
 
-    def __init__(self, tenant: str, name: str):
+    def __init__(self, workspace: str, name: str):
         """
         Initialize a hub project.
 
         Initialize a hub project by creating a new project or by loading an existing
-        one from a defined tenant.
+        one from a defined workspace.
 
         Parameters
         ----------
-        tenant : Path
-            The tenant of the project.
+        workspace : Path
+            The workspace of the project.
 
-            A tenant is a ``skore hub`` concept that must be configured on the
+            A workspace is a ``skore hub`` concept that must be configured on the
             ``skore hub`` interface. It represents an isolated entity managing users,
             projects, and resources. It can be a company, organization, or team that
             operates independently within the system.
@@ -189,13 +189,13 @@ class Project:
             The name of the project.
         """
         self.created = False
-        self.__tenant = slugify_and_warn(tenant, "tenant")
+        self.__workspace = slugify_and_warn(workspace, "workspace")
         self.__name = slugify_and_warn(name, "name")
 
     @property
-    def tenant(self) -> str:
-        """The tenant of the project."""
-        return self.__tenant
+    def workspace(self) -> str:
+        """The workspace of the project."""
+        return self.__workspace
 
     @property
     def name(self) -> str:
@@ -246,7 +246,7 @@ class Project:
 
         with HUBClient() as hub_client:
             hub_client.post(
-                url=f"projects/{self.tenant}/{self.name}/{endpoint}",
+                url=f"projects/{self.workspace}/{self.name}/{endpoint}",
                 content=payload_json_bytes,
                 headers={
                     "Content-Length": str(len(payload_json_bytes)),
@@ -258,11 +258,11 @@ class Project:
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its URN."""
         if m := re.match(Project.__REPORT_URN_PATTERN, urn):
-            tenant = self.tenant
+            workspace = self.workspace
             name = self.name
             type = m["type"]
             id = m["id"]
-            url = f"projects/{tenant}/{name}/{type}-reports/{id}"
+            url = f"projects/{workspace}/{name}/{type}-reports/{id}"
         else:
             raise ValueError(
                 f"URN '{urn}' format does not match '{Project.__REPORT_URN_PATTERN}'"
@@ -331,13 +331,13 @@ class Project:
                 zip(
                     itertools.repeat("estimator"),
                     hub_client.get(
-                        f"projects/{self.tenant}/{self.name}/estimator-reports/"
+                        f"projects/{self.workspace}/{self.name}/estimator-reports/"
                     ).json(),
                 ),
                 zip(
                     itertools.repeat("cross-validation"),
                     hub_client.get(
-                        f"projects/{self.tenant}/{self.name}/cross-validation-reports/"
+                        f"projects/{self.workspace}/{self.name}/cross-validation-reports/"
                     ).json(),
                 ),
             )
@@ -345,35 +345,35 @@ class Project:
         return sorted(map(dto, responses), key=itemgetter("date"))
 
     def __repr__(self) -> str:  # noqa: D105
-        return f"Project(mode='hub', name='{self.name}', tenant='{self.tenant}')"
+        return f"Project(mode='hub', name='{self.name}', workspace='{self.workspace}')"
 
     @staticmethod
-    def delete(tenant: str, name: str) -> None:
+    def delete(workspace: str, name: str) -> None:
         """
         Delete a hub project.
 
         Parameters
         ----------
-        tenant : Path
-            The tenant of the project.
+        workspace : Path
+            The workspace of the project.
 
-            A tenant is a ``skore hub`` concept that must be configured on the
+            A workspace is a ``skore hub`` concept that must be configured on the
             ``skore hub`` interface. It represents an isolated entity managing users,
             projects, and resources. It can be a company, organization, or team that
             operates independently within the system.
         name : str
             The name of the project.
         """
-        tenant = slugify_and_warn(tenant, "tenant")
+        workspace = slugify_and_warn(workspace, "workspace")
         name = slugify_and_warn(name, "name")
 
         with HUBClient() as hub_client:
             try:
-                hub_client.delete(f"projects/{tenant}/{name}")
+                hub_client.delete(f"projects/{workspace}/{name}")
             except HTTPStatusError as e:
                 if e.response.status_code == 403:
                     raise PermissionError(
                         f"Failed to delete the project '{name}'; "
-                        f"please contact the '{tenant}' owner"
+                        f"please contact the '{workspace}' owner"
                     ) from e
                 raise
