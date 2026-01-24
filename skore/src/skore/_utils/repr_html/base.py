@@ -20,7 +20,7 @@ from skore._utils._environment import is_environment_notebook_like
 ########################################################################################
 
 
-def _get_documentation_url(
+def get_documentation_url(
     class_name: str,
     accessor_name: str | None = None,
     method_or_attr_name: str | None = None,
@@ -59,12 +59,52 @@ def _get_documentation_url(
     return f"{base_url}/{'.'.join(path_parts)}.html"
 
 
-def _get_jinja_env():
+def get_jinja_env():
     """Get Jinja2 environment for loading templates."""
     from skore._utils import repr_html
 
     template_dir = Path(repr_html.__file__).parent
     return Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
+
+
+def get_public_methods_for_help(obj: Any) -> list[tuple[str, Any]]:
+    """Return the public instance methods of ``obj`` to display in help."""
+    methods = inspect.getmembers(obj, predicate=inspect.ismethod)
+    filtered_methods = []
+    for name, method in methods:
+        is_private_method = name.startswith("_")
+        # we cannot use `isinstance(method, classmethod)` because it is already
+        # transformed by the decorator `@classmethod`.
+        is_class_method = inspect.ismethod(method) and method.__self__ is type(obj)
+        is_help_method = name == "help"
+        if not (is_private_method or is_class_method or is_help_method):
+            filtered_methods.append((name, method))
+    return sorted(filtered_methods)
+
+
+def get_method_short_summary(method: Any) -> str:
+    """Get the one-line description for a method from its docstring."""
+    return (
+        method.__doc__.split("\n")[0]
+        if method.__doc__
+        else "No description available"
+    )
+
+
+def get_public_attributes(obj: Any) -> list[str]:
+    """Get the attributes of ``obj`` ending with '_' to display in help."""
+    return sorted(
+        name for name in dir(obj) if name.endswith("_") and not name.startswith("_")
+    )
+
+
+def get_attribute_short_sumamry(obj: Any, name: str) -> str:
+    """Get the description of an attribute from the class docstring."""
+    if obj.__doc__ is None:
+        return "No description available"
+    regex_pattern = rf"{name} : .*?\n\s*(.*?)\."
+    search_result = re.search(regex_pattern, obj.__doc__)
+    return search_result.group(1) if search_result else "No description available"
 
 
 ########################################################################################
@@ -84,28 +124,6 @@ class _BaseHelpDataMixin(ABC):
     def _build_help_data(self) -> dict[str, Any]:
         """Build data structure for Jinja2/Rich rendering."""
         pass
-
-    def _get_methods_for_help(self) -> list[tuple[str, Any]]:
-        """Return the public instance methods to display in help."""
-        methods = inspect.getmembers(self, predicate=inspect.ismethod)
-        filtered_methods = []
-        for name, method in methods:
-            is_private_method = name.startswith("_")
-            # we cannot use `isinstance(method, classmethod)` because it is already
-            # transformed by the decorator `@classmethod`.
-            is_class_method = inspect.ismethod(method) and method.__self__ is type(self)
-            is_help_method = name == "help"
-            if not (is_private_method or is_class_method or is_help_method):
-                filtered_methods.append((name, method))
-        return sorted(filtered_methods)
-
-    def _get_method_description(self, method: Any) -> str:
-        """Get the one-line description for a method from its docstring."""
-        return (
-            method.__doc__.split("\n")[0]
-            if method.__doc__
-            else "No description available"
-        )
 
     def _build_method_data(
         self,
@@ -139,12 +157,12 @@ class _BaseHelpDataMixin(ABC):
         else:
             params_part = "(...)"
 
-        description = obj._get_method_description(method)
+        description = get_method_short_summary(method)
         favorability_text = None
         if hasattr(obj, "_get_favorability_text"):
             favorability_text = obj._get_favorability_text(name)
 
-        doc_url = _get_documentation_url(class_name, accessor_path, name)
+        doc_url = get_documentation_url(class_name, accessor_path, name)
 
         return {
             "name_only": method_name_only,
@@ -154,31 +172,15 @@ class _BaseHelpDataMixin(ABC):
             "doc_url": doc_url,
         }
 
-    def _get_attributes_for_help(self) -> list[str]:
-        """Get the attributes ending with '_' to display in help."""
-        return sorted(
-            name
-            for name in dir(self)
-            if name.endswith("_") and not name.startswith("_")
-        )
-
-    def _get_attribute_description(self, name: str) -> str:
-        """Get the description of an attribute from its class docstring."""
-        if self.__doc__ is None:
-            return "No description available"
-        regex_pattern = rf"{name} : .*?\n\s*(.*?)\."
-        search_result = re.search(regex_pattern, self.__doc__)
-        return search_result.group(1) if search_result else "No description available"
-
     def _build_attributes_data(
         self, class_name: str
     ) -> tuple[list[dict[str, Any]] | None, dict[str, str] | None]:
         """Build attribute metadata and section identifiers.
 
         This helper is shared between reports and displays. It assumes that
-        `_get_attributes_for_help` returns attribute names without a leading dot.
+        `get_public_attributes` returns attribute names without a leading dot.
         """
-        attributes = self._get_attributes_for_help()
+        attributes = get_public_attributes(self)
         if not attributes:
             return None, None
 
@@ -192,8 +194,8 @@ class _BaseHelpDataMixin(ABC):
 
         items: list[dict[str, Any]] = []
         for attr_name in attrs_without_underscore + attrs_with_underscore:
-            description = self._get_attribute_description(attr_name)
-            doc_url = _get_documentation_url(class_name, None, attr_name)
+            description = get_attribute_short_sumamry(self, attr_name)
+            doc_url = get_documentation_url(class_name, None, attr_name)
             items.append(
                 {
                     "name": attr_name,
@@ -212,7 +214,7 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
     concepts such as accessors and X/y attributes.
     """
 
-    def _get_attributes_for_help(self) -> list[str]:
+    def get_public_attributes(self) -> list[str]:
         """Get the public attributes to display in help."""
         from skore._sklearn._base import _BaseAccessor
 
@@ -266,7 +268,7 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                 "sub_accessors": [],
             }
 
-            methods = sorted(accessor._get_methods_for_help())
+            methods = get_public_methods_for_help(accessor)
 
             for name, method in methods:
                 method_data = self._build_method_data(
@@ -285,7 +287,7 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                         "methods": [],
                     }
 
-                    sub_methods = sorted(sub_obj._get_methods_for_help())
+                    sub_methods = get_public_methods_for_help(sub_obj)
 
                     for name, method in sub_methods:
                         method_data = self._build_method_data(
@@ -301,7 +303,7 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
 
             data["accessors"].append(accessor_data)
 
-        base_methods = sorted(self._get_methods_for_help())
+        base_methods = get_public_methods_for_help(self)
 
         if base_methods:
             data["methods_section"] = {
@@ -341,7 +343,7 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
         data["tree_title"] = tree_title
         data["methods"] = []
 
-        methods = sorted(self._get_methods_for_help())
+        methods = get_public_methods_for_help(self)
 
         for name, method in methods:
             method_data = self._build_method_data(name, method, self, class_name, None)
@@ -367,7 +369,7 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
         data["attributes"] = attributes
         data["attributes_section"] = attributes_section
 
-        methods = self._get_methods_for_help()
+        methods = get_public_methods_for_help(self)
         if methods:
             data["methods_section"] = {
                 "id": str(uuid.uuid4()),
@@ -489,7 +491,7 @@ class _HTMLReportHelpMixin(_ReportHelpDataMixin, _BaseHTMLHelpMixin):
         """Create the HTML representation of the help tree."""
         template_data = self._build_help_data()
 
-        env = _get_jinja_env()
+        env = get_jinja_env()
         template = env.get_template("report_help.html.j2")
 
         container_id = f"skore-help-{uuid.uuid4().hex[:8]}"
@@ -549,7 +551,7 @@ class _HTMLAccessorHelpMixin(_AccessorHelpDataMixin, _BaseHTMLHelpMixin):
         """Create the HTML representation of the help tree for accessors."""
         template_data = self._build_help_data()
 
-        env = _get_jinja_env()
+        env = get_jinja_env()
         template = env.get_template("report_help.html.j2")
 
         container_id = f"skore-accessor-help-{uuid.uuid4().hex[:8]}"
@@ -611,7 +613,7 @@ class _HTMLHelpDisplayMixin(_DisplayHelpDataMixin, _BaseHTMLHelpMixin):
         """Create the HTML representation of the help tree."""
         template_data = self._build_help_data()
 
-        env = _get_jinja_env()
+        env = get_jinja_env()
         template = env.get_template("display_help.html.j2")
 
         container_id = f"skore-display-help-{uuid.uuid4().hex[:8]}"
