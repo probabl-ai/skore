@@ -391,11 +391,37 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
 
 
 ########################################################################################
+# Base help mixins for Rich and HTML rendering
+########################################################################################
+
+
+class _BaseRichHelpMixin(ABC):
+    """Base mixin for Rich-based help rendering."""
+
+    @abstractmethod
+    def _create_help_tree(self) -> Tree:
+        """Create the help tree for Rich rendering."""
+        pass
+
+    @abstractmethod
+    def _create_help_panel(self) -> Panel:
+        """Create the Rich panel wrapping the help tree."""
+        pass
+
+class _BaseHTMLHelpMixin(ABC):
+    """Base mixin for HTML-based help rendering."""
+
+    @abstractmethod
+    def _create_help_html(self) -> str:
+        """Create the HTML representation of the help tree."""
+        pass
+
+########################################################################################
 # Report help mixins
 ########################################################################################
 
 
-class _RichHelpMixin(_ReportHelpDataMixin):
+class _RichReportHelpMixin(_ReportHelpDataMixin):
     """Mixin for Rich-based help rendering for reports."""
 
     def _create_help_tree(self) -> Tree:
@@ -456,7 +482,7 @@ class _RichHelpMixin(_ReportHelpDataMixin):
         )
 
 
-class _HTMLHelpMixin(_ReportHelpDataMixin):
+class _HTMLReportHelpMixin(_ReportHelpDataMixin):
     """Mixin for HTML-based help rendering for reports with Shadow DOM isolation."""
 
     def _create_help_html(self) -> str:
@@ -603,7 +629,7 @@ class _HTMLHelpDisplayMixin(_DisplayHelpDataMixin):
 ########################################################################################
 
 
-class ReportHelpMixin(_RichHelpMixin, _HTMLHelpMixin):
+class ReportHelpMixin(_RichReportHelpMixin, _HTMLReportHelpMixin):
     """Mixin class providing help for report `help` and `__repr__`.
 
     This mixin inherits from both `_RichHelpMixin` and `_HTMLHelpMixin` and
