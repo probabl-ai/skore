@@ -10,9 +10,65 @@ from typing import Any
 
 from skore._externals._sklearn_compat import parse_version
 
-########################################################################################
-# Utility functions for help system
-########################################################################################
+
+@dataclass
+class HelpSection:
+    id: str
+    branch_id: str
+
+
+@dataclass
+class MethodHelp:
+    name: str
+    parameters: str
+    description: str
+    favorability: str | None
+    doc_url: str
+
+
+@dataclass
+class AttributeHelp:
+    name: str
+    description: str
+    doc_url: str
+
+
+@dataclass
+class AccessorBranchHelp:
+    id: str
+    branch_id: str
+    name: str
+    methods: list[MethodHelp]
+
+
+@dataclass
+class ReportHelpData:
+    title: str
+    root_node: str
+    class_name: str
+    accessors: list[AccessorBranchHelp]
+    base_methods: list[MethodHelp]
+    methods_section: HelpSection | None
+    attributes: list[AttributeHelp] | None
+    attributes_section: HelpSection | None
+
+
+@dataclass
+class AccessorHelpData:
+    title: str
+    root_node: str
+    methods: list[MethodHelp]
+
+
+@dataclass
+class DisplayHelpData:
+    title: str
+    root_node: str
+    class_name: str
+    attributes: list[AttributeHelp] | None
+    attributes_section: HelpSection | None
+    methods_section: HelpSection | None
+    methods: list[MethodHelp] | None
 
 
 def get_documentation_url(
@@ -99,71 +155,6 @@ def get_attribute_short_summary(obj: Any, name: str) -> str:
     regex_pattern = rf"{name} : .*?\n\s*(.*?)\."
     search_result = re.search(regex_pattern, obj.__doc__)
     return search_result.group(1) if search_result else "No description available"
-
-
-########################################################################################
-# Data structures for help system
-########################################################################################
-
-
-@dataclass
-class HelpSection:
-    id: str
-    branch_id: str
-
-
-@dataclass
-class MethodHelp:
-    name: str
-    parameters: str
-    description: str
-    favorability: str | None
-    doc_url: str
-
-
-@dataclass
-class AttributeHelp:
-    name: str
-    description: str
-    doc_url: str
-
-
-@dataclass
-class AccessorBranchHelp:
-    id: str
-    branch_id: str
-    name: str
-    methods: list[MethodHelp]
-
-
-@dataclass
-class ReportHelpData:
-    title: str
-    root_node: str
-    class_name: str
-    accessors: list[AccessorBranchHelp]
-    base_methods: list[MethodHelp]
-    methods_section: HelpSection | None
-    attributes: list[AttributeHelp] | None
-    attributes_section: HelpSection | None
-
-
-@dataclass
-class AccessorHelpData:
-    title: str
-    root_node: str
-    methods: list[MethodHelp]
-
-
-@dataclass
-class DisplayHelpData:
-    title: str
-    root_node: str
-    class_name: str
-    attributes: list[AttributeHelp] | None
-    attributes_section: HelpSection | None
-    methods_section: HelpSection | None
-    methods: list[MethodHelp] | None
 
 
 class _BaseHelpDataMixin(ABC):
