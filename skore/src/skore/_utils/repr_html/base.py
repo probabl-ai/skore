@@ -87,204 +87,15 @@ def _get_jinja_env():
 
 
 ########################################################################################
-# Rich help mixins
+# Base help data mixin (reports)
 ########################################################################################
 
 
-class _RichHelpMixin:
-    """Mixin for Rich-based help rendering for reports."""
-
-    def _create_help_tree(self) -> Tree:
-        """Create the help tree for Rich rendering."""
-        # Check if this is a report (has _ACCESSOR_CONFIG) or an accessor
-        if hasattr(self, "_ACCESSOR_CONFIG"):
-            # Report implementation
-            tree = Tree(self.__class__.__name__)
-
-            # Add accessor methods first
-            for accessor_attr, config in self._ACCESSOR_CONFIG.items():
-                accessor = getattr(self, accessor_attr)
-                # Add Rich markup for display (plain text is in config['name'])
-                branch = tree.add(f"[bold cyan].{config['name']}[/bold cyan]")
-
-                # Add main accessor methods first
-                methods = accessor._get_methods_for_help()
-                methods = accessor._sort_methods_for_help(methods)
-
-                # Add methods
-                for name, method in methods:
-                    # For Rich, show only method name with ellipsis
-                    displayed_name = f"{name}(...)"
-                    description = accessor._get_method_description(method)
-                    branch.add(f".{displayed_name.ljust(25)} - {description}")
-
-                # Add sub-accessors after main methods
-                for sub_attr, sub_obj in inspect.getmembers(accessor):
-                    # Import here to avoid circular dependency
-                    from skore._sklearn._base import _BaseAccessor
-
-                    if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith(
-                        "_"
-                    ):
-                        sub_branch = branch.add(f"[bold cyan].{sub_attr}[/bold cyan]")
-
-                        # Add sub-accessor methods
-                        sub_methods = sub_obj._get_methods_for_help()
-                        sub_methods = sub_obj._sort_methods_for_help(sub_methods)
-
-                        for name, method in sub_methods:
-                            # For Rich, show only method name with ellipsis
-                            displayed_name = f"{name}(...)"
-                            description = sub_obj._get_method_description(method)
-                            sub_branch.add(
-                                f".{displayed_name.ljust(25)} - {description}"
-                            )
-
-            # Add base methods section
-            base_methods = self._get_methods_for_help()
-            base_methods = self._sort_methods_for_help(base_methods)
-
-            if base_methods:
-                # Add Rich markup for display (plain text is "Methods")
-                methods_branch = tree.add("[bold cyan]Methods[/bold cyan]")
-                for name, method in base_methods:
-                    description = self._get_method_description(method)
-                    # For Rich, show only method name with ellipsis
-                    displayed_name = f"{name}(...)"
-                    methods_branch.add(
-                        f".{displayed_name}".ljust(34) + f" - {description}"
-                    )
-
-            # Add attributes section
-            if hasattr(self, "_get_attributes_for_help"):
-                attributes = self._get_attributes_for_help()
-                if attributes:
-                    # Add Rich markup for display (plain text is "Attributes")
-                    attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
-                    # Group attributes: those without `_` first, then those with `_`
-                    attrs_without_underscore = [
-                        a for a in attributes if not a.endswith("_")
-                    ]
-                    attrs_with_underscore = [a for a in attributes if a.endswith("_")]
-                    for attr_name in attrs_without_underscore + attrs_with_underscore:
-                        description = self._get_attribute_description(attr_name)
-                        attr_branch.add(f".{attr_name.ljust(29)} - {description}")
-
-            return tree
-        else:
-            # Accessor implementation
-            # Get plain text title
-            if hasattr(self, "_get_help_tree_title"):
-                tree_title_plain = self._get_help_tree_title()
-            else:
-                tree_title_plain = self.__class__.__name__
-            # Add Rich markup for display
-            tree_title_rich = f"[bold cyan]{tree_title_plain}[/bold cyan]"
-            tree = Tree(tree_title_rich)
-
-            methods = self._get_methods_for_help()
-            methods = self._sort_methods_for_help(methods)
-
-            for name, method in methods:
-                # For Rich, show only method name with ellipsis
-                displayed_name = f"{name}(...)"
-                description = self._get_method_description(method)
-                tree.add(f".{displayed_name}".ljust(26) + f" - {description}")
-
-            return tree
-
-    def _create_help_panel(self) -> Panel:
-        """Create the help panel for Rich rendering."""
-        # Legend removed - favorability info now in HTML tooltips only
-        content = self._create_help_tree()
-
-        # Get plain text title and add Rich markup for display
-        title_plain = self._get_help_panel_title()
-        # Add Rich markup for display (if title is not empty)
-        title_rich = (
-            f"[bold cyan]{title_plain}[/bold cyan]" if title_plain else title_plain
-        )
-
-        return Panel(
-            content,
-            title=title_rich,
-            expand=False,
-            border_style="orange1",
-        )
-
-
-class _RichHelpDisplayMixin:
-    """Mixin for Rich-based help rendering for displays."""
-
-    def _get_attributes_for_help(self) -> list[str]:
-        """Get the attributes ending with '_' to display in help."""
-        return sorted(
-            f".{name}"
-            for name in dir(self)
-            if name.endswith("_") and not name.startswith("_")
-        )
-
-    def _get_methods_for_help(self) -> list[tuple[str, Any]]:
-        """Get the public methods to display in help."""
-        methods = inspect.getmembers(self, predicate=inspect.ismethod)
-        filtered_methods = []
-        for name, method in methods:
-            is_private = name.startswith("_")
-            is_class_method = inspect.ismethod(method) and method.__self__ is type(self)
-            is_help_method = name == "help"
-            if not (is_private or is_class_method or is_help_method):
-                filtered_methods.append((f".{name}(...)", method))
-        return sorted(filtered_methods)
-
-    def _create_help_tree(self) -> Tree:
-        """Create a rich Tree with attributes and methods."""
-        tree = Tree("display")
-
-        methods = self._get_methods_for_help()
-        method_branch = tree.add("[bold cyan]Methods[/bold cyan]")
-        for name, method in methods:
-            description = (
-                method.__doc__.split("\n")[0]
-                if method.__doc__
-                else "No description available"
-            )
-            method_branch.add(f"{name} - {description}")
-
-        attributes = self._get_attributes_for_help()
-        # Ensure figure_ and ax_ are first
-        sorted_attrs = sorted(attributes)
-        if (".figure_" in sorted_attrs) and (".ax_" in sorted_attrs):
-            sorted_attrs.remove(".ax_")
-            sorted_attrs.remove(".figure_")
-            sorted_attrs = [".figure_", ".ax_"] + [
-                attr for attr in sorted_attrs if attr not in [".figure_", ".ax_"]
-            ]
-        if sorted_attrs:
-            attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
-            for attr in sorted_attrs:
-                attr_branch.add(attr)
-
-        return tree
-
-    def _create_help_panel(self) -> Panel:
-        return Panel(
-            self._create_help_tree(),
-            title=f"[bold cyan]{self.__class__.__name__} [/bold cyan]",
-            border_style="orange1",
-            expand=False,
-        )
-
-
-########################################################################################
-# HTML help mixins
-########################################################################################
-
-
-class _HTMLHelpMixin:
-    """Mixin for HTML-based help rendering for reports with Shadow DOM isolation."""
+class _ReportHelpDataMixin(ABC):
+    """Mixin responsible for building help data structures for reports."""
 
     def _build_help_data(self) -> dict[str, Any]:
-        """Build data structure for Jinja2 template rendering."""
+        """Build data structure for Jinja2/Rich rendering."""
         # Get plain text title (base methods should return plain text)
         title = self._get_help_panel_title()
         class_name = self.__class__.__name__
@@ -456,6 +267,169 @@ class _HTMLHelpMixin:
             "favorability_text": favorability_text,
             "doc_url": doc_url,
         }
+
+
+########################################################################################
+# Rich help mixin (reports)
+########################################################################################
+
+
+class _RichHelpMixin(_ReportHelpDataMixin):
+    """Mixin for Rich-based help rendering for reports."""
+
+    def _create_help_tree(self) -> Tree:
+        """Create the help tree for Rich rendering."""
+        data = self._build_help_data()
+
+        if data.get("is_report", False):
+            # Report implementation
+            tree = Tree(self.__class__.__name__)
+
+            # Accessor branches
+            for accessor_data in data.get("accessors", []):
+                branch = tree.add(f"[bold cyan].{accessor_data['name']}[/bold cyan]")
+
+                # Main accessor methods
+                for method in accessor_data["methods"]:
+                    displayed_name = f"{method['name_only']}(...)"  # keep ellipsis
+                    description = method["description"]
+                    branch.add(f".{displayed_name.ljust(25)} - {description}")
+
+                # Sub-accessors
+                for sub_accessor in accessor_data["sub_accessors"]:
+                    sub_branch = branch.add(
+                        f"[bold cyan].{sub_accessor['name']}[/bold cyan]"
+                    )
+                    for method in sub_accessor["methods"]:
+                        displayed_name = f"{method['name_only']}(...)"  # keep ellipsis
+                        description = method["description"]
+                        sub_branch.add(
+                            f".{displayed_name.ljust(25)} - {description}"
+                        )
+
+            # Base methods section
+            base_methods = data.get("base_methods", [])
+            if base_methods:
+                methods_branch = tree.add("[bold cyan]Methods[/bold cyan]")
+                for method in base_methods:
+                    displayed_name = f"{method['name_only']}(...)"  # keep ellipsis
+                    description = method["description"]
+                    methods_branch.add(
+                        f".{displayed_name}".ljust(26) + f" - {description}"
+                    )
+
+            # Attributes section
+            attributes = data.get("attributes") or []
+            if attributes:
+                attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
+                for attr in attributes:
+                    name = attr["name"]
+                    description = attr["description"]
+                    attr_branch.add(f".{name.ljust(25)} - {description}")
+
+            return tree
+
+        # Accessor-only implementation
+        tree_title_plain = data.get("tree_title", self.__class__.__name__)
+        tree_title_rich = f"[bold cyan]{tree_title_plain}[/bold cyan]"
+        tree = Tree(tree_title_rich)
+
+        for method in data.get("methods", []):
+            displayed_name = f"{method['name_only']}(...)"  # keep ellipsis
+            description = method["description"]
+            tree.add(f".{displayed_name}".ljust(26) + f" - {description}")
+
+        return tree
+
+    def _create_help_panel(self) -> Panel:
+        """Create the help panel for Rich rendering."""
+        # Legend removed - favorability info now in HTML tooltips only
+        content = self._create_help_tree()
+
+        # Get plain text title and add Rich markup for display
+        title_plain = self._get_help_panel_title()
+        # Add Rich markup for display (if title is not empty)
+        title_rich = (
+            f"[bold cyan]{title_plain}[/bold cyan]" if title_plain else title_plain
+        )
+
+        return Panel(
+            content,
+            title=title_rich,
+            expand=False,
+            border_style="orange1",
+        )
+
+
+class _RichHelpDisplayMixin:
+    """Mixin for Rich-based help rendering for displays."""
+
+    def _get_attributes_for_help(self) -> list[str]:
+        """Get the attributes ending with '_' to display in help."""
+        return sorted(
+            f".{name}"
+            for name in dir(self)
+            if name.endswith("_") and not name.startswith("_")
+        )
+
+    def _get_methods_for_help(self) -> list[tuple[str, Any]]:
+        """Get the public methods to display in help."""
+        methods = inspect.getmembers(self, predicate=inspect.ismethod)
+        filtered_methods = []
+        for name, method in methods:
+            is_private = name.startswith("_")
+            is_class_method = inspect.ismethod(method) and method.__self__ is type(self)
+            is_help_method = name == "help"
+            if not (is_private or is_class_method or is_help_method):
+                filtered_methods.append((f".{name}(...)", method))
+        return sorted(filtered_methods)
+
+    def _create_help_tree(self) -> Tree:
+        """Create a rich Tree with attributes and methods."""
+        tree = Tree("display")
+
+        methods = self._get_methods_for_help()
+        method_branch = tree.add("[bold cyan]Methods[/bold cyan]")
+        for name, method in methods:
+            description = (
+                method.__doc__.split("\n")[0]
+                if method.__doc__
+                else "No description available"
+            )
+            method_branch.add(f"{name.ljust(26)} - {description}")
+
+        attributes = self._get_attributes_for_help()
+        # Ensure figure_ and ax_ are first
+        sorted_attrs = sorted(attributes)
+        if (".figure_" in sorted_attrs) and (".ax_" in sorted_attrs):
+            sorted_attrs.remove(".ax_")
+            sorted_attrs.remove(".figure_")
+            sorted_attrs = [".figure_", ".ax_"] + [
+                attr for attr in sorted_attrs if attr not in [".figure_", ".ax_"]
+            ]
+        if sorted_attrs:
+            attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
+            for attr in sorted_attrs:
+                attr_branch.add(attr)
+
+        return tree
+
+    def _create_help_panel(self) -> Panel:
+        return Panel(
+            self._create_help_tree(),
+            title=f"[bold cyan]{self.__class__.__name__} [/bold cyan]",
+            border_style="orange1",
+            expand=False,
+        )
+
+
+########################################################################################
+# HTML help mixin (reports)
+########################################################################################
+
+
+class _HTMLHelpMixin(_ReportHelpDataMixin):
+    """Mixin for HTML-based help rendering for reports with Shadow DOM isolation."""
 
     def _create_help_html(self) -> str:
         """Create the HTML representation of the help tree."""
