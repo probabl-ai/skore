@@ -8,7 +8,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
 
-from skore._utils.repr_html.base import (
+from skore._utils.repr_html.data import (
     _AccessorHelpDataMixin,
     _DisplayHelpDataMixin,
     _ReportHelpDataMixin,
