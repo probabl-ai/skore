@@ -86,16 +86,22 @@ def get_public_methods_for_help(obj: Any) -> list[tuple[str, Any]]:
 def get_method_short_summary(method: Any) -> str:
     """Get the one-line description for a method from its docstring."""
     return (
-        method.__doc__.split("\n")[0]
-        if method.__doc__
-        else "No description available"
+        method.__doc__.split("\n")[0] if method.__doc__ else "No description available"
     )
 
 
 def get_public_attributes(obj: Any) -> list[str]:
     """Get the attributes of ``obj`` ending with '_' to display in help."""
+    from skore._sklearn._base import _BaseAccessor
+
     return sorted(
-        name for name in dir(obj) if name.endswith("_") and not name.startswith("_")
+        name
+        for name in dir(obj)
+        if not (
+            name.startswith("_")
+            or callable(getattr(obj, name))
+            or isinstance(getattr(obj, name), _BaseAccessor)
+        )
     )
 
 
@@ -211,7 +217,7 @@ class _BaseHelpDataMixin(ABC):
                 sig = inspect.signature(method)
                 param_names = [
                     param_name
-                    for param_name, param in sig.parameters.items()
+                    for param_name, _ in sig.parameters.items()
                     if param_name != "self"
                 ]
                 if param_names:
@@ -276,33 +282,6 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
     It enriches the generic helpers in ``_BaseHelpDataMixin`` with report-specific
     concepts such as accessors and X/y attributes.
     """
-
-    def get_public_attributes(self) -> list[str]:
-        """Get the public attributes to display in help."""
-        from skore._sklearn._base import _BaseAccessor
-
-        attributes = []
-        xy_attributes = []
-
-        for name in dir(self):
-            if (
-                name.startswith("_")
-                or callable(getattr(self, name))
-                or isinstance(getattr(self, name), _BaseAccessor)
-            ):
-                continue
-
-            value = getattr(self, name)
-            if name.startswith(("X", "y")):
-                if value is not None:
-                    xy_attributes.append(name)
-            else:
-                attributes.append(name)
-
-        xy_attributes.sort()
-        attributes.sort()
-
-        return xy_attributes + attributes
 
     def _build_help_data(self) -> dict[str, Any]:
         """Build data structure for Jinja2/Rich rendering."""
@@ -471,6 +450,7 @@ class _BaseRichHelpMixin(ABC):
         """Create the Rich panel wrapping the help tree."""
         pass
 
+
 class _BaseHTMLHelpMixin(ABC):
     """Base mixin for HTML-based help rendering."""
 
@@ -478,6 +458,7 @@ class _BaseHTMLHelpMixin(ABC):
     def _create_help_html(self) -> str:
         """Create the HTML representation of the help tree."""
         pass
+
 
 ########################################################################################
 # Report help mixins
