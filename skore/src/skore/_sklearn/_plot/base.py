@@ -8,7 +8,7 @@ import pandas as pd
 
 from skore._config import get_config
 from skore._sklearn.types import PlotBackend
-from skore._utils.repr_html.base import HelpDisplayMixin
+from skore._utils.repr_html.base import DisplayHelpMixin
 
 ########################################################################################
 # Display protocol
@@ -226,5 +226,5 @@ class StyleDisplayMixin:
 ########################################################################################
 
 
-class DisplayMixin(HelpDisplayMixin, PlotBackendMixin, StyleDisplayMixin):
+class DisplayMixin(DisplayHelpMixin, PlotBackendMixin, StyleDisplayMixin):
     """Mixin inheriting help, plotting, and style functionality."""

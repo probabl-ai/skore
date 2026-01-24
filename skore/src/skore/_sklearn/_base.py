@@ -12,11 +12,16 @@ from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._measure_time import MeasureTime
-from skore._utils.repr_html.base import AccessorHelpMixin, HelpMixin
+from skore._utils.repr_html.base import AccessorHelpMixin, ReportHelpMixin
 
 
-class _BaseReport(HelpMixin):
-    """Base class for all reports."""
+class _BaseReport(ReportHelpMixin):
+    """Base class for all reports.
+
+    This class centralizes shared report logic (e.g. configuration, accessors) and
+    inherits from ``ReportHelpMixin`` to provide a consistent ``help()`` and rich/HTML
+    representation across all report types.
+    """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
 
@@ -25,7 +30,11 @@ ParentT = TypeVar("ParentT", bound="_BaseReport")
 
 
 class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
-    """Base class for all accessors."""
+    """Base class for all accessors.
+
+    Accessors expose additional views on a report (e.g. data, metrics) and inherit from
+    ``AccessorHelpMixin`` to provide a dedicated ``help()`` and rich/HTML help tree.
+    """
 
     def __init__(self, parent: ParentT) -> None:
         self._parent = parent
@@ -143,18 +152,18 @@ def _get_cached_response_values(
 
     Parameters
     ----------
-    cache : dict
-        The cache to use.
+    cache : Cache
+        The cache backend to use.
 
     estimator_hash : int
         A hash associated with the estimator such that we can retrieve the data from
         the cache.
 
     estimator : estimator object
-        The estimator.
+        The estimator used to generate the predictions.
 
     X : {array-like, sparse matrix} of shape (n_samples, n_features) or None
-        The data.
+        The input data on which to compute the responses when needed.
 
     response_method : str, list of str or tuple of str
         The response method.

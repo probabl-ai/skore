@@ -15,7 +15,6 @@ from rich.tree import Tree
 from skore._externals._sklearn_compat import parse_version
 from skore._utils._environment import is_environment_notebook_like
 
-
 ########################################################################################
 # Utility functions for help system
 ########################################################################################
@@ -74,7 +73,12 @@ def _get_jinja_env():
 
 
 class _BaseHelpDataMixin(ABC):
-    """Mixin responsible for building help data structures for reports, accessors, and displays."""
+    """Base mixin for building help data structures.
+
+    Concrete subclasses implement ``_build_help_data`` for a specific type
+    (report, accessor, or display) and reuse these helpers to derive the
+    common pieces of information (methods, attributes, descriptions, links).
+    """
 
     @abstractmethod
     def _build_help_data(self) -> dict[str, Any]:
@@ -82,7 +86,7 @@ class _BaseHelpDataMixin(ABC):
         pass
 
     def _get_methods_for_help(self) -> list[tuple[str, Any]]:
-        """Get the methods to display in help."""
+        """Return the public instance methods to display in help."""
         methods = inspect.getmembers(self, predicate=inspect.ismethod)
         filtered_methods = []
         for name, method in methods:
@@ -94,6 +98,14 @@ class _BaseHelpDataMixin(ABC):
             if not (is_private_method or is_class_method or is_help_method):
                 filtered_methods.append((name, method))
         return sorted(filtered_methods)
+
+    def _get_method_description(self, method: Any) -> str:
+        """Get the one-line description for a method from its docstring."""
+        return (
+            method.__doc__.split("\n")[0]
+            if method.__doc__
+            else "No description available"
+        )
 
     def _build_method_data(
         self,
@@ -108,7 +120,6 @@ class _BaseHelpDataMixin(ABC):
         The method name and parameter list are derived directly from the function
         signature, and the description is taken from the first line of the docstring.
         """
-        # Derive method name and parameter list from the callable signature
         method_name_only = name
         params_part = ""
         if method is not None:
@@ -124,18 +135,15 @@ class _BaseHelpDataMixin(ABC):
                 else:
                     params_part = "()"
             except (ValueError, TypeError):
-                # Fallback when we cannot inspect the signature
                 params_part = "(...)"
         else:
             params_part = "(...)"
 
-        # Description and optional favorability text
         description = obj._get_method_description(method)
         favorability_text = None
         if hasattr(obj, "_get_favorability_text"):
             favorability_text = obj._get_favorability_text(name)
 
-        # Generate documentation URL
         doc_url = _get_documentation_url(class_name, accessor_path, name)
 
         return {
@@ -154,6 +162,14 @@ class _BaseHelpDataMixin(ABC):
             if name.endswith("_") and not name.startswith("_")
         )
 
+    def _get_attribute_description(self, name: str) -> str:
+        """Get the description of an attribute from its class docstring."""
+        if self.__doc__ is None:
+            return "No description available"
+        regex_pattern = rf"{name} : .*?\n\s*(.*?)\."
+        search_result = re.search(regex_pattern, self.__doc__)
+        return search_result.group(1) if search_result else "No description available"
+
     def _build_attributes_data(
         self, class_name: str
     ) -> tuple[list[dict[str, Any]] | None, dict[str, str] | None]:
@@ -171,7 +187,6 @@ class _BaseHelpDataMixin(ABC):
             "folder_id": str(uuid.uuid4()),
         }
 
-        # Group attributes: those without `_` first, then those with `_`
         attrs_without_underscore = [a for a in attributes if not a.endswith("_")]
         attrs_with_underscore = [a for a in attributes if a.endswith("_")]
 
@@ -189,37 +204,22 @@ class _BaseHelpDataMixin(ABC):
 
         return items, section
 
-    def _get_method_description(self, method: Any) -> str:
-        """Get the description for a method."""
-        return (
-            method.__doc__.split("\n")[0]
-            if method.__doc__
-            else "No description available"
-        )
-
-    def _get_attribute_description(self, name: str) -> str:
-        """Get the description of an attribute from its class docstring."""
-        if self.__doc__ is None:
-            return "No description available"
-        # Look for the first sentence on the line below the pattern 'attribute_name : '
-        regex_pattern = rf"{name} : .*?\n\s*(.*?)\."
-        search_result = re.search(regex_pattern, self.__doc__)
-        return search_result.group(1) if search_result else "No description available"
-
 
 class _ReportHelpDataMixin(_BaseHelpDataMixin):
-    """Mixin responsible for building help data structures for reports."""
+    """Mixin responsible for building help data structures for reports.
+
+    It enriches the generic helpers in ``_BaseHelpDataMixin`` with report-specific
+    concepts such as accessors and X/y attributes.
+    """
 
     def _get_attributes_for_help(self) -> list[str]:
         """Get the public attributes to display in help."""
-        # Import here to avoid circular dependency
         from skore._sklearn._base import _BaseAccessor
 
         attributes = []
         xy_attributes = []
 
         for name in dir(self):
-            # Skip private attributes, callables, and accessors
             if (
                 name.startswith("_")
                 or callable(getattr(self, name))
@@ -227,24 +227,20 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
             ):
                 continue
 
-            # Group X and y attributes separately
             value = getattr(self, name)
             if name.startswith(("X", "y")):
-                if value is not None:  # Only include non-None X/y attributes
+                if value is not None:
                     xy_attributes.append(name)
             else:
                 attributes.append(name)
 
-        # Sort X/y attributes to keep them grouped
         xy_attributes.sort()
         attributes.sort()
 
-        # Return X/y attributes first, followed by other attributes
         return xy_attributes + attributes
 
     def _build_help_data(self) -> dict[str, Any]:
         """Build data structure for Jinja2/Rich rendering."""
-        # Get plain text title (base methods should return plain text)
         title = self._get_help_title()
         class_name = self.__class__.__name__
 
@@ -253,7 +249,6 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
             "is_report": True,
         }
 
-        # Report implementation
         data["class_name"] = class_name
         data["accessors"] = []
         data["base_methods"] = []
@@ -261,7 +256,6 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
         data["methods_section"] = None
         data["attributes_section"] = None
 
-        # Build accessors data
         for accessor_attr, config in getattr(self, "_ACCESSOR_CONFIG", {}).items():
             accessor = getattr(self, accessor_attr)
             accessor_data = {
@@ -272,7 +266,6 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                 "sub_accessors": [],
             }
 
-            # Add main accessor methods
             methods = sorted(accessor._get_methods_for_help())
 
             for name, method in methods:
@@ -281,9 +274,7 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                 )
                 accessor_data["methods"].append(method_data)
 
-            # Add sub-accessors
             for sub_attr, sub_obj in inspect.getmembers(accessor):
-                # Import here to avoid circular dependency
                 from skore._sklearn._base import _BaseAccessor
 
                 if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith("_"):
@@ -310,7 +301,6 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
 
             data["accessors"].append(accessor_data)
 
-        # Build base methods data
         base_methods = sorted(self._get_methods_for_help())
 
         if base_methods:
@@ -324,12 +314,12 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                 )
                 data["base_methods"].append(method_data)
 
-        # Build attributes data (shared helper)
         attributes, attributes_section = self._build_attributes_data(class_name)
         data["attributes"] = attributes
         data["attributes_section"] = attributes_section
 
         return data
+
 
 class _AccessorHelpDataMixin(_BaseHelpDataMixin):
     """Mixin responsible for building help data structures for accessors."""
@@ -344,7 +334,6 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
             "is_report": False,
         }
 
-        # Accessor implementation
         if hasattr(self, "_get_help_tree_title"):
             tree_title = self._get_help_tree_title()
         else:
@@ -374,12 +363,10 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
             "class_name": class_name,
         }
 
-        # Build attributes data (shared helper)
         attributes, attributes_section = self._build_attributes_data(class_name)
         data["attributes"] = attributes
         data["attributes_section"] = attributes_section
 
-        # Build methods data (shared helper)
         methods = self._get_methods_for_help()
         if methods:
             data["methods_section"] = {
@@ -387,9 +374,7 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
                 "folder_id": str(uuid.uuid4()),
             }
             data["methods"] = []
-            for raw_name, method in methods:
-                # Clean up the name coming from `_get_methods_for_help` (strip dot/ellipsis)
-                name = raw_name.lstrip(".").replace("(...)", "")
+            for name, method in methods:
                 method_data = self._build_method_data(
                     name=name,
                     method=method,
@@ -419,36 +404,31 @@ class _RichHelpMixin(_ReportHelpDataMixin):
 
         tree = Tree(self.__class__.__name__)
 
-        # Accessor branches
         for accessor_data in data.get("accessors", []):
             branch = tree.add(f"[bold cyan].{accessor_data['name']}[/bold cyan]")
 
-            # Main accessor methods
             for method in accessor_data["methods"]:
-                displayed_name = f"{method['name_only']}(...)"  # keep ellipsis
+                displayed_name = f"{method['name_only']}(...)"
                 description = method["description"]
                 branch.add(f".{displayed_name.ljust(25)} - {description}")
 
-            # Sub-accessors
             for sub_accessor in accessor_data["sub_accessors"]:
                 sub_branch = branch.add(
                     f"[bold cyan].{sub_accessor['name']}[/bold cyan]"
                 )
                 for method in sub_accessor["methods"]:
-                    displayed_name = f"{method['name_only']}(...)"  # keep ellipsis
+                    displayed_name = f"{method['name_only']}(...)"
                     description = method["description"]
                     sub_branch.add(f".{displayed_name.ljust(25)} - {description}")
 
-        # Base methods section
         base_methods = data.get("base_methods", [])
         if base_methods:
             methods_branch = tree.add("[bold cyan]Methods[/bold cyan]")
             for method in base_methods:
-                displayed_name = f"{method['name_only']}(...)"  # keep ellipsis
+                displayed_name = f"{method['name_only']}(...)"
                 description = method["description"]
                 methods_branch.add(f".{displayed_name}".ljust(26) + f" - {description}")
 
-        # Attributes section
         attributes = data.get("attributes") or []
         if attributes:
             attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
@@ -461,10 +441,8 @@ class _RichHelpMixin(_ReportHelpDataMixin):
 
     def _create_help_panel(self) -> Panel:
         """Create the Rich panel wrapping the report help tree."""
-        # Legend removed - favorability info now in HTML tooltips only
         content = self._create_help_tree()
 
-        # Use the generic help title and add Rich markup for display
         title_plain = self._get_help_title()
         title_rich = (
             f"[bold cyan]{title_plain}[/bold cyan]" if title_plain else title_plain
@@ -483,18 +461,13 @@ class _HTMLHelpMixin(_ReportHelpDataMixin):
 
     def _create_help_html(self) -> str:
         """Create the HTML representation of the help tree."""
-        # Build data structure for template
         template_data = self._build_help_data()
 
-        # Load template
         env = _get_jinja_env()
         template = env.get_template("report_help.html.j2")
 
-        # Generate unique ID for this instance
         container_id = f"skore-help-{uuid.uuid4().hex[:8]}"
 
-        # Render the template with all data
-        # CSS and JS are included directly via {% include %} in the template
         shadow_dom_html = template.render(
             container_id=container_id,
             **template_data,
@@ -520,7 +493,7 @@ class _RichAccessorHelpMixin(_AccessorHelpDataMixin):
         tree = Tree(tree_title_rich)
 
         for method in data.get("methods", []):
-            displayed_name = f"{method['name_only']}(...)"  # keep ellipsis
+            displayed_name = f"{method['name_only']}(...)"
             description = method["description"]
             tree.add(f".{displayed_name}".ljust(26) + f" - {description}")
 
@@ -530,7 +503,6 @@ class _RichAccessorHelpMixin(_AccessorHelpDataMixin):
         """Create the Rich panel wrapping the accessor help tree."""
         content = self._create_help_tree()
 
-        # Use the generic help title and add Rich markup for display
         title_plain = self._get_help_title()
         title_rich = (
             f"[bold cyan]{title_plain}[/bold cyan]" if title_plain else title_plain
@@ -573,14 +545,12 @@ class _RichHelpDisplayMixin(_DisplayHelpDataMixin):
 
         tree = Tree("display")
 
-        # Attributes section
         attributes = data.get("attributes") or []
         if attributes:
             attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
             for attr in attributes:
                 attr_branch.add(attr["name"])
 
-        # Methods section
         methods = data.get("methods") or []
         if methods:
             method_branch = tree.add("[bold cyan]Methods[/bold cyan]")
@@ -592,11 +562,9 @@ class _RichHelpDisplayMixin(_DisplayHelpDataMixin):
         return tree
 
     def _create_help_panel(self) -> Panel:
-        """Create the Rich panel wrapping the report help tree."""
-        # Legend removed - favorability info now in HTML tooltips only
+        """Create the Rich panel wrapping the display help tree."""
         content = self._create_help_tree()
 
-        # Use the generic help title and add Rich markup for display
         title_plain = self._get_help_title()
         title_rich = (
             f"[bold cyan]{title_plain}[/bold cyan]" if title_plain else title_plain
@@ -609,23 +577,19 @@ class _RichHelpDisplayMixin(_DisplayHelpDataMixin):
             border_style="orange1",
         )
 
+
 class _HTMLHelpDisplayMixin(_DisplayHelpDataMixin):
     """Mixin for HTML-based help rendering for displays with Shadow DOM isolation."""
 
     def _create_help_html(self) -> str:
         """Create the HTML representation of the help tree."""
-        # Build data structure for template
         template_data = self._build_help_data()
 
-        # Load template
         env = _get_jinja_env()
         template = env.get_template("display_help.html.j2")
 
-        # Generate unique ID for this instance
         container_id = f"skore-display-help-{uuid.uuid4().hex[:8]}"
 
-        # Render the template with all data
-        # CSS and JS are included directly via {% include %} in the template
         shadow_dom_html = template.render(
             container_id=container_id,
             **template_data,
@@ -639,15 +603,15 @@ class _HTMLHelpDisplayMixin(_DisplayHelpDataMixin):
 ########################################################################################
 
 
-class HelpMixin(_RichHelpMixin, _HTMLHelpMixin):
-    """Mixin class providing help for the `help` method and the `__repr__` method.
+class ReportHelpMixin(_RichHelpMixin, _HTMLHelpMixin):
+    """Mixin class providing help for report `help` and `__repr__`.
 
     This mixin inherits from both `_RichHelpMixin` and `_HTMLHelpMixin` and
     delegates to the appropriate implementation based on the environment.
     """
 
     def help(self) -> None:
-        """Display a rich help."""
+        """Display report help using rich or HTML."""
         if is_environment_notebook_like():
             from IPython.display import HTML, display
 
@@ -657,15 +621,16 @@ class HelpMixin(_RichHelpMixin, _HTMLHelpMixin):
 
             console.print(self._create_help_panel())
 
+
 class AccessorHelpMixin(_RichAccessorHelpMixin, _HTMLAccessorHelpMixin):
-    """Mixin class providing help for accessor `help` method."""
+    """Mixin class providing help for accessor `help`."""
 
     def _get_help_title(self) -> str:
         name = self.__class__.__name__.replace("_", "").replace("Accessor", "").lower()
         return f"{name.capitalize()} accessor"
 
     def help(self) -> None:
-        """Display a rich help."""
+        """Display accessor help using rich or HTML."""
         if is_environment_notebook_like():
             from IPython.display import HTML, display
 
@@ -676,11 +641,11 @@ class AccessorHelpMixin(_RichAccessorHelpMixin, _HTMLAccessorHelpMixin):
             console.print(self._create_help_panel())
 
 
-class HelpDisplayMixin(_RichHelpDisplayMixin, _HTMLHelpDisplayMixin):
-    """Mixin class providing help for the `help` method and the `__repr__` method.
+class DisplayHelpMixin(_RichHelpDisplayMixin, _HTMLHelpDisplayMixin):
+    """Mixin class providing help for display `help` and `__repr__`.
 
-    This mixin inherits from both `_RichHelpDisplayMixin` and `_HTMLHelpDisplayMixin` and
-    delegates to the appropriate implementation based on the environment.
+    This mixin inherits from both `_RichHelpDisplayMixin` and `_HTMLHelpDisplayMixin`
+    and delegates to the appropriate implementation based on the environment.
     """
 
     estimator_name: str  # defined in the concrete display class
@@ -690,7 +655,7 @@ class HelpDisplayMixin(_RichHelpDisplayMixin, _HTMLHelpDisplayMixin):
         return f"{self.__class__.__name__} display"
 
     def help(self) -> None:
-        """Display available attributes and methods using rich or HTML."""
+        """Display display help using rich or HTML."""
         if is_environment_notebook_like():
             from IPython.display import HTML, display
 
@@ -720,6 +685,7 @@ class HelpDisplayMixin(_RichHelpDisplayMixin, _HTMLHelpDisplayMixin):
         console = Console(file=string_buffer, force_terminal=False)
         console.print(f"[cyan]skore.{self.__class__.__name__}(...)[/cyan]")
         return string_buffer.getvalue()
+
 
 class ReprHTMLMixin:
     """Mixin to handle consistently the HTML representation.
