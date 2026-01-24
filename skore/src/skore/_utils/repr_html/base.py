@@ -421,7 +421,7 @@ class _BaseHTMLHelpMixin(ABC):
 ########################################################################################
 
 
-class _RichReportHelpMixin(_ReportHelpDataMixin):
+class _RichReportHelpMixin(_ReportHelpDataMixin, _BaseRichHelpMixin):
     """Mixin for Rich-based help rendering for reports."""
 
     def _create_help_tree(self) -> Tree:
@@ -482,7 +482,7 @@ class _RichReportHelpMixin(_ReportHelpDataMixin):
         )
 
 
-class _HTMLReportHelpMixin(_ReportHelpDataMixin):
+class _HTMLReportHelpMixin(_ReportHelpDataMixin, _BaseHTMLHelpMixin):
     """Mixin for HTML-based help rendering for reports with Shadow DOM isolation."""
 
     def _create_help_html(self) -> str:
@@ -507,7 +507,7 @@ class _HTMLReportHelpMixin(_ReportHelpDataMixin):
 ########################################################################################
 
 
-class _RichAccessorHelpMixin(_AccessorHelpDataMixin):
+class _RichAccessorHelpMixin(_AccessorHelpDataMixin, _BaseRichHelpMixin):
     """Mixin for Rich-based help rendering for accessors."""
 
     def _create_help_tree(self) -> Tree:
@@ -542,7 +542,7 @@ class _RichAccessorHelpMixin(_AccessorHelpDataMixin):
         )
 
 
-class _HTMLAccessorHelpMixin(_AccessorHelpDataMixin):
+class _HTMLAccessorHelpMixin(_AccessorHelpDataMixin, _BaseHTMLHelpMixin):
     """Mixin for HTML-based help rendering for accessors with Shadow DOM isolation."""
 
     def _create_help_html(self) -> str:
@@ -562,7 +562,7 @@ class _HTMLAccessorHelpMixin(_AccessorHelpDataMixin):
         return shadow_dom_html
 
 
-class _RichHelpDisplayMixin(_DisplayHelpDataMixin):
+class _RichHelpDisplayMixin(_DisplayHelpDataMixin, _BaseRichHelpMixin):
     """Mixin for Rich-based help rendering for displays."""
 
     def _create_help_tree(self) -> Tree:
@@ -604,7 +604,7 @@ class _RichHelpDisplayMixin(_DisplayHelpDataMixin):
         )
 
 
-class _HTMLHelpDisplayMixin(_DisplayHelpDataMixin):
+class _HTMLHelpDisplayMixin(_DisplayHelpDataMixin, _BaseHTMLHelpMixin):
     """Mixin for HTML-based help rendering for displays with Shadow DOM isolation."""
 
     def _create_help_html(self) -> str:
