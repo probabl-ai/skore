@@ -130,10 +130,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     # Methods related to the help tree
     ####################################################################################
 
-    def _format_method_name(self, name: str, method: Any | None = None) -> str:
-        return super()._format_method_name(name, method).ljust(29)
-
-    def _get_help_panel_title(self) -> str:
+    def _get_help_title(self) -> str:
         return "Available data methods"
 
     def _get_help_tree_title(self) -> str:

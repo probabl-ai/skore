@@ -1,6 +1,3 @@
-import inspect
-import re
-from abc import ABC, abstractmethod
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
 
@@ -15,70 +12,37 @@ from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._measure_time import MeasureTime
-from skore._utils.repr_html.base import _HelpMixin
+from skore._utils.repr_html.base import AccessorHelpMixin, HelpMixin
 
 
-class _BaseReport(_HelpMixin):
+class _BaseReport(HelpMixin):
     """Base class for all reports."""
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
-    _X_train: ArrayLike | None
-    _X_test: ArrayLike | None
-    _y_train: ArrayLike | None
-    _y_test: ArrayLike | None
-    _cache: Cache
-    estimator_: BaseEstimator
-
-    def _get_help_panel_title(self) -> str:
-        return ""
-
-    def _get_attributes_for_help(self) -> list[str]:
-        """Get the public attributes to display in help."""
-        attributes = []
-        xy_attributes = []
-
-        for name in dir(self):
-            # Skip private attributes, callables, and accessors
-            if (
-                name.startswith("_")
-                or callable(getattr(self, name))
-                or isinstance(getattr(self, name), _BaseAccessor)
-            ):
-                continue
-
-            # Group X and y attributes separately
-            value = getattr(self, name)
-            if name.startswith(("X", "y")):
-                if value is not None:  # Only include non-None X/y attributes
-                    xy_attributes.append(name)
-            else:
-                attributes.append(name)
-
-        # Sort X/y attributes to keep them grouped
-        xy_attributes.sort()
-        attributes.sort()
-
-        # Return X/y attributes first, followed by other attributes
-        return xy_attributes + attributes
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")
 
 
-class _BaseAccessor(_HelpMixin, Generic[ParentT]):
+class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
     """Base class for all accessors."""
 
     def __init__(self, parent: ParentT) -> None:
         self._parent = parent
 
-    @abstractmethod
-    def _get_help_tree_title(self) -> str:
-        """Get the title for the help tree."""
-        pass
-
-    def _get_help_panel_title(self) -> str:
-        name = self.__class__.__name__.replace("_", "").replace("Accessor", "").lower()
-        return f"Available {name} methods"
+    def _rich_repr(self, class_name: str) -> str:
+        """Return a string representation using rich for accessors."""
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=False)
+        console.print(
+            Panel(
+                "Get guidance using the help() method",
+                title=f"[cyan]{class_name}[/cyan]",
+                border_style="orange1",
+                expand=False,
+            )
+        )
+        return string_buffer.getvalue()
 
     def _get_X_y_and_data_source_hash(
         self,
@@ -290,50 +254,7 @@ class _BaseMetricsAccessor:
     # Methods related to the help tree
     ####################################################################################
 
-    def _sort_methods_for_help(self, methods: list[tuple]) -> list[tuple]:
-        """Override sort method for metrics-specific ordering.
-
-        In short, we display the `summarize` first and then the `custom_metric`.
-        """
-
-        def _sort_key(method):
-            name = method[0]
-            if name == "custom_metric":
-                priority = 1
-            elif name == "summarize":
-                priority = 2
-            else:
-                priority = 0
-            return priority, name
-
-        return sorted(methods, key=_sort_key)
-
-    def _format_method_name(self, name: str, method: Any | None = None) -> str:
-        """Override format method for metrics-specific naming."""
-        # Get the signature from parent class
-        if method is None:
-            method = getattr(self, name, None)
-
-        if method is None:
-            method_name = f"{name}(...)"
-        else:
-            try:
-                sig = inspect.signature(method)
-                # Get parameter string, removing 'self' parameter
-                params = []
-                for param_name, param in sig.parameters.items():
-                    if param_name == "self":
-                        continue
-                    params.append(param_name)
-
-                params_str = ", ".join(params)
-                method_name = f"{name}({params_str})"
-            except (ValueError, TypeError):
-                method_name = f"{name}(...)"
-
-        return method_name.ljust(29)
-
-    def _get_help_panel_title(self) -> str:
+    def _get_help_title(self) -> str:
         return "Available metrics methods"
 
     def _get_help_tree_title(self) -> str:

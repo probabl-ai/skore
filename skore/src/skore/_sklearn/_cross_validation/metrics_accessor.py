@@ -1054,11 +1054,6 @@ class _MetricsAccessor(
     # Methods related to the help tree
     ####################################################################################
 
-    def _get_methods_for_help(self) -> list[tuple[str, Callable]]:
-        """Override to exclude the plot accessor from methods list."""
-        methods = super()._get_methods_for_help()
-        return [(name, method) for name, method in methods if name != "plot"]
-
     def __repr__(self) -> str:
         """Return a string representation using rich."""
         return self._rich_repr(class_name="skore.CrossValidationReport.metrics")
