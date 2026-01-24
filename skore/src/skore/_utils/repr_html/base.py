@@ -618,12 +618,6 @@ class _RichHelpDisplayMixin(_DisplayHelpDataMixin, _BaseRichHelpMixin):
 
         tree = Tree(f"[bold cyan]{data['root_node']}[/bold cyan]")
 
-        attributes = data.get("attributes") or []
-        if attributes:
-            attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
-            for attr in attributes:
-                attr_branch.add(attr["name"])
-
         methods = data.get("methods") or []
         if methods:
             method_branch = tree.add("[bold cyan]Methods[/bold cyan]")
@@ -631,6 +625,12 @@ class _RichHelpDisplayMixin(_DisplayHelpDataMixin, _BaseRichHelpMixin):
                 name = f".{method['name']}(...)"
                 description = method["description"]
                 method_branch.add(f"{name.ljust(26)} - {description}")
+
+        attributes = data.get("attributes") or []
+        if attributes:
+            attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
+            for attr in attributes:
+                attr_branch.add(attr["name"])
 
         return tree
 

@@ -6,23 +6,6 @@
             <span class="skore-help-label">{{ root_node }}</span>
         </div>
         <div class="skore-help-root-content">
-            {# Attributes section #}
-            {% if attributes %}
-                <div class="skore-help-node skore-help-folder">
-                    <input type="checkbox" id="{{ attributes_section.id }}" class="skore-help-toggle">
-                    <label for="{{ attributes_section.id }}" class="skore-help-folder-label">
-                        <span class="skore-help-section-name">Attributes</span>
-                    </label>
-                    <div class="skore-help-folder-content" id="{{ attributes_section.branch_id }}">
-                        {% for attr in attributes %}
-                            <div class="skore-help-node skore-help-method">
-                                <span class="skore-help-method-name">.<a href="{{ attr.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ attr.name }}<span class="skore-help-tooltip-text">{{ attr.description|e }}<br><br>Click to access the online documentation</span></a></span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-
             {# Methods section #}
             {% if methods %}
                 <div class="skore-help-node skore-help-folder">
@@ -35,6 +18,23 @@
                             <div class="skore-help-node skore-help-method">
                                 <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name }}<span class="skore-help-tooltip-text">{{ method.description|e }}<br><br>Click to access the online documentation</span></a>{{ method.parameters }}</span>
                                 </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            {# Attributes section #}
+            {% if attributes %}
+                <div class="skore-help-node skore-help-folder">
+                    <input type="checkbox" id="{{ attributes_section.id }}" class="skore-help-toggle">
+                    <label for="{{ attributes_section.id }}" class="skore-help-folder-label">
+                        <span class="skore-help-section-name">Attributes</span>
+                    </label>
+                    <div class="skore-help-folder-content" id="{{ attributes_section.branch_id }}">
+                        {% for attr in attributes %}
+                            <div class="skore-help-node skore-help-method">
+                                <span class="skore-help-method-name">.<a href="{{ attr.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ attr.name }}<span class="skore-help-tooltip-text">{{ attr.description|e }}<br><br>Click to access the online documentation</span></a></span>
+                            </div>
                         {% endfor %}
                     </div>
                 </div>
