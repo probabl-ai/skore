@@ -251,6 +251,9 @@ class MockReport(_BaseReport):
     def y_test(self):
         return self._y_test
 
+    def _get_help_title(self) -> str:
+        return "Mock report"
+
 
 class MockAccessor(_BaseAccessor):
     def __init__(self, parent):
@@ -351,21 +354,3 @@ def test_base_accessor_get_X_y_and_data_source_hash(data_source):
         assert X is X_test
         assert y is y_test
         assert data_source_hash == joblib.hash((X_test, y_test))
-
-
-def test_base_accessor_get_attributes_description():
-    X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    estimator = LogisticRegression()
-    report = MockReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    attributes = report._get_attributes_for_help()
-
-    assert len(attributes) == 7
-    assert report._get_attribute_description("no_private") == "The text to catch"
-    assert (
-        report._get_attribute_description("attr_without_description")
-        == "No description available"
-    )

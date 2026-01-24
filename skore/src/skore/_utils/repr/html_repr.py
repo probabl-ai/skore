@@ -7,7 +7,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from skore._utils.repr_html.data import (
+from skore._utils.repr.data import (
     _AccessorHelpDataMixin,
     _DisplayHelpDataMixin,
     _ReportHelpDataMixin,

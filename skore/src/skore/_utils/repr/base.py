@@ -1,10 +1,10 @@
 from skore._utils._environment import is_environment_notebook_like
-from skore._utils.repr_html.html_repr import (
+from skore._utils.repr.html_repr import (
     _HTMLAccessorHelpMixin,
     _HTMLHelpDisplayMixin,
     _HTMLReportHelpMixin,
 )
-from skore._utils.repr_html.rich_repr import (
+from skore._utils.repr.rich_repr import (
     _RichAccessorHelpMixin,
     _RichHelpDisplayMixin,
     _RichReportHelpMixin,

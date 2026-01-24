@@ -12,7 +12,7 @@ from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._measure_time import MeasureTime
-from skore._utils.repr_html.base import AccessorHelpMixin, ReportHelpMixin
+from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
 class _BaseReport(ReportHelpMixin):

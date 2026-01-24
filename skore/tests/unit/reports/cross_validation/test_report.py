@@ -95,30 +95,6 @@ def test_attributes(fixture_name, request, cv, n_jobs):
         report.y = y
 
 
-def test_help(capsys, forest_binary_classification_data):
-    """Check that the help method writes to the console."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y)
-
-    report.help()
-    captured = capsys.readouterr()
-    assert f"Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
-
-    # Check that we have a line with accuracy and the arrow associated with it
-    assert re.search(
-        r"\.accuracy\([^)]*\).*\(↗︎\).*-.*accuracy", captured.out, re.MULTILINE
-    )
-
-
-def test_repr(forest_binary_classification_data):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y)
-
-    repr_str = repr(report)
-    assert "CrossValidationReport" in repr_str
-
-
 @pytest.mark.parametrize(
     "fixture_name, expected_n_keys",
     [

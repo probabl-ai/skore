@@ -8,7 +8,7 @@ import pandas as pd
 
 from skore._config import get_config
 from skore._sklearn.types import PlotBackend
-from skore._utils.repr_html.base import DisplayHelpMixin
+from skore._utils.repr.base import DisplayHelpMixin
 
 ########################################################################################
 # Display protocol
