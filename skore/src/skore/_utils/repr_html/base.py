@@ -2,19 +2,22 @@ import inspect
 import re
 import uuid
 from abc import ABC, abstractmethod
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from importlib.metadata import version
-from io import StringIO
-from pathlib import Path
 from typing import Any
-
-from jinja2 import Environment, FileSystemLoader
-from rich.console import Console
-from rich.panel import Panel
-from rich.tree import Tree
 
 from skore._externals._sklearn_compat import parse_version
 from skore._utils._environment import is_environment_notebook_like
+from skore._utils.repr_html.html_repr import (
+    _HTMLAccessorHelpMixin,
+    _HTMLHelpDisplayMixin,
+    _HTMLReportHelpMixin,
+)
+from skore._utils.repr_html.rich_repr import (
+    _RichAccessorHelpMixin,
+    _RichHelpDisplayMixin,
+    _RichReportHelpMixin,
+)
 
 ########################################################################################
 # Utility functions for help system
@@ -59,14 +62,6 @@ def get_documentation_url(
         path_parts.append(method_or_attr_name)
 
     return f"{base_url}/{'.'.join(path_parts)}.html"
-
-
-def get_jinja_env():
-    """Get Jinja2 environment for loading templates."""
-    from skore._utils import repr_html
-
-    template_dir = Path(repr_html.__file__).parent
-    return Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
 
 
 def get_public_methods_for_help(obj: Any) -> list[tuple[str, Any]]:
@@ -415,236 +410,6 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
 
 
 ########################################################################################
-# Base help mixins for Rich and HTML rendering
-########################################################################################
-
-
-class _BaseRichHelpMixin(ABC):
-    """Base mixin for Rich-based help rendering."""
-
-    @abstractmethod
-    def _create_help_tree(self) -> Tree:
-        """Create the help tree for Rich rendering."""
-        pass
-
-    @abstractmethod
-    def _create_help_panel(self) -> Panel:
-        """Create the Rich panel wrapping the help tree."""
-        pass
-
-
-class _BaseHTMLHelpMixin(ABC):
-    """Base mixin for HTML-based help rendering."""
-
-    @abstractmethod
-    def _create_help_html(self) -> str:
-        """Create the HTML representation of the help tree."""
-        pass
-
-
-########################################################################################
-# Report help mixins
-########################################################################################
-
-
-class _RichReportHelpMixin(_ReportHelpDataMixin, _BaseRichHelpMixin):
-    """Mixin for Rich-based help rendering for reports."""
-
-    def _create_help_tree(self) -> Tree:
-        """Create the help tree for Rich rendering (reports only)."""
-        data = asdict(self._build_help_data())
-        data["is_report"] = True
-
-        tree = Tree(data["root_node"])
-
-        for accessor_data in data.get("accessors", []):
-            branch = tree.add(f"[bold cyan].{accessor_data['name']}[/bold cyan]")
-
-            for method in accessor_data["methods"]:
-                displayed_name = f"{method['name']}(...)"
-                description = method["description"]
-                branch.add(f".{displayed_name.ljust(25)} - {description}")
-
-        base_methods = data.get("base_methods", [])
-        if base_methods:
-            methods_branch = tree.add("[bold cyan]Methods[/bold cyan]")
-            for method in base_methods:
-                displayed_name = f"{method['name']}(...)"
-                description = method["description"]
-                methods_branch.add(f".{displayed_name}".ljust(26) + f" - {description}")
-
-        attributes = data.get("attributes") or []
-        if attributes:
-            attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
-            for attr in attributes:
-                name = attr["name"]
-                description = attr["description"]
-                attr_branch.add(f".{name.ljust(25)} - {description}")
-
-        return tree
-
-    def _create_help_panel(self) -> Panel:
-        """Create the Rich panel wrapping the report help tree."""
-        content = self._create_help_tree()
-
-        title_plain = self._get_help_title()
-        title_rich = (
-            f"[bold cyan]{title_plain}[/bold cyan]" if title_plain else title_plain
-        )
-
-        return Panel(
-            content,
-            title=title_rich,
-            expand=False,
-            border_style="orange1",
-        )
-
-
-class _HTMLReportHelpMixin(_ReportHelpDataMixin, _BaseHTMLHelpMixin):
-    """Mixin for HTML-based help rendering for reports with Shadow DOM isolation."""
-
-    def _create_help_html(self) -> str:
-        """Create the HTML representation of the help tree."""
-        template_data = asdict(self._build_help_data())
-        template_data["is_report"] = True
-
-        env = get_jinja_env()
-        template = env.get_template("report_help.html.j2")
-
-        container_id = f"skore-help-{uuid.uuid4().hex[:8]}"
-
-        shadow_dom_html = template.render(
-            container_id=container_id,
-            **template_data,
-        )
-
-        return shadow_dom_html
-
-
-########################################################################################
-# Accessor help data & mixins (reports)
-########################################################################################
-
-
-class _RichAccessorHelpMixin(_AccessorHelpDataMixin, _BaseRichHelpMixin):
-    """Mixin for Rich-based help rendering for accessors."""
-
-    def _create_help_tree(self) -> Tree:
-        """Create the help tree for Rich rendering for accessors."""
-        data = asdict(self._build_help_data())
-        data["is_report"] = False
-
-        root_node_rich = f"[bold cyan]{data['root_node']}[/bold cyan]"
-        tree = Tree(root_node_rich)
-
-        for method in data.get("methods", []):
-            displayed_name = f"{method['name']}(...)"
-            description = method["description"]
-            tree.add(f".{displayed_name}".ljust(26) + f" - {description}")
-
-        return tree
-
-    def _create_help_panel(self) -> Panel:
-        """Create the Rich panel wrapping the accessor help tree."""
-        content = self._create_help_tree()
-
-        title_plain = self._get_help_title()
-        title_rich = (
-            f"[bold cyan]{title_plain}[/bold cyan]" if title_plain else title_plain
-        )
-
-        return Panel(
-            content,
-            title=title_rich,
-            expand=False,
-            border_style="orange1",
-        )
-
-
-class _HTMLAccessorHelpMixin(_AccessorHelpDataMixin, _BaseHTMLHelpMixin):
-    """Mixin for HTML-based help rendering for accessors with Shadow DOM isolation."""
-
-    def _create_help_html(self) -> str:
-        """Create the HTML representation of the help tree for accessors."""
-        template_data = asdict(self._build_help_data())
-        template_data["is_report"] = False
-
-        env = get_jinja_env()
-        template = env.get_template("report_help.html.j2")
-
-        container_id = f"skore-accessor-help-{uuid.uuid4().hex[:8]}"
-
-        shadow_dom_html = template.render(
-            container_id=container_id,
-            **template_data,
-        )
-
-        return shadow_dom_html
-
-
-class _RichHelpDisplayMixin(_DisplayHelpDataMixin, _BaseRichHelpMixin):
-    """Mixin for Rich-based help rendering for displays."""
-
-    def _create_help_tree(self) -> Tree:
-        """Create a rich Tree with attributes and methods."""
-        data = asdict(self._build_help_data())
-
-        tree = Tree(f"[bold cyan]{data['root_node']}[/bold cyan]")
-
-        methods = data.get("methods") or []
-        if methods:
-            method_branch = tree.add("[bold cyan]Methods[/bold cyan]")
-            for method in methods:
-                name = f".{method['name']}(...)"
-                description = method["description"]
-                method_branch.add(f"{name.ljust(26)} - {description}")
-
-        attributes = data.get("attributes") or []
-        if attributes:
-            attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
-            for attr in attributes:
-                attr_branch.add(attr["name"])
-
-        return tree
-
-    def _create_help_panel(self) -> Panel:
-        """Create the Rich panel wrapping the display help tree."""
-        content = self._create_help_tree()
-
-        title_plain = self._get_help_title()
-        title_rich = (
-            f"[bold cyan]{title_plain}[/bold cyan]" if title_plain else title_plain
-        )
-
-        return Panel(
-            content,
-            title=title_rich,
-            expand=False,
-            border_style="orange1",
-        )
-
-
-class _HTMLHelpDisplayMixin(_DisplayHelpDataMixin, _BaseHTMLHelpMixin):
-    """Mixin for HTML-based help rendering for displays with Shadow DOM isolation."""
-
-    def _create_help_html(self) -> str:
-        """Create the HTML representation of the help tree."""
-        template_data = asdict(self._build_help_data())
-
-        env = get_jinja_env()
-        template = env.get_template("display_help.html.j2")
-
-        container_id = f"skore-display-help-{uuid.uuid4().hex[:8]}"
-
-        shadow_dom_html = template.render(
-            container_id=container_id,
-            **template_data,
-        )
-
-        return shadow_dom_html
-
-
-########################################################################################
 # Combined help mixins
 ########################################################################################
 
@@ -710,27 +475,6 @@ class DisplayHelpMixin(_RichHelpDisplayMixin, _HTMLHelpDisplayMixin):
             from skore import console  # avoid circular import
 
             console.print(self._create_help_panel())
-
-    def __str__(self) -> str:
-        """Return a string representation using rich."""
-        string_buffer = StringIO()
-        console = Console(file=string_buffer, force_terminal=False)
-        console.print(
-            Panel(
-                "Get guidance using the help() method",
-                title=f"[cyan]{self.__class__.__name__}[/cyan]",
-                border_style="orange1",
-                expand=False,
-            )
-        )
-        return string_buffer.getvalue()
-
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        string_buffer = StringIO()
-        console = Console(file=string_buffer, force_terminal=False)
-        console.print(f"[cyan]skore.{self.__class__.__name__}(...)[/cyan]")
-        return string_buffer.getvalue()
 
 
 class ReprHTMLMixin:
