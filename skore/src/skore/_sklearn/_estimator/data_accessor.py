@@ -16,6 +16,8 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     It provides methods to create plots and to visualise the datasets.
     """
 
+    _verbose_name: str = "data"
+
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
@@ -180,12 +182,6 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
-
-    def _get_help_title(self) -> str:
-        return "Available data methods"
-
-    def _get_help_tree_title(self) -> str:
-        return f"{self._parent.__class__.__name__}.data"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""

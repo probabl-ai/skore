@@ -21,6 +21,8 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
     You can access this accessor using the `feature_importance` attribute.
     """
 
+    _verbose_name: str = "feature_importance"
+
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
 
@@ -116,12 +118,6 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
-
-    def _get_help_title(self) -> str:
-        return "Available feature importance methods"
-
-    def _get_help_tree_title(self) -> str:
-        return f"{self._parent.__class__.__name__}.feature_importance"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""

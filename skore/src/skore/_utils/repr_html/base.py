@@ -2,6 +2,7 @@ import inspect
 import re
 import uuid
 from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass
 from importlib.metadata import version
 from io import StringIO
 from pathlib import Path
@@ -108,6 +109,72 @@ def get_attribute_short_sumamry(obj: Any, name: str) -> str:
 
 
 ########################################################################################
+# Data structures for help system
+########################################################################################
+
+
+@dataclass
+class HelpSection:
+    id: str
+    branch_id: str
+
+
+@dataclass
+class MethodHelp:
+    name: str
+    parameters: str
+    description: str
+    favorability: str | None
+    doc_url: str
+
+
+@dataclass
+class AttributeHelp:
+    name: str
+    description: str
+    doc_url: str
+
+
+@dataclass
+class AccessorBranchHelp:
+    id: str
+    branch_id: str
+    name: str
+    methods: list[MethodHelp]
+    sub_accessors: list["AccessorBranchHelp"] | None
+
+
+@dataclass
+class ReportHelpData:
+    title: str
+    root_node: str
+    class_name: str
+    accessors: list[AccessorBranchHelp]
+    base_methods: list[MethodHelp]
+    methods_section: HelpSection | None
+    attributes: list[AttributeHelp] | None
+    attributes_section: HelpSection | None
+
+
+@dataclass
+class AccessorHelpData:
+    title: str
+    root_node: str
+    methods: list[MethodHelp]
+
+
+@dataclass
+class DisplayHelpData:
+    title: str
+    root_node: str
+    class_name: str
+    attributes: list[AttributeHelp] | None
+    attributes_section: HelpSection | None
+    methods_section: HelpSection | None
+    methods: list[MethodHelp] | None
+
+
+########################################################################################
 # Base help data mixin to extract data from reports, accessors, and displays.
 ########################################################################################
 
@@ -132,14 +199,13 @@ class _BaseHelpDataMixin(ABC):
         obj: Any,
         class_name: str,
         accessor_path: str | None,
-    ) -> dict[str, Any]:
+    ) -> MethodHelp:
         """Build data structure for a single method.
 
         The method name and parameter list are derived directly from the function
         signature, and the description is taken from the first line of the docstring.
         """
-        method_name_only = name
-        params_part = ""
+        parameters = ""
         if method is not None:
             try:
                 sig = inspect.signature(method)
@@ -149,32 +215,32 @@ class _BaseHelpDataMixin(ABC):
                     if param_name != "self"
                 ]
                 if param_names:
-                    params_part = "(" + ", ".join(param_names) + ")"
+                    parameters = "(" + ", ".join(param_names) + ")"
                 else:
-                    params_part = "()"
+                    parameters = "()"
             except (ValueError, TypeError):
-                params_part = "(...)"
+                parameters = "(...)"
         else:
-            params_part = "(...)"
+            parameters = "(...)"
 
         description = get_method_short_summary(method)
-        favorability_text = None
+        favorability = None
         if hasattr(obj, "_get_favorability_text"):
-            favorability_text = obj._get_favorability_text(name)
+            favorability = obj._get_favorability_text(name)
 
         doc_url = get_documentation_url(class_name, accessor_path, name)
 
-        return {
-            "name_only": method_name_only,
-            "params_part": params_part,
-            "description": description,
-            "favorability_text": favorability_text,
-            "doc_url": doc_url,
-        }
+        return MethodHelp(
+            name=name,
+            parameters=parameters,
+            description=description,
+            favorability=favorability,
+            doc_url=doc_url,
+        )
 
     def _build_attributes_data(
         self, class_name: str
-    ) -> tuple[list[dict[str, Any]] | None, dict[str, str] | None]:
+    ) -> tuple[list[AttributeHelp] | None, HelpSection | None]:
         """Build attribute metadata and section identifiers.
 
         This helper is shared between reports and displays. It assumes that
@@ -184,24 +250,21 @@ class _BaseHelpDataMixin(ABC):
         if not attributes:
             return None, None
 
-        section = {
-            "id": str(uuid.uuid4()),
-            "folder_id": str(uuid.uuid4()),
-        }
+        section = HelpSection(id=str(uuid.uuid4()), branch_id=str(uuid.uuid4()))
 
         attrs_without_underscore = [a for a in attributes if not a.endswith("_")]
         attrs_with_underscore = [a for a in attributes if a.endswith("_")]
 
-        items: list[dict[str, Any]] = []
+        items: list[AttributeHelp] = []
         for attr_name in attrs_without_underscore + attrs_with_underscore:
             description = get_attribute_short_sumamry(self, attr_name)
             doc_url = get_documentation_url(class_name, None, attr_name)
             items.append(
-                {
-                    "name": attr_name,
-                    "description": description,
-                    "doc_url": doc_url,
-                }
+                AttributeHelp(
+                    name=attr_name,
+                    description=description,
+                    doc_url=doc_url,
+                )
             )
 
         return items, section
@@ -246,27 +309,26 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
         title = self._get_help_title()
         class_name = self.__class__.__name__
 
-        data: dict[str, Any] = {
-            "title": title,
-            "is_report": True,
-        }
-
-        data["class_name"] = class_name
-        data["accessors"] = []
-        data["base_methods"] = []
-        data["attributes"] = None
-        data["methods_section"] = None
-        data["attributes_section"] = None
+        data = ReportHelpData(
+            title=title,
+            root_node=class_name,
+            class_name=class_name,
+            accessors=[],
+            base_methods=[],
+            methods_section=None,
+            attributes=None,
+            attributes_section=None,
+        )
 
         for accessor_attr, config in getattr(self, "_ACCESSOR_CONFIG", {}).items():
             accessor = getattr(self, accessor_attr)
-            accessor_data = {
-                "id": str(uuid.uuid4()),
-                "folder_id": str(uuid.uuid4()),
-                "name": config["name"],
-                "methods": [],
-                "sub_accessors": [],
-            }
+            accessor_data = AccessorBranchHelp(
+                id=str(uuid.uuid4()),
+                branch_id=str(uuid.uuid4()),
+                name=config["name"],
+                methods=[],
+                sub_accessors=[],
+            )
 
             methods = get_public_methods_for_help(accessor)
 
@@ -274,18 +336,19 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                 method_data = self._build_method_data(
                     name, method, accessor, class_name, config["name"]
                 )
-                accessor_data["methods"].append(method_data)
+                accessor_data.methods.append(method_data)
 
             for sub_attr, sub_obj in inspect.getmembers(accessor):
                 from skore._sklearn._base import _BaseAccessor
 
                 if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith("_"):
-                    sub_accessor_data = {
-                        "id": str(uuid.uuid4()),
-                        "folder_id": str(uuid.uuid4()),
-                        "name": sub_attr,
-                        "methods": [],
-                    }
+                    sub_accessor_data = AccessorBranchHelp(
+                        id=str(uuid.uuid4()),
+                        branch_id=str(uuid.uuid4()),
+                        name=sub_attr,
+                        methods=[],
+                        sub_accessors=None,
+                    )
 
                     sub_methods = get_public_methods_for_help(sub_obj)
 
@@ -297,28 +360,27 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                             class_name,
                             f"{config['name']}.{sub_attr}",
                         )
-                        sub_accessor_data["methods"].append(method_data)
+                        sub_accessor_data.methods.append(method_data)
 
-                    accessor_data["sub_accessors"].append(sub_accessor_data)
+                    accessor_data.sub_accessors.append(sub_accessor_data)
 
-            data["accessors"].append(accessor_data)
+            data.accessors.append(accessor_data)
 
         base_methods = get_public_methods_for_help(self)
 
         if base_methods:
-            data["methods_section"] = {
-                "id": str(uuid.uuid4()),
-                "folder_id": str(uuid.uuid4()),
-            }
+            data.methods_section = HelpSection(
+                id=str(uuid.uuid4()), branch_id=str(uuid.uuid4())
+            )
             for name, method in base_methods:
                 method_data = self._build_method_data(
                     name, method, self, class_name, None
                 )
-                data["base_methods"].append(method_data)
+                data.base_methods.append(method_data)
 
         attributes, attributes_section = self._build_attributes_data(class_name)
-        data["attributes"] = attributes
-        data["attributes_section"] = attributes_section
+        data.attributes = attributes
+        data.attributes_section = attributes_section
 
         return data
 
@@ -330,24 +392,19 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
         """Build data structure for Jinja2/Rich rendering for accessors."""
         title = self._get_help_title()
         class_name = self.__class__.__name__
+        root_node = f"{self._parent.__class__.__name__}.{self._verbose_name}"
 
-        data: dict[str, Any] = {
-            "title": title,
-            "is_report": False,
-        }
-
-        if hasattr(self, "_get_help_tree_title"):
-            tree_title = self._get_help_tree_title()
-        else:
-            tree_title = class_name
-        data["tree_title"] = tree_title
-        data["methods"] = []
+        data = AccessorHelpData(
+            title=title,
+            root_node=root_node,
+            methods=[],
+        )
 
         methods = get_public_methods_for_help(self)
 
         for name, method in methods:
             method_data = self._build_method_data(name, method, self, class_name, None)
-            data["methods"].append(method_data)
+            data.methods.append(method_data)
 
         return data
 
@@ -360,22 +417,26 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
         class_name = self.__class__.__name__
         title = self._get_help_title()
 
-        data: dict[str, Any] = {
-            "title": title,
-            "class_name": class_name,
-        }
+        data = DisplayHelpData(
+            title=title,
+            root_node=class_name,
+            class_name=class_name,
+            attributes=None,
+            attributes_section=None,
+            methods_section=None,
+            methods=None,
+        )
 
         attributes, attributes_section = self._build_attributes_data(class_name)
-        data["attributes"] = attributes
-        data["attributes_section"] = attributes_section
+        data.attributes = attributes
+        data.attributes_section = attributes_section
 
         methods = get_public_methods_for_help(self)
         if methods:
-            data["methods_section"] = {
-                "id": str(uuid.uuid4()),
-                "folder_id": str(uuid.uuid4()),
-            }
-            data["methods"] = []
+            data.methods_section = HelpSection(
+                id=str(uuid.uuid4()), branch_id=str(uuid.uuid4())
+            )
+            data.methods = []
             for name, method in methods:
                 method_data = self._build_method_data(
                     name=name,
@@ -384,10 +445,10 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
                     class_name=class_name,
                     accessor_path=None,
                 )
-                data["methods"].append(method_data)
+                data.methods.append(method_data)
         else:
-            data["methods"] = None
-            data["methods_section"] = None
+            data.methods = None
+            data.methods_section = None
 
         return data
 
@@ -428,24 +489,25 @@ class _RichReportHelpMixin(_ReportHelpDataMixin, _BaseRichHelpMixin):
 
     def _create_help_tree(self) -> Tree:
         """Create the help tree for Rich rendering (reports only)."""
-        data = self._build_help_data()
+        data = asdict(self._build_help_data())
+        data["is_report"] = True
 
-        tree = Tree(self.__class__.__name__)
+        tree = Tree(data["root_node"])
 
         for accessor_data in data.get("accessors", []):
             branch = tree.add(f"[bold cyan].{accessor_data['name']}[/bold cyan]")
 
             for method in accessor_data["methods"]:
-                displayed_name = f"{method['name_only']}(...)"
+                displayed_name = f"{method['name']}(...)"
                 description = method["description"]
                 branch.add(f".{displayed_name.ljust(25)} - {description}")
 
-            for sub_accessor in accessor_data["sub_accessors"]:
+            for sub_accessor in accessor_data.get("sub_accessors") or []:
                 sub_branch = branch.add(
                     f"[bold cyan].{sub_accessor['name']}[/bold cyan]"
                 )
                 for method in sub_accessor["methods"]:
-                    displayed_name = f"{method['name_only']}(...)"
+                    displayed_name = f"{method['name']}(...)"
                     description = method["description"]
                     sub_branch.add(f".{displayed_name.ljust(25)} - {description}")
 
@@ -453,7 +515,7 @@ class _RichReportHelpMixin(_ReportHelpDataMixin, _BaseRichHelpMixin):
         if base_methods:
             methods_branch = tree.add("[bold cyan]Methods[/bold cyan]")
             for method in base_methods:
-                displayed_name = f"{method['name_only']}(...)"
+                displayed_name = f"{method['name']}(...)"
                 description = method["description"]
                 methods_branch.add(f".{displayed_name}".ljust(26) + f" - {description}")
 
@@ -489,7 +551,8 @@ class _HTMLReportHelpMixin(_ReportHelpDataMixin, _BaseHTMLHelpMixin):
 
     def _create_help_html(self) -> str:
         """Create the HTML representation of the help tree."""
-        template_data = self._build_help_data()
+        template_data = asdict(self._build_help_data())
+        template_data["is_report"] = True
 
         env = get_jinja_env()
         template = env.get_template("report_help.html.j2")
@@ -514,14 +577,14 @@ class _RichAccessorHelpMixin(_AccessorHelpDataMixin, _BaseRichHelpMixin):
 
     def _create_help_tree(self) -> Tree:
         """Create the help tree for Rich rendering for accessors."""
-        data = self._build_help_data()
+        data = asdict(self._build_help_data())
+        data["is_report"] = False
 
-        tree_title_plain = data.get("tree_title", self.__class__.__name__)
-        tree_title_rich = f"[bold cyan]{tree_title_plain}[/bold cyan]"
-        tree = Tree(tree_title_rich)
+        root_node_rich = f"[bold cyan]{data['root_node']}[/bold cyan]"
+        tree = Tree(root_node_rich)
 
         for method in data.get("methods", []):
-            displayed_name = f"{method['name_only']}(...)"
+            displayed_name = f"{method['name']}(...)"
             description = method["description"]
             tree.add(f".{displayed_name}".ljust(26) + f" - {description}")
 
@@ -549,7 +612,8 @@ class _HTMLAccessorHelpMixin(_AccessorHelpDataMixin, _BaseHTMLHelpMixin):
 
     def _create_help_html(self) -> str:
         """Create the HTML representation of the help tree for accessors."""
-        template_data = self._build_help_data()
+        template_data = asdict(self._build_help_data())
+        template_data["is_report"] = False
 
         env = get_jinja_env()
         template = env.get_template("report_help.html.j2")
@@ -569,9 +633,9 @@ class _RichHelpDisplayMixin(_DisplayHelpDataMixin, _BaseRichHelpMixin):
 
     def _create_help_tree(self) -> Tree:
         """Create a rich Tree with attributes and methods."""
-        data = self._build_help_data()
+        data = asdict(self._build_help_data())
 
-        tree = Tree("display")
+        tree = Tree(f"[bold cyan]{data['root_node']}[/bold cyan]")
 
         attributes = data.get("attributes") or []
         if attributes:
@@ -583,7 +647,7 @@ class _RichHelpDisplayMixin(_DisplayHelpDataMixin, _BaseRichHelpMixin):
         if methods:
             method_branch = tree.add("[bold cyan]Methods[/bold cyan]")
             for method in methods:
-                name = f".{method['name_only']}(...)"
+                name = f".{method['name']}(...)"
                 description = method["description"]
                 method_branch.add(f"{name.ljust(26)} - {description}")
 
@@ -611,7 +675,7 @@ class _HTMLHelpDisplayMixin(_DisplayHelpDataMixin, _BaseHTMLHelpMixin):
 
     def _create_help_html(self) -> str:
         """Create the HTML representation of the help tree."""
-        template_data = self._build_help_data()
+        template_data = asdict(self._build_help_data())
 
         env = get_jinja_env()
         template = env.get_template("display_help.html.j2")

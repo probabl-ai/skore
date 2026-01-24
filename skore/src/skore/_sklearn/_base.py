@@ -36,6 +36,8 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
     ``AccessorHelpMixin`` to provide a dedicated ``help()`` and rich/HTML help tree.
     """
 
+    _verbose_name: str = "accessor"
+
     def __init__(self, parent: ParentT) -> None:
         self._parent = parent
 
@@ -263,11 +265,7 @@ class _BaseMetricsAccessor:
     # Methods related to the help tree
     ####################################################################################
 
-    def _get_help_title(self) -> str:
-        return "Available metrics methods"
-
-    def _get_help_tree_title(self) -> str:
-        return f"{self._parent.__class__.__name__}.metrics"
+    _verbose_name: str = "metrics"
 
     def _get_favorability_text(self, name: str) -> str | None:
         """Get favorability text for a method, or None if not applicable."""
