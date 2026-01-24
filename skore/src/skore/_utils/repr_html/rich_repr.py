@@ -18,6 +18,8 @@ from skore._utils.repr_html.data import (
 class _BaseRichHelpMixin(ABC):
     """Base mixin for Rich-based help rendering."""
 
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]]
+
     @abstractmethod
     def _create_help_tree(self) -> Tree:
         """Create the help tree for Rich rendering."""

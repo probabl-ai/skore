@@ -17,7 +17,6 @@ class _FeatureImportanceAccessor(_BaseAccessor[CrossValidationReport], DirNamesM
 
     _verbose_name: str = "feature_importance"
 
-
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 

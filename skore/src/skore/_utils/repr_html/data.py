@@ -166,7 +166,12 @@ class _BaseHelpDataMixin(ABC):
     """
 
     @abstractmethod
-    def _build_help_data(self) -> dict[str, Any]:
+    def _get_help_title(self) -> str:
+        """Get the help title for the report, accessor, or display."""
+        pass
+
+    @abstractmethod
+    def _build_help_data(self) -> ReportHelpData | AccessorHelpData | DisplayHelpData:
         """Build data structure for Jinja2/Rich rendering."""
         pass
 
@@ -259,7 +264,9 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
     concepts such as accessors and X/y attributes.
     """
 
-    def _build_help_data(self) -> dict[str, Any]:
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]]
+
+    def _build_help_data(self) -> ReportHelpData:
         """Build data structure for Jinja2/Rich rendering."""
         class_name = self.__class__.__name__
         title = self._get_help_title()
@@ -324,7 +331,10 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
 class _AccessorHelpDataMixin(_BaseHelpDataMixin):
     """Mixin responsible for building help data structures for accessors."""
 
-    def _build_help_data(self) -> dict[str, Any]:
+    _verbose_name: str
+    _parent: Any
+
+    def _build_help_data(self) -> AccessorHelpData:
         """Build data structure for Jinja2/Rich rendering for accessors."""
         class_name = self.__class__.__name__
         root_node = f"{self._parent.__class__.__name__}.{self._verbose_name}"
@@ -348,7 +358,7 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
 class _DisplayHelpDataMixin(_BaseHelpDataMixin):
     """Mixin responsible for building help data structures for displays."""
 
-    def _build_help_data(self) -> dict[str, Any]:
+    def _build_help_data(self) -> DisplayHelpData:
         """Build data structure for Jinja2/Rich rendering for displays."""
         class_name = self.__class__.__name__
         title = self._get_help_title()
