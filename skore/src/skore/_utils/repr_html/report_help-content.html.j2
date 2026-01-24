@@ -15,28 +15,10 @@
                         <span class="skore-help-name">.{{ accessor.name }}</span>
                     </label>
                     <div class="skore-help-folder-content" id="{{ accessor.branch_id }}">
-                        {# Main accessor methods #}
                         {% for method in accessor.methods %}
                             <div class="skore-help-node skore-help-method">
                                 <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name }}<span class="skore-help-tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}<br><br>Click to access the online documentation</span></a>{{ method.parameters }}</span>
                                 </div>
-                        {% endfor %}
-
-                        {# Sub-accessors #}
-                        {% for sub_accessor in accessor.sub_accessors or [] %}
-                            <div class="skore-help-node skore-help-folder">
-                                <input type="checkbox" id="{{ sub_accessor.id }}" class="skore-help-toggle">
-                                <label for="{{ sub_accessor.id }}" class="skore-help-folder-label">
-                                    <span class="skore-help-name">.{{ sub_accessor.name }}</span>
-                                </label>
-                                <div class="skore-help-folder-content" id="{{ sub_accessor.branch_id }}">
-                                    {% for method in sub_accessor.methods %}
-                                        <div class="skore-help-node skore-help-method">
-                                            <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name }}<span class="skore-help-tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}<br><br>Click to access the online documentation</span></a>{{ method.parameters }}</span>
-                                            </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
                         {% endfor %}
                     </div>
                 </div>

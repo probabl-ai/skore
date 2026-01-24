@@ -22,6 +22,7 @@ from skore._utils._environment import is_environment_notebook_like
 
 
 def get_documentation_url(
+    *,
     class_name: str,
     accessor_name: str | None = None,
     method_or_attr_name: str | None = None,
@@ -105,7 +106,7 @@ def get_public_attributes(obj: Any) -> list[str]:
     )
 
 
-def get_attribute_short_sumamry(obj: Any, name: str) -> str:
+def get_attribute_short_summary(obj: Any, name: str) -> str:
     """Get the description of an attribute from the class docstring."""
     if obj.__doc__ is None:
         return "No description available"
@@ -147,7 +148,6 @@ class AccessorBranchHelp:
     branch_id: str
     name: str
     methods: list[MethodHelp]
-    sub_accessors: list["AccessorBranchHelp"] | None
 
 
 @dataclass
@@ -200,6 +200,7 @@ class _BaseHelpDataMixin(ABC):
 
     def _build_method_data(
         self,
+        *,
         name: str,
         method: Any,
         obj: Any,
@@ -234,7 +235,11 @@ class _BaseHelpDataMixin(ABC):
         if hasattr(obj, "_get_favorability_text"):
             favorability = obj._get_favorability_text(name)
 
-        doc_url = get_documentation_url(class_name, accessor_path, name)
+        doc_url = get_documentation_url(
+            class_name=class_name,
+            accessor_name=accessor_path,
+            method_or_attr_name=name,
+        )
 
         return MethodHelp(
             name=name,
@@ -245,7 +250,7 @@ class _BaseHelpDataMixin(ABC):
         )
 
     def _build_attributes_data(
-        self, class_name: str
+        self, *, class_name: str
     ) -> tuple[list[AttributeHelp] | None, HelpSection | None]:
         """Build attribute metadata and section identifiers.
 
@@ -256,23 +261,22 @@ class _BaseHelpDataMixin(ABC):
         if not attributes:
             return None, None
 
-        section = HelpSection(id=str(uuid.uuid4()), branch_id=str(uuid.uuid4()))
-
         attrs_without_underscore = [a for a in attributes if not a.endswith("_")]
         attrs_with_underscore = [a for a in attributes if a.endswith("_")]
 
-        items: list[AttributeHelp] = []
-        for attr_name in attrs_without_underscore + attrs_with_underscore:
-            description = get_attribute_short_sumamry(self, attr_name)
-            doc_url = get_documentation_url(class_name, None, attr_name)
-            items.append(
-                AttributeHelp(
-                    name=attr_name,
-                    description=description,
-                    doc_url=doc_url,
-                )
+        items = [
+            AttributeHelp(
+                name=attr_name,
+                description=get_attribute_short_summary(self, attr_name),
+                doc_url=get_documentation_url(
+                    class_name=class_name,
+                    accessor_name=None,
+                    method_or_attr_name=attr_name,
+                ),
             )
-
+            for attr_name in attrs_without_underscore + attrs_with_underscore
+        ]
+        section = HelpSection(id=str(uuid.uuid4()), branch_id=str(uuid.uuid4()))
         return items, section
 
 
@@ -285,83 +289,64 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
 
     def _build_help_data(self) -> dict[str, Any]:
         """Build data structure for Jinja2/Rich rendering."""
-        title = self._get_help_title()
         class_name = self.__class__.__name__
+        title = self._get_help_title()
 
-        data = ReportHelpData(
+        accessors = []
+        for accessor_attr, config in self._ACCESSOR_CONFIG.items():
+            accessor = getattr(self, accessor_attr)
+            methods = [
+                self._build_method_data(
+                    name=name,
+                    method=method,
+                    obj=accessor,
+                    class_name=class_name,
+                    accessor_path=config["name"],
+                )
+                for name, method in get_public_methods_for_help(accessor)
+            ]
+            accessors.append(
+                AccessorBranchHelp(
+                    id=str(uuid.uuid4()),
+                    branch_id=str(uuid.uuid4()),
+                    name=config["name"],
+                    methods=methods,
+                )
+            )
+
+        base_methods_raw = get_public_methods_for_help(self)
+        if base_methods_raw:
+            methods_section = HelpSection(
+                id=str(uuid.uuid4()), branch_id=str(uuid.uuid4())
+            )
+            base_methods = [
+                self._build_method_data(
+                    name=name,
+                    method=method,
+                    obj=self,
+                    class_name=class_name,
+                    accessor_path=None,
+                )
+                for name, method in base_methods_raw
+            ]
+        else:
+            methods_section = None
+            base_methods = []
+
+        attributes, attributes_section = self._build_attributes_data(
+            class_name=class_name
+        )
+
+        return ReportHelpData(
             title=title,
             root_node=class_name,
             class_name=class_name,
-            accessors=[],
-            base_methods=[],
-            methods_section=None,
-            attributes=None,
-            attributes_section=None,
+            accessors=accessors,
+            base_methods=base_methods,
+            methods_section=methods_section,
+            attributes=attributes,
+            attributes_section=attributes_section,
         )
-
-        for accessor_attr, config in getattr(self, "_ACCESSOR_CONFIG", {}).items():
-            accessor = getattr(self, accessor_attr)
-            accessor_data = AccessorBranchHelp(
-                id=str(uuid.uuid4()),
-                branch_id=str(uuid.uuid4()),
-                name=config["name"],
-                methods=[],
-                sub_accessors=[],
-            )
-
-            methods = get_public_methods_for_help(accessor)
-
-            for name, method in methods:
-                method_data = self._build_method_data(
-                    name, method, accessor, class_name, config["name"]
-                )
-                accessor_data.methods.append(method_data)
-
-            for sub_attr, sub_obj in inspect.getmembers(accessor):
-                from skore._sklearn._base import _BaseAccessor
-
-                if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith("_"):
-                    sub_accessor_data = AccessorBranchHelp(
-                        id=str(uuid.uuid4()),
-                        branch_id=str(uuid.uuid4()),
-                        name=sub_attr,
-                        methods=[],
-                        sub_accessors=None,
-                    )
-
-                    sub_methods = get_public_methods_for_help(sub_obj)
-
-                    for name, method in sub_methods:
-                        method_data = self._build_method_data(
-                            name,
-                            method,
-                            sub_obj,
-                            class_name,
-                            f"{config['name']}.{sub_attr}",
-                        )
-                        sub_accessor_data.methods.append(method_data)
-
-                    accessor_data.sub_accessors.append(sub_accessor_data)
-
-            data.accessors.append(accessor_data)
-
-        base_methods = get_public_methods_for_help(self)
-
-        if base_methods:
-            data.methods_section = HelpSection(
-                id=str(uuid.uuid4()), branch_id=str(uuid.uuid4())
-            )
-            for name, method in base_methods:
-                method_data = self._build_method_data(
-                    name, method, self, class_name, None
-                )
-                data.base_methods.append(method_data)
-
-        attributes, attributes_section = self._build_attributes_data(class_name)
-        data.attributes = attributes
-        data.attributes_section = attributes_section
-
-        return data
 
 
 class _AccessorHelpDataMixin(_BaseHelpDataMixin):
@@ -369,23 +354,23 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
 
     def _build_help_data(self) -> dict[str, Any]:
         """Build data structure for Jinja2/Rich rendering for accessors."""
-        title = self._get_help_title()
         class_name = self.__class__.__name__
         root_node = f"{self._parent.__class__.__name__}.{self._verbose_name}"
-
-        data = AccessorHelpData(
-            title=title,
+        methods = [
+            self._build_method_data(
+                name=name,
+                method=method,
+                obj=self,
+                class_name=class_name,
+                accessor_path=None,
+            )
+            for name, method in get_public_methods_for_help(self)
+        ]
+        return AccessorHelpData(
+            title=self._get_help_title(),
             root_node=root_node,
-            methods=[],
+            methods=methods,
         )
-
-        methods = get_public_methods_for_help(self)
-
-        for name, method in methods:
-            method_data = self._build_method_data(name, method, self, class_name, None)
-            data.methods.append(method_data)
-
-        return data
 
 
 class _DisplayHelpDataMixin(_BaseHelpDataMixin):
@@ -395,41 +380,38 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
         """Build data structure for Jinja2/Rich rendering for displays."""
         class_name = self.__class__.__name__
         title = self._get_help_title()
-
-        data = DisplayHelpData(
-            title=title,
-            root_node=class_name,
-            class_name=class_name,
-            attributes=None,
-            attributes_section=None,
-            methods_section=None,
-            methods=None,
+        attributes, attributes_section = self._build_attributes_data(
+            class_name=class_name
         )
 
-        attributes, attributes_section = self._build_attributes_data(class_name)
-        data.attributes = attributes
-        data.attributes_section = attributes_section
-
-        methods = get_public_methods_for_help(self)
-        if methods:
-            data.methods_section = HelpSection(
+        methods_raw = get_public_methods_for_help(self)
+        if methods_raw:
+            methods_section = HelpSection(
                 id=str(uuid.uuid4()), branch_id=str(uuid.uuid4())
             )
-            data.methods = []
-            for name, method in methods:
-                method_data = self._build_method_data(
+            methods = [
+                self._build_method_data(
                     name=name,
                     method=method,
                     obj=self,
                     class_name=class_name,
                     accessor_path=None,
                 )
-                data.methods.append(method_data)
+                for name, method in methods_raw
+            ]
         else:
-            data.methods = None
-            data.methods_section = None
+            methods_section = None
+            methods = None
 
-        return data
+        return DisplayHelpData(
+            title=title,
+            root_node=class_name,
+            class_name=class_name,
+            attributes=attributes,
+            attributes_section=attributes_section,
+            methods_section=methods_section,
+            methods=methods,
+        )
 
 
 ########################################################################################
@@ -482,15 +464,6 @@ class _RichReportHelpMixin(_ReportHelpDataMixin, _BaseRichHelpMixin):
                 displayed_name = f"{method['name']}(...)"
                 description = method["description"]
                 branch.add(f".{displayed_name.ljust(25)} - {description}")
-
-            for sub_accessor in accessor_data.get("sub_accessors") or []:
-                sub_branch = branch.add(
-                    f"[bold cyan].{sub_accessor['name']}[/bold cyan]"
-                )
-                for method in sub_accessor["methods"]:
-                    displayed_name = f"{method['name']}(...)"
-                    description = method["description"]
-                    sub_branch.add(f".{displayed_name.ljust(25)} - {description}")
 
         base_methods = data.get("base_methods", [])
         if base_methods:
