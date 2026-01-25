@@ -23,12 +23,10 @@ class _BaseRichHelpMixin(ABC):
     @abstractmethod
     def _create_help_tree(self) -> Tree:
         """Create the help tree for Rich rendering."""
-        pass
 
     @abstractmethod
     def _create_help_panel(self) -> Panel:
         """Create the Rich panel wrapping the help tree."""
-        pass
 
 
 class _RichReportHelpMixin(_ReportHelpDataMixin, _BaseRichHelpMixin):
@@ -159,24 +157,3 @@ class _RichHelpDisplayMixin(_DisplayHelpDataMixin, _BaseRichHelpMixin):
             expand=False,
             border_style="orange1",
         )
-
-    def __str__(self) -> str:
-        """Return a string representation using rich."""
-        string_buffer = StringIO()
-        console = Console(file=string_buffer, force_terminal=False)
-        console.print(
-            Panel(
-                "Get guidance using the help() method",
-                title=f"[cyan]{self.__class__.__name__}[/cyan]",
-                border_style="orange1",
-                expand=False,
-            )
-        )
-        return string_buffer.getvalue()
-
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        string_buffer = StringIO()
-        console = Console(file=string_buffer, force_terminal=False)
-        console.print(f"[cyan]skore.{self.__class__.__name__}(...)[/cyan]")
-        return string_buffer.getvalue()
