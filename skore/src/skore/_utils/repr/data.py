@@ -339,19 +339,16 @@ class _BaseHelpDataMixin(ABC):
             Dataclass with ``name``, ``parameters``, ``description``,
             ``favorability``, and ``doc_url``.
         """
-        try:
-            sig = inspect.signature(method)
-            param_names = [
-                param_name
-                for param_name, _ in sig.parameters.items()
-                if param_name != "self"
-            ]
-            if param_names:
-                parameters = "(" + ", ".join(param_names) + ")"
-            else:
-                parameters = "()"
-        except (ValueError, TypeError):
-            parameters = "(...)"
+        sig = inspect.signature(method)
+        parameter_names = [
+            parameter_name
+            for parameter_name, _ in sig.parameters.items()
+            if parameter_name != "self"
+        ]
+        if parameter_names:
+            parameters = "(" + ", ".join(parameter_names) + ")"
+        else:
+            parameters = "()"
 
         description = get_method_short_summary(method)
         favorability = None
@@ -449,6 +446,7 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
             )
 
         base_methods_raw = get_public_methods(self)
+        methods_section, base_methods = None, []
         if base_methods_raw:
             methods_section = HelpSection(
                 id=str(uuid.uuid4()), branch_id=str(uuid.uuid4())
@@ -463,9 +461,6 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                 )
                 for name, method in base_methods_raw
             ]
-        else:
-            methods_section = None
-            base_methods = []
 
         attributes, attributes_section = self._build_attributes_data()
 
@@ -523,6 +518,7 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
         attributes, attributes_section = self._build_attributes_data()
 
         methods_raw = get_public_methods(self)
+        methods_section, methods = None, []
         if methods_raw:
             methods_section = HelpSection(
                 id=str(uuid.uuid4()), branch_id=str(uuid.uuid4())
@@ -537,9 +533,6 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
                 )
                 for name, method in methods_raw
             ]
-        else:
-            methods_section = None
-            methods = None
 
         return DisplayHelpData(
             title=title,

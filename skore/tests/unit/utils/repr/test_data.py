@@ -78,6 +78,24 @@ class _ReportWithExplicitMethods(MockReport, _ReportHelpDataMixin):
         """A class method; must be excluded from get_public_methods."""
         pass
 
+    def _get_favorability_text(self, name: str) -> str | None:
+        """Return favorability indicator for _build_help_data coverage."""
+        if name == "public_action":
+            return "(↗︎)"
+        return None
+
+
+class _ReportWithAccessor(_ReportWithExplicitMethods):
+    """Report with _ACCESSOR_CONFIG and attached accessor for _build_help_data coverage."""
+
+    _ACCESSOR_CONFIG = {"metrics": {"name": "metrics"}}
+
+    def __init__(self, estimator, X_train=None, y_train=None, X_test=None, y_test=None):
+        super().__init__(
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        )
+        self.metrics = _AccessorWithExplicitMethods(parent=self)
+
 
 class _AccessorWithExplicitMethods(MockAccessor, _AccessorHelpDataMixin):
     """Accessor with explicit public, private, and class methods; used for help tests."""
@@ -165,6 +183,15 @@ def accessor_with_methods(report_with_methods):
 def display_with_methods():
     """Display with explicit private method; used as main display fixture."""
     return _DisplayWithExplicitMethods()
+
+
+@pytest.fixture
+def report_with_accessor():
+    """Report with _ACCESSOR_CONFIG and metrics accessor for _build_help_data tests."""
+    X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
+    y = np.array([0, 1, 1, 0])
+    estimator = LogisticRegression().fit(X, y)
+    return _ReportWithAccessor(estimator)
 
 
 def test_get_public_methods_display(display_with_methods):
@@ -358,12 +385,31 @@ def test_report_build_help_data_output(report_with_methods):
     assert m.name == "public_action"
     assert m.parameters == "()"
     assert "public" in m.description.lower()
-    assert m.favorability is None
+    assert m.favorability == "(↗︎)"
     assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
     assert data.methods_section is not None
     assert isinstance(data.methods_section, HelpSection)
     assert data.attributes is not None
     assert data.attributes_section is not None
+
+
+def test_report_build_help_data_output_with_accessors(report_with_accessor):
+    """_ReportHelpDataMixin._build_help_data with _ACCESSOR_CONFIG builds accessor branches."""
+    data = report_with_accessor._build_help_data()
+    assert isinstance(data, ReportHelpData)
+    assert len(data.accessors) == 1
+    branch = data.accessors[0]
+    assert branch.name == "metrics"
+    assert branch.id != ""
+    assert branch.branch_id != ""
+    assert len(branch.methods) == 1
+    m = branch.methods[0]
+    assert m.name == "fetch"
+    assert m.parameters == "()"
+    assert "Fetch" in m.description
+    assert m.favorability is None
+    assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
+    assert "metrics" in m.doc_url and "fetch" in m.doc_url
 
 
 def test_display_build_help_data_output(display_with_methods):
