@@ -286,9 +286,12 @@ def get_attribute_short_summary(obj: Any, name: str) -> str:
 class _BaseHelpDataMixin(ABC):
     """Base mixin for building help data structures.
 
-    Concrete subclasses implement ``_build_help_data`` for a specific type
-    (report, accessor, or display) and reuse these helpers to derive the
-    common pieces of information (methods, attributes, descriptions, links).
+    Enforces children to implement the following methods:
+    - ``_get_help_title``: to get the help title for the report, accessor, or display.
+    - ``_build_help_data``: to build the data structure for Jinja2/Rich rendering.
+
+    It provides the concreate implementation to get a method data structure or a list
+    of attribute data structures.
     """
 
     @abstractmethod
@@ -312,8 +315,31 @@ class _BaseHelpDataMixin(ABC):
     ) -> MethodHelp:
         """Build data structure for a single method.
 
-        The method name and parameter list are derived directly from the function
-        signature, and the description is taken from the first line of the docstring.
+        The parameter list is derived from the function signature; the description
+        comes from the first line of the docstring. Optional favorability text
+        is taken from ``obj._get_favorability_text(name)`` when available.
+        The documentation URL uses ``parent_obj`` and ``accessor_name`` for
+        path construction.
+
+        Parameters
+        ----------
+        name : str
+            The method name.
+        method : callable or None
+            The method to inspect for signature and docstring.
+        obj : object
+            The instance that owns the method (report, accessor, or display).
+            Used for favorability text when ``_get_favorability_text`` exists.
+        parent_obj : object
+            The parent instance for URL construction (report or display).
+        accessor_name : str or None
+            The accessor name when documenting an accessor method, else ``None``.
+
+        Returns
+        -------
+        MethodHelp
+            Dataclass with ``name``, ``parameters``, ``description``,
+            ``favorability``, and ``doc_url``.
         """
         parameters = ""
         if method is not None:
@@ -355,10 +381,20 @@ class _BaseHelpDataMixin(ABC):
     def _build_attributes_data(
         self,
     ) -> tuple[list[AttributeHelp] | None, HelpSection | None]:
-        """Build attribute metadata and section identifiers.
+        """Build attribute metadata and section identifiers for help rendering.
 
-        This helper is shared between reports and displays. It assumes that
-        `get_public_attributes` returns attribute names without a leading dot.
+        Collects public, non-callable attributes via ``get_public_attributes``,
+        orders them (names not ending with ``_`` first, then those ending with
+        ``_``), and builds ``AttributeHelp`` entries with descriptions from
+        the class docstring and documentation URLs. Returns ``(None, None)``
+        when there are no attributes.
+
+        Returns
+        -------
+        items : list of AttributeHelp or None
+            The attribute help entries, or ``None`` if no attributes.
+        section : HelpSection or None
+            Section id and branch_id for the attributes block, or ``None``.
         """
         attributes = get_public_attributes(self)
         if not attributes:
@@ -385,8 +421,8 @@ class _BaseHelpDataMixin(ABC):
 class _ReportHelpDataMixin(_BaseHelpDataMixin):
     """Mixin responsible for building help data structures for reports.
 
-    It enriches the generic helpers in ``_BaseHelpDataMixin`` with report-specific
-    concepts such as accessors and X/y attributes.
+    It defines ``_build_help_data`` by looking at accessors, methods, and attributes
+    of a report.
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
@@ -452,7 +488,10 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
 
 
 class _AccessorHelpDataMixin(_BaseHelpDataMixin):
-    """Mixin responsible for building help data structures for accessors."""
+    """Mixin responsible for building help data structures for accessors.
+
+    It defines ``_build_help_data`` by looking at methods of an accessor.
+    """
 
     _verbose_name: str
     _parent: Any
@@ -478,7 +517,10 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
 
 
 class _DisplayHelpDataMixin(_BaseHelpDataMixin):
-    """Mixin responsible for building help data structures for displays."""
+    """Mixin responsible for building help data structures for displays.
+
+    It defines ``_build_help_data`` by looking at attributes and methods of a display.
+    """
 
     def _build_help_data(self) -> DisplayHelpData:
         """Build data structure for Jinja2/Rich rendering for displays."""
