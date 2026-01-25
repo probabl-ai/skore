@@ -94,6 +94,32 @@ def _get_attribute_type(obj: Any, attribute_name: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
+def _build_attribute_text_fragment(obj: Any, attribute_name: str) -> str:
+    """Build the encoded ``#:~:text=`` fragment value for an attribute link.
+
+    Uses ``_get_attribute_type`` to extract the type from the class docstring.
+    Encodes name and type separately (spaces, brackets, etc.) and keeps
+    ``,-`` literal for the scroll-to-text prefix-,match format. When no type
+    is found, returns the encoded attribute name only.
+
+    Parameters
+    ----------
+    obj : object
+        The instance whose class docstring to search for the attribute type.
+    attribute_name : str
+        The attribute name (e.g. ``"coef_"``, ``"classes_"``).
+
+    Returns
+    -------
+    str
+        The percent-encoded fragment value to append after ``#:~:text=``.
+    """
+    attribute_type = _get_attribute_type(obj, attribute_name)
+    if attribute_type is not None:
+        return f"{quote(attribute_name, safe='')},-{quote(attribute_type, safe='')}"
+    return quote(attribute_name, safe="")
+
+
 def get_documentation_url(
     *,
     obj: Any,
@@ -102,11 +128,6 @@ def get_documentation_url(
     attribute_name: str | None = None,
 ) -> str:
     """Generate documentation URL for a class, a method or an attribute.
-
-    The class name is taken from ``obj.__class__.__name__``. For attributes,
-    a ``#:~:text={name},-{type}`` fragment is built (prefix + match) so the
-    type is matched with the name as context; the `` : `` between them is
-    injected by CSS in the HTML and thus omitted from the fragment.
 
     Parameters
     ----------
@@ -146,21 +167,14 @@ def get_documentation_url(
 
     full_url = f"{base_url}/{'.'.join(path_parts)}.html"
 
+    if attribute_name:
+        return (
+            f"{full_url}#:~:text={_build_attribute_text_fragment(obj, attribute_name)}"
+        )
+
     if method_name is not None and accessor_name is None:
         path_parts.append(method_name)
-        full_url += f"#{'.'.join(path_parts)}"
-
-    if attribute_name:
-        attr_type = _get_attribute_type(obj, attribute_name)
-        if attr_type is not None:
-            # Encode name and type separately (spaces, brackets, etc.);
-            # keep ",-" literal for the scroll-to-text prefix-,match format.
-            encoded_name = quote(attribute_name, safe="")
-            encoded_type = quote(attr_type, safe="")
-            fragment = f"{encoded_name},-{encoded_type}"
-        else:
-            fragment = quote(attribute_name, safe="")
-        full_url += f"#:~:text={fragment}"
+        return f"{full_url}#{'.'.join(path_parts)}"
 
     return full_url
 
