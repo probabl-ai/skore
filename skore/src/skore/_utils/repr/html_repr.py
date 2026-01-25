@@ -26,7 +26,6 @@ class _BaseHTMLHelpMixin(ABC):
     @abstractmethod
     def _create_help_html(self) -> str:
         """Create the HTML representation of the help tree."""
-        pass
 
 
 class _HTMLReportHelpMixin(_ReportHelpDataMixin, _BaseHTMLHelpMixin):
