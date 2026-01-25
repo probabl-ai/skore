@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from importlib.metadata import version
 from typing import Any
+from urllib.parse import quote
 
 from skore._externals._sklearn_compat import parse_version
 
@@ -71,33 +72,64 @@ class DisplayHelpData:
     methods: list[MethodHelp] | None
 
 
+def _get_attribute_type(obj: Any, attribute_name: str) -> str | None:
+    """Extract the type part from a numpydoc-style attribute or parameter entry.
+
+    Parameters
+    ----------
+    obj : object
+        The instance whose class docstring to search.
+    attribute_name : str
+        The attribute name (e.g. ``"coef_"``, ``"classes_"``).
+
+    Returns
+    -------
+    str or None
+        The type snippet, or ``None`` if not found.
+    """
+    if obj.__doc__ is None:
+        return None
+    pattern = rf"{re.escape(attribute_name)} \: ([^\n]+)"
+    match = re.search(pattern, obj.__doc__)
+    return match.group(1).strip() if match else None
+
+
 def get_documentation_url(
     *,
-    class_name: str,
+    obj: Any,
     accessor_name: str | None = None,
     method_name: str | None = None,
     attribute_name: str | None = None,
 ) -> str:
-    """Generate documentation URL for a method or attribute.
+    """Generate documentation URL for a class, a method or an attribute.
+
+    The class name is taken from ``obj.__class__.__name__``. For attributes,
+    a ``#:~:text={name},-{type}`` fragment is built (prefix + match) so the
+    type is matched with the name as context; the `` : `` between them is
+    injected by CSS in the HTML and thus omitted from the fragment.
 
     Parameters
     ----------
-    class_name : str
-        The class name (e.g., "EstimatorReport", "CrossValidationReport",
-        "ROCCurveDisplay").
+    obj : object
+        The instance whose class defines the documented API (e.g. report,
+        display, or accessor's parent report). Must be the report/display
+        for attribute URLs so the docstring is searched correctly.
     accessor_name : str, default=None
-        The accessor name if applicable (e.g., "data", "metrics"). Only used for
-        reports.
+        The accessor name if applicable (e.g. ``"data"``, ``"metrics"``).
+        Only used for reports.
     method_name : str, default=None
         The method name.
     attribute_name : str, default=None
-        The attribute name.
+        The attribute name. The text fragment is derived from the class
+        docstring when possible.
 
     Returns
     -------
     str
-        The full documentation URL
+        The full documentation URL, with optional ``#:~:text=...`` fragment
+        for attributes.
     """
+    class_name = obj.__class__.__name__
     skore_version = parse_version(version("skore"))
     if skore_version < parse_version("0.1"):
         url_version = "dev"
@@ -107,22 +139,48 @@ def get_documentation_url(
     base_url = f"https://docs.skore.probabl.ai/{url_version}/reference/api"
     path_parts = ["skore", class_name]
 
-    if accessor_name:
+    if accessor_name is not None:
         path_parts.append(accessor_name)
-
-    if method_name:
-        path_parts.append(method_name)
+        if method_name is not None:
+            path_parts.append(method_name)
 
     full_url = f"{base_url}/{'.'.join(path_parts)}.html"
 
+    if method_name is not None and accessor_name is None:
+        path_parts.append(method_name)
+        full_url += f"#{'.'.join(path_parts)}"
+
     if attribute_name:
-        full_url += f"#:~:text={attribute_name}"
+        attr_type = _get_attribute_type(obj, attribute_name)
+        if attr_type is not None:
+            # Encode name and type separately (spaces, brackets, etc.);
+            # keep ",-" literal for the scroll-to-text prefix-,match format.
+            encoded_name = quote(attribute_name, safe="")
+            encoded_type = quote(attr_type, safe="")
+            fragment = f"{encoded_name},-{encoded_type}"
+        else:
+            fragment = quote(attribute_name, safe="")
+        full_url += f"#:~:text={fragment}"
 
     return full_url
 
 
-def get_public_methods_for_help(obj: Any) -> list[tuple[str, Any]]:
-    """Return the public instance methods of ``obj`` to display in help."""
+def get_public_methods(obj: Any) -> list[tuple[str, Any]]:
+    """Return the public instance methods of ``obj`` to display in help.
+
+    Excludes private methods (leading underscore), class methods, and the
+    ``help`` method itself.
+
+    Parameters
+    ----------
+    obj : object
+        The instance to inspect (e.g. a report, accessor, or display).
+
+    Returns
+    -------
+    list of tuple of (str, callable)
+        Pairs of (method name, method) sorted by name.
+    """
     methods = inspect.getmembers(obj, predicate=inspect.ismethod)
     filtered_methods = []
     for name, method in methods:
@@ -137,15 +195,43 @@ def get_public_methods_for_help(obj: Any) -> list[tuple[str, Any]]:
 
 
 def get_method_short_summary(method: Any) -> str:
-    """Get the one-line description for a method from its docstring."""
+    """Extract the one-line description of a method from its docstring.
+
+    Uses the first line of the docstring; returns a fallback if none exists.
+
+    Parameters
+    ----------
+    method : callable
+        The method whose docstring to read.
+
+    Returns
+    -------
+    str
+        The description of the method.
+    """
     return (
         method.__doc__.split("\n")[0] if method.__doc__ else "No description available"
     )
 
 
 def get_public_attributes(obj: Any) -> list[str]:
-    """Get the attributes of ``obj`` ending with '_' to display in help."""
-    from skore._sklearn._base import _BaseAccessor
+    """Return public, non-callable attribute names of ``obj`` for help.
+
+    Excludes names starting with ``_``, callables (e.g. methods), and
+    attributes that are ``_BaseAccessor`` instances. Typically includes
+    fitted attributes (e.g. ending with ``_``) and other instance data.
+
+    Parameters
+    ----------
+    obj : object
+        The instance to inspect (e.g. a report or display).
+
+    Returns
+    -------
+    list of str
+        Sorted attribute names to display in help.
+    """
+    from skore._sklearn._base import _BaseAccessor  # avoid circular import
 
     return sorted(
         name
@@ -159,7 +245,23 @@ def get_public_attributes(obj: Any) -> list[str]:
 
 
 def get_attribute_short_summary(obj: Any, name: str) -> str:
-    """Get the description of an attribute from the class docstring."""
+    """Extract a short description of an attribute from the class docstring.
+
+    Looks for a numpydoc-style "Attributes" entry ``{name} : type\\n    Description.``
+    and returns the description text.
+
+    Parameters
+    ----------
+    obj : object
+        The instance whose class docstring to search.
+    name : str
+        The attribute name (e.g. ``"coef_"``, ``"classes_"``).
+
+    Returns
+    -------
+    str
+        The extracted description, or ``"No description available"``.
+    """
     if obj.__doc__ is None:
         return "No description available"
     regex_pattern = rf"{name} : .*?\n\s*(.*?)\."
@@ -191,8 +293,8 @@ class _BaseHelpDataMixin(ABC):
         name: str,
         method: Any,
         obj: Any,
-        class_name: str,
-        accessor_path: str | None,
+        parent_obj: Any,
+        accessor_name: str | None,
     ) -> MethodHelp:
         """Build data structure for a single method.
 
@@ -223,8 +325,8 @@ class _BaseHelpDataMixin(ABC):
             favorability = obj._get_favorability_text(name)
 
         doc_url = get_documentation_url(
-            class_name=class_name,
-            accessor_name=accessor_path,
+            obj=parent_obj,
+            accessor_name=accessor_name,
             method_name=name,
         )
 
@@ -237,7 +339,7 @@ class _BaseHelpDataMixin(ABC):
         )
 
     def _build_attributes_data(
-        self, *, class_name: str
+        self,
     ) -> tuple[list[AttributeHelp] | None, HelpSection | None]:
         """Build attribute metadata and section identifiers.
 
@@ -256,8 +358,7 @@ class _BaseHelpDataMixin(ABC):
                 name=attr_name,
                 description=get_attribute_short_summary(self, attr_name),
                 doc_url=get_documentation_url(
-                    class_name=class_name,
-                    accessor_name=None,
+                    obj=self,
                     attribute_name=attr_name,
                 ),
             )
@@ -289,10 +390,10 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                     name=name,
                     method=method,
                     obj=accessor,
-                    class_name=class_name,
-                    accessor_path=config["name"],
+                    parent_obj=self,
+                    accessor_name=config["name"],
                 )
-                for name, method in get_public_methods_for_help(accessor)
+                for name, method in get_public_methods(accessor)
             ]
             accessors.append(
                 AccessorBranchHelp(
@@ -303,7 +404,7 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                 )
             )
 
-        base_methods_raw = get_public_methods_for_help(self)
+        base_methods_raw = get_public_methods(self)
         if base_methods_raw:
             methods_section = HelpSection(
                 id=str(uuid.uuid4()), branch_id=str(uuid.uuid4())
@@ -313,8 +414,8 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                     name=name,
                     method=method,
                     obj=self,
-                    class_name=class_name,
-                    accessor_path=None,
+                    parent_obj=self,
+                    accessor_name=None,
                 )
                 for name, method in base_methods_raw
             ]
@@ -322,9 +423,7 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
             methods_section = None
             base_methods = []
 
-        attributes, attributes_section = self._build_attributes_data(
-            class_name=class_name
-        )
+        attributes, attributes_section = self._build_attributes_data()
 
         return ReportHelpData(
             title=title,
@@ -346,17 +445,16 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
 
     def _build_help_data(self) -> AccessorHelpData:
         """Build data structure for Jinja2/Rich rendering for accessors."""
-        class_name = self.__class__.__name__
         root_node = f"{self._parent.__class__.__name__}.{self._verbose_name}"
         methods = [
             self._build_method_data(
                 name=name,
                 method=method,
                 obj=self,
-                class_name=class_name,
-                accessor_path=None,
+                parent_obj=self._parent,
+                accessor_name=self._verbose_name,
             )
-            for name, method in get_public_methods_for_help(self)
+            for name, method in get_public_methods(self)
         ]
         return AccessorHelpData(
             title=self._get_help_title(),
@@ -372,11 +470,9 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
         """Build data structure for Jinja2/Rich rendering for displays."""
         class_name = self.__class__.__name__
         title = self._get_help_title()
-        attributes, attributes_section = self._build_attributes_data(
-            class_name=class_name
-        )
+        attributes, attributes_section = self._build_attributes_data()
 
-        methods_raw = get_public_methods_for_help(self)
+        methods_raw = get_public_methods(self)
         if methods_raw:
             methods_section = HelpSection(
                 id=str(uuid.uuid4()), branch_id=str(uuid.uuid4())
@@ -386,8 +482,8 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
                     name=name,
                     method=method,
                     obj=self,
-                    class_name=class_name,
-                    accessor_path=None,
+                    parent_obj=self,
+                    accessor_name=None,
                 )
                 for name, method in methods_raw
             ]
