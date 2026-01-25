@@ -27,22 +27,9 @@ These functions and classes are meant for managing a `Project` and its reports.
 Skore project's summary
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-When calling :meth:`Project.summarize`, a :class:`~skore.project.summary.Summary` object
-is returned. This object is a :class:`pandas.DataFrame` with a specific HTML
-representation to allow you filter and retrieve the reports.
+When calling :meth:`Project.summarize`, returns a summary table as a
+:class:`pandas.DataFrame` with a specific HTML representation to allow
+you filter and retrieve the reports.
 
-.. autosummary::
-   :toctree: api/
-   :template: class_without_inherited_members.rst
-
-   project.summary.Summary
-
-.. autosummary::
-   :toctree: api/
-   :template: class_methods_no_index.rst
-
-   project.summary.Summary.reports
-
-.. note::
-   This class :class:`~skore.project.summary.Summary` is not meant to be used
-   directly. Instead, use the method :meth:`Project.summarize`.
+The returned object is not intended to be instantiated or imported directly.
+Always use :meth:`Project.summarize`.

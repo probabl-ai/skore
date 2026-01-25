@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
 
 from skore import ComparisonReport
-from skore.project.widget import ModelExplorerWidget
+from skore.project._widget import ModelExplorerWidget
 
 if TYPE_CHECKING:
     from typing import Literal
