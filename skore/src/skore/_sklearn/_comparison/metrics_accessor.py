@@ -1217,8 +1217,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             y_true: list[YPlotData] = []
             y_pred: list[YPlotData] = []
 
+            data_sources: tuple[DataSource, ...]
             if data_source == "both":
-                data_sources: tuple[DataSource, DataSource] = ("train", "test")
+                data_sources = ("train", "test")
             else:
                 data_sources = (data_source,)
 
