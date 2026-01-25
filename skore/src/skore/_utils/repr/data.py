@@ -75,18 +75,23 @@ def get_documentation_url(
     *,
     class_name: str,
     accessor_name: str | None = None,
-    method_or_attr_name: str | None = None,
+    method_name: str | None = None,
+    attribute_name: str | None = None,
 ) -> str:
     """Generate documentation URL for a method or attribute.
 
     Parameters
     ----------
     class_name : str
-        The class name (e.g., "EstimatorReport", "CrossValidationReport", "ROCCurveDisplay")
-    accessor_name : str, optional
-        The accessor name if applicable (e.g., "data", "metrics"). Only used for reports.
-    method_or_attr_name : str, optional
-        The method or attribute name
+        The class name (e.g., "EstimatorReport", "CrossValidationReport",
+        "ROCCurveDisplay").
+    accessor_name : str, default=None
+        The accessor name if applicable (e.g., "data", "metrics"). Only used for
+        reports.
+    method_name : str, default=None
+        The method name.
+    attribute_name : str, default=None
+        The attribute name.
 
     Returns
     -------
@@ -105,10 +110,15 @@ def get_documentation_url(
     if accessor_name:
         path_parts.append(accessor_name)
 
-    if method_or_attr_name:
-        path_parts.append(method_or_attr_name)
+    if method_name:
+        path_parts.append(method_name)
 
-    return f"{base_url}/{'.'.join(path_parts)}.html"
+    full_url = f"{base_url}/{'.'.join(path_parts)}.html"
+
+    if attribute_name:
+        full_url += f"#:~:text={attribute_name}"
+
+    return full_url
 
 
 def get_public_methods_for_help(obj: Any) -> list[tuple[str, Any]]:
@@ -215,7 +225,7 @@ class _BaseHelpDataMixin(ABC):
         doc_url = get_documentation_url(
             class_name=class_name,
             accessor_name=accessor_path,
-            method_or_attr_name=name,
+            method_name=name,
         )
 
         return MethodHelp(
@@ -248,7 +258,7 @@ class _BaseHelpDataMixin(ABC):
                 doc_url=get_documentation_url(
                     class_name=class_name,
                     accessor_name=None,
-                    method_or_attr_name=attr_name,
+                    attribute_name=attr_name,
                 ),
             )
             for attr_name in attrs_without_underscore + attrs_with_underscore
