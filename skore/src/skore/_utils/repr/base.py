@@ -23,7 +23,8 @@ from skore._utils.repr.rich_repr import (
 
 
 class _HelpDisplay:
-    """Displayable help with ``_repr_html_`` and ``_repr_mimebundle_`` for sphinx-gallery."""
+    """Displayable help with ``_repr_html_`` and ``_repr_mimebundle_`` for
+    sphinx-gallery."""
 
     __slots__ = ("_html", "_plain")
 

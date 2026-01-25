@@ -12,6 +12,7 @@ from skore._utils.repr.base import (
     DisplayHelpMixin,
     ReportHelpMixin,
     ReprHTMLMixin,
+    _HelpDisplay,
 )
 
 
@@ -61,6 +62,24 @@ def display_with_base_help():
     return _DisplayWithBaseHelp()
 
 
+@patch("skore._utils.repr.base.is_environment_sphinx_build", return_value=True)
+@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=False)
+def test_report_help_mixin_sphinx_path(
+    mock_notebook, mock_sphinx, report_with_base_help
+):
+    """ReportHelpMixin.help returns _HelpDisplay when sphinx build."""
+    result = report_with_base_help.help()
+    mock_sphinx.assert_called_once()
+    mock_notebook.assert_not_called()
+    assert result is not None
+    assert isinstance(result, _HelpDisplay)
+    assert "skore-help-" in result._repr_html_()
+    bundle = result._repr_mimebundle_()
+    assert "text/html" in bundle
+    assert "text/plain" in bundle
+    assert "skore-help-" in bundle["text/html"]
+
+
 @patch("skore._utils.repr.base.is_environment_notebook_like", return_value=True)
 @patch("IPython.display.display")
 @patch("IPython.display.HTML")
@@ -90,6 +109,23 @@ def test_report_help_mixin_rich_path(
     assert panel is not None
 
 
+@patch("skore._utils.repr.base.is_environment_sphinx_build", return_value=True)
+@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=False)
+def test_accessor_help_mixin_sphinx_path(
+    mock_notebook, mock_sphinx, accessor_with_base_help
+):
+    """AccessorHelpMixin.help returns _HelpDisplay when sphinx build."""
+    result = accessor_with_base_help.help()
+    mock_sphinx.assert_called_once()
+    mock_notebook.assert_not_called()
+    assert result is not None
+    assert isinstance(result, _HelpDisplay)
+    assert "skore-accessor-help-" in result._repr_html_()
+    bundle = result._repr_mimebundle_()
+    assert "text/html" in bundle
+    assert "text/plain" in bundle
+
+
 @patch("skore._utils.repr.base.is_environment_notebook_like", return_value=True)
 @patch("IPython.display.display")
 @patch("IPython.display.HTML")
@@ -117,6 +153,23 @@ def test_accessor_help_mixin_rich_path(
     mock_console_print.assert_called_once()
     (panel,) = mock_console_print.call_args[0]
     assert panel is not None
+
+
+@patch("skore._utils.repr.base.is_environment_sphinx_build", return_value=True)
+@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=False)
+def test_display_help_mixin_sphinx_path(
+    mock_notebook, mock_sphinx, display_with_base_help
+):
+    """DisplayHelpMixin.help returns _HelpDisplay when sphinx build."""
+    result = display_with_base_help.help()
+    mock_sphinx.assert_called_once()
+    mock_notebook.assert_not_called()
+    assert result is not None
+    assert isinstance(result, _HelpDisplay)
+    assert "skore-display-help-" in result._repr_html_()
+    bundle = result._repr_mimebundle_()
+    assert "text/html" in bundle
+    assert "text/plain" in bundle
 
 
 @patch("skore._utils.repr.base.is_environment_notebook_like", return_value=True)
