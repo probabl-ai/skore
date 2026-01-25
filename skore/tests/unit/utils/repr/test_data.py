@@ -9,8 +9,16 @@ from sklearn.linear_model import LogisticRegression
 
 from skore._utils._testing import MockAccessor, MockDisplay, MockReport
 from skore._utils.repr.data import (
+    AccessorHelpData,
+    DisplayHelpData,
+    HelpSection,
+    MethodHelp,
+    ReportHelpData,
+    _AccessorHelpDataMixin,
     _build_attribute_text_fragment,
+    _DisplayHelpDataMixin,
     _get_attribute_type,
+    _ReportHelpDataMixin,
     get_attribute_short_summary,
     get_documentation_url,
     get_method_short_summary,
@@ -49,8 +57,8 @@ class _ClassWithDocstringMethod:
         pass
 
 
-class _ReportWithExplicitMethods(MockReport):
-    """Report with explicit public, private, and class methods for get_public_methods tests.
+class _ReportWithExplicitMethods(MockReport, _ReportHelpDataMixin):
+    """Report with explicit public, private, and class methods; used for help tests.
 
     Attributes
     ----------
@@ -71,8 +79,8 @@ class _ReportWithExplicitMethods(MockReport):
         pass
 
 
-class _AccessorWithExplicitMethods(MockAccessor):
-    """Accessor with explicit public, private, and class methods for get_public_methods tests."""
+class _AccessorWithExplicitMethods(MockAccessor, _AccessorHelpDataMixin):
+    """Accessor with explicit public, private, and class methods; used for help tests."""
 
     def fetch(self):
         """Fetch data."""
@@ -86,9 +94,12 @@ class _AccessorWithExplicitMethods(MockAccessor):
         """A class method; must be excluded from get_public_methods."""
         pass
 
+    def _get_help_title(self) -> str:
+        return "Mock accessor"
 
-class _DisplayWithExplicitMethods(MockDisplay):
-    """Display with explicit private and class methods for get_public_methods tests."""
+
+class _DisplayWithExplicitMethods(MockDisplay, _DisplayHelpDataMixin):
+    """Display with explicit private and class methods; used for help tests."""
 
     def _private_helper(self):
         pass
@@ -97,6 +108,9 @@ class _DisplayWithExplicitMethods(MockDisplay):
     def class_factory(cls):
         """A class method; must be excluded from get_public_methods."""
         pass
+
+    def _get_help_title(self) -> str:
+        return "Mock display"
 
 
 @pytest.mark.parametrize(
@@ -312,3 +326,61 @@ def test_get_documentation_url_version_branches(
         url = get_documentation_url(obj=display_with_methods)
     assert url.startswith("https://docs.skore.probabl.ai/")
     assert f"docs.skore.probabl.ai/{expected_url_version}/reference/api/" in url
+
+
+def test_accessor_build_help_data_output(accessor_with_methods):
+    """_AccessorHelpDataMixin._build_help_data returns AccessorHelpData with expected shape."""
+    data = accessor_with_methods._build_help_data()
+    assert isinstance(data, AccessorHelpData)
+    assert data.title == "Mock accessor"
+    expected_root = f"{accessor_with_methods._parent.__class__.__name__}.mock_accessor"
+    assert data.root_node == expected_root
+    assert len(data.methods) == 1
+    m = data.methods[0]
+    assert m.name == "fetch"
+    assert m.parameters == "()"
+    assert "Fetch" in m.description
+    assert m.favorability is None
+    assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
+    assert "mock_accessor" in m.doc_url and "fetch" in m.doc_url
+
+
+def test_report_build_help_data_output(report_with_methods):
+    """_ReportHelpDataMixin._build_help_data returns ReportHelpData with expected shape."""
+    data = report_with_methods._build_help_data()
+    assert isinstance(data, ReportHelpData)
+    assert data.title == "Mock report"
+    assert data.root_node == "_ReportWithExplicitMethods"
+    assert data.class_name == "_ReportWithExplicitMethods"
+    assert data.accessors == []
+    assert len(data.base_methods) == 1
+    m = data.base_methods[0]
+    assert m.name == "public_action"
+    assert m.parameters == "()"
+    assert "public" in m.description.lower()
+    assert m.favorability is None
+    assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
+    assert data.methods_section is not None
+    assert isinstance(data.methods_section, HelpSection)
+    assert data.attributes is not None
+    assert data.attributes_section is not None
+
+
+def test_display_build_help_data_output(display_with_methods):
+    """_DisplayHelpDataMixin._build_help_data returns DisplayHelpData with expected shape."""
+    data = display_with_methods._build_help_data()
+    assert isinstance(data, DisplayHelpData)
+    assert data.title == "Mock display"
+    assert data.root_node == "_DisplayWithExplicitMethods"
+    assert data.class_name == "_DisplayWithExplicitMethods"
+    assert data.attributes is None
+    assert data.attributes_section is None
+    assert data.methods_section is not None
+    assert isinstance(data.methods_section, HelpSection)
+    assert data.methods is not None
+    assert len(data.methods) == 3
+    names = {m.name for m in data.methods}
+    assert names == {"frame", "plot", "set_style"}
+    for m in data.methods:
+        assert isinstance(m, MethodHelp)
+        assert m.doc_url.startswith("https://docs.skore.probabl.ai/")

@@ -6,7 +6,7 @@ import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from importlib.metadata import version
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import quote
 
 from skore._externals._sklearn_compat import parse_version
@@ -297,18 +297,16 @@ class _BaseHelpDataMixin(ABC):
     @abstractmethod
     def _get_help_title(self) -> str:
         """Get the help title for the report, accessor, or display."""
-        pass
 
     @abstractmethod
     def _build_help_data(self) -> ReportHelpData | AccessorHelpData | DisplayHelpData:
         """Build data structure for Jinja2/Rich rendering."""
-        pass
 
     def _build_method_data(
         self,
         *,
         name: str,
-        method: Any,
+        method: Callable,
         obj: Any,
         parent_obj: Any,
         accessor_name: str | None,
@@ -325,7 +323,7 @@ class _BaseHelpDataMixin(ABC):
         ----------
         name : str
             The method name.
-        method : callable or None
+        method : callable
             The method to inspect for signature and docstring.
         obj : object
             The instance that owns the method (report, accessor, or display).
@@ -341,22 +339,18 @@ class _BaseHelpDataMixin(ABC):
             Dataclass with ``name``, ``parameters``, ``description``,
             ``favorability``, and ``doc_url``.
         """
-        parameters = ""
-        if method is not None:
-            try:
-                sig = inspect.signature(method)
-                param_names = [
-                    param_name
-                    for param_name, _ in sig.parameters.items()
-                    if param_name != "self"
-                ]
-                if param_names:
-                    parameters = "(" + ", ".join(param_names) + ")"
-                else:
-                    parameters = "()"
-            except (ValueError, TypeError):
-                parameters = "(...)"
-        else:
+        try:
+            sig = inspect.signature(method)
+            param_names = [
+                param_name
+                for param_name, _ in sig.parameters.items()
+                if param_name != "self"
+            ]
+            if param_names:
+                parameters = "(" + ", ".join(param_names) + ")"
+            else:
+                parameters = "()"
+        except (ValueError, TypeError):
             parameters = "(...)"
 
         description = get_method_short_summary(method)
