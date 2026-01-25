@@ -9,7 +9,8 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 
-from skore._sklearn._base import _BaseAccessor, _BaseReport, _get_cached_response_values
+from skore._sklearn._base import _get_cached_response_values
+from skore._utils._testing import MockAccessor, MockReport
 
 
 class MockClassifier(ClassifierMixin, BaseEstimator):
@@ -211,56 +212,6 @@ def test_get_cached_response_values_different_data_source_hash(
         f"Passing a hash not present in the cache keys should trigger new "
         f"computation for {response_method}"
     )
-
-
-class MockReport(_BaseReport):
-    """Mock a report with the minimal required attributes.
-
-    Attributes
-    ----------
-    no_private : dummy object
-        The text to catch.
-    """
-
-    def __init__(self, estimator, X_train=None, y_train=None, X_test=None, y_test=None):
-        self._estimator = estimator
-        self._X_train = X_train
-        self._y_train = y_train
-        self._X_test = X_test
-        self._y_test = y_test
-        self.no_private = "no_private"
-        self.attr_without_description = "attr_without_description"
-
-    @property
-    def estimator_(self):
-        return self._estimator
-
-    @property
-    def X_train(self):
-        return self._X_train
-
-    @property
-    def y_train(self):
-        return self._y_train
-
-    @property
-    def X_test(self):
-        return self._X_test
-
-    @property
-    def y_test(self):
-        return self._y_test
-
-    def _get_help_title(self) -> str:
-        return "Mock report"
-
-
-class MockAccessor(_BaseAccessor):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-    def _get_help_tree_title(self) -> str:
-        return "Mock accessor"
 
 
 def test_base_accessor_get_X_y_and_data_source_hash_error():
