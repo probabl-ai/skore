@@ -360,8 +360,10 @@ def test_accessor_build_help_data_output(accessor_with_methods):
     data = accessor_with_methods._build_help_data()
     assert isinstance(data, AccessorHelpData)
     assert data.title == "Mock accessor"
-    expected_root = f"{accessor_with_methods._parent.__class__.__name__}.mock_accessor"
+    expected_root = accessor_with_methods._parent.__class__.__name__
     assert data.root_node == expected_root
+    assert data.accessor_name == "mock_accessor"
+    assert data.accessor_branch_id != ""
     assert len(data.methods) == 1
     m = data.methods[0]
     assert m.name == "fetch"

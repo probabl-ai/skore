@@ -90,13 +90,17 @@ class _RichAccessorHelpMixin(_AccessorHelpDataMixin, _BaseRichHelpMixin):
         data = asdict(self._build_help_data())
         data["is_report"] = False
 
-        root_node_rich = f"[bold cyan]{data['root_node']}[/bold cyan]"
-        tree = Tree(root_node_rich)
+        tree = Tree(data["root_node"])
 
+        # Add accessor branch
+        accessor_name = data.get("accessor_name", "")
+        branch = tree.add(f"[bold cyan].{accessor_name}[/bold cyan]")
+
+        # Add methods under the accessor branch
         for method in data.get("methods", []):
             displayed_name = f"{method['name']}(...)"
             description = method["description"]
-            tree.add(f".{displayed_name}".ljust(26) + f" - {description}")
+            branch.add(f".{displayed_name}".ljust(26) + f" - {description}")
 
         return tree
 

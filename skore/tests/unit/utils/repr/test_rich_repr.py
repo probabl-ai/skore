@@ -107,10 +107,16 @@ def test_rich_report_help_mixin_tree_and_title(report_with_rich):
 
 
 def test_rich_accessor_help_mixin_tree_and_title(accessor_with_rich):
-    """_RichAccessorHelpMixin tree contains method entries and panel has title."""
+    """_RichAccessorHelpMixin tree contains root node, accessor branch, method entries and panel title."""
     panel = accessor_with_rich._create_help_panel()
     out = _render_panel(panel)
-    for expected in ("Mock accessor", "fetch", "mock_accessor"):
+    # Check for title, root node (parent class), accessor name, and method
+    for expected in (
+        "Mock accessor",
+        accessor_with_rich._parent.__class__.__name__,
+        "mock_accessor",
+        "fetch",
+    ):
         assert expected in out
 
 

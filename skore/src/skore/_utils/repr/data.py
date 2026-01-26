@@ -56,6 +56,8 @@ class ReportHelpData:
 class AccessorHelpData:
     title: str
     root_node: str
+    accessor_name: str
+    accessor_branch_id: str
     methods: list[MethodHelp]
 
 
@@ -482,7 +484,7 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
 
     def _build_help_data(self) -> AccessorHelpData:
         """Build data structure for Jinja2/Rich rendering for accessors."""
-        root_node = f"{self._parent.__class__.__name__}.{self._verbose_name}"
+        root_node = self._parent.__class__.__name__
         methods = [
             self._build_method_data(
                 name=name,
@@ -496,6 +498,8 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
         return AccessorHelpData(
             title=self._get_help_title(),
             root_node=root_node,
+            accessor_name=self._verbose_name,
+            accessor_branch_id=str(uuid.uuid4()),
             methods=methods,
         )
 

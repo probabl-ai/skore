@@ -64,11 +64,19 @@
                 <span class="label">{{ root_node }}</span>
             </div>
             <div class="root-content">
-                {% for method in methods %}
-                    <div class="node method">
-                        <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}</span></a>{{ method.parameters }}</span>
-                        </div>
-                {% endfor %}
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="name">.{{ accessor_name }}</span>
+                    </label>
+                    <div class="branch-content" id="{{ accessor_branch_id }}">
+                        {% for method in methods %}
+                            <div class="node method">
+                                <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}</span></a>{{ method.parameters }}</span>
+                                </div>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         {% endif %}
     </div>
