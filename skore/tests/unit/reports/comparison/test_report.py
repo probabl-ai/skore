@@ -7,9 +7,11 @@ import re
 from io import BytesIO
 
 import joblib
+import numpy as np
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
@@ -127,3 +129,107 @@ def test_pos_label_mismatch(report):
     err_msg = "Expected all estimators to have the same positive label."
     with pytest.raises(ValueError, match=err_msg):
         ComparisonReport(reports)
+
+
+def test_create_estimator_report_from_estimator_reports():
+    """Test creating an estimator report from a comparison report with
+    EstimatorReports."""
+    X, y = make_classification(random_state=42, n_samples=100)
+    X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
+        X, y, test_size=0.2, random_state=42, shuffle=False
+    )
+
+    estimators = {
+        "estimator_1": LinearSVC(random_state=42),
+        "estimator_2": LogisticRegression(random_state=42),
+    }
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_experiment, y_experiment, test_size=0.2, random_state=42, shuffle=False
+    )
+    comparison_report = ComparisonReport(
+        {
+            name: EstimatorReport(
+                est, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+            )
+            for name, est in estimators.items()
+        }
+    )
+
+    est_report = comparison_report.create_estimator_report("estimator_1")
+
+    assert isinstance(est_report, EstimatorReport)
+    assert est_report._parent_hash == comparison_report._hash
+    assert np.array_equal(est_report.X_train, X_experiment)
+    assert np.array_equal(est_report.y_train, y_experiment)
+
+    est_report_w_test = comparison_report.create_estimator_report(
+        "estimator_2", X_test=X_heldout, y_test=y_heldout
+    )
+
+    assert isinstance(est_report_w_test, EstimatorReport)
+    assert est_report_w_test._parent_hash == comparison_report._hash
+    assert np.array_equal(est_report_w_test.X_train, X_experiment)
+    assert np.array_equal(est_report_w_test.y_train, y_experiment)
+    assert np.array_equal(est_report_w_test.X_test, X_heldout)
+    assert np.array_equal(est_report_w_test.y_test, y_heldout)
+
+
+def test_create_estimator_report_from_cross_validation_reports():
+    """Test creating an estimator report from a comparison report with
+    CrossValidationReports."""
+    X, y = make_classification(random_state=42, n_samples=100)
+    X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
+        X, y, test_size=0.2, random_state=42, shuffle=False
+    )
+
+    estimators = {
+        "estimator_1": LinearSVC(random_state=42),
+        "estimator_2": LogisticRegression(random_state=42),
+    }
+
+    reports = {
+        name: CrossValidationReport(est, X=X_experiment, y=y_experiment, splitter=2)
+        for name, est in estimators.items()
+    }
+
+    comparison_report = ComparisonReport(reports)
+
+    est_report = comparison_report.create_estimator_report("estimator_1")
+
+    assert isinstance(est_report, EstimatorReport)
+    cv_report = comparison_report.reports_["estimator_1"]
+    assert est_report._parent_hash == cv_report._hash
+    assert np.array_equal(est_report.X_train, X_experiment)
+    assert np.array_equal(est_report.y_train, y_experiment)
+    assert est_report.X_test is None
+    assert est_report.y_test is None
+
+    est_report_w_test = comparison_report.create_estimator_report(
+        "estimator_2", X_test=X_heldout, y_test=y_heldout
+    )
+    cv_report = comparison_report.reports_["estimator_2"]
+
+    assert isinstance(est_report_w_test, EstimatorReport)
+    assert est_report_w_test._parent_hash == cv_report._hash
+    assert np.array_equal(est_report_w_test.X_train, X_experiment)
+    assert np.array_equal(est_report_w_test.y_train, y_experiment)
+    assert np.array_equal(est_report_w_test.X_test, X_heldout)
+    assert np.array_equal(est_report_w_test.y_test, y_heldout)
+
+
+def test_create_estimator_report_invalid_name():
+    """Test that an error is raised when an invalid estimator name is provided."""
+    X, y = make_classification(random_state=0)
+    estimators = {"LinearSVC": LinearSVC(), "LogisticRegression": LogisticRegression()}
+
+    reports = {
+        name: EstimatorReport(est, X_train=X, X_test=X, y_train=y, y_test=y)
+        for name, est in estimators.items()
+    }
+
+    comparison_report = ComparisonReport(reports)
+
+    err_msg = "Estimator name InvalidEstimator not found in the comparison report."
+    with pytest.raises(ValueError, match=err_msg):
+        comparison_report.create_estimator_report("InvalidEstimator")

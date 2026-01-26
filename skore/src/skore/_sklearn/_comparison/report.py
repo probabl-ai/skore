@@ -463,8 +463,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         estimator_report = self.reports_[estimator_name]
         return_report = EstimatorReport(
             estimator_report.estimator,
-            X_train=pd.concat([estimator_report._X_train, estimator_report._X_test]),
-            y_train=pd.concat([estimator_report._y_train, estimator_report._y_test]),
+            X_train=np.concatenate(
+                [estimator_report._X_train, estimator_report._X_test]
+            ),
+            y_train=np.concatenate(
+                [estimator_report._y_train, estimator_report._y_test]
+            ),
             X_test=X_test,
             y_test=y_test,
             pos_label=self._pos_label,

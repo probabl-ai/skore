@@ -10,6 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
@@ -255,3 +256,31 @@ def test_no_y():
     instance"""
     report = CrossValidationReport(KMeans(), X=np.random.rand(100, 5))
     assert isinstance(report, CrossValidationReport)
+
+
+def test_create_estimator_report(forest_binary_classification_data):
+    """Test the `create_estimator_report` method."""
+    estimator, X, y = forest_binary_classification_data
+    X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
+        X, y, test_size=0.2, random_state=42, shuffle=False
+    )
+    cv_report = CrossValidationReport(estimator, X_experiment, y_experiment, splitter=2)
+    est_report = cv_report.create_estimator_report()
+
+    assert isinstance(est_report, EstimatorReport)
+    assert est_report._parent_hash == cv_report._hash
+    assert np.array_equal(est_report.X_train, X_experiment)
+    assert np.array_equal(est_report.y_train, y_experiment)
+    assert est_report.X_test is None
+    assert est_report.y_test is None
+    assert est_report.pos_label == cv_report.pos_label
+
+    est_report_with_test = cv_report.create_estimator_report(X_heldout, y_heldout)
+
+    assert isinstance(est_report_with_test, EstimatorReport)
+    assert est_report_with_test._parent_hash == cv_report._hash
+    assert np.array_equal(est_report_with_test.X_train, X_experiment)
+    assert np.array_equal(est_report_with_test.y_train, y_experiment)
+    assert np.array_equal(est_report_with_test.X_test, X_heldout)
+    assert np.array_equal(est_report_with_test.y_test, y_heldout)
+    assert est_report_with_test.pos_label == cv_report.pos_label
