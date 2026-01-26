@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 import joblib
 import numpy as np
-import pandas as pd
 from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
