@@ -153,18 +153,15 @@
     color: var(--color-blue);
 }
 
-.toggle:checked + .branch-label + .branch-content {
-    display: block;
-}
-
-.toggle:not(:checked) + .branch-label + .branch-content {
-    display: none;
-}
-
 .branch-content {
     margin-left: 16px;
     position: relative;
     padding-left: 0;
+    display: none;
+}
+
+.branch-label:has(.toggle:checked) + .branch-content {
+    display: block;
 }
 
 /* Vertical lines for items inside branch content */

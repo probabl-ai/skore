@@ -14,7 +14,6 @@ from skore._externals._sklearn_compat import parse_version
 
 @dataclass
 class HelpSection:
-    id: str
     branch_id: str
 
 
@@ -36,7 +35,6 @@ class AttributeHelp:
 
 @dataclass
 class AccessorBranchHelp:
-    id: str
     branch_id: str
     name: str
     methods: list[MethodHelp]
@@ -385,7 +383,7 @@ class _BaseHelpDataMixin(ABC):
         items : list of AttributeHelp or None
             The attribute help entries, or ``None`` if no attributes.
         section : HelpSection or None
-            Section id and branch_id for the attributes block, or ``None``.
+            Section branch_id for the attributes block, or ``None``.
         """
         attributes = get_public_attributes(self)
         if not attributes:
@@ -405,7 +403,7 @@ class _BaseHelpDataMixin(ABC):
             )
             for attr_name in attrs_without_underscore + attrs_with_underscore
         ]
-        section = HelpSection(id=str(uuid.uuid4()), branch_id=str(uuid.uuid4()))
+        section = HelpSection(branch_id=str(uuid.uuid4()))
         return items, section
 
 
@@ -438,7 +436,6 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
             ]
             accessors.append(
                 AccessorBranchHelp(
-                    id=str(uuid.uuid4()),
                     branch_id=str(uuid.uuid4()),
                     name=config["name"],
                     methods=methods,
@@ -448,9 +445,7 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
         base_methods_raw = get_public_methods(self)
         methods_section, base_methods = None, []
         if base_methods_raw:
-            methods_section = HelpSection(
-                id=str(uuid.uuid4()), branch_id=str(uuid.uuid4())
-            )
+            methods_section = HelpSection(branch_id=str(uuid.uuid4()))
             base_methods = [
                 self._build_method_data(
                     name=name,
@@ -520,9 +515,7 @@ class _DisplayHelpDataMixin(_BaseHelpDataMixin):
         methods_raw = get_public_methods(self)
         methods_section, methods = None, []
         if methods_raw:
-            methods_section = HelpSection(
-                id=str(uuid.uuid4()), branch_id=str(uuid.uuid4())
-            )
+            methods_section = HelpSection(branch_id=str(uuid.uuid4()))
             methods = [
                 self._build_method_data(
                     name=name,

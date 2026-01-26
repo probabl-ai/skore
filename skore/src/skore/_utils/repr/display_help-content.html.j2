@@ -9,8 +9,8 @@
             {# Methods section #}
             {% if methods %}
                 <div class="node branch">
-                    <input type="checkbox" id="{{ methods_section.id }}" class="toggle">
-                    <label for="{{ methods_section.id }}" class="branch-label">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
                         <span class="section-name">Methods</span>
                     </label>
                     <div class="branch-content" id="{{ methods_section.branch_id }}">
@@ -26,8 +26,8 @@
             {# Attributes section #}
             {% if attributes %}
                 <div class="node branch">
-                    <input type="checkbox" id="{{ attributes_section.id }}" class="toggle">
-                    <label for="{{ attributes_section.id }}" class="branch-label">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
                         <span class="section-name">Attributes</span>
                     </label>
                     <div class="branch-content" id="{{ attributes_section.branch_id }}">
