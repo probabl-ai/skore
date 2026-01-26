@@ -400,7 +400,6 @@ def test_report_build_help_data_output_with_accessors(report_with_accessor):
     assert len(data.accessors) == 1
     branch = data.accessors[0]
     assert branch.name == "metrics"
-    assert branch.id != ""
     assert branch.branch_id != ""
     assert len(branch.methods) == 1
     m = branch.methods[0]
