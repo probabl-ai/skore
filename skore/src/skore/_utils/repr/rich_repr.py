@@ -92,11 +92,9 @@ class _RichAccessorHelpMixin(_AccessorHelpDataMixin, _BaseRichHelpMixin):
 
         tree = Tree(data["root_node"])
 
-        # Add accessor branch
         accessor_name = data.get("accessor_name", "")
         branch = tree.add(f"[bold cyan].{accessor_name}[/bold cyan]")
 
-        # Add methods under the accessor branch
         for method in data.get("methods", []):
             displayed_name = f"{method['name']}(...)"
             description = method["description"]
