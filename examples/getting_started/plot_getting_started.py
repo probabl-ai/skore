@@ -126,13 +126,13 @@ simple_cv_report.data.analyze()
 # using :meth:`~skore.CrossValidation.metrics.summarize`:
 
 # %%
-simple_metrics = simple_cv_report.metrics.summarize(indicator_favorability=True)
+simple_metrics = simple_cv_report.metrics.summarize(favorability=True)
 simple_metrics.frame()
 
 # %%
 # .. note::
 #
-#     `indicator_favorability=True` adds a "Favorability" column showing whether higher or lower values are better.
+#     `favorability=True` adds a "Favorability" column showing whether higher or lower values are better.
 
 # %%
 # More complex metrics are available, such as the precision-recall curve:
