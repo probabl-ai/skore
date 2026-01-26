@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._sklearn.types import MLTask
-from skore.project.summary import Summary
+from skore.project._summary import Summary
 
 
 class Project:
@@ -136,8 +136,8 @@ class Project:
 
     See Also
     --------
-    :class:`~skore.project.summary.Summary` :
-        DataFrame designed to investigate persisted reports' metadata/metrics.
+    :meth:`Project.summarize` :
+        Create a summary view to investigate persisted reports' metadata/metrics.
     """
 
     __HUB_NAME_PATTERN = re.compile(r"hub://(?P<workspace>[^/]+)/(?P<name>.+)")

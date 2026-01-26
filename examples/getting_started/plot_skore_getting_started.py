@@ -303,8 +303,8 @@ my_project.put("my_estimator_report", gb_report)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# We can retrieve the data in the project in the form of a
-# :class:`~skore.project.summary.Summary` object:
+# We can retrieve the data in the project as a summary object
+# by calling the ``summarize`` method:
 
 # %%
 summary = my_project.summarize()

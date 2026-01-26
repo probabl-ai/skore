@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import pytest
 
-from skore.project.widget import ModelExplorerWidget
+from skore.project._widget import ModelExplorerWidget
 
 
 @pytest.fixture
