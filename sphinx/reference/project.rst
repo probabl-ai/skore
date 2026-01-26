@@ -29,7 +29,7 @@ Skore project's summary
 
 When calling :meth:`Project.summarize`, returns a summary table as a
 :class:`pandas.DataFrame` with a specific HTML representation to allow
-you filter and retrieve the reports.
+you to filter and retrieve the reports.
 
 The returned object is not intended to be instantiated or imported directly.
 Always use :meth:`Project.summarize`.
