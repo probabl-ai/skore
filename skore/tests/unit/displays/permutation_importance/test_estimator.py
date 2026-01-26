@@ -4,10 +4,10 @@ import pytest
 from sklearn.base import clone
 from sklearn.metrics import (
     make_scorer,
-    precision_score,
-    recall_score,
-    r2_score,
     mean_squared_error,
+    precision_score,
+    r2_score,
+    recall_score,
 )
 from sklearn.utils._testing import _convert_container
 
@@ -297,19 +297,16 @@ def test_multi_output_regression(
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_None(
+def test_subplot_by_None_single_metric_single_value(
     pyplot,
     logistic_binary_classification_with_train_test,
-    logistic_multiclass_classification_with_train_test,
-    linear_regression_multioutput_with_train_test,
     data_source,
 ):
-    """Check the behaviour of the `subplot_by=None` with single or multiple
-    scores values."""
+    """Check the behaviour of `subplot_by=None` with a single metric returning
+    a single value."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
-    # case where there is a single metric returning a single value
     columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
     X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
     X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
@@ -319,12 +316,22 @@ def test_subplot_by_None(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.permutation(n_repeats=2, data_source=data_source)
+    display = report.feature_importance.permutation(
+        n_repeats=2, data_source=data_source
+    )
     display.plot(subplot_by=None)
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert len(display.facet_.legend.get_texts()) == 0
 
-    # case allowing to group by label when a single metric returns multiple values
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_None_single_metric_multiple_labels(
+    pyplot,
+    logistic_multiclass_classification_with_train_test,
+    data_source,
+):
+    """Check the behaviour of `subplot_by=None` with a single metric returning
+    multiple values grouped by label."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_multiclass_classification_with_train_test
     )
@@ -348,7 +355,27 @@ def test_subplot_by_None(
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(label) for label in report.estimator_.classes_]
 
-    # case allowing to group by the metric that returns a single value
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_None_multiple_metrics_single_value(
+    pyplot,
+    logistic_binary_classification_with_train_test,
+    data_source,
+):
+    """Check the behaviour of `subplot_by=None` with multiple metrics returning
+    single values grouped by metric."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    estimator = clone(estimator)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
     metric = {
         "precision": make_scorer(precision_score, average="macro"),
         "recall": make_scorer(recall_score, average="macro"),
@@ -363,7 +390,15 @@ def test_subplot_by_None(
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == list(metric.keys())
 
-    # case allowing to group by output when a single metric returns multiple values
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_None_single_metric_multiple_outputs(
+    pyplot,
+    linear_regression_multioutput_with_train_test,
+    data_source,
+):
+    """Check the behaviour of `subplot_by=None` with a single metric returning
+    multiple values grouped by output."""
     estimator, X_train, X_test, y_train, y_test = (
         linear_regression_multioutput_with_train_test
     )
@@ -387,9 +422,27 @@ def test_subplot_by_None(
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(output) for output in range(y_train.shape[1])]
 
-    # case where we should raise an error because there is too much information to plot
-    # when subplot_by is None
-    # multiple metrics with multiple-outputs
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_None_multiple_metrics_multiple_outputs_raises_error(
+    pyplot,
+    linear_regression_multioutput_with_train_test,
+    data_source,
+):
+    """Check that `subplot_by=None` raises an error when there are multiple metrics
+    with multiple outputs."""
+    estimator, X_train, X_test, y_train, y_test = (
+        linear_regression_multioutput_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    estimator = clone(estimator)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
     metric = {
         "r2": make_scorer(r2_score, multioutput="raw_values"),
         "mse": make_scorer(mean_squared_error, multioutput="raw_values"),
@@ -403,17 +456,13 @@ def test_subplot_by_None(
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_auto(
+def test_subplot_by_auto_single_metric_single_target_classification(
     pyplot,
     logistic_binary_classification_with_train_test,
-    logistic_multiclass_classification_with_train_test,
-    linear_regression_with_train_test,
-    linear_regression_multioutput_with_train_test,
     data_source,
 ):
-    """Check the behaviour of the `subplot_by="auto"` with different combinations
-    of metrics and targets for classification and regression."""
-    # Case 1: Single metric, single target (no hue, no col, no row)
+    """Check the behaviour of `subplot_by="auto"` with a single metric and
+    single target for classification (no hue, no col, no row)."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -432,7 +481,15 @@ def test_subplot_by_auto(
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert len(display.facet_.legend.get_texts()) == 0
 
-    # Regression with single metric
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_auto_single_metric_single_target_regression(
+    pyplot,
+    linear_regression_with_train_test,
+    data_source,
+):
+    """Check the behaviour of `subplot_by="auto"` with a single metric and
+    single target for regression (no hue, no col, no row)."""
     estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
     X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
@@ -449,8 +506,15 @@ def test_subplot_by_auto(
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert len(display.facet_.legend.get_texts()) == 0
 
-    # Case 2: Multiple metrics, single target (col=metric, no hue, no row)
-    # Classification with multiple averaged metrics
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_auto_multiple_metrics_single_target_classification(
+    pyplot,
+    logistic_binary_classification_with_train_test,
+    data_source,
+):
+    """Check the behaviour of `subplot_by="auto"` with multiple metrics and
+    single target for classification (col=metric, no hue, no row)."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -481,7 +545,15 @@ def test_subplot_by_auto(
         # If legend exists, it should be empty (no text entries)
         assert len(legend.get_texts()) == 0
 
-    # Regression with multiple metrics
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_auto_multiple_metrics_single_target_regression(
+    pyplot,
+    linear_regression_with_train_test,
+    data_source,
+):
+    """Check the behaviour of `subplot_by="auto"` with multiple metrics and
+    single target for regression (col=metric, no hue, no row)."""
     estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
     X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
@@ -509,8 +581,15 @@ def test_subplot_by_auto(
         # If legend exists, it should be empty (no text entries)
         assert len(legend.get_texts()) == 0
 
-    # Case 3: Single metric, multiple labels (hue=label, no col, no row)
-    # Classification with per-label metric
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_auto_single_metric_multiple_labels(
+    pyplot,
+    logistic_multiclass_classification_with_train_test,
+    data_source,
+):
+    """Check the behaviour of `subplot_by="auto"` with a single metric and
+    multiple labels (hue=label, no col, no row)."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_multiclass_classification_with_train_test
     )
@@ -534,8 +613,15 @@ def test_subplot_by_auto(
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(label) for label in report.estimator_.classes_]
 
-    # Case 4: Single metric, multiple outputs (hue=output, no col, no row)
-    # Regression with multi-output metric
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_auto_single_metric_multiple_outputs(
+    pyplot,
+    linear_regression_multioutput_with_train_test,
+    data_source,
+):
+    """Check the behaviour of `subplot_by="auto"` with a single metric and
+    multiple outputs (hue=output, no col, no row)."""
     estimator, X_train, X_test, y_train, y_test = (
         linear_regression_multioutput_with_train_test
     )
@@ -559,8 +645,15 @@ def test_subplot_by_auto(
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(output) for output in range(y_train.shape[1])]
 
-    # Case 5: Multiple metrics, multiple labels (hue=label, col=metric, no row)
-    # Classification with multiple per-label metrics
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_auto_multiple_metrics_multiple_labels(
+    pyplot,
+    logistic_multiclass_classification_with_train_test,
+    data_source,
+):
+    """Check the behaviour of `subplot_by="auto"` with multiple metrics and
+    multiple labels (hue=label, col=metric, no row)."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_multiclass_classification_with_train_test
     )
@@ -577,7 +670,7 @@ def test_subplot_by_auto(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.feature_importance.permutation(
-        n_repeats=2, data_source="train", metric=metric
+        n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by="auto")
     assert isinstance(display.ax_, np.ndarray)
@@ -591,8 +684,15 @@ def test_subplot_by_auto(
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(label) for label in report.estimator_.classes_]
 
-    # Case 6: Multiple metrics, multiple outputs (hue=output, col=metric, no row)
-    # Regression with multiple multi-output metrics
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_auto_multiple_metrics_multiple_outputs(
+    pyplot,
+    linear_regression_multioutput_with_train_test,
+    data_source,
+):
+    """Check the behaviour of `subplot_by="auto"` with multiple metrics and
+    multiple outputs (hue=output, col=metric, no row)."""
     estimator, X_train, X_test, y_train, y_test = (
         linear_regression_multioutput_with_train_test
     )
