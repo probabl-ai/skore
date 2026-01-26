@@ -760,3 +760,206 @@ def test_subplot_by_auto_multiple_metrics_multiple_outputs(
         display.figure_.get_suptitle()
         == f"Permutation importance of {report.estimator_name_} on {data_source} set"
     )
+
+
+def test_subplot_by_invalid_column_raises_error(
+    pyplot,
+    linear_regression_with_train_test,
+):
+    """Check that using an invalid column name for `subplot_by` raises an error."""
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    estimator = clone(estimator)
+    metric = {
+        "r2": make_scorer(r2_score),
+        "mse": make_scorer(mean_squared_error),
+    }
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.feature_importance.permutation(n_repeats=2, metric=metric)
+    err_msg = (
+        "The column label is not available. You can use the following values to "
+        "create subplots: metric"
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="label")
+
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_string_multiple_metrics_multiclass_with_remaining_column(
+    pyplot,
+    logistic_multiclass_classification_with_train_test,
+    data_source,
+):
+    """Check that when subplot_by is a string and there's a remaining column,
+    it becomes the hue (multiple metrics + multiclass case)."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    estimator = clone(estimator)
+    metric = {
+        "precision": make_scorer(precision_score, average=None),
+        "recall": make_scorer(recall_score, average=None),
+    }
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.feature_importance.permutation(
+        n_repeats=2, data_source=data_source, metric=metric
+    )
+    display.plot(subplot_by="metric")
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_.flatten()) == len(metric)
+    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
+        assert isinstance(ax, mpl.axes.Axes)
+        assert ax.get_title() == f"metric = {metric_name}"
+    legend = display.facet_.legend
+    assert legend is not None
+    legend_labels = [text.get_text() for text in legend.get_texts()]
+    assert legend_labels == [str(label) for label in report.estimator_.classes_]
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
+
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_string_multiple_metrics_binary_class_no_remaining_column(
+    pyplot,
+    logistic_binary_classification_with_train_test,
+    data_source,
+):
+    """Check that when subplot_by is a string and there's no remaining column,
+    hue is None (multiple metrics + binary class case)."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    estimator = clone(estimator)
+    metric = {
+        "precision": make_scorer(precision_score, average="macro"),
+        "recall": make_scorer(recall_score, average="macro"),
+    }
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.feature_importance.permutation(
+        n_repeats=2, data_source=data_source, metric=metric
+    )
+    display.plot(subplot_by="metric")
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_.flatten()) == len(metric)
+    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
+        assert isinstance(ax, mpl.axes.Axes)
+        assert ax.get_title() == f"metric = {metric_name}"
+        assert ax.get_xlabel() == f"Decrease of {metric_name}"
+    assert len(display.facet_.legend.get_texts()) == 0
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
+
+
+def test_subplot_by_invalid_tuple_columns_raises_error(
+    pyplot,
+    linear_regression_with_train_test,
+):
+    """Check that using a tuple with invalid column names for `subplot_by` raises an
+    error."""
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    estimator = clone(estimator)
+    metric = {
+        "r2": make_scorer(r2_score),
+        "mse": make_scorer(mean_squared_error),
+    }
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.feature_importance.permutation(n_repeats=2, metric=metric)
+    err_msg = (
+        r"The columns \('metric', 'label'\) are not available\. You can use the "
+        r"following values to create subplots: metric"
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by=("metric", "label"))
+
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+@pytest.mark.parametrize(
+    "subplot_by",
+    [
+        ("metric", "label"),
+        ("label", "metric"),
+    ],
+)
+def test_subplot_by_tuple_order_determines_row_and_col(
+    pyplot,
+    logistic_multiclass_classification_with_train_test,
+    data_source,
+    subplot_by,
+):
+    """Check that the order of the tuple in `subplot_by` determines which column
+    goes to row and which goes to col, verified by checking subplot titles."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    estimator = clone(estimator)
+    metric = {
+        "precision": make_scorer(precision_score, average=None),
+        "recall": make_scorer(recall_score, average=None),
+    }
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.feature_importance.permutation(
+        n_repeats=2, data_source=data_source, metric=metric
+    )
+    display.plot(subplot_by=subplot_by)
+    assert isinstance(display.ax_, np.ndarray)
+
+    # Get row and column names from tuple
+    row_col_name = subplot_by[0]  # First element goes to row
+    col_col_name = subplot_by[1]  # Second element goes to col
+
+    if row_col_name == "metric":
+        row_values = list(metric.keys())
+    else:  # row_col_name == "label"
+        row_values = [str(label) for label in report.estimator_.classes_]
+
+    if col_col_name == "metric":
+        col_values = list(metric.keys())
+    else:  # col_col_name == "label"
+        col_values = [str(label) for label in report.estimator_.classes_]
+
+    for row_idx, row_value in enumerate(row_values):
+        for col_idx, col_value in enumerate(col_values):
+            ax = display.ax_[row_idx, col_idx]
+            assert isinstance(ax, mpl.axes.Axes)
+            expected_title = (
+                f"{row_col_name} = {row_value} | {col_col_name} = {col_value}"
+            )
+            assert ax.get_title() == expected_title
+
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
