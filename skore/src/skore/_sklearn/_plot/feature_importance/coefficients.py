@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -85,171 +85,87 @@ class CoefficientsDisplay(DisplayMixin):
         self.report_type = report_type
 
     def _get_grouping_columns(self, frame: pd.DataFrame) -> list[str]:
-        """Get columns to group by for feature selection/sorting."""
+        """Get columns to group by for feature selection or sorting."""
         group_cols = []
-
-        if self.report_type not in ("estimator", "cross-validation"):
-            # For comparison reports, always group by estimator first
+        if "comparison" in self.report_type:
             group_cols.append("estimator")
-
         for col in ("label", "output"):
             if col in frame.columns and not frame[col].isna().all():
-                # Add label/output if present and not all NaN
                 group_cols.append(col)
-                break  # Only one of label/output will be present
-
+                break
         return group_cols
 
-    def _compute_feature_scores(self, group: pd.DataFrame, is_cv: bool) -> pd.Series:
-        """Compute feature importance scores.
-
-        Parameters
-        ----------
-        group : pd.DataFrame
-            Group of data to compute scores for.
-        is_cv : bool
-            Whether this is cross-validation data (has 'split' column).
-
-        Returns
-        -------
-        pd.Series
-            Series with feature names as index and scores as values.
-        """
-        if is_cv:
-            # For CV: compute mean absolute coefficient across splits
-            return group.groupby("feature")["coefficients"].apply(
-                lambda x: x.abs().mean()
-            )
-        else:
-            # For non-CV: use absolute coefficient values directly
-            if "feature" in group.index.names:
-                return group["coefficients"].abs()
-            else:  # Group by feature in case there are duplicates
-                return group.set_index("feature")["coefficients"].abs()
-
-    def _select_features_from_group(
-        self, group: pd.DataFrame, select_k: int
+    def _select_k_features_in_group(
+        self, frame: pd.DataFrame, select_k: int
     ) -> pd.DataFrame:
-        """Select top k or bottom k features from a group.
+        coefs = frame.groupby("feature")["coefficients"]
 
-        Parameters
-        ----------
-        group : pd.DataFrame
-            Group of data to select features from.
-        select_k : int
-            Number of features to select (positive for top, negative for bottom).
+        if "split" in frame:
+            # Cross-validation
+            scores = coefs.apply(lambda x: x.abs().mean())
+        else:
+            scores = coefs.first().abs()
+        scores = cast(pd.Series, scores)
 
-        Returns
-        -------
-        pd.DataFrame
-            Filtered group with only selected features.
-        """
-        is_cv = "split" in group.columns
-        scores = self._compute_feature_scores(group, is_cv)
-
-        # Select features based on sign of select_k
-        k = abs(select_k)
-        if k > len(scores):
-            import warnings
-
-            warnings.warn(
-                f"Requested {k} features but only {len(scores)} features available. "
-                f"Showing all {len(scores)} features.",
-                UserWarning,
-                stacklevel=2,
-            )
-            k = len(scores)
         if select_k > 0:
-            selected_features = scores.nlargest(k).index
+            selected_features = scores.nlargest(abs(select_k)).index
         else:
-            selected_features = scores.nsmallest(k).index
+            selected_features = scores.nsmallest(abs(select_k)).index
 
-        # Filter group to selected features
-        if is_cv:
-            return group[group["feature"].isin(selected_features)]
-        else:
-            if "feature" in group.index.names:
-                return group[group.index.isin(selected_features)]
-            else:
-                return group[group["feature"].isin(selected_features)]
+        return frame[frame["feature"].isin(selected_features)]
 
     def _sort_features_in_group(
         self,
-        group: pd.DataFrame,
+        frame: pd.DataFrame,
         sorting_order: Literal["descending", "ascending"],
     ) -> pd.DataFrame:
-        """Sort features in a group by absolute coefficient values.
-
-        Parameters
-        ----------
-        group : pd.DataFrame
-            Group of data to sort.
-        ascending : bool
-            Whether to sort in ascending order.
-
-        Returns
-        -------
-        pd.DataFrame
-            Sorted group.
-        """
-        is_cv = "split" in group.columns
         ascending = sorting_order == "ascending"
-
-        if is_cv:
-            # Sort by mean absolute coefficient across splits
-            scores = self._compute_feature_scores(group, is_cv)
-            feature_order = scores.sort_values(ascending=ascending).index
-            return group.set_index("feature").loc[feature_order].reset_index()
-        else:
-            # Sort by individual absolute coefficient values
-            return group.sort_values(
-                by="coefficients", key=lambda s: s.abs(), ascending=ascending
+        if "split" in frame:
+            # Cross-validation
+            scores = frame.groupby("feature")["coefficients"].apply(
+                lambda x: x.abs().mean()
             )
+            scores = cast(pd.Series, scores)
+            feature_order = scores.sort_values(ascending=ascending).index
+            return frame.set_index("feature").loc[feature_order].reset_index()
 
-    def _apply_groupwise_operation(
-        self, frame: pd.DataFrame, operation: Literal["select", "sort"], **kwargs
-    ) -> pd.DataFrame:
-        """Apply an operation (select or sort) to groups in the dataframe.
+        return frame.sort_values(
+            by="coefficients",
+            key=lambda s: s.abs(),
+            ascending=ascending,
+        )
 
-        Parameters
-        ----------
-        frame : pd.DataFrame
-            The dataframe to operate on.
-        operation : {"select", "sort"}
-            The operation to apply.
-        **kwargs
-            Additional arguments for the operation:
-            - For "select": select_k (int)
-            - For "sort": ascending (bool)
-
-        Returns
-        -------
-        pd.DataFrame
-            Dataframe with operation applied.
-        """
+    def _select_k_features(self, frame: pd.DataFrame, select_k: int) -> pd.DataFrame:
+        """Select top-k or bottom-k features based on absolute coefficient values."""
         group_cols = self._get_grouping_columns(frame)
 
-        # Define the operation function
-        if operation == "select":
-            select_k = kwargs["select_k"]
+        if not group_cols:
+            return self._select_k_features_in_group(frame, select_k)
 
-            def op_func(group: pd.DataFrame) -> pd.DataFrame:
-                return self._select_features_from_group(group, select_k)
-        elif operation == "sort":
-            sorting_order = kwargs["sorting_order"]
+        return pd.concat(
+            [
+                self._select_k_features_in_group(group, select_k)
+                for _, group in frame.groupby(group_cols, observed=True)
+            ],
+            ignore_index=True,
+        )
 
-            def op_func(group: pd.DataFrame) -> pd.DataFrame:
-                return self._sort_features_in_group(group, sorting_order)
-        else:
-            raise ValueError(f"Unknown operation: {operation}")
+    def _sort_features(
+        self, frame: pd.DataFrame, sorting_order: Literal["descending", "ascending"]
+    ) -> pd.DataFrame:
+        """Sort features by absolute coefficient values."""
+        group_cols = self._get_grouping_columns(frame)
 
-        # Apply operation with or without grouping
-        if group_cols:
-            return frame.groupby(group_cols, group_keys=False, observed=True).apply(
-                op_func
-            )
-        else:
-            return op_func(frame)
+        if not group_cols:
+            return self._sort_features_in_group(frame, sorting_order=sorting_order)
+
+        return pd.concat(
+            [
+                self._sort_features_in_group(group, sorting_order=sorting_order)
+                for _, group in frame.groupby(group_cols, observed=True)
+            ],
+            ignore_index=True,
+        )
 
     def frame(
         self,
@@ -362,17 +278,11 @@ class CoefficientsDisplay(DisplayMixin):
         if not include_intercept:
             coefficients = coefficients.query("feature != 'Intercept'")
 
-        # Apply feature selection if requested
         if select_k is not None:
-            coefficients = self._apply_groupwise_operation(
-                coefficients, operation="select", select_k=select_k
-            )
+            coefficients = self._select_k_features(coefficients, select_k)
 
-        # Apply sorting if requested
         if sorting_order is not None:
-            coefficients = self._apply_groupwise_operation(
-                coefficients, operation="sort", sorting_order=sorting_order
-            )
+            coefficients = self._sort_features(coefficients, sorting_order)
 
         return coefficients
 
