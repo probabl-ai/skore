@@ -330,6 +330,11 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
             data_source=data_source, X=X, y=y
         )
+        if y_true is None:
+            raise ValueError(
+                "The target should be provided when computing the permutation "
+                "importance."
+            )
 
         # NOTE: to temporary improve the `project.put` UX, we always store the
         # permutation importance into the cache dictionary even when seed is None.

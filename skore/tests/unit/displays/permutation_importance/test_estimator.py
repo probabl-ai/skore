@@ -68,7 +68,7 @@ def test_binary_classification_averaged_metrics(
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
 
-    assert display.ax_.get_xlabel() == "Decrease of score"
+    assert display.ax_.get_xlabel() == "Decrease of accuracy"
     assert display.ax_.get_ylabel() == ""
     estimator_name = display.importances["estimator"].unique()[0]
     assert (
@@ -146,7 +146,7 @@ def test_binary_classification_per_label_metrics(
     for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
         assert isinstance(ax, mpl.axes.Axes)
 
-        assert ax.get_xlabel() == "Decrease of score"
+        assert ax.get_xlabel() == f"Decrease of {metric_name}"
         assert ax.get_ylabel() == ""
         assert ax.get_title() == f"metric = {metric_name}"
     estimator_name = display.importances["estimator"].unique()[0]
@@ -208,7 +208,7 @@ def test_single_output_regression(
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
 
-    assert display.ax_.get_xlabel() == "Decrease of score"
+    assert display.ax_.get_xlabel() == "Decrease of r2"
     assert display.ax_.get_ylabel() == ""
     estimator_name = display.importances["estimator"].unique()[0]
     assert (
@@ -286,7 +286,7 @@ def test_multi_output_regression(
     for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
         assert isinstance(ax, mpl.axes.Axes)
 
-        assert ax.get_xlabel() == "Decrease of score"
+        assert ax.get_xlabel() == f"Decrease of {metric_name}"
         assert ax.get_ylabel() == ""
         assert ax.get_title() == f"metric = {metric_name}"
     estimator_name = display.importances["estimator"].unique()[0]
@@ -322,6 +322,11 @@ def test_subplot_by_None_single_metric_single_value(
     display.plot(subplot_by=None)
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert len(display.facet_.legend.get_texts()) == 0
+    assert display.ax_.get_xlabel() == "Decrease of accuracy"
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -354,6 +359,7 @@ def test_subplot_by_None_single_metric_multiple_labels(
     assert legend is not None
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(label) for label in report.estimator_.classes_]
+    assert display.ax_.get_xlabel() == "Decrease of precision score"
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -376,10 +382,7 @@ def test_subplot_by_None_multiple_metrics_single_value(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    metric = {
-        "precision": make_scorer(precision_score, average="macro"),
-        "recall": make_scorer(recall_score, average="macro"),
-    }
+    metric = ["precision", "recall"]
     display = report.feature_importance.permutation(
         n_repeats=2, data_source=data_source, metric=metric
     )
@@ -388,7 +391,12 @@ def test_subplot_by_None_multiple_metrics_single_value(
     legend = display.facet_.legend
     assert legend is not None
     legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == list(metric.keys())
+    assert legend_labels == metric
+    assert display.ax_.get_xlabel() == "Decrease of metric"
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -421,6 +429,11 @@ def test_subplot_by_None_single_metric_multiple_outputs(
     assert legend is not None
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(output) for output in range(y_train.shape[1])]
+    assert display.ax_.get_xlabel() == "Decrease of r2 score"
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -480,6 +493,11 @@ def test_subplot_by_auto_single_metric_single_target_classification(
     display.plot(subplot_by="auto")
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert len(display.facet_.legend.get_texts()) == 0
+    assert display.ax_.get_xlabel() == "Decrease of accuracy"
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -505,6 +523,11 @@ def test_subplot_by_auto_single_metric_single_target_regression(
     display.plot(subplot_by="auto")
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert len(display.facet_.legend.get_texts()) == 0
+    assert display.ax_.get_xlabel() == "Decrease of r2"
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -539,11 +562,12 @@ def test_subplot_by_auto_multiple_metrics_single_target_classification(
     for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
         assert isinstance(ax, mpl.axes.Axes)
         assert ax.get_title() == f"metric = {metric_name}"
-    # No legend when there's no hue (or legend exists but has no entries)
-    legend = display.facet_.legend
-    if legend is not None:
-        # If legend exists, it should be empty (no text entries)
-        assert len(legend.get_texts()) == 0
+        assert ax.get_xlabel() == f"Decrease of {metric_name}"
+    assert len(display.facet_.legend.get_texts()) == 0
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -576,10 +600,12 @@ def test_subplot_by_auto_multiple_metrics_single_target_regression(
     for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
         assert isinstance(ax, mpl.axes.Axes)
         assert ax.get_title() == f"metric = {metric_name}"
-    legend = display.facet_.legend
-    if legend is not None:
-        # If legend exists, it should be empty (no text entries)
-        assert len(legend.get_texts()) == 0
+        assert ax.get_xlabel() == f"Decrease of {metric_name}"
+    assert len(display.facet_.legend.get_texts()) == 0
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -607,11 +633,14 @@ def test_subplot_by_auto_single_metric_multiple_labels(
     )
     display.plot(subplot_by="auto")
     assert isinstance(display.ax_, mpl.axes.Axes)
-    # Legend should contain labels
     legend = display.facet_.legend
-    assert legend is not None
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(label) for label in report.estimator_.classes_]
+    assert display.ax_.get_xlabel() == "Decrease of precision score"
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -639,11 +668,14 @@ def test_subplot_by_auto_single_metric_multiple_outputs(
     )
     display.plot(subplot_by="auto")
     assert isinstance(display.ax_, mpl.axes.Axes)
-    # Legend should contain outputs
     legend = display.facet_.legend
-    assert legend is not None
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(output) for output in range(y_train.shape[1])]
+    assert display.ax_.get_xlabel() == "Decrease of r2 score"
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -678,11 +710,14 @@ def test_subplot_by_auto_multiple_metrics_multiple_labels(
     for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
         assert isinstance(ax, mpl.axes.Axes)
         assert ax.get_title() == f"metric = {metric_name}"
-    # Legend should contain labels
+        assert ax.get_xlabel() == f"Decrease of {metric_name}"
     legend = display.facet_.legend
-    assert legend is not None
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(label) for label in report.estimator_.classes_]
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -717,8 +752,11 @@ def test_subplot_by_auto_multiple_metrics_multiple_outputs(
     for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
         assert isinstance(ax, mpl.axes.Axes)
         assert ax.get_title() == f"metric = {metric_name}"
-    # Legend should contain outputs
+        assert ax.get_xlabel() == f"Decrease of {metric_name}"
     legend = display.facet_.legend
-    assert legend is not None
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(output) for output in range(y_train.shape[1])]
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+    )

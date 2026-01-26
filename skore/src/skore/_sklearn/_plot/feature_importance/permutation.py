@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -76,14 +76,15 @@ class PermutationImportanceDisplay(DisplayMixin):
         if "importances" in scores:
             # single metric case -> switch to multi-metric case by wrapping in a dict
             # with the name of the metric
+            metric = cast(str | Callable | _BaseScorer | None, metric)
             if metric is None:
                 metric_name = "accuracy" if is_classifier(estimator) else "r2"
             elif isinstance(metric, str):
                 metric_name = metric
             elif isinstance(metric, _BaseScorer):
-                metric_name = metric._score_func.__name__
+                metric_name = metric._score_func.__name__.replace("_", " ")
             else:
-                metric_name = metric.__name__
+                metric_name = metric.__name__.replace("_", " ")
             scores = {metric_name: scores}
 
         df_importances = []
@@ -227,7 +228,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             if n_columns_to_groupby > 1:
                 raise ValueError(
                     "Cannot plot all the available information available on a single "
-                    "plot. Please set `subplot_by` to a string or a tuple of strings."
+                    "plot. Please set `subplot_by` to a string or a tuple of strings. "
                     "You can use the following values to create subplots: "
                     f"{', '.join(columns_to_groupby)}"
                 )
@@ -274,6 +275,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             row=row,
             kind="strip",
             dodge=True,
+            sharex=False,
             **stripplot_kwargs,
         ).map_dataframe(
             sns.boxplot,
@@ -285,15 +287,27 @@ class PermutationImportanceDisplay(DisplayMixin):
         )
         add_background_features = hue is not None
 
+        metrics = frame["metric"].unique()
         self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
-        for ax in self.ax_.flatten():
-            _decorate_matplotlib_axis(
-                ax=ax,
-                add_background_features=add_background_features,
-                n_features=frame["feature"].nunique(),
-                xlabel="Decrease of score",
-                ylabel="",
-            )
+        for row_index, row_axes in enumerate(self.facet_.axes):
+            for col_index, ax in enumerate(row_axes):
+                if len(metrics) > 1:
+                    if row == "metric":
+                        xlabel = f"Decrease of {metrics[row_index]}"
+                    elif col == "metric":
+                        xlabel = f"Decrease of {metrics[col_index]}"
+                    else:
+                        xlabel = "Decrease of metric"
+                else:
+                    xlabel = f"Decrease of {metrics[0]}"
+
+                _decorate_matplotlib_axis(
+                    ax=ax,
+                    add_background_features=add_background_features,
+                    n_features=frame["feature"].nunique(),
+                    xlabel=xlabel,
+                    ylabel="",
+                )
         if len(self.ax_.flatten()) == 1:
             self.ax_ = self.ax_.flatten()[0]
         data_source = frame["data_source"].unique()[0]
