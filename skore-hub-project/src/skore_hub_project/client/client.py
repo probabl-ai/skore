@@ -22,7 +22,7 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
-from ..authentication import token as Token
+
 from ..authentication.uri import URI
 
 logger = logging.getLogger(__name__)
@@ -155,19 +155,7 @@ PACKAGE_SEMVER = __semver(importlib.metadata.version("skore-hub-project"))
 
 
 class HUBClient(Client):
-    """
-    Client exchanging with ``skore hub``.
-
-    Parameters
-    ----------
-    authenticated : bool, optional
-        Use headers with API key or token, default True.
-    """
-
-    def __init__(self, *, authenticated: bool = True, **kwargs: Any):
-        super().__init__(**kwargs)
-
-        self.authenticated = authenticated
+    """Client exchanging with ``skore hub``."""
 
     def request(
         self,
@@ -184,13 +172,9 @@ class HUBClient(Client):
             headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_SEMVER}"})
 
         # Overload headers with credentials
-        if self.authenticated:
-            if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
-                headers.update({"X-API-Key": apikey})
-            else:
-                headers.update({"Authorization": f"Bearer {Token.access()}"})
+        headers.update(CREDENTIALS)
 
         # Prefix the request by the hub URI when ``url`` is not absolute
-        url = urljoin(URI(), str(url))
+        url = urljoin(URI, str(url))
 
         return super().request(method=method, url=url, headers=headers, **kwargs)

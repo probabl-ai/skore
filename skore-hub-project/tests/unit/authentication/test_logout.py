@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 
-from skore_hub_project.authentication import token, uri
 from skore_hub_project.authentication.logout import logout
+
+from skore_hub_project.authentication import token, uri
 
 DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
 
