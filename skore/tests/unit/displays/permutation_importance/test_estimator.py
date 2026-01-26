@@ -963,3 +963,40 @@ def test_subplot_by_tuple_order_determines_row_and_col(
         display.figure_.get_suptitle()
         == f"Permutation importance of {report.estimator_name_} on {data_source} set"
     )
+
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+@pytest.mark.parametrize(
+    "aggregate, expected_value_columns",
+    [
+        ("mean", ["value"]),
+        ("std", ["value"]),
+        (("mean", "std"), ["value_mean", "value_std"]),
+        (("min", "max"), ["value_min", "value_max"]),
+    ],
+)
+def test_frame_aggregate_parameter(
+    linear_regression_with_train_test,
+    data_source,
+    aggregate,
+    expected_value_columns,
+):
+    """Check that the aggregate parameter correctly affects the column names."""
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    estimator = clone(estimator)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    n_repeats = 2
+    display = report.feature_importance.permutation(
+        n_repeats=n_repeats, data_source=data_source
+    )
+
+    df = display.frame(aggregate=aggregate)
+    base_columns = ["data_source", "metric", "feature"]
+    expected_columns = base_columns + expected_value_columns
+    assert sorted(df.columns.tolist()) == sorted(expected_columns)

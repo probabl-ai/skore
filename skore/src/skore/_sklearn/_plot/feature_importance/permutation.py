@@ -357,7 +357,8 @@ class PermutationImportanceDisplay(DisplayMixin):
                 .groupby(group_by, sort=False)  # avoid sorting the features by name
                 .aggregate(aggregate)
             ).reset_index()
-            frame.columns = flatten_multi_index(frame.columns)
+            if isinstance(frame.columns, pd.MultiIndex):
+                frame.columns = flatten_multi_index(frame.columns)
         return frame
 
     # ignore the type signature because we override kwargs by specifying the name of
