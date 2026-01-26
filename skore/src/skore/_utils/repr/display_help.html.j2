@@ -31,7 +31,7 @@
     shadowRoot.appendChild(template.content.cloneNode(true));
 
     // Apply theme to the container (wrapper is ref for luma-based detection)
-    const helpContainer = shadowRoot.querySelector('.skore-help-container');
+    const helpContainer = shadowRoot.querySelector('.container');
     if (helpContainer) {
         applyThemeToHelpContainer(helpContainer, '{{ container_id }}-wrapper');
     }

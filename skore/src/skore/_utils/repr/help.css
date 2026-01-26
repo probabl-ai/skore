@@ -1,5 +1,5 @@
 /* Light theme (default) */
-.skore-help-container,
+.container,
 :host {
     --color-blue: #3043f0;
     --color-orange: #f97316;
@@ -10,8 +10,8 @@
 }
 
 /* Dark theme */
-.skore-help-container.dark-theme,
-.skore-help-container[data-theme="dark"],
+.container.dark-theme,
+.container[data-theme="dark"],
 :host(.dark-theme),
 :host([data-theme="dark"]) {
     --color-blue: #6b42f6;
@@ -22,7 +22,7 @@
     --color-blue-hover: rgba(107, 66, 246, 0.2);
 }
 
-.skore-help-container {
+.container {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
     font-size: 13px;
     line-height: 1.5;
@@ -36,7 +36,7 @@
     max-width: 800px;
 }
 
-.skore-help-title {
+.title {
     font-weight: bold;
     color: var(--color-text);
     margin-bottom: 10px;
@@ -44,28 +44,28 @@
     text-align: center;
 }
 
-.skore-help-tree {
+.tree {
     margin-left: 0;
 }
 
-.skore-help-node {
+.node {
     margin: 0;
     padding: 0;
 }
 
-.skore-help-label {
+.label {
     color: var(--color-text);
     font-weight: bold;
 }
 
-.skore-help-root-content {
+.root-content {
     margin-left: 16px;
     position: relative;
 }
 
 /* Vertical lines for root content items - using border-left pattern */
-.skore-help-root-content > .skore-help-node,
-.skore-help-root-content > .skore-help-method {
+.root-content > .node,
+.root-content > .method {
     border-left: 2px solid var(--color-text);
     padding-left: 16px;
     position: relative;
@@ -75,22 +75,22 @@
 }
 
 /* Extend border to connect with previous element */
-.skore-help-root-content > .skore-help-node:not(:first-child),
-.skore-help-root-content > .skore-help-method:not(:first-child) {
+.root-content > .node:not(:first-child),
+.root-content > .method:not(:first-child) {
     border-top: 2px solid transparent;
     margin-top: -2px;
     padding-top: 2px;
 }
 
 /* Hide vertical line on last item below middle */
-.skore-help-root-content > .skore-help-node:last-child {
+.root-content > .node:last-child {
     border-bottom: none;
     padding-bottom: 0;
 }
 
 /* Add half-height vertical line for last item */
-.skore-help-root-content > .skore-help-node:last-child::after,
-.skore-help-root-content > .skore-help-method:last-child::after {
+.root-content > .node:last-child::after,
+.root-content > .method:last-child::after {
     content: '';
     position: absolute;
     left: -2px;
@@ -101,14 +101,14 @@
 }
 
 /* Hide border below middle for last item */
-.skore-help-root-content > .skore-help-node:last-child,
-.skore-help-root-content > .skore-help-method:last-child {
+.root-content > .node:last-child,
+.root-content > .method:last-child {
     border-left-color: transparent;
 }
 
 /* Horizontal connector lines for root content items */
-.skore-help-root-content > .skore-help-node::before,
-.skore-help-root-content > .skore-help-method::before {
+.root-content > .node::before,
+.root-content > .method::before {
     content: '';
     position: absolute;
     left: -2px;
@@ -118,11 +118,11 @@
     background-color: var(--color-text);
 }
 
-.skore-help-toggle {
+.toggle {
     display: none;
 }
 
-.skore-help-folder-label {
+.branch-label {
     cursor: pointer;
     user-select: none;
     display: flex;
@@ -136,40 +136,40 @@
 }
 
 /* Orange hover for accessors */
-.skore-help-folder-label:has(.skore-help-name):hover {
+.branch-label:has(.name):hover {
     background-color: var(--color-orange-hover);
 }
 
 /* Blue hover for Methods and Attributes sections */
-.skore-help-folder-label:has(.skore-help-section-name):hover {
+.branch-label:has(.section-name):hover {
     background-color: var(--color-blue-hover);
 }
 
-.skore-help-name {
+.name {
     color: var(--color-orange);
 }
 
-.skore-help-section-name {
+.section-name {
     color: var(--color-blue);
 }
 
-.skore-help-toggle:checked + .skore-help-folder-label + .skore-help-folder-content {
+.toggle:checked + .branch-label + .branch-content {
     display: block;
 }
 
-.skore-help-toggle:not(:checked) + .skore-help-folder-label + .skore-help-folder-content {
+.toggle:not(:checked) + .branch-label + .branch-content {
     display: none;
 }
 
-.skore-help-folder-content {
+.branch-content {
     margin-left: 16px;
     position: relative;
     padding-left: 0;
 }
 
-/* Vertical lines for items inside folder content */
-.skore-help-folder-content > .skore-help-node,
-.skore-help-folder-content > .skore-help-method {
+/* Vertical lines for items inside branch content */
+.branch-content > .node,
+.branch-content > .method {
     border-left: 2px solid var(--color-text);
     padding-left: 16px;
     position: relative;
@@ -179,22 +179,22 @@
 }
 
 /* Extend border to connect with previous element */
-.skore-help-folder-content > .skore-help-node:not(:first-child),
-.skore-help-folder-content > .skore-help-method:not(:first-child) {
+.branch-content > .node:not(:first-child),
+.branch-content > .method:not(:first-child) {
     border-top: 2px solid transparent;
     margin-top: -2px;
     padding-top: 2px;
 }
 
 /* Hide vertical line on last item below middle */
-.skore-help-folder-content > .skore-help-node:last-child,
-.skore-help-folder-content > .skore-help-method:last-child {
+.branch-content > .node:last-child,
+.branch-content > .method:last-child {
     border-left-color: transparent;
 }
 
 /* Add half-height vertical line for last items */
-.skore-help-folder-content > .skore-help-node:last-child::after,
-.skore-help-folder-content > .skore-help-method:last-child::after {
+.branch-content > .node:last-child::after,
+.branch-content > .method:last-child::after {
     content: '';
     position: absolute;
     left: -2px;
@@ -204,9 +204,9 @@
     background-color: var(--color-text);
 }
 
-/* Horizontal connector lines for items inside folder content */
-.skore-help-folder-content > .skore-help-node::before,
-.skore-help-folder-content > .skore-help-method::before {
+/* Horizontal connector lines for items inside branch content */
+.branch-content > .node::before,
+.branch-content > .method::before {
     content: '';
     position: absolute;
     left: -2px;
@@ -216,19 +216,19 @@
     background-color: var(--color-text);
 }
 
-.skore-help-method {
+.method {
     color: var(--color-text);
     margin: 0;
     padding: 0;
     line-height: 1.5em;
 }
 
-.skore-help-method-name {
+.method-name {
     color: var(--color-text);
 }
 
 
-.skore-help-method-tooltip {
+.method-tooltip {
     position: relative;
     text-decoration: underline;
     text-decoration-style: dashed;
@@ -238,16 +238,16 @@
     text-decoration-color: inherit;
 }
 
-.skore-help-method-tooltip:hover {
+.method-tooltip:hover {
     color: inherit;
 }
 
-.skore-help-method-tooltip:hover .skore-help-tooltip-text {
+.method-tooltip:hover .tooltip-text {
     visibility: visible;
     opacity: 1;
 }
 
-.skore-help-tooltip-text {
+.tooltip-text {
     visibility: hidden;
     opacity: 0;
     background-color: var(--color-text);
@@ -269,11 +269,11 @@
     transition: opacity 0.2s, visibility 0.2s;
 }
 
-.skore-help-arrow {
+.arrow {
     vertical-align: text-top;
 }
 
-.skore-help-tooltip-text::before {
+.tooltip-text::before {
     content: "";
     position: absolute;
     right: 100%;
@@ -283,7 +283,7 @@
     border-right-color: var(--color-text);
 }
 
-.skore-help-legend {
+.legend {
     margin-top: 15px;
     padding-top: 10px;
     border-top: 1px solid var(--color-text);

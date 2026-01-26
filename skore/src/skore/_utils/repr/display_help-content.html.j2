@@ -1,22 +1,22 @@
-<div class="skore-help-container">
-    <div class="skore-help-title">{{ title }}</div>
-    <div class="skore-help-tree">
+<div class="container">
+    <div class="title">{{ title }}</div>
+    <div class="tree">
         {# Root node #}
-        <div class="skore-help-node">
-            <span class="skore-help-label">{{ root_node }}</span>
+        <div class="node">
+            <span class="label">{{ root_node }}</span>
         </div>
-        <div class="skore-help-root-content">
+        <div class="root-content">
             {# Methods section #}
             {% if methods %}
-                <div class="skore-help-node skore-help-folder">
-                    <input type="checkbox" id="{{ methods_section.id }}" class="skore-help-toggle">
-                    <label for="{{ methods_section.id }}" class="skore-help-folder-label">
-                        <span class="skore-help-section-name">Methods</span>
+                <div class="node branch">
+                    <input type="checkbox" id="{{ methods_section.id }}" class="toggle">
+                    <label for="{{ methods_section.id }}" class="branch-label">
+                        <span class="section-name">Methods</span>
                     </label>
-                    <div class="skore-help-folder-content" id="{{ methods_section.branch_id }}">
+                    <div class="branch-content" id="{{ methods_section.branch_id }}">
                         {% for method in methods %}
-                            <div class="skore-help-node skore-help-method">
-                                <span class="skore-help-method-name">.<a href="{{ method.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ method.name }}<span class="skore-help-tooltip-text">{{ method.description|e }}<br><br>Click to access the online documentation</span></a>{{ method.parameters }}</span>
+                            <div class="node method">
+                                <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}<br><br>Click to access the online documentation</span></a>{{ method.parameters }}</span>
                                 </div>
                         {% endfor %}
                     </div>
@@ -25,15 +25,15 @@
 
             {# Attributes section #}
             {% if attributes %}
-                <div class="skore-help-node skore-help-folder">
-                    <input type="checkbox" id="{{ attributes_section.id }}" class="skore-help-toggle">
-                    <label for="{{ attributes_section.id }}" class="skore-help-folder-label">
-                        <span class="skore-help-section-name">Attributes</span>
+                <div class="node branch">
+                    <input type="checkbox" id="{{ attributes_section.id }}" class="toggle">
+                    <label for="{{ attributes_section.id }}" class="branch-label">
+                        <span class="section-name">Attributes</span>
                     </label>
-                    <div class="skore-help-folder-content" id="{{ attributes_section.branch_id }}">
+                    <div class="branch-content" id="{{ attributes_section.branch_id }}">
                         {% for attr in attributes %}
-                            <div class="skore-help-node skore-help-method">
-                                <span class="skore-help-method-name">.<a href="{{ attr.doc_url }}" target="_blank" class="skore-help-method-tooltip">{{ attr.name }}<span class="skore-help-tooltip-text">{{ attr.description|e }}<br><br>Click to access the online documentation</span></a></span>
+                            <div class="node method">
+                                <span class="method-name">.<a href="{{ attr.doc_url }}" target="_blank" class="method-tooltip">{{ attr.name }}<span class="tooltip-text">{{ attr.description|e }}<br><br>Click to access the online documentation</span></a></span>
                             </div>
                         {% endfor %}
                     </div>
