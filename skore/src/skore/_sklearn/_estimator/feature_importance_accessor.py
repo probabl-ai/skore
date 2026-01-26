@@ -376,6 +376,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             # stored as a workaround for the serialization for skore-hub as explained
             # earlier.
             display = self._parent._cache[cache_key]
+            return display
         else:
             if not isinstance(self._parent.estimator_, Pipeline) or at_step == 0:
                 feature_engineering, estimator = None, self._parent.estimator_
