@@ -17,7 +17,7 @@
                     <div class="branch-content" id="{{ accessor.branch_id }}">
                         {% for method in accessor.methods %}
                             <div class="node method">
-                                <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}<br><br>Click to access the online documentation</span></a>{{ method.parameters }}</span>
+                                <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}</span></a>{{ method.parameters }}</span>
                                 </div>
                         {% endfor %}
                     </div>
@@ -34,7 +34,7 @@
                     <div class="branch-content" id="{{ methods_section.branch_id }}">
                         {% for method in base_methods %}
                             <div class="node method">
-                                <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}<br><br>Click to access the online documentation</span></a>{{ method.parameters }}</span>
+                                <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}</span></a>{{ method.parameters }}</span>
                                 </div>
                         {% endfor %}
                     </div>
@@ -51,7 +51,7 @@
                     <div class="branch-content" id="{{ attributes_section.branch_id }}">
                         {% for attr in attributes %}
                             <div class="node method">
-                                <span class="method-name">.<a href="{{ attr.doc_url }}" target="_blank" class="method-tooltip">{{ attr.name }}<span class="tooltip-text">{{ attr.description|e }}<br><br>Click to access the online documentation</span></a></span>
+                                <span class="method-name">.<a href="{{ attr.doc_url }}" target="_blank" class="method-tooltip">{{ attr.name }}<span class="tooltip-text">{{ attr.description|e }}</span></a></span>
                             </div>
                         {% endfor %}
                     </div>
@@ -66,7 +66,7 @@
             <div class="root-content">
                 {% for method in methods %}
                     <div class="node method">
-                        <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}<br><br>Click to access the online documentation</span></a>{{ method.parameters }}</span>
+                        <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}</span></a>{{ method.parameters }}</span>
                         </div>
                 {% endfor %}
             </div>
