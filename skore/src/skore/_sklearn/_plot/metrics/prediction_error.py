@@ -348,7 +348,11 @@ class PredictionErrorDisplay(DisplayMixin):
         else:
             col = subplot_by
         hue = hue[0] if (hue := [c for c in hue_candidates if c != col]) else None
-        style = "data_source" if self.data_source == "both" else None
+        style = (
+            "data_source"
+            if self.data_source == "both" and col != "data_source"
+            else None
+        )
 
         return col, hue, style
 

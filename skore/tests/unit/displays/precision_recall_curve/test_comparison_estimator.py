@@ -541,6 +541,8 @@ def test_binary_classification_data_source_both(
 
     for ax in display.ax_:
         assert isinstance(ax, mpl.axes.Axes)
-        assert len(ax.get_lines()) >= 1
-        assert ax.get_xlabel() == "recall"
-        assert ax.get_ylabel() in ("precision", "")
+        legend = ax.get_legend()
+        legend_texts = [text.get_text() for text in legend.get_texts()]
+        assert len(legend_texts) == 2
+        assert "Train set" in legend_texts[0]
+        assert "Test set" in legend_texts[1]

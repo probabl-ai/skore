@@ -324,11 +324,11 @@ def test_title(pyplot, linear_regression_with_train_test):
     assert "Data source: Test set" in title
 
 
-def test_regression_data_source_both(pyplot, linear_regression_with_train_test):
-    """Regression test: `data_source='both'` should plot without crashing."""
+@pytest.fixture
+def linear_regression_comparison_report(linear_regression_with_train_test):
+    """Fixture providing a ComparisonReport with two linear regression estimators."""
     estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     estimator_2 = clone(estimator).fit(X_train, y_train)
-
     report = ComparisonReport(
         reports={
             "estimator_1": EstimatorReport(
@@ -347,7 +347,13 @@ def test_regression_data_source_both(pyplot, linear_regression_with_train_test):
             ),
         }
     )
+    return report
 
+
+def test_regression_data_source_both(pyplot, linear_regression_comparison_report):
+    """Regression test: `data_source='both'` should plot without crashing."""
+
+    report = linear_regression_comparison_report
     display = report.metrics.prediction_error(data_source="both")
     assert isinstance(display, PredictionErrorDisplay)
 
@@ -356,8 +362,7 @@ def test_regression_data_source_both(pyplot, linear_regression_with_train_test):
     assert isinstance(display.ax_, (list, np.ndarray))
     assert len(display.ax_) == len(report.reports_)
 
-    for ax in display.ax_:
-        assert isinstance(ax, mpl.axes.Axes)
-        assert len(ax.collections) >= 1
-        assert ax.get_xlabel() == "Predicted values"
-        assert ax.get_ylabel() == "Residuals (actual - predicted)"
+    legend_texts = [text.get_text() for text in display.figure_.legends[0].get_texts()]
+    assert len(legend_texts) == 2 + 1  # 2 datasource + 1 perfect predictions
+    assert legend_texts[0] == "train"
+    assert legend_texts[1] == "test"
