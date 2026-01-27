@@ -33,6 +33,7 @@ the API of each display.
    :template: base.rst
 
    CoefficientsDisplay
+   PermutationTestDisplay
 
 .. rubric:: General API
 

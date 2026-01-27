@@ -92,6 +92,8 @@ class PermutationImportanceDisplay(DisplayMixin):
             metric_importances = np.atleast_3d(metric_values["importances"])
 
             df_metric_importances = []
+            # we loop across the labels (for classification) or the outputs
+            # (for regression)
             for target_index, target_importances in enumerate(
                 np.moveaxis(metric_importances, -1, 0)
             ):
@@ -152,12 +154,13 @@ class PermutationImportanceDisplay(DisplayMixin):
         self,
         *,
         subplot_by: str | tuple[str, str] | None = "auto",
+        metric: str | list[str] | None = None,
     ) -> None:
         """Plot the permutation importance.
 
         Parameters
         ----------
-        subplot_by : str | tuple[str, str] | None, default="auto"
+        subplot_by : str, tuple of str or None, default="auto"
             Column(s) to use for subplotting. The possible values are:
 
             - if `"auto"`, depending of the information available, a meaningful decision
@@ -171,18 +174,33 @@ class PermutationImportanceDisplay(DisplayMixin):
               the second element is the column.
             - if `None`, all information is plotted on a single plot. An error is raised
               if there is too much information to plot on a single plot.
+
+        metric : str or list of str, default=None
+            Filter the importances by metric. If `None`, all importances associated with
+            each metric are plotted.
         """
-        return self._plot(subplot_by=subplot_by)
+        return self._plot(subplot_by=subplot_by, metric=metric)
 
     def _plot_matplotlib(
         self,
         *,
-        subplot_by: str | list[str] | None = "auto",
+        subplot_by: str | tuple[str, str] | None = "auto",
+        metric: str | list[str] | None = None,
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
-        frame = self.frame(aggregate=None)
+        frame = self.frame(metric=metric, aggregate=None)
+
+        err_msg = (
+            "You try to plot the permutation importance of metrics averaged over {} "
+            "and other without averaging. This setting is not supported. Please filter "
+            "a group of consistent metrics using the `metric` parameter."
+        )
+        if "label" in frame.columns and frame["label"].isna().any():
+            raise ValueError(err_msg.format("labels"))
+        elif "output" in frame.columns and frame["output"].isna().any():
+            raise ValueError(err_msg.format("outputs"))
 
         self._plot_single_estimator(
             subplot_by=subplot_by,
@@ -195,7 +213,7 @@ class PermutationImportanceDisplay(DisplayMixin):
     def _plot_single_estimator(
         self,
         *,
-        subplot_by: str | list[str] | None,
+        subplot_by: str | tuple[str, str] | None,
         frame: pd.DataFrame,
         estimator_name: str,
         boxplot_kwargs: dict[str, Any],
@@ -293,13 +311,13 @@ class PermutationImportanceDisplay(DisplayMixin):
             for col_index, ax in enumerate(row_axes):
                 if len(metrics) > 1:
                     if row == "metric":
-                        xlabel = f"Decrease of {metrics[row_index]}"
+                        xlabel = f"Decrease in {metrics[row_index]}"
                     elif col == "metric":
-                        xlabel = f"Decrease of {metrics[col_index]}"
+                        xlabel = f"Decrease in {metrics[col_index]}"
                     else:
-                        xlabel = "Decrease of metric"
+                        xlabel = "Decrease in metric"
                 else:
-                    xlabel = f"Decrease of {metrics[0]}"
+                    xlabel = f"Decrease in {metrics[0]}"
 
                 _decorate_matplotlib_axis(
                     ax=ax,
@@ -318,13 +336,18 @@ class PermutationImportanceDisplay(DisplayMixin):
     def frame(
         self,
         *,
+        metric: str | list[str] | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Get the feature importance in a dataframe format.
 
         Parameters
         ----------
-        aggregate : Aggregate | None, default=("mean", "std")
+        metric : str or list of str, default=None
+            Filter the importances by metric. If `None`, all importances associated with
+            each metric are returned.
+
+        aggregate : {"mean", "std"}, ("mean", std) or None, default=("mean", "std")
             Aggregate the importances by the given metric.
 
         Returns
@@ -338,23 +361,30 @@ class PermutationImportanceDisplay(DisplayMixin):
         else:
             raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
-        if self.importances["label"].isna().all():
+        frame = self.importances.copy()
+        if metric is not None:
+            frame = frame.query("metric in @metric")
+
+        if frame["label"].isna().all():
             # regression problem or averaged classification metric
             columns_to_drop.append("label")
         else:
             group_by.append("label")
-        if self.importances["output"].isna().all():
+        if frame["output"].isna().all():
             # classification problem or averaged regression metric
             columns_to_drop.append("output")
         else:
             group_by.append("output")
 
-        frame = self.importances.drop(columns=columns_to_drop)
+        frame = frame.drop(columns=columns_to_drop)
 
         if aggregate is not None:
             frame = (
                 frame.drop(columns=["repetition"])
-                .groupby(group_by, sort=False)  # avoid sorting the features by name
+                # avoid sorting the features by name and do not drop NA from
+                # output or labels in case of mixed metrics (i.e. averaged vs\
+                # non-averaged)
+                .groupby(group_by, sort=False, dropna=False)
                 .aggregate(aggregate)
             ).reset_index()
             if isinstance(frame.columns, pd.MultiIndex):
@@ -370,11 +400,11 @@ class PermutationImportanceDisplay(DisplayMixin):
         boxplot_kwargs: dict[str, Any] | None = None,
         stripplot_kwargs: dict[str, Any] | None = None,
     ):
-        """Set the style parameters for the display.
+        f"""Set the style parameters for the display.
 
         Parameters
         ----------
-        policy : Literal["override", "update"], default="update"
+        policy : {"override", "update"}, default="update"
             Policy to use when setting the style parameters.
             If "override", existing settings are set to the provided values.
             If "update", existing settings are not changed; only settings that were

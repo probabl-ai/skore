@@ -23,6 +23,8 @@ def _decorate_matplotlib_axis(
         The number of features to displayed.
     xlabel : str
         The label for the x-axis.
+    ylabel : str
+        The label for the y-axis.
     """
     ax.axvline(x=0, color=".5", linestyle="--")
     ax.set(xlabel=xlabel, ylabel=ylabel)
