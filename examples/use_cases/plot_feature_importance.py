@@ -987,7 +987,7 @@ ridge_report.help()
 # accessor:
 
 # %%
-ridge_report.feature_importance.permutation(seed=0)
+ridge_report.feature_importance.permutation(seed=0).frame()
 
 # %%
 # Since the permutation importance involves permuting values of a feature at random,
@@ -1027,10 +1027,10 @@ def plot_permutation_train_test(importances):
 def compute_permutation_importances(report, at_step=0):
     train_importance = report.feature_importance.permutation(
         data_source="train", seed=0, at_step=at_step
-    )
+    ).frame()
     test_importance = report.feature_importance.permutation(
         data_source="test", seed=0, at_step=at_step
-    )
+    ).frame()
     print(train_importance)
 
     return pd.concat(

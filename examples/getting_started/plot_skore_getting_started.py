@@ -108,7 +108,7 @@ roc.plot()
 # For example we can compute the permutation feature importance:
 
 # %%
-rf_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
+rf_report.feature_importance.permutation(seed=0).plot()
 
 # %%
 # .. seealso::

@@ -376,7 +376,6 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             # stored as a workaround for the serialization for skore-hub as explained
             # earlier.
             display = self._parent._cache[cache_key]
-            return display
         else:
             if not isinstance(self._parent.estimator_, Pipeline) or at_step == 0:
                 feature_engineering, estimator = None, self._parent.estimator_
@@ -435,7 +434,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 # NOTE: for the moment, we will always store the permutation importance
                 self._parent._cache[cache_key] = display
 
-            return display
+        return display
 
     ####################################################################################
     # Methods related to the help tree
