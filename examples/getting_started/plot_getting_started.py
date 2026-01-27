@@ -81,7 +81,7 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 # skore makes it easy through :class:`skore.CrossValidationReport`.
 
 # %%
-# Model no. 1: linear regression with preprocessing
+# Model no. 1: Linear regression with preprocessing
 # -------------------------------------------------
 #
 # Our first model will be a linear model, with automatic preprocessing of non-numeric
@@ -139,7 +139,7 @@ simple_metrics.frame()
 
 # %%
 precision_recall = simple_cv_report.metrics.precision_recall()
-precision_recall
+precision_recall.help()
 
 # %%
 # .. note::
@@ -196,11 +196,12 @@ coefficients.frame()
 )
 
 # %%
-# Model no. 2: gradient boosting
-# ------------------------------
+# Model no. 2: Random forest
+# --------------------------
 #
 # Now, we cross-validate a more advanced model using :class:`~sklearn.ensemble.RandomForestClassifier`.
-# This model automatically handles preprocessing for different column types.
+# Again, we rely on :func:`~skrub.tabular_pipeline` to perform the appropriate
+# preprocessing to use with this model.
 
 # %%
 from sklearn.ensemble import RandomForestClassifier
@@ -238,8 +239,8 @@ comparison = ComparisonReport(
 comparison.help()
 
 # %%
-# In fact, it has mostly the same API as `CrossValidationReport` and we have access to
-# the same tools to make statistical analysis and compare both models:
+# In fact, it has mostly the same API as :class:`~skore.CrossValidationReport` and we
+# have access to the same tools to make statistical analysis and compare both models:
 comparison_metrics = comparison.metrics.summarize(favorability=True)
 comparison_metrics.frame()
 
@@ -247,9 +248,11 @@ comparison_metrics.frame()
 comparison.metrics.precision_recall().plot()
 
 # %%
-# Based on the previous tables and plots, it seems that the `RandomForest` model has slightly better
-# performance. For the purposes of this guide however, we make the arbitrary choice to deploy
-# the linear model because it is more interpretable.
+# Based on the previous tables and plots, it seems that the
+# :class:`~sklearn.ensemble.RandomForestClassifier` model has slightly better
+# performance. For the purposes of this guide however, we make the arbitrary choice
+# to deploy the linear model to make a comparison with the coefficients study shown
+# earlier.
 
 # %%
 # Final model evaluation on held-out data
@@ -283,7 +286,10 @@ final_metrics.frame()
 final_report.metrics.confusion_matrix().plot()
 
 # %%
-# We compare the performance on the held-out data with what we observed during cross-validation
+# We can easily combine the results of the previous cross-validation together with
+# the evaluation on the held-out dataset, since the two are accessible as dataframes.
+# This way, we can check if our chosen model meets the expectations we set during the
+# experiment phase.
 
 # %%
 pd.concat(
@@ -297,7 +303,7 @@ pd.concat(
 
 # %%
 # Our final sanity check is to compare the features considered most impactful
-# between our final model and the cross-validation
+# between our final model and the cross-validation:
 
 # %%
 final_coefficients = final_report.feature_importance.coefficients()
@@ -343,7 +349,7 @@ pd.concat(
 # in the interest of simplicity we kept this until the end.
 
 # %%
-# We load or create a local project
+# We load or create a local project:
 
 # %%
 
@@ -358,7 +364,7 @@ os.environ["SKORE_WORKSPACE"] = temp_dir.name
 project = skore.Project("german_credit_classification")
 
 # %%
-# We store our reports with descriptive keys
+# We store our reports with descriptive keys:
 
 # %%
 project.put("simple_linear_model_cv", simple_cv_report)
@@ -366,10 +372,12 @@ project.put("advanced_pipeline_cv", advanced_cv_report)
 project.put("final_model", final_report)
 
 # %%
-# Now we can retrieve a summary of our stored reports
+# Now we can retrieve a summary of our stored reports:
 
 # %%
 summary = project.summarize()
+# Uncomment the next line to display the widget in an interactive environment:
+# summary
 
 # %%
 # .. note::
@@ -386,9 +394,9 @@ summary = project.summarize()
 #     this allows us to retrieve exactly those reports programmatically.
 
 # %%
-# Supposing you selected "Cross-validation" in the "Report type" tab,
-# if you now call `reports()`, you get only the the `CrossValidationReport`
-# objects, which you can directly put in the form of a `ComparisonReport`
+# Supposing you selected "Cross-validation" in the "Report type" tab, if you now call
+# `reports()`, you get only the the :class:`~skore.CrossValidationReport` objects, which
+# you can directly put in the form of a :class:`~skore.ComparisonReport`:
 
 # %%
 
@@ -397,7 +405,8 @@ summary = project.summarize()
 summary = summary.query('report_type == "cross-validation"')
 # sphinx_gallery_end_ignore
 
-print(summary.reports(return_as="comparison"))
+new_report = summary.reports(return_as="comparison")
+new_report.help()
 
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
