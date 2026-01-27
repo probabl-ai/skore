@@ -9,4 +9,5 @@ ENVARNAME: Final[str] = "SKORE_HUB_API_KEY"
 
 def APIKey() -> Callable[[], dict[str, str]]:
     """API key used for ``skore hub`` authentication, as HTTP header parameters."""
-    return lambda: {"X-API-Key": environ[ENVARNAME]}  # when is evaluate ?!
+    header = {"X-API-Key": environ[ENVARNAME]}
+    return lambda: header
