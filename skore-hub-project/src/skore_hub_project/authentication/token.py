@@ -6,8 +6,8 @@ from datetime import datetime, timezone
 from threading import RLock
 from time import sleep
 from typing import Iterator, Literal
-from webbrowser import open as open_webbrowser
 from urllib.parse import urljoin
+from webbrowser import open as open_webbrowser
 
 from httpx import HTTPStatusError, TimeoutException
 
@@ -173,13 +173,13 @@ def post_oauth_refresh_token(refresh_token: str) -> tuple[str, str, str]:
         - expires_at : str
             The expiration datetime as ISO 8601 str of the access token
     """
-    from skore_hub_project.client.client import HUBClient
+    from skore_hub_project.client.client import Client
 
     url = "identity/oauth/token/refresh"
     json = {"refresh_token": refresh_token}
 
-    with HUBClient(authenticated=False) as client:
-        response = client.post(url, json=json).json()
+    with Client() as client:
+        response = client.post(urljoin(URI, url), json=json).json()
 
         return (
             response["access_token"],
@@ -210,7 +210,7 @@ class Token:
         self.__refreshment = refreshment
         self.__expiration = datetime.fromisoformat(expiration)
 
-    def __iter__(self) -> Iterator[tuple[Literal["Authorization"], str]]:
+    def __call__(self) -> dict[str, str]:
         with self.__lock:
             if self.__expiration <= datetime.now(timezone.utc):
                 access, refreshment, expiration = post_oauth_refresh_token(
@@ -221,4 +221,4 @@ class Token:
                 self.__refreshment = refreshment
                 self.__expiration = datetime.fromisoformat(expiration)
 
-            yield ("Authorization", f"Bearer {self.__access}")
+            return {"Authorization": f"Bearer {self.__access}"}

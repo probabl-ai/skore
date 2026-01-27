@@ -1,11 +1,12 @@
 """Login to ``skore hub``."""
 
-from __future__ import annotations
+from collections.abc import Callable
 
 from skore_hub_project import console
-from skore_hub_project.authentication.token import APIKey, Token
+from skore_hub_project.authentication.apikey import APIKey
+from skore_hub_project.authentication.token import Token
 
-CREDENTIALS: APIKey | Token | None = None
+CREDENTIALS: Callable[[], dict[str, str]] | None = None
 
 
 def login(*, timeout: int = 600) -> None:
@@ -17,9 +18,6 @@ def login(*, timeout: int = 600) -> None:
         CREDENTIALS = APIKey()
     except KeyError:
         console.rule("[cyan]Skore Hub[/cyan]")
-        console.print(
-            f"",
-            soft_wrap=True,
-        )
+        console.print(f"", soft_wrap=True)
 
         CREDENTIALS = Token(timeout=timeout)

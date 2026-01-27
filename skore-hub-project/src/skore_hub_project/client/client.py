@@ -22,8 +22,8 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
-
-from ..authentication.uri import URI
+from skore_hub_project.authentication.login import CREDENTIALS
+from skore_hub_project.authentication.uri import URI
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +172,12 @@ class HUBClient(Client):
             headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_SEMVER}"})
 
         # Overload headers with credentials
-        headers.update(CREDENTIALS)
+        if CREDENTIALS is None:
+            raise RuntimeError(
+                "You are not logged in. Please run `login` or create an API key."
+            )
+
+        headers.update(CREDENTIALS())
 
         # Prefix the request by the hub URI when ``url`` is not absolute
         url = urljoin(URI, str(url))
