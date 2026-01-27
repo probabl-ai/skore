@@ -9,7 +9,7 @@ def _decorate_matplotlib_axis(
     add_background_features: bool,
     n_features: int,
     xlabel: str,
-    ylabel: str
+    ylabel: str,
 ) -> None:
     """Decorate the matplotlib axis.
 

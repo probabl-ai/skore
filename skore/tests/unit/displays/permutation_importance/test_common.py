@@ -4,7 +4,7 @@ import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 
-from skore import PermutationImportanceDisplay, EstimatorReport
+from skore import EstimatorReport, PermutationImportanceDisplay
 
 
 @pytest.mark.parametrize("method", ["frame", "plot"])

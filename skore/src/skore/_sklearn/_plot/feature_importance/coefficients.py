@@ -10,9 +10,9 @@ from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
+from skore._sklearn._plot.feature_importance.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import ReportType
-from skore._sklearn._plot.feature_importance.utils import _decorate_matplotlib_axis
 
 
 class CoefficientsDisplay(DisplayMixin):
