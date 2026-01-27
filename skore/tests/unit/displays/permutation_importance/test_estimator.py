@@ -12,6 +12,7 @@ from sklearn.metrics import (
 from sklearn.utils._testing import _convert_container
 
 from skore import EstimatorReport, PermutationImportanceDisplay
+from skore._utils._testing import custom_r2_score
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -215,6 +216,30 @@ def test_single_output_regression(
         display.figure_.get_suptitle()
         == f"Permutation importance of {estimator_name} on {data_source} set"
     )
+
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_callable_metric(
+    pyplot,
+    linear_regression_with_train_test,
+    data_source,
+):
+    """Test that callable metrics are properly formatted in xlabel (underscores
+    replaced with spaces)."""
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    estimator = clone(estimator)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.feature_importance.permutation(
+        n_repeats=2, data_source=data_source, metric=custom_r2_score
+    )
+    display.plot()
+    assert display.ax_.get_xlabel() == "Decrease of custom r2 score"
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
