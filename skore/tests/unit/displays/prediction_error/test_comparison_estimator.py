@@ -322,3 +322,42 @@ def test_title(pyplot, linear_regression_with_train_test):
     assert "Prediction Error" in title
     assert "estimator_1" not in title
     assert "Data source: Test set" in title
+
+
+def test_regression_data_source_both(pyplot, linear_regression_with_train_test):
+    """Regression test: `data_source='both'` should plot without crashing."""
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
+    estimator_2 = clone(estimator).fit(X_train, y_train)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+
+    display = report.metrics.prediction_error(data_source="both")
+    assert isinstance(display, PredictionErrorDisplay)
+
+    display.plot()
+
+    assert isinstance(display.ax_, (list, np.ndarray))
+    assert len(display.ax_) == len(report.reports_)
+
+    for ax in display.ax_:
+        assert isinstance(ax, mpl.axes.Axes)
+        assert len(ax.collections) >= 1
+        assert ax.get_xlabel() == "Predicted values"
+        assert ax.get_ylabel() == "Residuals (actual - predicted)"

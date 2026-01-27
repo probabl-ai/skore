@@ -501,3 +501,46 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
             assert isinstance(display.ax_, mpl.axes.Axes)
         else:
             assert len(display.ax_) == expected_len
+
+
+def test_binary_classification_data_source_both(
+    pyplot, logistic_binary_classification_with_train_test
+):
+    """Regression test: `data_source='both'` should plot without crashing."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+
+    display = report.metrics.precision_recall(data_source="both")
+    assert isinstance(display, PrecisionRecallCurveDisplay)
+
+    display.plot()
+
+    assert isinstance(display.ax_, (list, np.ndarray))
+    assert len(display.ax_) == len(report.reports_)
+
+    for ax in display.ax_:
+        assert isinstance(ax, mpl.axes.Axes)
+        assert len(ax.get_lines()) >= 1
+        assert ax.get_xlabel() == "recall"
+        assert ax.get_ylabel() in ("precision", "")
