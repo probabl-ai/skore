@@ -52,7 +52,7 @@ class MockEstimator(ClassifierMixin, BaseEstimator):
 def check_roc_curve_display_data(display: RocCurveDisplay):
     """Check the structure of the display's internal data."""
     assert list(display.roc_curve.columns) == [
-        "estimator_name",
+        "estimator",
         "data_source",
         "split",
         "label",
@@ -61,7 +61,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
         "tpr",
     ]
     assert list(display.roc_auc.columns) == [
-        "estimator_name",
+        "estimator",
         "data_source",
         "split",
         "label",

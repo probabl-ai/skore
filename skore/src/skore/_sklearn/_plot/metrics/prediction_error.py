@@ -1,11 +1,9 @@
 import numbers
 from collections import namedtuple
-from typing import Any, Literal, cast
+from typing import Literal, cast
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import colormaps
-from matplotlib.artist import Artist
+import seaborn as sns
 from pandas import DataFrame
 from sklearn.utils.validation import _num_samples, check_array
 
@@ -14,7 +12,6 @@ from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _despine_matplotlib_axis,
     _validate_style_kwargs,
-    sample_mpl_colormap,
 )
 from skore._sklearn.types import DataSource, MLTask, ReportType, YPlotData
 
@@ -39,7 +36,7 @@ class PredictionErrorDisplay(DisplayMixin):
     prediction_error : DataFrame
         The prediction error data to display. The columns are
 
-        - `estimator_name`
+        - `estimator`
         - `split` (may be null)
         - `y_true`
         - `y_pred`
@@ -97,8 +94,17 @@ class PredictionErrorDisplay(DisplayMixin):
     >>> display.plot(kind="actual_vs_predicted")
     """
 
-    _default_data_points_kwargs: dict[str, Any] | None = None
-    _default_perfect_model_kwargs: dict[str, Any] | None = None
+    _default_relplot_kwargs = {
+        "alpha": 0.3,
+        "s": 15,
+        "marker": "o",
+        "aspect": 1.0,
+    }
+    _default_perfect_model_kwargs = {
+        "color": "black",
+        "alpha": 0.7,
+        "linestyle": "--",
+    }
 
     def __init__(
         self,
@@ -119,418 +125,15 @@ class PredictionErrorDisplay(DisplayMixin):
         self.ml_task = ml_task
         self.report_type = report_type
 
-    def _validate_data_points_kwargs(
-        self,
-        *,
-        data_points_kwargs: dict[str, Any] | list[dict[str, Any]] | None,
-    ) -> list[dict[str, Any]]:
-        """Validate and format the scatter keyword arguments.
-
-        Parameters
-        ----------
-        data_points_kwargs : dict or list of dict or None
-            Keyword arguments for the scatter plot.
-
-        Returns
-        -------
-        list of dict
-            Validated list of keyword arguments for each curve.
-
-        Raises
-        ------
-        ValueError
-            If the format of `data_points_kwargs` is invalid.
-        """
-        if self.report_type == "estimator":
-            allow_single_dict = True
-            n_scatter_groups = 1
-        elif self.report_type == "cross-validation":
-            allow_single_dict = True
-            n_scatter_groups = len(self._prediction_error["split"].cat.categories)
-        elif self.report_type in (
-            "comparison-estimator",
-            "comparison-cross-validation",
-        ):
-            # since we compare different estimators, it does not make sense to share
-            # a single dictionary for all the estimators.
-            allow_single_dict = False
-            n_scatter_groups = len(
-                self._prediction_error["estimator_name"].cat.categories
-            )
-        else:
-            raise ValueError(
-                f"`report_type` should be one of 'estimator', 'cross-validation', "
-                "'comparison-cross-validation' or 'comparison-estimator'. "
-                f"Got '{self.report_type}' instead."
-            )
-
-        if data_points_kwargs is None:
-            return [{}] * n_scatter_groups
-        elif n_scatter_groups == 1:
-            if isinstance(data_points_kwargs, dict):
-                return [data_points_kwargs]
-            raise ValueError(
-                "You intend to plot the prediction error for a single estimator. We "
-                "expect `data_points_kwargs` to be a dictionary. Got "
-                f"{type(data_points_kwargs)} instead."
-            )
-        else:
-            if not allow_single_dict and isinstance(data_points_kwargs, dict):
-                raise ValueError(
-                    "You intend to plot multiple curves. We expect "
-                    "`data_points_kwargs` to be a list of dictionaries. Got "
-                    f"{type(data_points_kwargs)} instead."
-                )
-
-            if isinstance(data_points_kwargs, dict):
-                return [data_points_kwargs] * n_scatter_groups
-
-            # From this point, we have a list of dictionaries
-            if len(data_points_kwargs) != n_scatter_groups:
-                raise ValueError(
-                    "You intend to plot prediction errors either from multiple "
-                    "estimators or from a cross-validated estimator. "
-                    "We expect `data_points_kwargs` to be a list of dictionaries "
-                    "with the same length as the number of estimators or splits. "
-                    f"Got {len(data_points_kwargs)} instead of {n_scatter_groups}."
-                )
-
-        return data_points_kwargs
-
-    def _plot_single_estimator(
-        self,
-        *,
-        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
-        estimator_name: str,
-        samples_kwargs: list[dict[str, Any]],
-    ) -> list[Artist]:
-        """Plot the prediction error for a single estimator.
-
-        Parameters
-        ----------
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}
-            The type of plot to draw.
-
-        estimator_name : str
-            Name of the estimator.
-
-        samples_kwargs : list of dict
-            Keyword arguments for the scatter plot.
-
-        Returns
-        -------
-        scatter : list of matplotlib Artist
-            The scatter plot.
-        """
-        scatter = []
-        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
-
-        data_points_kwargs_validated = _validate_style_kwargs(
-            data_points_kwargs, samples_kwargs[0]
-        )
-
-        def add_scatter(data_source: DataSource, marker="o"):
-            if data_source in ("train", "test"):
-                scatter_label = f"{data_source.title()} set"
-            else:  # data_source == "X_y"
-                scatter_label = "External data set"
-
-            prediction_error = self._prediction_error.query(
-                f"data_source == {data_source!r}"
-            )
-
-            scatter.append(
-                self.ax_.scatter(
-                    x=prediction_error["y_pred"],
-                    y=(
-                        prediction_error["y_true"]
-                        if kind == "actual_vs_predicted"
-                        else prediction_error["residuals"]
-                    ),
-                    label=scatter_label,
-                    **(data_points_kwargs_validated | {"marker": marker}),
-                )
-            )
-
-        if self.data_source == "both":
-            add_scatter(data_source="test", marker="x")
-            add_scatter(data_source="train")
-        else:
-            add_scatter(data_source=self.data_source)
-
-        # move the perfect model line to the end of the legend
-        handles, labels = self.ax_.get_legend_handles_labels()
-        handles.append(handles.pop(0))
-        labels.append(labels.pop(0))
-
-        self.ax_.legend(handles, labels, loc="lower right")
-        self.ax_.set_title(f"Prediction Error for {estimator_name}")
-
-        return cast(list[Artist], scatter)
-
-    def _plot_cross_validated_estimator(
-        self,
-        *,
-        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
-        estimator_name: str,
-        samples_kwargs: list[dict[str, Any]],
-    ) -> list[Artist]:
-        """Plot the prediction error for a cross-validated estimator.
-
-        Parameters
-        ----------
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}
-            The type of plot to draw.
-
-        estimator_name : str
-            Name of the estimator.
-
-        samples_kwargs : list of dict
-            Keyword arguments for the scatter plot.
-
-        Returns
-        -------
-        scatter : list of matplotlib Artist
-            The scatter plot.
-        """
-        scatter = []
-        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
-        n_splits = len(self._prediction_error["split"].cat.categories)
-        colors_markers = sample_mpl_colormap(
-            colormaps.get_cmap("tab10"),
-            n_splits if n_splits > 10 else 10,
-        )
-
-        for split_idx, prediction_error_split in self._prediction_error.groupby(
-            "split", observed=True
-        ):
-            data_points_kwargs_split = {
-                "color": colors_markers[split_idx],
-                **data_points_kwargs,
-            }
-
-            data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_split, samples_kwargs[split_idx]
-            )
-
-            label = f"Split #{split_idx + 1}"
-
-            if kind == "actual_vs_predicted":
-                scatter.append(
-                    self.ax_.scatter(
-                        prediction_error_split["y_pred"],
-                        prediction_error_split["y_true"],
-                        label=label,
-                        **data_points_kwargs_validated,
-                    )
-                )
-            else:  # kind == "residual_vs_predicted"
-                scatter.append(
-                    self.ax_.scatter(
-                        prediction_error_split["y_pred"],
-                        prediction_error_split["residuals"],
-                        label=label,
-                        **data_points_kwargs_validated,
-                    )
-                )
-
-        if self.data_source in ("train", "test"):
-            legend_title = f"{self.data_source.capitalize()} set"
-        else:
-            legend_title = "External set"
-
-        # move the perfect model line to the end of the legend
-        handles, labels = self.ax_.get_legend_handles_labels()
-        handles.append(handles.pop(0))
-        labels.append(labels.pop(0))
-
-        if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
-            # too many lines to fit legend in the plot
-            self.ax_.legend(
-                handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
-            )
-        else:
-            self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
-        self.ax_.set_title(f"Prediction Error for {estimator_name}")
-
-        return cast(list[Artist], scatter)
-
-    def _plot_comparison_estimator(
-        self,
-        *,
-        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
-        samples_kwargs: list[dict[str, Any]],
-    ) -> list[Artist]:
-        """Plot the prediction error of several estimators.
-
-        Parameters
-        ----------
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}
-            The type of plot to draw.
-
-        samples_kwargs : list of dict
-            Keyword arguments for the scatter plot.
-
-        Returns
-        -------
-        scatter : list of matplotlib Artist
-            The scatter plot.
-        """
-        scatter = []
-        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
-
-        estimator_names = self._prediction_error["estimator_name"].cat.categories
-        n_estimators = len(estimator_names)
-        colors_markers = sample_mpl_colormap(
-            colormaps.get_cmap("tab10"),
-            n_estimators if n_estimators > 10 else 10,
-        )
-
-        for idx, (estimator_name, prediction_error_estimator) in enumerate(
-            self._prediction_error.groupby("estimator_name", observed=True)
-        ):
-            data_points_kwargs_split = {
-                "color": colors_markers[idx],
-                **data_points_kwargs,
-            }
-
-            data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_split, samples_kwargs[idx]
-            )
-
-            if kind == "actual_vs_predicted":
-                scatter.append(
-                    self.ax_.scatter(
-                        prediction_error_estimator["y_pred"],
-                        prediction_error_estimator["y_true"],
-                        label=estimator_name,
-                        **data_points_kwargs_validated,
-                    )
-                )
-            else:  # kind == "residual_vs_predicted"
-                scatter.append(
-                    self.ax_.scatter(
-                        prediction_error_estimator["y_pred"],
-                        prediction_error_estimator["residuals"],
-                        label=estimator_name,
-                        **data_points_kwargs_validated,
-                    )
-                )
-
-        if self.data_source in ("train", "test"):
-            legend_title = f"{self.data_source.capitalize()} set"
-        else:
-            legend_title = "External set"
-
-        # move the perfect model line to the end of the legend
-        handles, labels = self.ax_.get_legend_handles_labels()
-        handles.append(handles.pop(0))
-        labels.append(labels.pop(0))
-
-        if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
-            # too many lines to fit legend in the plot
-            self.ax_.legend(
-                handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
-            )
-        else:
-            self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
-        self.ax_.set_title("Prediction Error")
-
-        return cast(list[Artist], scatter)
-
-    def _plot_comparison_cross_validation(
-        self,
-        *,
-        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
-        samples_kwargs: list[dict[str, Any]],
-    ) -> list[Artist]:
-        """Plot the prediction error of several cross-validated estimators.
-
-        Parameters
-        ----------
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}
-            The type of plot to draw.
-
-        samples_kwargs : list of dict
-            Keyword arguments for the scatter plot.
-
-        Returns
-        -------
-        scatter : list of matplotlib Artist
-            The scatter plot.
-        """
-        scatter = []
-        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
-
-        estimator_names = self._prediction_error["estimator_name"].cat.categories
-        n_estimators = len(estimator_names)
-        colors_markers = sample_mpl_colormap(
-            colormaps.get_cmap("tab10"),
-            n_estimators if n_estimators > 10 else 10,
-        )
-
-        for idx, (estimator_name, prediction_error_estimator) in enumerate(
-            self._prediction_error.groupby("estimator_name", observed=True)
-        ):
-            data_points_kwargs_split = {
-                "color": colors_markers[idx],
-                **data_points_kwargs,
-            }
-
-            data_points_kwargs_validated = _validate_style_kwargs(
-                data_points_kwargs_split, samples_kwargs[idx]
-            )
-
-            if kind == "actual_vs_predicted":
-                scatter.append(
-                    self.ax_.scatter(
-                        prediction_error_estimator["y_pred"],
-                        prediction_error_estimator["y_true"],
-                        label=estimator_name,
-                        **data_points_kwargs_validated,
-                    )
-                )
-            else:  # kind == "residual_vs_predicted"
-                scatter.append(
-                    self.ax_.scatter(
-                        prediction_error_estimator["y_pred"],
-                        prediction_error_estimator["residuals"],
-                        label=estimator_name,
-                        **data_points_kwargs_validated,
-                    )
-                )
-
-        if self.data_source in ("train", "test"):
-            legend_title = f"{self.data_source.capitalize()} set"
-        else:
-            legend_title = "External set"
-
-        # move the perfect model line to the end of the legend
-        handles, labels = self.ax_.get_legend_handles_labels()
-        handles.append(handles.pop(0))
-        labels.append(labels.pop(0))
-
-        if len(labels) > MAX_N_LABELS or kind == "residual_vs_predicted":
-            # too many lines to fit legend in the plot
-            self.ax_.legend(
-                handles, labels, bbox_to_anchor=(1.02, 1), title=legend_title
-            )
-        else:
-            self.ax_.legend(handles, labels, loc="lower right", title=legend_title)
-        self.ax_.set_title("Prediction Error")
-
-        return cast(list[Artist], scatter)
-
     @DisplayMixin.style_plot
     def plot(
         self,
         *,
-        estimator_name: str | None = None,
+        subplot_by: Literal["auto", "data_source", "split", "estimator"]
+        | None = "auto",
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
-        data_points_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
-        perfect_model_kwargs: dict[str, Any] | None = None,
         despine: bool = True,
     ) -> None:
         """Plot visualization.
@@ -539,9 +142,16 @@ class PredictionErrorDisplay(DisplayMixin):
 
         Parameters
         ----------
-        estimator_name : str
-            Name of the estimator used to plot the prediction error. If `None`,
-            we used the inferred name from the estimator.
+        subplot_by : {"auto", "data_source", "split", "estimator", None}, \
+                default="auto"
+            The variable to use for creating subplots:
+
+            - "auto" creates subplots by estimator for comparison reports, otherwise
+              uses a single plot.
+            - "data_source" creates subplots by data source (train/test).
+            - "split" creates subplots by cross-validation split.
+            - "estimator" creates subplots by estimator.
+            - None creates a single plot.
 
         kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
                 default="residual_vs_predicted"
@@ -552,14 +162,6 @@ class PredictionErrorDisplay(DisplayMixin):
             - "residual_vs_predicted" draws the residuals, i.e. difference
               between observed and predicted values, (y-axis) vs. the predicted
               values (x-axis).
-
-        data_points_kwargs : dict, default=None
-            Dictionary with keywords passed to the `matplotlib.pyplot.scatter`
-            call.
-
-        perfect_model_kwargs : dict, default=None
-            Dictionary with keyword passed to the `matplotlib.pyplot.plot`
-            call to draw the optimal line.
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
@@ -578,22 +180,19 @@ class PredictionErrorDisplay(DisplayMixin):
         >>> display.plot(kind="actual_vs_predicted")
         """
         return self._plot(
-            estimator_name=estimator_name,
+            subplot_by=subplot_by,
             kind=kind,
-            data_points_kwargs=data_points_kwargs,
-            perfect_model_kwargs=perfect_model_kwargs,
             despine=despine,
         )
 
     def _plot_matplotlib(
         self,
         *,
-        estimator_name: str | None = None,
+        subplot_by: Literal["auto", "data_source", "split", "estimator"]
+        | None = "auto",
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
-        data_points_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
-        perfect_model_kwargs: dict[str, Any] | None = None,
         despine: bool = True,
     ) -> None:
         """Matplolib implementation of the `plot` method."""
@@ -605,53 +204,63 @@ class PredictionErrorDisplay(DisplayMixin):
             )
         if kind == "actual_vs_predicted":
             xlabel, ylabel = "Predicted values", "Actual values"
-        else:  # kind == "residual_vs_predicted"
-            xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
-
-        self.figure_, self.ax_ = plt.subplots()
-
-        perfect_model_kwargs_validated = _validate_style_kwargs(
-            {
-                "color": "black",
-                "alpha": 0.7,
-                "linestyle": "--",
-                "label": "Perfect predictions",
-            },
-            perfect_model_kwargs or self._default_perfect_model_kwargs or {},
-        )
-
-        if kind == "actual_vs_predicted":
-            # For actual vs predicted, we want the same range for both axes
+            y_plot = "y_true"
             min_value = min(self.range_y_pred.min, self.range_y_true.min)
             max_value = max(self.range_y_pred.max, self.range_y_true.max)
             x_range_perfect_pred = [min_value, max_value]
             y_range_perfect_pred = [min_value, max_value]
-
-            self.line_ = self.ax_.plot(
-                x_range_perfect_pred,
-                y_range_perfect_pred,
-                **perfect_model_kwargs_validated,
-            )[0]
-            self.ax_.set(
-                aspect="equal",
-                xlim=x_range_perfect_pred,
-                ylim=y_range_perfect_pred,
-                xticks=np.linspace(
-                    x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
-                ),
-                yticks=np.linspace(
-                    y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
-                ),
-            )
-
+            y_line = y_range_perfect_pred
         else:  # kind == "residual_vs_predicted"
+            xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
+            y_plot = "residuals"
             x_range_perfect_pred = [self.range_y_pred.min, self.range_y_pred.max]
             y_range_perfect_pred = [self.range_residuals.min, self.range_residuals.max]
+            y_line = [0, 0]
 
-            self.line_ = self.ax_.plot(
-                x_range_perfect_pred, [0, 0], **perfect_model_kwargs_validated
-            )[0]
-            self.ax_.set(
+        col, hue, style = self._get_plot_columns(subplot_by)
+        relplot_kwargs = {
+            "col": col,
+            "hue": hue,
+            "style": style,
+            **self._default_relplot_kwargs,
+        }
+        if style:
+            relplot_kwargs["style_order"] = ["train", "test"]
+            relplot_kwargs["hue_order"] = ["train", "test"]
+
+        facet_grid = sns.relplot(
+            data=self.frame(),
+            x="y_pred",
+            y=y_plot,
+            kind="scatter",
+            **_validate_style_kwargs(relplot_kwargs, {}),
+        )
+        self.figure_, self.ax_ = facet_grid.figure, facet_grid.axes.flatten()
+        self.lines_ = []
+
+        title = "Prediction Error"
+        if "comparison" not in self.report_type:
+            title += f" for {self._prediction_error['estimator'].cat.categories.item()}"
+        title += (
+            f"\nData source: {self.data_source.capitalize()} set"
+            if self.data_source in ("train", "test")
+            else "\nData source: external set"
+            if self.data_source == "X_y"
+            else "\nData source: Train and Test"
+        )
+        self.figure_.suptitle(title)
+
+        for ax in self.ax_:
+            self.lines_.append(
+                ax.plot(
+                    x_range_perfect_pred,
+                    y_line,
+                    **self._default_perfect_model_kwargs,
+                )[0]
+            )
+            ax.set(
+                xlabel=xlabel,
+                ylabel=ylabel,
                 xlim=x_range_perfect_pred,
                 ylim=y_range_perfect_pred,
                 xticks=np.linspace(
@@ -662,56 +271,85 @@ class PredictionErrorDisplay(DisplayMixin):
                 ),
             )
 
-        self.ax_.set(xlabel=xlabel, ylabel=ylabel)
+            if despine:
+                _despine_matplotlib_axis(
+                    ax, x_range=ax.get_xlim(), y_range=ax.get_ylim()
+                )
 
-        # make the scatter plot afterwards since it should take into account the line
-        # for the perfect predictions
-        if data_points_kwargs is None:
-            data_points_kwargs = self._default_data_points_kwargs
-        data_points_kwargs = self._validate_data_points_kwargs(
-            data_points_kwargs=data_points_kwargs
+        # Add the perfect model line to the legend
+        # We retrieve the legend elements created by seaborn, add the perfect model line
+        # and create a new legend manually.
+        handles = []
+        labels = []
+        if facet_grid._legend is not None:
+            handles = list(facet_grid._legend.legend_handles)
+            labels = [t.get_text() for t in facet_grid._legend.get_texts()]
+            facet_grid._legend.remove()
+            if hue == "split":
+                labels = [f"Split #{label}" for label in labels]
+        handles.append(self.lines_[0])
+        labels.append("Perfect predictions")
+
+        self.figure_.legend(
+            handles,
+            labels,
+            loc="upper center",
+            bbox_to_anchor=(0.5, 0),
+            ncol=1,
+            frameon=True,
         )
 
-        if self.report_type == "estimator":
-            self.scatter_ = self._plot_single_estimator(
-                kind=kind,
-                estimator_name=(
-                    self._prediction_error["estimator_name"].cat.categories.item()
-                    if estimator_name is None
-                    else estimator_name
-                ),
-                samples_kwargs=data_points_kwargs,
-            )
-        elif self.report_type == "cross-validation":
-            self.scatter_ = self._plot_cross_validated_estimator(
-                kind=kind,
-                estimator_name=(
-                    self._prediction_error["estimator_name"].cat.categories.item()
-                    if estimator_name is None
-                    else estimator_name
-                ),
-                samples_kwargs=data_points_kwargs,
-            )
-        elif self.report_type == "comparison-estimator":
-            self.scatter_ = self._plot_comparison_estimator(
-                kind=kind,
-                samples_kwargs=data_points_kwargs,
-            )
-        elif self.report_type == "comparison-cross-validation":
-            self.scatter_ = self._plot_comparison_cross_validation(
-                kind=kind,
-                samples_kwargs=data_points_kwargs,
-            )
+        if len(self.ax_) == 1:
+            self.ax_ = self.ax_[0]
+
+    def _get_plot_columns(
+        self,
+        subplot_by: Literal["auto", "estimator", "data_source", "split"] | None,
+    ) -> tuple[str | None, str | None, str | None]:
+        """Validate the `subplot_by` parameter.
+
+        Parameters
+        ----------
+        subplot_by : {"auto", "estimator", "data_source", "split", None}
+            The variable to use for subplotting.
+
+        Returns
+        -------
+        tuple of (str or None, str or None, str or None)
+            A tuple containing (col, hue, style) where:
+            - col: Column variable for subplots
+            - hue: Variable for color encoding
+            - style: Variable for marker style
+        """
+        valid_subplot_by: list[str | None] = ["auto"]
+        hue_candidates = []
+        if "estimator" in self.report_type and self.data_source == "both":
+            valid_subplot_by.append("data_source")
+            hue_candidates.append("data_source")
+        if "cross-validation" in self.report_type:
+            valid_subplot_by.append("split")
+            hue_candidates.append("split")
+        if "comparison" in self.report_type:
+            valid_subplot_by.append("estimator")
+            hue_candidates.append("estimator")
         else:
+            valid_subplot_by.append(None)
+
+        if subplot_by not in valid_subplot_by:
             raise ValueError(
-                f"`report_type` should be one of 'estimator', 'cross-validation', "
-                f"or 'comparison-estimator'. Got '{self.report_type}' instead."
+                f"Invalid `subplot_by` parameter. Valid options are: "
+                f"{', '.join(str(s) for s in valid_subplot_by)}. "
+                f"Got '{subplot_by}' instead."
             )
 
-        if despine:
-            x_range = self.ax_.get_xlim()
-            y_range = self.ax_.get_ylim()
-            _despine_matplotlib_axis(self.ax_, x_range=x_range, y_range=y_range)
+        if subplot_by == "auto":
+            col = "estimator" if "comparison" in self.report_type else None
+        else:
+            col = subplot_by
+        hue = hue[0] if (hue := [c for c in hue_candidates if c != col]) else None
+        style = "data_source" if self.data_source == "both" else None
+
+        return col, hue, style
 
     @classmethod
     def _compute_data_for_display(
@@ -817,7 +455,7 @@ class PredictionErrorDisplay(DisplayMixin):
                 ):
                     prediction_error_records.append(
                         {
-                            "estimator_name": y_true_i.estimator_name,
+                            "estimator": y_true_i.estimator_name,
                             "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "y_true": y_true_sample_i,
@@ -835,7 +473,7 @@ class PredictionErrorDisplay(DisplayMixin):
                 ):
                     prediction_error_records.append(
                         {
-                            "estimator_name": y_true_i.estimator_name,
+                            "estimator": y_true_i.estimator_name,
                             "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
                             "y_true": y_true_sample_i,
@@ -858,7 +496,7 @@ class PredictionErrorDisplay(DisplayMixin):
         return cls(
             prediction_error=DataFrame.from_records(prediction_error_records).astype(
                 {
-                    "estimator_name": "category",
+                    "estimator": "category",
                     "data_source": "category",
                     "split": "category",
                 }
@@ -880,7 +518,7 @@ class PredictionErrorDisplay(DisplayMixin):
             A DataFrame containing the prediction error data with columns depending on
             the report type:
 
-            - `estimator_name`: Name of the estimator (when comparing estimators)
+            - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
             - `y_true`: True target values
             - `y_pred`: Predicted target values
@@ -910,8 +548,53 @@ class PredictionErrorDisplay(DisplayMixin):
         elif self.report_type == "cross-validation":
             columns = ["split"] + statistical_columns
         elif self.report_type == "comparison-estimator":
-            columns = ["estimator_name"] + statistical_columns
+            columns = ["estimator"] + statistical_columns
         else:  # self.report_type == "comparison-cross-validation"
-            columns = ["estimator_name", "split"] + statistical_columns
+            columns = ["estimator", "split"] + statistical_columns
 
         return self._prediction_error[columns]
+
+    # ignore the type signature because we override kwargs by specifying the name of
+    # the parameters for the user.
+    def set_style(  # type: ignore[override]
+        self,
+        *,
+        policy: Literal["override", "update"] = "update",
+        relplot_kwargs: dict | None = None,
+        perfect_model_kwargs: dict | None = None,
+    ):
+        """Set the style parameters for the display.
+
+        Parameters
+        ----------
+        policy : {"override", "update"}, default="update"
+            Policy to use when setting the style parameters.
+            If "override", existing settings are set to the provided values.
+            If "update", existing settings are not changed; only settings that were
+            previously unset are changed.
+
+        relplot_kwargs : dict, default=None
+            Additional keyword arguments to be passed to :func:`seaborn.relplot` for
+            rendering the scatter plot(s). Common options include `palette`, `alpha`,
+            `s`, `marker`, etc.
+
+        perfect_model_kwargs : dict, default=None
+            Additional keyword arguments to be passed to :func:`matplotlib.pyplot.plot`
+            for drawing the perfect prediction line. Common options include `color`,
+            `alpha`, `linestyle`, etc.
+
+        Returns
+        -------
+        self : object
+            The instance with a modified style.
+
+        Raises
+        ------
+        ValueError
+            If a style parameter is unknown.
+        """
+        return super().set_style(
+            policy=policy,
+            relplot_kwargs=relplot_kwargs or {},
+            perfect_model_kwargs=perfect_model_kwargs or {},
+        )

@@ -312,7 +312,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         Parameters
         ----------
         response_methods : {"auto", "predict", "predict_proba", "decision_function"},\
-                default="auto
+                default="auto"
             The methods to use to compute the predictions.
 
         n_jobs : int, default=None

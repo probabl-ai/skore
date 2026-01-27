@@ -63,7 +63,7 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
 
 @fixture
 def project():
-    return Project("<tenant>", "<name>")
+    return Project("myworkspace", "myname")
 
 
 @fixture
@@ -132,8 +132,11 @@ class TestEstimatorReportPayload:
             raise Exception("test_metrics_raises_exception")
 
         monkeypatch.setattr(
-            "skore_hub_project.metric.metric.EstimatorReportMetric.compute",
-            raise_exception,
+            "skore_hub_project.report.estimator_report.EstimatorReportPayload.METRICS",
+            [AccuracyTest],
+        )
+        monkeypatch.setattr(
+            "skore_hub_project.metric.AccuracyTest.compute", raise_exception
         )
 
         with raises(Exception, match="test_metrics_raises_exception"):
@@ -179,5 +182,5 @@ class TestEstimatorReportPayload:
     def test_exception(self):
         with raises(ValidationError):
             EstimatorReportPayload(
-                project=Project("<tenant>", "<name>"), report=None, key="<key>"
+                project=Project("myworkspace", "myname"), report=None, key="<key>"
             )

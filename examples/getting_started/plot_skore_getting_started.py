@@ -47,7 +47,6 @@ Skore: getting started
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-
 from skore import EstimatorReport
 
 X, y = make_classification(
@@ -88,7 +87,7 @@ rf_report.help()
 # performance of our estimator:
 
 # %%
-rf_report.metrics.summarize(indicator_favorability=True).frame()
+rf_report.metrics.summarize(favorability=True).frame()
 
 # %%
 # We can also retrieve the predictions directly e.g. on the train set:
@@ -212,7 +211,7 @@ comparator.help()
 # It can also compute common metrics, which will give us our benchmark:
 
 # %%
-comparator.metrics.summarize(indicator_favorability=True).frame()
+comparator.metrics.summarize(favorability=True).frame()
 
 # %%
 # Other metrics like the ROC curve are also implemented to enable easy comparison:
@@ -304,8 +303,8 @@ my_project.put("my_estimator_report", gb_report)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# We can retrieve the data in the project in the form of a
-# :class:`~skore.project.summary.Summary` object:
+# We can retrieve the data in the project as a summary object
+# by calling the ``summarize`` method:
 
 # %%
 summary = my_project.summarize()
@@ -325,7 +324,7 @@ pprint(stored_reports)
 
 # %%
 comparator = ComparisonReport(reports=stored_reports)
-comparator.metrics.summarize(pos_label=1, indicator_favorability=True).frame()
+comparator.metrics.summarize(pos_label=1, favorability=True).frame()
 
 # %%
 # We can retrieve metrics about our stored estimator reports, for example

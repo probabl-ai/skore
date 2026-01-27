@@ -83,9 +83,9 @@ TableReport(y)
 # ^^^^^^^^^
 
 # %%
-from skrub import TableVectorizer, StringEncoder
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
+from skrub import StringEncoder, TableVectorizer
 
 model = make_pipeline(
     TableVectorizer(high_cardinality=StringEncoder()),
@@ -156,7 +156,7 @@ data_display.plot(kind="corr")
 
 # %%
 hgbt_split_1 = hgbt_model_report.estimator_reports_[0]
-hgbt_split_1.metrics.summarize(indicator_favorability=True).frame()
+hgbt_split_1.metrics.summarize(favorability=True).frame()
 
 # %%
 # The favorability of each metric indicates whether the metric is better
@@ -177,10 +177,10 @@ hgbt_split_1.metrics.summarize(indicator_favorability=True).frame()
 # %%
 import numpy as np
 from sklearn.compose import make_column_transformer
+from sklearn.linear_model import RidgeCV
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, SplineTransformer
-from sklearn.linear_model import RidgeCV
-from skrub import DatetimeEncoder, ToDatetime, DropCols, GapEncoder
+from skrub import DatetimeEncoder, DropCols, GapEncoder, ToDatetime
 
 
 def periodic_spline_transformer(period, n_splines=None, degree=3):
@@ -273,7 +273,7 @@ with warnings.catch_warnings():
 # We can now have a look at the performance of the model with some standard metrics.
 
 # %%
-linear_model_report.metrics.summarize(indicator_favorability=True).frame()
+linear_model_report.metrics.summarize(favorability=True).frame()
 
 # %%
 # Comparing the models
@@ -286,7 +286,7 @@ linear_model_report.metrics.summarize(indicator_favorability=True).frame()
 from skore import ComparisonReport
 
 comparator = ComparisonReport([hgbt_model_report, linear_model_report])
-comparator.metrics.summarize(indicator_favorability=True).frame()
+comparator.metrics.summarize(favorability=True).frame()
 
 # %%
 # In addition, if we forgot to compute a specific metric

@@ -304,7 +304,7 @@ report.metrics.summarize(
 # does not necessarily share the same parameters. In this more complex case, skore will
 # require us to provide a scorer using the :func:`sklearn.metrics.make_scorer`
 # function.
-from sklearn.metrics import make_scorer, f1_score
+from sklearn.metrics import f1_score, make_scorer
 
 f1_scorer = make_scorer(f1_score, response_method="predict")
 operational_decision_cost_scorer = make_scorer(

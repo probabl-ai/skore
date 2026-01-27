@@ -31,6 +31,7 @@ report are accessible through accessors.
     :nosignatures:
     :template: autosummary/accessor.rst
 
+    ComparisonReport.feature_importance
     ComparisonReport.metrics
 
 Metrics

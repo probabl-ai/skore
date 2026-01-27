@@ -47,7 +47,7 @@ Questions, bugs, and feature requests
 
 If you have any questions, feel free to reach out:
 
-* Join our community on `Discord <https://discord.gg/scBZerAGwW>`_ for general chat and Q&A.
+* Join our community on `Discord <https://discord.probabl.ai>`_ for general chat and Q&A.
 * Alternatively, you can `start a discussion on GitHub <https://github.com/probabl-ai/skore/discussions>`_.
 * Both bugs and feature requests can be filed in the `GitHub issue tracker <https://github.com/probabl-ai/skore/issues>`_:
 
