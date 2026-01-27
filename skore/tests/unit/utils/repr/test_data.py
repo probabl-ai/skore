@@ -116,6 +116,29 @@ class _AccessorWithExplicitMethods(MockAccessor, _AccessorHelpDataMixin):
         return "Mock accessor"
 
 
+class _EmptyAccessor(MockAccessor, _AccessorHelpDataMixin):
+    """Accessor with no public methods; used for testing empty accessor exclusion."""
+
+    def _internal(self):
+        """Private method; should not be included."""
+        pass
+
+    def _get_help_title(self) -> str:
+        return "Empty accessor"
+
+
+class _ReportWithEmptyAccessor(_ReportWithExplicitMethods):
+    """Report with _ACCESSOR_CONFIG and empty accessor for testing exclusion."""
+
+    _ACCESSOR_CONFIG = {"empty": {"name": "empty"}}
+
+    def __init__(self, estimator, X_train=None, y_train=None, X_test=None, y_test=None):
+        super().__init__(
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        )
+        self.empty = _EmptyAccessor(parent=self)
+
+
 class _DisplayWithExplicitMethods(MockDisplay, _DisplayHelpDataMixin):
     """Display with explicit private and class methods; used for help tests."""
 
@@ -411,6 +434,19 @@ def test_report_build_help_data_output_with_accessors(report_with_accessor):
     assert m.favorability is None
     assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
     assert "metrics" in m.doc_url and "fetch" in m.doc_url
+
+
+def test_report_build_help_data_output_excludes_empty_accessor():
+    """_ReportHelpDataMixin._build_help_data excludes accessors with no methods."""
+    X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
+    y = np.array([0, 1, 1, 0])
+    estimator = LogisticRegression().fit(X, y)
+    report = _ReportWithEmptyAccessor(estimator)
+    data = report._build_help_data()
+    assert isinstance(data, ReportHelpData)
+    assert len(data.accessors) == 0
+    assert hasattr(report, "empty")
+    assert report.empty is not None
 
 
 def test_display_build_help_data_output(display_with_methods):

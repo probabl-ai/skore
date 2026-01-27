@@ -436,13 +436,14 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                 )
                 for name, method in get_public_methods(accessor)
             ]
-            accessors.append(
-                AccessorBranchHelp(
-                    branch_id=str(uuid.uuid4()),
-                    name=config["name"],
-                    methods=methods,
+            if methods:
+                accessors.append(
+                    AccessorBranchHelp(
+                        branch_id=str(uuid.uuid4()),
+                        name=config["name"],
+                        methods=methods,
+                    )
                 )
-            )
 
         base_methods_raw = get_public_methods(self)
         methods_section, base_methods = None, []
