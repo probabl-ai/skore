@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from threading import RLock
 from time import sleep
-from typing import Iterator, Literal
 from urllib.parse import urljoin
 from webbrowser import open as open_webbrowser
 
@@ -189,6 +188,8 @@ def post_oauth_refresh_token(refresh_token: str) -> tuple[str, str, str]:
 
 
 class Token:
+    """Token used for ``skore hub`` authentication, as HTTP header parameters."""
+
     def __init__(self, *, timeout: int = 600) -> None:
         url, device_code, user_code = get_oauth_device_login()
 
@@ -210,7 +211,7 @@ class Token:
         self.__refreshment = refreshment
         self.__expiration = datetime.fromisoformat(expiration)
 
-    def __call__(self) -> dict[str, str]:
+    def __call__(self) -> dict[str, str]:  # noqa: D102
         with self.__lock:
             if self.__expiration <= datetime.now(timezone.utc):
                 access, refreshment, expiration = post_oauth_refresh_token(

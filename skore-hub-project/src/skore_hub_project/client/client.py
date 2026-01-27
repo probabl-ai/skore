@@ -4,7 +4,6 @@ import importlib.metadata
 import logging
 from contextlib import suppress
 from http import HTTPStatus
-from os import environ
 from time import sleep
 from typing import Any, Final
 from urllib.parse import urljoin
@@ -22,7 +21,6 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
-from skore_hub_project.authentication.login import CREDENTIALS
 from skore_hub_project.authentication.uri import URI
 
 logger = logging.getLogger(__name__)
@@ -165,19 +163,21 @@ class HUBClient(Client):
         **kwargs: Any,
     ) -> Response:
         """Execute request with authorization."""
-        headers = Headers(headers)
+        from skore_hub_project.authentication.login import credentials
 
-        # Overload headers with package semantic versioning
-        if PACKAGE_SEMVER:
-            headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_SEMVER}"})
-
-        # Overload headers with credentials
-        if CREDENTIALS is None:
+        if credentials is None:
             raise RuntimeError(
                 "You are not logged in. Please run `login` or create an API key."
             )
 
-        headers.update(CREDENTIALS())
+        headers = Headers(headers)
+
+        # Overload headers with credentials
+        headers.update(credentials())
+
+        # Overload headers with package semantic versioning
+        if PACKAGE_SEMVER:
+            headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_SEMVER}"})
 
         # Prefix the request by the hub URI when ``url`` is not absolute
         url = urljoin(URI, str(url))
