@@ -188,7 +188,13 @@ def post_oauth_refresh_token(refresh_token: str) -> tuple[str, str, str]:
 
 
 class Token:
-    """Token used for ``skore hub`` authentication, as HTTP header parameters."""
+    """
+    Token used for ``skore hub`` authentication, as HTTP header parameters.
+
+    Notes
+    -----
+    Refresh the token on-the-fly if necessary.
+    """
 
     def __init__(self, *, timeout: int = 600) -> None:
         url, device_code, user_code = get_oauth_device_login()
