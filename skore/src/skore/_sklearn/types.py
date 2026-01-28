@@ -1,10 +1,11 @@
 """Types between parts of the sklearn module."""
 
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from typing import Any, Literal, Protocol
 
 from numpy.typing import ArrayLike
+from pandas._typing import AggFuncType
 
 PlotBackend = Literal["matplotlib", "plotly"]
 
@@ -32,7 +33,8 @@ class _DefaultType:
 
 _DEFAULT = _DefaultType()
 PositiveLabel = int | float | bool | str | None | _DefaultType
-Aggregate = Literal["mean", "std"] | Sequence[Literal["mean", "std"]]
+
+Aggregate = AggFuncType
 
 
 @dataclass
