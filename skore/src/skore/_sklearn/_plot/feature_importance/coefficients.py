@@ -35,7 +35,7 @@ class CoefficientsDisplay(DisplayMixin):
 
     Attributes
     ----------
-    ax_ : ndarray ofmatplotlib Axes
+    ax_ : ndarray of matplotlib Axes
         Array of matplotlib Axes with the different matplotlib axis.
 
     figure_ : matplotlib Figure
