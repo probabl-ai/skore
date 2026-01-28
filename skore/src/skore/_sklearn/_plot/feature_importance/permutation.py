@@ -400,7 +400,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         boxplot_kwargs: dict[str, Any] | None = None,
         stripplot_kwargs: dict[str, Any] | None = None,
     ):
-        f"""Set the style parameters for the display.
+        """Set the style parameters for the display.
 
         Parameters
         ----------
