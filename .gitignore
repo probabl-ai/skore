@@ -198,3 +198,4 @@ sphinx/_templates/demo_report_help_generated.html
 skore/LICENSE
 skore-hub-project/LICENSE
 skore-local-project/LICENSE
+.aider*
