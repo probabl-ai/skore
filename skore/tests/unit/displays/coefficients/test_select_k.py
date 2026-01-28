@@ -1,6 +1,35 @@
+from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PolynomialFeatures
 
-from skore import ComparisonReport, EstimatorReport
+from skore import ComparisonReport, CrossValidationReport, EstimatorReport
+
+
+def test_estimator(logistic_binary_classification_with_train_test):
+    """Test that select_k works with EstimatorReport."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+    )
+
+    coefficients = report.feature_importance.coefficients().frame(select_k=3)
+
+    assert set(coefficients["feature"]) == {"Feature #10", "Feature #1", "Feature #15"}
+
+
+def test_comparison_cross_validation(logistic_binary_classification_data):
+    """Test that select_k works with ComparisonReports of CrossValidationReports."""
+    estimator, X, y = logistic_binary_classification_data
+    report_1 = CrossValidationReport(estimator, X, y)
+    report_2 = CrossValidationReport(estimator, X, y)
+    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+
+    coefficients = report.feature_importance.coefficients().frame(select_k=3)
+
+    assert set(coefficients["feature"]) == {"Feature #10", "Feature #1", "Feature #15"}
 
 
 def test_positive(regression_train_test_split):
@@ -164,3 +193,35 @@ def test_plot(regression_train_test_split):
 
     assert hasattr(display, "ax_")
     assert hasattr(display, "figure_")
+
+
+def test_plot_different_features(logistic_binary_classification_with_train_test):
+    """
+    Test that select_k works correctly when the estimators have different features.
+    """
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        Pipeline([("poly", PolynomialFeatures()), ("predictor", clone(estimator))]),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+
+    display = report.feature_importance.coefficients()
+    display.plot(select_k=3)
+
+    labels = [
+        [tick_label.get_text() for tick_label in ax.get_yaxis().get_ticklabels()]
+        for ax in display.ax_
+    ]
+    assert labels == [
+        ["Feature #10", "Feature #1", "Feature #15"],
+        ["Intercept", "x10", "x1"],
+    ]
