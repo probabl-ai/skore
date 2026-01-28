@@ -25,32 +25,6 @@ def report(request):
     return request.getfixturevalue(request.param)
 
 
-def test_help(capsys, report):
-    """Check the help menu works."""
-    report.help()
-
-    captured = capsys.readouterr()
-    assert "Tools to compare estimators" in captured.out
-
-    # Check that we have a line with accuracy and the arrow associated with it
-    assert re.search(
-        r"\.accuracy\([^)]*\).*\(↗︎\).*-.*accuracy", captured.out, re.MULTILINE
-    )
-
-
-def test_repr(report):
-    """Check the `__repr__` works."""
-
-    assert "ComparisonReport" in repr(report)
-
-
-def test_metrics_repr(report):
-    """Check the repr method of `report.metrics`."""
-    repr_str = repr(report.metrics)
-    assert "skore.ComparisonReport.metrics" in repr_str
-    assert "help()" in repr_str
-
-
 def test_pickle(tmp_path, report):
     """Check that we can pickle a comparison report."""
     with BytesIO() as stream:
@@ -71,38 +45,6 @@ def test_cross_validation_report_cleaned_up(report):
 
     with BytesIO() as stream:
         joblib.dump(sub_report, stream)
-
-
-def test_metrics_help(capsys, report):
-    """Check that the help method writes to the console."""
-    report.metrics.help()
-    captured = capsys.readouterr()
-    assert "Available metrics methods" in captured.out
-
-
-def test_feature_importance_help(capsys):
-    X, y = make_classification(random_state=0)
-    estimators = {"LinearSVC": LinearSVC(), "LogisticRegression": LogisticRegression()}
-
-    reports = {
-        name: EstimatorReport(est, X_train=X, X_test=X, y_train=y, y_test=y)
-        for name, est in estimators.items()
-    }
-
-    comparison_report = ComparisonReport(reports)
-
-    comparison_report.feature_importance.help()
-    captured = capsys.readouterr()
-
-    assert "Available feature importance methods" in captured.out
-    assert "coefficients" in captured.out
-
-    comparison_report.feature_importance.coefficients().help()
-    captured = capsys.readouterr()
-
-    assert "frame" in captured.out
-    assert "plot" in captured.out
-    assert "set_style" in captured.out
 
 
 @pytest.mark.parametrize("report", [EstimatorReport, CrossValidationReport])

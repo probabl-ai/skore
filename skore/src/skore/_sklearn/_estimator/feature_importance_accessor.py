@@ -156,6 +156,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     You can access this accessor using the `feature_importance` attribute.
     """
 
+    _verbose_name: str = "feature_importance"
+
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
@@ -648,15 +650,6 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
-
-    def _format_method_name(self, name: str) -> str:
-        return f"{name}(...)".ljust(29)
-
-    def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available feature importance methods[/bold cyan]"
-
-    def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.feature_importance[/bold cyan]"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""

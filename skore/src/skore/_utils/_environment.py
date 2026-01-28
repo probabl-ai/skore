@@ -12,6 +12,7 @@ def get_environment_info() -> dict[str, Any]:
         "is_jupyter": False,
         "is_vscode": False,
         "is_interactive": False,
+        "is_sphinx_build": False,
         "environment_name": "standard_python",
         "details": {},
     }
@@ -39,6 +40,9 @@ def get_environment_info() -> dict[str, Any]:
         else:
             env_info["environment_name"] = "vscode_script"
 
+    if "SPHINX_BUILD" in os.environ:
+        env_info["is_sphinx_build"] = True
+
     env_info["details"]["python_executable"] = sys.executable
     env_info["details"]["python_version"] = sys.version
 
@@ -46,6 +50,12 @@ def get_environment_info() -> dict[str, Any]:
 
 
 def is_environment_notebook_like() -> bool:
-    """Return `True` if the execution context dcan render HTML. `False` otherwise."""
+    """Return `True` if the execution context can render HTML. `False` otherwise."""
     info = get_environment_info()
     return info["is_vscode"] or info["is_jupyter"]
+
+
+def is_environment_sphinx_build() -> bool:
+    """Return `True` if the execution context is a sphinx build. `False` otherwise."""
+    info = get_environment_info()
+    return info["is_sphinx_build"]
