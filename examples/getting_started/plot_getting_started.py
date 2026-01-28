@@ -188,7 +188,7 @@ coefficients.frame()
 # sphinx_gallery_end_ignore
 
 (
-    coefficients.frame()
+    coefficients.frame(format="long")
     .groupby("feature")
     .mean()
     .drop(columns=["split"])
@@ -322,7 +322,7 @@ final_top_15_features = (
 
 simple_coefficients = simple_cv_report.feature_importance.coefficients()
 cv_top_15_features = (
-    simple_coefficients.frame()
+    simple_coefficients.frame(format="long")
     .groupby("feature")
     .mean()
     .reset_index()

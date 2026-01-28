@@ -335,7 +335,9 @@ def unscale_coefficients(df, feature_mean, feature_std):
 
 
 df_ridge_report_coef_unscaled = unscale_coefficients(
-    ridge_report.feature_importance.coefficients().frame(), feature_mean, feature_std
+    ridge_report.feature_importance.coefficients().frame(format="long"),
+    feature_mean,
+    feature_std,
 )
 df_ridge_report_coef_unscaled
 
@@ -452,7 +454,7 @@ print("Number of features after feature engineering:", n_features_engineered)
 # %%
 engineered_ridge_report_feature_importance = (
     engineered_ridge_report.feature_importance.coefficients()
-    .frame()
+    .frame(format="long")
     .set_index("feature")
     .sort_values(by="coefficients", key=abs, ascending=True)
     .tail(15)
@@ -714,7 +716,7 @@ print(selectk_features)
 # %%
 (
     selectk_ridge_report.feature_importance.coefficients()
-    .frame()
+    .frame(format="long")
     .set_index("feature")
     .sort_values(by="coefficients", key=abs, ascending=True)
     .tail(15)

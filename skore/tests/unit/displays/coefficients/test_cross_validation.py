@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.base import clone
 from sklearn.compose import TransformedTargetRegressor
@@ -70,7 +71,7 @@ def test_binary_classification(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(format="long")
     expected_columns = ["split", "feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     feature_names = (["Intercept"] + columns_names) * splitter
@@ -154,7 +155,7 @@ def test_multiclass_classification(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(format="long")
     expected_columns = ["split", "feature", "label", "coefficients"]
     assert df.columns.tolist() == expected_columns
     feature_names = (["Intercept"] + columns_names) * splitter * n_classes
@@ -261,7 +262,7 @@ def test_single_output_regression(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(format="long")
     expected_columns = ["split", "feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == (["Intercept"] + columns_names) * splitter
@@ -355,7 +356,7 @@ def test_multi_output_regression(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(format="long")
     expected_columns = ["split", "feature", "output", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["output"]).tolist() == [f"{i}" for i in range(n_outputs)]
@@ -408,7 +409,11 @@ def test_include_intercept(
     report = CrossValidationReport(clone(estimator), X, y, splitter=splitter)
     display = report.feature_importance.coefficients()
 
-    assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
+    assert (
+        display.frame(format="long", include_intercept=False)
+        .query("feature == 'Intercept'")
+        .empty
+    )
 
     display.plot(include_intercept=False)
     assert all(
@@ -416,3 +421,116 @@ def test_include_intercept(
     )
     estimator_name = display.coefficients["estimator"][0]
     assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
+
+
+def test_aggregate_parameter(
+    pyplot,
+    logistic_binary_classification_data,
+):
+    """Check that the aggregate parameter aggregates CV splits correctly."""
+    estimator, X, y = logistic_binary_classification_data
+    columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
+    X = _convert_container(X, "dataframe", columns_name=columns_names)
+    splitter = 3
+
+    report = CrossValidationReport(clone(estimator), X, y, splitter=splitter)
+    display = report.feature_importance.coefficients()
+
+    df_long = display.frame(format="long")
+    assert df_long["split"].nunique() == splitter
+
+    df_agg = display.frame(format="wide", aggregate=True)
+
+    for val in df_agg["coefficients"]:
+        assert "±" in str(val)
+
+
+def test_query_parameter_cross_validation(
+    pyplot,
+    logistic_multiclass_classification_data,
+):
+    """Check that the query parameter filters data correctly for CV reports."""
+    estimator, X, y = logistic_multiclass_classification_data
+    columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
+    X = _convert_container(X, "dataframe", columns_name=columns_names)
+    splitter = 2
+
+    report = CrossValidationReport(clone(estimator), X, y, splitter=splitter)
+    display = report.feature_importance.coefficients()
+
+    # Filter by a specific split
+    df_filtered = display.frame(format="long", query={"split": 0})
+    assert set(df_filtered["split"]) == {0}
+
+    labels = np.unique(y)
+    target_label = int(labels[0])
+    df_label = display.frame(format="long", query={"label": target_label})
+    assert set(df_label["label"]) == {target_label}
+
+
+def test_wide_format_binary_classification(
+    pyplot,
+    logistic_binary_classification_data,
+):
+    """Check wide format for binary classification CV has splits as columns."""
+    estimator, X, y = logistic_binary_classification_data
+    columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
+    X = _convert_container(X, "dataframe", columns_name=columns_names)
+
+    report = CrossValidationReport(clone(estimator), X, y, splitter=2)
+    display = report.feature_importance.coefficients()
+
+    df_wide = display.frame(format="wide")
+    assert df_wide.index.name == "feature"
+    assert df_wide.columns.name == "split"
+
+
+def test_wide_format_multiclass_classification(
+    pyplot,
+    logistic_multiclass_classification_data,
+):
+    """Check wide format for multiclass CV has (label, split) MultiIndex columns."""
+    estimator, X, y = logistic_multiclass_classification_data
+    columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
+    X = _convert_container(X, "dataframe", columns_name=columns_names)
+
+    report = CrossValidationReport(clone(estimator), X, y, splitter=2)
+    display = report.feature_importance.coefficients()
+
+    df_wide = display.frame(format="wide")
+    assert df_wide.index.name == "feature"
+    assert isinstance(df_wide.columns, pd.MultiIndex)
+
+
+def test_wide_format_single_output_regression(
+    pyplot,
+    linear_regression_data,
+):
+    """Check wide format for single output regression CV has splits as columns."""
+    estimator, X, y = linear_regression_data
+    columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
+    X = _convert_container(X, "dataframe", columns_name=columns_names)
+
+    report = CrossValidationReport(clone(estimator), X, y, splitter=2)
+    display = report.feature_importance.coefficients()
+
+    df_wide = display.frame(format="wide")
+    assert df_wide.index.name == "feature"
+    assert df_wide.columns.name == "split"
+
+
+def test_wide_format_multi_output_regression(
+    pyplot,
+    linear_regression_multioutput_data,
+):
+    """Check wide format for multi-output regression CV has MultiIndex columns."""
+    estimator, X, y = linear_regression_multioutput_data
+    columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
+    X = _convert_container(X, "dataframe", columns_name=columns_names)
+
+    report = CrossValidationReport(clone(estimator), X, y, splitter=2)
+    display = report.feature_importance.coefficients()
+
+    df_wide = display.frame(format="wide")
+    assert df_wide.index.name == "feature"
+    assert isinstance(df_wide.columns, pd.MultiIndex)

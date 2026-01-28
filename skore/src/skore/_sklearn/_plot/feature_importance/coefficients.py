@@ -55,22 +55,13 @@ class CoefficientsDisplay(DisplayMixin):
     >>> report = EstimatorReport(LogisticRegression(), **split_data)
     >>> display = report.feature_importance.coefficients()
     >>> display.frame()
-                  feature       label  coefficients
-    0           Intercept      setosa      9.2...
-    1   sepal length (cm)      setosa     -0.4...
-    2    sepal width (cm)      setosa      0.8...
-    3   petal length (cm)      setosa     -2.3...
-    4    petal width (cm)      setosa     -0.9...
-    5           Intercept  versicolor      1.7...
-    6   sepal length (cm)  versicolor      0.5...
-    7    sepal width (cm)  versicolor     -0.2...
-    8   petal length (cm)  versicolor     -0.2...
-    9    petal width (cm)  versicolor     -0.7...
-    10          Intercept   virginica    -11.0...
-    11  sepal length (cm)   virginica     -0.1...
-    12   sepal width (cm)   virginica     -0.5...
-    13  petal length (cm)   virginica      2.5...
-    14   petal width (cm)   virginica      1.7...
+    label                   setosa  versicolor  virginica
+    feature
+    Intercept                 9.2...       1.7...    -11.0...
+    sepal length (cm)        -0.4...       0.5...     -0.1...
+    sepal width (cm)          0.8...      -0.2...     -0.5...
+    petal length (cm)        -2.3...      -0.2...      2.5...
+    petal width (cm)         -0.9...      -0.7...      1.7...
     """
 
     _default_barplot_kwargs: dict[str, Any] = {"palette": "tab10"}
@@ -84,21 +75,35 @@ class CoefficientsDisplay(DisplayMixin):
         self.coefficients = coefficients
         self.report_type = report_type
 
-    def frame(self, *, include_intercept: bool = True):
+    def frame(
+        self,
+        *,
+        include_intercept: bool = True,
+        format: Literal["long", "wide"] = "wide",
+        aggregate: bool = False,
+        query: dict[str, Any] | None = None,
+    ) -> pd.DataFrame:
         """Get the coefficients in a dataframe format.
-
-        The returned dataframe is not going to contain constant columns or columns
-        containing only NaN values.
 
         Parameters
         ----------
         include_intercept : bool, default=True
-            Whether or not to include the intercept in the dataframe.
+            Whether to include the intercept in the dataframe.
+
+        format : {"long", "wide"}, default="wide"
+            Output format. "wide" pivots features as rows with labels/splits as
+            columns. "long" returns raw data with one row per observation.
+
+        aggregate : bool, default=False
+            When True and format="wide", aggregate CV splits showing "mean ± std".
+
+        query : dict or None, default=None
+            Filter data before formatting. Example: ``{"label": "setosa"}``.
 
         Returns
         -------
         DataFrame
-            Dataframe containing the coefficients of the linear model.
+            Coefficients of the linear model.
 
         Examples
         --------
@@ -113,8 +118,22 @@ class CoefficientsDisplay(DisplayMixin):
         ... )
         >>> report = EstimatorReport(LogisticRegression(), **split_data)
         >>> display = report.feature_importance.coefficients()
+
+        Get coefficients in wide format (default):
+
         >>> display.frame()
-                    feature       label  coefficients
+        label                   setosa  versicolor  virginica
+        feature
+        Intercept                 9.2...       1.7...    -11.0...
+        sepal length (cm)        -0.4...       0.5...     -0.1...
+        sepal width (cm)          0.8...      -0.2...     -0.5...
+        petal length (cm)        -2.3...      -0.2...      2.5...
+        petal width (cm)         -0.9...      -0.7...      1.7...
+
+        Get coefficients in long format:
+
+        >>> display.frame(format="long")
+                      feature       label  coefficients
         0           Intercept      setosa      9.2...
         1   sepal length (cm)      setosa     -0.4...
         2    sepal width (cm)      setosa      0.8...
@@ -137,22 +156,72 @@ class CoefficientsDisplay(DisplayMixin):
             columns_to_drop = ["estimator"]
         elif self.report_type == "comparison-estimator":
             columns_to_drop = ["split"]
-        elif self.report_type == "comparison-cross-validation":
+        else:  # comparison-cross-validation
             columns_to_drop = []
-        else:
-            raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
         if self.coefficients["label"].isna().all():
-            # regression problem
             columns_to_drop.append("label")
         if self.coefficients["output"].isna().all():
-            # classification problem
             columns_to_drop.append("output")
 
-        coefficients = self.coefficients.drop(columns=columns_to_drop)
+        df = self.coefficients.drop(columns=columns_to_drop)
+
         if not include_intercept:
-            coefficients = coefficients.query("feature != 'Intercept'")
-        return coefficients
+            df = df.query("feature != 'Intercept'")
+
+        if query is not None:
+            conditions = " and ".join(
+                f"`{col}` == {val!r}" for col, val in query.items()
+            )
+            df = df.query(conditions)
+
+        if format == "long":
+            return df.reset_index(drop=True)
+
+        # Wide format: pivot the dataframe
+        label_col: str | None = (
+            "label" if "label" in df else "output" if "output" in df else None
+        )
+
+        if aggregate and "split" in df:
+            group_cols = [
+                c for c in df.columns if c not in ("split", "coefficients")
+            ]
+            agg = df.groupby(group_cols, sort=False)["coefficients"].agg(
+                ["mean", "std"]
+            )
+            agg["value"] = agg.apply(
+                lambda r: f"{r['mean']:.3f} ± {r['std']:.3f}", axis=1
+            )
+            df = agg["value"].reset_index()
+            df.columns = pd.Index(list(group_cols) + ["coefficients"])
+
+        if "estimator" in df:
+            index = ["feature"] if label_col is None else [label_col, "feature"]
+            columns: list[str] | None = (
+                ["estimator", "split"] if "split" in df else ["estimator"]
+            )
+        else:
+            index = ["feature"]
+            columns = (
+                [label_col, "split"] if "split" in df and label_col is not None
+                else [label_col] if label_col is not None
+                else ["split"] if "split" in df
+                else None
+            )
+
+        if columns:
+            result = df.pivot_table(
+                index=index,
+                columns=columns,
+                values="coefficients",
+                aggfunc="first",
+                sort=False,
+            )
+        else:
+            result = df.set_index(index)["coefficients"].to_frame()
+
+        return result
 
     @DisplayMixin.style_plot
     def plot(
@@ -207,7 +276,7 @@ class CoefficientsDisplay(DisplayMixin):
 
         if self.report_type in ("estimator", "cross-validation"):
             return self._plot_single_estimator(
-                frame=self.frame(include_intercept=include_intercept),
+                frame=self.frame(include_intercept=include_intercept, format="long"),
                 estimator_name=self.coefficients["estimator"][0],
                 report_type=self.report_type,
                 subplot_by=subplot_by,
@@ -220,7 +289,7 @@ class CoefficientsDisplay(DisplayMixin):
             "comparison-cross-validation",
         ):
             return self._plot_comparison(
-                frame=self.frame(include_intercept=include_intercept),
+                frame=self.frame(include_intercept=include_intercept, format="long"),
                 report_type=self.report_type,
                 subplot_by=subplot_by,
                 barplot_kwargs=barplot_kwargs,
