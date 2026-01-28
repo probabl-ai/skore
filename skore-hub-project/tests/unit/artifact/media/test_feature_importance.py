@@ -61,7 +61,7 @@ def monkeypatch_permutation(monkeypatch):
         param(
             MeanDecreaseImpurity,
             "binary_classification",
-            "mean_decrease_impurity",
+            "impurity_decrease",
             None,
             id="MeanDecreaseImpurity",
         ),

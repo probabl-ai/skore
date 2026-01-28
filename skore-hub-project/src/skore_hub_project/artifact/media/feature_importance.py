@@ -77,8 +77,8 @@ class PermutationTest(Permutation):  # noqa: D101
 
 
 class MeanDecreaseImpurity(FeatureImportance[EstimatorReport]):  # noqa: D101
-    accessor: ClassVar[str] = "feature_importance.mean_decrease_impurity"
-    name: Literal["mean_decrease_impurity"] = "mean_decrease_impurity"
+    accessor: ClassVar[str] = "feature_importance.impurity_decrease"
+    name: Literal["impurity_decrease"] = "impurity_decrease"
     data_source: None = None
 
 
