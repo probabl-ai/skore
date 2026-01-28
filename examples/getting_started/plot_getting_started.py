@@ -46,12 +46,12 @@ TableReport(german_credit.frame)
 # Creating our experiment and held-out sets
 # -----------------------------------------
 #
-# We will use skore's enhanced `train_test_split` function to create our experiment set
+# We will use skore's enhanced :func:`~skore.train_test_split` function to create our experiment set
 # and a left-out test set. The experiment set will be used for model development and
 # cross-validation, while the left-out set will only be used at the end to validate
 # our final model.
 #
-# Unlike scikit-learn's `train_test_split`, skore's version provides helpful diagnostics
+# Unlike scikit-learn's :func:`~skore.train_test_split`, skore's version provides helpful diagnostics
 # about potential issues with your data split, such as class imbalance.
 
 # %%
@@ -61,7 +61,7 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 
 # %%
 # skore tells us we have class-imbalance issues with our data, which we confirm
-# with the `TableReport` above by clicking on the "class" column and looking at the
+# with the :class:`~skore.TableReport` above by clicking on the "class" column and looking at the
 # class distribution: there are only 300 examples where the target is "bad".
 # The second warning concerns time-ordered data, but our data does not contain time-ordered columns so we can safely ignore it.
 
@@ -69,13 +69,14 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 # Model development with cross-validation
 # =======================================
 #
-# We will investigate two different models using cross-validation:
+# We will investigate two different families of models using cross-validation.
 #
-# 1. A simple linear model coupled with preprocessing powered by
-#    :func:`skrub.tabular_pipeline`
-# 2. A more advanced model, sklearn's
-#    :class:`~sklearn.ensemble.RandomForestClassifier`,
-#    where preprocessing is handled automatically.
+# 1. A :class:`~sklearn.linear_model.LogisticRegression` which is a linear model
+# 2. A :class:`~sklearn.ensemble.RandomForestClassifier` which is an ensemble of
+#    decision trees.
+#
+# In both cases, we rely on :func:`skrub.tabular_pipeline` to choose the proper
+# preprocessing depending on the kind of model.
 #
 # Cross-validation is necessary to get a more reliable estimate of model performance.
 # skore makes it easy through :class:`skore.CrossValidationReport`.
@@ -110,7 +111,10 @@ simple_cv_report = CrossValidationReport(
 )
 
 # %%
-# The :meth:`~skore.CrossValidationReport.help` method shows all available methods and properties:
+# Skore reports allow us to structure the statistical information
+# we look for when experimenting with predictive models. First, the
+# :meth:`~skore.CrossValidationReport.help` method shows us all its available methods
+# and attributes, with the knowledge that our model was trained for classification:
 
 # %%
 simple_cv_report.help()
@@ -123,7 +127,7 @@ simple_cv_report.data.analyze()
 
 # %%
 # But we can also quickly get an overview of the performance of our model,
-# using :meth:`~skore.CrossValidation.metrics.summarize`:
+# using :meth:`~skore.CrossValidationReport.metrics.summarize`:
 
 # %%
 simple_metrics = simple_cv_report.metrics.summarize(favorability=True)
@@ -132,10 +136,12 @@ simple_metrics.frame()
 # %%
 # .. note::
 #
-#     `favorability=True` adds a "Favorability" column showing whether higher or lower values are better.
+#     `favorability=True` adds a column showing whether higher or lower metric values
+#     are better.
 
 # %%
-# More complex metrics are available, such as the precision-recall curve:
+# In addition to the summary of metrics, skore provides more advanced statistical
+# information such as the precision-recall curve:
 
 # %%
 precision_recall = simple_cv_report.metrics.precision_recall()
@@ -149,27 +155,27 @@ precision_recall.help()
 #     to access the information in several ways.
 
 # %%
-# We can visualize the critical information as a plot:
+# We can visualize the critical information as a plot, with only a few lines of code:
 
 # %%
 precision_recall.plot()
 
 # %%
-# Or we can access the raw information as a dataframe:
+# Or we can access the raw information as a dataframe if additional analysis is needed:
 
 # %%
 precision_recall.frame()
 
 # %%
-# Similarly, we can plot the confusion matrix:
+# As another example, we can plot the confusion matrix with the same consistent API:
 
 # %%
 confusion_matrix = simple_cv_report.metrics.confusion_matrix()
 confusion_matrix.plot()
 
 # %%
-# Since our model is a linear model, we can study the importance that it gives
-# to each feature:
+# Skore also provides utilities to inspect models. Since our model is a linear
+# model, we can study the importance that it gives to each feature:
 
 # %%
 coefficients = simple_cv_report.feature_importance.coefficients()
@@ -206,7 +212,7 @@ coefficients.frame()
 # %%
 from sklearn.ensemble import RandomForestClassifier
 
-advanced_model = tabular_pipeline(RandomForestClassifier())
+advanced_model = tabular_pipeline(RandomForestClassifier(random_state=0))
 advanced_model
 
 # %%
@@ -235,12 +241,12 @@ comparison = ComparisonReport(
 )
 
 # %%
-# This report also has a help menu:
+# This report follows the same API as :class:`~skore.CrossValidationReport`:
 comparison.help()
 
 # %%
-# In fact, it has mostly the same API as :class:`~skore.CrossValidationReport` and we
-# have access to the same tools to make statistical analysis and compare both models:
+# We have access to the same tools to perform statistical analysis and compare both
+# models:
 comparison_metrics = comparison.metrics.summarize(favorability=True)
 comparison_metrics.frame()
 
@@ -395,7 +401,8 @@ summary = project.summarize()
 
 # %%
 # Supposing you selected "Cross-validation" in the "Report type" tab, if you now call
-# `reports()`, you get only the the :class:`~skore.CrossValidationReport` objects, which
+# :meth:`~skore.project._summary.Summary.reports`, you get only the
+# :class:`~skore.CrossValidationReport` objects, which
 # you can directly put in the form of a :class:`~skore.ComparisonReport`:
 
 # %%
