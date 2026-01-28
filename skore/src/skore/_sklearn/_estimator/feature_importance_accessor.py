@@ -206,7 +206,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         )
 
     @available_if(_check_has_feature_importances())
-    def mean_decrease_impurity(self) -> ImpurityDecreaseDisplay:
+    def impurity_decrease(self) -> ImpurityDecreaseDisplay:
         """Retrieve the mean decrease impurity (MDI) of a tree-based model.
 
         This method is available for estimators that expose a `feature_importances_`
@@ -230,7 +230,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> forest = RandomForestClassifier(n_estimators=5, random_state=0)
         >>> report = EstimatorReport(forest, **split_data)
-        >>> display = report.feature_importance.mean_decrease_impurity()
+        >>> display = report.feature_importance.impurity_decrease()
         >>> display.frame()
         """
         return ImpurityDecreaseDisplay._compute_data_for_display(

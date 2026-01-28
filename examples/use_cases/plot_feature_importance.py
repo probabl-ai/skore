@@ -801,7 +801,7 @@ tree_report.help()
 
 # %%
 # We have a
-# :meth:`~skore.EstimatorReport.feature_importance.mean_decrease_impurity`
+# :meth:`~skore.EstimatorReport.feature_importance.impurity_decrease`
 # accessor.
 
 # %%
@@ -862,7 +862,7 @@ plot_tree(
 # Now, let us look at the feature importance based on the MDI:
 
 # %%
-tree_report.feature_importance.mean_decrease_impurity().plot.barh(
+tree_report.feature_importance.impurity_decrease().plot.barh(
     title=f"Feature importance of {tree_report.estimator_name_}",
     xlabel="MDI",
     ylabel="Feature",
@@ -924,7 +924,7 @@ print(f"Number of trees in the forest: {n_estimators}")
 # Let us look into the MDI of our random forest:
 
 # %%
-rf_report.feature_importance.mean_decrease_impurity().plot.barh(
+rf_report.feature_importance.impurity_decrease().plot.barh(
     title=f"Feature importance of {rf_report.estimator_name_}",
     xlabel="MDI",
     ylabel="Feature",

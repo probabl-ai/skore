@@ -61,7 +61,7 @@ def test_numpy_arrays(data, estimator, expected_shape):
     X, y = data
     estimator.fit(X, y)
     report = EstimatorReport(estimator)
-    result = report.feature_importance.mean_decrease_impurity()
+    result = report.feature_importance.impurity_decrease()
 
     assert result.shape == expected_shape
 
@@ -86,13 +86,13 @@ def test_numpy_arrays(data, estimator, expected_shape):
     ],
 )
 def test_pandas_dataframe(estimator):
-    """If provided, the `mean_decrease_impurity` dataframe uses the feature names."""
+    """If provided, the `impurity_decrease` dataframe uses the feature names."""
     X, y = make_classification(n_features=5, random_state=42)
     X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(X.shape[1])])
     estimator.fit(X, y)
 
     report = EstimatorReport(estimator)
-    result = report.feature_importance.mean_decrease_impurity()
+    result = report.feature_importance.impurity_decrease()
 
     assert result.shape == (5, 1)
     assert result.index.tolist() == [
@@ -133,7 +133,7 @@ def _make_estimator_param(estimator):
 def test_all_sklearn_estimators(
     request, estimator, regression_data, binary_classification_data
 ):
-    """Check that `mean_decrease_impurity` is supported for every sklearn estimator."""
+    """Check that `impurity_decrease` is supported for every sklearn estimator."""
     if is_regressor(estimator):
         X, y = regression_data
     else:
@@ -142,7 +142,7 @@ def test_all_sklearn_estimators(
     estimator.fit(X, y)
 
     report = EstimatorReport(estimator)
-    result = report.feature_importance.mean_decrease_impurity()
+    result = report.feature_importance.impurity_decrease()
 
     assert result.shape == (X.shape[1], 1)
     assert result.index.tolist() == [f"Feature #{i}" for i in range(X.shape[1])]
@@ -168,7 +168,7 @@ def test_pipeline_with_transformer(regression_data):
         model, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
     )
 
-    result = report.feature_importance.mean_decrease_impurity()
+    result = report.feature_importance.impurity_decrease()
     assert result.shape == (report.estimator_[-1].n_features_in_, 1)
     assert result.index.tolist() == [
         "1",

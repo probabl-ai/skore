@@ -12,6 +12,55 @@ from skore._sklearn.types import ReportType
 
 
 class ImpurityDecreaseDisplay(DisplayMixin):
+    """Display to inspect the mean decrease impurity of tree-based models.
+
+    Parameters
+    ----------
+    importances : DataFrame
+        The importances data to display. The columns are:
+
+        - `estimator`
+        - `feature`
+        - `importances`
+
+    report_type : {"estimator", "cross-validation", "comparison-estimator", \
+            "comparison-cross-validation"}
+        Report type from which the display is created.
+
+    Attributes
+    ----------
+    ax_ : matplotlib Axes
+        Matplotlib Axes with the plot.
+
+    facet_ : seaborn FacetGrid
+        FacetGrid containing the plot.
+
+    figure_ : matplotlib Figure
+        Figure containing the plot.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_iris
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> from skore import EstimatorReport, train_test_split
+    >>> iris = load_iris(as_frame=True)
+    >>> X, y = iris.data, iris.target
+    >>> y = iris.target_names[y]
+    >>> split_data = train_test_split(
+    ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
+    ... )
+    >>> report = EstimatorReport(
+    ...     RandomForestClassifier(random_state=0), **split_data
+    ... )
+    >>> display = report.feature_importance.impurity_decrease()
+    >>> display.frame()
+                    feature  importances
+    0  sepal length (cm)     0.1...
+    1   sepal width (cm)     0.0...
+    2  petal length (cm)     0.4...
+    3   petal width (cm)     0.3...
+    """
+
     _default_barplot_kwargs: dict[str, Any] = {}
 
     def __init__(self, *, importances: pd.DataFrame, report_type: ReportType):
@@ -26,6 +75,23 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         estimator_name: str,
         report_type: ReportType,
     ) -> "ImpurityDecreaseDisplay":
+        """Compute the data for the display.
+
+        Parameters
+        ----------
+        estimator : BaseEstimator
+            The estimator to compute the data for.
+        estimator_name : str
+            The name of the estimator.
+        report_type : {"estimator", "cross-validation", "comparison-estimator", \
+                "comparison-cross-validation"}
+            The type of report to compute the data for.
+
+        Returns
+        -------
+        ImpurityDecreaseDisplay
+            The data for the display.
+        """
         if isinstance(estimator, Pipeline):
             preprocessor, predictor = estimator[:-1], estimator[-1]
         else:
@@ -47,6 +113,38 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         return cls(importances=importances, report_type=report_type)
 
     def frame(self) -> pd.DataFrame:
+        """Get the mean decrease impurity in a dataframe format.
+
+        The returned dataframe is not going to contain constant columns or columns
+        containing only NaN values.
+
+        Returns
+        -------
+        DataFrame
+            Dataframe containing the mean decrease impurity of the tree-based model.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_iris
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from skore import EstimatorReport, train_test_split
+        >>> iris = load_iris(as_frame=True)
+        >>> X, y = iris.data, iris.target
+        >>> y = iris.target_names[y]
+        >>> split_data = train_test_split(
+        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
+        ... )
+        >>> report = EstimatorReport(
+        ...     RandomForestClassifier(random_state=0), **split_data
+        ... )
+        >>> display = report.feature_importance.impurity_decrease()
+        >>> display.frame()
+                     feature  importances
+        0  sepal length (cm)     0.1...
+        1   sepal width (cm)     0.0...
+        2  petal length (cm)     0.4...
+        3   petal width (cm)     0.3...
+        """
         if self.report_type == "estimator":
             columns_to_drop = ["estimator"]
         else:
@@ -56,10 +154,31 @@ class ImpurityDecreaseDisplay(DisplayMixin):
 
     @DisplayMixin.style_plot
     def plot(self) -> None:
+        """Plot the mean decrease impurity for the different features.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_iris
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from skore import EstimatorReport, train_test_split
+        >>> iris = load_iris(as_frame=True)
+        >>> X, y = iris.data, iris.target
+        >>> y = iris.target_names[y]
+        >>> split_data = train_test_split(
+        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
+        ... )
+        >>> report = EstimatorReport(RandomForestClassifier(), **split_data)
+        >>> display = report.feature_importance.impurity_decrease()
+        >>> display.plot()
+        """
         return self._plot()
 
     def _plot_matplotlib(self) -> None:
-        """Dispatch the plotting function for matplotlib backend."""
+        """Dispatch the plotting function for matplotlib backend.
+
+        This method creates a bar plot showing the mean decrease impurity for each
+        feature using seaborn's catplot.
+        """
         barplot_kwargs = self._default_barplot_kwargs.copy()
         frame = self.frame()
 
@@ -76,6 +195,21 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         estimator_name: str,
         barplot_kwargs: dict[str, Any],
     ) -> None:
+        """Plot the mean decrease impurity for an `EstimatorReport`.
+
+        A bar plot is used to display the mean decrease impurity values.
+
+        Parameters
+        ----------
+        frame : pd.DataFrame
+            The frame to plot.
+        estimator_name : str
+            The name of the estimator to plot.
+        barplot_kwargs : dict
+            Keyword arguments to be passed to :func:`seaborn.barplot` for
+            rendering the mean decrease impurity with an
+            :class:`~skore.EstimatorReport`.
+        """
         self.facet_ = sns.catplot(
             data=frame,
             x="importances",

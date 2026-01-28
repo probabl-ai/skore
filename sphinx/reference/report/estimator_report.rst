@@ -89,5 +89,5 @@ used to train your estimator.
 
     EstimatorReport.feature_importance.help
     EstimatorReport.feature_importance.coefficients
-    EstimatorReport.feature_importance.mean_decrease_impurity
+    EstimatorReport.feature_importance.impurity_decrease
     EstimatorReport.feature_importance.permutation
