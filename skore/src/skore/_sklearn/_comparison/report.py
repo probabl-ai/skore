@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 import joblib
 import numpy as np
+import pandas as pd
 from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -421,12 +422,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def create_estimator_report(
         self,
-        estimator_name: str,
+        *,
+        name: str,
         X_test: ArrayLike | None = None,
         y_test: ArrayLike | None = None,
     ) -> EstimatorReport:
-        """
-        Create an estimator report from the comparison report.
+        """Create an estimator report from one of the reports in the comparison.
 
         This method creates a new :class:`~skore.EstimatorReport` with the same
         estimator and the same data as the chosen report. It is useful to evaluate and
@@ -435,7 +436,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        estimator_name : str
+        name : str
             The name of the estimator to create a report for.
 
         X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
@@ -446,34 +447,41 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         Returns
         -------
-        estimator_report : :class:`~skore.EstimatorReport`
+        report : :class:`~skore.EstimatorReport`
             The estimator report.
         """
-        if estimator_name not in self.reports_:
+        if name not in self.reports_:
             raise ValueError(
-                f"Estimator name {estimator_name} not found in the comparison report."
+                f"Estimator name {name} not found in the comparison report. "
+                f"Available names are: {list(self.reports_.keys())}."
             )
 
-        if isinstance(self.reports_[estimator_name], CrossValidationReport):
+        if isinstance(self.reports_[name], CrossValidationReport):
             return cast(
-                CrossValidationReport, self.reports_[estimator_name]
-            ).create_estimator_report(X_test, y_test)
+                CrossValidationReport, self.reports_[name]
+            ).create_estimator_report(X_test=X_test, y_test=y_test)
 
-        estimator_report = self.reports_[estimator_name]
-        return_report = EstimatorReport(
+        estimator_report = self.reports_[name]
+        X_concat = (
+            pd.concat([estimator_report._X_train, estimator_report._X_test])
+            if isinstance(estimator_report._X_train, pd.DataFrame)
+            else np.concatenate([estimator_report._X_train, estimator_report._X_test])
+        )
+        y_concat = (
+            pd.concat([estimator_report._y_train, estimator_report._y_test])
+            if isinstance(estimator_report._y_train, (pd.DataFrame, pd.Series))
+            else np.concatenate([estimator_report._y_train, estimator_report._y_test])
+        )
+        report = EstimatorReport(
             estimator_report.estimator,
-            X_train=np.concatenate(
-                [estimator_report._X_train, estimator_report._X_test]
-            ),
-            y_train=np.concatenate(
-                [estimator_report._y_train, estimator_report._y_test]
-            ),
+            X_train=X_concat,
+            y_train=y_concat,
             X_test=X_test,
             y_test=y_test,
             pos_label=self._pos_label,
         )
-        return_report._parent_hash = self._hash
-        return return_report
+        report._parent_hash = self._hash
+        return report
 
     @property
     def pos_label(self) -> PositiveLabel | None:

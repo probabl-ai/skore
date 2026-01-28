@@ -447,10 +447,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         ]
 
     def create_estimator_report(
-        self, X_test: ArrayLike | None = None, y_test: ArrayLike | None = None
+        self, *, X_test: ArrayLike | None = None, y_test: ArrayLike | None = None
     ) -> EstimatorReport:
-        """
-        Create an estimator report from the cross-validation report.
+        """Create an estimator report from the cross-validation report.
 
         This method creates a new :class:`~skore.EstimatorReport` with the same
         estimator and the same data as the cross-validation report. It is useful to
@@ -467,10 +466,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Returns
         -------
-        estimator_report : :class:`~skore.EstimatorReport`
+        report : :class:`~skore.EstimatorReport`
             The estimator report.
         """
-        return_report = EstimatorReport(
+        report = EstimatorReport(
             self._estimator,
             X_train=self._X,
             y_train=self._y,
@@ -478,8 +477,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             y_test=y_test,
             pos_label=self._pos_label,
         )
-        return_report._parent_hash = self._hash
-        return return_report
+        report._parent_hash = self._hash
+        return report
 
     @property
     def ml_task(self) -> MLTask:

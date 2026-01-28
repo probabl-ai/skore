@@ -275,7 +275,9 @@ def test_create_estimator_report(forest_binary_classification_data):
     assert est_report.y_test is None
     assert est_report.pos_label == cv_report.pos_label
 
-    est_report_with_test = cv_report.create_estimator_report(X_heldout, y_heldout)
+    est_report_with_test = cv_report.create_estimator_report(
+        X_test=X_heldout, y_test=y_heldout
+    )
 
     assert isinstance(est_report_with_test, EstimatorReport)
     assert est_report_with_test._parent_hash == cv_report._hash
