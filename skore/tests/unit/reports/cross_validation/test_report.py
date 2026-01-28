@@ -183,6 +183,50 @@ def test_get_predictions(
         assert split_predictions.shape == expected_shape
 
 
+def test_check_split_consistency():
+    """Check that check_split_consistency detects outlier splits."""
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import KFold
+
+    rng = np.random.default_rng(42)
+
+    X_normal = np.vstack(
+        [
+            rng.normal(loc=-2, scale=1.0, size=(40, 2)),
+            rng.normal(loc=2, scale=1.0, size=(40, 2)),
+        ]
+    )
+    y_normal = np.array([0] * 40 + [1] * 40)
+
+    # 20 samples with inverted labels to create a clear outlier fold
+    X_bad = np.vstack(
+        [
+            rng.normal(loc=-2, scale=0.5, size=(10, 2)),
+            rng.normal(loc=2, scale=0.5, size=(10, 2)),
+        ]
+    )
+    y_bad = np.array([1] * 10 + [0] * 10)
+
+    X = np.vstack([X_normal, X_bad])
+    y = np.concatenate([y_normal, y_bad])
+
+    cv = KFold(n_splits=5, shuffle=False)
+    report = CrossValidationReport(LogisticRegression(), X=X, y=y, splitter=cv)
+    result = report.check_split_consistency(metric="accuracy", threshold=2.0)
+
+    assert result.index.name == "Metric"
+    assert "Accuracy" in result.index
+    assert len(result.columns) == 15
+    assert ("Split #0", "Value") in result.columns
+    assert ("Split #0", "Modified Z-score") in result.columns
+    assert ("Split #0", "Is Outlier (|z|>2.0)") in result.columns
+
+    outlier_col = "Is Outlier (|z|>2.0)"
+    assert result.loc["Accuracy", ("Split #4", outlier_col)]
+    for i in range(4):
+        assert not result.loc["Accuracy", (f"Split #{i}", outlier_col)]
+
+
 def test_get_predictions_error(
     logistic_binary_classification_data,
 ):
