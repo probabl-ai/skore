@@ -4,22 +4,32 @@ from json import dumps, loads
 from urllib.parse import urljoin
 
 from httpx import HTTPError, Response, TimeoutException
-from pytest import fixture, mark, raises
+from pytest import mark, raises
 
-from skore_hub_project.authentication import token, uri
 from skore_hub_project.authentication.token import (
+    Token,
     get_oauth_device_code_probe,
     get_oauth_device_login,
     get_oauth_device_token,
-    login,
     post_oauth_device_callback,
+    post_oauth_refresh_token,
 )
-from skore_hub_project.authentication.uri import DEFAULT as URI
+from skore_hub_project.authentication.uri import URI
+
+DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
+DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
+
+REFRESH_URL = "identity/oauth/token/refresh"
+LOGIN_URL = "identity/oauth/device/login"
+PROBE_URL = "identity/oauth/device/code-probe"
+CALLBACK_URL = "identity/oauth/device/callback"
+TOKEN_URL = "identity/oauth/device/token"
 
 
 @mark.parametrize("success_uri", [None, "toto"])
+@mark.respx()
 def test_get_oauth_device_login(respx_mock, success_uri):
-    respx_mock.get(urljoin(uri.DEFAULT, "identity/oauth/device/login")).mock(
+    respx_mock.get(urljoin(URI, LOGIN_URL)).mock(
         Response(
             200,
             json={
@@ -41,10 +51,9 @@ def test_get_oauth_device_login(respx_mock, success_uri):
     assert user_code == "C"
 
 
+@mark.respx()
 def test_post_oauth_device_callback(respx_mock):
-    route = respx_mock.post(
-        urljoin(uri.DEFAULT, "identity/oauth/device/callback")
-    ).mock(Response(201, json={}))
+    route = respx_mock.post(urljoin(URI, CALLBACK_URL)).mock(Response(201, json={}))
 
     post_oauth_device_callback("my_state", "my_user_code")
 
@@ -52,8 +61,9 @@ def test_post_oauth_device_callback(respx_mock):
     assert route.calls.last.request.read() == b"state=my_state&user_code=my_user_code"
 
 
+@mark.respx()
 def test_get_oauth_device_token(respx_mock):
-    respx_mock.get(urljoin(uri.DEFAULT, "identity/oauth/device/token")).mock(
+    respx_mock.get(urljoin(URI, TOKEN_URL)).mock(
         Response(
             200,
             json={
@@ -76,9 +86,10 @@ def test_get_oauth_device_token(respx_mock):
     }
 
 
+@mark.respx()
 def test_get_oauth_device_code_probe(monkeypatch, respx_mock):
-    monkeypatch.setattr("skore_hub_project.authentication.login.sleep", lambda _: None)
-    respx_mock.get(urljoin(uri.DEFAULT, "identity/oauth/device/code-probe")).mock(
+    monkeypatch.setattr("skore_hub_project.authentication.token.sleep", lambda _: None)
+    respx_mock.get(urljoin(URI, PROBE_URL)).mock(
         side_effect=[
             Response(400),
             Response(400),
@@ -94,8 +105,9 @@ def test_get_oauth_device_code_probe(monkeypatch, respx_mock):
     }
 
 
+@mark.respx()
 def test_get_oauth_device_code_probe_exception(respx_mock):
-    respx_mock.get(urljoin(uri.DEFAULT, "identity/oauth/device/code-probe")).mock(
+    respx_mock.get(urljoin(URI, PROBE_URL)).mock(
         side_effect=[
             Response(404),
             Response(400),
@@ -113,8 +125,9 @@ def test_get_oauth_device_code_probe_exception(respx_mock):
     }
 
 
+@mark.respx()
 def test_get_oauth_device_code_probe_timeout(respx_mock):
-    respx_mock.get(urljoin(uri.DEFAULT, "identity/oauth/device/code-probe")).mock(
+    respx_mock.get(urljoin(URI, PROBE_URL)).mock(
         side_effect=[
             Response(400),
             Response(400),
@@ -131,170 +144,35 @@ def test_get_oauth_device_code_probe_timeout(respx_mock):
     }
 
 
-DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
-DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
-
-REFRESH_URL = "identity/oauth/token/refresh"
-LOGIN_URL = "identity/oauth/device/login"
-PROBE_URL = "identity/oauth/device/code-probe"
-CALLBACK_URL = "identity/oauth/device/callback"
-TOKEN_URL = "identity/oauth/device/token"
-
-
-@mark.respx(assert_all_mocked=False)
-def test_login_with_token(respx_mock):
-    assert not token.Filepath().exists()
-
-    token.persist("A", "B", DATETIME_MAX)
-
-    assert token.Filepath().exists()
-    assert token.access(refresh=False) == "A"
-
-    login()
-
-    assert not respx_mock.calls
-    assert token.Filepath().exists()
-    assert token.access(refresh=False) == "A"
-
-
-def test_login_with_expired_token(respx_mock):
-    respx_mock.post(REFRESH_URL).mock(
+@mark.respx()
+def test_post_oauth_refresh_token(respx_mock):
+    route = respx_mock.post(urljoin(URI, REFRESH_URL)).mock(
         Response(
             200,
-            json={
-                "access_token": "D",
-                "refresh_token": "E",
-                "expires_at": DATETIME_MAX,
-            },
+            json={"access_token": "A", "refresh_token": "B", "expires_at": "C"},
         )
     )
 
-    assert not token.Filepath().exists()
+    access_token, refresh_token, expires_at = post_oauth_refresh_token("token")
 
-    token.persist("A", "B", DATETIME_MIN)
-
-    assert token.Filepath().exists()
-    assert token.access(refresh=False) == "A"
-
-    login()
-
-    assert token.Filepath().exists()
-    assert token.access(refresh=False) == "D"
+    assert route.calls.last.request.read() == b'{"refresh_token":"token"}'
+    assert access_token == "A"
+    assert refresh_token == "B"
+    assert expires_at == "C"
 
 
-def test_login(monkeypatch, respx_mock):
-    def open_webbrowser(url):
-        open_webbrowser.url = url
-        return True
+class TestToken:
+    @mark.respx()
+    def test_init(self, monkeypatch, respx_mock):
+        def open_webbrowser(url):
+            open_webbrowser.url = url
+            return True
 
-    monkeypatch.setattr(
-        "skore_hub_project.authentication.login.open_webbrowser", open_webbrowser
-    )
-
-    respx_mock.post(REFRESH_URL).mock(Response(404))
-    respx_mock.get(LOGIN_URL).mock(
-        Response(
-            200,
-            json={
-                "authorization_url": "<url>",
-                "device_code": "<device>",
-                "user_code": "<user>",
-            },
+        monkeypatch.setattr(
+            "skore_hub_project.authentication.token.open_webbrowser", open_webbrowser
         )
-    )
-    respx_mock.get(PROBE_URL).mock(Response(200))
-    respx_mock.post(CALLBACK_URL).mock(Response(200))
-    respx_mock.get(TOKEN_URL).mock(
-        Response(
-            200,
-            json={
-                "token": {
-                    "access_token": "D",
-                    "refresh_token": "E",
-                    "expires_at": DATETIME_MAX,
-                }
-            },
-        )
-    )
 
-    assert not token.Filepath().exists()
-
-    token.persist("A", "B", DATETIME_MIN)
-
-    assert token.Filepath().exists()
-
-    assert token.access(refresh=False) == "A"
-    assert uri.URI() == uri.DEFAULT
-
-    login()
-
-    assert open_webbrowser.url == "<url>"
-    assert token.Filepath().exists()
-
-    assert token.access(refresh=False) == "D"
-    assert uri.URI() == uri.DEFAULT
-
-
-def test_login_timeout(monkeypatch, respx_mock):
-    monkeypatch.setattr(
-        "skore_hub_project.authentication.login.open_webbrowser",
-        lambda _: True,
-    )
-
-    respx_mock.post(REFRESH_URL).mock(Response(404))
-    respx_mock.get(LOGIN_URL).mock(
-        Response(
-            200,
-            json={
-                "authorization_url": "<url>",
-                "device_code": "<device>",
-                "user_code": "<user>",
-            },
-        )
-    )
-    respx_mock.get(PROBE_URL).mock(side_effect=repeat(Response(400)))
-    respx_mock.post(CALLBACK_URL).mock(Response(200))
-    respx_mock.get(TOKEN_URL).mock(
-        Response(
-            200,
-            json={
-                "token": {
-                    "access_token": "D",
-                    "refresh_token": "E",
-                    "expires_at": DATETIME_MAX,
-                }
-            },
-        )
-    )
-
-    assert not token.Filepath().exists()
-
-    token.persist("A", "B", DATETIME_MIN)
-
-    assert token.Filepath().exists()
-    assert token.access(refresh=False) == "A"
-
-    # The token can't be refreshed: 404
-    # The token is dropped
-    # The token can't be recreated: timeout
-    with raises(TimeoutException):
-        login(timeout=0)
-
-    assert not token.Filepath().exists()
-
-
-def test_login_successively_on_different_uri(monkeypatch, respx_mock):
-    def open_webbrowser(url):
-        open_webbrowser.url = url
-        return True
-
-    monkeypatch.setattr(
-        "skore_hub_project.authentication.login.open_webbrowser", open_webbrowser
-    )
-
-    for u in ("https://my-1-uri", "https://my-2-uri"):
-        respx_mock.post(urljoin(u, REFRESH_URL)).mock(Response(404))
-        respx_mock.get(urljoin(u, LOGIN_URL)).mock(
+        respx_mock.get(LOGIN_URL).mock(
             Response(
                 200,
                 json={
@@ -304,9 +182,9 @@ def test_login_successively_on_different_uri(monkeypatch, respx_mock):
                 },
             )
         )
-        respx_mock.get(urljoin(u, PROBE_URL)).mock(Response(200))
-        respx_mock.post(urljoin(u, CALLBACK_URL)).mock(Response(200))
-        respx_mock.get(urljoin(u, TOKEN_URL)).mock(
+        respx_mock.get(PROBE_URL).mock(Response(200))
+        respx_mock.post(CALLBACK_URL).mock(Response(200))
+        respx_mock.get(TOKEN_URL).mock(
             Response(
                 200,
                 json={
@@ -319,98 +197,122 @@ def test_login_successively_on_different_uri(monkeypatch, respx_mock):
             )
         )
 
-    # Login into a first custom uri using ENVAR
-    monkeypatch.setenv(uri.ENVARNAME, "https://my-1-uri")
+        token = Token()
 
-    login()
+        assert token._Token__access == "D"
+        assert token._Token__refreshment == "E"
+        assert token._Token__expiration == datetime.fromisoformat(DATETIME_MAX)
+        assert open_webbrowser.url == "<url>"
 
-    assert uri.URI() == "https://my-1-uri"
-
-    # Login into a second custom uri using ENVAR
-    monkeypatch.setenv(uri.ENVARNAME, "https://my-2-uri")
-
-    login()
-
-    assert uri.URI() == "https://my-2-uri"
-
-
-DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
-DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
-
-
-@fixture
-def filepath(tmp_path):
-    return tmp_path / "skore.token"
-
-
-def test_post_oauth_refresh_token(respx_mock):
-    route = respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
-        Response(
-            200,
-            json={"access_token": "A", "refresh_token": "B", "expires_at": "C"},
+    @mark.respx()
+    def test_init_timeout(self, monkeypatch, respx_mock):
+        monkeypatch.setattr(
+            "skore_hub_project.authentication.token.open_webbrowser",
+            lambda _: True,
         )
-    )
 
-    access_token, refresh_token, expires_at = token.post_oauth_refresh_token("token")
-
-    assert route.calls.last.request.read() == b'{"refresh_token":"token"}'
-    assert access_token == "A"
-    assert refresh_token == "B"
-    assert expires_at == "C"
-
-
-def test_filepath(filepath):
-    assert token.Filepath() == filepath
-
-
-def test_persist(filepath):
-    assert not filepath.exists()
-
-    token.persist("A", "B", DATETIME_MAX)
-
-    assert filepath.exists()
-    assert loads(filepath.read_text()) == ["A", "B", DATETIME_MAX]
-
-
-@mark.respx(assert_all_mocked=False)
-def test_access(filepath, respx_mock):
-    assert not filepath.exists()
-
-    filepath.write_text(dumps(["A", "B", DATETIME_MAX]))
-
-    assert token.access() == "A"
-    assert filepath.exists()
-    assert loads(filepath.read_text()) == ["A", "B", DATETIME_MAX]
-    assert not respx_mock.calls
-
-
-def test_access_expired(filepath, respx_mock):
-    respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
-        Response(
-            200,
-            json={
-                "access_token": "D",
-                "refresh_token": "E",
-                "expires_at": DATETIME_MAX,
-            },
+        respx_mock.get(LOGIN_URL).mock(
+            Response(
+                200,
+                json={
+                    "authorization_url": "<url>",
+                    "device_code": "<device>",
+                    "user_code": "<user>",
+                },
+            )
         )
-    )
+        respx_mock.get(PROBE_URL).mock(Response(400))
 
-    assert not filepath.exists()
+        # Simulate a user who does not complete the authentication process:
+        # - the token can't be acknowledged by the hub until the user is logged in; 400
+        # - the token can't be created; timeout
+        with raises(TimeoutException):
+            Token(timeout=0)
 
-    filepath.write_text(dumps(["A", "B", DATETIME_MIN]))
+    @mark.respx()
+    def test_call(self, monkeypatch, respx_mock):
+        monkeypatch.setattr(
+            "skore_hub_project.authentication.token.open_webbrowser",
+            lambda _: True,
+        )
 
-    assert filepath.exists()
-    assert token.access() == "D"
-    assert loads(filepath.read_text()) == ["D", "E", DATETIME_MAX]
+        respx_mock.get(LOGIN_URL).mock(
+            Response(
+                200,
+                json={
+                    "authorization_url": "<url>",
+                    "device_code": "<device>",
+                    "user_code": "<user>",
+                },
+            )
+        )
+        respx_mock.get(PROBE_URL).mock(Response(200))
+        respx_mock.post(CALLBACK_URL).mock(Response(200))
+        respx_mock.get(TOKEN_URL).mock(
+            Response(
+                200,
+                json={
+                    "token": {
+                        "access_token": "D",
+                        "refresh_token": "E",
+                        "expires_at": DATETIME_MAX,
+                    }
+                },
+            )
+        )
 
+        assert Token()() == {"Authorization": "Bearer D"}
 
-@mark.respx(assert_all_mocked=False)
-def test_access_exception(filepath, respx_mock):
-    assert not filepath.exists()
+    @mark.respx()
+    def test_call_with_expired_token(self, monkeypatch, respx_mock):
+        monkeypatch.setattr(
+            "skore_hub_project.authentication.token.open_webbrowser",
+            lambda _: True,
+        )
 
-    with raises(token.TokenError, match="not logged in"):
-        token.access()
+        respx_mock.get(LOGIN_URL).mock(
+            Response(
+                200,
+                json={
+                    "authorization_url": "<url>",
+                    "device_code": "<device>",
+                    "user_code": "<user>",
+                },
+            )
+        )
+        respx_mock.get(PROBE_URL).mock(Response(200))
+        respx_mock.post(CALLBACK_URL).mock(Response(200))
+        respx_mock.get(TOKEN_URL).mock(
+            Response(
+                200,
+                json={
+                    "token": {
+                        "access_token": "D",
+                        "refresh_token": "E",
+                        "expires_at": DATETIME_MIN,
+                    }
+                },
+            )
+        )
+        respx_mock.post(REFRESH_URL).mock(
+            Response(
+                200,
+                json={
+                    "access_token": "F",
+                    "refresh_token": "G",
+                    "expires_at": DATETIME_MAX,
+                },
+            )
+        )
 
-    assert not filepath.exists()
-    assert not respx_mock.calls
+        token = Token()
+
+        assert token._Token__access == "D"
+        assert token._Token__refreshment == "E"
+        assert token._Token__expiration == datetime.fromisoformat(DATETIME_MIN)
+
+        assert token() == {"Authorization": "Bearer F"}
+
+        assert token._Token__access == "F"
+        assert token._Token__refreshment == "G"
+        assert token._Token__expiration == datetime.fromisoformat(DATETIME_MAX)
