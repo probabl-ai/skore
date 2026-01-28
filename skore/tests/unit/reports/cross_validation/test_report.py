@@ -12,11 +12,12 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.utils._testing import _convert_container
 from sklearn.utils.validation import check_is_fitted
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._sklearn._cross_validation.report import _generate_estimator_report
-from skore._utils._testing import MockEstimator, _convert_container
+from skore._utils._testing import MockEstimator
 
 
 def test_report_can_be_rebuilt_using_parameters(
