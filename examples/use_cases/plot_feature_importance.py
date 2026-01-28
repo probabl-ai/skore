@@ -862,11 +862,7 @@ plot_tree(
 # Now, let us look at the feature importance based on the MDI:
 
 # %%
-tree_report.feature_importance.impurity_decrease().plot.barh(
-    title=f"Feature importance of {tree_report.estimator_name_}",
-    xlabel="MDI",
-    ylabel="Feature",
-)
+tree_report.feature_importance.impurity_decrease().plot()
 
 # %%
 # For a decision tree, for each feature, the MDI is averaged across all splits in the
@@ -924,11 +920,7 @@ print(f"Number of trees in the forest: {n_estimators}")
 # Let us look into the MDI of our random forest:
 
 # %%
-rf_report.feature_importance.impurity_decrease().plot.barh(
-    title=f"Feature importance of {rf_report.estimator_name_}",
-    xlabel="MDI",
-    ylabel="Feature",
-)
+rf_report.feature_importance.impurity_decrease().plot()
 
 # %%
 # In a random forest, the MDI is computed by averaging the MDI of each feature across
