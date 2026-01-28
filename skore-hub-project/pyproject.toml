@@ -31,6 +31,9 @@ test = [
   "xdoctest",
 ]
 
+[project.entry-points."skore.plugins.login"]
+hub = "skore_hub_project:login"
+
 [project.entry-points."skore.plugins.project"]
 hub = "skore_hub_project:Project"
 
