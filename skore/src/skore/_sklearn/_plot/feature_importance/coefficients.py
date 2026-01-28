@@ -689,7 +689,7 @@ class CoefficientsDisplay(DisplayMixin):
             report_type=report_type,
             hue=hue,
             col=col,
-            barplot_kwargs=barplot_kwargs,
+            barplot_kwargs={"sharey": has_same_features} | barplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
         )
