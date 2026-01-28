@@ -18,6 +18,7 @@ jobs:
     permissions:
       actions: read
       contents: read
+      id-token: write
       pull-requests: write
     steps:
       - name: Checkout code
@@ -42,10 +43,10 @@ jobs:
 
       - name: Serve documentation preview
         if: ${{ steps.download-html-artifacts.outcome == 'success' }}
-        uses: ./.github/actions/sphinx/deploy
+        uses: ./.github/actions/sphinx/deploy-aws
         with:
-          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOC_PREVIEW }}
           BUCKET: ${{ vars.DOCUMENTATION_PREVIEW_BUCKET }}
+          ROLE_TO_ASSUME: ${{ vars.AWS_ROLE }}
           SOURCE: html/
           DESTINATION: ${{ steps.acquire-pr-context.outputs.pr-number }}/
 
