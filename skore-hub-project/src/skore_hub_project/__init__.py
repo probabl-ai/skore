@@ -8,7 +8,8 @@ from contextlib import contextmanager
 from rich.console import Console
 from rich.theme import Theme
 
-from .project.project import Project
+from skore_hub_project.authentication.login import login
+from skore_hub_project.project.project import Project
 
 __all__ = [
     "Payload",
@@ -16,6 +17,7 @@ __all__ = [
     "b64_str_to_bytes",
     "bytes_to_b64_str",
     "console",
+    "login",
     "switch_mpl_backend",
 ]
 
