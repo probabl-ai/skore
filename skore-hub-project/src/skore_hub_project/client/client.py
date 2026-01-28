@@ -166,7 +166,10 @@ class HUBClient(Client):
         from skore_hub_project.authentication.login import credentials
 
         if credentials is None:
-            raise RuntimeError("You are not logged in. Please run `login`.")
+            raise RuntimeError(
+                "You are not logged in. "
+                "Please call the `skore.login()` function at the top of your script."
+            )
 
         headers = Headers(headers)
 
