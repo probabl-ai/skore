@@ -199,9 +199,11 @@ class Token:
     def __init__(self, *, timeout: int = 600) -> None:
         url, device_code, user_code = get_oauth_device_login()
 
-        console.rule("[cyan]Skore Hub[/cyan]")
         console.print(
-            f"Opening browser; if this fails, please visit this URL to log in:\n{url}",
+            (
+                f"Opening browser for interactive authentication; "
+                f"if this fails, please visit:\n{url}"
+            ),
             soft_wrap=True,
         )
 
