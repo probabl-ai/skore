@@ -84,17 +84,6 @@ class CoefficientsDisplay(DisplayMixin):
         self.coefficients = coefficients
         self.report_type = report_type
 
-    def _get_grouping_columns(self, frame: pd.DataFrame) -> list[str]:
-        """Get columns to group by for feature selection or sorting."""
-        group_cols = []
-        if "comparison" in self.report_type:
-            group_cols.append("estimator")
-        for col in ("label", "output"):
-            if col in frame.columns and not frame[col].isna().all():
-                group_cols.append(col)
-                break
-        return group_cols
-
     def _select_k_features_in_group(
         self, frame: pd.DataFrame, select_k: int
     ) -> pd.DataFrame:
@@ -137,7 +126,7 @@ class CoefficientsDisplay(DisplayMixin):
 
     def _select_k_features(self, frame: pd.DataFrame, select_k: int) -> pd.DataFrame:
         """Select top-k or bottom-k features based on absolute coefficient values."""
-        group_cols = self._get_grouping_columns(frame)
+        group_cols = self._get_columns_to_groupby(frame=frame)
 
         if not group_cols:
             return self._select_k_features_in_group(frame, select_k)
@@ -154,7 +143,7 @@ class CoefficientsDisplay(DisplayMixin):
         self, frame: pd.DataFrame, sorting_order: Literal["descending", "ascending"]
     ) -> pd.DataFrame:
         """Sort features by absolute coefficient values."""
-        group_cols = self._get_grouping_columns(frame)
+        group_cols = self._get_columns_to_groupby(frame=frame)
 
         if not group_cols:
             return self._sort_features_in_group(frame, sorting_order=sorting_order)
