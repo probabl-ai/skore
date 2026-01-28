@@ -202,6 +202,7 @@ class PredictionErrorDisplay(DisplayMixin):
                 f"`kind` must be one of {', '.join(expected_kind)}. "
                 f"Got {kind!r} instead."
             )
+
         if kind == "actual_vs_predicted":
             xlabel, ylabel = "Predicted values", "Actual values"
             y_plot = "y_true"
@@ -347,7 +348,11 @@ class PredictionErrorDisplay(DisplayMixin):
         else:
             col = subplot_by
         hue = hue[0] if (hue := [c for c in hue_candidates if c != col]) else None
-        style = "data_source" if self.data_source == "both" else None
+        style = (
+            "data_source"
+            if self.data_source == "both" and col != "data_source"
+            else None
+        )
 
         return col, hue, style
 

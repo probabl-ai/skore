@@ -322,3 +322,21 @@ def test_title(pyplot, linear_regression_with_train_test):
     assert "Prediction Error" in title
     assert "estimator_1" not in title
     assert "Data source: Test set" in title
+
+
+def test_regression_data_source_both(pyplot, linear_regression_comparison_report):
+    """Regression test: `data_source='both'` should plot without crashing."""
+    report = linear_regression_comparison_report
+    display = report.metrics.prediction_error(data_source="both")
+
+    assert isinstance(display, PredictionErrorDisplay)
+
+    display.plot()
+
+    assert isinstance(display.ax_, (list, np.ndarray))
+    assert len(display.ax_) == len(report.reports_)
+
+    legend_texts = [text.get_text() for text in display.figure_.legends[0].get_texts()]
+    assert len(legend_texts) == 2 + 1  # 2 datasource + 1 perfect predictions
+    assert legend_texts[0] == "train"
+    assert legend_texts[1] == "test"
