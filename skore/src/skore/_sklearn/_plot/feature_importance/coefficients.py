@@ -162,7 +162,7 @@ class CoefficientsDisplay(DisplayMixin):
         return pd.concat(
             [
                 self._sort_features_in_group(group, sorting_order=sorting_order)
-                for _, group in frame.groupby(group_cols, observed=True)
+                for _, group in frame.groupby(group_cols, sort=False, observed=True)
             ],
             ignore_index=True,
         )
