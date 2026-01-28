@@ -14,7 +14,6 @@ from skore_hub_project.authentication.login import login
 from skore_hub_project.authentication.uri import URI
 from skore_hub_project.client.client import Client, HUBClient, __semver
 
-DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
 
 LOGIN_URL = "identity/oauth/device/login"
