@@ -17,7 +17,7 @@ def test_estimator_html_repr(respx_mock, binary_classification, upload_mock):
         checksum = serializer.checksum
 
     # create media
-    project = Project("<tenant>", "<name>")
+    project = Project("myworkspace", "myname")
     media = EstimatorHtmlRepr(project=project, report=binary_classification)
     media_dict = media.model_dump()
 

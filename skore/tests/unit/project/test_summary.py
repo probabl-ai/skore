@@ -9,7 +9,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 
 from skore._sklearn import ComparisonReport, CrossValidationReport, EstimatorReport
-from skore.project.summary import Summary
+from skore.project._summary import Summary
 
 
 @fixture
@@ -207,7 +207,7 @@ class TestSummary:
         ]
 
         monkeypatch.setattr(
-            "skore.project.summary.Summary._query_string_selection",
+            "skore.project._summary.Summary._query_string_selection",
             lambda self: "ml_task == 'regression'",
         )
 
@@ -240,7 +240,7 @@ class TestSummary:
         ]
 
         monkeypatch.setattr(
-            "skore.project.summary.Summary._query_string_selection",
+            "skore.project._summary.Summary._query_string_selection",
             lambda self: "ml_task == 'regression'",
         )
 

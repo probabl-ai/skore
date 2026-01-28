@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._sklearn.types import MLTask
-from skore.project.summary import Summary
+from skore.project._summary import Summary
 
 
 class Project:
@@ -28,16 +28,16 @@ class Project:
 
     .. rubric:: Hub mode
 
-    If the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the project
+    If the ``name`` takes the form of the URI ``hub://<workspace>/<name>``, the project
     is configured to the ``hub`` mode to communicate with the ``skore hub``.
 
-    A tenant is a ``skore hub`` concept that must be configured on the ``skore hub``
+    A workspace is a ``skore hub`` concept that must be configured on the ``skore hub``
     interface. It represents an isolated entity managing users, projects, and
     resources. It can be a company, organization, or team that operates
     independently within the system.
 
     In this mode, you must have an account to the ``skore hub`` and must be
-    authorized to the specified tenant. You must also be authenticated beforehand,
+    authorized to the specified workspace. You must also be authenticated beforehand,
     using the ``skore-hub-login`` CLI.
 
     .. rubric:: Local mode
@@ -62,7 +62,7 @@ class Project:
     name : str
         The name of the project:
 
-        - if the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the
+        - if the ``name`` takes the form of the URI ``hub://<workspace>/<name>``, the
           project is configured to communicate with the ``skore hub``,
         - otherwise, the project is configured to communicate with a local storage, on
           the user machine.
@@ -136,11 +136,11 @@ class Project:
 
     See Also
     --------
-    :class:`~skore.project.summary.Summary` :
-        DataFrame designed to investigate persisted reports' metadata/metrics.
+    :meth:`Project.summarize` :
+        Create a summary view to investigate persisted reports' metadata/metrics.
     """
 
-    __HUB_NAME_PATTERN = re.compile(r"hub://(?P<tenant>[^/]+)/(?P<name>.+)")
+    __HUB_NAME_PATTERN = re.compile(r"hub://(?P<workspace>[^/]+)/(?P<name>.+)")
 
     @staticmethod
     def __setup_plugin(name: str) -> tuple[Literal["local", "hub"], str, Any, dict]:
@@ -152,7 +152,7 @@ class Project:
         if match := re.match(Project.__HUB_NAME_PATTERN, name):
             mode = "hub"
             name = match["name"]
-            parameters = {"tenant": match["tenant"], "name": name}
+            parameters = {"workspace": match["workspace"], "name": name}
         else:
             mode = "local"
             parameters = {"name": name}
@@ -171,7 +171,7 @@ class Project:
         name : str
             The name of the project:
 
-            - if the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the
+            - if the ``name`` takes the form of the URI ``hub://<workspace>/<name>``, the
               project is configured to communicate with the ``skore hub``,
             - otherwise, the project is configured to communicate with a local storage,
               on the user machine.
@@ -292,7 +292,7 @@ class Project:
         name : str
             The name of the project:
 
-            - if the ``name`` takes the form of the URI ``hub://<tenant>/<name>``, the
+            - if the ``name`` takes the form of the URI ``hub://<workspace>/<name>``, the
               project is configured to communicate with the ``skore hub``,
             - otherwise, the project is configured to communicate with a local storage,
               on the user machine.
