@@ -122,7 +122,7 @@ class CoefficientsDisplay(DisplayMixin):
             by="coefficients",
             key=lambda s: s.abs(),
             ascending=ascending,
-        )
+        ).reset_index(drop=True)
 
     def _select_k_features(self, frame: pd.DataFrame, select_k: int) -> pd.DataFrame:
         """Select top-k or bottom-k features based on absolute coefficient values."""
