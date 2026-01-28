@@ -1,9 +1,10 @@
 """Configure logging and global settings."""
 
-import logging
-import warnings
+from logging import INFO, NullHandler, getLogger
+from typing import Literal
+from warnings import warn
 
-import joblib
+from joblib import __version__ as joblib_version
 from rich.console import Console
 from rich.theme import Theme
 
@@ -27,32 +28,49 @@ from skore._utils._patch import setup_jupyter_display
 from skore._utils._show_versions import show_versions
 from skore.project import Project
 
+# Configure jupyter display for VS Code compatibility
+setup_jupyter_display()
+
+
+if parse_version(joblib_version) < parse_version("1.4"):
+    set_config(show_progress=False)
+    warn(
+        "Because your version of joblib is older than 1.4, some of the features of "
+        "skore will not be enabled (e.g. progress bars). You can update joblib to "
+        "benefit from these features.",
+        stacklevel=2,
+    )
+
+
 __all__ = [
-    "CrossValidationReport",
+    "CoefficientsDisplay",
     "ComparisonReport",
     "ConfusionMatrixDisplay",
+    "CrossValidationReport",
     "Display",
     "EstimatorReport",
+    "MetricsSummaryDisplay",
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",
     "Project",
     "RocCurveDisplay",
-    "MetricsSummaryDisplay",
-    "show_versions",
-    "train_test_split",
-    "config_context",
-    "get_config",
-    "set_config",
     "TableReportDisplay",
-    "CoefficientsDisplay",
+    "config_context",
+    "console",
+    "get_config",
+    "logger",
+    "login",
+    "set_config",
+    "show_versions",
+    "skore_console_theme",
+    "train_test_split",
 ]
 
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())  # Default to no output
-logger.setLevel(logging.INFO)
 
-# Configure jupyter display for VS Code compatibility
-setup_jupyter_display()
+logger = getLogger(__name__)
+logger.addHandler(NullHandler())  # Default to no output
+logger.setLevel(INFO)
+
 
 skore_console_theme = Theme(
     {
@@ -62,14 +80,20 @@ skore_console_theme = Theme(
     }
 )
 
+
 console = Console(theme=skore_console_theme, width=88)
 
-joblib_version = parse_version(joblib.__version__)
-if joblib_version < parse_version("1.4"):
-    warnings.warn(
-        "Because your version of joblib is older than 1.4, some of the features of "
-        "skore will not be enabled (e.g. progress bars). You can update joblib to "
-        "benefit from these features.",
-        stacklevel=2,
-    )
-    set_config(show_progress=False)
+
+def login(*, mode: Literal["local", "hub"] = "hub", **kwargs):
+    from importlib.metadata import entry_points
+
+    if mode == "local":
+        return
+
+    MODE = "hub"
+    PLUGINS = entry_points(group="skore.plugins.login")
+
+    if MODE not in PLUGINS.names:
+        raise ValueError(f"Unknown mode `{MODE}`. Please install `skore[{MODE}]`.")
+
+    return PLUGINS[MODE].load()(**kwargs)
