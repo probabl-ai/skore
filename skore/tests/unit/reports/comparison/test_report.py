@@ -135,10 +135,12 @@ def test_pos_label_mismatch(report):
 @pytest.mark.parametrize(
     "container_types", [("dataframe", "series"), ("array", "array")]
 )
-def test_create_estimator_report_from_estimator_reports(container_types):
+def test_create_estimator_report_from_estimator_reports(
+    container_types, binary_classification_data
+):
     """Test creating an estimator report from a comparison report with
     EstimatorReports."""
-    X, y = make_classification(random_state=42, n_samples=100)
+    X, y = binary_classification_data
     X = _convert_container(X, container_types[0])
     y = _convert_container(y, container_types[1])
     X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
@@ -184,10 +186,12 @@ def test_create_estimator_report_from_estimator_reports(container_types):
 @pytest.mark.parametrize(
     "container_types", [("dataframe", "series"), ("array", "array")]
 )
-def test_create_estimator_report_from_cross_validation_reports(container_types):
+def test_create_estimator_report_from_cross_validation_reports(
+    container_types, binary_classification_data
+):
     """Test creating an estimator report from a comparison report with
     CrossValidationReports."""
-    X, y = make_classification(random_state=42, n_samples=100)
+    X, y = binary_classification_data
     X = _convert_container(X, container_types[0])
     y = _convert_container(y, container_types[1])
     X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(

@@ -16,7 +16,7 @@ from sklearn.utils.validation import check_is_fitted
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._sklearn._cross_validation.report import _generate_estimator_report
-from skore._utils._testing import MockEstimator
+from skore._utils._testing import MockEstimator, _convert_container
 
 
 def test_report_can_be_rebuilt_using_parameters(
@@ -258,9 +258,14 @@ def test_no_y():
     assert isinstance(report, CrossValidationReport)
 
 
-def test_create_estimator_report(forest_binary_classification_data):
+@pytest.mark.parametrize(
+    "container_types", [("dataframe", "series"), ("array", "array")]
+)
+def test_create_estimator_report(container_types, forest_binary_classification_data):
     """Test the `create_estimator_report` method."""
     estimator, X, y = forest_binary_classification_data
+    X = _convert_container(X, container_types[0])
+    y = _convert_container(y, container_types[1])
     X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
         X, y, test_size=0.2, random_state=42, shuffle=False
     )
@@ -269,8 +274,8 @@ def test_create_estimator_report(forest_binary_classification_data):
 
     assert isinstance(est_report, EstimatorReport)
     assert est_report._parent_hash == cv_report._hash
-    assert np.array_equal(est_report.X_train, X_experiment)
-    assert np.array_equal(est_report.y_train, y_experiment)
+    assert joblib.hash(est_report.X_train) == joblib.hash(X_experiment)
+    assert joblib.hash(est_report.y_train) == joblib.hash(y_experiment)
     assert est_report.X_test is None
     assert est_report.y_test is None
     assert est_report.pos_label == cv_report.pos_label
@@ -281,8 +286,8 @@ def test_create_estimator_report(forest_binary_classification_data):
 
     assert isinstance(est_report_with_test, EstimatorReport)
     assert est_report_with_test._parent_hash == cv_report._hash
-    assert np.array_equal(est_report_with_test.X_train, X_experiment)
-    assert np.array_equal(est_report_with_test.y_train, y_experiment)
-    assert np.array_equal(est_report_with_test.X_test, X_heldout)
-    assert np.array_equal(est_report_with_test.y_test, y_heldout)
+    assert joblib.hash(est_report_with_test.X_train) == joblib.hash(X_experiment)
+    assert joblib.hash(est_report_with_test.y_train) == joblib.hash(y_experiment)
+    assert joblib.hash(est_report_with_test.X_test) == joblib.hash(X_heldout)
+    assert joblib.hash(est_report_with_test.y_test) == joblib.hash(y_heldout)
     assert est_report_with_test.pos_label == cv_report.pos_label
