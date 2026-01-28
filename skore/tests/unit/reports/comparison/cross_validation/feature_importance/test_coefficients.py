@@ -54,18 +54,6 @@ def test_with_mixed_reports(regression_data):
     assert not hasattr(report.feature_importance, "coefficients")
 
 
-def test_select_k_zero_raises_error(regression_data):
-    """Test that select_k=0 raises ValueError."""
-    X, y = regression_data
-    report_1 = CrossValidationReport(Ridge(), X, y, splitter=2)
-    report_2 = CrossValidationReport(Ridge(), X, y, splitter=2)
-    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    display = report.feature_importance.coefficients()
-
-    with pytest.raises(ValueError, match="`select_k` must be a non-zero integer"):
-        display.frame(select_k=0)
-
-
 def test_select_k_positive_frame(regression_data):
     """Test that select_k selects features per estimator based on mean across splits."""
     X, y = regression_data

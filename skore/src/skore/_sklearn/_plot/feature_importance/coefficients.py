@@ -238,13 +238,6 @@ class CoefficientsDisplay(DisplayMixin):
         13   sepal width (cm)   virginica       -0.5...
         14  sepal length (cm)   virginica       -0.1...
         """
-        if select_k is not None and select_k == 0:
-            raise ValueError(
-                "`select_k` must be a non-zero integer. "
-                "Use positive values for top-k features or "
-                "negative values for bottom-k features."
-            )
-
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
         elif self.report_type == "cross-validation":

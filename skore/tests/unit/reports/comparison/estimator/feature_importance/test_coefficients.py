@@ -82,22 +82,6 @@ def test_with_mixed_reports(regression_train_test_split):
     assert not hasattr(report.feature_importance, "coefficients")
 
 
-def test_select_k_zero_raises_error(regression_train_test_split):
-    """Test that select_k=0 raises ValueError."""
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    report_1 = EstimatorReport(
-        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report_2 = EstimatorReport(
-        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    display = report.feature_importance.coefficients()
-
-    with pytest.raises(ValueError, match="`select_k` must be a non-zero integer"):
-        display.frame(select_k=0)
-
-
 def test_select_k_positive_frame(regression_train_test_split):
     """Test that select_k with positive value selects features per estimator."""
     X_train, X_test, y_train, y_test = regression_train_test_split

@@ -41,16 +41,6 @@ def test_with_model_not_exposing_coef(regression_data):
     assert not hasattr(report.feature_importance, "coefficients")
 
 
-def test_select_k_zero_raises_error(regression_data):
-    """Test that select_k=0 raises ValueError."""
-    X, y = regression_data
-    report = CrossValidationReport(Ridge(), X, y, splitter=2)
-    display = report.feature_importance.coefficients()
-
-    with pytest.raises(ValueError, match="`select_k` must be a non-zero integer"):
-        display.frame(select_k=0)
-
-
 def test_select_k_positive_frame(regression_data):
     """Test that select_k with positive value returns correct features in frame."""
     X, y = regression_data
