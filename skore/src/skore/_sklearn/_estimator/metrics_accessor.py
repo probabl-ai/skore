@@ -218,16 +218,6 @@ class _MetricsAccessor(
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
-        # Handle dictionary metrics
-        metric_names = None
-        if isinstance(metric, dict):
-            metric_names = list(metric.keys())
-            metrics = list(metric.values())
-        elif metric is not None and not isinstance(metric, list):
-            metrics = [metric]
-        elif isinstance(metric, list):
-            metrics = metric
-
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
             # FIXME: we are still recomputing the hash for all the metrics that we
@@ -238,6 +228,16 @@ class _MetricsAccessor(
             )
         else:
             data_source_hash = None
+
+        # Handle dictionary metrics
+        metric_names = None
+        if isinstance(metric, dict):
+            metric_names = list(metric.keys())
+            metrics = list(metric.values())
+        elif metric is not None and not isinstance(metric, list):
+            metrics = [metric]
+        elif isinstance(metric, list):
+            metrics = metric
 
         if metric is None:
             # Equivalent to _get_scorers_to_add
@@ -451,19 +451,14 @@ class _MetricsAccessor(
 
             scores.append(score_df)
 
-        has_multilevel = any(
+        if any(
             isinstance(df, pd.DataFrame) and isinstance(df.index, pd.MultiIndex)
             for df in scores
-        )
-
-        if has_multilevel:
+        ):
             # Convert single-level dataframes to multi-level
             for i, df in enumerate(scores):
-                if hasattr(df, "index") and not isinstance(df.index, pd.MultiIndex):
-                    if self._parent._ml_task in (
-                        "regression",
-                        "multioutput-regression",
-                    ):
+                if not isinstance(df.index, pd.MultiIndex):
+                    if "regression" in self._parent._ml_task:
                         name_index = ["Metric", "Output"]
                     else:
                         name_index = ["Metric", "Label / Average"]
@@ -556,19 +551,17 @@ class _MetricsAccessor(
 
             if isinstance(score, np.ndarray):
                 score = score.tolist()
-            elif hasattr(score, "item"):
+            if hasattr(score, "item"):
                 score = score.item()
-
-            self._parent._cache[cache_key] = score
-
-        if isinstance(score, list):
-            if "classification" in self._parent._ml_task:
-                return dict(
+            if isinstance(score, list) and len(score) == 1:
+                score = score[0]
+            if isinstance(score, list) and "classification" in self._parent._ml_task:
+                score = dict(
                     zip(self._parent._estimator.classes_.tolist(), score, strict=False)
                 )
 
-            if len(score) == 1:
-                return score[0]
+            self._parent._cache[cache_key] = score
+
         return score
 
     def _fit_time(self, cast: bool = True, **kwargs) -> float | None:
@@ -1747,7 +1740,6 @@ class _MetricsAccessor(
                 data_source_hash=data_source_hash,
             )
             for key, value, is_cached in results:
-                key = cast(tuple[Any, ...], key)
                 if not is_cached:
                     cache[key] = value
                 if key[-1] != "predict_time":
