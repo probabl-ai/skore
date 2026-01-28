@@ -211,6 +211,7 @@ def test_cache_predictions(
     else:
         report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
+    breakpoint()
     assert report._cache == {}
     report.cache_predictions(n_jobs=n_jobs)
     assert len(report._cache) == expected_n_keys

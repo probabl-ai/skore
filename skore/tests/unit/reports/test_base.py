@@ -102,14 +102,10 @@ def test_get_cached_response_values(
         f"Expected 1 call for {response_method}, got {initial_calls}"
     )
 
-    # cache the results
-    cache.update((key, value) for key, value, _ in results)
-
     # Reload from the cache
     results = _get_cached_response_values(cache=cache, **params)
     assert len(results) == 1
-    _, response_values, is_cached = results[0]
-    assert is_cached
+    _, response_values, = results[0]
     assert response_values.shape == y.shape
     current_calls = getattr(estimator, f"n_call_{response_method}")
     assert current_calls == initial_calls, (
@@ -126,24 +122,19 @@ def test_get_cached_response_values(
     if pos_label_sensitive:
         assert len(results) == 2
         assert current_calls == initial_calls + 1
-        _, response_values, is_cached = results[0]
-        assert not is_cached
+        _, response_values  = results[0]
         assert response_values.shape == y.shape
-
-        cache.update((key, value) for key, value, _ in results)
 
     else:
         assert len(results) == 1
         assert current_calls == initial_calls
-        _, response_values, is_cached = results[0]
-        assert is_cached
+        _, response_values = results[0]
         assert response_values.shape == y.shape
 
     # Should reload completely from the cache
     results = _get_cached_response_values(cache=cache, **params)
     assert len(results) == 1
-    _, response_values, is_cached = results[0]
-    assert is_cached
+    _, response_values = results[0]
     assert response_values.shape == y.shape
 
 
@@ -176,21 +167,16 @@ def test_get_cached_response_values_different_data_source_hash(
     }
     results = _get_cached_response_values(cache=cache, **params)
     assert len(results) == 2
-    _, response_values, is_cached = results[0]
-    assert not is_cached
+    _, response_values = results[0]
     assert response_values.shape == y.shape
     initial_calls = getattr(estimator, f"n_call_{response_method}")
-
-    # cache the results
-    cache.update((key, value) for key, value, _ in results)
 
     # Second call by passing the hash of the data should not trigger new computation
     # because we consider it trustworthy
     params["data_source_hash"] = joblib.hash(X)
     results = _get_cached_response_values(cache=cache, **params)
     assert len(results) == 1
-    _, response_values, is_cached = results[0]
-    assert is_cached
+    _, response_values = results[0]
     assert response_values.shape == y.shape
     current_calls = getattr(estimator, f"n_call_{response_method}")
     assert current_calls == initial_calls, (
@@ -203,8 +189,7 @@ def test_get_cached_response_values_different_data_source_hash(
     params["data_source_hash"] = 456
     results = _get_cached_response_values(cache=cache, **params)
     assert len(results) == 2
-    _, response_values, is_cached = results[0]
-    assert not is_cached
+    _, response_values = results[0]
     assert response_values.shape == y.shape
     current_calls = getattr(estimator, f"n_call_{response_method}")
     assert current_calls == initial_calls + 1, (
