@@ -88,7 +88,7 @@ xgb_report.metrics.roc().plot()
 # We can also inspect our model:
 
 # %%
-xgb_report.feature_importance.permutation()
+xgb_report.feature_importance.permutation().frame()
 
 # %%
 # Custom model

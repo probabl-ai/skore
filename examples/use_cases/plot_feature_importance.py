@@ -987,7 +987,7 @@ ridge_report.help()
 # accessor:
 
 # %%
-ridge_report.feature_importance.permutation(seed=0)
+ridge_report.feature_importance.permutation(seed=0).frame()
 
 # %%
 # Since the permutation importance involves permuting values of a feature at random,
@@ -1002,17 +1002,11 @@ ridge_report.feature_importance.permutation(seed=0)
 def plot_permutation_train_test(importances):
     _, ax = plt.subplots(figsize=(8, 6))
 
-    # create a long format required by seaborn
-    importances = importances.stack().reset_index()
-    importances.columns = ["Dataset", "Feature", "Repeats", "Importance"]
-
     sns.boxplot(
         data=importances,
-        x="Importance",
-        y="Feature",
-        hue="Dataset",
-        orient="h",
-        order=importances["Feature"].unique()[::-1],
+        x="value",
+        y="feature",
+        hue="data_source",
         ax=ax,
         whis=10_000,
     )
@@ -1027,17 +1021,12 @@ def plot_permutation_train_test(importances):
 def compute_permutation_importances(report, at_step=0):
     train_importance = report.feature_importance.permutation(
         data_source="train", seed=0, at_step=at_step
-    )
+    ).frame(aggregate=None)
     test_importance = report.feature_importance.permutation(
         data_source="test", seed=0, at_step=at_step
-    )
-    print(train_importance)
+    ).frame(aggregate=None)
 
-    return pd.concat(
-        {"train": train_importance, "test": test_importance},
-        axis=0,
-        names=["Dataset"],
-    ).droplevel(level=1, axis=0)
+    return pd.concat([train_importance, test_importance], axis=0)
 
 
 # %%
@@ -1069,23 +1058,25 @@ plot_permutation_train_test(compute_permutation_importances(selectk_ridge_report
 importances = compute_permutation_importances(selectk_ridge_report, at_step=-1)
 
 # Rename some features for clarity
-importances = importances.reset_index()
-importances["Feature"] = (
-    importances["Feature"]
+importances["feature"] = (
+    importances["feature"]
     .str.replace("remainder__", "")
     .str.replace("kmeans__", "geospatial__")
 )
 
+
 # Take only the 15 most important train features
-importances = importances.set_index(["Dataset", "Feature"])
 best_15_features = (
-    importances.loc[("test", slice(None))]
-    .aggregate("mean", axis=1)
-    .sort_values(key=abs)
+    importances.set_index("data_source")
+    .loc["test", :]
+    .drop(columns=["metric", "repetition"])
+    .groupby("feature")
+    .aggregate("mean")
+    .sort_values(by="value", key=abs)
     .tail(15)
     .index
 )
-importances = importances[importances.index.isin(best_15_features, level=1)]
+importances = importances.query("feature in @best_15_features")
 
 plot_permutation_train_test(importances)
 

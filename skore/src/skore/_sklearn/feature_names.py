@@ -26,7 +26,14 @@ def _get_feature_names(
     The estimator may or may not be inside a sklearn.Pipeline.
     """
     if hasattr(estimator, "feature_names_in_"):
-        return estimator.feature_names_in_.tolist()
+        feature_names = estimator.feature_names_in_
+        # skrub is not implementing rigorously the scikit-learn API and returns a
+        # list and so we need to check if we have an array-like before to make any
+        # conversion
+        if hasattr(feature_names, "tolist"):
+            feature_names = feature_names.tolist()
+        return feature_names
+
     elif (
         transformer is not None
         and hasattr(transformer, "get_feature_names_out")

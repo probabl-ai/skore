@@ -98,3 +98,19 @@ def test_get_feature_names_sklearn_model(container_type):
         estimator=sklearn_model[-1], transformer=sklearn_model[0], n_features=X.shape[1]
     )
     assert feature_names == expected_feature_names
+
+
+def test_get_feature_names_list_instead_of_array():
+    """Test that feature_names_in_ as a list (e.g., from skrub) is handled correctly."""
+
+    class MockEstimator:
+        def __init__(self, feature_names):
+            self.feature_names_in_ = feature_names
+
+    feature_names_list = ["feature_0", "feature_1", "feature_2"]
+    estimator = MockEstimator(feature_names_list)
+
+    result = _get_feature_names(estimator)
+    assert result == feature_names_list
+    assert isinstance(result, list)
+    assert result is feature_names_list
