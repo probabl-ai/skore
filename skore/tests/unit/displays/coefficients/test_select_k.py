@@ -105,8 +105,10 @@ def test_plot(comparison_report):
 
     display.plot(select_k=3)
 
-    assert hasattr(display, "ax_")
-    assert hasattr(display, "figure_")
+    labels = [
+        tick_label.get_text() for tick_label in display.ax_.get_yaxis().get_ticklabels()
+    ]
+    assert labels == ["Feature #10", "Feature #1", "Feature #15"]
 
 
 def test_plot_different_features(logistic_binary_classification_with_train_test):
