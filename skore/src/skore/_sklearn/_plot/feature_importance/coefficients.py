@@ -179,8 +179,9 @@ class CoefficientsDisplay(DisplayMixin):
         select_k : int, default=None
             Select features based on absolute coefficient values:
 
-            - Positive values: select the k features with largest absolute coefficients
-            - Negative values: select the |k| features with smallest absolute
+            - Positive values: select the `select_k` features with largest absolute
+              coefficients
+            - Negative values: select the `-select_k` features with smallest absolute
               coefficients
 
             Selection is performed independently within each group:
@@ -198,7 +199,7 @@ class CoefficientsDisplay(DisplayMixin):
         sorting_order : {"descending", "ascending", None}, default="descending"
             Sort features by absolute coefficient values:
 
-            - "descending": largest absolute values first (default)
+            - "descending": largest absolute values first
             - "ascending": smallest absolute values first
             - None: preserve original order
 
@@ -298,8 +299,9 @@ class CoefficientsDisplay(DisplayMixin):
         select_k : int, default=None
             Select features based on absolute coefficient values:
 
-            - Positive values: select the k features with largest absolute coefficients
-            - Negative values: select the |k| features with smallest absolute
+            - Positive values: select the `select_k` features with largest absolute
+              coefficients
+            - Negative values: select the `-select_k` features with smallest absolute
               coefficients
 
             Selection is performed independently within each group as described in
@@ -308,7 +310,7 @@ class CoefficientsDisplay(DisplayMixin):
         sorting_order : {"descending", "ascending", None}, default="descending"
             Sort features by absolute coefficient values:
 
-            - "descending": largest absolute values first (default)
+            - "descending": largest absolute values first
             - "ascending": smallest absolute values first
             - None: preserve original order
 
