@@ -346,32 +346,18 @@ class CoefficientsDisplay(DisplayMixin):
         sorting_order: Literal["descending", "ascending", None] = "descending",
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
-        # Get filtered and sorted frame using .frame() method
         frame = self.frame(
             include_intercept=include_intercept,
             select_k=select_k,
             sorting_order=sorting_order,
         )
 
-        # make copy of the dictionary since we are going to pop some keys later
+        # Make copy of the dictionary since we are going to pop some keys later
         barplot_kwargs = self._default_barplot_kwargs.copy()
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
 
-        if self.report_type in ("estimator", "cross-validation"):
-            return self._plot_single_estimator(
-                frame=frame,
-                estimator_name=self.coefficients["estimator"][0],
-                report_type=self.report_type,
-                subplot_by=subplot_by,
-                barplot_kwargs=barplot_kwargs,
-                boxplot_kwargs=boxplot_kwargs,
-                stripplot_kwargs=stripplot_kwargs,
-            )
-        elif self.report_type in (
-            "comparison-estimator",
-            "comparison-cross-validation",
-        ):
+        if "comparison" in self.report_type:
             return self._plot_comparison(
                 frame=frame,
                 report_type=self.report_type,
@@ -380,8 +366,16 @@ class CoefficientsDisplay(DisplayMixin):
                 boxplot_kwargs=boxplot_kwargs,
                 stripplot_kwargs=stripplot_kwargs,
             )
-        else:
-            raise TypeError(f"Unexpected report type: {self.report_type!r}")
+        # EstimatorReport or CrossValidationReport
+        return self._plot_single_estimator(
+            frame=frame,
+            estimator_name=self.coefficients["estimator"][0],
+            report_type=self.report_type,
+            subplot_by=subplot_by,
+            barplot_kwargs=barplot_kwargs,
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
+        )
 
     @staticmethod
     def _decorate_matplotlib_axis(
