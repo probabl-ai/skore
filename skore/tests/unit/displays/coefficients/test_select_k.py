@@ -88,22 +88,9 @@ def test_plot(comparison_report):
     assert labels == ["Feature #10", "Feature #1", "Feature #15"]
 
 
-def test_plot_different_features(logistic_binary_classification_with_train_test):
+def test_plot_different_features(comparison_report_different_features):
     """`select_k` works for plotting when the estimators have different features."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    report_1 = EstimatorReport(
-        estimator, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
-    )
-    report_2 = EstimatorReport(
-        clone(estimator),
-        X_train=X_train[:, :4],
-        X_test=X_test[:, :4],
-        y_train=y_train,
-        y_test=y_test,
-    )
-    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+    report = comparison_report_different_features
 
     display = report.feature_importance.coefficients()
     display.plot(select_k=3)
@@ -114,5 +101,5 @@ def test_plot_different_features(logistic_binary_classification_with_train_test)
     ]
     assert labels == [
         ["Feature #10", "Feature #1", "Feature #15"],
-        ["Feature #1", "Intercept", "Feature #0"],
+        ["Feature #1", "Feature #4", "Intercept"],
     ]
