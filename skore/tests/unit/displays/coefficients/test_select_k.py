@@ -32,6 +32,21 @@ def test_comparison_cross_validation(logistic_binary_classification_data):
     assert set(coefficients["feature"]) == {"Feature #10", "Feature #1", "Feature #15"}
 
 
+def test_zero(regression_train_test_split):
+    """Test that if select_k is zero then the output is an empty dataframe."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report_1 = EstimatorReport(
+        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
+
+    frame = report.feature_importance.coefficients().frame(select_k=0)
+    assert frame.empty
+
+
 def test_positive(regression_train_test_split):
     """Test that select_k with positive value selects features per estimator."""
     X_train, X_test, y_train, y_test = regression_train_test_split

@@ -148,6 +148,9 @@ class CoefficientsDisplay(DisplayMixin):
         if not group_cols:
             return self._sort_features_in_group(frame, sorting_order=sorting_order)
 
+        if len(frame) == 0:
+            return frame
+
         return pd.concat(
             [
                 self._sort_features_in_group(group, sorting_order=sorting_order)
