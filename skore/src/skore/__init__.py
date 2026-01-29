@@ -1,5 +1,6 @@
 """Configure logging and global settings."""
 
+from importlib.metadata import entry_points
 from logging import INFO, NullHandler, getLogger
 from typing import Literal
 from warnings import warn
@@ -85,8 +86,6 @@ console = Console(theme=skore_console_theme, width=88)
 
 
 def login(*, mode: Literal["local", "hub"] = "hub", **kwargs):
-    from importlib.metadata import entry_points
-
     if mode == "local":
         return
 
