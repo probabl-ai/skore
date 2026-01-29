@@ -267,22 +267,16 @@ comparison.metrics.precision_recall().plot()
 # Now that we have chosen to deploy the linear model, we will train it on
 # the full experiment set and evaluate it on our held-out data: training on more data
 # should help performance and we can also validate that our model generalizes well to
-# new data.
+# new data. This can be done in one step with :meth:`~skore.ComparisonReport.create_estimator_report`.
 
 # %%
-from skore import EstimatorReport
 
-final_report = EstimatorReport(
-    simple_model,
-    X_train=X_experiment,
-    y_train=y_experiment,
-    X_test=X_holdout,
-    y_test=y_holdout,
-    pos_label="good",
+final_report = comparison.create_estimator_report(
+    name="Simple Linear Model", X_test=X_holdout, y_test=y_holdout
 )
 
 # %%
-# :class:`skore.EstimatorReport` has a similar API to the other report classes:
+# This returns a :class:`~skore.EstimatorReport` which has a similar API to the other report classes:
 
 # %%
 final_metrics = final_report.metrics.summarize()
