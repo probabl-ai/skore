@@ -26,10 +26,6 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn._plot.utils import (
-    _expand_data_sources,
-    _get_ys_for_single_report,
-)
 from skore._sklearn.types import (
     _DEFAULT,
     DataSource,
@@ -42,6 +38,8 @@ from skore._utils._accessor import (
     _check_estimator_has_method,
     _check_roc_auc,
     _check_supported_ml_task,
+    _expand_data_sources,
+    _get_ys_for_single_report,
 )
 from skore._utils._index import flatten_multi_index
 
@@ -1744,21 +1742,21 @@ class _MetricsAccessor(
         y_true: list[YPlotData] = []
         y_pred: list[YPlotData] = []
 
-        for data_source in data_sources:
-            data_source_X, data_source_y, data_source_hash = (
-                self._get_X_y_and_data_source_hash(data_source=data_source, X=X, y=y)
+        for ds in data_sources:
+            ds_X, ds_y, ds_hash = self._get_X_y_and_data_source_hash(
+                data_source=ds, X=X, y=y
             )
-            assert data_source_y is not None, "y must be provided"
+            assert ds_y is not None, "y must be provided"
 
             y_true_data, y_pred_data = _get_ys_for_single_report(
                 cache=self._parent._cache,
                 estimator_hash=int(self._parent._hash),
                 estimator=self._parent.estimator_,
                 estimator_name=self._parent.estimator_name_,
-                X=data_source_X,
-                y_true=data_source_y,
-                data_source=data_source,
-                data_source_hash=data_source_hash,
+                X=ds_X,
+                y_true=ds_y,
+                data_source=ds,
+                data_source_hash=ds_hash,
                 response_method=response_method,
                 pos_label=pos_label,
                 split=None,

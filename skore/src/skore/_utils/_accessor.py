@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, cast
+from typing import Any, Literal, cast
 
+from numpy.typing import ArrayLike
 from sklearn.pipeline import Pipeline
+
+from skore._sklearn._base import Cache, _get_cached_response_values
+from skore._sklearn.types import DataSource, PositiveLabel, YPlotData
 
 
 def _check_all_checks(checks: list[Callable]) -> Callable:
@@ -63,6 +67,63 @@ def _check_roc_auc(ml_task_and_methods: list[tuple[str, list[str]]]):
         return True
 
     return check
+
+
+def _expand_data_sources(
+    data_source: DataSource | Literal["both"],
+) -> tuple[DataSource, ...]:
+    """Expand 'both' data source to ('train', 'test')."""
+    if data_source == "both":
+        return ("train", "test")
+    return (data_source,)
+
+
+def _get_ys_for_single_report(
+    *,
+    cache: Cache,
+    estimator_hash: int,
+    estimator: Any,
+    estimator_name: str,
+    X: ArrayLike | None,
+    y_true: ArrayLike,
+    data_source: DataSource,
+    data_source_hash: int | None,
+    response_method: str | list[str] | tuple[str, ...],
+    pos_label: PositiveLabel | None,
+    split: int | None = None,
+) -> tuple[YPlotData, YPlotData]:
+    """Get y_true and y_pred as YPlotData for a single estimator report."""
+    results = _get_cached_response_values(
+        cache=cache,
+        estimator_hash=estimator_hash,
+        estimator=estimator,
+        X=X,
+        response_method=response_method,
+        pos_label=pos_label,
+        data_source=data_source,
+        data_source_hash=data_source_hash,
+    )
+
+    for key, value, is_cached in results:
+        if not is_cached:
+            cache[key] = value
+        if key[-1] != "predict_time":
+            y_pred = value
+
+    y_true_data = YPlotData(
+        estimator_name=estimator_name,
+        data_source=data_source,
+        split=split,
+        y=y_true,
+    )
+    y_pred_data = YPlotData(
+        estimator_name=estimator_name,
+        data_source=data_source,
+        split=split,
+        y=y_pred,
+    )
+
+    return y_true_data, y_pred_data
 
 
 ########################################################################################

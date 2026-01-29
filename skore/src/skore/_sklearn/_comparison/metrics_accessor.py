@@ -21,10 +21,6 @@ from skore._sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn._plot.utils import (
-    _expand_data_sources,
-    _get_ys_for_single_report,
-)
 from skore._sklearn.types import (
     _DEFAULT,
     Aggregate,
@@ -35,6 +31,8 @@ from skore._sklearn.types import (
 from skore._utils._accessor import (
     _check_any_sub_report_has_metric,
     _check_supported_ml_task,
+    _expand_data_sources,
+    _get_ys_for_single_report,
 )
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
@@ -1233,10 +1231,10 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         if self._parent._reports_type == "EstimatorReport":
             for report_name, report in self._parent.reports_.items():
-                for data_source in data_sources:
-                    report_X, report_y, data_source_hash = (
+                for ds in data_sources:
+                    report_X, report_y, ds_hash = (
                         report.metrics._get_X_y_and_data_source_hash(
-                            data_source=data_source,
+                            data_source=ds,
                             X=X,
                             y=y,
                         )
@@ -1249,8 +1247,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                         estimator_name=report_name,
                         X=report_X,
                         y_true=report_y,
-                        data_source=data_source,
-                        data_source_hash=data_source_hash,
+                        data_source=ds,
+                        data_source_hash=ds_hash,
                         response_method=response_method,
                         pos_label=pos_label,
                         split=None,
@@ -1275,10 +1273,10 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         else:
             for report_name, report in self._parent.reports_.items():
                 for split, estimator_report in enumerate(report.estimator_reports_):
-                    for data_source in data_sources:
-                        report_X, report_y, data_source_hash = (
+                    for ds in data_sources:
+                        report_X, report_y, ds_hash = (
                             estimator_report.metrics._get_X_y_and_data_source_hash(
-                                data_source=data_source,
+                                data_source=ds,
                                 X=X,
                                 y=y,
                             )
@@ -1291,8 +1289,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                             estimator_name=report_name,
                             X=report_X,
                             y_true=report_y,
-                            data_source=data_source,
-                            data_source_hash=data_source_hash,
+                            data_source=ds,
+                            data_source_hash=ds_hash,
                             response_method=response_method,
                             pos_label=pos_label,
                             split=split,

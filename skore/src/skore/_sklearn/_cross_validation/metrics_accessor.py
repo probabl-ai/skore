@@ -21,7 +21,6 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn._plot.utils import _get_ys_for_single_report
 from skore._sklearn.types import (
     _DEFAULT,
     Aggregate,
@@ -29,7 +28,10 @@ from skore._sklearn.types import (
     PositiveLabel,
     YPlotData,
 )
-from skore._utils._accessor import _check_estimator_report_has_method
+from skore._utils._accessor import (
+    _check_estimator_report_has_method,
+    _get_ys_for_single_report,
+)
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
 from skore._utils._parallel import Parallel, delayed
