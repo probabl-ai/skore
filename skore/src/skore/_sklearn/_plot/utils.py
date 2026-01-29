@@ -1,17 +1,19 @@
 from collections.abc import Sequence
-from typing import Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
+from numpy.typing import ArrayLike
 from pandas import DataFrame
 from sklearn.utils.validation import (
     _check_pos_label_consistency,
     check_consistent_length,
 )
 
+from skore._sklearn._base import _get_cached_response_values
 from skore._sklearn.types import (
     DataSource,
     MLTask,
@@ -19,6 +21,9 @@ from skore._sklearn.types import (
     ReportType,
     YPlotData,
 )
+
+if TYPE_CHECKING:
+    from skore._sklearn._base import Cache
 
 LINESTYLE = [
     ("solid", "solid"),
@@ -337,11 +342,7 @@ def _get_curve_plot_columns(
 
     hue = hue[0] if (hue := [c for c in hue_candidates if c != col]) else None
 
-    style = (
-        "data_source"
-        if has_both_data_sources and (not is_comparison or not is_multiclass)
-        else None
-    )
+    style = "data_source" if has_both_data_sources else None
 
     return col, hue, style
 
@@ -437,3 +438,60 @@ def _format_legend_label(
         )
         + f" ({statistic})"
     )
+
+
+def _expand_data_sources(
+    data_source: DataSource | Literal["both"],
+) -> tuple[DataSource, ...]:
+    """Expand 'both' data source to ('train', 'test')."""
+    if data_source == "both":
+        return ("train", "test")
+    return (data_source,)
+
+
+def _get_ys_for_single_report(
+    *,
+    cache: "Cache",
+    estimator_hash: int,
+    estimator: Any,
+    estimator_name: str,
+    X: ArrayLike | None,
+    y_true: ArrayLike,
+    data_source: DataSource,
+    data_source_hash: int | None,
+    response_method: str | list[str] | tuple[str, ...],
+    pos_label: PositiveLabel | None,
+    split: int | None = None,
+) -> tuple[YPlotData, YPlotData]:
+    """Get y_true and y_pred as YPlotData for a single estimator report."""
+    results = _get_cached_response_values(
+        cache=cache,
+        estimator_hash=estimator_hash,
+        estimator=estimator,
+        X=X,
+        response_method=response_method,
+        pos_label=pos_label,
+        data_source=data_source,
+        data_source_hash=data_source_hash,
+    )
+
+    for key, value, is_cached in results:
+        if not is_cached:
+            cache[key] = value
+        if key[-1] != "predict_time":
+            y_pred = value
+
+    y_true_data = YPlotData(
+        estimator_name=estimator_name,
+        data_source=data_source,
+        split=split,
+        y=y_true,
+    )
+    y_pred_data = YPlotData(
+        estimator_name=estimator_name,
+        data_source=data_source,
+        split=split,
+        y=y_pred,
+    )
+
+    return y_true_data, y_pred_data
