@@ -1,4 +1,3 @@
-from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
@@ -13,9 +12,22 @@ def test_estimator(logistic_binary_classification_with_train_test):
         estimator, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
     )
 
-    coefficients = report.feature_importance.coefficients().frame(select_k=3)
+    frame = report.feature_importance.coefficients().frame(select_k=3)
 
-    assert set(coefficients["feature"]) == {"Feature #10", "Feature #1", "Feature #15"}
+    assert set(frame["feature"]) == {"Feature #10", "Feature #1", "Feature #15"}
+
+
+def test_cross_validation(logistic_binary_classification_data):
+    """`select_k` works with CrossValidationReports."""
+    estimator, X, y = logistic_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+
+    frame = report.feature_importance.coefficients().frame(select_k=3)
+
+    assert [list(group["feature"]) for _, group in frame.groupby("split")] == [
+        ["Feature #10", "Feature #1", "Feature #15"],
+        ["Feature #10", "Feature #1", "Feature #15"],
+    ]
 
 
 def test_comparison_cross_validation(logistic_binary_classification_data):
@@ -74,6 +86,19 @@ def test_multiclass(multiclass_classification_train_test_split):
         ("report_2", 1): ["Feature #6", "Feature #8"],
         ("report_2", 2): ["Intercept", "Feature #5"],
     }
+
+
+def test_multi_output_regression(linear_regression_multioutput_data):
+    """`select_k` works per output in multi-output regression."""
+    estimator, X, y = linear_regression_multioutput_data
+    report = EstimatorReport(estimator, X_train=X, X_test=X, y_train=y, y_test=y)
+
+    frame = report.feature_importance.coefficients().frame(select_k=2)
+
+    assert [list(group["feature"]) for _, group in frame.groupby("output")] == [
+        ["Feature #0", "Feature #4"],
+        ["Feature #2", "Feature #0"],
+    ]
 
 
 def test_plot(comparison_report):
