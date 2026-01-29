@@ -1,34 +1,11 @@
-import pytest
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import PolynomialFeatures
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 
 
-@pytest.fixture
-def comparison_report(binary_classification_train_test_split):
-    X_train, X_test, y_train, y_test = binary_classification_train_test_split
-    report_1 = EstimatorReport(
-        LogisticRegression(),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    report_2 = EstimatorReport(
-        LogisticRegression(),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    return ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-
-
 def test_estimator(logistic_binary_classification_with_train_test):
-    """Test that select_k works with EstimatorReport."""
+    """`select_k` works with EstimatorReports."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -42,7 +19,7 @@ def test_estimator(logistic_binary_classification_with_train_test):
 
 
 def test_comparison_cross_validation(logistic_binary_classification_data):
-    """Test that select_k works with ComparisonReports of CrossValidationReports."""
+    """`select_k` works with ComparisonReports of CrossValidationReports."""
     estimator, X, y = logistic_binary_classification_data
     report_1 = CrossValidationReport(estimator, X, y)
     report_2 = CrossValidationReport(estimator, X, y)
@@ -54,20 +31,20 @@ def test_comparison_cross_validation(logistic_binary_classification_data):
 
 
 def test_zero(comparison_report):
-    """Test that if select_k is zero then the output is an empty dataframe."""
+    """If `select_k` is zero then the output is an empty dataframe."""
 
     frame = comparison_report.feature_importance.coefficients().frame(select_k=0)
     assert frame.empty
 
 
 def test_negative(comparison_report):
-    """Test that if select_k is negative then the features are the bottom k."""
+    """If `select_k` is negative then the features are the bottom `-select_k`."""
     frame = comparison_report.feature_importance.coefficients().frame(select_k=-3)
     assert set(frame["feature"]) == {"Feature #17", "Feature #16", "Feature #0"}
 
 
 def test_multiclass(multiclass_classification_train_test_split):
-    """Test that select_k works per estimator and per class in multiclass comparison."""
+    """`select_k` works per estimator and per class in multiclass comparison."""
     X_train, X_test, y_train, y_test = multiclass_classification_train_test_split
     report_1 = EstimatorReport(
         LogisticRegression(),
@@ -100,7 +77,7 @@ def test_multiclass(multiclass_classification_train_test_split):
 
 
 def test_plot(comparison_report):
-    """Test that plot method correctly uses select_k parameter."""
+    """`select_k` works for plotting."""
     display = comparison_report.feature_importance.coefficients()
 
     display.plot(select_k=3)
@@ -112,9 +89,7 @@ def test_plot(comparison_report):
 
 
 def test_plot_different_features(logistic_binary_classification_with_train_test):
-    """
-    Test that select_k works correctly when the estimators have different features.
-    """
+    """`select_k` works for plotting when the estimators have different features."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -122,9 +97,9 @@ def test_plot_different_features(logistic_binary_classification_with_train_test)
         estimator, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
     )
     report_2 = EstimatorReport(
-        Pipeline([("poly", PolynomialFeatures()), ("predictor", clone(estimator))]),
-        X_train=X_train,
-        X_test=X_test,
+        clone(estimator),
+        X_train=X_train[:, :4],
+        X_test=X_test[:, :4],
         y_train=y_train,
         y_test=y_test,
     )
@@ -139,5 +114,5 @@ def test_plot_different_features(logistic_binary_classification_with_train_test)
     ]
     assert labels == [
         ["Feature #10", "Feature #1", "Feature #15"],
-        ["Intercept", "x10", "x1"],
+        ["Feature #1", "Intercept", "Feature #0"],
     ]
