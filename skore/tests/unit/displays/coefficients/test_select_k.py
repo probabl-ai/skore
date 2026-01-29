@@ -1,9 +1,30 @@
+import pytest
 from sklearn.base import clone
-from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
+
+
+@pytest.fixture
+def comparison_report(binary_classification_train_test_split):
+    X_train, X_test, y_train, y_test = binary_classification_train_test_split
+    report_1 = EstimatorReport(
+        LogisticRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report_2 = EstimatorReport(
+        LogisticRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    return ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
 
 def test_estimator(logistic_binary_classification_with_train_test):
@@ -32,179 +53,57 @@ def test_comparison_cross_validation(logistic_binary_classification_data):
     assert set(coefficients["feature"]) == {"Feature #10", "Feature #1", "Feature #15"}
 
 
-def test_zero(regression_train_test_split):
+def test_zero(comparison_report):
     """Test that if select_k is zero then the output is an empty dataframe."""
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    report_1 = EstimatorReport(
-        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report_2 = EstimatorReport(
-        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    frame = report.feature_importance.coefficients().frame(select_k=0)
+    frame = comparison_report.feature_importance.coefficients().frame(select_k=0)
     assert frame.empty
 
 
-def test_positive(regression_train_test_split):
-    """Test that select_k with positive value selects features per estimator."""
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    report_1 = EstimatorReport(
-        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report_2 = EstimatorReport(
-        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    display = report.feature_importance.coefficients()
-
-    full_frame = display.frame(include_intercept=False)
-    select_k = min(3, full_frame["feature"].nunique())
-
-    # Get filtered frame
-    filtered_frame = display.frame(include_intercept=False, select_k=select_k)
-
-    # For comparison reports, selection happens per estimator
-    for estimator_name in filtered_frame["estimator"].unique():
-        est_features = filtered_frame[filtered_frame["estimator"] == estimator_name]
-
-        # Should have exactly select_k features for this estimator
-        assert len(est_features) == select_k, (
-            f"Expected {select_k} features for {estimator_name}"
-        )
-
-        # Verify these are the top-k for this estimator
-        est_full = full_frame[full_frame["estimator"] == estimator_name]
-        abs_coefs = est_full["coefficients"].abs()
-        expected_features = set(
-            est_full.loc[abs_coefs.nlargest(select_k).index, "feature"].tolist()
-        )
-        actual_features = set(est_features["feature"].unique())
-        assert actual_features == expected_features, (
-            f"For {estimator_name}, expected {expected_features}, got {actual_features}"
-        )
+def test_negative(comparison_report):
+    """Test that if select_k is negative then the features are the bottom k."""
+    frame = comparison_report.feature_importance.coefficients().frame(select_k=-3)
+    assert set(frame["feature"]) == {"Feature #17", "Feature #16", "Feature #0"}
 
 
-def test_negative(regression_train_test_split):
-    """Test that select_k with negative value selects features per estimator."""
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    report_1 = EstimatorReport(
-        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report_2 = EstimatorReport(
-        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    display = report.feature_importance.coefficients()
-
-    full_frame = display.frame(include_intercept=False)
-    bottom_k = min(3, full_frame["feature"].nunique())
-
-    # Get filtered frame
-    filtered_frame = display.frame(include_intercept=False, select_k=-bottom_k)
-
-    # For comparison reports, selection happens per estimator
-    for estimator_name in filtered_frame["estimator"].unique():
-        est_features = filtered_frame[filtered_frame["estimator"] == estimator_name]
-
-        # Should have exactly bottom_k features for this estimator
-        assert len(est_features) == bottom_k, (
-            f"Expected {bottom_k} features for {estimator_name}"
-        )
-
-        # Verify these are the bottom-k for this estimator
-        est_full = full_frame[full_frame["estimator"] == estimator_name]
-        abs_coefs = est_full["coefficients"].abs()
-        expected_features = set(
-            est_full.loc[abs_coefs.nsmallest(bottom_k).index, "feature"].tolist()
-        )
-        actual_features = set(est_features["feature"].unique())
-        assert actual_features == expected_features, (
-            f"For {estimator_name}, expected {expected_features}, got {actual_features}"
-        )
-
-
-def test_multiclass(regression_train_test_split):
+def test_multiclass(multiclass_classification_train_test_split):
     """Test that select_k works per estimator and per class in multiclass comparison."""
-    from sklearn.datasets import load_iris
-    from sklearn.model_selection import train_test_split
-
-    # iris dataset - has 3 classes
-    iris = load_iris(as_frame=True)
-    X, y = iris.data, iris.target
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.3, random_state=42, stratify=y
-    )
-
+    X_train, X_test, y_train, y_test = multiclass_classification_train_test_split
     report_1 = EstimatorReport(
-        LogisticRegression(max_iter=200),
+        LogisticRegression(),
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
     report_2 = EstimatorReport(
-        LogisticRegression(max_iter=200),
+        LogisticRegression(),
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    display = report.feature_importance.coefficients()
+    frame = report.feature_importance.coefficients().frame(select_k=2)
 
-    full_frame = display.frame(include_intercept=False)
-    select_k = 2
-
-    # Get filtered frame
-    filtered_frame = display.frame(include_intercept=False, select_k=select_k)
-
-    # For each estimator and label combination
-    for estimator_name in filtered_frame["estimator"].unique():
-        for label in filtered_frame["label"].unique():
-            group_filtered = filtered_frame[
-                (filtered_frame["estimator"] == estimator_name)
-                & (filtered_frame["label"] == label)
-            ]
-
-            # Should have exactly select_k features
-            assert len(group_filtered) == select_k, (
-                f"Expected {select_k} features for {estimator_name}, label {label}"
-            )
-
-            # Verify these are the top-k for this estimator-label combination
-            group_full = full_frame[
-                (full_frame["estimator"] == estimator_name)
-                & (full_frame["label"] == label)
-            ]
-            abs_coefs = group_full["coefficients"].abs()
-            expected_features = set(
-                group_full.loc[abs_coefs.nlargest(select_k).index, "feature"].tolist()
-            )
-            actual_features = set(group_filtered["feature"].unique())
-            assert actual_features == expected_features, (
-                f"For {estimator_name}, label {label}, expected {expected_features}, "
-                f"got {actual_features}"
-            )
+    assert {
+        (report, int(label)): list(group["feature"])
+        for (report, label), group in frame.groupby(["estimator", "label"])
+    } == {
+        ("report_1", 0): ["Intercept", "Feature #7"],
+        ("report_1", 1): ["Feature #6", "Feature #8"],
+        ("report_1", 2): ["Intercept", "Feature #5"],
+        ("report_2", 0): ["Intercept", "Feature #7"],
+        ("report_2", 1): ["Feature #6", "Feature #8"],
+        ("report_2", 2): ["Intercept", "Feature #5"],
+    }
 
 
-def test_plot(regression_train_test_split):
+def test_plot(comparison_report):
     """Test that plot method correctly uses select_k parameter."""
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    report_1 = EstimatorReport(
-        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report_2 = EstimatorReport(
-        Ridge(), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    display = report.feature_importance.coefficients()
+    display = comparison_report.feature_importance.coefficients()
 
-    select_k = 3
-
-    display.plot(select_k=select_k, include_intercept=False)
+    display.plot(select_k=3)
 
     assert hasattr(display, "ax_")
     assert hasattr(display, "figure_")
