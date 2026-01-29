@@ -86,6 +86,47 @@ console = Console(theme=skore_console_theme, width=88)
 
 
 def login(*, mode: Literal["local", "hub"] = "hub", **kwargs):
+    """
+    Login to the storage backend.
+
+    It configures the credentials used to communicate with the desired storage backend.
+    It only affects the current session: credentials are stored in memory and are not
+    persisted.
+
+    It must be called at the top of your script.
+
+    Two storage backends are available and their credentials can be configured using the
+    ``mode`` parameter. Please note that both can be configured in the same script
+    without side-effect.
+
+    .. rubric:: Hub mode
+
+    It configures the credentials used to communicate with the ``Skore Hub``, persisting
+    projects remotely.
+
+    In this mode, you must be already registered to the ``Skore Hub``. Also, we
+    recommend that you set up an API key via [url](coming soon) and use it to log in.
+
+    .. rubric:: Local mode
+
+    Otherwise, it configures the credentials used to communicate with the ``local``
+    backend, persisting projects on the user machine.
+
+    Parameters
+    ----------
+    mode : Literal["local", "hub"], optional
+        The mode of the storage backend to log in, default hub.
+    **kwargs : dict
+        Extra keyword arguments passed to the login function, depending on its mode.
+
+        timeout : int, mode:hub only, optional
+            The maximum time in second before raising an error, default 600.
+
+    See Also
+    --------
+    :class:`~skore.Project` :
+        Refer to the :ref:`project` section of the user guide for more details.
+    """
     if mode == "local":
         return
 
