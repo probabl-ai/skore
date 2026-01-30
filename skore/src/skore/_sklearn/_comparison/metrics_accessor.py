@@ -1152,7 +1152,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         *,
         X: ArrayLike | None,
         y: ArrayLike | None,
-        data_source: DataSource,
+        data_source: DataSource | Literal["both"],
         response_method: str | list[str],
         display_class: type[
             RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay
@@ -1169,12 +1169,13 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,)
             The target.
 
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metric.
 
         response_method : str
             The response method.
@@ -1211,46 +1212,53 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             y_true: list[YPlotData] = []
             y_pred: list[YPlotData] = []
 
+            data_sources: tuple[DataSource, ...]
+            if data_source == "both":
+                data_sources = ("train", "test")
+            else:
+                data_sources = (data_source,)
+
             if self._parent._reports_type == "EstimatorReport":
                 for report_name, report in self._parent.reports_.items():
-                    report_X, report_y, _ = (
-                        report.metrics._get_X_y_and_data_source_hash(
-                            data_source=data_source,
-                            X=X,
-                            y=y,
-                        )
-                    )
-
-                    y_true.append(
-                        YPlotData(
-                            estimator_name=report_name,
-                            data_source=data_source,
-                            split=None,
-                            y=report_y,
-                        )
-                    )
-                    results = _get_cached_response_values(
-                        cache=report._cache,
-                        estimator_hash=report._hash,
-                        estimator=report._estimator,
-                        X=report_X,
-                        response_method=response_method,
-                        data_source=data_source,
-                        data_source_hash=None,
-                        pos_label=display_kwargs.get("pos_label"),
-                    )
-                    for key, value, is_cached in results:
-                        if not is_cached:
-                            report._cache[key] = value
-                        if key[-1] != "predict_time":
-                            y_pred.append(
-                                YPlotData(
-                                    estimator_name=report_name,
-                                    data_source=data_source,
-                                    split=None,
-                                    y=value,
-                                )
+                    for ds in data_sources:
+                        report_X, report_y, _ = (
+                            report.metrics._get_X_y_and_data_source_hash(
+                                data_source=ds,
+                                X=X,
+                                y=y,
                             )
+                        )
+
+                        y_true.append(
+                            YPlotData(
+                                estimator_name=report_name,
+                                data_source=ds,
+                                split=None,
+                                y=report_y,
+                            )
+                        )
+                        results = _get_cached_response_values(
+                            cache=report._cache,
+                            estimator_hash=report._hash,
+                            estimator=report._estimator,
+                            X=report_X,
+                            response_method=response_method,
+                            data_source=ds,
+                            data_source_hash=None,
+                            pos_label=display_kwargs.get("pos_label"),
+                        )
+                        for key, value, is_cached in results:
+                            if not is_cached:
+                                report._cache[key] = value
+                            if key[-1] != "predict_time":
+                                y_pred.append(
+                                    YPlotData(
+                                        estimator_name=report_name,
+                                        data_source=ds,
+                                        split=None,
+                                        y=value,
+                                    )
+                                )
 
                     progress.update(main_task, advance=1, refresh=True)
 
@@ -1269,45 +1277,46 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             else:
                 for report_name, report in self._parent.reports_.items():
                     for split, estimator_report in enumerate(report.estimator_reports_):
-                        report_X, report_y, _ = (
-                            estimator_report.metrics._get_X_y_and_data_source_hash(
-                                data_source=data_source,
-                                X=X,
-                                y=y,
-                            )
-                        )
-
-                        y_true.append(
-                            YPlotData(
-                                estimator_name=report_name,
-                                data_source=data_source,
-                                split=split,
-                                y=report_y,
-                            )
-                        )
-
-                        results = _get_cached_response_values(
-                            cache=estimator_report._cache,
-                            estimator_hash=estimator_report._hash,
-                            estimator=estimator_report.estimator_,
-                            X=report_X,
-                            response_method=response_method,
-                            data_source=data_source,
-                            data_source_hash=None,
-                            pos_label=display_kwargs.get("pos_label"),
-                        )
-                        for key, value, is_cached in results:
-                            if not is_cached:
-                                report._cache[key] = value
-                            if key[-1] != "predict_time":
-                                y_pred.append(
-                                    YPlotData(
-                                        estimator_name=report_name,
-                                        data_source=data_source,
-                                        split=split,
-                                        y=value,
-                                    )
+                        for ds in data_sources:
+                            report_X, report_y, _ = (
+                                estimator_report.metrics._get_X_y_and_data_source_hash(
+                                    data_source=ds,
+                                    X=X,
+                                    y=y,
                                 )
+                            )
+
+                            y_true.append(
+                                YPlotData(
+                                    estimator_name=report_name,
+                                    data_source=ds,
+                                    split=split,
+                                    y=report_y,
+                                )
+                            )
+
+                            results = _get_cached_response_values(
+                                cache=estimator_report._cache,
+                                estimator_hash=estimator_report._hash,
+                                estimator=estimator_report.estimator_,
+                                X=report_X,
+                                response_method=response_method,
+                                data_source=ds,
+                                data_source_hash=None,
+                                pos_label=display_kwargs.get("pos_label"),
+                            )
+                            for key, value, is_cached in results:
+                                if not is_cached:
+                                    report._cache[key] = value
+                                if key[-1] != "predict_time":
+                                    y_pred.append(
+                                        YPlotData(
+                                            estimator_name=report_name,
+                                            data_source=ds,
+                                            split=split,
+                                            y=value,
+                                        )
+                                    )
 
                     progress.update(main_task, advance=1, refresh=True)
 
@@ -1340,7 +1349,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     def roc(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
@@ -1349,12 +1358,13 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metrics.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -1419,7 +1429,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     def precision_recall(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
@@ -1428,12 +1438,13 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metrics.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -1498,7 +1509,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     def prediction_error(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         subsample: int = 1_000,
@@ -1510,12 +1521,13 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metrics.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation

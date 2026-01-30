@@ -482,3 +482,48 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
             assert isinstance(display.ax_, mpl.axes.Axes)
         else:
             assert len(display.ax_) == expected_len
+
+
+def test_binary_classification_data_source_both(
+    pyplot, logistic_binary_classification_with_train_test
+):
+    """Regression test: `data_source='both'` should plot without crashing."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+
+    display = report.metrics.roc(data_source="both")
+    assert isinstance(display, RocCurveDisplay)
+
+    display.plot()
+
+    assert isinstance(display.ax_, (list, np.ndarray))
+    assert len(display.ax_) == len(report.reports_)
+
+    for ax in display.ax_:
+        assert isinstance(ax, mpl.axes.Axes)
+        legend = ax.get_legend()
+        legend_texts = [text.get_text() for text in legend.get_texts()]
+        assert len(legend_texts) == 2 + 1  # 2 datasource + 1 chance level
+        assert "Train set" in legend_texts[0]
+        assert "Test set" in legend_texts[1]

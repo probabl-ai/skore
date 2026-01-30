@@ -10,7 +10,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.utils._testing import _convert_container
 from sklearn.utils.validation import check_is_fitted
 
 from skore import CrossValidationReport, EstimatorReport
@@ -231,3 +233,38 @@ def test_no_y():
     instance"""
     report = CrossValidationReport(KMeans(), X=np.random.rand(100, 5))
     assert isinstance(report, CrossValidationReport)
+
+
+@pytest.mark.parametrize(
+    "container_types", [("dataframe", "series"), ("array", "array")]
+)
+def test_create_estimator_report(container_types, forest_binary_classification_data):
+    """Test the `create_estimator_report` method."""
+    estimator, X, y = forest_binary_classification_data
+    X = _convert_container(X, container_types[0])
+    y = _convert_container(y, container_types[1])
+    X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
+        X, y, test_size=0.2, random_state=42, shuffle=False
+    )
+    cv_report = CrossValidationReport(estimator, X_experiment, y_experiment, splitter=2)
+    est_report = cv_report.create_estimator_report()
+
+    assert isinstance(est_report, EstimatorReport)
+    assert est_report._parent_hash == cv_report._hash
+    assert joblib.hash(est_report.X_train) == joblib.hash(X_experiment)
+    assert joblib.hash(est_report.y_train) == joblib.hash(y_experiment)
+    assert est_report.X_test is None
+    assert est_report.y_test is None
+    assert est_report.pos_label == cv_report.pos_label
+
+    est_report_with_test = cv_report.create_estimator_report(
+        X_test=X_heldout, y_test=y_heldout
+    )
+
+    assert isinstance(est_report_with_test, EstimatorReport)
+    assert est_report_with_test._parent_hash == cv_report._hash
+    assert joblib.hash(est_report_with_test.X_train) == joblib.hash(X_experiment)
+    assert joblib.hash(est_report_with_test.y_train) == joblib.hash(y_experiment)
+    assert joblib.hash(est_report_with_test.X_test) == joblib.hash(X_heldout)
+    assert joblib.hash(est_report_with_test.y_test) == joblib.hash(y_heldout)
+    assert est_report_with_test.pos_label == cv_report.pos_label
