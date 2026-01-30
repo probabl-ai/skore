@@ -983,7 +983,7 @@ rf_report.inspection.impurity_decrease().plot.barh(
 ridge_report.help()
 
 # %%
-# We have a :meth:`~skore.EstimatorReport.inspection.permutation`
+# We have a :meth:`~skore.EstimatorReport.inspection.permutation_importance`
 # accessor:
 
 # %%
