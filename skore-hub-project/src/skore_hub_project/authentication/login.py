@@ -3,6 +3,14 @@
 from collections.abc import Callable
 from logging import getLogger
 
+from rich.align import Align
+from rich.panel import Panel
+
+from skore_hub_project import console
+from skore_hub_project.authentication.apikey import APIKey
+from skore_hub_project.authentication.token import Token
+from skore_hub_project.authentication.uri import URI
+
 logger = getLogger(__name__)
 
 #
@@ -17,16 +25,6 @@ credentials: Callable[[], dict[str, str]] | None = None
 
 def login(*, timeout: int = 600) -> None:
     """Login to ``skore hub``."""
-    from rich.align import Align
-    from rich.console import Group
-    from rich.panel import Panel
-    from rich.text import Text
-
-    from skore_hub_project import console
-    from skore_hub_project.authentication.apikey import APIKey
-    from skore_hub_project.authentication.token import Token
-    from skore_hub_project.authentication.uri import URI
-
     global credentials
 
     if credentials is not None:
