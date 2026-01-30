@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from pydantic import ValidationError
 from pytest import mark, param, raises
 
-from skore_hub_project import Project, switch_mpl_backend
+from skore_hub_project import switch_mpl_backend
 from skore_hub_project.artifact.media import (
     PrecisionRecallTest,
     PrecisionRecallTrain,
@@ -14,6 +14,7 @@ from skore_hub_project.artifact.media import (
     RocTrain,
 )
 from skore_hub_project.artifact.serializer import Serializer
+from skore_hub_project.project.project import Project
 
 
 def serialize(display) -> bytes:

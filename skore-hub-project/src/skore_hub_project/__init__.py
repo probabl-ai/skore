@@ -8,11 +8,8 @@ from contextlib import contextmanager
 from rich.console import Console
 from rich.theme import Theme
 
-from .project.project import Project
-
 __all__ = [
     "Payload",
-    "Project",
     "b64_str_to_bytes",
     "bytes_to_b64_str",
     "console",

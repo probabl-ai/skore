@@ -10,10 +10,11 @@ from typing import ClassVar, Generic, TypeVar, cast
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from skore_hub_project import Project, switch_mpl_backend
+from skore_hub_project import switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
+from skore_hub_project.project.project import Project
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 SkinnedProgress = partial(

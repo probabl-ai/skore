@@ -1,10 +1,9 @@
 """Client exchanging with ``skore hub``."""
 
 import importlib.metadata
-import logging
 from contextlib import suppress
 from http import HTTPStatus
-from os import environ
+from logging import getLogger
 from time import sleep
 from typing import Any, Final
 from urllib.parse import urljoin
@@ -22,10 +21,9 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
-from ..authentication import token as Token
-from ..authentication.uri import URI
+from skore_hub_project.authentication.uri import URI
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class Client(HTTPXClient):
@@ -155,19 +153,7 @@ PACKAGE_SEMVER = __semver(importlib.metadata.version("skore-hub-project"))
 
 
 class HUBClient(Client):
-    """
-    Client exchanging with ``skore hub``.
-
-    Parameters
-    ----------
-    authenticated : bool, optional
-        Use headers with API key or token, default True.
-    """
-
-    def __init__(self, *, authenticated: bool = True, **kwargs: Any):
-        super().__init__(**kwargs)
-
-        self.authenticated = authenticated
+    """Client exchanging with ``skore hub``."""
 
     def request(
         self,
@@ -177,20 +163,24 @@ class HUBClient(Client):
         **kwargs: Any,
     ) -> Response:
         """Execute request with authorization."""
+        from skore_hub_project.authentication.login import credentials
+
+        if credentials is None:
+            raise RuntimeError(
+                "You are not logged in. "
+                "Please call the `skore.login()` function at the top of your script."
+            )
+
         headers = Headers(headers)
+
+        # Overload headers with credentials
+        headers.update(credentials())
 
         # Overload headers with package semantic versioning
         if PACKAGE_SEMVER:
             headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_SEMVER}"})
 
-        # Overload headers with credentials
-        if self.authenticated:
-            if (apikey := environ.get("SKORE_HUB_API_KEY")) is not None:
-                headers.update({"X-API-Key": apikey})
-            else:
-                headers.update({"Authorization": f"Bearer {Token.access()}"})
-
         # Prefix the request by the hub URI when ``url`` is not absolute
-        url = urljoin(URI(), str(url))
+        url = urljoin(URI, str(url))
 
         return super().request(method=method, url=url, headers=headers, **kwargs)
