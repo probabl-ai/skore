@@ -51,7 +51,9 @@ ipywidgets==8.1.8
 jedi==0.19.2
     # via ipython
 jinja2==3.1.6
-    # via skrub
+    # via
+    #   skore (skore/pyproject.toml)
+    #   skrub
 joblib==1.5.3
     # via
     #   skore (skore/pyproject.toml)

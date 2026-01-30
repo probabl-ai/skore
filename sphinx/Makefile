@@ -6,6 +6,7 @@ ifeq ($(SPHINX_DOMAIN),)
 	SPHINX_DOMAIN := docs.skore.probabl.ai
 endif
 
+export SPHINX_BUILD ?= 1
 export SPHINX_VERSION ?= dev
 export SPHINX_RELEASE ?= 0.0.0+dev
 export SPHINX_DOMAIN
