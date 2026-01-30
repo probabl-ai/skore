@@ -264,11 +264,11 @@ class CoefficientsDisplay(DisplayMixin):
         if not include_intercept:
             coefficients = coefficients.query("feature != 'Intercept'")
 
-        if select_k is not None:
-            coefficients = self._select_k_features(coefficients, select_k)
-
         if sorting_order is not None:
             coefficients = self._sort_features(coefficients, sorting_order)
+
+        if select_k is not None:
+            coefficients = self._select_k_features(coefficients, select_k)
 
         return coefficients
 
