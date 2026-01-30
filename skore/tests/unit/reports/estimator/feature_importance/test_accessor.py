@@ -1,5 +1,3 @@
-import pytest
-
 from skore import EstimatorReport
 
 
