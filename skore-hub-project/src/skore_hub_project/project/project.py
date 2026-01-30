@@ -89,13 +89,13 @@ def slugify_and_warn(string: str, type: Literal["workspace", "name"]) -> str:
         warnings.warn(
             (
                 (
-                    f"Your project will be addressed under the '{slug}' workspace."
-                    "The workspace name must be lower-case and contain only ASCII letters"
-                    ", digits, and characters '.', '-', and '_'."
+                    f"Your project will be addressed under the '{slug}' workspace. "
+                    "The workspace name must be lower-case and contain only ASCII "
+                    "letters, digits, and characters '.', '-', and '_'."
                 )
                 if type == "workspace"
                 else (
-                    f"Your project will be created as '{slug}'."
+                    f"Your project will be created as '{slug}'. "
                     "The project name must be lower-case and contain only ASCII letters"
                     ", digits, and characters '.', '-', and '_'."
                 )
