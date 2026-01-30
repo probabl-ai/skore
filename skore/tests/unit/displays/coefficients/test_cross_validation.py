@@ -70,7 +70,7 @@ def test_binary_classification(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(sorting_order=None)
     expected_columns = ["split", "feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     feature_names = (["Intercept"] + columns_names) * splitter
@@ -154,7 +154,7 @@ def test_multiclass_classification(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(sorting_order=None)
     expected_columns = ["split", "feature", "label", "coefficients"]
     assert df.columns.tolist() == expected_columns
     feature_names = (["Intercept"] + columns_names) * splitter * n_classes
@@ -261,7 +261,7 @@ def test_single_output_regression(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(sorting_order=None)
     expected_columns = ["split", "feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == (["Intercept"] + columns_names) * splitter
@@ -355,7 +355,7 @@ def test_multi_output_regression(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(sorting_order=None)
     expected_columns = ["split", "feature", "output", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["output"]).tolist() == [f"{i}" for i in range(n_outputs)]

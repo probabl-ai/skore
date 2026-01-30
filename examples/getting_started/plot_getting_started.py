@@ -182,24 +182,7 @@ coefficients = simple_cv_report.feature_importance.coefficients()
 coefficients.frame()
 
 # %%
-
-# sphinx_gallery_start_ignore
-# TODO: Replace with top_k argument when available
-# sphinx_gallery_end_ignore
-
-(
-    coefficients.frame()
-    .groupby("feature")
-    .mean()
-    .drop(columns=["split"])
-    .sort_values(by="coefficients", key=abs, ascending=False)
-    .head(15)[::-1]
-    .plot.barh(
-        title="Mean model weights",
-        xlabel="Coefficient",
-        ylabel="Feature",
-    )
-)
+coefficients.plot(select_k=15)
 
 # %%
 # Model no. 2: Random forest
@@ -306,24 +289,21 @@ pd.concat(
 # between our final model and the cross-validation:
 
 # %%
+
+# sphinx_gallery_start_ignore
+# TODO: Use native aggregation when available
+# sphinx_gallery_end_ignore
+
 final_coefficients = final_report.feature_importance.coefficients()
-final_top_15_features = (
-    final_coefficients.frame()
-    .sort_values(by="coefficients", key=abs, ascending=False)
-    .head(15)["feature"]
-    .reset_index(drop=True)
-)
+final_top_15_features = final_coefficients.frame(select_k=15)["feature"]
 
 simple_coefficients = simple_cv_report.feature_importance.coefficients()
 cv_top_15_features = (
-    simple_coefficients.frame()
-    .groupby("feature")
+    simple_coefficients.frame(select_k=15)
+    .groupby("feature", sort=False)
     .mean()
-    .reset_index()
-    .drop(columns=["split"])
-    .sort_values(by="coefficients", key=abs, ascending=False)
-    .head(15)["feature"]
-    .reset_index(drop=True)
+    .drop(columns="split")
+    .reset_index()["feature"]
 )
 
 pd.concat(
