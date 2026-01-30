@@ -526,7 +526,7 @@ def test_subplot_by_data_source(fixture_name, request):
     display = report.metrics.precision_recall(data_source="both")
     if "multiclass" in fixture_name:
         err_msg = (
-            "subplot_by must be one of 'auto', 'estimator', 'label'. "
+            "subplot_by must be one of auto, estimator, label. "
             "Got 'data_source' instead."
         )
         with pytest.raises(ValueError, match=err_msg):
