@@ -55,7 +55,7 @@ class _RichReportHelpMixin(_ReportHelpDataMixin, _BaseRichHelpMixin):
                 description = method["description"]
                 methods_branch.add(f".{displayed_name}".ljust(26) + f" - {description}")
 
-        attributes = data.get("attributes") or []
+        attributes = data.get("attributes", [])
         if attributes:
             attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
             for attr in attributes:
