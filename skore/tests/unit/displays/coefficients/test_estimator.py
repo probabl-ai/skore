@@ -37,7 +37,7 @@ def test_binary_classification(
         model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -112,7 +112,7 @@ def test_multiclass_classification(
         model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -206,7 +206,7 @@ def test_single_output_regression(
         model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -291,7 +291,7 @@ def test_multi_output_regression(
         model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -375,7 +375,7 @@ def test_include_intercept(
     report = EstimatorReport(
         clone(estimator), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
 
     assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
 

@@ -178,7 +178,7 @@ confusion_matrix.plot()
 # model, we can study the importance that it gives to each feature:
 
 # %%
-coefficients = simple_cv_report.feature_importance.coefficients()
+coefficients = simple_cv_report.inspection.coefficients()
 coefficients.frame()
 
 # %%
@@ -294,10 +294,10 @@ pd.concat(
 # TODO: Use native aggregation when available
 # sphinx_gallery_end_ignore
 
-final_coefficients = final_report.feature_importance.coefficients()
+final_coefficients = final_report.inspection.coefficients()
 final_top_15_features = final_coefficients.frame(select_k=15)["feature"]
 
-simple_coefficients = simple_cv_report.feature_importance.coefficients()
+simple_coefficients = simple_cv_report.inspection.coefficients()
 cv_top_15_features = (
     simple_coefficients.frame(select_k=15)
     .groupby("feature", sort=False)

@@ -35,7 +35,7 @@ def test_binary_classification(
     report_2 = CrossValidationReport(model, X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -136,7 +136,7 @@ def test_multiclass_classification(
     report_2 = CrossValidationReport(model, X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -247,7 +247,7 @@ def test_single_output_regression(
     report_2 = CrossValidationReport(model, X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -358,7 +358,7 @@ def test_multi_output_regression(
     report_2 = CrossValidationReport(model, X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -473,7 +473,7 @@ def test_subplot_by_none_multiclass_or_multioutput(
     report_2 = CrossValidationReport(clone(estimator), X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
 
     err_msg = (
         "There are multiple labels or outputs and `subplot_by` is `None`. "
@@ -506,7 +506,7 @@ def test_different_features(
         reports={"report_simple": report_simple, "report_complex": report_complex}
     )
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     df = display.frame(sorting_order=None)
@@ -561,7 +561,7 @@ def test_include_intercept(
     report_2 = CrossValidationReport(clone(estimator), X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
 
     assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
 

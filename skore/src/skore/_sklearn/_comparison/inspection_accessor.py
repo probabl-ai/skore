@@ -7,7 +7,7 @@ from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
-from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
+from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
 from skore._utils._accessor import _check_comparison_report_sub_estimators_have_coef
 
 if TYPE_CHECKING:
@@ -15,10 +15,10 @@ if TYPE_CHECKING:
     from skore._sklearn._cross_validation.report import CrossValidationReport
 
 
-class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
-    """Accessor for feature importance related operations.
+class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
+    """Accessor for model inspection related operations.
 
-    You can access this accessor using the `feature_importance` attribute.
+    You can access this accessor using the `inspection` attribute.
     """
 
     def __init__(self, parent: ComparisonReport) -> None:
@@ -59,7 +59,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         ...     "report small alpha": report_small_alpha,
         ...     "report big alpha": report_big_alpha,
         ... })
-        >>> display = report.feature_importance.coefficients()
+        >>> display = report.inspection.coefficients()
         >>> display.frame()
                      estimator     feature  coefficients
         0   report small alpha  Feature #8      633.8...
@@ -121,11 +121,11 @@ class _FeatureImportanceAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixi
         return f"{name}(...)".ljust(29)
 
     def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available feature importance methods[/bold cyan]"
+        return "[bold cyan]Available model inspection methods[/bold cyan]"
 
     def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.feature_importance[/bold cyan]"
+        return "[bold cyan]report.inspection[/bold cyan]"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.EstimatorReport.feature_importance")
+        return self._rich_repr(class_name="skore.EstimatorReport.inspection")

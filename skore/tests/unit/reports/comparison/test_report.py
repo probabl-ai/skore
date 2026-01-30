@@ -94,13 +94,13 @@ def test_feature_importance_help(capsys):
 
     comparison_report = ComparisonReport(reports)
 
-    comparison_report.feature_importance.help()
+    comparison_report.inspection.help()
     captured = capsys.readouterr()
 
-    assert "Available feature importance methods" in captured.out
+    assert "Available model inspection methods" in captured.out
     assert "coefficients" in captured.out
 
-    comparison_report.feature_importance.coefficients().help()
+    comparison_report.inspection.coefficients().help()
     captured = capsys.readouterr()
 
     assert "frame" in captured.out

@@ -25,8 +25,8 @@ from skore._utils._progress_bar import progress_decorator
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from skore._sklearn._cross_validation.feature_importance_accessor import (
-        _FeatureImportanceAccessor,
+    from skore._sklearn._cross_validation.inspection_accessor import (
+        _InspectionAccessor,
     )
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
 
@@ -145,10 +145,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "data": {"name": "data"},
         "metrics": {"name": "metrics"},
-        "feature_importance": {"name": "feature_importance"},
+        "inspection": {"name": "inspection"},
     }
     metrics: _MetricsAccessor
-    feature_importance: _FeatureImportanceAccessor
+    inspection: _InspectionAccessor
 
     def __init__(
         self,

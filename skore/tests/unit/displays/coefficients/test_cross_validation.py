@@ -33,7 +33,7 @@ def test_binary_classification(
 
     report = CrossValidationReport(model, X, y, splitter=splitter)
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -117,7 +117,7 @@ def test_multiclass_classification(
 
     report = CrossValidationReport(model, X, y, splitter=splitter)
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -219,7 +219,7 @@ def test_single_output_regression(
 
     report = CrossValidationReport(model, X, y, splitter=splitter)
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -312,7 +312,7 @@ def test_multi_output_regression(
 
     report = CrossValidationReport(model, X, y, splitter=splitter)
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -406,7 +406,7 @@ def test_include_intercept(
     splitter = 2
 
     report = CrossValidationReport(clone(estimator), X, y, splitter=splitter)
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
 
     assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
 

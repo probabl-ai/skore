@@ -36,7 +36,7 @@ def test_binary_classification_averaged_metrics(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     n_repeats = 2
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=n_repeats, data_source=data_source
     )
     assert isinstance(display, PermutationImportanceDisplay)
@@ -103,7 +103,7 @@ def test_binary_classification_per_label_metrics(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     n_repeats = 2
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=n_repeats, data_source=data_source, metric=metric
     )
     assert isinstance(display, PermutationImportanceDisplay)
@@ -176,7 +176,7 @@ def test_single_output_regression(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     n_repeats = 2
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=n_repeats, data_source=data_source
     )
     assert isinstance(display, PermutationImportanceDisplay)
@@ -235,7 +235,7 @@ def test_callable_metric(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=custom_r2_score
     )
     display.plot()
@@ -267,7 +267,7 @@ def test_multi_output_regression(
         "r2": make_scorer(r2_score, multioutput="raw_values"),
         "mse": make_scorer(mean_squared_error, multioutput="raw_values"),
     }
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=n_repeats, data_source=data_source, metric=metric
     )
     assert isinstance(display, PermutationImportanceDisplay)
@@ -341,7 +341,7 @@ def test_subplot_by_None_single_metric_single_value(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source
     )
     display.plot(subplot_by=None)
@@ -375,7 +375,7 @@ def test_subplot_by_None_single_metric_multiple_labels(
     )
 
     metric = make_scorer(precision_score, average=None)
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by=None)
@@ -408,7 +408,7 @@ def test_subplot_by_None_multiple_metrics_single_value(
     )
 
     metric = ["precision", "recall"]
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by=None)
@@ -445,7 +445,7 @@ def test_subplot_by_None_single_metric_multiple_outputs(
     )
 
     metric = make_scorer(r2_score, multioutput="raw_values")
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by=None)
@@ -485,7 +485,7 @@ def test_subplot_by_None_multiple_metrics_multiple_outputs_raises_error(
         "r2": make_scorer(r2_score, multioutput="raw_values"),
         "mse": make_scorer(mean_squared_error, multioutput="raw_values"),
     }
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     err_msg = "Cannot plot all the available information available on a single plot."
@@ -512,7 +512,7 @@ def test_subplot_by_auto_single_metric_single_target_classification(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source
     )
     display.plot(subplot_by="auto")
@@ -542,7 +542,7 @@ def test_subplot_by_auto_single_metric_single_target_regression(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source
     )
     display.plot(subplot_by="auto")
@@ -578,7 +578,7 @@ def test_subplot_by_auto_multiple_metrics_single_target_classification(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by="auto")
@@ -616,7 +616,7 @@ def test_subplot_by_auto_multiple_metrics_single_target_regression(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by="auto")
@@ -653,7 +653,7 @@ def test_subplot_by_auto_single_metric_multiple_labels(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by="auto")
@@ -688,7 +688,7 @@ def test_subplot_by_auto_single_metric_multiple_outputs(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by="auto")
@@ -726,7 +726,7 @@ def test_subplot_by_auto_multiple_metrics_multiple_labels(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by="auto")
@@ -768,7 +768,7 @@ def test_subplot_by_auto_multiple_metrics_multiple_outputs(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by="auto")
@@ -805,7 +805,7 @@ def test_subplot_by_invalid_column_raises_error(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(n_repeats=2, metric=metric)
+    display = report.inspection.permutation_importance(n_repeats=2, metric=metric)
     err_msg = (
         "The column label is not available. You can use the following values to "
         "create subplots: metric"
@@ -837,7 +837,7 @@ def test_subplot_by_string_multiple_metrics_multiclass_with_remaining_column(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by="metric")
@@ -879,7 +879,7 @@ def test_subplot_by_string_multiple_metrics_binary_class_no_remaining_column(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by="metric")
@@ -915,7 +915,7 @@ def test_subplot_by_invalid_tuple_columns_raises_error(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(n_repeats=2, metric=metric)
+    display = report.inspection.permutation_importance(n_repeats=2, metric=metric)
     err_msg = (
         r"The columns \('metric', 'label'\) are not available\. You can use the "
         r"following values to create subplots: metric"
@@ -955,7 +955,7 @@ def test_subplot_by_tuple_order_determines_row_and_col(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(subplot_by=subplot_by)
@@ -1017,7 +1017,7 @@ def test_frame_aggregate_parameter(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     n_repeats = 2
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=n_repeats, data_source=data_source
     )
 
@@ -1057,7 +1057,7 @@ def test_frame_metric_parameter(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     n_repeats = 2
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=n_repeats, data_source=data_source, metric=metric
     )
 
@@ -1098,7 +1098,7 @@ def test_frame_mixed_averaged_and_non_averaged_metrics(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     n_repeats = 2
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=n_repeats, data_source=data_source, metric=metric
     )
 
@@ -1148,7 +1148,7 @@ def test_plot_mixed_averaged_and_non_averaged_metrics_classification_raises_erro
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
 
@@ -1194,7 +1194,7 @@ def test_plot_mixed_averaged_and_non_averaged_metrics_regression_raises_error(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
 

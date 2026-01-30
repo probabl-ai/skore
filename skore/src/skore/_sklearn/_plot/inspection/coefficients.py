@@ -9,7 +9,7 @@ from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
-from skore._sklearn._plot.feature_importance.utils import _decorate_matplotlib_axis
+from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import ReportType
 
@@ -52,7 +52,7 @@ class CoefficientsDisplay(DisplayMixin):
     ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
     ... )
     >>> report = EstimatorReport(LogisticRegression(), **split_data)
-    >>> display = report.feature_importance.coefficients()
+    >>> display = report.inspection.coefficients()
     >>> display.frame()
                   feature       label  coefficients
     0           Intercept      setosa        9.2...
@@ -228,7 +228,7 @@ class CoefficientsDisplay(DisplayMixin):
         ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
         ... )
         >>> report = EstimatorReport(LogisticRegression(), **split_data)
-        >>> display = report.feature_importance.coefficients()
+        >>> display = report.inspection.coefficients()
         >>> display.frame()
                       feature       label  coefficients
         0           Intercept      setosa        9.2...
@@ -334,7 +334,7 @@ class CoefficientsDisplay(DisplayMixin):
         ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
         ... )
         >>> report = EstimatorReport(LogisticRegression(), **split_data)
-        >>> display = report.feature_importance.coefficients()
+        >>> display = report.inspection.coefficients()
         >>> display.plot()
         """
         return self._plot(
