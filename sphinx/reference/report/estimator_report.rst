@@ -80,8 +80,8 @@ estimator.
 Inspection
 ----------
 
-The `inspection` accessor helps you to evaluate the importance of the features
-used to train your estimator.
+The `inspection` accessor helps you inspect your model by e.g. evaluating the importance
+of the features in your model.
 
 .. autosummary::
     :toctree: ../api/

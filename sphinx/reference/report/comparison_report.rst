@@ -62,8 +62,8 @@ get the common performance metric representations.
 Inspection
 ----------
 
-The `inspection` accessor helps you evaluate the importance
-used to train your estimator.
+The `inspection` accessor helps you inspect your model by e.g. evaluating the importance
+of the features in your model.
 
 .. autosummary::
     :toctree: ../api/

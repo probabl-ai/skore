@@ -41,7 +41,7 @@ class FeatureImportance(Media[Report], ABC):  # noqa: D101
 
 
 class Permutation(FeatureImportance[EstimatorReport], ABC):  # noqa: D101
-    accessor: ClassVar[str] = "inspection.permutation"
+    accessor: ClassVar[str] = "feature_importance.permutation"
     name: Literal["permutation"] = "permutation"
 
     def content_to_upload(self) -> bytes | None:  # noqa: D102
@@ -77,12 +77,12 @@ class PermutationTest(Permutation):  # noqa: D101
 
 
 class MeanDecreaseImpurity(FeatureImportance[EstimatorReport]):  # noqa: D101
-    accessor: ClassVar[str] = "inspection.impurity_decrease"
-    name: Literal["impurity_decrease"] = "impurity_decrease"
+    accessor: ClassVar[str] = "feature_importance.mean_decrease_impurity"
+    name: Literal["mean_decrease_impurity"] = "mean_decrease_impurity"
     data_source: None = None
 
 
 class Coefficients(FeatureImportance[Report]):  # noqa: D101
-    accessor: ClassVar[str] = "inspection.coefficients"
+    accessor: ClassVar[str] = "feature_importance.coefficients"
     name: Literal["coefficients"] = "coefficients"
     data_source: None = None

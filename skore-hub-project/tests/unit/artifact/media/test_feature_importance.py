@@ -30,9 +30,9 @@ def monkeypatch_permutation(monkeypatch):
     import skore
 
     monkeypatch.setattr(
-        "skore.EstimatorReport.inspection.permutation",
+        "skore.EstimatorReport.feature_importance.permutation",
         partialmethod(
-            skore.EstimatorReport.inspection.permutation,
+            skore.EstimatorReport.feature_importance.permutation,
             seed=42,
         ),
     )
@@ -61,7 +61,7 @@ def monkeypatch_permutation(monkeypatch):
         param(
             MeanDecreaseImpurity,
             "binary_classification",
-            "impurity_decrease",
+            "mean_decrease_impurity",
             None,
             id="MeanDecreaseImpurity",
         ),
@@ -93,7 +93,7 @@ def test_feature_importance(
     project = Project("myworkspace", "myname")
     report = request.getfixturevalue(report)
 
-    function = getattr(report.inspection, accessor)
+    function = getattr(report.feature_importance, accessor)
     function_kwargs = {"data_source": data_source} if data_source else {}
     result = function(**function_kwargs)
     content = serialize(result)
@@ -120,7 +120,7 @@ def test_feature_importance(
 
     # unavailable accessor
     report.clear_cache()
-    monkeypatch.delattr(report.inspection.__class__, accessor)
+    monkeypatch.delattr(report.feature_importance.__class__, accessor)
     upload_mock.reset_mock()
 
     assert Media(project=project, report=report).model_dump() == {
