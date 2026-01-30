@@ -7,7 +7,7 @@ from skore import ComparisonReport, EstimatorReport
 @pytest.mark.parametrize("sorting_order", ["descending", "ascending"])
 def test(comparison_report, sorting_order):
     """`sorting_order` sorts per estimator."""
-    frame = comparison_report.feature_importance.coefficients().frame(
+    frame = comparison_report.inspection.coefficients().frame(
         sorting_order=sorting_order
     )
 
@@ -18,7 +18,7 @@ def test(comparison_report, sorting_order):
 
 def test_plot(comparison_report):
     """`sorting_order` works for plotting."""
-    display = comparison_report.feature_importance.coefficients()
+    display = comparison_report.inspection.coefficients()
 
     display.plot(sorting_order="ascending")
 
@@ -33,7 +33,7 @@ def test_plot_different_features(comparison_report_different_features, sorting_o
     """
     report = comparison_report_different_features
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     display.plot(sorting_order=sorting_order, select_k=25)
 
     bar_widths = [[bar.get_width() for bar in ax.patches] for ax in display.ax_]
