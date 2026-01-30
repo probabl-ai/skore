@@ -90,4 +90,4 @@ of the features in your model.
     EstimatorReport.inspection.help
     EstimatorReport.inspection.coefficients
     EstimatorReport.inspection.impurity_decrease
-    EstimatorReport.inspection.permutation
+    EstimatorReport.inspection.permutation_importance
