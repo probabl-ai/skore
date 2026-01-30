@@ -1,9 +1,9 @@
 """Client exchanging with ``skore hub``."""
 
 import importlib.metadata
-import logging
 from contextlib import suppress
 from http import HTTPStatus
+from logging import getLogger
 from time import sleep
 from typing import Any, Final
 from urllib.parse import urljoin
@@ -23,7 +23,7 @@ from httpx._types import HeaderTypes
 
 from skore_hub_project.authentication.uri import URI
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class Client(HTTPXClient):

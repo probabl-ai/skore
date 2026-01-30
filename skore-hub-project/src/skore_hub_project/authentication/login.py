@@ -1,6 +1,9 @@
 """Login to ``skore hub``."""
 
 from collections.abc import Callable
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 #
 # Global variable storing credentials used for authentication by the ``HUBClient``, both
@@ -22,45 +25,57 @@ def login(*, timeout: int = 600) -> None:
     from skore_hub_project import console
     from skore_hub_project.authentication.apikey import APIKey
     from skore_hub_project.authentication.token import Token
+    from skore_hub_project.authentication.uri import URI
 
     global credentials
+
+    if credentials is not None:
+        logger.debug(f"Already logged in {URI} with {type(credentials)}.")
+        console.print(
+            Panel(
+                Align.center("[blink]Already logged in."),
+                title="[cyan]Login to [bold]Skore Hub",
+                border_style="cyan",
+                padding=1,
+            )
+        )
+
+        return
 
     try:
         credentials = APIKey()
     except KeyError:
         console.print(
             Panel(
-                Group(
-                    Panel(
-                        Align.center(
-                            "API key not detected, fallback to interactive "
-                            "authentication for the session."
-                        ),
-                        style="white on orange_red1",
-                    ),
-                    Text(),
-                    Text(
-                        "We recommend that you set up an API key via [url](coming soon) "
-                        "and use it to log in.",
-                        style="white",
-                    ),
+                Align.center(
+                    "Falling back to interactive authentication for the session.\n"
+                    "We recommend that you set up an API key via [url](coming soon) "
+                    "and use it to log in."
                 ),
-                title="[cyan]Login to [b]Skore Hub",
-                style="dark_orange",
+                title="[cyan]Login to [bold]Skore Hub",
+                subtitle="[dark_orange bold]API key not detected",
+                border_style="dark_orange",
+                padding=1,
             )
         )
 
         credentials = Token(timeout=timeout)
+
+        console.print(
+            Panel(
+                Align.center("[blink]Login successful."),
+                title="[cyan]Login to [b]Skore Hub",
+                border_style="cyan",
+                padding=1,
+            )
+        )
     else:
         console.print(
             Panel(
-                Panel(Align.center("API key detected."), style="white on blue"),
-                title="[cyan]Login to [b]Skore Hub",
-                style="dark_orange",
+                Align.center("[blink]Login successful."),
+                title="[cyan]Login to [bold]Skore Hub",
+                subtitle="[cyan bold]API key detected",
+                border_style="cyan",
+                padding=1,
             )
-        )
-    finally:
-        console.print(
-            Panel(Align.center("[bold blink cyan]Login successful")),
-            style="dark_orange",
         )
