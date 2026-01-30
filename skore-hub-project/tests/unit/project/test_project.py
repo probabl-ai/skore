@@ -62,9 +62,9 @@ def monkeypatch_permutation(monkeypatch):
     import skore
 
     monkeypatch.setattr(
-        "skore.EstimatorReport.feature_importance.permutation",
+        "skore.EstimatorReport.inspection.permutation",
         partialmethod(
-            skore.EstimatorReport.feature_importance.permutation,
+            skore.EstimatorReport.inspection.permutation,
             seed=42,
         ),
     )

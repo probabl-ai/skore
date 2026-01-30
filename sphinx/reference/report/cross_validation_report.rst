@@ -32,7 +32,7 @@ functionalities of the report are exposed through accessors.
    :template: autosummary/accessor.rst
 
    CrossValidationReport.data
-   CrossValidationReport.feature_importance
+   CrossValidationReport.inspection
    CrossValidationReport.metrics
 
 
@@ -80,15 +80,15 @@ estimator across cross-validation splits.
     CrossValidationReport.metrics.roc_auc
     CrossValidationReport.metrics.timings
 
-Feature importance
-------------------
+Inspection
+----------
 
-The `feature_importance` accessor helps you evaluate the importance
+The `inspection` accessor helps you evaluate the importance
 used to train your estimator.
 
 .. autosummary::
     :toctree: ../api/
     :template: autosummary/accessor_method.rst
 
-    CrossValidationReport.feature_importance.help
-    CrossValidationReport.feature_importance.coefficients
+    CrossValidationReport.inspection.help
+    CrossValidationReport.inspection.coefficients
