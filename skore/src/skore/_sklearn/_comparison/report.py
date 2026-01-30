@@ -461,7 +461,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 CrossValidationReport, self.reports_[name]
             ).create_estimator_report(X_test=X_test, y_test=y_test)
 
-        estimator_report = self.reports_[name]
+        estimator_report = cast(EstimatorReport, self.reports_[name])
         X_concat = (
             pd.concat([estimator_report._X_train, estimator_report._X_test])
             if isinstance(estimator_report._X_train, pd.DataFrame)
