@@ -1746,7 +1746,8 @@ class _MetricsAccessor(
             ds_X, ds_y, ds_hash = self._get_X_y_and_data_source_hash(
                 data_source=ds, X=X, y=y
             )
-            assert ds_y is not None, "y must be provided"
+            if ds_y is None:
+                raise ValueError("y must be provided")
 
             y_true_data, y_pred_data = _get_ys_for_single_report(
                 cache=self._parent._cache,
