@@ -23,7 +23,7 @@
 }
 
 .container {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-family: monospace;
     font-size: 13px;
     line-height: 1.5;
     padding: 10px;
