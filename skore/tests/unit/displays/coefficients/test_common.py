@@ -7,7 +7,7 @@ from sklearn.linear_model import LogisticRegression
 from skore import CoefficientsDisplay, CrossValidationReport, EstimatorReport
 
 
-@pytest.mark.parametrize("method", ["frame", "plot"])
+@pytest.mark.parametrize("method", ["plot"])
 def test_coefficients_display_invalid_report_type(pyplot, method):
     """Check that CoefficientsDisplay raises TypeError for invalid `report_type`."""
     coefficients = pd.DataFrame(
