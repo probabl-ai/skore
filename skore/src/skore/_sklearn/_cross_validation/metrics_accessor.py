@@ -59,7 +59,7 @@ class _MetricsAccessor(
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
-        indicator_favorability: bool = False,
+        favorability: bool = False,
         flat_index: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> MetricsSummaryDisplay:
@@ -119,7 +119,7 @@ class _MetricsAccessor(
             class is set to the one provided when creating the report. If `None`,
             the metric is computed considering each class as a positive class.
 
-        indicator_favorability : bool, default=False
+        favorability : bool, default=False
             Whether or not to add an indicator of the favorability of the metric as
             an extra column in the returned DataFrame.
 
@@ -147,7 +147,7 @@ class _MetricsAccessor(
         >>> report.metrics.summarize(
         ...     metric=["precision", "recall"],
         ...     pos_label=1,
-        ...     indicator_favorability=True,
+        ...     favorability=True,
         ... ).frame()
                   LogisticRegression           Favorability
                                 mean       std
@@ -167,7 +167,7 @@ class _MetricsAccessor(
             metric=metric,
             pos_label=pos_label,
             metric_kwargs=metric_kwargs,
-            indicator_favorability=indicator_favorability,
+            favorability=favorability,
             response_method=response_method,
         )
         if flat_index:
@@ -260,7 +260,7 @@ class _MetricsAccessor(
             # Pop the favorability column if it exists, to:
             # - not use it in the aggregate operation
             # - later to only report a single column and not by split columns
-            if metric_kwargs.get("indicator_favorability", False):
+            if metric_kwargs.get("favorability", False):
                 favorability = results.pop("Favorability").iloc[:, 0]
             else:
                 favorability = None
@@ -1248,7 +1248,7 @@ class _MetricsAccessor(
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> display = report.metrics.roc()
-        >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
+        >>> display.set_style(relplot_kwargs={"color": "tab:red"}).plot()
         """
         if pos_label == _DEFAULT:
             pos_label = self._parent.pos_label

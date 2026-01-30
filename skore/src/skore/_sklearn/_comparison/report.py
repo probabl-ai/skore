@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 import joblib
 import numpy as np
+import pandas as pd
 from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -418,6 +419,69 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
             for report in self.reports_.values()
         ]
+
+    def create_estimator_report(
+        self,
+        *,
+        name: str,
+        X_test: ArrayLike | None = None,
+        y_test: ArrayLike | None = None,
+    ) -> EstimatorReport:
+        """Create an estimator report from one of the reports in the comparison.
+
+        This method creates a new :class:`~skore.EstimatorReport` with the same
+        estimator and the same data as the chosen report. It is useful to evaluate and
+        deploy a model that was deemed optimal during the comparison. Provide a held out
+        test set to properly evaluate the performance of the model.
+
+        Parameters
+        ----------
+        name : str
+            The name of the estimator to create a report for.
+
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+            Testing data. It should have the same structure as the training data.
+
+        y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
+            Testing target.
+
+        Returns
+        -------
+        report : :class:`~skore.EstimatorReport`
+            The estimator report.
+        """
+        if name not in self.reports_:
+            raise ValueError(
+                f"Estimator name {name} not found in the comparison report. "
+                f"Available names are: {list(self.reports_.keys())}."
+            )
+
+        if isinstance(self.reports_[name], CrossValidationReport):
+            return cast(
+                CrossValidationReport, self.reports_[name]
+            ).create_estimator_report(X_test=X_test, y_test=y_test)
+
+        estimator_report = cast(EstimatorReport, self.reports_[name])
+        X_concat = (
+            pd.concat([estimator_report._X_train, estimator_report._X_test])
+            if isinstance(estimator_report._X_train, pd.DataFrame)
+            else np.concatenate([estimator_report._X_train, estimator_report._X_test])
+        )
+        y_concat = (
+            pd.concat([estimator_report._y_train, estimator_report._y_test])
+            if isinstance(estimator_report._y_train, (pd.DataFrame, pd.Series))
+            else np.concatenate([estimator_report._y_train, estimator_report._y_test])
+        )
+        report = EstimatorReport(
+            estimator_report.estimator,
+            X_train=X_concat,
+            y_train=y_concat,
+            X_test=X_test,
+            y_test=y_test,
+            pos_label=self._pos_label,
+        )
+        report._parent_hash = self._hash
+        return report
 
     @property
     def pos_label(self) -> PositiveLabel | None:

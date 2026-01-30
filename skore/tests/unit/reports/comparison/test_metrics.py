@@ -35,9 +35,7 @@ def test_favorability_undefined_metrics(report):
         }
 
     comparison_report = ComparisonReport(reports)
-    metrics = comparison_report.metrics.summarize(
-        pos_label=1, indicator_favorability=True
-    )
+    metrics = comparison_report.metrics.summarize(pos_label=1, favorability=True)
     assert isinstance(metrics, MetricsSummaryDisplay)
     metrics_df = metrics.frame()
 

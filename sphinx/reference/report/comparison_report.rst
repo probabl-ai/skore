@@ -22,6 +22,7 @@ report are accessible through accessors.
     ComparisonReport.help
     ComparisonReport.cache_predictions
     ComparisonReport.clear_cache
+    ComparisonReport.create_estimator_report
     ComparisonReport.get_predictions
 
 .. rubric:: Accessors
@@ -31,6 +32,7 @@ report are accessible through accessors.
     :nosignatures:
     :template: autosummary/accessor.rst
 
+    ComparisonReport.feature_importance
     ComparisonReport.metrics
 
 Metrics

@@ -159,7 +159,7 @@ def test_summarize_data_source_both(forest_binary_classification_data):
 
     # By default,
     result_both = report.metrics.summarize(
-        data_source="both", indicator_favorability=True
+        data_source="both", favorability=True
     ).frame()
     assert result_both.columns.tolist() == [
         "RandomForestClassifier (train)",

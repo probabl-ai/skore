@@ -27,13 +27,13 @@ def monkeypatch_upload_with_mock(monkeypatch, upload_mock):
 
 @fixture
 def monkeypatch_upload_routes(respx_mock):
-    respx_mock.post("projects/<tenant>/<name>/artifacts").mock(
+    respx_mock.post("projects/myworkspace/myname/artifacts").mock(
         Response(201, json=[{"upload_url": "http://chunk1.com/", "chunk_id": 1}])
     )
     respx_mock.put("http://chunk1.com").mock(
         Response(200, headers={"etag": '"<etag1>"'})
     )
-    respx_mock.post("projects/<tenant>/<name>/artifacts/complete")
+    respx_mock.post("projects/myworkspace/myname/artifacts/complete")
 
 
 class FakeClient(Client):

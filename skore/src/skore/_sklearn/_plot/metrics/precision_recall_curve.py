@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import seaborn as sns
-from matplotlib.axes import Axes
 from numpy.typing import NDArray
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
@@ -11,8 +10,10 @@ from sklearn.preprocessing import LabelBinarizer
 
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
-    _ClassifierCurveDisplayMixin,
+    _build_custom_legend_with_stats,
+    _ClassifierDisplayMixin,
     _despine_matplotlib_axis,
+    _get_curve_plot_columns,
     _validate_style_kwargs,
 )
 from skore._sklearn.types import (
@@ -24,7 +25,7 @@ from skore._sklearn.types import (
 )
 
 
-class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
+class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     """Precision Recall visualization.
 
     An instance of this class should be created by
@@ -124,20 +125,24 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     def plot(
         self,
         *,
-        subplot_by: Literal["auto", "label", "estimator"] | None = "auto",
+        subplot_by: Literal["auto", "label", "estimator", "data_source"]
+        | None = "auto",
         despine: bool = True,
     ) -> None:
         """Plot visualization.
 
         Parameters
         ----------
-        subplot_by : {"auto", "label", "estimator"} or None, default="auto"
+        subplot_by : {"auto", "label", "estimator", "data_source"} or None, \
+            default="auto"
             Column to use for creating subplots. Options:
 
             - "auto": None for EstimatorReport and Cross-Validation Report, \
-              "label" for ComparisonReport
+              "estimator" for ComparisonReport
             - "label": one subplot per class (multiclass only)
             - "estimator": one subplot per estimator (comparison only)
+            - "data_source": one subplot per data source (EstimatorReport with both \
+                data sources only)
             - None: no subplots (Not available for comparison in multiclass)
 
         despine : bool, default=True
@@ -168,51 +173,51 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
     def _plot_matplotlib(
         self,
         *,
-        subplot_by: Literal["auto", "label", "estimator"] | None = "auto",
+        subplot_by: Literal["auto", "label", "estimator", "data_source"]
+        | None = "auto",
         despine: bool = True,
     ) -> None:
         """Matplotlib implementation of the `plot` method."""
-        is_cross_validation = self.report_type in (
-            "cross-validation",
-            "comparison-cross-validation",
-        )
-
         plot_data = self.frame(with_average_precision=True)
 
-        col, hue, style = self._get_plot_columns(plot_data, subplot_by)
+        col, hue, style = _get_curve_plot_columns(
+            plot_data=plot_data,
+            report_type=self.report_type,
+            ml_task=self.ml_task,
+            data_source=self.data_source,
+            subplot_by=subplot_by,
+        )
 
-        kwargs: dict[str, Any] = {
-            "data": plot_data,
+        relplot_kwargs: dict[str, Any] = {
             "col": col,
             "hue": hue,
             "style": style,
         }
 
-        if is_cross_validation:
-            kwargs["units"] = "split"
-            kwargs["alpha"] = 0.4
+        if "cross-validation" in self.report_type:
+            relplot_kwargs["units"] = "split"
+            relplot_kwargs["alpha"] = 0.4
 
-            # Convert categorical columns to strings to avoid pandas future warning.
-            # See: https://github.com/mwaskom/seaborn/issues/3891
-            # Only needed in cross val as its aggregation that causes the future warning
-            columns_to_convert = plot_data.select_dtypes(include="category").columns
-            plot_data[columns_to_convert].astype(str)
+            # Convert the "split" column from category to string to avoid pandas future
+            # warning. See: https://github.com/mwaskom/seaborn/issues/3891
+            plot_data["split"] = plot_data["split"].astype(str)
 
-        kwargs["col_order"] = plot_data[col].unique().tolist() if col else None
-        kwargs["hue_order"] = plot_data[hue].unique().tolist() if hue else None
-        kwargs["style_order"] = plot_data[style].unique().tolist() if style else None
+        relplot_kwargs["col_order"] = plot_data[col].unique().tolist() if col else None
+        relplot_kwargs["hue_order"] = plot_data[hue].unique().tolist() if hue else None
+        relplot_kwargs["style_order"] = (
+            plot_data[style].unique().tolist() if style else None
+        )
 
         if style:
-            kwargs["dashes"] = {"train": (5, 5), "test": ""}
-
-        kwargs = _validate_style_kwargs({**kwargs, **self._default_relplot_kwargs}, {})
+            relplot_kwargs["dashes"] = {"train": (5, 5), "test": ""}
 
         facet_grid = sns.relplot(
-            **kwargs,
+            data=plot_data,
             kind="line",
             estimator=None,
             x="recall",
             y="precision",
+            **_validate_style_kwargs(relplot_kwargs, self._default_relplot_kwargs),
         )
 
         self.figure_, self.ax_ = facet_grid.figure, facet_grid.axes.flatten()
@@ -227,16 +232,22 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         # Build a legend for each subplot.
         for idx, ax in enumerate(self.ax_):
-            col_value = kwargs["col_order"][idx] if kwargs["col_order"] else None
+            col_value = (
+                relplot_kwargs["col_order"][idx]
+                if relplot_kwargs["col_order"]
+                else None
+            )
             subplot_data = plot_data[plot_data[col] == col_value] if col else plot_data
-            self._build_legend_for_ax(
+            _build_custom_legend_with_stats(
                 ax=ax,
                 subplot_data=subplot_data,
                 hue=hue,
                 style=style,
-                hue_order=kwargs["hue_order"],
-                style_order=kwargs["style_order"],
-                is_cross_validation=is_cross_validation,
+                hue_order=relplot_kwargs["hue_order"],
+                style_order=relplot_kwargs["style_order"],
+                is_cross_validation="cross-validation" in self.report_type,
+                statistic_column_name="average_precision",
+                statistic_acronym="AP",
             )
 
         if self.ml_task == "binary-classification":
@@ -257,7 +268,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
         )
 
         title = "Precision-Recall Curve"
-        if self.report_type in ("estimator", "cross-validation"):
+        if "comparison" not in self.report_type:
             title += f" for {self.precision_recall['estimator'].cat.categories.item()}"
         self.figure_.suptitle(
             "\n".join(filter(None, [title, info_pos_label, info_data_source]))
@@ -269,172 +280,6 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         if len(self.ax_) == 1:
             self.ax_ = self.ax_[0]
-
-    def _get_plot_columns(
-        self,
-        plot_data: DataFrame,
-        subplot_by: Literal["auto", "label", "estimator"] | None = "auto",
-    ) -> tuple[str | None, str | None, str | None]:
-        """Determine col, hue, and style columns based on data and user preference.
-
-        Rules:
-        - Default ("auto"): None for EstimatorReport and Cross-Validation Report,
-            "label" for ComparisonReport
-        - subplot_by=None disallowed for comparison in multiclass
-        - subplot_by="estimator" only allowed for comparison reports
-        - subplot_by="label" only allowed for multiclass classification
-        - hue priority: estimator > label > data_source (excluding col)
-
-        Returns (col, hue, style) tuple where each can be None if not applicable.
-        """
-        has_multiple_estimators = (
-            "estimator" in plot_data.columns and plot_data["estimator"].nunique() > 1
-        )
-        is_comparison = self.report_type in (
-            "comparison-estimator",
-            "comparison-cross-validation",
-        )
-        is_multiclass = self.ml_task == "multiclass-classification"
-        has_both_data_sources = self.data_source == "both"
-
-        allowed_values: set[str | None] = {"auto"}
-        if is_multiclass:
-            allowed_values.add("label")
-            if self.report_type in ["estimator", "cross-validation"]:
-                allowed_values.add(None)
-        else:
-            allowed_values.add(None)
-        if is_comparison and has_multiple_estimators:
-            allowed_values.add("estimator")
-        if has_both_data_sources:
-            allowed_values.add("data_source")
-
-        if subplot_by not in allowed_values:
-            allowed_str = ", ".join(sorted([str(s) for s in allowed_values]))
-            raise ValueError(
-                f"subplot_by must be one of {allowed_str}. Got {subplot_by!r} instead."
-            )
-
-        if subplot_by == "auto":
-            col = "estimator" if is_comparison else None
-        else:
-            col = subplot_by
-        has_multiple_labels = (
-            "label" in plot_data.columns and plot_data["label"].nunique() > 1
-        )
-
-        hue_candidates = []
-        if has_multiple_estimators:
-            hue_candidates.append("estimator")
-        if has_multiple_labels:
-            hue_candidates.append("label")
-
-        hue = hue[0] if (hue := [c for c in hue_candidates if c != col]) else None
-
-        style = "data_source" if self.data_source == "both" else None
-
-        return col, hue, style
-
-    def _build_legend_for_ax(
-        self,
-        *,
-        ax: Axes,
-        subplot_data: DataFrame,
-        hue: str | None,
-        style: str | None,
-        hue_order: list[Any] | None,
-        style_order: list[Any] | None,
-        is_cross_validation: bool = False,
-    ) -> None:
-        """Build custom legend with AP stats for a single axis."""
-        legend_labels = []
-        for hue_value in hue_order or [None]:
-            hue_value_str = (
-                f"'{hue_value}'" if isinstance(hue_value, str) else str(hue_value)
-            )
-            hue_group = (
-                subplot_data.query(f"{hue} == {hue_value_str}")
-                if hue_value is not None
-                else subplot_data
-            )
-            for style_value in style_order or [None]:
-                style_value_str = (
-                    f"'{style_value}'"
-                    if isinstance(style_value, str)
-                    else str(style_value)
-                )
-                average_precision_group = (
-                    hue_group.query(f"{style} == {style_value_str}")[
-                        "average_precision"
-                    ]
-                    if style_value is not None
-                    else hue_group["average_precision"]
-                )
-                if not average_precision_group.empty:
-                    legend_labels.append(
-                        self._format_legend_label(
-                            style_column_name=style,
-                            style_value=style_value,
-                            hue_column_name=hue,
-                            hue_value=hue_value,
-                            statistic=self._format_average_precision(
-                                average_precision_group, is_cross_validation
-                            ),
-                        )
-                    )
-
-        n_entries = len(legend_labels)
-        lines = ax.get_lines()
-        handles = []
-        seen_line_attributes = []
-        for line in lines:
-            line_attributes = (line.get_color(), line.get_linestyle())
-            if line_attributes not in seen_line_attributes:
-                seen_line_attributes.append(line_attributes)
-                handles.append(line)
-
-        fontsize = "small" if n_entries > 4 else "medium"
-
-        ax.legend(
-            handles,
-            legend_labels,
-            loc="upper center",
-            bbox_to_anchor=(0.5, -0.15),
-            ncol=1,
-            frameon=False,
-            fontsize=fontsize,
-        )
-
-    @staticmethod
-    def _format_average_precision(
-        average_precision: Any, is_cross_validation: bool
-    ) -> str:
-        """Format average precision statistic as single value or mean±std."""
-        if is_cross_validation and len(average_precision) > 1:
-            return f"AP={average_precision.mean():.2f}±{average_precision.std():.2f}"
-        return f"AP={average_precision.iloc[0]:.2f}"
-
-    def _format_legend_label(
-        self,
-        style_column_name: str | None,
-        style_value: str | None,
-        hue_column_name: str | None,
-        hue_value: str | None,
-        statistic: str,
-    ) -> str:
-        """Format a legend label based on style and hue."""
-        if style_value is None and hue_value is None:
-            return statistic
-        if style_column_name == "data_source":
-            style_value = cast(str, style_value)
-            style_value = style_value.title() + " set"
-        return (
-            " - ".join(
-                str(s)
-                for s in filter(lambda x: x is not None, [hue_value, style_value])
-            )
-            + f" ({statistic})"
-        )
 
     @classmethod
     def _compute_data_for_display(
@@ -677,7 +522,7 @@ class PrecisionRecallCurveDisplay(_ClassifierCurveDisplayMixin, DisplayMixin):
 
         Parameters
         ----------
-        policy : Literal["override", "update"], default="update"
+        policy : {"override", "update"}, default="update"
             Policy to use when setting the style parameters.
             If "override", existing settings are set to the provided values.
             If "update", existing settings are not changed; only settings that were

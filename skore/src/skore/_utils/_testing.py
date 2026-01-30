@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.legend import Legend
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.metrics import r2_score
 
 from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
@@ -52,7 +53,7 @@ class MockEstimator(ClassifierMixin, BaseEstimator):
 def check_roc_curve_display_data(display: RocCurveDisplay):
     """Check the structure of the display's internal data."""
     assert list(display.roc_curve.columns) == [
-        "estimator_name",
+        "estimator",
         "data_source",
         "split",
         "label",
@@ -61,7 +62,7 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
         "tpr",
     ]
     assert list(display.roc_auc.columns) == [
-        "estimator_name",
+        "estimator",
         "data_source",
         "split",
         "label",
@@ -126,3 +127,27 @@ def check_frame_structure(df, expected_index, expected_data_columns):
         else:
             assert col in expected_data_columns
             assert df[col].dtype == np.float64
+
+
+def custom_r2_score(estimator, X, y):
+    """Custom callable scorer for testing permutation importance with callable metrics.
+
+    This function has the signature required by sklearn's permutation_importance:
+    (estimator, X, y) -> score.
+
+    Parameters
+    ----------
+    estimator : object
+        The fitted estimator.
+    X : array-like
+        The input data.
+    y : array-like
+        The target values.
+
+    Returns
+    -------
+    float
+        The R2 score.
+    """
+    y_pred = estimator.predict(X)
+    return r2_score(y, y_pred)

@@ -134,9 +134,9 @@ def test_metric(comparison_cross_validation_reports_binary_classification):
 
 
 def test_favorability(comparison_cross_validation_reports_binary_classification):
-    """`MetricsSummaryDisplay` works as intended with `indicator_favorability=True`."""
+    """`MetricsSummaryDisplay` works as intended with `favorability=True`."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(indicator_favorability=True).frame()
+    result = report.metrics.summarize(favorability=True).frame()
 
     assert_index_equal(
         result.columns,
@@ -228,10 +228,8 @@ def test_cache_poisoning(binary_classification_data):
         DummyClassifier(strategy="uniform", random_state=2), X=X, y=y
     )
     report = ComparisonReport({"model_1": report_1, "model_2": report_2})
-    report.metrics.summarize(indicator_favorability=True)
-    result = report_1.metrics.summarize(
-        aggregate=None, indicator_favorability=True
-    ).frame()
+    report.metrics.summarize(favorability=True)
+    result = report_1.metrics.summarize(aggregate=None, favorability=True).frame()
 
     assert "Favorability" in result.columns
 
