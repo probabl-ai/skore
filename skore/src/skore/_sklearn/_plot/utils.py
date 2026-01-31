@@ -311,8 +311,9 @@ def _get_curve_plot_columns(
         allowed_values.add(None)
     if is_comparison and has_multiple_estimators:
         allowed_values.add("estimator")
-    if has_both_data_sources:
+    if has_both_data_sources and (not is_comparison or not is_multiclass):
         allowed_values.add("data_source")
+    # Disallow for comparison reports in multiclass classification
 
     if subplot_by not in allowed_values:
         allowed_str = ", ".join(sorted([str(s) for s in allowed_values]))

@@ -31,7 +31,7 @@ report are accessible through accessors.
    :template: autosummary/accessor.rst
 
    EstimatorReport.data
-   EstimatorReport.feature_importance
+   EstimatorReport.inspection
    EstimatorReport.metrics
 
 .. _estimator_data:
@@ -77,17 +77,17 @@ estimator.
     EstimatorReport.metrics.roc
     EstimatorReport.metrics.roc_auc
 
-Feature importance
-------------------
+Inspection
+----------
 
-The `feature_importance` accessor helps you to evaluate the importance of the features
-used to train your estimator.
+The `inspection` accessor helps you inspect your model by e.g. evaluating the importance
+of the features in your model.
 
 .. autosummary::
     :toctree: ../api/
     :template: autosummary/accessor_method.rst
 
-    EstimatorReport.feature_importance.help
-    EstimatorReport.feature_importance.coefficients
-    EstimatorReport.feature_importance.mean_decrease_impurity
-    EstimatorReport.feature_importance.permutation
+    EstimatorReport.inspection.help
+    EstimatorReport.inspection.coefficients
+    EstimatorReport.inspection.impurity_decrease
+    EstimatorReport.inspection.permutation_importance

@@ -1,7 +1,6 @@
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -10,7 +9,7 @@ from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
-from skore._sklearn._plot.utils import _despine_matplotlib_axis
+from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import ReportType
 
@@ -35,7 +34,7 @@ class CoefficientsDisplay(DisplayMixin):
 
     Attributes
     ----------
-    ax_ : ndarray ofmatplotlib Axes
+    ax_ : ndarray of matplotlib Axes
         Array of matplotlib Axes with the different matplotlib axis.
 
     figure_ : matplotlib Figure
@@ -53,38 +52,125 @@ class CoefficientsDisplay(DisplayMixin):
     ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
     ... )
     >>> report = EstimatorReport(LogisticRegression(), **split_data)
-    >>> display = report.feature_importance.coefficients()
+    >>> display = report.inspection.coefficients()
     >>> display.frame()
                   feature       label  coefficients
-    0           Intercept      setosa      9.2...
-    1   sepal length (cm)      setosa     -0.4...
-    2    sepal width (cm)      setosa      0.8...
-    3   petal length (cm)      setosa     -2.3...
-    4    petal width (cm)      setosa     -0.9...
-    5           Intercept  versicolor      1.7...
-    6   sepal length (cm)  versicolor      0.5...
-    7    sepal width (cm)  versicolor     -0.2...
-    8   petal length (cm)  versicolor     -0.2...
-    9    petal width (cm)  versicolor     -0.7...
-    10          Intercept   virginica    -11.0...
-    11  sepal length (cm)   virginica     -0.1...
-    12   sepal width (cm)   virginica     -0.5...
-    13  petal length (cm)   virginica      2.5...
-    14   petal width (cm)   virginica      1.7...
+    0           Intercept      setosa        9.2...
+    1   petal length (cm)      setosa       -2.3...
+    2    petal width (cm)      setosa       -0.9...
+    3    sepal width (cm)      setosa        0.8...
+    4   sepal length (cm)      setosa       -0.4...
+    5           Intercept  versicolor        1.7...
+    6    petal width (cm)  versicolor       -0.7...
+    7   sepal length (cm)  versicolor        0.5...
+    8    sepal width (cm)  versicolor       -0.2...
+    9   petal length (cm)  versicolor       -0.2...
+    10          Intercept   virginica      -11.0...
+    11  petal length (cm)   virginica        2.5...
+    12   petal width (cm)   virginica        1.7...
+    13   sepal width (cm)   virginica       -0.5...
+    14  sepal length (cm)   virginica       -0.1...
     """
 
-    _default_barplot_kwargs: dict[str, Any] = {"palette": "tab10"}
+    _default_barplot_kwargs: dict[str, Any] = {
+        "aspect": 2,
+        "height": 6,
+        "palette": "tab10",
+    }
+    _default_stripplot_kwargs: dict[str, Any] = {
+        "alpha": 0.5,
+        "aspect": 2,
+        "height": 6,
+        "palette": "tab10",
+    }
     _default_boxplot_kwargs: dict[str, Any] = {
-        "whis": 100_000,
+        "whis": 1e10,
         **BOXPLOT_STYLE,
     }
-    _default_stripplot_kwargs: dict[str, Any] = {"palette": "tab10", "alpha": 0.5}
 
     def __init__(self, *, coefficients: pd.DataFrame, report_type: ReportType):
         self.coefficients = coefficients
         self.report_type = report_type
 
-    def frame(self, *, include_intercept: bool = True):
+    def _select_k_features_in_group(
+        self, frame: pd.DataFrame, select_k: int
+    ) -> pd.DataFrame:
+        coefs = frame.groupby("feature")["coefficients"]
+
+        if "split" in frame:
+            # Cross-validation
+            scores = coefs.apply(lambda x: x.abs().mean())
+        else:
+            scores = coefs.first().abs()
+        scores = cast(pd.Series, scores)
+
+        if select_k > 0:
+            selected_features = scores.nlargest(abs(select_k)).index
+        else:
+            selected_features = scores.nsmallest(abs(select_k)).index
+
+        return frame[frame["feature"].isin(selected_features)]
+
+    def _sort_features_in_group(
+        self,
+        frame: pd.DataFrame,
+        sorting_order: Literal["descending", "ascending"],
+    ) -> pd.DataFrame:
+        ascending = sorting_order == "ascending"
+        if "split" in frame:
+            # Cross-validation
+            scores = frame.groupby("feature")["coefficients"].apply(
+                lambda x: x.abs().mean()
+            )
+            scores = cast(pd.Series, scores)
+            feature_order = scores.sort_values(ascending=ascending).index
+            return frame.set_index("feature").loc[feature_order].reset_index()
+
+        return frame.sort_values(
+            by="coefficients",
+            key=lambda s: s.abs(),
+            ascending=ascending,
+        ).reset_index(drop=True)
+
+    def _select_k_features(self, frame: pd.DataFrame, select_k: int) -> pd.DataFrame:
+        """Select top-k or bottom-k features based on absolute coefficient values."""
+        group_cols = self._get_columns_to_groupby(frame=frame)
+
+        if not group_cols:
+            return self._select_k_features_in_group(frame, select_k)
+
+        return pd.concat(
+            [
+                self._select_k_features_in_group(group, select_k)
+                for _, group in frame.groupby(group_cols, observed=True)
+            ],
+            ignore_index=True,
+        )
+
+    def _sort_features(
+        self, frame: pd.DataFrame, sorting_order: Literal["descending", "ascending"]
+    ) -> pd.DataFrame:
+        """Sort features by absolute coefficient values."""
+        group_cols = self._get_columns_to_groupby(frame=frame)
+
+        if not group_cols:
+            return self._sort_features_in_group(frame, sorting_order=sorting_order)
+
+        return pd.concat(
+            [
+                self._sort_features_in_group(group, sorting_order=sorting_order)
+                for _, group in frame.groupby(group_cols, sort=False, observed=True)
+            ],
+            ignore_index=True,
+        )
+
+    def frame(
+        self,
+        *,
+        include_intercept: bool = True,
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = "descending",
+    ):
         """Get the coefficients in a dataframe format.
 
         The returned dataframe is not going to contain constant columns or columns
@@ -94,6 +180,36 @@ class CoefficientsDisplay(DisplayMixin):
         ----------
         include_intercept : bool, default=True
             Whether or not to include the intercept in the dataframe.
+
+        select_k : int, default=None
+            Select features based on absolute coefficient values:
+
+            - Positive values: select the `select_k` features with largest absolute
+              coefficients
+            - Negative values: select the `-select_k` features with smallest absolute
+              coefficients
+
+            Selection is performed independently within each group:
+
+            - Single estimator reports: For binary classification or single-output
+              regression, selection is global. For multiclass classification or
+              multi-output regression, selection is performed independently per
+              class/output.
+            - Cross-validation reports: Grouping follows the same rules as single
+              estimator reports. Within each group, features are ranked by the mean
+              absolute coefficient values across folds.
+            - Comparison reports: Selection is performed independently per estimator,
+              and per class/output if applicable.
+
+        sorting_order : {"descending", "ascending", None}, default="descending"
+            Sort features by absolute coefficient values:
+
+            - "descending": largest absolute values first
+            - "ascending": smallest absolute values first
+            - None: preserve original order
+
+            Can be used independently of `select_k`. Sorting is performed within the
+            same groups as selection.
 
         Returns
         -------
@@ -112,24 +228,24 @@ class CoefficientsDisplay(DisplayMixin):
         ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
         ... )
         >>> report = EstimatorReport(LogisticRegression(), **split_data)
-        >>> display = report.feature_importance.coefficients()
+        >>> display = report.inspection.coefficients()
         >>> display.frame()
-                    feature       label  coefficients
-        0           Intercept      setosa      9.2...
-        1   sepal length (cm)      setosa     -0.4...
-        2    sepal width (cm)      setosa      0.8...
-        3   petal length (cm)      setosa     -2.3...
-        4    petal width (cm)      setosa     -0.9...
-        5           Intercept  versicolor      1.7...
-        6   sepal length (cm)  versicolor      0.5...
-        7    sepal width (cm)  versicolor     -0.2...
-        8   petal length (cm)  versicolor     -0.2...
-        9    petal width (cm)  versicolor     -0.7...
-        10          Intercept   virginica    -11.0...
-        11  sepal length (cm)   virginica     -0.1...
-        12   sepal width (cm)   virginica     -0.5...
-        13  petal length (cm)   virginica      2.5...
-        14   petal width (cm)   virginica      1.7...
+                      feature       label  coefficients
+        0           Intercept      setosa        9.2...
+        1   petal length (cm)      setosa       -2.3...
+        2    petal width (cm)      setosa       -0.9...
+        3    sepal width (cm)      setosa        0.8...
+        4   sepal length (cm)      setosa       -0.4...
+        5           Intercept  versicolor        1.7...
+        6    petal width (cm)  versicolor       -0.7...
+        7   sepal length (cm)  versicolor        0.5...
+        8    sepal width (cm)  versicolor       -0.2...
+        9   petal length (cm)  versicolor       -0.2...
+        10          Intercept   virginica      -11.0...
+        11  petal length (cm)   virginica        2.5...
+        12   petal width (cm)   virginica        1.7...
+        13   sepal width (cm)   virginica       -0.5...
+        14  sepal length (cm)   virginica       -0.1...
         """
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
@@ -152,6 +268,13 @@ class CoefficientsDisplay(DisplayMixin):
         coefficients = self.coefficients.drop(columns=columns_to_drop)
         if not include_intercept:
             coefficients = coefficients.query("feature != 'Intercept'")
+
+        if sorting_order is not None:
+            coefficients = self._sort_features(coefficients, sorting_order)
+
+        if select_k is not None:
+            coefficients = self._select_k_features(coefficients, select_k)
+
         return coefficients
 
     @DisplayMixin.style_plot
@@ -160,6 +283,8 @@ class CoefficientsDisplay(DisplayMixin):
         *,
         include_intercept: bool = True,
         subplot_by: Literal["auto", "estimator", "label", "output"] | None = "auto",
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = "descending",
     ) -> None:
         """Plot the coefficients for the different features.
 
@@ -176,6 +301,27 @@ class CoefficientsDisplay(DisplayMixin):
               regression problem;
             - when comparing estimators for which the input features are different.
 
+        select_k : int, default=None
+            Select features based on absolute coefficient values:
+
+            - Positive values: select the `select_k` features with largest absolute
+              coefficients
+            - Negative values: select the `-select_k` features with smallest absolute
+              coefficients
+
+            Selection is performed independently within each group as described in
+            the `frame` method.
+
+        sorting_order : {"descending", "ascending", None}, default="descending"
+            Sort features by absolute coefficient values:
+
+            - "descending": largest absolute values first
+            - "ascending": smallest absolute values first
+            - None: preserve original order
+
+            Can be used independently of `select_k`. Sorting is performed within the
+            same groups as selection.
+
         Examples
         --------
         >>> from sklearn.datasets import load_iris
@@ -188,81 +334,55 @@ class CoefficientsDisplay(DisplayMixin):
         ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
         ... )
         >>> report = EstimatorReport(LogisticRegression(), **split_data)
-        >>> display = report.feature_importance.coefficients()
+        >>> display = report.inspection.coefficients()
         >>> display.plot()
         """
-        return self._plot(include_intercept=include_intercept, subplot_by=subplot_by)
+        return self._plot(
+            include_intercept=include_intercept,
+            subplot_by=subplot_by,
+            select_k=select_k,
+            sorting_order=sorting_order,
+        )
 
     def _plot_matplotlib(
         self,
         *,
         include_intercept: bool = True,
         subplot_by: Literal["estimator", "label", "output"] | None = None,
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = "descending",
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
-        # make copy of the dictionary since we are going to pop some keys later
+        frame = self.frame(
+            include_intercept=include_intercept,
+            select_k=select_k,
+            sorting_order=sorting_order,
+        )
+
+        # Make copy of the dictionary since we are going to pop some keys later
         barplot_kwargs = self._default_barplot_kwargs.copy()
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
 
-        if self.report_type in ("estimator", "cross-validation"):
-            return self._plot_single_estimator(
-                frame=self.frame(include_intercept=include_intercept),
-                estimator_name=self.coefficients["estimator"][0],
-                report_type=self.report_type,
-                subplot_by=subplot_by,
-                barplot_kwargs=barplot_kwargs,
-                boxplot_kwargs=boxplot_kwargs,
-                stripplot_kwargs=stripplot_kwargs,
-            )
-        elif self.report_type in (
-            "comparison-estimator",
-            "comparison-cross-validation",
-        ):
+        if "comparison" in self.report_type:
             return self._plot_comparison(
-                frame=self.frame(include_intercept=include_intercept),
+                frame=frame,
                 report_type=self.report_type,
                 subplot_by=subplot_by,
                 barplot_kwargs=barplot_kwargs,
                 boxplot_kwargs=boxplot_kwargs,
                 stripplot_kwargs=stripplot_kwargs,
             )
-        else:
-            raise TypeError(f"Unexpected report type: {self.report_type!r}")
-
-    @staticmethod
-    def _decorate_matplotlib_axis(
-        *, ax: plt.Axes, add_background_features: bool = False, n_features: int
-    ) -> None:
-        """Decorate the matplotlib axis.
-
-        Parameters
-        ----------
-        ax : plt.Axes
-            The matplotlib axis to decorate.
-        add_background_features : bool, default=False
-            Whether to add a background color for each group of features.
-        n_features : int
-            The number of features to displayed.
-        """
-        ax.axvline(x=0, color=".5", linestyle="--")
-        ax.set(xlabel="Magnitude of coefficient", ylabel="")
-        _despine_matplotlib_axis(
-            ax,
-            axis_to_despine=("top", "right", "left"),
-            remove_ticks=True,
-            x_range=None,
-            y_range=None,
+        # EstimatorReport or CrossValidationReport
+        return self._plot_single_estimator(
+            frame=frame,
+            estimator_name=self.coefficients["estimator"][0],
+            report_type=self.report_type,
+            subplot_by=subplot_by,
+            barplot_kwargs=barplot_kwargs,
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
         )
-        if add_background_features:
-            for feature_idx in range(0, n_features, 2):
-                ax.axhspan(
-                    feature_idx - 0.5,
-                    feature_idx + 0.5,
-                    color="lightgray",
-                    alpha=0.1,
-                    zorder=0,
-                )
 
     @staticmethod
     def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
@@ -319,10 +439,12 @@ class CoefficientsDisplay(DisplayMixin):
 
         self.figure_, self.ax_ = facet.figure, facet.axes.squeeze()
         for ax in self.ax_.flatten():
-            self._decorate_matplotlib_axis(
+            _decorate_matplotlib_axis(
                 ax=ax,
                 add_background_features=add_background_features,
                 n_features=frame["feature"].nunique(),
+                xlabel="Magnitude of coefficient",
+                ylabel="",
             )
         if len(self.ax_.flatten()) == 1:
             self.ax_ = self.ax_.flatten()[0]
@@ -521,7 +643,7 @@ class CoefficientsDisplay(DisplayMixin):
             report_type=report_type,
             hue=hue,
             col=col,
-            barplot_kwargs=barplot_kwargs,
+            barplot_kwargs={"sharey": has_same_features} | barplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
         )

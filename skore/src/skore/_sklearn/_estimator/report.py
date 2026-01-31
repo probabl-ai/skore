@@ -26,8 +26,8 @@ from skore._utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
-    from skore._sklearn._estimator.feature_importance_accessor import (
-        _FeatureImportanceAccessor,
+    from skore._sklearn._estimator.inspection_accessor import (
+        _InspectionAccessor,
     )
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 
@@ -103,11 +103,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "data": {"name": "data"},
         "metrics": {"name": "metrics"},
-        "feature_importance": {"name": "feature_importance"},
+        "inspection": {"name": "inspection"},
     }
 
     metrics: _MetricsAccessor
-    feature_importance: _FeatureImportanceAccessor
+    inspection: _InspectionAccessor
     data: _DataAccessor
 
     @staticmethod
@@ -178,6 +178,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_test = y_test
         self._pos_label = pos_label
         self.fit_time_ = fit_time
+        self._parent_hash: np.int64 | None = None
 
         self._initialize_state()
 

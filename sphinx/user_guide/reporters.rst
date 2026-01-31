@@ -97,7 +97,7 @@ available metrics in `skore`.
 Model interpretability
 ^^^^^^^^^^^^^^^^^^^^^^
 
-:obj:`EstimatorReport.feature_importance` is the entry point to interpret and explain a
+:obj:`EstimatorReport.inspection` is the entry point to interpret and explain a
 predictive model. This accessor provides methods that return a :class:`skore.Display`
 object. As with other display objects, they expose three methods: `plot`, `set_style`
 and `frame`.

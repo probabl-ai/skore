@@ -26,13 +26,14 @@ the API of each display.
    PrecisionRecallCurveDisplay
    PredictionErrorDisplay
 
-.. rubric:: Feature Importance
+.. rubric:: Inspection
 
 .. autosummary::
    :toctree: ../api/
    :template: base.rst
 
    CoefficientsDisplay
+   PermutationImportanceDisplay
 
 .. rubric:: General API
 

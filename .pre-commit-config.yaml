@@ -11,35 +11,56 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.38.1
+    rev: v1.42.3
     hooks:
       - id: typos
 
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.1
+    rev: 0.9.0
     hooks:
       - id: nbstripout
         args: [--keep-id]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.1
+    rev: v0.14.14
     hooks:
+
       - id: ruff-check
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
         args: [--fix, --select, I]
+
       - id: ruff-format
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+    rev: v1.19.1
     hooks:
+
       - id: mypy
         pass_filenames: false
         alias: mypy-skore
         name: mypy skore/
         files: ^skore/
         args: [--config-file=skore/pyproject.toml, skore]
-        additional_dependencies: [IPython, matplotlib, numpy, polars, rich, scipy-stubs]
+        additional_dependencies:
+          # from dependencies
+          - IPython
+          - anywidget
+          - ipywidgets
+          - joblib
+          - matplotlib
+          - numpy
+          - pandas
+          - plotly
+          - rich
+          - scikit-learn
+          - skrub
+          - seaborn
+          # from test dependencies
+          - polars
+          - pyarrow
+          - scipy-stubs
+
       - id: mypy
         pass_filenames: false
         alias: mypy-skore-hub-project
@@ -47,6 +68,7 @@ repos:
         files: ^skore-hub-project/
         args: [--config-file=skore-hub-project/pyproject.toml, skore-hub-project]
         additional_dependencies: [skore, blake3, httpx, orjson, pandas-stubs, pydantic]
+
       - id: mypy
         pass_filenames: false
         alias: mypy-skore-local-project

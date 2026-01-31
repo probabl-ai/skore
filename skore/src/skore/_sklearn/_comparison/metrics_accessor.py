@@ -12,7 +12,6 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import (
     _BaseAccessor,
     _BaseMetricsAccessor,
-    _get_cached_response_values,
 )
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._plot.metrics import (
@@ -32,6 +31,8 @@ from skore._sklearn.types import (
 from skore._utils._accessor import (
     _check_any_sub_report_has_metric,
     _check_supported_ml_task,
+    _expand_data_sources,
+    _get_ys_for_single_report,
 )
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
@@ -1157,13 +1158,21 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         *,
         X: ArrayLike | None,
         y: ArrayLike | None,
-        data_source: DataSource,
-        response_method: str | list[str],
+        data_source: DataSource | Literal["both"],
+        response_method: str | list[str] | tuple[str, ...],
         display_class: type[
-            RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay
+            RocCurveDisplay
+            | PrecisionRecallCurveDisplay
+            | PredictionErrorDisplay
+            | ConfusionMatrixDisplay
         ],
         display_kwargs: dict[str, Any],
-    ) -> RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay:
+    ) -> (
+        RocCurveDisplay
+        | PrecisionRecallCurveDisplay
+        | PredictionErrorDisplay
+        | ConfusionMatrixDisplay
+    ):
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1174,14 +1183,15 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,)
             The target.
 
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metric.
 
-        response_method : str
+        response_method : str, list of str or tuple of str
             The response method.
 
         display_class : class
@@ -1195,13 +1205,16 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
+        pos_label = display_kwargs.get("pos_label")
+        data_sources = _expand_data_sources(data_source)
+
+        # Compute cache key
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
-            # build the cache key components to finally create a tuple that will be used
-            # to check if the metric has already been computed
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
             cache_key_parts.extend(display_kwargs.values())
+            cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
         assert self._parent._progress_info is not None, "Progress info not set"
@@ -1210,130 +1223,101 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
 
-        if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key]
-        else:
-            y_true: list[YPlotData] = []
-            y_pred: list[YPlotData] = []
+        if cache_key and cache_key in self._parent._cache:
+            return self._parent._cache[cache_key]
 
-            if self._parent._reports_type == "EstimatorReport":
-                for report_name, report in self._parent.reports_.items():
-                    report_X, report_y, _ = (
+        y_true: list[YPlotData] = []
+        y_pred: list[YPlotData] = []
+
+        if self._parent._reports_type == "EstimatorReport":
+            for report_name, report in self._parent.reports_.items():
+                for ds in data_sources:
+                    report_X, report_y, ds_hash = (
                         report.metrics._get_X_y_and_data_source_hash(
-                            data_source=data_source,
+                            data_source=ds,
                             X=X,
                             y=y,
                         )
                     )
 
-                    y_true.append(
-                        YPlotData(
-                            estimator_name=report_name,
-                            data_source=data_source,
-                            split=None,
-                            y=report_y,
-                        )
-                    )
-                    results = _get_cached_response_values(
+                    y_true_data, y_pred_data = _get_ys_for_single_report(
                         cache=report._cache,
-                        estimator_hash=report._hash,
+                        estimator_hash=int(report._hash),
                         estimator=report._estimator,
+                        estimator_name=report_name,
                         X=report_X,
+                        y_true=report_y,
+                        data_source=ds,
+                        data_source_hash=ds_hash,
                         response_method=response_method,
-                        data_source=data_source,
-                        data_source_hash=None,
-                        pos_label=display_kwargs.get("pos_label"),
+                        pos_label=pos_label,
+                        split=None,
                     )
-                    for key, value, is_cached in results:
-                        if not is_cached:
-                            report._cache[key] = value
-                        if key[-1] != "predict_time":
-                            y_pred.append(
-                                YPlotData(
-                                    estimator_name=report_name,
-                                    data_source=data_source,
-                                    split=None,
-                                    y=value,
-                                )
-                            )
+                    y_true.append(y_true_data)
+                    y_pred.append(y_pred_data)
 
-                    progress.update(main_task, advance=1, refresh=True)
+                progress.update(main_task, advance=1, refresh=True)
 
-                display = display_class._compute_data_for_display(
-                    y_true=y_true,
-                    y_pred=y_pred,
-                    report_type="comparison-estimator",
-                    estimators=[
-                        report.estimator_ for report in self._parent.reports_.values()
-                    ],
-                    ml_task=self._parent._ml_task,
-                    data_source=data_source,
-                    **display_kwargs,
-                )
+            display = display_class._compute_data_for_display(
+                y_true=y_true,
+                y_pred=y_pred,
+                report_type="comparison-estimator",
+                estimators=[
+                    report.estimator_ for report in self._parent.reports_.values()
+                ],
+                ml_task=self._parent._ml_task,
+                data_source=data_source,
+                **display_kwargs,
+            )
 
-            else:
-                for report_name, report in self._parent.reports_.items():
-                    for split, estimator_report in enumerate(report.estimator_reports_):
-                        report_X, report_y, _ = (
+        else:
+            for report_name, report in self._parent.reports_.items():
+                for split, estimator_report in enumerate(report.estimator_reports_):
+                    for ds in data_sources:
+                        report_X, report_y, ds_hash = (
                             estimator_report.metrics._get_X_y_and_data_source_hash(
-                                data_source=data_source,
+                                data_source=ds,
                                 X=X,
                                 y=y,
                             )
                         )
 
-                        y_true.append(
-                            YPlotData(
-                                estimator_name=report_name,
-                                data_source=data_source,
-                                split=split,
-                                y=report_y,
-                            )
-                        )
-
-                        results = _get_cached_response_values(
+                        y_true_data, y_pred_data = _get_ys_for_single_report(
                             cache=estimator_report._cache,
-                            estimator_hash=estimator_report._hash,
+                            estimator_hash=int(estimator_report._hash),
                             estimator=estimator_report.estimator_,
+                            estimator_name=report_name,
                             X=report_X,
+                            y_true=report_y,
+                            data_source=ds,
+                            data_source_hash=ds_hash,
                             response_method=response_method,
-                            data_source=data_source,
-                            data_source_hash=None,
-                            pos_label=display_kwargs.get("pos_label"),
+                            pos_label=pos_label,
+                            split=split,
                         )
-                        for key, value, is_cached in results:
-                            if not is_cached:
-                                report._cache[key] = value
-                            if key[-1] != "predict_time":
-                                y_pred.append(
-                                    YPlotData(
-                                        estimator_name=report_name,
-                                        data_source=data_source,
-                                        split=split,
-                                        y=value,
-                                    )
-                                )
+                        y_true.append(y_true_data)
+                        y_pred.append(y_pred_data)
 
-                    progress.update(main_task, advance=1, refresh=True)
+                progress.update(main_task, advance=1, refresh=True)
 
-                display = display_class._compute_data_for_display(
-                    y_true=y_true,
-                    y_pred=y_pred,
-                    report_type="comparison-cross-validation",
-                    estimators=[
-                        estimator_report.estimator_
-                        for report in self._parent.reports_.values()
-                        for estimator_report in report.estimator_reports_
-                    ],
-                    ml_task=self._parent._ml_task,
-                    data_source=data_source,
-                    **display_kwargs,
-                )
+            display = display_class._compute_data_for_display(
+                y_true=y_true,
+                y_pred=y_pred,
+                report_type="comparison-cross-validation",
+                estimators=[
+                    estimator_report.estimator_
+                    for report in self._parent.reports_.values()
+                    for estimator_report in report.estimator_reports_
+                ],
+                ml_task=self._parent._ml_task,
+                data_source=data_source,
+                **display_kwargs,
+            )
 
-            if cache_key is not None:
-                # Unless seed is an int (i.e. the call is deterministic),
-                # we do not cache
-                self._parent._cache[cache_key] = display
+        if cache_key is not None:
+            # Unless seed is an int (i.e. the call is deterministic),
+            # we do not cache
+            self._parent._cache[cache_key] = display
 
         return display
 
@@ -1345,7 +1329,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     def roc(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
@@ -1354,12 +1338,13 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metrics.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -1424,7 +1409,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     def precision_recall(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
@@ -1433,12 +1418,13 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metrics.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -1503,7 +1489,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     def prediction_error(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         subsample: int = 1_000,
@@ -1515,12 +1501,13 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train", "X_y", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
+            - "both" : use both the train and test sets to compute the metrics.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
