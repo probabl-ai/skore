@@ -111,7 +111,7 @@ class TestCrossValidationReportPayload:
                         "groups": None,
                         "sample_count": 5,
                     },
-                    "train_test_distribution": [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
+                    "test_indices": [0, 1, 2, 3, 5],
                 },
                 {
                     "test": {
@@ -124,7 +124,7 @@ class TestCrossValidationReportPayload:
                         "groups": None,
                         "sample_count": 5,
                     },
-                    "train_test_distribution": [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
+                    "test_indices": [4, 6, 7, 8, 9],
                 },
             ],
             "strategy_name": "StratifiedKFold",
@@ -157,7 +157,7 @@ class TestCrossValidationReportPayload:
                         "groups": None,
                         "sample_count": 5,
                     },
-                    "train_test_distribution": [1, 1, 0, 0, 0, 1, 0, 1, 1, 0],
+                    "test_indices": [0, 1, 5, 7, 8],
                 },
                 {
                     "test": {
@@ -170,7 +170,7 @@ class TestCrossValidationReportPayload:
                         "groups": None,
                         "sample_count": 5,
                     },
-                    "train_test_distribution": [0, 0, 1, 1, 1, 0, 1, 0, 0, 1],
+                    "test_indices": [2, 3, 4, 6, 9],
                 },
                 {
                     "test": {
@@ -183,7 +183,7 @@ class TestCrossValidationReportPayload:
                         "groups": None,
                         "sample_count": 5,
                     },
-                    "train_test_distribution": [1, 1, 0, 1, 0, 1, 0, 0, 1, 0],
+                    "test_indices": [0, 1, 3, 5, 8],
                 },
                 {
                     "test": {
@@ -196,7 +196,7 @@ class TestCrossValidationReportPayload:
                         "groups": None,
                         "sample_count": 5,
                     },
-                    "train_test_distribution": [0, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+                    "test_indices": [2, 4, 6, 7, 9],
                 },
             ],
             "strategy_name": "RepeatedKFold",
@@ -226,6 +226,10 @@ class TestCrossValidationReportPayload:
             assert len(test_target_distribution) == 100
             assert all(isinstance(value, float) for value in train_target_distribution)
             assert all(isinstance(value, float) for value in test_target_distribution)
+            test_indices = split["test_indices"]
+            assert isinstance(test_indices, list)
+            assert all(isinstance(i, int) for i in test_indices)
+            assert test_indices == sorted(test_indices)
 
     def test_class_names(self, payload):
         assert payload.class_names == ["1", "0"]

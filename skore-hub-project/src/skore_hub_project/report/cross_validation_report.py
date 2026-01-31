@@ -172,10 +172,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
         This includes the number of splits, the number of repeats, the seed,
         and the distribution of the train and test sets.
-
-        The distribution of each split is computed by dividing the split into a maximum
-        of 200 buckets, and averaging the number of samples belonging to the test-set in
-        each of these buckets. @TODO: find a better representation of the distribution.
         """
         splits = []
 
@@ -202,12 +198,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 test_kernel = gaussian_kde(test_y)
                 test_target_distribution = [float(x) for x in test_kernel(linspace)]
 
-            # remove this when a better solution is found
-            # see #2212 for details
-            buckets_number = min(len(self.report.X), 200)
-            split = np.zeros(len(self.report.X), dtype=int)
-            split[test_indices] = 1
-
             splits.append(
                 {
                     "train": {
@@ -220,10 +210,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                         "target_distribution": test_target_distribution,
                         "groups": None,
                     },
-                    "train_test_distribution": [
-                        float(np.mean(bucket))
-                        for bucket in np.array_split(split, buckets_number)
-                    ],
+                    "test_indices": sorted([int(i) for i in test_indices]),
                 }
             )
 
