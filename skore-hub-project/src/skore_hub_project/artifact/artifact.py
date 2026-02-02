@@ -6,8 +6,8 @@ from functools import cached_property
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from skore_hub_project import Project
 from skore_hub_project.artifact.upload import upload
+from skore_hub_project.project.project import Project
 
 Content = str | bytes | None
 

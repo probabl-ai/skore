@@ -9,7 +9,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold, RepeatedKFold
 from skore import CrossValidationReport, EstimatorReport
 
-from skore_hub_project import Project
 from skore_hub_project.artifact.media import (
     EstimatorHtmlRepr,
     PrecisionRecallTest,
@@ -51,6 +50,7 @@ from skore_hub_project.metric import (
     RocAucTrainMean,
     RocAucTrainStd,
 )
+from skore_hub_project.project.project import Project
 from skore_hub_project.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
