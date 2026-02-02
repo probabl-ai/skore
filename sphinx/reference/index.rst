@@ -14,18 +14,18 @@ Overview
 
 The following table provides a quick reference to the public classes and functions in skore:
 
-ML Assistance Functions
-^^^^^^^^^^^^^^^^^^^^^^^
+Project Management
+^^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :widths: 30 70
 
-   * - :func:`train_test_split`
-     - Split arrays or matrices into random train and test subsets
+   * - :class:`Project`
+     - Main class for managing a skore project and its reports
 
 
-Report Classes
-^^^^^^^^^^^^^^
+ML Assistance
+^^^^^^^^^^^^^
 
 .. list-table::
    :widths: 30 70
@@ -36,15 +36,8 @@ Report Classes
      - Report for evaluating an estimator using cross-validation
    * - :class:`ComparisonReport`
      - Report for comparing multiple estimator or cross-validation reports
-
-Project Management
-^^^^^^^^^^^^^^^^^^
-
-.. list-table::
-   :widths: 30 70
-
-   * - :class:`Project`
-     - Main class for managing a skore project and its reports
+   * - :func:`train_test_split`
+     - Split arrays or matrices into random train and test subsets
 
 
 Display Classes
