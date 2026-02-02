@@ -50,7 +50,7 @@ def login(*, timeout: int = 600) -> None:
             live.update(
                 Panel(
                     Align.center(
-                        "Login successful using [b]interactive authentication."
+                        "Successfully logged in, using [b]interactive authentication."
                     ),
                     title="[cyan]Login to [bold]Skore Hub",
                     border_style="cyan",
@@ -61,7 +61,7 @@ def login(*, timeout: int = 600) -> None:
     else:
         console.print(
             Panel(
-                Align.center("Login successful using [b]API key."),
+                Align.center("Successfully logged in, using [b]API key."),
                 title="[cyan]Login to [bold]Skore Hub",
                 border_style="cyan",
                 padding=1,

@@ -208,8 +208,9 @@ class Token:
             Align.center(
                 "[b]API key not detected.[/b]\n\n"
                 "Starting interactive authentication for the session.\n"
-                "[i]We recommend that you set up an API key via url (coming soon) and "
-                "use it to log in.[/i]\n\n"
+                "[i]We recommend that you create an API key and use it to log in, "
+                "at [link=https://skore.probabl.ai/account]"
+                "https://skore.probabl.ai/account[/link].[/i]\n\n"
                 "Opening browser for interactive authentication; if this fails, "
                 f"please visit:\n[link={url}]{url}[/link]"
             ),
