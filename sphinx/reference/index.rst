@@ -83,16 +83,6 @@ Inspection
      - Display for permutation feature importance
 
 
-General
-"""""""
-
-.. list-table::
-   :widths: 30 70
-
-   * - :class:`Display`
-     - Base class for all display objects
-
-
 Configuration
 ^^^^^^^^^^^^^
 
