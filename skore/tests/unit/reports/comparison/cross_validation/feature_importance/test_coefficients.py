@@ -29,8 +29,8 @@ def test_with_model_exposing_coef(regression_data, estimator):
     report_1 = CrossValidationReport(estimator, X, y, splitter=2)
     report_2 = CrossValidationReport(estimator, X, y, splitter=2)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    assert hasattr(report.feature_importance, "coefficients")
-    display = report.feature_importance.coefficients()
+    assert hasattr(report.inspection, "coefficients")
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
 
@@ -41,7 +41,7 @@ def test_with_model_not_exposing_coef(regression_data):
     report_1 = CrossValidationReport(DecisionTreeRegressor(), X, y, splitter=2)
     report_2 = CrossValidationReport(DecisionTreeRegressor(), X, y, splitter=2)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    assert not hasattr(report.feature_importance, "coefficients")
+    assert not hasattr(report.inspection, "coefficients")
 
 
 def test_with_mixed_reports(regression_data):
@@ -50,4 +50,4 @@ def test_with_mixed_reports(regression_data):
     report_1 = CrossValidationReport(Ridge(), X, y, splitter=2)
     report_2 = CrossValidationReport(DecisionTreeRegressor(), X, y, splitter=2)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    assert not hasattr(report.feature_importance, "coefficients")
+    assert not hasattr(report.inspection, "coefficients")

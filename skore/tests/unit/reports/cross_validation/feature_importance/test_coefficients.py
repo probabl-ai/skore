@@ -27,8 +27,8 @@ def test_with_model_exposing_coef(regression_data, estimator):
     attribute."""
     X, y = regression_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    assert hasattr(report.feature_importance, "coefficients")
-    display = report.feature_importance.coefficients()
+    assert hasattr(report.inspection, "coefficients")
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
 
@@ -37,4 +37,4 @@ def test_with_model_not_exposing_coef(regression_data):
     `coef_` attribute."""
     X, y = regression_data
     report = CrossValidationReport(DecisionTreeRegressor(), X, y, splitter=2)
-    assert not hasattr(report.feature_importance, "coefficients")
+    assert not hasattr(report.inspection, "coefficients")

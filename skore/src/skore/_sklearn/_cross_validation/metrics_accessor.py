@@ -12,7 +12,6 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import (
     _BaseAccessor,
     _BaseMetricsAccessor,
-    _get_cached_response_values,
 )
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot import (
@@ -29,7 +28,10 @@ from skore._sklearn.types import (
     PositiveLabel,
     YPlotData,
 )
-from skore._utils._accessor import _check_estimator_report_has_method
+from skore._utils._accessor import (
+    _check_estimator_report_has_method,
+    _get_ys_for_single_report,
+)
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
 from skore._utils._parallel import Parallel, delayed
@@ -1074,12 +1076,20 @@ class _MetricsAccessor(
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         data_source: DataSource,
-        response_method: str,
+        response_method: str | list[str] | tuple[str, ...],
         display_class: type[
-            RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay
+            RocCurveDisplay
+            | PrecisionRecallCurveDisplay
+            | PredictionErrorDisplay
+            | ConfusionMatrixDisplay
         ],
         display_kwargs: dict[str, Any],
-    ) -> RocCurveDisplay | PrecisionRecallCurveDisplay | PredictionErrorDisplay:
+    ) -> (
+        RocCurveDisplay
+        | PrecisionRecallCurveDisplay
+        | PredictionErrorDisplay
+        | ConfusionMatrixDisplay
+    ):
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1097,7 +1107,7 @@ class _MetricsAccessor(
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        response_method : str
+        response_method : str, list of str, or tuple of str
             The response method.
 
         display_class : class
@@ -1111,6 +1121,9 @@ class _MetricsAccessor(
         display : display_class
             The display.
         """
+        pos_label = display_kwargs.get("pos_label")
+
+        # For "X_y" data source, retrieve X and y once to use across all splits
         if data_source == "X_y":
             X, y, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
@@ -1119,15 +1132,13 @@ class _MetricsAccessor(
         else:
             data_source_hash = None
 
+        # Compute cache key
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
             cache_key_parts.extend(display_kwargs.values())
-            if data_source_hash is not None:
-                cache_key_parts.append(data_source_hash)
-            else:
-                cache_key_parts.append(data_source)
+            cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
         assert self._parent._progress_info is not None, "Progress info not set"
@@ -1137,66 +1148,56 @@ class _MetricsAccessor(
         progress.update(main_task, total=total_estimators)
 
         if cache_key and cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key]
-        else:
-            y_true: list[YPlotData] = []
-            y_pred: list[YPlotData] = []
-            for report_idx, report in enumerate(self._parent.estimator_reports_):
-                if data_source != "X_y":
-                    # only retrieve data stored in the reports when we don't want to
-                    # use an external common X and y
-                    X, y, _ = report.metrics._get_X_y_and_data_source_hash(
-                        data_source=data_source
-                    )
+            return self._parent._cache[cache_key]
 
-                y_true.append(
-                    YPlotData(
-                        estimator_name=self._parent.estimator_name_,
-                        data_source=data_source,
-                        split=report_idx,
-                        y=cast(ArrayLike, y),
-                    )
-                )
-                results = _get_cached_response_values(
-                    cache=report._cache,
-                    estimator_hash=int(report._hash),
-                    estimator=report._estimator,
-                    X=X,
-                    response_method=response_method,
-                    data_source=data_source,
-                    data_source_hash=data_source_hash,
-                    pos_label=display_kwargs.get("pos_label"),
-                )
-                for key, value, is_cached in results:
-                    if not is_cached:
-                        report._cache[key] = value
-                    if key[-1] != "predict_time":
-                        y_pred.append(
-                            YPlotData(
-                                estimator_name=self._parent.estimator_name_,
-                                data_source=data_source,
-                                split=report_idx,
-                                y=value,
-                            )
-                        )
-                progress.update(main_task, advance=1, refresh=True)
+        y_true: list[YPlotData] = []
+        y_pred: list[YPlotData] = []
 
-            display = display_class._compute_data_for_display(
-                y_true=y_true,
-                y_pred=y_pred,
-                report_type="cross-validation",
-                estimators=[
-                    report.estimator_ for report in self._parent.estimator_reports_
-                ],
-                ml_task=self._parent._ml_task,
+        for report_idx, report in enumerate(self._parent.estimator_reports_):
+            if data_source == "X_y":
+                # Use the externally provided X and y for all splits
+                report_X = X
+                report_y = y
+            else:
+                # Retrieve data stored in the individual reports
+                report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
+                    data_source=data_source
+                )
+
+            y_true_data, y_pred_data = _get_ys_for_single_report(
+                cache=report._cache,
+                estimator_hash=int(report._hash),
+                estimator=report._estimator,
+                estimator_name=self._parent.estimator_name_,
+                X=report_X,
+                y_true=cast(ArrayLike, report_y),
                 data_source=data_source,
-                **display_kwargs,
+                data_source_hash=data_source_hash,
+                response_method=response_method,
+                pos_label=pos_label,
+                split=report_idx,
             )
+            y_true.append(y_true_data)
+            y_pred.append(y_pred_data)
 
-            if cache_key is not None:
-                # Unless seed is an int (i.e. the call is deterministic),
-                # we do not cache
-                self._parent._cache[cache_key] = display
+            progress.update(main_task, advance=1, refresh=True)
+
+        display = display_class._compute_data_for_display(
+            y_true=y_true,
+            y_pred=y_pred,
+            report_type="cross-validation",
+            estimators=[
+                report.estimator_ for report in self._parent.estimator_reports_
+            ],
+            ml_task=self._parent._ml_task,
+            data_source=data_source,
+            **display_kwargs,
+        )
+
+        if cache_key is not None:
+            # Unless seed is an int (i.e. the call is deterministic),
+            # we do not cache
+            self._parent._cache[cache_key] = display
 
         return display
 

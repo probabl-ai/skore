@@ -337,11 +337,7 @@ def _get_curve_plot_columns(
 
     hue = hue[0] if (hue := [c for c in hue_candidates if c != col]) else None
 
-    style = (
-        "data_source"
-        if has_both_data_sources and (not is_comparison or not is_multiclass)
-        else None
-    )
+    style = "data_source" if has_both_data_sources else None
 
     return col, hue, style
 

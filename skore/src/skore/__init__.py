@@ -22,8 +22,8 @@ from skore._sklearn import (
     train_test_split,
 )
 from skore._sklearn._plot.base import Display
-from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
-from skore._sklearn._plot.feature_importance.permutation import (
+from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
+from skore._sklearn._plot.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
 from skore._utils._patch import setup_jupyter_display

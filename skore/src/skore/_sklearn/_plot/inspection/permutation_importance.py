@@ -10,7 +10,7 @@ from sklearn.inspection import permutation_importance
 from sklearn.metrics._scorer import _BaseScorer
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
-from skore._sklearn._plot.feature_importance.utils import _decorate_matplotlib_axis
+from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.types import Aggregate, DataSource, ReportType
 from skore._utils._index import flatten_multi_index
 

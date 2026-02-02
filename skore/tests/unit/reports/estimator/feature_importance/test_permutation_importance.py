@@ -21,7 +21,7 @@ def test_permutation_importance_returns_display(regression_train_test_split, n_j
         X_test=X_test,
         y_test=y_test,
     )
-    display = report.feature_importance.permutation(seed=42, n_jobs=n_jobs)
+    display = report.inspection.permutation_importance(seed=42, n_jobs=n_jobs)
 
     assert isinstance(display, PermutationImportanceDisplay)
     assert hasattr(display, "importances")
@@ -38,7 +38,7 @@ def test_not_fitted_error(regression_train_test_split, n_jobs):
 
     error_msg = "This LinearRegression instance is not fitted yet"
     with pytest.raises(NotFittedError, match=error_msg):
-        report.feature_importance.permutation(seed=42, n_jobs=n_jobs)
+        report.inspection.permutation_importance(seed=42, n_jobs=n_jobs)
 
 
 @pytest.mark.parametrize("n_jobs", [1, 2])
@@ -59,7 +59,7 @@ def test_at_step_int(regression_train_test_split, n_jobs, at_step, expected_feat
         pipeline, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         seed=42, at_step=at_step, n_jobs=n_jobs
     )
 
@@ -78,7 +78,7 @@ def test_at_step_str(regression_train_test_split, n_jobs):
         pipeline, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         seed=42, at_step="pca", n_jobs=n_jobs
     )
 
@@ -100,10 +100,10 @@ def test_at_step_non_pipeline(regression_train_test_split, n_jobs):
         y_test=y_test,
     )
 
-    display_start = report.feature_importance.permutation(
+    display_start = report.inspection.permutation_importance(
         seed=42, at_step=0, n_jobs=n_jobs
     )
-    display_end = report.feature_importance.permutation(
+    display_end = report.inspection.permutation_importance(
         seed=42, at_step=-1, n_jobs=n_jobs
     )
     assert len(display_start.importances) == len(display_end.importances)
@@ -128,7 +128,9 @@ def test_at_step_value_error(regression_train_test_split, n_jobs, at_step, err_m
     )
 
     with pytest.raises(ValueError, match=err_msg):
-        report.feature_importance.permutation(seed=42, at_step=at_step, n_jobs=n_jobs)
+        report.inspection.permutation_importance(
+            seed=42, at_step=at_step, n_jobs=n_jobs
+        )
 
 
 @pytest.mark.parametrize("n_jobs", [1, 2])
@@ -153,7 +155,7 @@ def test_metric_parameter(
         y_test=y_test,
     )
 
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         seed=42, metric=metric, n_jobs=n_jobs
     )
 
@@ -175,7 +177,7 @@ def test_metric_list(regression_train_test_split, n_jobs):
         y_test=y_test,
     )
 
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         seed=42, metric=["r2", "neg_mean_squared_error"], n_jobs=n_jobs
     )
 
@@ -201,7 +203,7 @@ def test_metric_dict(regression_train_test_split, n_jobs):
         "r2": make_scorer(r2_score),
         "rmse": make_scorer(root_mean_squared_error),
     }
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         seed=42, metric=metric_dict, n_jobs=n_jobs
     )
 
@@ -225,7 +227,7 @@ def test_max_samples_parameter(regression_train_test_split, n_jobs, max_samples)
         y_test=y_test,
     )
 
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         seed=42, max_samples=max_samples, n_jobs=n_jobs
     )
 
@@ -247,7 +249,7 @@ def test_cache_display_stored(regression_train_test_split, n_jobs):
     assert report._cache == {}
 
     with check_cache_changed(report._cache):
-        display = report.feature_importance.permutation(
+        display = report.inspection.permutation_importance(
             data_source="train", seed=42, n_jobs=n_jobs
         )
 
@@ -296,7 +298,7 @@ def test_cache_parameter_in_cache(
         "n_jobs": n_jobs,
         param_name: first_value,
     }
-    report.feature_importance.permutation(**kwargs1)
+    report.inspection.permutation_importance(**kwargs1)
 
     # Different parameter value should create a new cache entry
     with check_cache_changed(report._cache):
@@ -306,7 +308,7 @@ def test_cache_parameter_in_cache(
             "n_jobs": n_jobs,
             param_name: second_value,
         }
-        report.feature_importance.permutation(**kwargs2)
+        report.inspection.permutation_importance(**kwargs2)
 
 
 @pytest.mark.parametrize("n_jobs", [1, 2])
@@ -322,10 +324,12 @@ def test_cache_seed_none(regression_train_test_split, n_jobs):
     )
     assert report._cache == {}
 
-    report.feature_importance.permutation(data_source="train", n_jobs=n_jobs)
+    report.inspection.permutation_importance(data_source="train", n_jobs=n_jobs)
     assert len(report._cache) == 1
 
-    display2 = report.feature_importance.permutation(data_source="train", n_jobs=n_jobs)
+    display2 = report.inspection.permutation_importance(
+        data_source="train", n_jobs=n_jobs
+    )
     assert len(report._cache) == 1
     key = next(iter(report._cache.keys()))
     cached_display = report._cache[key]
@@ -345,14 +349,14 @@ def test_cache_seed_int(regression_train_test_split, n_jobs):
     )
     assert report._cache == {}
 
-    display1 = report.feature_importance.permutation(
+    display1 = report.inspection.permutation_importance(
         data_source="train", seed=42, n_jobs=n_jobs
     )
     assert display1 is not None
     assert isinstance(display1, PermutationImportanceDisplay)
     assert len(report._cache) == 1
 
-    display2 = report.feature_importance.permutation(
+    display2 = report.inspection.permutation_importance(
         data_source="train", seed=42, n_jobs=n_jobs
     )
     assert display2 is not None
@@ -371,7 +375,7 @@ def test_classification(logistic_binary_classification_with_train_test, n_jobs):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.permutation(
+    display = report.inspection.permutation_importance(
         data_source="train", seed=42, n_jobs=n_jobs
     )
 
@@ -389,7 +393,9 @@ def test_sparse_array(regression_train_test_split, n_jobs):
         pipeline, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.permutation(seed=42, at_step=-1, n_jobs=n_jobs)
+    display = report.inspection.permutation_importance(
+        seed=42, at_step=-1, n_jobs=n_jobs
+    )
 
     assert isinstance(display, PermutationImportanceDisplay)
     assert len(display.importances) > 0
@@ -404,7 +410,9 @@ def test_feature_names_from_pipeline(regression_train_test_split, n_jobs):
         pipeline, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.permutation(seed=42, at_step=-1, n_jobs=n_jobs)
+    display = report.inspection.permutation_importance(
+        seed=42, at_step=-1, n_jobs=n_jobs
+    )
 
     assert isinstance(display, PermutationImportanceDisplay)
     assert "feature" in display.importances.columns

@@ -34,7 +34,7 @@ def test_binary_classification(
 
     report = CrossValidationReport(model, X, y, splitter=splitter)
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -71,7 +71,7 @@ def test_binary_classification(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame(format="long")
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["split", "feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     feature_names = (["Intercept"] + columns_names) * splitter
@@ -118,7 +118,7 @@ def test_multiclass_classification(
 
     report = CrossValidationReport(model, X, y, splitter=splitter)
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -155,7 +155,7 @@ def test_multiclass_classification(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame(format="long")
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["split", "feature", "label", "coefficients"]
     assert df.columns.tolist() == expected_columns
     feature_names = (["Intercept"] + columns_names) * splitter * n_classes
@@ -220,7 +220,7 @@ def test_single_output_regression(
 
     report = CrossValidationReport(model, X, y, splitter=splitter)
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -262,7 +262,7 @@ def test_single_output_regression(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame(format="long")
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["split", "feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == (["Intercept"] + columns_names) * splitter
@@ -313,7 +313,7 @@ def test_multi_output_regression(
 
     report = CrossValidationReport(model, X, y, splitter=splitter)
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -356,7 +356,7 @@ def test_multi_output_regression(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame(format="long")
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["split", "feature", "output", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["output"]).tolist() == [f"{i}" for i in range(n_outputs)]
@@ -407,7 +407,7 @@ def test_include_intercept(
     splitter = 2
 
     report = CrossValidationReport(clone(estimator), X, y, splitter=splitter)
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
 
     assert (
         display.frame(format="long", include_intercept=False)
@@ -433,7 +433,7 @@ def test_wide_format_binary_classification(
     X = _convert_container(X, "dataframe", columns_name=columns_names)
 
     report = CrossValidationReport(clone(estimator), X, y, splitter=2)
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
 
     df_wide = display.frame(format="wide")
     assert df_wide.index.name == "feature"
@@ -450,7 +450,7 @@ def test_wide_format_multiclass_classification(
     X = _convert_container(X, "dataframe", columns_name=columns_names)
 
     report = CrossValidationReport(clone(estimator), X, y, splitter=2)
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
 
     df_wide = display.frame(format="wide")
     assert df_wide.index.name == "feature"
@@ -467,7 +467,7 @@ def test_wide_format_single_output_regression(
     X = _convert_container(X, "dataframe", columns_name=columns_names)
 
     report = CrossValidationReport(clone(estimator), X, y, splitter=2)
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
 
     df_wide = display.frame(format="wide")
     assert df_wide.index.name == "feature"
@@ -484,7 +484,7 @@ def test_wide_format_multi_output_regression(
     X = _convert_container(X, "dataframe", columns_name=columns_names)
 
     report = CrossValidationReport(clone(estimator), X, y, splitter=2)
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
 
     df_wide = display.frame(format="wide")
     assert df_wide.index.name == "feature"

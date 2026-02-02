@@ -1,7 +1,6 @@
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -10,7 +9,7 @@ from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
-from skore._sklearn._plot.feature_importance.utils import _decorate_matplotlib_axis
+from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import ReportType
 
@@ -35,7 +34,7 @@ class CoefficientsDisplay(DisplayMixin):
 
     Attributes
     ----------
-    ax_ : ndarray ofmatplotlib Axes
+    ax_ : ndarray of matplotlib Axes
         Array of matplotlib Axes with the different matplotlib axis.
 
     figure_ : matplotlib Figure
@@ -53,7 +52,7 @@ class CoefficientsDisplay(DisplayMixin):
     ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
     ... )
     >>> report = EstimatorReport(LogisticRegression(), **split_data)
-    >>> display = report.feature_importance.coefficients()
+    >>> display = report.inspection.coefficients()
     >>> display.frame()
     label                   setosa  versicolor  virginica
     feature
@@ -64,22 +63,105 @@ class CoefficientsDisplay(DisplayMixin):
     petal width (cm)         -0.9...      -0.7...      1.7...
     """
 
-    _default_barplot_kwargs: dict[str, Any] = {"palette": "tab10"}
+    _default_barplot_kwargs: dict[str, Any] = {
+        "aspect": 2,
+        "height": 6,
+        "palette": "tab10",
+    }
+    _default_stripplot_kwargs: dict[str, Any] = {
+        "alpha": 0.5,
+        "aspect": 2,
+        "height": 6,
+        "palette": "tab10",
+    }
     _default_boxplot_kwargs: dict[str, Any] = {
         "whis": 1e10,
         **BOXPLOT_STYLE,
     }
-    _default_stripplot_kwargs: dict[str, Any] = {"palette": "tab10", "alpha": 0.5}
 
     def __init__(self, *, coefficients: pd.DataFrame, report_type: ReportType):
         self.coefficients = coefficients
         self.report_type = report_type
+
+    def _select_k_features_in_group(
+        self, frame: pd.DataFrame, select_k: int
+    ) -> pd.DataFrame:
+        coefs = frame.groupby("feature")["coefficients"]
+
+        if "split" in frame:
+            # Cross-validation
+            scores = coefs.apply(lambda x: x.abs().mean())
+        else:
+            scores = coefs.first().abs()
+        scores = cast(pd.Series, scores)
+
+        if select_k > 0:
+            selected_features = scores.nlargest(abs(select_k)).index
+        else:
+            selected_features = scores.nsmallest(abs(select_k)).index
+
+        return frame[frame["feature"].isin(selected_features)]
+
+    def _sort_features_in_group(
+        self,
+        frame: pd.DataFrame,
+        sorting_order: Literal["descending", "ascending"],
+    ) -> pd.DataFrame:
+        ascending = sorting_order == "ascending"
+        if "split" in frame:
+            # Cross-validation
+            scores = frame.groupby("feature")["coefficients"].apply(
+                lambda x: x.abs().mean()
+            )
+            scores = cast(pd.Series, scores)
+            feature_order = scores.sort_values(ascending=ascending).index
+            return frame.set_index("feature").loc[feature_order].reset_index()
+
+        return frame.sort_values(
+            by="coefficients",
+            key=lambda s: s.abs(),
+            ascending=ascending,
+        ).reset_index(drop=True)
+
+    def _select_k_features(self, frame: pd.DataFrame, select_k: int) -> pd.DataFrame:
+        """Select top-k or bottom-k features based on absolute coefficient values."""
+        group_cols = self._get_columns_to_groupby(frame=frame)
+
+        if not group_cols:
+            return self._select_k_features_in_group(frame, select_k)
+
+        return pd.concat(
+            [
+                self._select_k_features_in_group(group, select_k)
+                for _, group in frame.groupby(group_cols, observed=True)
+            ],
+            ignore_index=True,
+        )
+
+    def _sort_features(
+        self, frame: pd.DataFrame, sorting_order: Literal["descending", "ascending"]
+    ) -> pd.DataFrame:
+        """Sort features by absolute coefficient values."""
+        group_cols = self._get_columns_to_groupby(frame=frame)
+
+        if not group_cols:
+            return self._sort_features_in_group(frame, sorting_order=sorting_order)
+
+        return pd.concat(
+            [
+                self._sort_features_in_group(group, sorting_order=sorting_order)
+                for _, group in frame.groupby(group_cols, sort=False, observed=True)
+            ],
+            ignore_index=True,
+        )
 
     def frame(
         self,
         *,
         include_intercept: bool = True,
         format: Literal["long", "wide"] = "wide",
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = "descending",
     ) -> pd.DataFrame:
         """Get the coefficients in a dataframe format.
 
@@ -91,6 +173,36 @@ class CoefficientsDisplay(DisplayMixin):
         format : {"long", "wide"}, default="wide"
             Output format. "wide" pivots features as rows with labels/splits as
             columns. "long" returns raw data with one row per observation.
+
+        select_k : int, default=None
+            Select features based on absolute coefficient values:
+
+            - Positive values: select the `select_k` features with largest absolute
+              coefficients
+            - Negative values: select the `-select_k` features with smallest absolute
+              coefficients
+
+            Selection is performed independently within each group:
+
+            - Single estimator reports: For binary classification or single-output
+              regression, selection is global. For multiclass classification or
+              multi-output regression, selection is performed independently per
+              class/output.
+            - Cross-validation reports: Grouping follows the same rules as single
+              estimator reports. Within each group, features are ranked by the mean
+              absolute coefficient values across folds.
+            - Comparison reports: Selection is performed independently per estimator,
+              and per class/output if applicable.
+
+        sorting_order : {"descending", "ascending", None}, default="descending"
+            Sort features by absolute coefficient values:
+
+            - "descending": largest absolute values first
+            - "ascending": smallest absolute values first
+            - None: preserve original order
+
+            Can be used independently of `select_k`. Sorting is performed within the
+            same groups as selection.
 
         Returns
         -------
@@ -109,7 +221,7 @@ class CoefficientsDisplay(DisplayMixin):
         ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
         ... )
         >>> report = EstimatorReport(LogisticRegression(), **split_data)
-        >>> display = report.feature_importance.coefficients()
+        >>> display = report.inspection.coefficients()
 
         Get coefficients in wide format (default):
 
@@ -161,12 +273,17 @@ class CoefficientsDisplay(DisplayMixin):
         if not include_intercept:
             frame = frame.query("feature != 'Intercept'")
 
+        if sorting_order is not None:
+            frame = self._sort_features(frame, sorting_order)
+
+        if select_k is not None:
+            frame = self._select_k_features(frame, select_k)
+
         if format == "long":
             return frame.reset_index(drop=True)
 
-        if (
-            self.report_type.startswith("comparison")
-            and not self._has_same_features(frame=frame)
+        if self.report_type.startswith("comparison") and not self._has_same_features(
+            frame=frame
         ):
             raise ValueError(
                 "Cannot use wide format when estimators have different features. "
@@ -201,6 +318,8 @@ class CoefficientsDisplay(DisplayMixin):
         *,
         include_intercept: bool = True,
         subplot_by: Literal["auto", "estimator", "label", "output"] | None = "auto",
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = "descending",
     ) -> None:
         """Plot the coefficients for the different features.
 
@@ -217,6 +336,27 @@ class CoefficientsDisplay(DisplayMixin):
               regression problem;
             - when comparing estimators for which the input features are different.
 
+        select_k : int, default=None
+            Select features based on absolute coefficient values:
+
+            - Positive values: select the `select_k` features with largest absolute
+              coefficients
+            - Negative values: select the `-select_k` features with smallest absolute
+              coefficients
+
+            Selection is performed independently within each group as described in
+            the `frame` method.
+
+        sorting_order : {"descending", "ascending", None}, default="descending"
+            Sort features by absolute coefficient values:
+
+            - "descending": largest absolute values first
+            - "ascending": smallest absolute values first
+            - None: preserve original order
+
+            Can be used independently of `select_k`. Sorting is performed within the
+            same groups as selection.
+
         Examples
         --------
         >>> from sklearn.datasets import load_iris
@@ -229,47 +369,56 @@ class CoefficientsDisplay(DisplayMixin):
         ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
         ... )
         >>> report = EstimatorReport(LogisticRegression(), **split_data)
-        >>> display = report.feature_importance.coefficients()
+        >>> display = report.inspection.coefficients()
         >>> display.plot()
         """
-        return self._plot(include_intercept=include_intercept, subplot_by=subplot_by)
+        return self._plot(
+            include_intercept=include_intercept,
+            subplot_by=subplot_by,
+            select_k=select_k,
+            sorting_order=sorting_order,
+        )
 
     def _plot_matplotlib(
         self,
         *,
         include_intercept: bool = True,
         subplot_by: Literal["estimator", "label", "output"] | None = None,
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = "descending",
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
-        # make copy of the dictionary since we are going to pop some keys later
+        frame = self.frame(
+            include_intercept=include_intercept,
+            select_k=select_k,
+            sorting_order=sorting_order,
+            format="long",
+        )
+
+        # Make copy of the dictionary since we are going to pop some keys later
         barplot_kwargs = self._default_barplot_kwargs.copy()
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
 
-        if self.report_type in ("estimator", "cross-validation"):
-            return self._plot_single_estimator(
-                frame=self.frame(include_intercept=include_intercept, format="long"),
-                estimator_name=self.coefficients["estimator"][0],
-                report_type=self.report_type,
-                subplot_by=subplot_by,
-                barplot_kwargs=barplot_kwargs,
-                boxplot_kwargs=boxplot_kwargs,
-                stripplot_kwargs=stripplot_kwargs,
-            )
-        elif self.report_type in (
-            "comparison-estimator",
-            "comparison-cross-validation",
-        ):
+        if "comparison" in self.report_type:
             return self._plot_comparison(
-                frame=self.frame(include_intercept=include_intercept, format="long"),
+                frame=frame,
                 report_type=self.report_type,
                 subplot_by=subplot_by,
                 barplot_kwargs=barplot_kwargs,
                 boxplot_kwargs=boxplot_kwargs,
                 stripplot_kwargs=stripplot_kwargs,
             )
-        else:
-            raise TypeError(f"Unexpected report type: {self.report_type!r}")
+        # EstimatorReport or CrossValidationReport
+        return self._plot_single_estimator(
+            frame=frame,
+            estimator_name=self.coefficients["estimator"][0],
+            report_type=self.report_type,
+            subplot_by=subplot_by,
+            barplot_kwargs=barplot_kwargs,
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
+        )
 
     @staticmethod
     def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
@@ -530,7 +679,7 @@ class CoefficientsDisplay(DisplayMixin):
             report_type=report_type,
             hue=hue,
             col=col,
-            barplot_kwargs=barplot_kwargs,
+            barplot_kwargs={"sharey": has_same_features} | barplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
         )

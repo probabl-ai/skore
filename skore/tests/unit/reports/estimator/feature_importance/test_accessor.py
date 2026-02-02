@@ -6,12 +6,12 @@ def test_feature_importance_help(capsys, linear_regression_with_test):
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    report.feature_importance.help()
+    report.inspection.help()
     captured = capsys.readouterr()
-    assert "Available feature importance methods" in captured.out
+    assert "Available model inspection methods" in captured.out
     assert "coefficients" in captured.out
 
-    report.feature_importance.coefficients().help()
+    report.inspection.coefficients().help()
     captured = capsys.readouterr()
     assert "frame" in captured.out
     assert "plot" in captured.out
@@ -23,6 +23,6 @@ def test_feature_importance_repr(linear_regression_with_test):
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    repr_str = repr(report.feature_importance)
-    assert "skore.EstimatorReport.feature_importance" in repr_str
+    repr_str = repr(report.inspection)
+    assert "skore.EstimatorReport.inspection" in repr_str
     assert "help()" in repr_str

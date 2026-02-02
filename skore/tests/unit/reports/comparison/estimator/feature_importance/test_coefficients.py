@@ -33,8 +33,8 @@ def test_with_model_exposing_coef(regression_train_test_split, estimator):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    assert hasattr(report.feature_importance, "coefficients")
-    display = report.feature_importance.coefficients()
+    assert hasattr(report.inspection, "coefficients")
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
 
@@ -57,7 +57,7 @@ def test_with_model_not_exposing_coef(regression_train_test_split):
         y_test=y_test,
     )
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    assert not hasattr(report.feature_importance, "coefficients")
+    assert not hasattr(report.inspection, "coefficients")
 
 
 def test_with_mixed_reports(regression_train_test_split):
@@ -78,4 +78,4 @@ def test_with_mixed_reports(regression_train_test_split):
         y_test=y_test,
     )
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    assert not hasattr(report.feature_importance, "coefficients")
+    assert not hasattr(report.inspection, "coefficients")
