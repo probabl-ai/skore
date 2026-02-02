@@ -47,8 +47,11 @@ Project Management
      - Main class for managing a skore project and its reports
 
 
-Display Classes - Data
-^^^^^^^^^^^^^^^^^^^^^^
+Display Classes
+^^^^^^^^^^^^^^^
+
+Data
+""""
 
 .. list-table::
    :widths: 30 70
@@ -57,8 +60,8 @@ Display Classes - Data
      - Display for tabular data reports
 
 
-Display Classes - Metrics
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Metrics
+"""""""
 
 .. list-table::
    :widths: 30 70
@@ -75,8 +78,8 @@ Display Classes - Metrics
      - Prediction error visualization
 
 
-Display Classes - Inspection
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Inspection
+""""""""""
 
 .. list-table::
    :widths: 30 70
@@ -87,8 +90,8 @@ Display Classes - Inspection
      - Display for permutation feature importance
 
 
-Display Classes - General
-^^^^^^^^^^^^^^^^^^^^^^^^^
+General
+"""""""
 
 .. list-table::
    :widths: 30 70
