@@ -295,7 +295,7 @@ pd.concat(
 # sphinx_gallery_end_ignore
 
 final_coefficients = final_report.inspection.coefficients()
-final_top_15_features = final_coefficients.frame(select_k=15)["feature"]
+final_top_15_features = final_coefficients.frame(select_k=15, format="long")["feature"]
 
 simple_coefficients = simple_cv_report.inspection.coefficients()
 cv_top_15_features = (

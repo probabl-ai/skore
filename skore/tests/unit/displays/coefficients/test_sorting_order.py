@@ -1,14 +1,11 @@
 import pytest
-from sklearn.base import clone
-
-from skore import ComparisonReport, EstimatorReport
 
 
 @pytest.mark.parametrize("sorting_order", ["descending", "ascending"])
 def test(comparison_report, sorting_order):
     """`sorting_order` sorts per estimator."""
     frame = comparison_report.inspection.coefficients().frame(
-        sorting_order=sorting_order
+        sorting_order=sorting_order, format="long"
     )
 
     for estimator in set(frame["estimator"]):
