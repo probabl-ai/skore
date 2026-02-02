@@ -5,10 +5,16 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from threading import RLock
 from time import sleep
+from typing import cast
 from urllib.parse import urljoin
 from webbrowser import open as open_webbrowser
 
 from httpx import HTTPStatusError, TimeoutException
+from rich.align import Align
+from rich.console import Group
+from rich.live import Live
+from rich.panel import Panel
+from rich.text import Text
 
 from skore_hub_project import console
 from skore_hub_project.authentication.uri import URI
@@ -196,16 +202,27 @@ class Token:
     Refresh the token on-the-fly if necessary.
     """
 
-    def __init__(self, *, timeout: int = 600) -> None:
+    def __init__(self, *, timeout: int = 600, live: Live | None = None) -> None:
         url, device_code, user_code = get_oauth_device_login()
-
-        console.print(
-            (
-                f"Opening browser for interactive authentication; "
-                f"if this fails, please visit:\n{url}"
+        panel = Panel(
+            Align.center(
+                "[b]API key not detected.[/b]\n\n"
+                "Starting interactive authentication for the session.\n"
+                "[i]We recommend that you set up an API key via url (coming soon) and "
+                "use it to log in.[/i]\n\n"
+                "Opening browser for interactive authentication; if this fails, "
+                f"please visit:\n[link={url}]{url}[/link]"
             ),
-            soft_wrap=True,
+            title="[cyan]Login to [bold]Skore Hub",
+            border_style="cyan",
+            padding=1,
         )
+
+        if live:
+            live.update(panel)
+            live.refresh()
+        else:
+            console.print(panel, soft_wrap=True)
 
         open_webbrowser(url)
 

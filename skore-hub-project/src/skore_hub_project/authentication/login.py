@@ -4,6 +4,7 @@ from collections.abc import Callable
 from logging import getLogger
 
 from rich.align import Align
+from rich.live import Live
 from rich.panel import Panel
 
 from skore_hub_project import console
@@ -31,8 +32,8 @@ def login(*, timeout: int = 600) -> None:
         logger.debug(f"Already logged in {URI} with {type(credentials)}.")
         console.print(
             Panel(
-                Align.center("[blink]Already logged in."),
-                title="[cyan]Login to [bold]Skore Hub",
+                Align.center("Already logged in."),
+                title="[cyan]Login to [b]Skore Hub",
                 border_style="cyan",
                 padding=1,
             )
@@ -43,36 +44,25 @@ def login(*, timeout: int = 600) -> None:
     try:
         credentials = APIKey()
     except KeyError:
-        console.print(
-            Panel(
-                Align.center(
-                    "Falling back to interactive authentication for the session.\n"
-                    "We recommend that you set up an API key via [url](coming soon) "
-                    "and use it to log in."
-                ),
-                title="[cyan]Login to [bold]Skore Hub",
-                subtitle="[dark_orange bold]API key not detected",
-                border_style="dark_orange",
-                padding=1,
-            )
-        )
+        with Live(console=console, auto_refresh=False) as live:
+            credentials = Token(timeout=timeout, live=live)
 
-        credentials = Token(timeout=timeout)
-
-        console.print(
-            Panel(
-                Align.center("[blink]Login successful."),
-                title="[cyan]Login to [b]Skore Hub",
-                border_style="cyan",
-                padding=1,
+            live.update(
+                Panel(
+                    Align.center(
+                        "Login successful using [b]interactive authentication."
+                    ),
+                    title="[cyan]Login to [bold]Skore Hub",
+                    border_style="cyan",
+                    padding=1,
+                )
             )
-        )
+            live.refresh()
     else:
         console.print(
             Panel(
-                Align.center("[blink]Login successful."),
+                Align.center("Login successful using [b]API key."),
                 title="[cyan]Login to [bold]Skore Hub",
-                subtitle="[cyan bold]API key detected",
                 border_style="cyan",
                 padding=1,
             )
