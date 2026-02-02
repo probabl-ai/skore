@@ -19,7 +19,7 @@ ML Assistance Functions
 
 .. list-table::
    :widths: 30 70
-    
+
    * - :func:`train_test_split`
      - Split arrays or matrices into random train and test subsets
 
@@ -126,7 +126,8 @@ Utilities
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
 
-   Managing a project <project>
    ML Assistance <report/index>
+   Managing a project <project>
    Utilities <utils>
