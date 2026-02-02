@@ -105,6 +105,18 @@ class TestProject:
             "workspace": "<workspace>",
         }
 
+    def test_init_local_unknown_plugin(self, monkeypatch, tmp_path):
+        monkeypatch.undo()
+        monkeypatch.setattr(
+            "skore.project.project.entry_points", lambda **kwargs: EntryPoints([])
+        )
+
+        with raises(
+            ValueError,
+            match=escape("Unknown mode `local`. Please install `skore[local]`."),
+        ):
+            Project("<name>")
+
     def test_init_hub(self, FakeHubProject):
         project = Project("hub://<workspace>/<name>")
 
@@ -118,35 +130,17 @@ class TestProject:
             "name": "<name>",
         }
 
-    def test_init_exception_no_plugin(self, monkeypatch, tmp_path):
+    def test_init_hub_unknown_plugin(self, monkeypatch, tmp_path):
         monkeypatch.undo()
         monkeypatch.setattr(
-            "skore.project.project.entry_points", lambda **kwargs: EntryPoints()
-        )
-
-        with raises(SystemError, match="No project plugin found"):
-            Project("<project>")
-
-    def test_init_exception_unknown_plugin(self, monkeypatch, tmp_path):
-        monkeypatch.undo()
-        monkeypatch.setattr(
-            "skore.project.project.entry_points",
-            lambda **kwargs: EntryPoints(
-                [
-                    EntryPoint(
-                        "hub",
-                        f"{__file__}.FakeHubProject",
-                        "skore.plugins.project",
-                    )
-                ]
-            ),
+            "skore.project.project.entry_points", lambda **kwargs: EntryPoints([])
         )
 
         with raises(
             ValueError,
-            match=escape("Unknown mode `local`. Please install `skore[local]`."),
+            match=escape("Unknown mode `hub`. Please install `skore[hub]`."),
         ):
-            Project("<name>")
+            Project("hub://<workspace>/<name>")
 
     def test_init_exception_wrong_ml_task(self, monkeypatch):
         """If the underlying Project implementation contains reports with

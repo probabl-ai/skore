@@ -38,7 +38,7 @@ class Project:
 
     In this mode, you must have an account to the ``skore hub`` and must be
     authorized to the specified workspace. You must also be authenticated beforehand,
-    using the ``skore-hub-login`` CLI.
+    by calling the ``skore.login()`` function at the top of your script.
 
     .. rubric:: Local mode
 
@@ -144,9 +144,7 @@ class Project:
 
     @staticmethod
     def __setup_plugin(name: str) -> tuple[Literal["local", "hub"], str, Any, dict]:
-        if not (PLUGINS := entry_points(group="skore.plugins.project")):
-            raise SystemError("No project plugin found, please install at least one.")
-
+        PLUGINS = entry_points(group="skore.plugins.project")
         mode: Literal["local", "hub"]
 
         if match := re.match(Project.__HUB_NAME_PATTERN, name):
