@@ -78,7 +78,6 @@
 
 
 
-
 .. dropdown:: CrossValidationReport accessors
    :icon: chevron-down
 
@@ -152,7 +151,6 @@
 
 
 
-
 .. dropdown:: ComparisonReport accessors
    :icon: chevron-down
 
@@ -214,6 +212,5 @@
 
       * - :func:`~ComparisonReport.inspection.coefficients`
         - Retrieve the coefficients for each report, including the intercepts
-
 
 

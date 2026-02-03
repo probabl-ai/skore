@@ -11,5 +11,4 @@
         - {{ method_doc }}
 {% endfor %}
 {% endfor %}
-
 {% endfor %}

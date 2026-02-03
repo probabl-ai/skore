@@ -8,7 +8,7 @@ dropdown tables with accessor methods during the build process using a Jinja tem
 
 import inspect
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader
 from sphinx.application import Sphinx
@@ -17,7 +17,7 @@ from sphinx.util import logging
 logger = logging.getLogger(__name__)
 
 
-def get_accessor_methods(cls: type, accessor_name: str) -> List[Tuple[str, str]]:
+def get_accessor_methods(cls: type, accessor_name: str) -> list[tuple[str, str]]:
     """
     Get methods from an accessor by introspecting the accessor class.
 
@@ -28,70 +28,51 @@ def get_accessor_methods(cls: type, accessor_name: str) -> List[Tuple[str, str]]
     Returns:
         List of (method_name, description) tuples
     """
-    try:
-        # Get the accessor descriptor/class
-        accessor_cls = getattr(cls, accessor_name)
+    accessor_cls = getattr(cls, accessor_name)
 
-        # It could be a property or a descriptor class
-        if isinstance(accessor_cls, property):
-            # It's a property, get the return type from fget
-            fget = accessor_cls.fget
-            if fget is None:
-                return []
-
-            sig = inspect.signature(fget)
-            return_annotation = sig.return_annotation
-
-            if return_annotation == inspect.Signature.empty:
-                logger.debug(f"No return annotation for {cls.__name__}.{accessor_name}")
-                return []
-
-            accessor_cls = return_annotation
-        elif inspect.isclass(accessor_cls):
-            # It's already a class (descriptor pattern)
-            pass
-        else:
-            logger.debug(f"Unknown accessor type for {cls.__name__}.{accessor_name}: {type(accessor_cls)}")
+    if inspect.isclass(accessor_cls):
+        # Already a class
+        pass
+    elif isinstance(accessor_cls, property):
+        if accessor_cls.fget is None:
             return []
 
-        # Get public methods from the accessor class
-        methods = []
-        for name in dir(accessor_cls):
-            if name.startswith('_'):
-                continue
-            if name == 'help':
-                continue  # Skip help method
+        sig = inspect.signature(accessor_cls.fget)
 
-            try:
-                attr = getattr(accessor_cls, name)
-                if not callable(attr):
-                    continue
+        if sig.return_annotation == inspect.Signature.empty:
+            logger.debug(f"No return annotation for {cls.__name__}.{accessor_name}")
+            return []
 
-                # Get the docstring
-                doc = getattr(attr, '__doc__', '')
-                if doc:
-                    # Extract first line, clean it up
-                    first_line = doc.strip().split('\n')[0].strip()
-                    # Remove any leading/trailing periods or extra whitespace
-                    doc = first_line.rstrip('.')
-                else:
-                    doc = ''
-
-                methods.append((name, doc))
-            except Exception as e:
-                logger.debug(f"Error introspecting {name}: {e}")
-                continue
-
-        return sorted(methods)
-
-    except Exception as e:
-        logger.warning(f"Error getting methods for {cls.__name__}.{accessor_name}: {e}")
+        accessor_cls = sig.return_annotation
+    else:
+        logger.debug(
+            f"Unknown accessor type for {cls.__name__}.{accessor_name}: {type(accessor_cls)}"
+        )
         return []
 
+    methods = []
+    for name in dir(accessor_cls):
+        if name.startswith("_"):
+            continue
+        if name == "help":
+            continue  # Skip help method
 
-def get_accessor_data(
-    class_name: str, accessor_config: Dict[str, Any], cls: type
-) -> Dict[str, Any]:
+        attr = getattr(accessor_cls, name)
+
+        if not callable(attr):
+            continue
+
+        doc = getattr(attr, "__doc__", "")
+        if doc:
+            first_line = doc.strip().split("\n")[0].strip()
+            doc = first_line.rstrip(".")
+
+        methods.append((name, doc))
+
+    return sorted(methods)
+
+
+def get_accessor_data(accessor_config: dict[str, Any], cls: type) -> dict[str, Any]:
     """
     Get accessor data for template rendering.
 
@@ -105,18 +86,14 @@ def get_accessor_data(
     """
     accessors = {}
 
-    for accessor_key, accessor_info in accessor_config.items():
-        accessor_name = accessor_info['name']
-        methods = get_accessor_methods(cls, accessor_name)
+    for accessor_info in accessor_config.values():
+        accessor_name = accessor_info["name"]
+        methods = get_accessor_methods(cls, accessor_name) or [
+            ("(no public methods)", "")
+        ]
+        accessors[accessor_name] = {"methods": methods}
 
-        accessors[accessor_name] = {
-            'methods': methods if methods else [('(no public methods)', '')]
-        }
-
-    return {
-        'name': class_name,
-        'accessors': accessors
-    }
+    return {"name": cls.__name__, "accessors": accessors}
 
 
 def generate_accessor_tables(app: Sphinx, config: Any) -> None:
@@ -129,56 +106,45 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
     classes_to_process = config.accessor_summary_classes
 
     if not classes_to_process:
-        return
+        raise ValueError("accessor_summary_classes not found")
 
     logger.info("Generating accessor summary tables...")
 
-    # Collect data for all classes
     classes_data = []
 
     for class_path in classes_to_process:
-        try:
-            # Import the class
-            module_name, class_name = class_path.rsplit('.', 1)
-            module = __import__(module_name, fromlist=[class_name])
-            cls = getattr(module, class_name)
+        module_name, class_name = class_path.rsplit(".", 1)
+        module = __import__(module_name, fromlist=[class_name])
+        cls = getattr(module, class_name)
 
-            # Check if class has _ACCESSOR_CONFIG
-            if not hasattr(cls, '_ACCESSOR_CONFIG'):
-                logger.warning(f"{class_path} does not have _ACCESSOR_CONFIG")
-                continue
+        if not hasattr(cls, "_ACCESSOR_CONFIG"):
+            raise ValueError(f"{cls} has no attribute '_ACCESSOR_CONFIG'.")
 
-            accessor_config = cls._ACCESSOR_CONFIG
+        accessor_config = cls._ACCESSOR_CONFIG
 
-            # Get accessor data
-            class_data = get_accessor_data(class_name, accessor_config, cls)
-            classes_data.append(class_data)
+        class_data = get_accessor_data(accessor_config, cls)
+        classes_data.append(class_data)
 
-            logger.info(f"Collected accessor data for {class_name}")
+        logger.info(f"Collected accessor data for {class_name}")
 
-        except Exception as e:
-            logger.error(f"Failed to process {class_path}: {e}", exc_info=True)
+    template_dir = Path(app.confdir) / "_templates"
+    env = Environment(loader=FileSystemLoader(str(template_dir)))
+    template = env.get_template("accessor_summary.rst")
 
-    # Render using Jinja template
-    if classes_data:
-        template_dir = Path(app.confdir) / '_templates'
-        env = Environment(loader=FileSystemLoader(str(template_dir)))
-        template = env.get_template('accessor_summary.rst')
+    rst_content = template.render(classes=classes_data)
 
-        rst_content = template.render(classes=classes_data)
-
-        output_path = Path(app.srcdir) / 'reference' / '_accessor_tables.rst'
-        output_path.write_text(rst_content)
-        logger.info(f"Wrote accessor tables to {output_path}")
+    output_path = Path(app.srcdir) / "reference" / "_accessor_tables.rst"
+    output_path.write_text(rst_content)
+    logger.info(f"Wrote accessor tables to {output_path}")
 
 
-def setup(app: Sphinx) -> Dict[str, Any]:
+def setup(app: Sphinx) -> dict[str, Any]:
     """Setup the extension."""
-    app.add_config_value('accessor_summary_classes', [], 'html')
-    app.connect('config-inited', generate_accessor_tables)
+    app.add_config_value("accessor_summary_classes", [], "html")
+    app.connect("config-inited", generate_accessor_tables)
 
     return {
-        'version': '0.1',
-        'parallel_read_safe': True,
-        'parallel_write_safe': True,
+        "version": "0.1",
+        "parallel_read_safe": True,
+        "parallel_write_safe": True,
     }
