@@ -133,7 +133,8 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
 
     rst_content = template.render(classes=classes_data)
 
-    output_path = Path(app.srcdir) / "reference" / "_accessor_tables.rst"
+    (Path(app.srcdir) / "reference" / "api").mkdir(exist_ok=True)
+    output_path = Path(app.srcdir) / "reference" / "api" / "accessor_tables.rst"
     output_path.write_text(rst_content)
     logger.info(f"Wrote accessor tables to {output_path}")
 
