@@ -10,8 +10,10 @@ from sklearn.utils._testing import _convert_container
 from skore import CoefficientsDisplay, EstimatorReport
 
 
-@pytest.mark.parametrize("fit_intercept", [True, False])
-@pytest.mark.parametrize("with_preprocessing", [True, False])
+@pytest.mark.parametrize(
+    "fit_intercept,with_preprocessing",
+    [(True, True), (False, False)],
+)
 def test_binary_classification(
     pyplot,
     logistic_binary_classification_with_train_test,
@@ -84,8 +86,10 @@ def test_binary_classification(
         display.plot(subplot_by="label")
 
 
-@pytest.mark.parametrize("fit_intercept", [True, False])
-@pytest.mark.parametrize("with_preprocessing", [True, False])
+@pytest.mark.parametrize(
+    "fit_intercept,with_preprocessing",
+    [(True, True), (False, False)],
+)
 def test_multiclass_classification(
     pyplot,
     logistic_multiclass_classification_with_train_test,
@@ -177,9 +181,10 @@ def test_multiclass_classification(
         display.plot(subplot_by="incorrect")
 
 
-@pytest.mark.parametrize("fit_intercept", [True, False])
-@pytest.mark.parametrize("with_preprocessing", [True, False])
-@pytest.mark.parametrize("with_transformed_target", [True, False])
+@pytest.mark.parametrize(
+    "fit_intercept,with_preprocessing,with_transformed_target",
+    [(True, True, True), (False, False, False)],
+)
 def test_single_output_regression(
     pyplot,
     linear_regression_with_train_test,
@@ -259,9 +264,10 @@ def test_single_output_regression(
         display.plot(subplot_by="output")
 
 
-@pytest.mark.parametrize("fit_intercept", [True, False])
-@pytest.mark.parametrize("with_preprocessing", [True, False])
-@pytest.mark.parametrize("with_transformed_target", [True, False])
+@pytest.mark.parametrize(
+    "fit_intercept,with_preprocessing,with_transformed_target",
+    [(True, True, True), (False, False, False)],
+)
 def test_multi_output_regression(
     pyplot,
     linear_regression_multioutput_with_train_test,

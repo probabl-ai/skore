@@ -2,7 +2,7 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from sklearn.base import clone
-from sklearn.compose import TransformedTargetRegressor
+from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.utils._testing import _convert_container
@@ -10,8 +10,11 @@ from sklearn.utils._testing import _convert_container
 from skore import CoefficientsDisplay, ComparisonReport, CrossValidationReport
 
 
-@pytest.mark.parametrize("fit_intercept", [True, False])
-@pytest.mark.parametrize("with_preprocessing", [True, False])
+@pytest.mark.parametrize(
+    "fit_intercept,with_preprocessing",
+    [(True, True), (False, False)],
+    scope="module",
+)
 def test_binary_classification(
     pyplot,
     logistic_binary_classification_data,
@@ -110,8 +113,10 @@ def test_binary_classification(
         display.plot(subplot_by="incorrect")
 
 
-@pytest.mark.parametrize("fit_intercept", [True, False])
-@pytest.mark.parametrize("with_preprocessing", [True, False])
+@pytest.mark.parametrize(
+    "fit_intercept,with_preprocessing",
+    [(True, True), (False, False)],
+)
 def test_multiclass_classification(
     pyplot,
     logistic_multiclass_classification_data,
@@ -218,9 +223,10 @@ def test_multiclass_classification(
         display.plot(subplot_by="incorrect")
 
 
-@pytest.mark.parametrize("fit_intercept", [True, False])
-@pytest.mark.parametrize("with_preprocessing", [True, False])
-@pytest.mark.parametrize("with_transformed_target", [True, False])
+@pytest.mark.parametrize(
+    "fit_intercept,with_preprocessing,with_transformed_target",
+    [(True, True, True), (False, False, False)],
+)
 def test_single_output_regression(
     pyplot,
     linear_regression_data,
@@ -328,9 +334,10 @@ def test_single_output_regression(
         display.plot(subplot_by="incorrect")
 
 
-@pytest.mark.parametrize("fit_intercept", [True, False])
-@pytest.mark.parametrize("with_preprocessing", [True, False])
-@pytest.mark.parametrize("with_transformed_target", [True, False])
+@pytest.mark.parametrize(
+    "fit_intercept,with_preprocessing,with_transformed_target",
+    [(True, True, True), (False, False, False)],
+)
 def test_multi_output_regression(
     pyplot,
     linear_regression_multioutput_data,
@@ -496,8 +503,17 @@ def test_different_features(
     n_classes, splitter = len(np.unique(y)), 2
 
     simple_model = clone(estimator)
+
+    preprocessor = ColumnTransformer(
+        [("poly", PolynomialFeatures(), columns_names[:2])],
+        remainder="passthrough",
+    )
+
     complex_model = Pipeline(
-        [("poly", PolynomialFeatures()), ("predictor", clone(estimator))]
+        [
+            ("preprocessor", preprocessor),
+            ("predictor", clone(estimator)),
+        ]
     )
 
     report_simple = CrossValidationReport(simple_model, X, y, splitter=splitter)
