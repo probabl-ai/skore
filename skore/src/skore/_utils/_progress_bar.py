@@ -15,6 +15,11 @@ T = TypeVar("T")
 DescriptionType = str | Callable[..., str]
 
 
+class ProgressInfo:
+    def __init__(self):
+
+
+
 def progress_decorator(
     description: DescriptionType,
 ) -> Callable[[Callable[..., T]], Callable[..., T]]:
@@ -48,7 +53,7 @@ def progress_decorator(
 
             created_progress = False
 
-            if getattr(self_obj, "_progress_info", None) is not None:
+            if hasattr(self_obj, "_progress_info"):
                 progress = self_obj._progress_info["current_progress"]
             else:
                 progress = Progress(
@@ -97,6 +102,15 @@ def progress_decorator(
                             task, completed=progress.tasks[task].total, refresh=True
                         )
                     progress.stop()
+
+                # the problem:
+                # in multithread, 2 threads can work on the same progress
+                # the first will delete the progress, before the second finishes
+                # -> thread-safety issue
+                # the solutions:
+                # either we create one progress per thread
+                # or we don't delete the progress here, but we delete it in __reduce__
+                # or we don't do anything when show_progress=False
 
                 # clean up child reports
                 for report in reports_to_cleanup:

@@ -9,6 +9,7 @@ from typing import ClassVar, Generic, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
+from skore import config_context as set_skore_config
 
 from skore_hub_project import switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media
@@ -110,6 +111,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         metrics = [metric_cls(report=self.report) for metric_cls in self.METRICS]
 
         with (
+            set_skore_config(show_progress=False),
             switch_mpl_backend(),
             SkinnedProgress() as progress,
             ThreadPoolExecutor() as pool,
