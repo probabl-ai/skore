@@ -1,14 +1,16 @@
 """
-Sphinx extension to automatically generate accessor method tables.
+Sphinx extension to automatically generate accessor method tables using Jinja templates.
 
 This extension adds a config value `accessor_summary_classes` which should be a list
 of class names to generate accessor summaries for. It automatically generates the
-dropdown tables with accessor methods during the build process.
+dropdown tables with accessor methods during the build process using a Jinja template.
 """
 
 import inspect
+from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+from jinja2 import Environment, FileSystemLoader
 from sphinx.application import Sphinx
 from sphinx.util import logging
 
@@ -87,11 +89,11 @@ def get_accessor_methods(cls: type, accessor_name: str) -> List[Tuple[str, str]]
         return []
 
 
-def generate_accessor_table_rst(
+def get_accessor_data(
     class_name: str, accessor_config: Dict[str, Any], cls: type
-) -> str:
+) -> Dict[str, Any]:
     """
-    Generate RST content for accessor tables.
+    Get accessor data for template rendering.
 
     Args:
         class_name: Short class name (e.g., 'EstimatorReport')
@@ -99,48 +101,31 @@ def generate_accessor_table_rst(
         cls: The actual class object
 
     Returns:
-        RST content as a string
+        Dictionary with accessor data for template
     """
-    rst_lines = []
-    rst_lines.append(f".. dropdown:: {class_name} accessors")
-    rst_lines.append("   :icon: chevron-down")
-    rst_lines.append("")
+    accessors = {}
 
     for accessor_key, accessor_info in accessor_config.items():
         accessor_name = accessor_info['name']
-        accessor_full_name = f"{class_name}.{accessor_name}"
-
-        rst_lines.append(f"   **{accessor_name.capitalize()}**: :class:`{accessor_full_name}`")
-        rst_lines.append("")
-        rst_lines.append("   .. list-table::")
-        rst_lines.append("      :widths: 30 70")
-        rst_lines.append("")
-
-        # Get accessor methods
         methods = get_accessor_methods(cls, accessor_name)
 
-        if methods:
-            for method_name, method_doc in methods:
-                rst_lines.append(f"      * - :func:`~{accessor_full_name}.{method_name}`")
-                rst_lines.append(f"        - {method_doc}")
-        else:
-            rst_lines.append("      * - (no public methods)")
-            rst_lines.append("        -")
+        accessors[accessor_name] = {
+            'methods': methods if methods else [('(no public methods)', '')]
+        }
 
-        rst_lines.append("")
-
-    return '\n'.join(rst_lines)
+    return {
+        'name': class_name,
+        'accessors': accessors
+    }
 
 
 def generate_accessor_tables(app: Sphinx, config: Any) -> None:
     """
-    Generate accessor table RST files during config-inited event.
+    Generate accessor table RST files using Jinja template during config-inited event.
 
     This function reads the `accessor_summary_classes` config value and generates
     RST snippets for each class that can be included in documentation.
     """
-    from pathlib import Path
-
     classes_to_process = config.accessor_summary_classes
 
     if not classes_to_process:
@@ -148,8 +133,8 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
 
     logger.info("Generating accessor summary tables...")
 
-    # Collect all RST content
-    all_rst = []
+    # Collect data for all classes
+    classes_data = []
 
     for class_path in classes_to_process:
         try:
@@ -165,20 +150,25 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
 
             accessor_config = cls._ACCESSOR_CONFIG
 
-            # Generate RST content
-            rst_content = generate_accessor_table_rst(class_name, accessor_config, cls)
-            all_rst.append(rst_content)
-            all_rst.append("")  # Add blank line between dropdowns
+            # Get accessor data
+            class_data = get_accessor_data(class_name, accessor_config, cls)
+            classes_data.append(class_data)
 
-            logger.info(f"Generated accessor table for {class_name}")
+            logger.info(f"Collected accessor data for {class_name}")
 
         except Exception as e:
             logger.error(f"Failed to process {class_path}: {e}", exc_info=True)
 
-    # Write all content to a single file
-    if all_rst:
+    # Render using Jinja template
+    if classes_data:
+        template_dir = Path(app.confdir) / '_templates'
+        env = Environment(loader=FileSystemLoader(str(template_dir)))
+        template = env.get_template('accessor_summary.rst')
+
+        rst_content = template.render(classes=classes_data)
+
         output_path = Path(app.srcdir) / 'reference' / '_accessor_tables.rst'
-        output_path.write_text('\n'.join(all_rst))
+        output_path.write_text(rst_content)
         logger.info(f"Wrote accessor tables to {output_path}")
 
 
