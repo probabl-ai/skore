@@ -155,7 +155,7 @@ def test_pipeline_with_transformer(regression_data):
     from sklearn.preprocessing import PolynomialFeatures
 
     X, y = regression_data
-    X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(5)])
+    X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(4)])
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
@@ -176,16 +176,11 @@ def test_pipeline_with_transformer(regression_data):
         "my_feature_1",
         "my_feature_2",
         "my_feature_3",
-        "my_feature_4",
         "my_feature_0 my_feature_1",
         "my_feature_0 my_feature_2",
         "my_feature_0 my_feature_3",
-        "my_feature_0 my_feature_4",
         "my_feature_1 my_feature_2",
         "my_feature_1 my_feature_3",
-        "my_feature_1 my_feature_4",
         "my_feature_2 my_feature_3",
-        "my_feature_2 my_feature_4",
-        "my_feature_3 my_feature_4",
     ]
     assert result.columns.tolist() == ["Mean decrease impurity"]

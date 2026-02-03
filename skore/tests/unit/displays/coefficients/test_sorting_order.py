@@ -37,7 +37,7 @@ def test_plot_different_features(comparison_report_different_features, sorting_o
     display.plot(sorting_order=sorting_order, select_k=25)
 
     bar_widths = [[bar.get_width() for bar in ax.patches] for ax in display.ax_]
-    assert len(bar_widths[0]) == 21
-    assert len(bar_widths[1]) == 5 + 1  # 5 features + intercept
+    assert len(bar_widths[0]) == 5
+    assert len(bar_widths[1]) == 3
     for coefs in bar_widths:
         assert coefs == sorted(coefs, key=abs, reverse=(sorting_order == "descending"))

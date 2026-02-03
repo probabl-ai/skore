@@ -14,7 +14,7 @@ def test_estimator(logistic_binary_classification_with_train_test):
 
     frame = report.inspection.coefficients().frame(select_k=3)
 
-    assert set(frame["feature"]) == {"Feature #10", "Feature #1", "Feature #15"}
+    assert set(frame["feature"]) == {"Feature #2", "Feature #3", "Feature #1"}
 
 
 def test_cross_validation(logistic_binary_classification_data):
@@ -25,8 +25,8 @@ def test_cross_validation(logistic_binary_classification_data):
     frame = report.inspection.coefficients().frame(select_k=3)
 
     assert [list(group["feature"]) for _, group in frame.groupby("split")] == [
-        ["Feature #10", "Feature #1", "Feature #15"],
-        ["Feature #10", "Feature #1", "Feature #15"],
+        ["Feature #3", "Feature #2", "Feature #1"],
+        ["Feature #3", "Feature #2", "Feature #1"],
     ]
 
 
@@ -39,7 +39,7 @@ def test_comparison_cross_validation(logistic_binary_classification_data):
 
     coefficients = report.inspection.coefficients().frame(select_k=3)
 
-    assert set(coefficients["feature"]) == {"Feature #10", "Feature #1", "Feature #15"}
+    assert set(coefficients["feature"]) == {"Feature #2", "Feature #3", "Feature #1"}
 
 
 def test_zero(comparison_report):
@@ -52,7 +52,7 @@ def test_zero(comparison_report):
 def test_negative(comparison_report):
     """If `select_k` is negative then the features are the bottom `-select_k`."""
     frame = comparison_report.inspection.coefficients().frame(select_k=-3)
-    assert set(frame["feature"]) == {"Feature #17", "Feature #16", "Feature #0"}
+    assert set(frame["feature"]) == {"Feature #0", "Intercept", "Feature #1"}
 
 
 def test_multiclass(multiclass_classification_train_test_split):
@@ -79,12 +79,12 @@ def test_multiclass(multiclass_classification_train_test_split):
         (report, int(label)): list(group["feature"])
         for (report, label), group in frame.groupby(["estimator", "label"])
     } == {
-        ("report_1", 0): ["Intercept", "Feature #7"],
-        ("report_1", 1): ["Feature #6", "Feature #8"],
-        ("report_1", 2): ["Intercept", "Feature #5"],
-        ("report_2", 0): ["Intercept", "Feature #7"],
-        ("report_2", 1): ["Feature #6", "Feature #8"],
-        ("report_2", 2): ["Intercept", "Feature #5"],
+        ("report_1", 0): ["Feature #3", "Feature #0"],
+        ("report_1", 1): ["Feature #0", "Feature #3"],
+        ("report_1", 2): ["Feature #3", "Feature #1"],
+        ("report_2", 0): ["Feature #3", "Feature #0"],
+        ("report_2", 1): ["Feature #0", "Feature #3"],
+        ("report_2", 2): ["Feature #3", "Feature #1"],
     }
 
 
@@ -96,8 +96,8 @@ def test_multi_output_regression(linear_regression_multioutput_data):
     frame = report.inspection.coefficients().frame(select_k=2)
 
     assert [list(group["feature"]) for _, group in frame.groupby("output")] == [
-        ["Feature #0", "Feature #4"],
-        ["Feature #2", "Feature #0"],
+        ["Feature #1", "Feature #0"],
+        ["Feature #0", "Feature #3"],
     ]
 
 
@@ -110,7 +110,7 @@ def test_plot(comparison_report):
     labels = [
         tick_label.get_text() for tick_label in display.ax_.get_yaxis().get_ticklabels()
     ]
-    assert labels == ["Feature #10", "Feature #1", "Feature #15"]
+    assert labels == ["Feature #3", "Feature #2", "Feature #1"]
 
 
 def test_plot_different_features(comparison_report_different_features):
@@ -125,6 +125,6 @@ def test_plot_different_features(comparison_report_different_features):
         for ax in display.ax_
     ]
     assert labels == [
-        ["Feature #10", "Feature #1", "Feature #15"],
-        ["Feature #1", "Feature #4", "Intercept"],
+        ["Feature #3", "Feature #2", "Feature #1"],
+        ["Feature #1", "Feature #0", "Intercept"],
     ]

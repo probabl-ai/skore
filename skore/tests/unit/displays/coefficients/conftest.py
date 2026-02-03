@@ -34,11 +34,11 @@ def comparison_report_different_features(binary_classification_train_test_split)
         y_train=y_train,
         y_test=y_test,
     )
-    # Limit the number of features to the first 5
+    # Limit the number of features to the first 2
     report_2 = EstimatorReport(
         LogisticRegression(),
-        X_train=X_train[:, 0:5],
-        X_test=X_test[:, 0:5],
+        X_train=X_train[:, 0:2],
+        X_test=X_test[:, 0:2],
         y_train=y_train,
         y_test=y_test,
     )

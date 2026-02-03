@@ -82,7 +82,7 @@ def pyplot():
 
 @pytest.fixture
 def binary_classification_data():
-    return make_classification(random_state=42)
+    return make_classification(random_state=42, n_features=4)
 
 
 @pytest.fixture
@@ -94,7 +94,12 @@ def binary_classification_train_test_split(binary_classification_data):
 @pytest.fixture
 def multiclass_classification_data():
     return make_classification(
-        n_classes=3, n_clusters_per_class=1, random_state=42, n_informative=10
+        n_classes=3,
+        n_clusters_per_class=1,
+        n_informative=3,
+        n_redundant=0,
+        n_features=4,
+        random_state=42,
     )
 
 
@@ -106,18 +111,18 @@ def multiclass_classification_train_test_split(multiclass_classification_data):
 
 @pytest.fixture
 def regression_data():
-    return make_regression(n_features=5, random_state=42)
+    return make_regression(n_features=4, random_state=42)
 
 
 @pytest.fixture
 def positive_regression_data():
-    X, y = make_regression(n_features=5, random_state=42)
+    X, y = make_regression(n_features=4, random_state=42)
     return X, np.abs(y) + 0.1
 
 
 @pytest.fixture
 def regression_multioutput_data():
-    return make_regression(n_targets=2, n_features=5, random_state=42)
+    return make_regression(n_targets=2, n_features=4, random_state=42)
 
 
 @pytest.fixture
