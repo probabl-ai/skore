@@ -52,7 +52,7 @@ def test_zero(comparison_report):
 def test_negative(comparison_report):
     """If `select_k` is negative then the features are the bottom `-select_k`."""
     frame = comparison_report.inspection.coefficients().frame(select_k=-3)
-    assert set(frame["feature"]) == {"Feature #0", "Intercept", "Feature #1"}
+    assert set(frame["feature"]) == {"Feature #3", "Feature #0", "Intercept"}
 
 
 def test_multiclass(multiclass_classification_train_test_split):
@@ -79,12 +79,12 @@ def test_multiclass(multiclass_classification_train_test_split):
         (report, int(label)): list(group["feature"])
         for (report, label), group in frame.groupby(["estimator", "label"])
     } == {
-        ("report_1", 0): ["Feature #3", "Feature #0"],
-        ("report_1", 1): ["Feature #0", "Feature #3"],
-        ("report_1", 2): ["Feature #3", "Feature #1"],
-        ("report_2", 0): ["Feature #3", "Feature #0"],
-        ("report_2", 1): ["Feature #0", "Feature #3"],
-        ("report_2", 2): ["Feature #3", "Feature #1"],
+        ("report_1", 0): ["Feature #3", "Feature #2"],
+        ("report_1", 1): ["Intercept", "Feature #2"],
+        ("report_1", 2): ["Feature #2", "Feature #3"],
+        ("report_2", 0): ["Feature #3", "Feature #2"],
+        ("report_2", 1): ["Intercept", "Feature #2"],
+        ("report_2", 2): ["Feature #2", "Feature #3"],
     }
 
 
@@ -110,7 +110,7 @@ def test_plot(comparison_report):
     labels = [
         tick_label.get_text() for tick_label in display.ax_.get_yaxis().get_ticklabels()
     ]
-    assert labels == ["Feature #3", "Feature #2", "Feature #1"]
+    assert labels == ["Feature #2", "Feature #1", "Feature #3"]
 
 
 def test_plot_different_features(comparison_report_different_features):
@@ -125,6 +125,6 @@ def test_plot_different_features(comparison_report_different_features):
         for ax in display.ax_
     ]
     assert labels == [
-        ["Feature #3", "Feature #2", "Feature #1"],
+        ["Feature #2", "Feature #1", "Feature #3"],
         ["Feature #1", "Feature #0", "Intercept"],
     ]

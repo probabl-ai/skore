@@ -44,7 +44,7 @@ def test_legend_multiclass_classification(
             f"±{roc_auc.std():.2f})"
         )
     assert len(legend_texts) == len(labels) + 1
-    assert "Chance level (AUC = 0.5)" in legend_texts
+    assert legend_texts[-1] == "Chance level (AUC = 0.5)"
 
 
 @pytest.mark.parametrize(
