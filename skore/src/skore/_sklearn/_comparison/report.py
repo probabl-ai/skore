@@ -19,8 +19,8 @@ from skore._utils._cache import Cache
 from skore._utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
-    from skore._sklearn._comparison.feature_importance_accessor import (
-        _FeatureImportanceAccessor,
+    from skore._sklearn._comparison.inspection_accessor import (
+        _InspectionAccessor,
     )
     from skore._sklearn._comparison.metrics_accessor import _MetricsAccessor
 
@@ -105,10 +105,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
-        "feature_importance": {"name": "feature_importance"},
+        "inspection": {"name": "inspection"},
     }
     metrics: _MetricsAccessor
-    feature_importance: _FeatureImportanceAccessor
+    inspection: _InspectionAccessor
 
     _reports_type: ReportType
 

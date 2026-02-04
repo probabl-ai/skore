@@ -41,7 +41,7 @@ def test_permutation_importance_display_barplot_kwargs(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.permutation()
+    display = report.inspection.permutation_importance()
     display.set_style(
         boxplot_kwargs={"boxprops": {"facecolor": "blue"}},
         stripplot_kwargs={"color": "red"},

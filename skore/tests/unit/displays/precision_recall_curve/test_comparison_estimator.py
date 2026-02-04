@@ -503,6 +503,39 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
             assert len(display.ax_) == expected_len
 
 
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "logistic_binary_classification_with_train_test",
+        "logistic_multiclass_classification_with_train_test",
+    ],
+)
+def test_subplot_by_data_source(fixture_name, request):
+    """Check the behaviour when `subplot_by` is `data_source`."""
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport(
+        reports={"estimator_1": report_1, "estimator_2": report_2}
+    )
+
+    display = report.metrics.precision_recall(data_source="both")
+    if "multiclass" in fixture_name:
+        err_msg = (
+            "subplot_by must be one of auto, estimator, label. "
+            "Got 'data_source' instead."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            display.plot(subplot_by="data_source")
+    else:
+        display.plot(subplot_by="data_source")
+        assert len(display.ax_) == 2
+
+
 def test_binary_classification_data_source_both(
     pyplot, logistic_binary_classification_with_train_test
 ):

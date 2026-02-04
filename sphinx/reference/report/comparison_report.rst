@@ -1,11 +1,11 @@
-Report for a comparison of :class:`EstimatorReport`
-===================================================
+Comparing multiple reports
+==========================
 
 .. currentmodule:: skore
 
 The class :class:`ComparisonReport` provides a report allowing to compare
-:class:`EstimatorReport` instances in an interactive way. The functionalities of the
-report are accessible through accessors.
+:class:`EstimatorReport` or :class:`CrossValidationReport` instances in an interactive
+way. The functionalities of the report are accessible through accessors.
 
 .. autosummary::
     :toctree: ../api/
@@ -32,7 +32,7 @@ report are accessible through accessors.
     :nosignatures:
     :template: autosummary/accessor.rst
 
-    ComparisonReport.feature_importance
+    ComparisonReport.inspection
     ComparisonReport.metrics
 
 Metrics
@@ -59,15 +59,15 @@ get the common performance metric representations.
     ComparisonReport.metrics.roc_auc
     ComparisonReport.metrics.timings
 
-Feature importance
-------------------
+Inspection
+----------
 
-The `feature_importance` accessor helps you evaluate the importance
-used to train your estimator.
+The `inspection` accessor helps you inspect your model by e.g. evaluating the importance
+of the features in your model.
 
 .. autosummary::
     :toctree: ../api/
     :template: autosummary/accessor_method.rst
 
-    ComparisonReport.feature_importance.help
-    ComparisonReport.feature_importance.coefficients
+    ComparisonReport.inspection.help
+    ComparisonReport.inspection.coefficients

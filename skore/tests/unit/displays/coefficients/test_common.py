@@ -37,7 +37,7 @@ def test_coefficients_display_barplot_kwargs(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     display.set_style(barplot_kwargs={"color": "red"}).plot()
 
     assert hasattr(display, "figure_")
@@ -57,7 +57,7 @@ def test_coefficients_display_boxplot_kwargs(pyplot):
         LogisticRegression(random_state=42), X, y, splitter=splitter
     )
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     display.set_style(
         boxplot_kwargs={"boxprops": {"facecolor": "blue"}},
         stripplot_kwargs={"color": "red"},

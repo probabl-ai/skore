@@ -52,7 +52,6 @@ test-base = [
   "pytest-randomly",
   "pytest-xdist",
   "scipy-stubs",
-  "skrub",
   "xdoctest",
 ]
 test = ["skore[test-base]", "polars", "pyarrow"]

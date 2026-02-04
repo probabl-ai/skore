@@ -1,5 +1,5 @@
-import importlib
-import sys
+from importlib import import_module
+from sys import modules
 from unittest.mock import Mock, patch
 
 from pytest import warns
@@ -14,7 +14,7 @@ def test_warning_old_joblib():
         patch("skore._config.set_config", function),
         warns(UserWarning, match="Because your version of joblib is older than 1.4"),
     ):
-        sys.modules.pop("skore", None)
-        importlib.import_module("skore")
+        modules.pop("skore", None)
+        import_module("skore")
 
     function.assert_called_with(show_progress=False)

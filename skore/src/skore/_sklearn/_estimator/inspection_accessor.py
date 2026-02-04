@@ -15,8 +15,8 @@ from sklearn.utils.validation import _num_features
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn._plot.feature_importance.coefficients import CoefficientsDisplay
-from skore._sklearn._plot.feature_importance.permutation import (
+from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
+from skore._sklearn._plot.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
 from skore._sklearn.feature_names import _get_feature_names
@@ -29,10 +29,10 @@ from skore._utils._accessor import (
 Metric = str | Callable | list[str] | tuple[str] | dict[str, Callable] | None
 
 
-class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
-    """Accessor for feature importance related operations.
+class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
+    """Accessor for model inspection related operations.
 
-    You can access this accessor using the `feature_importance` attribute.
+    You can access this accessor using the `inspection` attribute.
     """
 
     _verbose_name: str = "feature_importance"
@@ -60,20 +60,20 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, shuffle=False, as_dict=True)
         >>> regressor = Ridge()
         >>> report = EstimatorReport(regressor, **split_data)
-        >>> display = report.feature_importance.coefficients()
+        >>> display = report.inspection.coefficients()
         >>> display.frame()
                feature  coefficients
-        0    Intercept    151.4...
-        1   Feature #0     30.6...
-        2   Feature #1    -69.8...
-        3   Feature #2    254.8...
-        4   Feature #3    168.3...
-        5   Feature #4     18.3...
-        6   Feature #5    -19.5...
-        7   Feature #6   -134.6...
-        8   Feature #7    117.2...
-        9   Feature #8    242.1...
-        10  Feature #9    113.2...
+        0   Feature #2      254.8...
+        1   Feature #8      242.1...
+        2   Feature #3      168.3...
+        3    Intercept      151.4...
+        4   Feature #6     -134.6...
+        5   Feature #7      117.2...
+        6   Feature #9      113.2...
+        7   Feature #1      -69.8...
+        8   Feature #0       30.6...
+        9   Feature #5      -19.5...
+        10  Feature #4       18.3...
         >>> display.plot() # shows plot
         """
         return CoefficientsDisplay._compute_data_for_display(
@@ -84,12 +84,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         )
 
     @available_if(_check_has_feature_importances())
-    def mean_decrease_impurity(self):
+    def impurity_decrease(self):
         """Retrieve the mean decrease impurity (MDI) of a tree-based model.
 
         This method is available for estimators that expose a `feature_importances_`
         attribute. See for example
-        :attr:`sklearn.ensemble.GradientBoostingClassifier.feature_importances_`.
+        :attr:`sklearn.ensemble.GradientBoostingClassifier.inspections_`.
         In particular, note that the MDI is computed at fit time, i.e. using the
         training data.
 
@@ -103,7 +103,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> forest = RandomForestClassifier(n_estimators=5, random_state=0)
         >>> report = EstimatorReport(forest, **split_data)
-        >>> report.feature_importance.mean_decrease_impurity()
+        >>> report.inspection.impurity_decrease()
                    Mean decrease impurity
         Feature #0                0.06...
         Feature #1                0.19...
@@ -138,7 +138,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         return df
 
-    def permutation(
+    def permutation_importance(
         self,
         *,
         data_source: DataSource = "test",
@@ -252,7 +252,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = EstimatorReport(regressor, **split_data)
 
-        >>> report.feature_importance.permutation(
+        >>> report.inspection.permutation_importance(
         ...    n_repeats=2,
         ...    seed=0,
         ... ).frame(aggregate=None)
@@ -264,7 +264,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         4        test     r2  Feature #1           2  2.63...
         5        test     r2  Feature #2           2  0.02...
 
-        >>> report.feature_importance.permutation(
+        >>> report.inspection.permutation_importance(
         ...    metric=["r2", "neg_mean_squared_error"],
         ...    n_repeats=2,
         ...    seed=0,
@@ -283,7 +283,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         4        test  neg_mean_squared_error  Feature #1           2  8666.16...
         5        test  neg_mean_squared_error  Feature #2           2    74.21...
 
-        >>> report.feature_importance.permutation(
+        >>> report.inspection.permutation_importance(
         ...    n_repeats=2,
         ...    seed=0,
         ... ).frame()
@@ -297,7 +297,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> from sklearn.preprocessing import StandardScaler
         >>> pipeline = make_pipeline(StandardScaler(), Ridge())
         >>> pipeline_report = EstimatorReport(pipeline, **split_data)
-        >>> pipeline_report.feature_importance.permutation(
+        >>> pipeline_report.inspection.permutation_importance(
         ...    n_repeats=2,
         ...    seed=0,
         ...    at_step=-1,
@@ -307,7 +307,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         1        test     r2      x1    2.47...   0.22...
         2        test     r2      x2    0.02...   0.00...
 
-        >>> pipeline_report.feature_importance.permutation(
+        >>> pipeline_report.inspection.permutation_importance(
         ...    n_repeats=2,
         ...    seed=0,
         ...    at_step="ridge",
@@ -436,4 +436,4 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.EstimatorReport.feature_importance")
+        return self._rich_repr(class_name="skore.EstimatorReport.inspection")

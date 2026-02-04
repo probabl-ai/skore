@@ -35,7 +35,7 @@ def test_binary_classification(
     report_2 = CrossValidationReport(model, X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -75,7 +75,7 @@ def test_binary_classification(
 
             np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(sorting_order=None)
     expected_columns = ["estimator", "split", "feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == (["Intercept"] + columns_names) * splitter * len(
@@ -136,7 +136,7 @@ def test_multiclass_classification(
     report_2 = CrossValidationReport(model, X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -176,7 +176,7 @@ def test_multiclass_classification(
 
             np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(sorting_order=None)
     expected_columns = ["estimator", "split", "feature", "label", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["label"]).tolist() == np.unique(y).tolist()
@@ -247,7 +247,7 @@ def test_single_output_regression(
     report_2 = CrossValidationReport(model, X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -293,7 +293,7 @@ def test_single_output_regression(
 
             np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(sorting_order=None)
     expected_columns = ["estimator", "split", "feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == (["Intercept"] + columns_names) * splitter * len(
@@ -358,7 +358,7 @@ def test_multi_output_regression(
     report_2 = CrossValidationReport(model, X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
     expected_columns = [
@@ -407,7 +407,7 @@ def test_multi_output_regression(
 
             np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame()
+    df = display.frame(sorting_order=None)
     expected_columns = ["estimator", "split", "feature", "output", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["output"]).tolist() == [f"{i}" for i in range(n_outputs)]
@@ -473,7 +473,7 @@ def test_subplot_by_none_multiclass_or_multioutput(
     report_2 = CrossValidationReport(clone(estimator), X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
 
     err_msg = (
         "There are multiple labels or outputs and `subplot_by` is `None`. "
@@ -506,10 +506,10 @@ def test_different_features(
         reports={"report_simple": report_simple, "report_complex": report_complex}
     )
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
-    df = display.frame()
+    df = display.frame(sorting_order=None)
     expected_features = ["Intercept"] + report_simple.estimator_reports_[
         0
     ].estimator_.feature_names_in_.tolist()
@@ -561,7 +561,7 @@ def test_include_intercept(
     report_2 = CrossValidationReport(clone(estimator), X, y, splitter=splitter)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    display = report.feature_importance.coefficients()
+    display = report.inspection.coefficients()
 
     assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
 
