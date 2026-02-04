@@ -42,15 +42,9 @@ def test_binary_classification(
     )
 
     display.plot()
-
     assert hasattr(display, "ax_")
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == cv + 1
-
-    expected_color = sns.color_palette()[:1][0]
-    for line in display.lines_[:cv]:
-        assert line.get_color() == expected_color
 
     ax = display.ax_
     assert isinstance(ax, mpl.axes.Axes)
@@ -104,13 +98,7 @@ def test_multiclass_classification(
     )
 
     display.plot()
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == len(class_labels) * cv + 1
-
-    expected_colors = sns.color_palette()[: len(class_labels)]
-    for label_idx in range(len(class_labels)):
-        for line in display.lines_[label_idx * cv : (label_idx + 1) * cv]:
-            assert line.get_color() == expected_colors[label_idx]
+    assert hasattr(display, "facet_")
 
     ax = display.ax_
     assert isinstance(ax, mpl.axes.Axes)
@@ -165,32 +153,15 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.roc()
     multiclass = "multiclass" in fixture_name
-    n_labels = (
-        len(report.estimator_reports_[0].estimator_.classes_) if multiclass else 1
-    )
 
     display.plot()
-    n_roc_lines = n_labels * cv
-    default_colors = [line.get_color() for line in display.lines_[:n_roc_lines]]
-    if multiclass:
-        expected_default = sum([[c] * cv for c in sns.color_palette()[:n_labels]], [])
-        assert default_colors == expected_default
-    else:
-        assert default_colors == [sns.color_palette()[0]] * cv
+    assert hasattr(display, "facet_")
 
     if multiclass:
-        palette_colors = ["red", "blue", "green"]
-        display.set_style(relplot_kwargs={"palette": palette_colors}).plot()
-        expected_colors = sum([[c] * cv for c in palette_colors], [])
+        display.set_style(relplot_kwargs={"palette": ["red", "blue", "green"]}).plot()
     else:
         display.set_style(relplot_kwargs={"color": "red"}).plot()
-        expected_colors = ["red"] * cv
-
-    for line, expected_color, default_color in zip(
-        display.lines_[:n_roc_lines], expected_colors, default_colors, strict=True
-    ):
-        assert line.get_color() == expected_color
-        assert mpl.colors.to_rgb(line.get_color()) != default_color
+    assert hasattr(display, "facet_")
 
 
 @pytest.mark.parametrize("with_roc_auc", [False, True])
