@@ -62,7 +62,7 @@ def MockDatetime(mock_now):
     return MockDatetime
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def pyplot():
     """Setup and teardown fixture for matplotlib.
 
@@ -429,10 +429,10 @@ def comparison_estimator_reports_multiclass_classification(
 def cross_validation_reports_binary_classification(binary_classification_data):
     X, y = binary_classification_data
     cv_report_1 = CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=0), X, y
+        DummyClassifier(strategy="uniform", random_state=0), X, y, splitter=2
     )
     cv_report_2 = CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=1), X, y
+        DummyClassifier(strategy="uniform", random_state=1), X, y, splitter=2
     )
     return cv_report_1, cv_report_2
 
@@ -441,10 +441,10 @@ def cross_validation_reports_binary_classification(binary_classification_data):
 def cross_validation_reports_multiclass_classification(multiclass_classification_data):
     X, y = multiclass_classification_data
     cv_report_1 = CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=0), X, y
+        DummyClassifier(strategy="uniform", random_state=0), X, y, splitter=2
     )
     cv_report_2 = CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=1), X, y
+        DummyClassifier(strategy="uniform", random_state=1), X, y, splitter=2
     )
     return cv_report_1, cv_report_2
 

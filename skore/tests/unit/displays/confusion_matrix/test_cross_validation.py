@@ -9,7 +9,7 @@ from sklearn.svm import SVC
 from skore import CrossValidationReport
 
 
-def test_normalization(pyplot, forest_binary_classification_data):
+def test_normalization(forest_binary_classification_data):
     """Check that normalized values are correctly computed."""
     (estimator, X, y), cv = forest_binary_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
@@ -73,7 +73,7 @@ def test_frame_default_threshold(
         assert split_frame["threshold"].iloc[0] == closest_threshold
 
 
-def test_threshold_closest_match(pyplot, forest_binary_classification_data):
+def test_threshold_closest_match(forest_binary_classification_data):
     """Check that the closest threshold is selected for data."""
     (estimator, X, y), cv = forest_binary_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
@@ -196,7 +196,7 @@ def test_split_aggregation(pyplot, forest_binary_classification_data):
         "forest_multiclass_classification_data",
     ],
 )
-def test_subplot_by(subplot_by, fixture_name, request):
+def test_subplot_by(pyplot, subplot_by, fixture_name, request):
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X=X, y=y, splitter=3)
     display = report.metrics.confusion_matrix()
