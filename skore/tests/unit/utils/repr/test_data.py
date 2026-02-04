@@ -171,20 +171,15 @@ def test_get_attribute_type(obj, attribute_name, expected):
 @pytest.mark.parametrize(
     "obj, attribute_name, expected",
     [
-        (_ClassWithNumpydocAttrs(), "coef_", "ndarray (n_features,)"),
-        (_ClassWithNumpydocAttrs(), "param", "int"),
-        (_ClassWithNoDocstring(), "coef_", None),
-        (_ClassWithNumpydocAttrs(), "other_attr", None),
+        (_ClassWithNumpydocAttrs(), "coef_", "coef_,-ndarray (n_features,)"),
+        (_ClassWithNumpydocAttrs(), "param", "param_,-int"),
+        (_ClassWithNoDocstring(), "coef_", "coef_"),
+        (_ClassWithNumpydocAttrs(), "other_attr", "other_attr"),
     ],
 )
 def test_build_attribute_text_fragment(obj, attribute_name, expected):
     """_build_attribute_text_fragment returns encoded name,-type or encoded name."""
-    got = _build_attribute_text_fragment(obj, attribute_name)
-    if expected is not None:
-        expected = f"{quote(attribute_name, safe='')},-{quote(expected, safe='')}"
-    else:
-        expected = quote(attribute_name, safe="")
-    assert got == expected
+    assert _build_attribute_text_fragment(obj, attribute_name) == expected
 
 
 @pytest.fixture
