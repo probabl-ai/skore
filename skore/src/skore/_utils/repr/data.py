@@ -391,19 +391,13 @@ class _BaseHelpDataMixin(ABC):
         if not attributes:
             return None, None
 
-        attrs_without_underscore = [a for a in attributes if not a.endswith("_")]
-        attrs_with_underscore = [a for a in attributes if a.endswith("_")]
-
         items = [
             AttributeHelp(
                 name=attr_name,
                 description=get_attribute_short_summary(self, attr_name),
-                doc_url=get_documentation_url(
-                    obj=self,
-                    attribute_name=attr_name,
-                ),
+                doc_url=get_documentation_url(obj=self, attribute_name=attr_name),
             )
-            for attr_name in attrs_without_underscore + attrs_with_underscore
+            for attr_name in attributes
         ]
         section = HelpSection(branch_id=str(uuid.uuid4()))
         return items, section
