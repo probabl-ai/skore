@@ -31,7 +31,7 @@ def test_with_model_exposing_feature_importances_classification(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     assert hasattr(report.feature_importance, "impurity_decrease")
-    display = report.feature_importance.impurity_decrease()
+    display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
 
@@ -52,7 +52,7 @@ def test_with_model_exposing_feature_importances_regression(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     assert hasattr(report.feature_importance, "impurity_decrease")
-    display = report.feature_importance.impurity_decrease()
+    display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
 

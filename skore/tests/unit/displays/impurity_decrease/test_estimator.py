@@ -35,7 +35,7 @@ def test_binary_classification(
         model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.impurity_decrease()
+    display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
     expected_columns = ["estimator", "feature", "importances"]
@@ -92,7 +92,7 @@ def test_multiclass_classification(
         model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.impurity_decrease()
+    display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
     expected_columns = ["estimator", "feature", "importances"]
@@ -147,7 +147,7 @@ def test_single_output_regression(
         model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.impurity_decrease()
+    display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
     expected_columns = ["estimator", "feature", "importances"]
@@ -202,7 +202,7 @@ def test_multi_output_regression(
         model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.impurity_decrease()
+    display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
     expected_columns = ["estimator", "feature", "importances"]

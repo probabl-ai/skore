@@ -52,7 +52,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
     >>> report = EstimatorReport(
     ...     RandomForestClassifier(random_state=0), **split_data
     ... )
-    >>> display = report.feature_importance.impurity_decrease()
+    >>> display = report.inspection.impurity_decrease()
     >>> display.frame()
                     feature  importances
     0  sepal length (cm)     0.1...
@@ -137,7 +137,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         >>> report = EstimatorReport(
         ...     RandomForestClassifier(random_state=0), **split_data
         ... )
-        >>> display = report.feature_importance.impurity_decrease()
+        >>> display = report.inspection.impurity_decrease()
         >>> display.frame()
                      feature  importances
         0  sepal length (cm)     0.1...
@@ -168,7 +168,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
         ... )
         >>> report = EstimatorReport(RandomForestClassifier(), **split_data)
-        >>> display = report.feature_importance.impurity_decrease()
+        >>> display = report.inspection.impurity_decrease()
         >>> display.plot()
         """
         return self._plot()

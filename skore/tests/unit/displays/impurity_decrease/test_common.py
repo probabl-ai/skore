@@ -33,7 +33,7 @@ def test_impurity_decrease_display_barplot_kwargs(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.feature_importance.impurity_decrease()
+    display = report.inspection.impurity_decrease()
     display.set_style(barplot_kwargs={"color": "red"}).plot()
 
     assert hasattr(display, "figure_")

@@ -107,7 +107,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> forest = RandomForestClassifier(n_estimators=5, random_state=0)
         >>> report = EstimatorReport(forest, **split_data)
-        >>> display = report.feature_importance.impurity_decrease()
+        >>> display = report.inspection.impurity_decrease()
         >>> display.frame()
               feature  importances
         0  Feature #0     0.06...

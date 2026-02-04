@@ -30,9 +30,9 @@ def monkeypatch_permutation(monkeypatch):
     import skore
 
     monkeypatch.setattr(
-        "skore.EstimatorReport.feature_importance.permutation",
+        "skore.EstimatorReport.inspection.permutation",
         partialmethod(
-            skore.EstimatorReport.feature_importance.permutation,
+            skore.EstimatorReport.inspection.permutation,
             seed=42,
         ),
     )
@@ -120,7 +120,7 @@ def test_feature_importance(
 
     # unavailable accessor
     report.clear_cache()
-    monkeypatch.delattr(report.feature_importance.__class__, accessor)
+    monkeypatch.delattr(report.inspection.__class__, accessor)
     upload_mock.reset_mock()
 
     assert Media(project=project, report=report).model_dump() == {

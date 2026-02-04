@@ -458,16 +458,14 @@ engineered_ridge_report_feature_importance = (
     .tail(15)
 )
 
-engineered_ridge_report_feature_importance.index = (
-    engineered_ridge_report_feature_importance.index.str.replace("remainder__", "")
+engineered_ridge_report_inspection.index = (
+    engineered_ridge_report_inspection.index.str.replace("remainder__", "")
 )
-engineered_ridge_report_feature_importance.index = (
-    engineered_ridge_report_feature_importance.index.str.replace(
-        "kmeans__", "geospatial__"
-    )
+engineered_ridge_report_inspection.index = (
+    engineered_ridge_report_inspection.index.str.replace("kmeans__", "geospatial__")
 )
 
-engineered_ridge_report_feature_importance.plot.barh(
+engineered_ridge_report_inspection.plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
