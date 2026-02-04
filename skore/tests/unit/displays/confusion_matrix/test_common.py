@@ -106,8 +106,10 @@ class TestConfusionMatrixDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
-        display.plot()
-        assert display.figure_.get_figheight() == 6
+        figure, _ = request.getfixturevalue(
+            f"{fixture_prefix}_{task}_classification_figure_axes"
+        )
+        assert figure.get_figheight() == 6
 
         display.set_style(facet_grid_kwargs={"height": 8}).plot()
         assert display.figure_.get_figheight() == 8
