@@ -56,3 +56,20 @@ def test_permutation_importance_display_barplot_kwargs(
     for collection in display.ax_.collections:
         for facecolor in collection.get_facecolor():
             np.testing.assert_allclose(facecolor, expected_red)
+
+
+def test_set_style_with_single_kwarg(
+    pyplot, logistic_binary_classification_with_train_test
+):
+    """Check that set_style works when only one kwarg is passed."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    display = report.inspection.permutation_importance()
+    display.set_style(stripplot_kwargs={"alpha": 0.8}).plot()
+    for collection in display.ax_.collections:
+        assert collection.get_alpha() == 0.8
