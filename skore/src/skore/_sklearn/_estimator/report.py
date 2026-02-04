@@ -22,7 +22,7 @@ from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import Parallel, delayed
-from skore._utils._progress_bar import progress_decorator, ProgressBar
+from skore._utils._progress_bar import ProgressBar, progress_decorator
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
@@ -216,7 +216,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         self._cache = Cache()
 
-    @progress_decorator(describe="Caching predictions")
+    @progress_decorator(description="Caching predictions")
     def cache_predictions(
         self,
         response_methods: Literal["auto"] | list[str] = "auto",

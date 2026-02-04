@@ -35,7 +35,7 @@ from skore._utils._accessor import (
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
 from skore._utils._parallel import Parallel, delayed
-from skore._utils._progress_bar import progress_decorator, ProgressBar
+from skore._utils._progress_bar import ProgressBar, progress_decorator
 
 DataSource = Literal["test", "train", "X_y"]
 
@@ -183,7 +183,7 @@ class _MetricsAccessor(
                 )
         return MetricsSummaryDisplay(summarize_data=results)
 
-    @progress_decorator(describe="Compute metric for each split")
+    @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
         self,
         report_metric_name: str,
@@ -1067,7 +1067,7 @@ class _MetricsAccessor(
     # Methods related to displays
     ####################################################################################
 
-    @progress_decorator(describe="Computing predictions for display")
+    @progress_decorator(description="Computing predictions for display")
     def _get_display(
         self,
         *,

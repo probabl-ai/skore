@@ -1,4 +1,7 @@
-import pytest
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from time import sleep
+
+from pytest import raises
 
 from skore._utils._progress_bar import progress_decorator
 
@@ -7,73 +10,91 @@ def test_standalone_progress():
     """Check the general behavior of the progress bar when used standalone."""
 
     class StandaloneTask:
-        def __init__(self):
-            self._progress_info = None
+        @progress_decorator("Standalone")
+        def run(self, *, progress):
+            assert progress.total is None
+            assert progress._ProgressBar__progress.live._started is True
+            assert progress._ProgressBar__progress.tasks[0].total is None
 
-        @progress_decorator("Standalone Task")
-        def run(self, iterations=5):
-            progress = self._progress_info["current_progress"]
-            task = self._progress_info["current_task"]
-            progress.update(task, total=iterations)
+            progress.total = 2
+            progress.advance()
+            progress.advance()
 
-            for i in range(iterations):
-                progress.update(task, advance=1)
-                self._standalone_n_calls = i
+            self.progress = progress
             return "done"
 
     task = StandaloneTask()
     result = task.run()
 
     assert result == "done"
-    assert task._standalone_n_calls == 4
-    assert task._progress_info is None
+
+    assert task.progress.description == "Standalone"
+    assert task.progress.total == 2
+
+    assert task.progress._ProgressBar__progress.tasks[0].description == "Standalone"
+    assert task.progress._ProgressBar__progress.tasks[0].total == 2
+    assert task.progress._ProgressBar__progress.live._started is False
+    assert task.progress._ProgressBar__progress.finished
+    assert task.progress._ProgressBar__progress.tasks[0].finished
 
 
 def test_nested_progress():
     """Check that we can nest progress bars."""
 
+    parent_progress = None
+    child_progress = None
+
     class ParentTask:
-        def __init__(self):
-            self._progress_info = None
+        @progress_decorator("Parent")
+        def run(self, *, progress):
+            assert progress.total is None
+            assert progress._ProgressBar__progress.live._started is True
+            assert progress._ProgressBar__progress.tasks[0].total is None
 
-        @progress_decorator("Parent Task")
-        def run(self, iterations=3):
-            progress = self._progress_info["current_progress"]
-            task = self._progress_info["current_task"]
-            progress.update(task, total=iterations)
+            progress.total = 1
+            ChildTask().run()
+            progress.advance()
 
-            self._child = ChildTask()
-            for i in range(iterations):
-                # Share the parent's progress bar with child
-                self._child._progress_info = {"current_progress": progress}
-                self._child.run()
-                progress.update(task, advance=1)
-                self._parent_n_calls = i
+            nonlocal parent_progress
+            parent_progress = progress
             return "done"
 
     class ChildTask:
-        def __init__(self):
-            self._progress_info = None
+        @progress_decorator("Child")
+        def run(self, *, progress):
+            assert progress.total is None
+            assert progress._ProgressBar__progress.live._started is True
+            assert progress._ProgressBar__progress.tasks[0].total is None
 
-        @progress_decorator("Child Task")
-        def run(self, iterations=2):
-            progress = self._progress_info["current_progress"]
-            task = self._progress_info["current_task"]
-            progress.update(task, total=iterations)
+            progress.total = 2
+            progress.advance()
+            progress.advance()
 
-            for i in range(iterations):
-                progress.update(task, advance=1)
-                self._child_n_calls = i
+            nonlocal child_progress
+            child_progress = progress
             return "done"
 
     parent = ParentTask()
     result = parent.run()
 
     assert result == "done"
-    assert parent._progress_info is None
-    assert parent._parent_n_calls == 2
-    assert parent._child._child_n_calls == 1
-    assert parent._child._progress_info is None
+
+    assert parent_progress != child_progress
+    assert parent_progress.description == "Parent"
+    assert parent_progress.total == 1
+    assert child_progress.description == "Child"
+    assert child_progress.total == 2
+
+    assert parent_progress._ProgressBar__progress.tasks[0].description == "Parent"
+    assert parent_progress._ProgressBar__progress.tasks[0].total == 1
+    assert parent_progress._ProgressBar__progress.live._started is False
+    assert parent_progress._ProgressBar__progress.finished
+    assert parent_progress._ProgressBar__progress.tasks[0].finished
+    assert child_progress._ProgressBar__progress.tasks[0].description == "Child"
+    assert child_progress._ProgressBar__progress.tasks[0].total == 2
+    assert child_progress._ProgressBar__progress.live._started is False
+    assert child_progress._ProgressBar__progress.finished
+    assert child_progress._ProgressBar__progress.tasks[0].finished
 
 
 def test_dynamic_description():
@@ -82,82 +103,124 @@ def test_dynamic_description():
 
     class DynamicTask:
         def __init__(self, name):
-            self._progress_info = None
             self.name = name
 
-        @progress_decorator(lambda self: f"Processing {self.name}")
-        def run(self, iterations=4):
-            progress = self._progress_info["current_progress"]
-            task = self._progress_info["current_task"]
-            progress.update(task, total=iterations)
+        @progress_decorator(lambda self: f"{self.name}")
+        def run(self, *, progress):
+            assert progress.total is None
+            assert progress._ProgressBar__progress.live._started is True
+            assert progress._ProgressBar__progress.tasks[0].total is None
 
-            for i in range(iterations):
-                progress.update(task, advance=1)
-                self._dynamic_n_calls = i
-            return self.name
+            progress.total = 2
+            progress.advance()
+            progress.advance()
 
-    task = DynamicTask("test_task")
+            self.progress = progress
+            return "done"
+
+    task = DynamicTask("test")
     result = task.run()
 
-    assert result == "test_task"
-    assert task._progress_info is None
-    assert task._dynamic_n_calls == 3
+    assert result == "done"
+
+    assert task.progress.description == "test"
+    assert task.progress.total == 2
+
+    assert task.progress._ProgressBar__progress.tasks[0].description == "test"
+    assert task.progress._ProgressBar__progress.tasks[0].total == 2
+    assert task.progress._ProgressBar__progress.live._started is False
+    assert task.progress._ProgressBar__progress.finished
+    assert task.progress._ProgressBar__progress.tasks[0].finished
 
 
 def test_exception_handling():
     """Check that the progress bar stops during an exception but in a clean way."""
 
     class ErrorTask:
-        def __init__(self):
-            self._progress_info = None
+        @progress_decorator("Error")
+        def run(self, *, progress):
+            assert progress.total is None
+            assert progress._ProgressBar__progress.live._started is True
+            assert progress._ProgressBar__progress.tasks[0].total is None
 
-        @progress_decorator("Error Task")
-        def run(self):
-            progress = self._progress_info["current_progress"]
-            task = self._progress_info["current_task"]
-            progress.update(task, total=3)
-
-            progress.update(task, advance=1)
+            self.progress = progress
             raise ValueError("Test error")
 
     task = ErrorTask()
-    with pytest.raises(ValueError, match="Test error"):
+
+    with raises(ValueError, match="Test error"):
         task.run()
 
-    # Verify progress bar was cleaned up
-    assert task._progress_info is None
+    assert task.progress.description == "Error"
+    assert task.progress.total is None
+
+    assert task.progress._ProgressBar__progress.tasks[0].description == "Error"
+    assert task.progress._ProgressBar__progress.tasks[0].total is None
+    assert task.progress._ProgressBar__progress.live._started is False
+    assert not task.progress._ProgressBar__progress.finished
+    assert not task.progress._ProgressBar__progress.tasks[0].finished
 
 
-def test_child_report_cleanup():
-    """Ensure that child reports in reports_ get progress assigned and then cleaned
-    up."""
+def test_thread_safety():
+    """Check thread-safety."""
 
-    class Child:
-        def __init__(self):
-            self._progress_info = None
-            self.called = False
+    t1_progress = None
+    t2_progress = None
 
-        @progress_decorator("Child Process")
-        def process(self):
-            self.called = True
-            return "child_done"
+    class T1Task:
+        @progress_decorator("T1")
+        def run(self, *, progress):
+            assert progress.total is None
+            assert progress._ProgressBar__progress.live._started is True
+            assert progress._ProgressBar__progress.tasks[0].total is None
 
-    class Parent:
-        def __init__(self):
-            self._progress_info = None
-            self.reports_ = {"child1": Child(), "child2": Child()}
+            sleep(0.5)
 
-        @progress_decorator("Parent Process")
-        def run(self):
-            return [rpt.process() for rpt in self.reports_.values()]
+            progress.total = 1
+            progress.advance()
 
-    parent = Parent()
-    results = parent.run()
+            nonlocal t1_progress
+            t1_progress = progress
+            return "done"
 
-    assert results == ["child_done", "child_done"]
-    assert all(rp.called for rp in parent.reports_.values())
-    # Verify that progress attributes are cleaned for each child report
-    for rp in parent.reports_.values():
-        assert rp._progress_info is None
-    # Also verify if parent reports are cleaned up as well
-    assert parent._progress_info is None
+    class T2Task:
+        @progress_decorator("T2")
+        def run(self, *, progress):
+            assert progress.total is None
+            assert progress._ProgressBar__progress.live._started is True
+            assert progress._ProgressBar__progress.tasks[0].total is None
+
+            progress.total = 2
+            progress.advance()
+            progress.advance()
+
+            nonlocal t2_progress
+            t2_progress = progress
+            return "done"
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future1 = executor.submit(lambda: T1Task().run())
+        future2 = executor.submit(lambda: T2Task().run())
+
+        result1 = future1.result()
+        result2 = future2.result()
+
+    assert result1 == "done"
+    assert result2 == "done"
+
+    assert t1_progress != t2_progress
+    assert t1_progress.description == "T1"
+    assert t1_progress.total == 1
+    assert t2_progress.description == "T2"
+    assert t2_progress.total == 2
+
+    assert t1_progress._ProgressBar__progress.tasks[0].description == "T1"
+    assert t1_progress._ProgressBar__progress.tasks[0].total == 1
+    assert t1_progress._ProgressBar__progress.live._started is False
+    assert t1_progress._ProgressBar__progress.finished
+    assert t1_progress._ProgressBar__progress.tasks[0].finished
+    assert t2_progress._ProgressBar__progress.tasks[0].description == "T2"
+    assert t2_progress._ProgressBar__progress.tasks[0].total == 2
+    assert t2_progress._ProgressBar__progress.live._started is False
+    assert t2_progress._ProgressBar__progress.finished
+    assert t2_progress._ProgressBar__progress.tasks[0].finished

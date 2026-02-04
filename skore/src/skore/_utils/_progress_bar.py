@@ -12,7 +12,7 @@ from rich.progress import (
 from skore._config import get_config
 
 T = TypeVar("T")
-Describe = str | Callable[..., str]
+Description = str | Callable[..., str]
 Function = Callable[..., T]
 SkinnedProgress = partial(
     Progress,
@@ -25,7 +25,7 @@ SkinnedProgress = partial(
     ),
     TextColumn("[orange1]{task.percentage:>3.0f}%"),
     expand=False,
-    # transient=True,
+    transient=True,
     disable=(not get_config()["show_progress"]),
 )
 
@@ -65,7 +65,7 @@ class ProgressBar:
         self.__progress.update(self.__task, advance=1, refresh=True)
 
 
-def progress_decorator(describe: Describe) -> Callable[[Function], Function]:
+def progress_decorator(description: Description) -> Callable[[Function], Function]:
     """Decorate class methods to add a progress bar.
 
     This decorator adds a Rich progress bar to class methods, displaying progress
@@ -73,7 +73,7 @@ def progress_decorator(describe: Describe) -> Callable[[Function], Function]:
 
     Parameters
     ----------
-    describe : str or callable
+    description : str or callable
         The description of the progress bar. If a callable, it should take the
         self object as an argument and return a string.
 
@@ -87,9 +87,9 @@ def progress_decorator(describe: Describe) -> Callable[[Function], Function]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> T:
             report = args[0]._parent if hasattr(args[0], "_parent") else args[0]
-            description = describe(report) if callable(describe) else describe
+            task = description(report) if callable(description) else description
 
-            with ProgressBar(description) as progress:
+            with ProgressBar(task) as progress:
                 return func(*args, **kwargs, progress=progress)
 
         return wrapper

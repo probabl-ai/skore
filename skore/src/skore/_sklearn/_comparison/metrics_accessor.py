@@ -36,7 +36,7 @@ from skore._utils._accessor import (
 )
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
-from skore._utils._progress_bar import progress_decorator, ProgressBar
+from skore._utils._progress_bar import ProgressBar, progress_decorator
 
 from .utils import _combine_cross_validation_results, _combine_estimator_results
 
@@ -184,7 +184,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 )
         return MetricsSummaryDisplay(results)
 
-    @progress_decorator(describe="Compute metric for each estimator")
+    @progress_decorator(description="Compute metric for each estimator")
     def _compute_metric_scores(
         self,
         report_metric_name: str,
@@ -1150,7 +1150,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     # Methods related to displays
     ####################################################################################
 
-    @progress_decorator(describe="Computing predictions for display")
+    @progress_decorator(description="Computing predictions for display")
     def _get_display(
         self,
         *,

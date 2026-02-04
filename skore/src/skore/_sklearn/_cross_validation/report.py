@@ -20,7 +20,7 @@ from skore._sklearn.types import _DEFAULT, MLTask, PositiveLabel, SKLearnCrossVa
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import Parallel, delayed
-from skore._utils._progress_bar import progress_decorator, ProgressBar
+from skore._utils._progress_bar import ProgressBar, progress_decorator
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -182,7 +182,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
 
     @progress_decorator(
-        describe=lambda self: (
+        description=lambda self: (
             f"Processing cross-validation\nfor {self.estimator_name_}"
         )
     )
@@ -291,7 +291,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         self._cache = Cache()
 
-    @progress_decorator(describe="Cross-validation predictions")
+    @progress_decorator(description="Cross-validation predictions")
     def cache_predictions(
         self,
         response_methods: str = "auto",
