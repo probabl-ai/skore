@@ -351,9 +351,7 @@ class _BaseHelpDataMixin(ABC):
             parameters = "()"
 
         description = get_method_short_summary(method)
-        favorability = None
-        if hasattr(obj, "_get_favorability_text"):
-            favorability = obj._get_favorability_text(name)
+        favorability = obj._get_favorability_text(name) if hasattr(obj, "_get_favorability_text") else None
 
         doc_url = get_documentation_url(
             obj=parent_obj,
