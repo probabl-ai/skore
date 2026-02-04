@@ -1,6 +1,5 @@
 from collections.abc import Callable
-from functools import wraps, partial
-from threading import RLock, get_ident
+from functools import partial, wraps
 from typing import Any, TypeVar
 
 from rich.progress import (
@@ -13,7 +12,8 @@ from rich.progress import (
 from skore._config import get_config
 
 T = TypeVar("T")
-
+Describe = str | Callable[..., str]
+Function = Callable[..., T]
 SkinnedProgress = partial(
     Progress,
     SpinnerColumn(),
@@ -31,11 +31,11 @@ SkinnedProgress = partial(
 
 
 class ProgressBar:
-    def __init__(self, description):
+    def __init__(self, description=None, total=None):
         self.__description = description
-        self.__total = None
+        self.__total = total
         self.__progress = SkinnedProgress()
-        self.__task = self.__progress.add_task(description, total=None)
+        self.__task = self.__progress.add_task(description, total=total)
 
     def __enter__(self):
         self.__progress.start()
@@ -57,7 +57,7 @@ class ProgressBar:
         return self.__total
 
     @total.setter
-    def total(self, value: float):
+    def total(self, value: float | None):
         self.__total = value
         self.__progress.update(self.__task, total=value, refresh=True)
 
@@ -65,31 +65,7 @@ class ProgressBar:
         self.__progress.update(self.__task, advance=1, refresh=True)
 
 
-# class ProgressBarPool:
-#     def __init__(self):
-#         self.__lock = RLock()
-#         self.__pool = {}
-
-#     def __setitem__(self, description, progress_bar):
-#         with self.__lock:
-#             self.__pool[(get_ident(), description)] = progress_bar
-
-#     def __getitem__(self, description):
-#         with self.__lock:
-#             return self.__pool[(get_ident(), description)]
-
-#     def __delitem__(self, description):
-#         with self.__lock:
-#             del self.__pool[(get_ident(), description)]
-
-#     def __contains__(self, description):
-#         with self.__lock:
-#             return (get_ident(), description) in self.__pool
-
-
-def progress_decorator(
-    describe: str | Callable[..., str],
-) -> Callable[[Callable[..., T]], Callable[..., T]]:
+def progress_decorator(describe: Describe) -> Callable[[Function], Function]:
     """Decorate class methods to add a progress bar.
 
     This decorator adds a Rich progress bar to class methods, displaying progress
@@ -97,7 +73,7 @@ def progress_decorator(
 
     Parameters
     ----------
-    description : str or callable
+    describe : str or callable
         The description of the progress bar. If a callable, it should take the
         self object as an argument and return a string.
 
@@ -108,40 +84,13 @@ def progress_decorator(
     """
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
-        # func.describe = (
-        #     description if callable(description) else (lambda _: description)
-        # )
-
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> T:
-            report = args[0]
-
-            if hasattr(report, "_parent"):  # report is an accessor
-                report = report._parent
-
+            report = args[0]._parent if hasattr(args[0], "_parent") else args[0]
             description = describe(report) if callable(describe) else describe
 
             with ProgressBar(description) as progress:
                 return func(*args, **kwargs, progress=progress)
-
-            # assert description not in self._progress_pool, "Something wrong"
-            # self._progress_pool[description] = progress_bar
-
-            # the problem:
-            # in multithread, 2 threads can work on the same progress
-            # the first will delete the progress, before the second finishes
-            # -> thread-safety issue
-            # the solutions:
-            # - either we create one progress per thread
-            #   https://docs.python.org/3/library/threading.html#threading.get_ident
-            # - or we don't delete the progress here, but we delete it in __reduce__
-            # - or we don't do anything when show_progress=False
-
-            # try:
-            #     ...
-            # finally:
-            #     progress_bar.stop()
-            #     del self._progress_pool[description]
 
         return wrapper
 
