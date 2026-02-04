@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from functools import partial, wraps
+from inspect import signature
 from typing import Any, TypeVar
 
 from rich.progress import (
@@ -12,8 +13,6 @@ from rich.progress import (
 from skore._config import get_config
 
 T = TypeVar("T")
-Description = str | Callable[..., str]
-Function = Callable[..., T]
 SkinnedProgress = partial(
     Progress,
     SpinnerColumn(),
@@ -48,31 +47,43 @@ class ProgressBar:
 
     @property
     def description(self) -> str | None:
+        """Description of the progress bar."""
         return self.__description
 
     @description.setter
     def description(self, value: str | None):
+        """Set description of the progress bar."""
         self.__description = value
         self.__progress.update(self.__task, description=value, refresh=True)
 
     @property
     def total(self) -> float:
+        """Total number of steps before the progress bar is considered completed."""
         return self.__total
 
     @total.setter
     def total(self, value: float | None):
+        """Set total number of steps before the progress bar is considered completed."""
         self.__total = value
         self.__progress.update(self.__task, total=value, refresh=True)
 
     def advance(self):
+        """Advance the progress bar by one step."""
         self.__progress.update(self.__task, advance=1, refresh=True)
 
 
-def progress_decorator(description: Description) -> Callable[[Function], Function]:
-    """Decorate class methods to add a progress bar.
+def progress_decorator(
+    description: str | Callable[..., str],
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
+    """
+    Decorate class methods to track progress.
 
-    This decorator adds a Rich progress bar to class methods, displaying progress
-    during execution. The progress bar automatically disappears after completion.
+    This decorator injects a ``ProgressBar`` object to the wrapped method, used to track
+    progress during execution. The progress bar automatically disappears after
+    completion.
+
+    The wrapped method is responsible for advancing the progress bar and managing its
+    size.
 
     Parameters
     ----------
@@ -83,10 +94,15 @@ def progress_decorator(description: Description) -> Callable[[Function], Functio
     Returns
     -------
     decorator : function
-        A decorator that wraps the input function and adds a progress bar to it.
+        A decorator that wraps the input function, and injects the progress bar as
+        parameter.
     """
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        assert "progress" in signature(func).parameters, (
+            "You can only decorate functions with `progress` parameter"
+        )
+
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> T:
             report = args[0]._parent if hasattr(args[0], "_parent") else args[0]
