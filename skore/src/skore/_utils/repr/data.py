@@ -345,10 +345,7 @@ class _BaseHelpDataMixin(ABC):
             for parameter_name, _ in sig.parameters.items()
             if parameter_name != "self"
         ]
-        if parameter_names:
-            parameters = "(" + ", ".join(parameter_names) + ")"
-        else:
-            parameters = "()"
+        parameters = f"({", ".join(parameter_names)})"
 
         description = get_method_short_summary(method)
         favorability = obj._get_favorability_text(name) if hasattr(obj, "_get_favorability_text") else None
