@@ -18,19 +18,19 @@ def train_test_split(request):
     [
         (
             "binary_classification_train_test_split",
-            DecisionTreeClassifier(random_state=0),
+            DecisionTreeClassifier(max_depth=2),
         ),
         (
             "binary_classification_train_test_split",
-            make_pipeline(StandardScaler(), DecisionTreeClassifier(random_state=0)),
+            make_pipeline(StandardScaler(), DecisionTreeClassifier(max_depth=2)),
         ),
         (
             "regression_train_test_split",
-            DecisionTreeRegressor(random_state=0),
+            DecisionTreeRegressor(max_depth=2),
         ),
         (
             "regression_train_test_split",
-            make_pipeline(StandardScaler(), DecisionTreeRegressor(random_state=0)),
+            make_pipeline(StandardScaler(), DecisionTreeRegressor(max_depth=2)),
         ),
     ],
     indirect=["train_test_split"],
@@ -54,7 +54,7 @@ def test_with_model_not_exposing_mean_decrease_impurity(
     `feature_importances_` attribute."""
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
     report = EstimatorReport(
-        LogisticRegression(random_state=0),
+        LogisticRegression(),
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
