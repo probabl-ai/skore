@@ -74,8 +74,9 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     """
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.precision_recall()
-    valid_values_str = ", ".join(valid_values)
-    err_msg = f"subplot_by must be one of {valid_values_str}. Got 'invalid' instead."
+    err_msg = (
+        f"subplot_by must be one of {', '.join(valid_values)}. Got 'invalid' instead."
+    )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
 
