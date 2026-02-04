@@ -72,4 +72,4 @@ def test_set_style_with_single_kwarg(
     display = report.inspection.permutation_importance()
     display.set_style(stripplot_kwargs={"alpha": 0.8}).plot()
     for collection in display.ax_.collections:
-        assert collection.get_alpha() == 0.8  
+        assert collection.get_alpha() == 0.8
