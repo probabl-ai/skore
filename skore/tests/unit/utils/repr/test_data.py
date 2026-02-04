@@ -1,6 +1,6 @@
 """Unit tests for helpers in ``skore._utils.repr.data``."""
 
-from unittest.mock import patch
+import re
 from urllib.parse import quote
 
 import numpy as np
@@ -171,8 +171,12 @@ def test_get_attribute_type(obj, attribute_name, expected):
 @pytest.mark.parametrize(
     "obj, attribute_name, expected",
     [
-        (_ClassWithNumpydocAttrs(), "coef_", "coef_,-ndarray (n_features,)"),
-        (_ClassWithNumpydocAttrs(), "param", "param_,-int"),
+        (
+            _ClassWithNumpydocAttrs(),
+            "coef_",
+            "coef_,-ndarray%20%28n_features%2C%29",
+        ),
+        (_ClassWithNumpydocAttrs(), "param", "param,-int"),
         (_ClassWithNoDocstring(), "coef_", "coef_"),
         (_ClassWithNumpydocAttrs(), "other_attr", "other_attr"),
     ],
@@ -308,7 +312,10 @@ def test_get_documentation_url_class_only(report_with_methods, display_with_meth
     """get_documentation_url returns base class URL with no accessor/method/attribute."""
     for obj in (report_with_methods, display_with_methods):
         url = get_documentation_url(obj=obj)
-        assert re.match(rf'https://docs.skore.probabl.ai/[^/]+/reference/api/skore\.[^/]+{obj.__class__.__name__}.html', url)
+        assert re.match(
+            rf"https://docs.skore.probabl.ai/[^/]+/reference/api/skore\.{re.escape(obj.__class__.__name__)}\.html",
+            url,
+        )
         assert "#" not in url
 
 
@@ -360,11 +367,14 @@ def test_get_documentation_url_attribute():
     ],
 )
 def test_get_documentation_url_version_branches(
-    display_with_methods, mocked_version, expected_url_version
+    monkeypatch, display_with_methods, mocked_version, expected_url_version
 ):
     """get_documentation_url uses \"dev\" for version < 0.1, else major.minor."""
-    with patch("skore._utils.repr.data.version", return_value=mocked_version):
-        url = get_documentation_url(obj=display_with_methods)
+    monkeypatch.setattr(
+        "skore._utils.repr.data.version",
+        lambda name: mocked_version,
+    )
+    url = get_documentation_url(obj=display_with_methods)
     assert url.startswith("https://docs.skore.probabl.ai/")
     assert f"docs.skore.probabl.ai/{expected_url_version}/reference/api/" in url
 
