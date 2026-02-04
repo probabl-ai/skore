@@ -171,20 +171,15 @@ def test_get_attribute_type(obj, attribute_name, expected):
 @pytest.mark.parametrize(
     "obj, attribute_name, expected",
     [
-        (_ClassWithNumpydocAttrs(), "coef_", "ndarray (n_features,)"),
-        (_ClassWithNumpydocAttrs(), "param", "int"),
-        (_ClassWithNoDocstring(), "coef_", None),
-        (_ClassWithNumpydocAttrs(), "other_attr", None),
+        (_ClassWithNumpydocAttrs(), "coef_", "coef_,-ndarray (n_features,)"),
+        (_ClassWithNumpydocAttrs(), "param", "param_,-int"),
+        (_ClassWithNoDocstring(), "coef_", "coef_"),
+        (_ClassWithNumpydocAttrs(), "other_attr", "other_attr"),
     ],
 )
 def test_build_attribute_text_fragment(obj, attribute_name, expected):
     """_build_attribute_text_fragment returns encoded name,-type or encoded name."""
-    got = _build_attribute_text_fragment(obj, attribute_name)
-    if expected is not None:
-        expected = f"{quote(attribute_name, safe='')},-{quote(expected, safe='')}"
-    else:
-        expected = quote(attribute_name, safe="")
-    assert got == expected
+    assert _build_attribute_text_fragment(obj, attribute_name) == expected
 
 
 @pytest.fixture
@@ -255,8 +250,7 @@ def test_get_public_methods_accessor_excludes_help(accessor_with_methods):
 )
 def test_get_method_short_summary(method_name, expected):
     """get_method_short_summary returns first docstring line or fallback."""
-    obj = _ClassWithDocstringMethod()
-    method = getattr(obj, method_name)
+    method = getattr(_ClassWithDocstringMethod(), method_name)
     assert get_method_short_summary(method) == expected
 
 
@@ -314,10 +308,7 @@ def test_get_documentation_url_class_only(report_with_methods, display_with_meth
     """get_documentation_url returns base class URL with no accessor/method/attribute."""
     for obj in (report_with_methods, display_with_methods):
         url = get_documentation_url(obj=obj)
-        assert url.startswith("https://docs.skore.probabl.ai/")
-        assert "/reference/api/" in url
-        assert "skore." in url and obj.__class__.__name__ in url
-        assert url.endswith(".html")
+        assert re.match(rf'https://docs.skore.probabl.ai/[^/]+/reference/api/skore\.[^/]+{obj.__class__.__name__}.html', url)
         assert "#" not in url
 
 
