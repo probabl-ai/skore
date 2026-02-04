@@ -22,7 +22,7 @@ from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import Parallel, delayed
-from skore._utils._progress_bar import progress_decorator
+from skore._utils._progress_bar import progress_decorator, ProgressBar
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
@@ -152,8 +152,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         y_test: ArrayLike | None = None,
         pos_label: PositiveLabel | None = None,
     ) -> None:
-        # used to know if a parent launch a progress bar manager
-        self._progress_info: dict[str, Any] | None = None
         self._fit = fit
 
         fit_time: float | None = None
@@ -218,11 +216,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         self._cache = Cache()
 
-    @progress_decorator(description="Caching predictions")
+    @progress_decorator(describe="Caching predictions")
     def cache_predictions(
         self,
         response_methods: Literal["auto"] | list[str] = "auto",
         n_jobs: int | None = None,
+        *,
+        progress: ProgressBar,
     ) -> None:
         """Cache estimator's predictions.
 
@@ -287,13 +287,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
         )
         # trigger the computation
-        assert self._progress_info is not None, (
-            "The rich Progress class was not initialized."
-        )
-        progress = self._progress_info["current_progress"]
-        task = self._progress_info["current_task"]
         total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
-        progress.update(task, total=total_iterations)
+        progress.total = total_iterations
 
         # do not mutate directly `self._cache` during the execution of Parallel
         results_to_cache: dict[tuple[Any, ...], Any] = {}
@@ -301,7 +296,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             results_to_cache.update(
                 (key, value) for key, value, is_cached in results if not is_cached
             )
-            progress.update(task, advance=1, refresh=True)
+            progress.advance()
 
         if results_to_cache:
             self._cache.update(results_to_cache)

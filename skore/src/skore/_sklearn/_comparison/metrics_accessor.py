@@ -36,7 +36,7 @@ from skore._utils._accessor import (
 )
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
-from skore._utils._progress_bar import progress_decorator
+from skore._utils._progress_bar import progress_decorator, ProgressBar
 
 from .utils import _combine_cross_validation_results, _combine_estimator_results
 
@@ -184,11 +184,12 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 )
         return MetricsSummaryDisplay(results)
 
-    @progress_decorator(description="Compute metric for each estimator")
+    @progress_decorator(describe="Compute metric for each estimator")
     def _compute_metric_scores(
         self,
         report_metric_name: str,
         *,
+        progress: ProgressBar,
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
@@ -220,12 +221,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         cache_key = tuple(cache_key_parts)
 
-        assert self._parent._progress_info is not None, "Progress info not set"
-        progress = self._parent._progress_info["current_progress"]
-        main_task = self._parent._progress_info["current_task"]
-
         total_estimators = len(self._parent.reports_)
-        progress.update(main_task, total=total_estimators)
+        progress.total = total_estimators
 
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
@@ -256,7 +253,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     individual_results.append(result.frame())
                 else:
                     individual_results.append(result)
-                progress.update(main_task, advance=1, refresh=True)
+
+                progress.advance()
 
             if self._parent._reports_type == "EstimatorReport":
                 results = _combine_estimator_results(
@@ -1152,10 +1150,11 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     # Methods related to displays
     ####################################################################################
 
-    @progress_decorator(description="Computing predictions for display")
+    @progress_decorator(describe="Computing predictions for display")
     def _get_display(
         self,
         *,
+        progress: ProgressBar,
         X: ArrayLike | None,
         y: ArrayLike | None,
         data_source: DataSource | Literal["both"],
@@ -1217,11 +1216,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
-        assert self._parent._progress_info is not None, "Progress info not set"
-        progress = self._parent._progress_info["current_progress"]
-        main_task = self._parent._progress_info["current_task"]
         total_estimators = len(self._parent.reports_)
-        progress.update(main_task, total=total_estimators)
+        progress.total = total_estimators
 
         if cache_key and cache_key in self._parent._cache:
             return self._parent._cache[cache_key]
@@ -1256,7 +1252,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     y_true.append(y_true_data)
                     y_pred.append(y_pred_data)
 
-                progress.update(main_task, advance=1, refresh=True)
+                progress.advance()
 
             display = display_class._compute_data_for_display(
                 y_true=y_true,
@@ -1298,7 +1294,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                         y_true.append(y_true_data)
                         y_pred.append(y_pred_data)
 
-                progress.update(main_task, advance=1, refresh=True)
+                progress.advance()
 
             display = display_class._compute_data_for_display(
                 y_true=y_true,

@@ -16,7 +16,7 @@ from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import _DEFAULT, PositiveLabel
 from skore._utils._cache import Cache
-from skore._utils._progress_bar import progress_decorator
+from skore._utils._progress_bar import progress_decorator, ProgressBar
 
 if TYPE_CHECKING:
     from skore._sklearn._comparison.inspection_accessor import (
@@ -246,8 +246,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             ComparisonReport._validate_reports(reports)
         )
 
-        self._progress_info: dict[str, Any] | None = None
-
         self.n_jobs = n_jobs
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
@@ -282,13 +280,15 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         self._cache = Cache()
 
-    @progress_decorator(description="Estimator predictions")
+    @progress_decorator(describe="Estimator predictions")
     def cache_predictions(
         self,
         response_methods: Literal[
             "auto", "predict", "predict_proba", "decision_function"
         ] = "auto",
         n_jobs: int | None = None,
+        *,
+        progress: ProgressBar,
     ) -> None:
         """Cache the predictions for sub-estimators reports.
 
@@ -322,20 +322,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
-        assert self._progress_info is not None, (
-            "The rich Progress class was not initialized."
-        )
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
-
         total_estimators = len(self.reports_)
-        progress.update(main_task, total=total_estimators)
+        progress.total = total_estimators
 
         for report in self.reports_.values():
-            # Share the parent's progress bar with child report
-            report._progress_info = {"current_progress": progress}
             report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
-            progress.update(main_task, advance=1, refresh=True)
+            progress.advance()
 
     def get_predictions(
         self,
