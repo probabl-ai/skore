@@ -39,31 +39,21 @@ def report_with_html():
     return _ReportWithHTML(estimator)
 
 
-@pytest.fixture
-def accessor_with_html(report_with_html):
-    """Accessor with HTML help mixin."""
-    return _AccessorWithHTML(parent=report_with_html)
-
-
-@pytest.fixture
-def display_with_html():
-    """Display with HTML help mixin."""
-    return _DisplayWithHTML()
-
-
 def test_html_report_help_mixin_creates_container(report_with_html):
     """_HTMLReportHelpMixin._create_help_html returns HTML containing the container id."""
     html = report_with_html._create_help_html()
     assert "skore-help-" in html
 
 
-def test_html_accessor_help_mixin_creates_container(accessor_with_html):
+def test_html_accessor_help_mixin_creates_container(report_with_html):
     """_HTMLAccessorHelpMixin._create_help_html returns HTML containing the container id."""
-    html = accessor_with_html._create_help_html()
+    accessor = _AccessorWithHTML(parent=report_with_html)
+    html = accessor._create_help_html()
     assert "skore-accessor-help-" in html
 
 
-def test_html_display_help_mixin_creates_container(display_with_html):
+def test_html_display_help_mixin_creates_container():
     """_HTMLHelpDisplayMixin._create_help_html returns HTML containing the container id."""
-    html = display_with_html._create_help_html()
+    display = _DisplayWithHTML()
+    html = display._create_help_html()
     assert "skore-display-help-" in html

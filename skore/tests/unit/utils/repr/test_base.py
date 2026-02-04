@@ -1,6 +1,6 @@
 """Unit tests for ``skore._utils.repr.base``."""
 
-from unittest.mock import patch
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -62,12 +62,16 @@ def display_with_base_help():
     return _DisplayWithBaseHelp()
 
 
-@patch("skore._utils.repr.base.is_environment_sphinx_build", return_value=True)
-@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=False)
-def test_report_help_mixin_sphinx_path(
-    mock_notebook, mock_sphinx, report_with_base_help
-):
+def test_report_help_mixin_sphinx_path(monkeypatch, report_with_base_help):
     """ReportHelpMixin.help returns _HelpDisplay when sphinx build."""
+    mock_sphinx = Mock(return_value=True)
+    mock_notebook = Mock(return_value=False)
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_sphinx_build", mock_sphinx
+    )
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+    )
     result = report_with_base_help.help()
     mock_sphinx.assert_called_once()
     mock_notebook.assert_not_called()
@@ -80,14 +84,17 @@ def test_report_help_mixin_sphinx_path(
     assert "skore-help-" in bundle["text/html"]
 
 
-@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=True)
-@patch("IPython.display.display")
-@patch("IPython.display.HTML")
-def test_report_help_mixin_html_path(
-    mock_html_cls, mock_display, mock_notebook, report_with_base_help
-):
+def test_report_help_mixin_html_path(monkeypatch, report_with_base_help):
     """ReportHelpMixin.help uses HTML path when notebook-like."""
-    mock_html_cls.return_value = sentinel_html = object()
+    sentinel_html = object()
+    mock_html_cls = Mock(return_value=sentinel_html)
+    mock_display = Mock()
+    mock_notebook = Mock(return_value=True)
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+    )
+    monkeypatch.setattr("IPython.display.display", mock_display)
+    monkeypatch.setattr("IPython.display.HTML", mock_html_cls)
     report_with_base_help.help()
     mock_notebook.assert_called_once()
     mock_html_cls.assert_called_once()
@@ -96,12 +103,14 @@ def test_report_help_mixin_html_path(
     mock_display.assert_called_once_with(sentinel_html)
 
 
-@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=False)
-@patch("skore.console.print")
-def test_report_help_mixin_rich_path(
-    mock_console_print, mock_notebook, report_with_base_help
-):
+def test_report_help_mixin_rich_path(monkeypatch, report_with_base_help):
     """ReportHelpMixin.help uses Rich path when not notebook-like."""
+    mock_console_print = Mock()
+    mock_notebook = Mock(return_value=False)
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+    )
+    monkeypatch.setattr("skore.console.print", mock_console_print)
     report_with_base_help.help()
     mock_notebook.assert_called_once()
     mock_console_print.assert_called_once()
@@ -109,12 +118,16 @@ def test_report_help_mixin_rich_path(
     assert panel is not None
 
 
-@patch("skore._utils.repr.base.is_environment_sphinx_build", return_value=True)
-@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=False)
-def test_accessor_help_mixin_sphinx_path(
-    mock_notebook, mock_sphinx, accessor_with_base_help
-):
+def test_accessor_help_mixin_sphinx_path(monkeypatch, accessor_with_base_help):
     """AccessorHelpMixin.help returns _HelpDisplay when sphinx build."""
+    mock_sphinx = Mock(return_value=True)
+    mock_notebook = Mock(return_value=False)
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_sphinx_build", mock_sphinx
+    )
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+    )
     result = accessor_with_base_help.help()
     mock_sphinx.assert_called_once()
     mock_notebook.assert_not_called()
@@ -126,14 +139,17 @@ def test_accessor_help_mixin_sphinx_path(
     assert "text/plain" in bundle
 
 
-@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=True)
-@patch("IPython.display.display")
-@patch("IPython.display.HTML")
-def test_accessor_help_mixin_html_path(
-    mock_html_cls, mock_display, mock_notebook, accessor_with_base_help
-):
+def test_accessor_help_mixin_html_path(monkeypatch, accessor_with_base_help):
     """AccessorHelpMixin.help uses HTML path when notebook-like."""
-    mock_html_cls.return_value = sentinel_html = object()
+    sentinel_html = object()
+    mock_html_cls = Mock(return_value=sentinel_html)
+    mock_display = Mock()
+    mock_notebook = Mock(return_value=True)
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+    )
+    monkeypatch.setattr("IPython.display.display", mock_display)
+    monkeypatch.setattr("IPython.display.HTML", mock_html_cls)
     accessor_with_base_help.help()
     mock_notebook.assert_called_once()
     mock_html_cls.assert_called_once()
@@ -142,12 +158,14 @@ def test_accessor_help_mixin_html_path(
     mock_display.assert_called_once_with(sentinel_html)
 
 
-@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=False)
-@patch("skore.console.print")
-def test_accessor_help_mixin_rich_path(
-    mock_console_print, mock_notebook, accessor_with_base_help
-):
+def test_accessor_help_mixin_rich_path(monkeypatch, accessor_with_base_help):
     """AccessorHelpMixin.help uses Rich path when not notebook-like."""
+    mock_console_print = Mock()
+    mock_notebook = Mock(return_value=False)
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+    )
+    monkeypatch.setattr("skore.console.print", mock_console_print)
     accessor_with_base_help.help()
     mock_notebook.assert_called_once()
     mock_console_print.assert_called_once()
@@ -155,12 +173,16 @@ def test_accessor_help_mixin_rich_path(
     assert panel is not None
 
 
-@patch("skore._utils.repr.base.is_environment_sphinx_build", return_value=True)
-@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=False)
-def test_display_help_mixin_sphinx_path(
-    mock_notebook, mock_sphinx, display_with_base_help
-):
+def test_display_help_mixin_sphinx_path(monkeypatch, display_with_base_help):
     """DisplayHelpMixin.help returns _HelpDisplay when sphinx build."""
+    mock_sphinx = Mock(return_value=True)
+    mock_notebook = Mock(return_value=False)
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_sphinx_build", mock_sphinx
+    )
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+    )
     result = display_with_base_help.help()
     mock_sphinx.assert_called_once()
     mock_notebook.assert_not_called()
@@ -172,14 +194,17 @@ def test_display_help_mixin_sphinx_path(
     assert "text/plain" in bundle
 
 
-@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=True)
-@patch("IPython.display.display")
-@patch("IPython.display.HTML")
-def test_display_help_mixin_html_path(
-    mock_html_cls, mock_display, mock_notebook, display_with_base_help
-):
+def test_display_help_mixin_html_path(monkeypatch, display_with_base_help):
     """DisplayHelpMixin.help uses HTML path when notebook-like."""
-    mock_html_cls.return_value = sentinel_html = object()
+    sentinel_html = object()
+    mock_html_cls = Mock(return_value=sentinel_html)
+    mock_display = Mock()
+    mock_notebook = Mock(return_value=True)
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+    )
+    monkeypatch.setattr("IPython.display.display", mock_display)
+    monkeypatch.setattr("IPython.display.HTML", mock_html_cls)
     display_with_base_help.help()
     mock_notebook.assert_called_once()
     mock_html_cls.assert_called_once()
@@ -188,12 +213,14 @@ def test_display_help_mixin_html_path(
     mock_display.assert_called_once_with(sentinel_html)
 
 
-@patch("skore._utils.repr.base.is_environment_notebook_like", return_value=False)
-@patch("skore.console.print")
-def test_display_help_mixin_rich_path(
-    mock_console_print, mock_notebook, display_with_base_help
-):
+def test_display_help_mixin_rich_path(monkeypatch, display_with_base_help):
     """DisplayHelpMixin.help uses Rich path when not notebook-like."""
+    mock_console_print = Mock()
+    mock_notebook = Mock(return_value=False)
+    monkeypatch.setattr(
+        "skore._utils.repr.base.is_environment_notebook_like", mock_notebook
+    )
+    monkeypatch.setattr("skore.console.print", mock_console_print)
     display_with_base_help.help()
     mock_notebook.assert_called_once()
     mock_console_print.assert_called_once()
