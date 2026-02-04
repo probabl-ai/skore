@@ -33,43 +33,43 @@ class ProgressBar:
     """Simplified progress bar based on ``rich.Progress``."""
 
     def __init__(self, description=None, total=None):
-        self.__description = description
-        self.__total = total
-        self.__progress = SkinnedProgress()
-        self.__task = self.__progress.add_task(description, total=total)
+        self._description = description
+        self._total = total
+        self._progress = SkinnedProgress()
+        self._task = self._progress.add_task(description, total=total)
 
     def __enter__(self):
-        self.__progress.start()
+        self._progress.start()
         return self
 
     def __exit__(self, type, value, traceback):
-        self.__progress.stop()
+        self._progress.stop()
 
     @property
     def description(self) -> str | None:
         """Description of the progress bar."""
-        return self.__description
+        return self._description
 
     @description.setter
     def description(self, value: str | None):
         """Set description of the progress bar."""
-        self.__description = value
-        self.__progress.update(self.__task, description=value, refresh=True)
+        self._description = value
+        self._progress.update(self._task, description=value, refresh=True)
 
     @property
     def total(self) -> float:
         """Total number of steps before the progress bar is considered completed."""
-        return self.__total
+        return self._total
 
     @total.setter
     def total(self, value: float | None):
         """Set total number of steps before the progress bar is considered completed."""
-        self.__total = value
-        self.__progress.update(self.__task, total=value, refresh=True)
+        self._total = value
+        self._progress.update(self._task, total=value, refresh=True)
 
     def advance(self):
         """Advance the progress bar by one step."""
-        self.__progress.update(self.__task, advance=1, refresh=True)
+        self._progress.update(self._task, advance=1, refresh=True)
 
 
 def progress_decorator(
