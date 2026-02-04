@@ -314,10 +314,7 @@ def test_get_documentation_url_class_only(report_with_methods, display_with_meth
     """get_documentation_url returns base class URL with no accessor/method/attribute."""
     for obj in (report_with_methods, display_with_methods):
         url = get_documentation_url(obj=obj)
-        assert url.startswith("https://docs.skore.probabl.ai/")
-        assert "/reference/api/" in url
-        assert "skore." in url and obj.__class__.__name__ in url
-        assert url.endswith(".html")
+        assert re.match(rf'https://docs.skore.probabl.ai/[^/]+/reference/api/skore\.[^/]+{obj.__class__.__name__}.html', url)
         assert "#" not in url
 
 
