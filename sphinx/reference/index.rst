@@ -30,15 +30,8 @@ ML Assistance
 .. list-table::
    :widths: 30 70
 
-   * - :class:`EstimatorReport`
-     - Comprehensive report for evaluating a single scikit-learn estimator
-   * - :class:`CrossValidationReport`
-     - Report for evaluating an estimator using cross-validation
-   * - :class:`ComparisonReport`
-     - Report for comparing multiple estimator or cross-validation reports
    * - :func:`train_test_split`
      - Split arrays or matrices into random train and test subsets
-
 
 .. include:: api/accessor_tables.rst
 

@@ -17,6 +17,14 @@ from sphinx.util import logging
 logger = logging.getLogger(__name__)
 
 
+def get_doc_first_line(obj):
+    doc = getattr(obj, "__doc__", "")
+    if doc:
+        first_line = doc.strip().split("\n")[0].strip()
+        doc = first_line.rstrip(".")
+    return doc
+
+
 def get_accessor_methods(cls: type, accessor_name: str) -> list[tuple[str, str]]:
     """
     Get methods from an accessor by introspecting the accessor class.
@@ -62,28 +70,27 @@ def get_accessor_methods(cls: type, accessor_name: str) -> list[tuple[str, str]]
         if not callable(attr):
             continue
 
-        doc = getattr(attr, "__doc__", "")
-        if doc:
-            first_line = doc.strip().split("\n")[0].strip()
-            doc = first_line.rstrip(".")
+        doc = get_doc_first_line(attr)
 
         methods.append((name, doc))
 
     return sorted(methods)
 
 
-def get_accessor_data(accessor_config: dict[str, Any], cls: type) -> dict[str, Any]:
+def get_accessor_data(cls: type) -> dict[str, Any]:
     """
     Get accessor data for template rendering.
 
     Args:
-        class_name: Short class name (e.g., 'EstimatorReport')
-        accessor_config: The _ACCESSOR_CONFIG dictionary
-        cls: The actual class object
+        cls: The class object
 
     Returns:
         Dictionary with accessor data for template
     """
+    if not hasattr(cls, "_ACCESSOR_CONFIG"):
+        raise ValueError(f"{cls} has no attribute '_ACCESSOR_CONFIG'.")
+    accessor_config: dict = cls._ACCESSOR_CONFIG
+
     accessors = {}
 
     for accessor_info in accessor_config.values():
@@ -93,7 +100,11 @@ def get_accessor_data(accessor_config: dict[str, Any], cls: type) -> dict[str, A
         ]
         accessors[accessor_name] = {"methods": methods}
 
-    return {"name": cls.__name__, "accessors": accessors}
+    return {
+        "name": cls.__name__,
+        "doc": get_doc_first_line(cls),
+        "accessors": accessors,
+    }
 
 
 def generate_accessor_tables(app: Sphinx, config: Any) -> None:
@@ -117,12 +128,7 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
         module = __import__(module_name, fromlist=[class_name])
         cls = getattr(module, class_name)
 
-        if not hasattr(cls, "_ACCESSOR_CONFIG"):
-            raise ValueError(f"{cls} has no attribute '_ACCESSOR_CONFIG'.")
-
-        accessor_config = cls._ACCESSOR_CONFIG
-
-        class_data = get_accessor_data(accessor_config, cls)
+        class_data = get_accessor_data(cls)
         classes_data.append(class_data)
 
         logger.info(f"Collected accessor data for {class_name}")
