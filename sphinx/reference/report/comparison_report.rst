@@ -1,5 +1,5 @@
-Comparing multiple estimators
-=============================
+Comparing multiple reports
+==========================
 
 .. currentmodule:: skore
 
