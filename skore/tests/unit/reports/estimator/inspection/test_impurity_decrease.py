@@ -21,7 +21,7 @@ from skore import EstimatorReport, ImpurityDecreaseDisplay
         ),
     ],
 )
-def test_with_model_exposing_feature_importances_classification(
+def test_with_model_exposing_mean_decrease_impurity_classification(
     binary_classification_train_test_split, estimator
 ):
     """Check that we can create an impurity decrease display from classification model
@@ -30,7 +30,7 @@ def test_with_model_exposing_feature_importances_classification(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    assert hasattr(report.feature_importance, "impurity_decrease")
+    assert hasattr(report.inspection, "impurity_decrease")
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
@@ -42,7 +42,7 @@ def test_with_model_exposing_feature_importances_classification(
         DecisionTreeRegressor(random_state=0),
     ],
 )
-def test_with_model_exposing_feature_importances_regression(
+def test_with_model_exposing_mean_decrease_impurity_regression(
     regression_train_test_split, estimator
 ):
     """Check that we can create an impurity decrease display from regression model
@@ -51,12 +51,12 @@ def test_with_model_exposing_feature_importances_regression(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    assert hasattr(report.feature_importance, "impurity_decrease")
+    assert hasattr(report.inspection, "impurity_decrease")
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
 
-def test_with_model_not_exposing_feature_importances(
+def test_with_model_not_exposing_mean_decrease_impurity(
     binary_classification_train_test_split,
 ):
     """Check that we cannot create an impurity decrease display from model not exposing a
@@ -69,4 +69,4 @@ def test_with_model_not_exposing_feature_importances(
         X_test=X_test,
         y_test=y_test,
     )
-    assert not hasattr(report.feature_importance, "impurity_decrease")
+    assert not hasattr(report.inspection, "impurity_decrease")
