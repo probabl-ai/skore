@@ -76,6 +76,7 @@ estimator.
     EstimatorReport.metrics.rmse
     EstimatorReport.metrics.roc
     EstimatorReport.metrics.roc_auc
+    EstimatorReport.metrics.confusion_matrix
 
 Inspection
 ----------

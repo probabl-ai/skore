@@ -79,6 +79,7 @@ estimator across cross-validation splits.
     CrossValidationReport.metrics.roc
     CrossValidationReport.metrics.roc_auc
     CrossValidationReport.metrics.timings
+    CrossValidationReport.metrics.confusion_matrix
 
 Inspection
 ----------
