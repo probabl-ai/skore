@@ -450,7 +450,7 @@ print("Number of features after feature engineering:", n_features_engineered)
 # Let us display the 15 largest absolute coefficients:
 
 # %%
-engineered_ridge_report_feature_importance = (
+engineered_ridge_report_coefficients = (
     engineered_ridge_report.inspection.coefficients()
     .frame()
     .set_index("feature")
@@ -458,14 +458,14 @@ engineered_ridge_report_feature_importance = (
     .tail(15)
 )
 
-engineered_ridge_report_inspection.index = (
-    engineered_ridge_report_inspection.index.str.replace("remainder__", "")
+engineered_ridge_report_coefficients.index = (
+    engineered_ridge_report_coefficients.index.str.replace("remainder__", "")
 )
-engineered_ridge_report_inspection.index = (
-    engineered_ridge_report_inspection.index.str.replace("kmeans__", "geospatial__")
+engineered_ridge_report_coefficients.index = (
+    engineered_ridge_report_coefficients.index.str.replace("kmeans__", "geospatial__")
 )
 
-engineered_ridge_report_inspection.plot.barh(
+engineered_ridge_report_coefficients.plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
