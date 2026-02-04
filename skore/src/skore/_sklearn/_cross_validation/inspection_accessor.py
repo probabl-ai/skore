@@ -1,12 +1,22 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
+import pandas as pd
+from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
+from skore._sklearn._plot.inspection.permutation_importance import (
+    PermutationImportanceDisplay,
+)
+from skore._sklearn.types import DataSource
 from skore._utils._accessor import _check_cross_validation_sub_estimator_has_coef
+
+Metric = str | Callable | list[str] | tuple[str] | dict[str, Callable] | None
 
 
 class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
@@ -71,6 +81,41 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             ],
             splits=list(range(len(self._parent.estimator_reports_))),
             report_type="cross-validation",
+        )
+
+    def permutation_importance(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        at_step: int | str = 0,
+        metric: Metric = None,
+        n_repeats: int = 5,
+        max_samples: float = 1.0,
+        n_jobs: int | None = None,
+        seed: int | None = None,
+    ) -> PermutationImportanceDisplay:
+        importances = []
+        for report_idx, report in enumerate(self._parent.estimator_reports_):
+            display = report.inspection.permutation_importance(
+                data_source=data_source,
+                X=X,
+                y=y,
+                at_step=at_step,
+                metric=metric,
+                n_repeats=n_repeats,
+                max_samples=max_samples,
+                n_jobs=n_jobs,
+                seed=seed,
+            )
+            df = display.importances
+            df["split"] = report_idx
+            importances.append(df)
+
+        importances = pd.concat(importances, axis="index")
+        return PermutationImportanceDisplay(
+            importances=importances, report_type="cross-validation"
         )
 
     ####################################################################################

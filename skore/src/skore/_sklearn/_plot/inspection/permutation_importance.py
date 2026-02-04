@@ -26,12 +26,13 @@ class PermutationImportanceDisplay(DisplayMixin):
         - `estimator`
         - `data_source`
         - `metric`
+        - `split`
         - `feature`
         - `label` or `output` (classification vs. regression)
         - `repetition`
         - `value`
 
-    report_type : {"estimator"}
+    report_type : {"estimator", "cross-validation"}
         Report type from which the display is created.
     """
 
@@ -123,6 +124,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             "estimator",
             "data_source",
             "metric",
+            "split",
             "feature",
             "label",
             "output",
@@ -132,6 +134,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         df_importances = pd.concat(df_importances, axis="index")
         df_importances["data_source"] = data_source
         df_importances["estimator"] = estimator_name
+        df_importances["split"] = np.nan
 
         return PermutationImportanceDisplay(
             importances=df_importances[ordered_columns], report_type=report_type
@@ -147,13 +150,15 @@ class PermutationImportanceDisplay(DisplayMixin):
             columns_to_groupby.append("label")
         if "output" in frame.columns and frame["output"].nunique() > 1:
             columns_to_groupby.append("output")
+        if "split" in frame.columns and frame["split"].nunique() > 1:
+            columns_to_groupby.append("split")
         return columns_to_groupby
 
     @DisplayMixin.style_plot
     def plot(
         self,
         *,
-        subplot_by: str | tuple[str, str] | None = "auto",
+        subplot_by: str | tuple[str, ...] | None = "auto",
         metric: str | list[str] | None = None,
     ) -> None:
         """Plot the permutation importance.
@@ -168,10 +173,10 @@ class PermutationImportanceDisplay(DisplayMixin):
             - if a string, the corresponding column of the dataframe is used to create
               several subplots. Those plots will be a organized in a grid of a single
               row and several columns.
-            - if a tuple of strings, the corresponding columns of the dataframe are used
-              to create several subplots. Those plots will be a organized in a grid of
-              several rows and columns. The first element of the tuple is the row and
-              the second element is the column.
+            - if a tuple of 2 strings, the corresponding columns are used to create
+              subplots in a grid. The first element is the row, the second is the column.
+            - if a tuple of 3 strings, all three facets (row, column, hue) are used.
+              The order is (row, col, hue).
             - if `None`, all information is plotted on a single plot. An error is raised
               if there is too much information to plot on a single plot.
 
@@ -184,7 +189,7 @@ class PermutationImportanceDisplay(DisplayMixin):
     def _plot_matplotlib(
         self,
         *,
-        subplot_by: str | tuple[str, str] | None = "auto",
+        subplot_by: str | tuple[str, ...] | None = "auto",
         metric: str | list[str] | None = None,
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
@@ -213,7 +218,7 @@ class PermutationImportanceDisplay(DisplayMixin):
     def _plot_single_estimator(
         self,
         *,
-        subplot_by: str | tuple[str, str] | None,
+        subplot_by: str | tuple[str, ...] | None,
         frame: pd.DataFrame,
         estimator_name: str,
         boxplot_kwargs: dict[str, Any],
@@ -223,24 +228,29 @@ class PermutationImportanceDisplay(DisplayMixin):
         if subplot_by == "auto":
             is_multi_metric = frame["metric"].nunique() > 1
             is_multi_target = any(name in frame.columns for name in ["label", "output"])
-            if is_multi_metric and is_multi_target:
-                hue, col, row = (
-                    "label" if "label" in frame.columns else "output",
-                    "metric",
-                    None,
-                )
-            elif is_multi_metric:
-                hue, col, row = None, "metric", None
-            elif is_multi_target:
-                hue, col, row = (
-                    "label" if "label" in frame.columns else "output",
-                    None,
-                    None,
-                )
-            else:
-                hue, col, row = None, None, None
+            is_cross_validation = self.report_type == "cross-validation"
+
+            # Build list of dimensions in priority order: hue > col > row
+            target_col = "label" if "label" in frame.columns else "output"
+            dimensions = []
+            if is_multi_target:
+                dimensions.append(target_col)
+            if is_multi_metric:
+                dimensions.append("metric")
+            if is_cross_validation:
+                dimensions.append("split")
+
+            match len(dimensions):
+                case 0:
+                    hue, col, row = None, None, None
+                case 1:
+                    hue, col, row = dimensions[0], None, None
+                case 2:
+                    hue, col, row = dimensions[0], dimensions[1], None
+                case _:
+                    hue, col, row = dimensions[0], dimensions[1], dimensions[2]
         elif subplot_by is None:
-            # Possible accepted values: {"metric"}, {"label"}, {"output"}
+            # Possible accepted values: {"metric"}, {"label"}, {"output"}, {"split"}
             columns_to_groupby = self._get_columns_to_groupby(frame=frame)
             n_columns_to_groupby = len(columns_to_groupby)
             if n_columns_to_groupby > 1:
@@ -255,29 +265,42 @@ class PermutationImportanceDisplay(DisplayMixin):
             else:
                 hue, col, row = None, None, None
         else:
-            # Possible accepted values: {"metric"}, {"metric", "label"},
-            # {"metric", "output"}
+            # Possible accepted values: {"metric"}, {"label"}, {"output"}, {"split"},
+            # {"metric", "label"}, {"metric", "output"}, {"metric", "split"},
+            # {"metric", "label", "split"}, {"metric", "output", "split"}
             columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-            if isinstance(subplot_by, str):
-                if subplot_by not in columns_to_groupby:
+            subplot_cols = (subplot_by,) if isinstance(subplot_by, str) else subplot_by
+            invalid = [c for c in subplot_cols if c not in columns_to_groupby]
+            if invalid:
+                raise ValueError(
+                    f"The column(s) {invalid} are not available. You can use the "
+                    "following values to create subplots: "
+                    f"{', '.join(columns_to_groupby)}"
+                )
+
+            remaining = set(columns_to_groupby) - set(subplot_cols)
+
+            match len(subplot_cols):
+                case 1:
+                    col, row, hue = (
+                        subplot_cols[0],
+                        None,
+                        (next(iter(remaining)) if remaining else None),
+                    )
+                case 2:
+                    row, col, hue = (
+                        subplot_cols[0],
+                        subplot_cols[1],
+                        (next(iter(remaining)) if remaining else None),
+                    )
+                case 3:
+                    row, col, hue = subplot_cols[0], subplot_cols[1], subplot_cols[2]
+                case _:
                     raise ValueError(
-                        f"The column {subplot_by} is not available. You can use the "
-                        "following values to create subplots: "
+                        "Expected 1 to 3 columns for subplot_by, got "
+                        f"{len(subplot_cols)}. You can use the following values: "
                         f"{', '.join(columns_to_groupby)}"
                     )
-                col, row = subplot_by, None
-                if remaining_column := set(columns_to_groupby) - {subplot_by}:
-                    hue = next(iter(remaining_column))
-                else:
-                    hue = None
-            else:
-                if not all(item in columns_to_groupby for item in subplot_by):
-                    raise ValueError(
-                        f"The columns {subplot_by} are not available. You can use the "
-                        "following values to create subplots: "
-                        f"{', '.join(columns_to_groupby)}"
-                    )
-                (row, col), hue = subplot_by, None
 
         if hue is None:
             # we don't need the palette and we are at risk of raising an error or
@@ -356,8 +379,11 @@ class PermutationImportanceDisplay(DisplayMixin):
             Dataframe containing the importances.
         """
         if self.report_type == "estimator":
-            columns_to_drop = ["estimator"]
+            columns_to_drop = ["estimator", "split"]
             group_by = ["data_source", "metric", "feature"]
+        elif self.report_type == "cross-validation":
+            columns_to_drop = ["estimator"]
+            group_by = ["data_source", "metric", "split", "feature"]
         else:
             raise TypeError(f"Unexpected report type: {self.report_type!r}")
 

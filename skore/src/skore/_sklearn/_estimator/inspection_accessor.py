@@ -148,7 +148,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         max_samples: float = 1.0,
         n_jobs: int | None = None,
         seed: int | None = None,
-    ) -> pd.DataFrame:
+    ) -> PermutationImportanceDisplay:
         """Report the permutation feature importance.
 
         This computes the permutation importance using sklearn's
