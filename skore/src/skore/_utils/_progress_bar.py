@@ -31,6 +31,8 @@ SkinnedProgress = partial(
 
 
 class ProgressBar:
+    """Simplified progress bar based on ``rich.Progress``."""
+
     def __init__(self, description=None, total=None):
         self.__description = description
         self.__total = total
@@ -50,6 +52,7 @@ class ProgressBar:
 
     @description.setter
     def description(self, value: str | None):
+        self.__description = value
         self.__progress.update(self.__task, description=value, refresh=True)
 
     @property
