@@ -430,6 +430,6 @@ class PermutationImportanceDisplay(DisplayMixin):
         """
         return super().set_style(
             policy=policy,
-            boxplot_kwargs=boxplot_kwargs,
-            stripplot_kwargs=stripplot_kwargs,
+            boxplot_kwargs=boxplot_kwargs or {},
+            stripplot_kwargs=stripplot_kwargs or {},
         )
