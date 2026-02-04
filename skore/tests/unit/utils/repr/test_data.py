@@ -255,8 +255,7 @@ def test_get_public_methods_accessor_excludes_help(accessor_with_methods):
 )
 def test_get_method_short_summary(method_name, expected):
     """get_method_short_summary returns first docstring line or fallback."""
-    obj = _ClassWithDocstringMethod()
-    method = getattr(obj, method_name)
+    method = getattr(_ClassWithDocstringMethod(), method_name)
     assert get_method_short_summary(method) == expected
 
 
