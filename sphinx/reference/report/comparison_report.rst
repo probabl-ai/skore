@@ -1,11 +1,11 @@
-Report for a comparison of :class:`EstimatorReport`
-===================================================
+Comparing multiple reports
+==========================
 
 .. currentmodule:: skore
 
 The class :class:`ComparisonReport` provides a report allowing to compare
-:class:`EstimatorReport` instances in an interactive way. The functionalities of the
-report are accessible through accessors.
+:class:`EstimatorReport` or :class:`CrossValidationReport` instances in an interactive
+way. The functionalities of the report are accessible through accessors.
 
 .. autosummary::
     :toctree: ../api/
