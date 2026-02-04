@@ -3,7 +3,6 @@ from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from skore import CrossValidationReport, EstimatorReport
 
-from skore_hub_project import Project
 from skore_hub_project.artifact.media import (
     EstimatorHtmlRepr,
     MeanDecreaseImpurity,
@@ -34,6 +33,7 @@ from skore_hub_project.metric import (
     RocAucTest,
     RocAucTrain,
 )
+from skore_hub_project.project.project import Project
 from skore_hub_project.report import EstimatorReportPayload
 
 

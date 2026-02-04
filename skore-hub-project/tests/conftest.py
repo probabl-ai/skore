@@ -188,9 +188,7 @@ def monkeypatch_matplotlib(monkeypatch):
 
 @fixture
 def monkeypatch_skore_hub_envars(monkeypatch):
-    """
-    Delete environment variables that can bias the tests.
-    """
+    """Delete environment variables that can bias the tests."""
     monkeypatch.delenv("SKORE_HUB_API_KEY", raising=False)
     monkeypatch.delenv("SKORE_HUB_URI", raising=False)
 
@@ -224,6 +222,12 @@ def monkeypatch_rich(monkeypatch):
     monkeypatch.setattr("skore_hub_project.console.quiet", True)
 
 
+@fixture
+def monkeypatch_global_variables(monkeypatch):
+    """Reset global variables that can bias the tests."""
+    monkeypatch.setattr("skore_hub_project.authentication.login.credentials", None)
+
+
 @fixture(autouse=True)
 def setup(
     monkeypatch_tmpdir,
@@ -232,4 +236,5 @@ def setup(
     monkeypatch_skore_hub_envars,
     monkeypatch_sklearn_estimator_html_repr,
     monkeypatch_rich,
+    monkeypatch_global_variables,
 ): ...

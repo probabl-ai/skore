@@ -6,7 +6,7 @@ from sklearn.base import BaseEstimator
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn._plot.feature_importance.utils import _decorate_matplotlib_axis
+from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import ReportType
 

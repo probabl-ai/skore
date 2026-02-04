@@ -1,462 +1,419 @@
-import contextlib
-import copy
-
-import numpy as np
-import pandas as pd
 import pytest
-from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
-from sklearn.datasets import make_regression
 from sklearn.decomposition import PCA
 from sklearn.exceptions import NotFittedError
-from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import make_scorer, r2_score, root_mean_squared_error
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import SplineTransformer, StandardScaler
 
-from skore import EstimatorReport, train_test_split
-from skore._utils._testing import check_cache_changed, check_cache_unchanged
+from skore import EstimatorReport, PermutationImportanceDisplay
+from skore._utils._testing import check_cache_changed
 
 
-def regression_data() -> dict:
-    X, y = make_regression(n_features=3, random_state=42)
-    split_data = train_test_split(X, y, test_size=0.2, random_state=42, as_dict=True)
-    return split_data
-
-
-def regression_data_dataframe():
-    data = regression_data()
-    columns = ["my_feature_0", "my_feature_1", "my_feature_2"]
-    data["X_train"] = pd.DataFrame(data["X_train"], columns=columns)
-    data["X_test"] = pd.DataFrame(data["X_test"], columns=columns)
-    return data
-
-
-repeat_columns = pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat")
-
-multi_index_numpy = pd.MultiIndex.from_product(
-    [["r2"], (f"Feature #{i}" for i in range(3))],
-    names=("Metric", "Feature"),
-)
-
-multi_index_pandas = pd.MultiIndex.from_product(
-    [["r2"], (f"my_feature_{i}" for i in range(3))],
-    names=("Metric", "Feature"),
-)
-
-
-def case_default_args_numpy():
-    data = regression_data()
-
-    kwargs = {"seed": 42}
-
-    return data, kwargs, multi_index_numpy, repeat_columns
-
-
-def case_r2_numpy():
-    data = regression_data()
-
-    kwargs = {"metric": make_scorer(r2_score), "seed": 42}
-
-    return (
-        data,
-        kwargs,
-        pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
-        repeat_columns,
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_permutation_importance_returns_display(regression_train_test_split, n_jobs):
+    """Test that permutation importance returns a PermutationImportanceDisplay."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
     )
+    display = report.inspection.permutation_importance(seed=42, n_jobs=n_jobs)
+
+    assert isinstance(display, PermutationImportanceDisplay)
+    assert hasattr(display, "importances")
+    assert hasattr(display, "frame")
 
 
-def case_train_numpy():
-    data = regression_data()
-
-    kwargs = {"data_source": "train", "metric": "r2", "seed": 42}
-
-    return data, kwargs, multi_index_numpy, repeat_columns
-
-
-def case_several_scoring_numpy():
-    data = regression_data()
-
-    kwargs = {"metric": ["r2", "rmse"], "seed": 42}
-
-    expected_index = pd.MultiIndex.from_product(
-        [
-            ["r2", "rmse"],
-            (f"Feature #{i}" for i in range(3)),
-        ],
-        names=("Metric", "Feature"),
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_not_fitted_error(regression_train_test_split, n_jobs):
+    """Test that NotFittedError is raised when estimator is not fitted."""
+    _, X_test, _, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(), fit=False, X_test=X_test, y_test=y_test
     )
-
-    return data, kwargs, expected_index, repeat_columns
-
-
-def case_X_y():
-    data = regression_data()
-    X, y = data["X_train"], data["y_train"]
-
-    kwargs = {"data_source": "X_y", "X": X, "y": y, "seed": 42}
-
-    return data, kwargs, multi_index_numpy, repeat_columns
-
-
-def case_aggregate():
-    data = regression_data()
-
-    kwargs = {"data_source": "train", "aggregate": "mean", "seed": 42}
-
-    return data, kwargs, multi_index_numpy, pd.Index(["mean"], dtype="object")
-
-
-def case_default_args_pandas():
-    data = regression_data_dataframe()
-
-    kwargs = {"seed": 42}
-
-    return data, kwargs, multi_index_pandas, repeat_columns
-
-
-def case_r2_pandas():
-    data = regression_data_dataframe()
-
-    kwargs = {"metric": make_scorer(r2_score), "seed": 42}
-
-    return (
-        data,
-        kwargs,
-        pd.Index((f"my_feature_{i}" for i in range(3)), name="Feature"),
-        repeat_columns,
-    )
-
-
-def case_train_pandas():
-    data = regression_data_dataframe()
-
-    kwargs = {"data_source": "train", "seed": 42}
-
-    return data, kwargs, multi_index_pandas, repeat_columns
-
-
-def case_several_metric_pandas():
-    data = regression_data_dataframe()
-
-    kwargs = {"metric": ["r2", "rmse"], "seed": 42}
-
-    expected_index = pd.MultiIndex.from_product(
-        [
-            ["r2", "rmse"],
-            (f"my_feature_{i}" for i in range(3)),
-        ],
-        names=("Metric", "Feature"),
-    )
-
-    return data, kwargs, expected_index, repeat_columns
-
-
-@pytest.mark.parametrize(
-    "estimator",
-    [
-        pytest.param(LinearRegression(), id="linear_regression"),
-        pytest.param(
-            make_pipeline(StandardScaler(), LinearRegression()), id="pipeline"
-        ),
-    ],
-)
-@pytest.mark.parametrize(
-    "params",
-    [
-        case_default_args_numpy,
-        case_r2_numpy,
-        case_train_numpy,
-        case_several_scoring_numpy,
-        case_aggregate,
-        case_default_args_pandas,
-        case_r2_pandas,
-        case_train_pandas,
-        case_several_metric_pandas,
-        case_X_y,
-    ],
-)
-def test(estimator, params):
-    data, kwargs, expected_index, expected_columns = params()
-
-    report = EstimatorReport(estimator, **data)
-    result = report.feature_importance.permutation(**kwargs)
-
-    # Do not check values
-    pd.testing.assert_index_equal(result.index, expected_index)
-    pd.testing.assert_index_equal(result.columns, expected_columns)
-
-
-def test_cache_n_jobs(regression_data):
-    """Results are properly cached. `n_jobs` is not in the cache."""
-    X, y = regression_data
-    report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
-
-    with check_cache_changed(report._cache):
-        result = report.feature_importance.permutation(
-            data_source="train", seed=42, n_jobs=1
-        )
-
-    with check_cache_unchanged(report._cache):
-        cached_result = report.feature_importance.permutation(
-            data_source="train", seed=42, n_jobs=-1
-        )
-
-    pd.testing.assert_frame_equal(cached_result, result)
-
-
-def test_cache_seed_error(regression_data):
-    """Check that we only accept int and None as value for `seed`."""
-
-    X, y = regression_data
-    report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
-    assert report._cache == {}
-
-    err_msg = "seed must be an integer or None"
-    with pytest.raises(ValueError, match=err_msg):
-        report.feature_importance.permutation(
-            data_source="train", seed=np.random.RandomState(42)
-        )
-
-
-def test_cache_seed_none(regression_data):
-    """Check the strategy on how we use the cache when `seed` is None.
-
-    In this case, we store the result in the cache for sending to the hub but we
-    always retrigger the computation.
-    """
-
-    X, y = regression_data
-    report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
-    assert report._cache == {}
-
-    importance_first_call = report.feature_importance.permutation(data_source="train")
-    assert report._cache != {}
-    importance_second_call = report.feature_importance.permutation(data_source="train")
-    # the dataframes should be different
-    with contextlib.suppress(AssertionError):
-        pd.testing.assert_frame_equal(importance_first_call, importance_second_call)
-    # the cache should contain the last result
-    assert len(report._cache) == 1
-    key = next(iter(report._cache.keys()))
-    pd.testing.assert_frame_equal(report._cache[key], importance_second_call)
-
-
-def test_cache_seed_int(regression_data):
-    """Check the strategy on how we use the cache when `seed` is an int.
-
-    In this case, we store and reload from the cache
-    """
-    X, y = regression_data
-    report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
-    assert report._cache == {}
-
-    importance_first_call = report.feature_importance.permutation(
-        data_source="train", seed=42
-    )
-    assert report._cache != {}
-    importance_second_call = report.feature_importance.permutation(
-        data_source="train", seed=42
-    )
-    # the dataframes should be the same
-    pd.testing.assert_frame_equal(importance_first_call, importance_second_call)
-    # the cache should contain the last result
-    assert len(report._cache) == 1
-    key = next(iter(report._cache.keys()))
-    pd.testing.assert_frame_equal(report._cache[key], importance_second_call)
-
-
-def test_cache_metric(regression_data):
-    """`metric` is in the cache."""
-
-    X, y = regression_data
-    report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
-
-    report.feature_importance.permutation(data_source="train", metric="r2", seed=42)
-
-    # Metrics are different, so cache keys should be different
-    with check_cache_changed(report._cache):
-        report.feature_importance.permutation(
-            data_source="train", metric="rmse", seed=42
-        )
-
-
-@pytest.mark.parametrize(
-    "metric",
-    [
-        make_scorer(r2_score),
-        ["r2", "rmse"],
-        {"r2": make_scorer(r2_score), "rmse": make_scorer(root_mean_squared_error)},
-    ],
-)
-def test_cache_metric_is_callable(regression_data, metric):
-    """If `metric` is a callable then the result is cached properly."""
-
-    X, y = regression_data
-    report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
-
-    with check_cache_changed(report._cache):
-        result = report.feature_importance.permutation(
-            data_source="train", metric=metric, seed=42
-        )
-
-    with check_cache_unchanged(report._cache):
-        cached_result = report.feature_importance.permutation(
-            data_source="train", metric=copy.copy(metric), seed=42
-        )
-
-    pd.testing.assert_frame_equal(cached_result, result)
-
-
-def test_classification(binary_classification_data):
-    """If `metric` is a callable then the result is cached properly."""
-
-    X, y = binary_classification_data
-    report = EstimatorReport(LogisticRegression(), X_train=X, y_train=y)
-
-    result = report.feature_importance.permutation(data_source="train", seed=42)
-
-    pd.testing.assert_index_equal(
-        result.index,
-        pd.MultiIndex.from_product(
-            [["accuracy"], (f"Feature #{i}" for i in range(X.shape[1]))],
-            names=("Metric", "Feature"),
-        ),
-    )
-    pd.testing.assert_index_equal(result.columns, repeat_columns)
-
-
-def test_not_fitted(regression_data):
-    """If estimator is not fitted, raise"""
-    X, y = regression_data
-
-    report = EstimatorReport(LinearRegression(), fit=False, X_test=X, y_test=y)
 
     error_msg = "This LinearRegression instance is not fitted yet"
     with pytest.raises(NotFittedError, match=error_msg):
-        report.feature_importance.permutation()
+        report.inspection.permutation_importance(seed=42, n_jobs=n_jobs)
 
 
-class TestAtStep:
-    @pytest.fixture(params=["numpy", "dataframe"])
-    def split_data(self, request):
-        array_type = request.param
+@pytest.mark.parametrize("n_jobs", [1, 2])
+@pytest.mark.parametrize(
+    "at_step, expected_features",
+    [
+        (0, ["Feature #0", "Feature #1", "Feature #2", "Feature #3", "Feature #4"]),
+        (1, ["x0", "x1", "x2", "x3", "x4"]),
+        (-1, ["pca0", "pca1"]),
+    ],
+)
+def test_at_step_int(regression_train_test_split, n_jobs, at_step, expected_features):
+    """Test the `at_step` integer parameter for permutation importance with a
+    pipeline."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    pipeline = make_pipeline(StandardScaler(), PCA(n_components=2), LinearRegression())
+    report = EstimatorReport(
+        pipeline, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
 
-        if array_type == "numpy":
-            return regression_data()
-        elif array_type == "dataframe":
-            return regression_data_dataframe()
+    display = report.inspection.permutation_importance(
+        seed=42, at_step=at_step, n_jobs=n_jobs
+    )
 
-    @pytest.fixture
-    def pipeline_report(self, split_data) -> EstimatorReport:
-        pipeline = make_pipeline(
+    assert isinstance(display, PermutationImportanceDisplay)
+    actual_features = sorted(display.importances["feature"].unique())
+    assert actual_features == sorted(expected_features)
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_at_step_str(regression_train_test_split, n_jobs):
+    """Test the `at_step` string parameter for permutation importance with a
+    pipeline."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    pipeline = make_pipeline(StandardScaler(), PCA(n_components=2), LinearRegression())
+    report = EstimatorReport(
+        pipeline, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    display = report.inspection.permutation_importance(
+        seed=42, at_step="pca", n_jobs=n_jobs
+    )
+
+    assert isinstance(display, PermutationImportanceDisplay)
+    expected_features = ["x0", "x1", "x2", "x3", "x4"]
+    actual_features = sorted(display.importances["feature"].unique())
+    assert actual_features == sorted(expected_features)
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_at_step_non_pipeline(regression_train_test_split, n_jobs):
+    """For non-pipeline estimators, changing at_step should not change the results."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    display_start = report.inspection.permutation_importance(
+        seed=42, at_step=0, n_jobs=n_jobs
+    )
+    display_end = report.inspection.permutation_importance(
+        seed=42, at_step=-1, n_jobs=n_jobs
+    )
+    assert len(display_start.importances) == len(display_end.importances)
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+@pytest.mark.parametrize(
+    "at_step, err_msg",
+    [
+        (8, "at_step must be strictly smaller in magnitude than"),
+        (-8, "at_step must be strictly smaller in magnitude than"),
+        ("hello", "not in list"),
+        (0.5, "at_step must be an integer or a string"),
+    ],
+)
+def test_at_step_value_error(regression_train_test_split, n_jobs, at_step, err_msg):
+    """If `at_step` value is not appropriate, a ValueError is raised."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    pipeline = make_pipeline(StandardScaler(), PCA(n_components=2), LinearRegression())
+    report = EstimatorReport(
+        pipeline, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    with pytest.raises(ValueError, match=err_msg):
+        report.inspection.permutation_importance(
+            seed=42, at_step=at_step, n_jobs=n_jobs
+        )
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+@pytest.mark.parametrize(
+    "metric, expected_metric_name",
+    [
+        ("r2", "r2"),
+        (make_scorer(r2_score), "r2 score"),
+        (make_scorer(root_mean_squared_error), "root mean squared error"),
+    ],
+)
+def test_metric_parameter(
+    regression_train_test_split, n_jobs, metric, expected_metric_name
+):
+    """Test that different metric parameters work correctly."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    display = report.inspection.permutation_importance(
+        seed=42, metric=metric, n_jobs=n_jobs
+    )
+
+    assert isinstance(display, PermutationImportanceDisplay)
+    metrics = display.importances["metric"].unique()
+    assert len(metrics) == 1
+    assert metrics[0] == expected_metric_name
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_metric_list(regression_train_test_split, n_jobs):
+    """Test that metric as a list works correctly."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    display = report.inspection.permutation_importance(
+        seed=42, metric=["r2", "neg_mean_squared_error"], n_jobs=n_jobs
+    )
+
+    assert isinstance(display, PermutationImportanceDisplay)
+    metrics = display.importances["metric"].unique()
+    assert len(metrics) == 2
+    assert set(metrics) == {"r2", "neg_mean_squared_error"}
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_metric_dict(regression_train_test_split, n_jobs):
+    """Test that metric as a dict works correctly."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    metric_dict = {
+        "r2": make_scorer(r2_score),
+        "rmse": make_scorer(root_mean_squared_error),
+    }
+    display = report.inspection.permutation_importance(
+        seed=42, metric=metric_dict, n_jobs=n_jobs
+    )
+
+    assert isinstance(display, PermutationImportanceDisplay)
+    # Check that we have the expected unique metric values (dict keys)
+    metrics = display.importances["metric"].unique()
+    assert len(metrics) == 2
+    assert set(metrics) == {"r2", "rmse"}
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+@pytest.mark.parametrize("max_samples", [0.5, 1.0])
+def test_max_samples_parameter(regression_train_test_split, n_jobs, max_samples):
+    """Test that max_samples parameter works correctly."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    display = report.inspection.permutation_importance(
+        seed=42, max_samples=max_samples, n_jobs=n_jobs
+    )
+
+    assert isinstance(display, PermutationImportanceDisplay)
+    assert len(display.importances) > 0
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_cache_display_stored(regression_train_test_split, n_jobs):
+    """Test that the display object is stored in cache."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    assert report._cache == {}
+
+    with check_cache_changed(report._cache):
+        display = report.inspection.permutation_importance(
+            data_source="train", seed=42, n_jobs=n_jobs
+        )
+
+    assert len(report._cache) == 1
+    key = next(iter(report._cache.keys()))
+    cached_display = report._cache[key]
+    assert isinstance(cached_display, PermutationImportanceDisplay)
+    assert cached_display is display
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+@pytest.mark.parametrize(
+    "param_name, first_value, second_value, use_pipeline",
+    [
+        ("metric", "r2", make_scorer(root_mean_squared_error), False),
+        ("at_step", 0, -1, True),
+        ("max_samples", 0.5, 0.8, False),
+    ],
+)
+def test_cache_parameter_in_cache(
+    regression_train_test_split,
+    n_jobs,
+    param_name,
+    first_value,
+    second_value,
+    use_pipeline,
+):
+    """Test that metric, at_step, and max_samples are part of the cache key."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+
+    if use_pipeline:
+        estimator = make_pipeline(
             StandardScaler(), PCA(n_components=2), LinearRegression()
         )
-        return EstimatorReport(pipeline, **split_data)
+    else:
+        estimator = LinearRegression()
 
-    @pytest.mark.parametrize("at_step", [0, -1, 1])
-    def test_int(self, pipeline_report, at_step):
-        """
-        Test the `at_step` integer parameter for permutation importance with a pipeline.
-        """
-        result = pipeline_report.feature_importance.permutation(
-            seed=42, at_step=at_step
-        )
-
-        assert isinstance(result.index, pd.MultiIndex)
-        assert result.index.nlevels == 2
-        assert result.index.names == ["Metric", "Feature"]
-        assert result.shape[0] > 0
-
-    def test_str(self, pipeline_report):
-        """
-        Test the `at_step` string parameter for permutation importance with a pipeline.
-        """
-        result = pipeline_report.feature_importance.permutation(seed=42, at_step="pca")
-
-        assert isinstance(result.index, pd.MultiIndex)
-        assert result.index.nlevels == 2
-        assert result.index.names == ["Metric", "Feature"]
-        assert result.shape[0] > 0
-
-    def test_non_pipeline(self, split_data):
-        """
-        For non-pipeline estimators, changing at_step should not change the results.
-        """
-        report = EstimatorReport(LinearRegression(), **split_data)
-
-        result_start = report.feature_importance.permutation(seed=42, at_step=0)
-        result_end = report.feature_importance.permutation(seed=42, at_step=-1)
-
-        pd.testing.assert_frame_equal(result_start, result_end)
-
-    AT_STEP_TOO_LARGE = (
-        "at_step must be strictly smaller in magnitude than "
-        "the number of steps in the Pipeline"
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    @pytest.mark.parametrize(
-        "at_step, err_msg",
-        [
-            (8, AT_STEP_TOO_LARGE),
-            (-8, AT_STEP_TOO_LARGE),
-            ("hello", "not in list"),
-            (0.5, "at_step must be an integer or a string"),
-        ],
+    # First call with first parameter value
+    kwargs1 = {
+        "data_source": "train",
+        "seed": 42,
+        "n_jobs": n_jobs,
+        param_name: first_value,
+    }
+    report.inspection.permutation_importance(**kwargs1)
+
+    # Different parameter value should create a new cache entry
+    with check_cache_changed(report._cache):
+        kwargs2 = {
+            "data_source": "train",
+            "seed": 42,
+            "n_jobs": n_jobs,
+            param_name: second_value,
+        }
+        report.inspection.permutation_importance(**kwargs2)
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_cache_seed_none(regression_train_test_split, n_jobs):
+    """Test cache behavior when seed is None - should not cache."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
     )
-    def test_value_error(self, pipeline_report, at_step, err_msg):
-        """If `at_step` value is not appropriate, a ValueError is raised."""
-        with pytest.raises(ValueError, match=err_msg):
-            pipeline_report.feature_importance.permutation(seed=42, at_step=at_step)
+    assert report._cache == {}
 
-    def test_sparse_array(self, split_data):
-        """If one of the steps outputs a sparse array, `permutation` still works."""
-        pipeline = make_pipeline(
-            SplineTransformer(sparse_output=True), LinearRegression()
-        )
-        report = EstimatorReport(pipeline, **split_data)
+    report.inspection.permutation_importance(data_source="train", n_jobs=n_jobs)
+    assert len(report._cache) == 1
 
-        report.feature_importance.permutation(seed=42, at_step=-1)
+    display2 = report.inspection.permutation_importance(
+        data_source="train", n_jobs=n_jobs
+    )
+    assert len(report._cache) == 1
+    key = next(iter(report._cache.keys()))
+    cached_display = report._cache[key]
+    assert cached_display is display2
 
-    def test_feature_names(self, split_data):
-        """If the requested pipeline step gives proper feature names,
-        these names should appear in the output."""
-        pipeline = make_pipeline(SplineTransformer(), LinearRegression())
-        report = EstimatorReport(pipeline, **split_data)
 
-        result = report.feature_importance.permutation(seed=42, at_step=-1)
-        last_step_feature_names = list(report.estimator_[0].get_feature_names_out())
-        assert list(result.index.levels[1]) == last_step_feature_names
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_cache_seed_int(regression_train_test_split, n_jobs):
+    """Test cache behavior when seed is an int - should use cache."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    assert report._cache == {}
 
-    @pytest.mark.parametrize("at_step", [0, -1])
-    def test_non_sklearn_pipeline(self, split_data, at_step):
-        """If the pipeline contains non-sklearn-compliant transformers,
-        `permutation` still works."""
+    display1 = report.inspection.permutation_importance(
+        data_source="train", seed=42, n_jobs=n_jobs
+    )
+    assert display1 is not None
+    assert isinstance(display1, PermutationImportanceDisplay)
+    assert len(report._cache) == 1
 
-        class Scaler(TransformerMixin, BaseEstimator):
-            def fit(self, X, y=None):
-                self.mean_ = X.mean(axis=0)
-                self.std_ = X.std(axis=0)
-                return self
+    display2 = report.inspection.permutation_importance(
+        data_source="train", seed=42, n_jobs=n_jobs
+    )
+    assert display2 is not None
+    assert isinstance(display2, PermutationImportanceDisplay)
+    assert display1.importances.equals(display2.importances)
+    assert len(report._cache) == 1
 
-            def transform(self, X, y=None):
-                X_ = X.copy()
-                return (X_ - self.mean_) / self.std_
 
-        class Regressor(RegressorMixin, BaseEstimator):
-            _is_fitted = False
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_classification(logistic_binary_classification_with_train_test, n_jobs):
+    """Test permutation importance with classification data."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
 
-            def fit(self, X, y):
-                self.y_mean = np.mean(y)
-                self._is_fitted = True
-                return self
+    display = report.inspection.permutation_importance(
+        data_source="train", seed=42, n_jobs=n_jobs
+    )
 
-            def predict(self, X):
-                return np.full(X.shape[0], self.y_mean)
+    assert isinstance(display, PermutationImportanceDisplay)
+    assert len(display.importances) > 0
+    assert "accuracy" in display.importances["metric"].unique()
 
-            def __sklearn_is_fitted__(self):
-                return self._is_fitted
 
-        pipeline = make_pipeline(Scaler(), Regressor())
-        report = EstimatorReport(pipeline, **split_data)
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_sparse_array(regression_train_test_split, n_jobs):
+    """Test that permutation importance works with sparse arrays."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    pipeline = make_pipeline(SplineTransformer(sparse_output=True), LinearRegression())
+    report = EstimatorReport(
+        pipeline, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
 
-        report.feature_importance.permutation(seed=42, at_step=at_step)
+    display = report.inspection.permutation_importance(
+        seed=42, at_step=-1, n_jobs=n_jobs
+    )
+
+    assert isinstance(display, PermutationImportanceDisplay)
+    assert len(display.importances) > 0
+
+
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_feature_names_from_pipeline(regression_train_test_split, n_jobs):
+    """Test that feature names from pipeline steps are used correctly."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    pipeline = make_pipeline(SplineTransformer(), LinearRegression())
+    report = EstimatorReport(
+        pipeline, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    display = report.inspection.permutation_importance(
+        seed=42, at_step=-1, n_jobs=n_jobs
+    )
+
+    assert isinstance(display, PermutationImportanceDisplay)
+    assert "feature" in display.importances.columns
+    assert len(display.importances["feature"].unique()) > 0

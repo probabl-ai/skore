@@ -26,7 +26,7 @@ the API of each display.
    PrecisionRecallCurveDisplay
    PredictionErrorDisplay
 
-.. rubric:: Feature Importance
+.. rubric:: Inspection
 
 .. autosummary::
    :toctree: ../api/
@@ -34,6 +34,7 @@ the API of each display.
 
    CoefficientsDisplay
    ImpurityDecreaseDisplay
+   PermutationImportanceDisplay
 
 .. rubric:: General API
 

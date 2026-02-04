@@ -178,28 +178,11 @@ confusion_matrix.plot()
 # model, we can study the importance that it gives to each feature:
 
 # %%
-coefficients = simple_cv_report.feature_importance.coefficients()
+coefficients = simple_cv_report.inspection.coefficients()
 coefficients.frame()
 
 # %%
-
-# sphinx_gallery_start_ignore
-# TODO: Replace with top_k argument when available
-# sphinx_gallery_end_ignore
-
-(
-    coefficients.frame()
-    .groupby("feature")
-    .mean()
-    .drop(columns=["split"])
-    .sort_values(by="coefficients", key=abs, ascending=False)
-    .head(15)[::-1]
-    .plot.barh(
-        title="Mean model weights",
-        xlabel="Coefficient",
-        ylabel="Feature",
-    )
-)
+coefficients.plot(select_k=15)
 
 # %%
 # Model no. 2: Random forest
@@ -267,22 +250,16 @@ comparison.metrics.precision_recall().plot()
 # Now that we have chosen to deploy the linear model, we will train it on
 # the full experiment set and evaluate it on our held-out data: training on more data
 # should help performance and we can also validate that our model generalizes well to
-# new data.
+# new data. This can be done in one step with :meth:`~skore.ComparisonReport.create_estimator_report`.
 
 # %%
-from skore import EstimatorReport
 
-final_report = EstimatorReport(
-    simple_model,
-    X_train=X_experiment,
-    y_train=y_experiment,
-    X_test=X_holdout,
-    y_test=y_holdout,
-    pos_label="good",
+final_report = comparison.create_estimator_report(
+    name="Simple Linear Model", X_test=X_holdout, y_test=y_holdout
 )
 
 # %%
-# :class:`skore.EstimatorReport` has a similar API to the other report classes:
+# This returns a :class:`~skore.EstimatorReport` which has a similar API to the other report classes:
 
 # %%
 final_metrics = final_report.metrics.summarize()
@@ -312,24 +289,21 @@ pd.concat(
 # between our final model and the cross-validation:
 
 # %%
-final_coefficients = final_report.feature_importance.coefficients()
-final_top_15_features = (
-    final_coefficients.frame()
-    .sort_values(by="coefficients", key=abs, ascending=False)
-    .head(15)["feature"]
-    .reset_index(drop=True)
-)
 
-simple_coefficients = simple_cv_report.feature_importance.coefficients()
+# sphinx_gallery_start_ignore
+# TODO: Use native aggregation when available
+# sphinx_gallery_end_ignore
+
+final_coefficients = final_report.inspection.coefficients()
+final_top_15_features = final_coefficients.frame(select_k=15)["feature"]
+
+simple_coefficients = simple_cv_report.inspection.coefficients()
 cv_top_15_features = (
-    simple_coefficients.frame()
-    .groupby("feature")
+    simple_coefficients.frame(select_k=15)
+    .groupby("feature", sort=False)
     .mean()
-    .reset_index()
-    .drop(columns=["split"])
-    .sort_values(by="coefficients", key=abs, ascending=False)
-    .head(15)["feature"]
-    .reset_index(drop=True)
+    .drop(columns="split")
+    .reset_index()["feature"]
 )
 
 pd.concat(

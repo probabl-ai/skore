@@ -3,7 +3,6 @@ from functools import partialmethod
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
 
-from skore_hub_project import Project
 from skore_hub_project.artifact.media import (
     Coefficients,
     MeanDecreaseImpurity,
@@ -11,6 +10,7 @@ from skore_hub_project.artifact.media import (
     PermutationTrain,
 )
 from skore_hub_project.artifact.serializer import Serializer
+from skore_hub_project.project.project import Project
 
 
 def serialize(result) -> bytes:

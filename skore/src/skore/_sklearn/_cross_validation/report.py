@@ -25,8 +25,8 @@ from skore._utils._progress_bar import progress_decorator
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from skore._sklearn._cross_validation.feature_importance_accessor import (
-        _FeatureImportanceAccessor,
+    from skore._sklearn._cross_validation.inspection_accessor import (
+        _InspectionAccessor,
     )
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
 
@@ -145,10 +145,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "data": {"name": "data"},
         "metrics": {"name": "metrics"},
-        "feature_importance": {"name": "feature_importance"},
+        "inspection": {"name": "inspection"},
     }
     metrics: _MetricsAccessor
-    feature_importance: _FeatureImportanceAccessor
+    inspection: _InspectionAccessor
 
     def __init__(
         self,
@@ -445,6 +445,40 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
             for report in self.estimator_reports_
         ]
+
+    def create_estimator_report(
+        self, *, X_test: ArrayLike | None = None, y_test: ArrayLike | None = None
+    ) -> EstimatorReport:
+        """Create an estimator report from the cross-validation report.
+
+        This method creates a new :class:`~skore.EstimatorReport` with the same
+        estimator and the same data as the cross-validation report. It is useful to
+        evaluate and deploy a model that was deemed optimal with cross-validation.
+        Provide a held out test set to properly evaluate the performance of the model.
+
+        Parameters
+        ----------
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+            Testing data. It should have the same structure as the training data.
+
+        y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
+            Testing target.
+
+        Returns
+        -------
+        report : :class:`~skore.EstimatorReport`
+            The estimator report.
+        """
+        report = EstimatorReport(
+            self._estimator,
+            X_train=self._X,
+            y_train=self._y,
+            X_test=X_test,
+            y_test=y_test,
+            pos_label=self._pos_label,
+        )
+        report._parent_hash = self._hash
+        return report
 
     @property
     def ml_task(self) -> MLTask:

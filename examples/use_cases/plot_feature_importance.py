@@ -21,7 +21,7 @@ Here, we go beyond predictive performance, and inspect these models to better in
 their behavior, by using feature importance.
 Indeed, in practice, inspection can help spot some flaws in models: it is always
 recommended to look "under the hood".
-For that, we use the unified :meth:`~skore.EstimatorReport.feature_importance` accessor
+For that, we use the unified :meth:`~skore.EstimatorReport.inspection` accessor
 of the :class:`~skore.EstimatorReport`.
 For linear models, we look at their coefficients.
 For tree-based models, we inspect their mean decrease in impurity (MDI).
@@ -260,10 +260,10 @@ ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
 
 # %%
 # Now, to inspect our model, let us use the
-# :meth:`skore.EstimatorReport.feature_importance` accessor:
+# :meth:`skore.EstimatorReport.inspection` accessor:
 
 # %%
-ridge_report.feature_importance.coefficients().frame()
+ridge_report.inspection.coefficients().frame()
 
 # %%
 # .. note::
@@ -276,11 +276,11 @@ ridge_report.feature_importance.coefficients().frame()
 # We can plot this pandas datafame:
 
 # %%
-ridge_report.feature_importance.coefficients().plot()
+ridge_report.inspection.coefficients().plot()
 
 # %%
 # .. note::
-#   More generally, :meth:`skore.EstimatorReport.feature_importance.coefficients` can
+#   More generally, :meth:`skore.EstimatorReport.inspection.coefficients` can
 #   help you inspect the coefficients of all linear models.
 #   We consider a linear model as defined in
 #   `scikit-learn's documentation
@@ -335,7 +335,7 @@ def unscale_coefficients(df, feature_mean, feature_std):
 
 
 df_ridge_report_coef_unscaled = unscale_coefficients(
-    ridge_report.feature_importance.coefficients().frame(), feature_mean, feature_std
+    ridge_report.inspection.coefficients().frame(), feature_mean, feature_std
 )
 df_ridge_report_coef_unscaled
 
@@ -451,7 +451,7 @@ print("Number of features after feature engineering:", n_features_engineered)
 
 # %%
 engineered_ridge_report_feature_importance = (
-    engineered_ridge_report.feature_importance.coefficients()
+    engineered_ridge_report.inspection.coefficients()
     .frame()
     .set_index("feature")
     .sort_values(by="coefficients", key=abs, ascending=True)
@@ -713,7 +713,7 @@ print(selectk_features)
 
 # %%
 (
-    selectk_ridge_report.feature_importance.coefficients()
+    selectk_ridge_report.inspection.coefficients()
     .frame()
     .set_index("feature")
     .sort_values(by="coefficients", key=abs, ascending=True)
@@ -801,7 +801,7 @@ tree_report.help()
 
 # %%
 # We have a
-# :meth:`~skore.EstimatorReport.feature_importance.impurity_decrease`
+# :meth:`~skore.EstimatorReport.inspection.impurity_decrease`
 # accessor.
 
 # %%
@@ -862,7 +862,7 @@ plot_tree(
 # Now, let us look at the feature importance based on the MDI:
 
 # %%
-tree_report.feature_importance.impurity_decrease().plot()
+tree_report.inspection.impurity_decrease().plot()
 
 # %%
 # For a decision tree, for each feature, the MDI is averaged across all splits in the
@@ -920,7 +920,7 @@ print(f"Number of trees in the forest: {n_estimators}")
 # Let us look into the MDI of our random forest:
 
 # %%
-rf_report.feature_importance.impurity_decrease().plot()
+rf_report.inspection.impurity_decrease().plot()
 
 # %%
 # In a random forest, the MDI is computed by averaging the MDI of each feature across
@@ -975,11 +975,11 @@ rf_report.feature_importance.impurity_decrease().plot()
 ridge_report.help()
 
 # %%
-# We have a :meth:`~skore.EstimatorReport.feature_importance.permutation`
+# We have a :meth:`~skore.EstimatorReport.inspection.permutation_importance`
 # accessor:
 
 # %%
-ridge_report.feature_importance.permutation(seed=0)
+ridge_report.inspection.permutation_importance(seed=0).frame()
 
 # %%
 # Since the permutation importance involves permuting values of a feature at random,
@@ -994,17 +994,11 @@ ridge_report.feature_importance.permutation(seed=0)
 def plot_permutation_train_test(importances):
     _, ax = plt.subplots(figsize=(8, 6))
 
-    # create a long format required by seaborn
-    importances = importances.stack().reset_index()
-    importances.columns = ["Dataset", "Feature", "Repeats", "Importance"]
-
     sns.boxplot(
         data=importances,
-        x="Importance",
-        y="Feature",
-        hue="Dataset",
-        orient="h",
-        order=importances["Feature"].unique()[::-1],
+        x="value",
+        y="feature",
+        hue="data_source",
         ax=ax,
         whis=10_000,
     )
@@ -1017,19 +1011,14 @@ def plot_permutation_train_test(importances):
 
 
 def compute_permutation_importances(report, at_step=0):
-    train_importance = report.feature_importance.permutation(
+    train_importance = report.inspection.permutation_importance(
         data_source="train", seed=0, at_step=at_step
-    )
-    test_importance = report.feature_importance.permutation(
+    ).frame(aggregate=None)
+    test_importance = report.inspection.permutation_importance(
         data_source="test", seed=0, at_step=at_step
-    )
-    print(train_importance)
+    ).frame(aggregate=None)
 
-    return pd.concat(
-        {"train": train_importance, "test": test_importance},
-        axis=0,
-        names=["Dataset"],
-    ).droplevel(level=1, axis=0)
+    return pd.concat([train_importance, test_importance], axis=0)
 
 
 # %%
@@ -1061,23 +1050,25 @@ plot_permutation_train_test(compute_permutation_importances(selectk_ridge_report
 importances = compute_permutation_importances(selectk_ridge_report, at_step=-1)
 
 # Rename some features for clarity
-importances = importances.reset_index()
-importances["Feature"] = (
-    importances["Feature"]
+importances["feature"] = (
+    importances["feature"]
     .str.replace("remainder__", "")
     .str.replace("kmeans__", "geospatial__")
 )
 
+
 # Take only the 15 most important train features
-importances = importances.set_index(["Dataset", "Feature"])
 best_15_features = (
-    importances.loc[("test", slice(None))]
-    .aggregate("mean", axis=1)
-    .sort_values(key=abs)
+    importances.set_index("data_source")
+    .loc["test", :]
+    .drop(columns=["metric", "repetition"])
+    .groupby("feature")
+    .aggregate("mean")
+    .sort_values(by="value", key=abs)
     .tail(15)
     .index
 )
-importances = importances[importances.index.isin(best_15_features, level=1)]
+importances = importances.query("feature in @best_15_features")
 
 plot_permutation_train_test(importances)
 
@@ -1108,7 +1099,7 @@ plot_permutation_train_test(compute_permutation_importances(tree_report))
 #
 # In this example, we used the California housing dataset to predict house prices with
 # skore's :class:`~skore.EstimatorReport`.
-# By employing the :class:`~skore.EstimatorReport.feature_importance` accessor,
+# By employing the :class:`~skore.EstimatorReport.inspection` accessor,
 # we gained valuable insights into model behavior beyond mere predictive performance.
 # For linear models like Ridge regression, we inspected coefficients to understand
 # feature contributions, revealing the prominence of ``MedInc``, ``Latitude``,

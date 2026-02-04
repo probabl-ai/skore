@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 import numpy as np
 import pytest
+from sklearn.base import clone
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
@@ -503,3 +504,29 @@ def comparison_cross_validation_reports_regression(
 ):
     cv_report_1, cv_report_2 = cross_validation_reports_regression
     return ComparisonReport([cv_report_1, cv_report_2])
+
+
+@pytest.fixture
+def linear_regression_comparison_report(linear_regression_with_train_test):
+    """Fixture providing a ComparisonReport with two linear regression estimators."""
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
+    estimator_2 = clone(estimator).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    return report
