@@ -117,8 +117,9 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         4  Feature #4     0.02...
         """
         return ImpurityDecreaseDisplay._compute_data_for_display(
-            estimator=self._parent.estimator_,
-            estimator_name=self._parent.estimator_name_,
+            estimators=[self._parent.estimator_],
+            names=[self._parent.estimator_name_],
+            splits=[np.nan],
             report_type="estimator",
         )
 
