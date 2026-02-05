@@ -91,6 +91,7 @@ def test_binary_classification(
         np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
 
     display.plot()
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
@@ -99,6 +100,7 @@ def test_binary_classification(
     assert display.ax_.get_ylabel() == ""
 
     display.plot(subplot_by="estimator")
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
@@ -209,6 +211,7 @@ def test_multiclass_classification(
         np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
 
     display.plot()
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
@@ -224,6 +227,7 @@ def test_multiclass_classification(
     assert display.figure_.get_suptitle() == "Coefficients by estimator"
 
     display.plot(subplot_by="estimator")
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
@@ -330,6 +334,7 @@ def test_single_output_regression(
         np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
 
     display.plot()
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
@@ -338,6 +343,7 @@ def test_single_output_regression(
     assert display.ax_.get_ylabel() == ""
 
     display.plot(subplot_by="estimator")
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
@@ -454,6 +460,7 @@ def test_multi_output_regression(
         np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
 
     display.plot()
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     # For multi-output regression with comparison reports, plot() creates subplots
@@ -470,6 +477,7 @@ def test_multi_output_regression(
     assert display.figure_.get_suptitle() == "Coefficients by estimator"
 
     display.plot(subplot_by="estimator")
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
@@ -593,6 +601,7 @@ def test_different_features(
 
     for subplot_by in ("auto", "estimator"):
         display.plot(subplot_by=subplot_by)
+        assert hasattr(display, "facet_")
         assert hasattr(display, "figure_")
         assert hasattr(display, "ax_")
         assert isinstance(display.ax_, np.ndarray)

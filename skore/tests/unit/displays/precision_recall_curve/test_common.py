@@ -33,6 +33,7 @@ class TestPrecisionRecallCurveDisplay:
         assert hasattr(display, "pos_label")
 
         display.plot()
+        assert hasattr(display, "facet_")
         assert hasattr(display, "figure_")
         assert hasattr(display, "ax_")
 

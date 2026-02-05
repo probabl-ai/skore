@@ -68,14 +68,14 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
     Attributes
     ----------
-    ax_ : matplotlib axes or ndarray of axes
-        The axes on which the precision-recall curve is plotted.
+    facet_ : seaborn FacetGrid
+        FacetGrid containing the precision-recall curve.
 
     figure_ : matplotlib figure
         The figure on which the precision-recall curve is plotted.
 
-    lines_ : list of matplotlib lines
-        The lines of the precision-recall curve.
+    ax_ : matplotlib axes or ndarray of axes
+        The axes on which the precision-recall curve is plotted.
 
     Examples
     --------
@@ -211,7 +211,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if style:
             relplot_kwargs["dashes"] = {"train": (5, 5), "test": ""}
 
-        facet_grid = sns.relplot(
+        self.facet_ = sns.relplot(
             data=plot_data,
             kind="line",
             estimator=None,
@@ -220,8 +220,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             **_validate_style_kwargs(relplot_kwargs, self._default_relplot_kwargs),
         )
 
-        self.figure_, self.ax_ = facet_grid.figure, facet_grid.axes.flatten()
-        self.lines_ = [line for ax in self.ax_ for line in ax.get_lines()]
+        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.flatten()
 
         # Create space under the plot to fit the manually created legends.
         n_legend_rows = plot_data[hue].nunique() if hue else 1

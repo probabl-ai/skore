@@ -34,11 +34,14 @@ class CoefficientsDisplay(DisplayMixin):
 
     Attributes
     ----------
-    ax_ : ndarray of matplotlib Axes
-        Array of matplotlib Axes with the different matplotlib axis.
+    facet_ : seaborn FacetGrid
+        FacetGrid containing the coefficients.
 
     figure_ : matplotlib Figure
         Figure containing the plot.
+
+    ax_ : ndarray of matplotlib Axes
+        Array of matplotlib Axes with the different matplotlib axis.
 
     Examples
     --------
@@ -408,7 +411,7 @@ class CoefficientsDisplay(DisplayMixin):
         stripplot_kwargs: dict[str, Any] | None = None,
     ):
         if "estimator" in report_type:
-            facet = sns.catplot(
+            self.facet_ = sns.catplot(
                 data=frame,
                 x="coefficients",
                 y="feature",
@@ -418,7 +421,7 @@ class CoefficientsDisplay(DisplayMixin):
                 **barplot_kwargs,
             )
         else:  # "cross-validation" in report_type
-            facet = sns.catplot(
+            self.facet_ = sns.catplot(
                 data=frame,
                 x="coefficients",
                 y="feature",
@@ -437,7 +440,7 @@ class CoefficientsDisplay(DisplayMixin):
             )
         add_background_features = hue is not None
 
-        self.figure_, self.ax_ = facet.figure, facet.axes.squeeze()
+        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
         for ax in self.ax_.flatten():
             _decorate_matplotlib_axis(
                 ax=ax,

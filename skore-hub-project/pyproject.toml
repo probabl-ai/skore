@@ -31,12 +31,11 @@ test = [
   "xdoctest",
 ]
 
-[project.scripts]
-skore-hub-login = "skore_hub_project.authentication.login:login"
-skore-hub-logout = "skore_hub_project.authentication.logout:logout"
+[project.entry-points."skore.plugins.login"]
+hub = "skore_hub_project.authentication.login:login"
 
 [project.entry-points."skore.plugins.project"]
-hub = "skore_hub_project:Project"
+hub = "skore_hub_project.project.project:Project"
 
 [build-system]
 requires = ["hatchling"]

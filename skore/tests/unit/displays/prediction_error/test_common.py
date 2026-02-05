@@ -35,6 +35,7 @@ class TestPredictionErrorDisplay:
         assert hasattr(display, "data_source")
 
         display.plot()
+        assert hasattr(display, "facet_")
         assert hasattr(display, "figure_")
         assert hasattr(display, "ax_")
 
