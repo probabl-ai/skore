@@ -1,4 +1,7 @@
+import matplotlib as mpl
 import pytest
+
+mpl.rc("figure", max_open_warning=False)
 
 
 @pytest.fixture(scope="module")

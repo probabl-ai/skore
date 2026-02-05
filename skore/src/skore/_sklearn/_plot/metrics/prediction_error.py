@@ -208,14 +208,20 @@ class PredictionErrorDisplay(DisplayMixin):
             y_plot = "y_true"
             min_value = min(self.range_y_pred.min, self.range_y_true.min)
             max_value = max(self.range_y_pred.max, self.range_y_true.max)
-            x_range_perfect_pred = [min_value, max_value]
-            y_range_perfect_pred = [min_value, max_value]
+            x_range_perfect_pred = [min_value - 0.1, max_value + 0.1]
+            y_range_perfect_pred = [min_value - 0.1, max_value + 0.1]
             y_line = y_range_perfect_pred
         else:  # kind == "residual_vs_predicted"
             xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
             y_plot = "residuals"
-            x_range_perfect_pred = [self.range_y_pred.min, self.range_y_pred.max]
-            y_range_perfect_pred = [self.range_residuals.min, self.range_residuals.max]
+            x_range_perfect_pred = [
+                self.range_y_pred.min - 0.1,
+                self.range_y_pred.max + 0.1,
+            ]
+            y_range_perfect_pred = [
+                self.range_residuals.min - 0.1,
+                self.range_residuals.max + 0.1,
+            ]
             y_line = [0, 0]
 
         col, hue, style = self._get_plot_columns(subplot_by)

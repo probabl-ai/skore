@@ -1,6 +1,6 @@
 import pytest
-from sklearn.datasets import make_classification
-from sklearn.dummy import DummyClassifier
+from sklearn.datasets import make_classification, make_regression
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.model_selection import train_test_split
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
@@ -175,5 +175,82 @@ def comparison_cross_validation_reports_multiclass_classification(
         [
             cross_validation_report_multiclass_classification_0,
             cross_validation_report_multiclass_classification_1,
+        ]
+    )
+
+
+@pytest.fixture(scope="module")
+def regression():
+    return make_regression(n_features=4, random_state=0)
+
+
+@pytest.fixture(scope="module")
+def regression_train_test_split(regression):
+    X, y = regression
+    return train_test_split(X, y, test_size=0.2, random_state=0)
+
+
+@pytest.fixture(scope="module")
+def estimator_report_regression_0(regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    return EstimatorReport(
+        DummyRegressor(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+
+@pytest.fixture(scope="module")
+def estimator_report_regression_1(regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    return EstimatorReport(
+        DummyRegressor(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+
+@pytest.fixture(scope="module")
+def cross_validation_report_regression_0(
+    regression,
+):
+    X, y = regression
+    return CrossValidationReport(DummyRegressor(), X=X, y=y, splitter=2)
+
+
+@pytest.fixture(scope="module")
+def cross_validation_report_regression_1(
+    regression,
+):
+    X, y = regression
+    return CrossValidationReport(DummyRegressor(), X=X, y=y, splitter=2)
+
+
+@pytest.fixture(scope="module")
+def comparison_estimator_reports_regression(
+    estimator_report_regression_0,
+    estimator_report_regression_1,
+):
+    return ComparisonReport(
+        [
+            estimator_report_regression_0,
+            estimator_report_regression_1,
+        ]
+    )
+
+
+@pytest.fixture(scope="module")
+def comparison_cross_validation_reports_regression(
+    cross_validation_report_regression_0,
+    cross_validation_report_regression_1,
+):
+    return ComparisonReport(
+        [
+            cross_validation_report_regression_0,
+            cross_validation_report_regression_1,
         ]
     )

@@ -498,8 +498,8 @@ def comparison_estimator_reports_regression(
 @pytest.fixture
 def cross_validation_reports_regression(regression_data):
     X, y = regression_data
-    cv_report_1 = CrossValidationReport(DummyRegressor(), X, y)
-    cv_report_2 = CrossValidationReport(DummyRegressor(), X, y)
+    cv_report_1 = CrossValidationReport(DummyRegressor(), X, y, splitter=2)
+    cv_report_2 = CrossValidationReport(DummyRegressor(), X, y, splitter=2)
     return cv_report_1, cv_report_2
 
 
