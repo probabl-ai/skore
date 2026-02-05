@@ -450,7 +450,7 @@ print("Number of features after feature engineering:", n_features_engineered)
 # Let us display the 15 largest absolute coefficients:
 
 # %%
-engineered_ridge_report_feature_importance = (
+engineered_ridge_report_coefficients = (
     engineered_ridge_report.inspection.coefficients()
     .frame()
     .set_index("feature")
@@ -458,16 +458,14 @@ engineered_ridge_report_feature_importance = (
     .tail(15)
 )
 
-engineered_ridge_report_feature_importance.index = (
-    engineered_ridge_report_feature_importance.index.str.replace("remainder__", "")
+engineered_ridge_report_coefficients.index = (
+    engineered_ridge_report_coefficients.index.str.replace("remainder__", "")
 )
-engineered_ridge_report_feature_importance.index = (
-    engineered_ridge_report_feature_importance.index.str.replace(
-        "kmeans__", "geospatial__"
-    )
+engineered_ridge_report_coefficients.index = (
+    engineered_ridge_report_coefficients.index.str.replace("kmeans__", "geospatial__")
 )
 
-engineered_ridge_report_feature_importance.plot.barh(
+engineered_ridge_report_coefficients.plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
@@ -862,11 +860,7 @@ plot_tree(
 # Now, let us look at the feature importance based on the MDI:
 
 # %%
-tree_report.inspection.impurity_decrease().plot.barh(
-    title=f"Feature importance of {tree_report.estimator_name_}",
-    xlabel="MDI",
-    ylabel="Feature",
-)
+tree_report.inspection.impurity_decrease().plot()
 
 # %%
 # For a decision tree, for each feature, the MDI is averaged across all splits in the
@@ -924,11 +918,7 @@ print(f"Number of trees in the forest: {n_estimators}")
 # Let us look into the MDI of our random forest:
 
 # %%
-rf_report.inspection.impurity_decrease().plot.barh(
-    title=f"Feature importance of {rf_report.estimator_name_}",
-    xlabel="MDI",
-    ylabel="Feature",
-)
+rf_report.inspection.impurity_decrease().plot()
 
 # %%
 # In a random forest, the MDI is computed by averaging the MDI of each feature across
