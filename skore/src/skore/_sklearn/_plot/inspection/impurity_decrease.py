@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Literal
 
 import pandas as pd
@@ -74,7 +76,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         estimator: BaseEstimator,
         estimator_name: str,
         report_type: ReportType,
-    ) -> "ImpurityDecreaseDisplay":
+    ) -> ImpurityDecreaseDisplay:
         """Compute the data for the display.
 
         Parameters
