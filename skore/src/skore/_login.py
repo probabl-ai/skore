@@ -27,7 +27,8 @@ def login(*, mode: Literal["local", "hub"] = "hub", **kwargs):
     projects remotely.
 
     In this mode, you must be already registered to the ``Skore Hub``. Also, we
-    recommend that you set up an API key via [url](coming soon) and use it to log in.
+    recommend that you set up an API key via https://skore.probabl.ai/account
+    and use it to log in.
 
     .. rubric:: Local mode
 
