@@ -20,7 +20,7 @@ test = [
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "skore",
+  "skore>=0.12",
   "xdoctest",
 ]
 
