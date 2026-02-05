@@ -551,6 +551,9 @@ class _MetricsAccessor(
 
             score = metric_fn(y_true, y_pred, **kwargs)
 
+            if hasattr(score, "item"):
+                score = score.item()
+
             if isinstance(score, np.ndarray):
                 score = score.tolist()
 
