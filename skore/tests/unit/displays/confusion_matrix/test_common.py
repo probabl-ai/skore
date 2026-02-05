@@ -36,6 +36,7 @@ class TestConfusionMatrixDisplay:
         assert hasattr(display, "thresholds")
 
         display.plot()
+        assert hasattr(display, "facet_")
         assert hasattr(display, "figure_")
         assert hasattr(display, "ax_")
 

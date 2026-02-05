@@ -33,6 +33,17 @@ class PermutationImportanceDisplay(DisplayMixin):
 
     report_type : {"estimator"}
         Report type from which the display is created.
+
+    Attributes
+    ----------
+    facet_ : seaborn FacetGrid
+        FacetGrid containing the permutation importance.
+
+    figure_ : matplotlib Figure
+        Figure containing the permutation importance.
+
+    ax_ : matplotlib Axes
+        Axes with permutation importance.
     """
 
     _default_boxplot_kwargs: dict[str, Any] = {

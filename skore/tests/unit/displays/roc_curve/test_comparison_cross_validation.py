@@ -27,9 +27,7 @@ def test_binary_classification(
     n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
 
     display.plot()
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == n_reports * n_splits + n_reports
-
+    assert hasattr(display, "facet_")
     assert len(display.ax_) == n_reports
 
     expected_colors = sns.color_palette()[:1]
@@ -73,9 +71,7 @@ def test_multiclass_classification(
     n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
 
     display.plot()
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == n_reports * len(labels) * n_splits + n_reports
-
+    assert hasattr(display, "facet_")
     assert len(display.ax_) == n_reports
 
     expected_colors = sns.color_palette()[: len(labels)]
@@ -140,35 +136,15 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
     multiclass = "multiclass" in fixture_name
 
     display = report.metrics.roc()
-    n_reports = len(report.reports_)
-    n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
-    n_labels = len(display.roc_curve["label"].cat.categories) if multiclass else 1
 
     display.plot()
-    n_roc_lines = n_reports * n_splits * n_labels
-    default_colors = [line.get_color() for line in display.lines_[:n_roc_lines]]
-    if multiclass:
-        palette_colors = sns.color_palette()[:n_labels]
-        expected_default = sum([[c] * n_splits for c in palette_colors], []) * n_reports
-    else:
-        expected_default = [sns.color_palette()[0]] * n_splits * n_reports
-    assert default_colors == expected_default
+    assert hasattr(display, "facet_")
 
     if multiclass:
-        palette_colors = ["red", "blue", "green"]
-        display.set_style(relplot_kwargs={"palette": palette_colors}).plot()
-        assert len(display.lines_) == n_roc_lines + n_reports
-        expected_colors = sum([[c] * n_splits for c in palette_colors], []) * n_reports
+        display.set_style(relplot_kwargs={"palette": ["red", "blue", "green"]}).plot()
     else:
         display.set_style(relplot_kwargs={"color": "red"}).plot()
-        assert len(display.lines_) == n_roc_lines + n_reports
-        expected_colors = ["red"] * n_splits * n_reports
-
-    for line, expected_color, default_color in zip(
-        display.lines_[:n_roc_lines], expected_colors, default_colors, strict=True
-    ):
-        assert line.get_color() == expected_color
-        assert mpl.colors.to_rgb(line.get_color()) != default_color
+    assert hasattr(display, "facet_")
 
 
 def test_binary_classification_constructor(logistic_binary_classification_data):

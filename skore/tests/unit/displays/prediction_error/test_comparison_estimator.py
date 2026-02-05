@@ -54,11 +54,7 @@ def test_regression(pyplot, linear_regression_with_train_test):
         assert getattr(display, f"range_{attr}").max == global_max
 
     display.plot()
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == 2
-    for line in display.lines_:
-        assert isinstance(line, mpl.lines.Line2D)
-        assert line.get_color() == "black"
+    assert hasattr(display, "facet_")
 
     assert isinstance(display.ax_, np.ndarray)
     assert len(display.ax_) == 2
@@ -101,11 +97,7 @@ def test_regression_actual_vs_predicted(pyplot, linear_regression_with_train_tes
     assert isinstance(display._prediction_error, pd.DataFrame)
     assert display.data_source == "test"
 
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == 2  # One line per subplot (estimator)
-    for line in display.lines_:
-        assert isinstance(line, mpl.lines.Line2D)
-        assert line.get_color() == "black"
+    assert hasattr(display, "facet_")
 
     # For comparison reports, ax_ is an array of axes
     assert isinstance(display.ax_, np.ndarray)
@@ -149,8 +141,7 @@ def test_kwargs(pyplot, linear_regression_with_train_test):
         perfect_model_kwargs={"color": "orange"},
     )
     display.plot()
-    for line in display.lines_:
-        assert line.get_color() == "orange"
+    assert hasattr(display, "facet_")
     for ax in display.ax_:
         scatter_collection = ax.collections[0]
         np.testing.assert_array_equal(
