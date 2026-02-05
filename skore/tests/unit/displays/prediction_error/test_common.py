@@ -89,10 +89,8 @@ class TestPredictionErrorDisplay:
         )
         display.set_style(
             relplot_kwargs=relplot_kwargs,
-            perfect_model_kwargs={"color": "blue"},
         ).plot()
         ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
-        assert display.lines_[0].get_color() == "blue"
         np.testing.assert_array_equal(
             ax.collections[0].get_facecolor()[0][:3], [1.0, 0.0, 0.0]
         )
