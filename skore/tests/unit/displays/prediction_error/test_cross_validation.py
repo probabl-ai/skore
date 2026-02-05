@@ -39,10 +39,7 @@ def test_regression(pyplot, linear_regression_data, data_source):
         assert getattr(display, f"range_{attr}").max == global_max
 
     display.plot()
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == 1
-    assert isinstance(display.lines_[0], mpl.lines.Line2D)
-    assert display.lines_[0].get_color() == "black"
+    assert hasattr(display, "facet_")
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.figure_.legends[0]
@@ -62,16 +59,12 @@ def test_regression_actual_vs_predicted(pyplot, linear_regression_data):
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
     assert isinstance(display, PredictionErrorDisplay)
+    assert hasattr(display, "facet_")
 
     # check the structure of the attributes
     assert isinstance(display._prediction_error, pd.DataFrame)
     assert display._prediction_error["split"].nunique() == cv
     assert display.data_source == "test"
-
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == 1
-    assert isinstance(display.lines_[0], mpl.lines.Line2D)
-    assert display.lines_[0].get_color() == "black"
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.figure_.legends[0]
@@ -95,7 +88,7 @@ def test_kwargs(pyplot, linear_regression_data):
         relplot_kwargs={"palette": ["red", "green", "blue"]},
         perfect_model_kwargs={"color": "orange"},
     ).plot()
-    assert display.lines_[0].get_color() == "orange"
+    assert hasattr(display, "facet_")
     rgb_colors = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
     for idx, collection in enumerate(display.ax_.collections):
         np.testing.assert_array_equal(

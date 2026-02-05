@@ -111,6 +111,6 @@ Utilities
    :maxdepth: 2
    :hidden:
 
-   ML Assistance <report/index>
    Managing a project <project>
+   ML Assistance <report/index>
    Utilities <utils>

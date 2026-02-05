@@ -60,6 +60,9 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         confusion matrix. Only available for binary classification. Thresholds are
         sorted in ascending order.
 
+    facet_ : seaborn FacetGrid
+        FacetGrid containing the confusion matrix.
+
     figure_ : matplotlib Figure
         Figure containing the confusion matrix.
 
@@ -203,11 +206,11 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         facet_grid_kwargs_validated = _validate_style_kwargs(
             {"col": subplot_by_validated, **self._default_facet_grid_kwargs}, {}
         )
-        grid = sns.FacetGrid(
+        self.facet_ = sns.FacetGrid(
             data=frame,
             **facet_grid_kwargs_validated,
         )
-        self.figure_, self.ax_ = grid.figure, grid.axes.flatten()
+        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.flatten()
 
         def plot_heatmap(data, **kwargs):
             """Plot heatmap for each facet."""
@@ -225,7 +228,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
             sns.heatmap(heatmap_data, **kwargs)
 
-        grid.map_dataframe(plot_heatmap, **heatmap_kwargs_validated)
+        self.facet_.map_dataframe(plot_heatmap, **heatmap_kwargs_validated)
 
         info_data_source = (
             f"Data source: {self.data_source.capitalize()} set"

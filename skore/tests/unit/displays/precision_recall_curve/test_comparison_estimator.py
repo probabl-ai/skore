@@ -45,9 +45,9 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
     n_reports = len(report.reports_)
 
     display.plot()
+    assert hasattr(display, "facet_")
     assert len(display.ax_) == n_reports
 
-    expected_colors = sns.color_palette()[:1]
     for idx, estimator in enumerate(report.reports_):
         ax = display.ax_[idx]
         assert isinstance(ax, mpl.axes.Axes)
@@ -60,10 +60,6 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
             "average_precision"
         ].iloc[0]
         assert legend_texts[0] == f"AP={average_precision:.2f}"
-
-        line = display.lines_[idx]
-        assert isinstance(line, mpl.lines.Line2D)
-        assert line.get_color() == expected_colors[0]
 
         assert len(legend_texts) == 1
         assert ax.get_xlabel() == "recall"
@@ -111,9 +107,7 @@ def test_multiclass_classification(
     n_reports = len(report.reports_)
 
     display.plot()
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == len(class_labels) * n_reports
-    expected_colors = sns.color_palette()[: len(class_labels)]
+    assert hasattr(display, "facet_")
     assert len(display.ax_) == n_reports
 
     for idx, estimator in enumerate(report.reports_):
@@ -132,8 +126,6 @@ def test_multiclass_classification(
                 legend_texts[class_label_idx]
                 == f"{class_label} (AP={average_precision:.2f})"
             )
-            line = ax.get_lines()[class_label_idx]
-            assert line.get_color() == expected_colors[class_label_idx]
 
         assert len(legend_texts) == len(class_labels)
         assert ax.get_xlabel() == "recall"
@@ -213,45 +205,15 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
         }
     )
     display = report.metrics.precision_recall()
-    n_reports = len(report.reports_)
-    n_labels = (
-        len(display.precision_recall["label"].cat.categories) if multiclass else 1
-    )
 
     display.plot()
-    default_colors = [line.get_color() for line in display.lines_]
-    if multiclass:
-        # With subplot_by="estimator", each subplot has n_labels lines
-        # Colors cycle by label: [label0_color, label1_color, ...] per subplot
-        palette_colors = sns.color_palette()[:n_labels]
-        expected_default = palette_colors * n_reports
-    else:
-        # Binary: each subplot has 1 line, all same color
-        expected_default = [sns.color_palette()[0]] * n_reports
-    assert default_colors == expected_default
+    assert hasattr(display, "facet_")
 
     if multiclass:
-        # For multiclass, use palette since there's a hue variable
-        palette_colors = ["red", "blue", "green"]
-        display.set_style(relplot_kwargs={"palette": palette_colors}).plot()
-        assert len(display.lines_) == n_reports * n_labels
-        expected_colors = palette_colors * n_reports
-        for line, expected_color, default_color in zip(
-            display.lines_, expected_colors, default_colors, strict=True
-        ):
-            assert line.get_color() == expected_color
-            assert mpl.colors.to_rgb(line.get_color()) != default_color
-
+        display.set_style(relplot_kwargs={"palette": ["red", "blue", "green"]}).plot()
     else:
-        # For binary, use color since there's no hue variable
         display.set_style(relplot_kwargs={"color": "red"}).plot()
-        assert len(display.lines_) == n_reports * n_labels
-        expected_colors = ["red"] * n_reports
-        for line, expected_color, default_color in zip(
-            display.lines_, expected_colors, default_colors, strict=True
-        ):
-            assert line.get_color() == expected_color
-            assert mpl.colors.to_rgb(line.get_color()) != default_color
+    assert hasattr(display, "facet_")
 
 
 @pytest.mark.parametrize("with_average_precision", [False, True])

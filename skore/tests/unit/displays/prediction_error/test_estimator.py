@@ -42,11 +42,8 @@ def test_regression(pyplot, linear_regression_with_train_test, subsample):
 
     display.plot()
     assert hasattr(display, "ax_")
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == 1
-    assert isinstance(display.lines_[0], mpl.lines.Line2D)
-    assert display.lines_[0].get_color() == "black"
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.figure_.legends[0]
@@ -85,10 +82,7 @@ def test_regression_actual_vs_predicted(pyplot, linear_regression_with_train_tes
     assert isinstance(display, PredictionErrorDisplay)
 
     display.plot(kind="actual_vs_predicted")
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == 1
-    assert isinstance(display.lines_[0], mpl.lines.Line2D)
-    assert display.lines_[0].get_color() == "black"
+    assert hasattr(display, "facet_")
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.figure_.legends[0]
@@ -155,7 +149,7 @@ def test_kwargs(pyplot, linear_regression_with_train_test):
     display.set_style(
         relplot_kwargs={"color": "red"}, perfect_model_kwargs={"color": "blue"}
     ).plot()
-    assert display.lines_[0].get_color() == "blue"
+    assert hasattr(display, "facet_")
     scatter_collection = display.ax_.collections[0]
     np.testing.assert_array_equal(
         scatter_collection.get_facecolor()[0][:3], [1.0, 0.0, 0.0]

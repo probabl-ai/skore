@@ -97,9 +97,10 @@ div.card-body details[open] summary i {
   display: none;
 }
 
-/* Make left sidebar thinner to avoid cropping things in main pane */
-.bd-sidebar-primary {
-  width: 20%;
+@media (min-width: 960px) {
+  .bd-page-width {
+    max-width: 95rem;
+  }
 }
 
 /* sphinx-gallery */
