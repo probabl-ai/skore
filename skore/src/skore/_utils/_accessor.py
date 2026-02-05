@@ -172,7 +172,7 @@ def _check_estimator_has_coef() -> Callable:
     return check
 
 
-def _check_has_feature_importances() -> Callable:
+def _check_estimator_has_feature_importances() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the estimator has a `feature_importances_` attribute."""
         parent_estimator = accessor._parent.estimator_

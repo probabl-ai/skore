@@ -5,7 +5,7 @@ from skore._externals._pandas_accessors import DirNamesMixin, _register_accessor
 from skore._utils._accessor import (
     _check_cross_validation_sub_estimator_has_coef,
     _check_estimator_has_coef,
-    _check_has_feature_importances,
+    _check_estimator_has_feature_importances,
     _check_supported_ml_task,
 )
 
@@ -172,16 +172,16 @@ def test_check_has_feature_importance():
     parent = MockParent(Estimator())
     accessor = MockAccessor(parent)
 
-    assert _check_has_feature_importances()(accessor)
+    assert _check_estimator_has_feature_importances()(accessor)
 
     parent = MockParent(make_pipeline(Estimator()))
     accessor = MockAccessor(parent)
 
-    assert _check_has_feature_importances()(accessor)
+    assert _check_estimator_has_feature_importances()(accessor)
 
     parent = MockParent(estimator="hello")
     accessor = MockAccessor(parent)
 
     err_msg = "Estimator 'hello' is not a supported estimator by the function called."
     with pytest.raises(AttributeError, match=err_msg):
-        assert _check_has_feature_importances()(accessor)
+        assert _check_estimator_has_feature_importances()(accessor)

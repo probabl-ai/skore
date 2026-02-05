@@ -24,7 +24,7 @@ from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import DataSource
 from skore._utils._accessor import (
     _check_estimator_has_coef,
-    _check_has_feature_importances,
+    _check_estimator_has_feature_importances,
 )
 
 Metric = str | Callable | list[str] | tuple[str] | dict[str, Callable] | None
@@ -82,7 +82,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report_type="estimator",
         )
 
-    @available_if(_check_has_feature_importances())
+    @available_if(_check_estimator_has_feature_importances())
     def impurity_decrease(self) -> ImpurityDecreaseDisplay:
         """Retrieve the mean decrease impurity (MDI) of a tree-based model.
 
