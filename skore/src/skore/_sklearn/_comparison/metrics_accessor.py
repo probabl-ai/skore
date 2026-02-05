@@ -36,7 +36,7 @@ from skore._utils._accessor import (
 )
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
-from skore._utils._progress_bar import ProgressBar, progress_decorator
+from skore._utils._progress_bar import track
 
 from .utils import _combine_cross_validation_results, _combine_estimator_results
 
@@ -184,12 +184,10 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 )
         return MetricsSummaryDisplay(results)
 
-    @progress_decorator(description="Compute metric for each estimator")
     def _compute_metric_scores(
         self,
         report_metric_name: str,
         *,
-        progress: ProgressBar,
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
@@ -221,9 +219,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         cache_key = tuple(cache_key_parts)
 
-        total_estimators = len(self._parent.reports_)
-        progress.total = total_estimators
-
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
         else:
@@ -242,19 +237,19 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             if self._parent._reports_type == "CrossValidationReport":
                 kwargs["aggregate"] = None
 
-            generator = parallel(
-                joblib.delayed(getattr(report.metrics, report_metric_name))(**kwargs)
-                for report in self._parent.reports_.values()
-            )
-            individual_results = []
-            for result in generator:
-                if report_metric_name == "summarize":
-                    # for summarize, the output is a display
-                    individual_results.append(result.frame())
-                else:
-                    individual_results.append(result)
-
-                progress.advance()
+            individual_results = [
+                result.frame() if report_metric_name == "summarize" else result
+                for result in track(
+                    parallel(
+                        joblib.delayed(getattr(report.metrics, report_metric_name))(
+                            **kwargs
+                        )
+                        for report in self._parent.reports_.values()
+                    ),
+                    description="Compute metric for each estimator",
+                    total=len(self._parent.reports_),
+                )
+            ]
 
             if self._parent._reports_type == "EstimatorReport":
                 results = _combine_estimator_results(
@@ -1150,11 +1145,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     # Methods related to displays
     ####################################################################################
 
-    @progress_decorator(description="Computing predictions for display")
     def _get_display(
         self,
         *,
-        progress: ProgressBar,
         X: ArrayLike | None,
         y: ArrayLike | None,
         data_source: DataSource | Literal["both"],
@@ -1216,9 +1209,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
-        total_estimators = len(self._parent.reports_)
-        progress.total = total_estimators
-
         if cache_key and cache_key in self._parent._cache:
             return self._parent._cache[cache_key]
 
@@ -1226,7 +1216,11 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         y_pred: list[YPlotData] = []
 
         if self._parent._reports_type == "EstimatorReport":
-            for report_name, report in self._parent.reports_.items():
+            for report_name, report in track(
+                self._parent.reports_.items(),
+                description="Computing predictions for display",
+                total=len(self._parent.reports_),
+            ):
                 for ds in data_sources:
                     report_X, report_y, ds_hash = (
                         report.metrics._get_X_y_and_data_source_hash(
@@ -1252,8 +1246,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                     y_true.append(y_true_data)
                     y_pred.append(y_pred_data)
 
-                progress.advance()
-
             display = display_class._compute_data_for_display(
                 y_true=y_true,
                 y_pred=y_pred,
@@ -1267,7 +1259,11 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             )
 
         else:
-            for report_name, report in self._parent.reports_.items():
+            for report_name, report in track(
+                self._parent.reports_.items(),
+                description="Computing predictions for display",
+                total=len(self._parent.reports_),
+            ):
                 for split, estimator_report in enumerate(report.estimator_reports_):
                     for ds in data_sources:
                         report_X, report_y, ds_hash = (
@@ -1293,8 +1289,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                         )
                         y_true.append(y_true_data)
                         y_pred.append(y_pred_data)
-
-                progress.advance()
 
             display = display_class._compute_data_for_display(
                 y_true=y_true,

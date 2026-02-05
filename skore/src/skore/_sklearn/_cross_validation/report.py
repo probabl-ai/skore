@@ -20,7 +20,7 @@ from skore._sklearn.types import _DEFAULT, MLTask, PositiveLabel, SKLearnCrossVa
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import Parallel, delayed
-from skore._utils._progress_bar import ProgressBar, progress_decorator
+from skore._utils._progress_bar import ProgressBar, track
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -181,45 +181,38 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             y, estimator=self.estimator_reports_[0]._estimator
         )
 
-    @progress_decorator(
-        description=lambda self: (
-            f"Processing cross-validation\nfor {self.estimator_name_}"
-        )
-    )
-    def _fit_estimator_reports(self, *, progress: ProgressBar) -> list[EstimatorReport]:
+    def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
-
-        This function is created to be able to use the progress bar. It works well
-        with the patch of `rich` in VS Code.
 
         Returns
         -------
         estimator_reports : list of EstimatorReport
             The estimator reports.
         """
-        progress.total = len(self.split_indices)
         parallel = Parallel(
             **_validate_joblib_parallel_params(
                 n_jobs=self.n_jobs, return_as="generator"
             )
         )
-        # do not split the data to take advantage of the memory mapping
-        generator = parallel(
-            delayed(_generate_estimator_report)(
-                clone(self._estimator),
-                self._X,
-                self._y,
-                self._pos_label,
-                train_indices,
-                test_indices,
-            )
-            for (train_indices, test_indices) in self.split_indices
-        )
 
-        estimator_reports = []
-        for report in generator:
-            estimator_reports.append(report)
-            progress.advance()
+        # do not split the data to take advantage of the memory mapping
+        estimator_reports = list(
+            track(
+                parallel(
+                    delayed(_generate_estimator_report)(
+                        clone(self._estimator),
+                        self._X,
+                        self._y,
+                        self._pos_label,
+                        train_indices,
+                        test_indices,
+                    )
+                    for (train_indices, test_indices) in self.split_indices
+                ),
+                description=f"Processing cross-validation\nfor {self.estimator_name_}",
+                total=len(self.split_indices),
+            )
+        )
 
         warn_msg = None
         if not any(isinstance(report, EstimatorReport) for report in estimator_reports):
@@ -291,13 +284,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         self._cache = Cache()
 
-    @progress_decorator(description="Cross-validation predictions")
     def cache_predictions(
         self,
-        response_methods: str = "auto",
+        response_methods: list[str] | Literal["auto"] = "auto",
         n_jobs: int | None = None,
-        *,
-        progress: ProgressBar,
     ) -> None:
         """Cache the predictions for sub-estimators reports.
 
@@ -326,22 +316,21 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
-        total_estimators = len(self.estimator_reports_)
-        progress.total = total_estimators
+        total = len(self.estimator_reports_)
 
-        for split_idx, estimator_report in enumerate(self.estimator_reports_, 1):
-            # Update the progress bar description to include the split number
-            progress.description = (
-                "Cross-validation predictions for split "
-                f"#{split_idx}/{total_estimators}"
-            )
+        with ProgressBar(description="Cross-validation predictions", total=total) as pb:
+            for split_idx, estimator_report in enumerate(self.estimator_reports_, 1):
+                pb.description = (
+                    f"Cross-validation predictions for split #{split_idx}/{total}"
+                )
 
-            # Call cache_predictions without printing a separate message
-            estimator_report.cache_predictions(
-                response_methods=response_methods, n_jobs=n_jobs
-            )
+                # Call cache_predictions without printing a separate message
+                estimator_report.cache_predictions(
+                    response_methods=response_methods,
+                    n_jobs=n_jobs,
+                )
 
-            progress.advance()
+                pb.advance()
 
     def get_predictions(
         self,

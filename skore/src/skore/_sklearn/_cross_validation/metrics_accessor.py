@@ -35,7 +35,7 @@ from skore._utils._accessor import (
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
 from skore._utils._parallel import Parallel, delayed
-from skore._utils._progress_bar import ProgressBar, progress_decorator
+from skore._utils._progress_bar import track
 
 DataSource = Literal["test", "train", "X_y"]
 
@@ -183,12 +183,10 @@ class _MetricsAccessor(
                 )
         return MetricsSummaryDisplay(summarize_data=results)
 
-    @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
         self,
         report_metric_name: str,
         *,
-        progress: ProgressBar,
         data_source: DataSource = "test",
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
@@ -223,9 +221,6 @@ class _MetricsAccessor(
                 cache_key_parts.append(metric_kwargs[key])
         cache_key = tuple(cache_key_parts)
 
-        total_estimators = len(self._parent.estimator_reports_)
-        progress.total = total_estimators
-
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
         else:
@@ -234,21 +229,20 @@ class _MetricsAccessor(
                     n_jobs=self._parent.n_jobs, return_as="generator"
                 )
             )
-            generator = parallel(
-                delayed(getattr(report.metrics, report_metric_name))(
-                    data_source=data_source, X=X, y=y, **metric_kwargs
-                )
-                for report in self._parent.estimator_reports_
-            )
-            results = []
-            for result in generator:
-                if report_metric_name == "summarize":
-                    # for summarize, the output is a display
-                    results.append(result.frame())
-                else:
-                    results.append(result)
 
-                progress.advance()
+            results = [
+                result.frame() if report_metric_name == "summarize" else result
+                for result in track(
+                    parallel(
+                        delayed(getattr(report.metrics, report_metric_name))(
+                            data_source=data_source, X=X, y=y, **metric_kwargs
+                        )
+                        for report in self._parent.estimator_reports_
+                    ),
+                    description="Compute metric for each split",
+                    total=len(self._parent.estimator_reports_),
+                )
+            ]
 
             results = pd.concat(
                 results,
@@ -1067,11 +1061,9 @@ class _MetricsAccessor(
     # Methods related to displays
     ####################################################################################
 
-    @progress_decorator(description="Computing predictions for display")
     def _get_display(
         self,
         *,
-        progress: ProgressBar,
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         data_source: DataSource,
@@ -1140,16 +1132,17 @@ class _MetricsAccessor(
             cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
-        total_estimators = len(self._parent.estimator_reports_)
-        progress.total = total_estimators
-
         if cache_key and cache_key in self._parent._cache:
             return self._parent._cache[cache_key]
 
         y_true: list[YPlotData] = []
         y_pred: list[YPlotData] = []
 
-        for report_idx, report in enumerate(self._parent.estimator_reports_):
+        for report_idx, report in track(
+            enumerate(self._parent.estimator_reports_),
+            description="Computing predictions for display",
+            total=len(self._parent.estimator_reports_),
+        ):
             if data_source == "X_y":
                 # Use the externally provided X and y for all splits
                 report_X = X
@@ -1175,8 +1168,6 @@ class _MetricsAccessor(
             )
             y_true.append(y_true_data)
             y_pred.append(y_pred_data)
-
-            progress.advance()
 
         display = display_class._compute_data_for_display(
             y_true=y_true,

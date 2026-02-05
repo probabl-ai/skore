@@ -16,7 +16,7 @@ from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import _DEFAULT, PositiveLabel
 from skore._utils._cache import Cache
-from skore._utils._progress_bar import ProgressBar, progress_decorator
+from skore._utils._progress_bar import track
 
 if TYPE_CHECKING:
     from skore._sklearn._comparison.inspection_accessor import (
@@ -114,10 +114,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     @staticmethod
     def _validate_reports(
-        reports: list[EstimatorReport]
-        | dict[str, EstimatorReport]
-        | list[CrossValidationReport]
-        | dict[str, CrossValidationReport],
+        reports: (
+            list[EstimatorReport]
+            | dict[str, EstimatorReport]
+            | list[CrossValidationReport]
+            | dict[str, CrossValidationReport]
+        ),
     ) -> tuple[
         dict[str, EstimatorReport] | dict[str, CrossValidationReport],
         ReportType,
@@ -224,10 +226,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        reports: list[EstimatorReport]
-        | dict[str, EstimatorReport]
-        | list[CrossValidationReport]
-        | dict[str, CrossValidationReport],
+        reports: (
+            list[EstimatorReport]
+            | dict[str, EstimatorReport]
+            | list[CrossValidationReport]
+            | dict[str, CrossValidationReport]
+        ),
         *,
         n_jobs: int | None = None,
     ) -> None:
@@ -280,15 +284,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         self._cache = Cache()
 
-    @progress_decorator(description="Estimator predictions")
     def cache_predictions(
         self,
         response_methods: Literal[
             "auto", "predict", "predict_proba", "decision_function"
         ] = "auto",
         n_jobs: int | None = None,
-        *,
-        progress: ProgressBar,
     ) -> None:
         """Cache the predictions for sub-estimators reports.
 
@@ -322,12 +323,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
-        total_estimators = len(self.reports_)
-        progress.total = total_estimators
-
-        for report in self.reports_.values():
+        for report in track(
+            self.reports_.values(),
+            description="Estimator predictions",
+            total=len(self.reports_),
+        ):
             report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
-            progress.advance()
 
     def get_predictions(
         self,

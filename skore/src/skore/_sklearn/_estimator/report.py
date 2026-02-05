@@ -22,7 +22,7 @@ from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import Parallel, delayed
-from skore._utils._progress_bar import ProgressBar, progress_decorator
+from skore._utils._progress_bar import track
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
@@ -216,13 +216,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         self._cache = Cache()
 
-    @progress_decorator(description="Caching predictions")
     def cache_predictions(
         self,
-        response_methods: Literal["auto"] | list[str] = "auto",
+        response_methods: Literal["auto"] | str | list[str] = "auto",
         n_jobs: int | None = None,
-        *,
-        progress: ProgressBar,
     ) -> None:
         """Cache estimator's predictions.
 
@@ -272,31 +269,32 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         parallel = Parallel(
             **_validate_joblib_parallel_params(n_jobs=n_jobs, return_as="generator")
         )
-        generator = parallel(
-            delayed(_get_cached_response_values)(
-                cache=self._cache,
-                estimator_hash=self._hash,
-                estimator=self._estimator,
-                X=X,
-                response_method=response_method,
-                pos_label=pos_label,
-                data_source=data_source,
-            )
-            for response_method, pos_label, (data_source, X) in product(
-                response_methods, pos_labels, data_sources
-            )
-        )
-        # trigger the computation
-        total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
-        progress.total = total_iterations
 
+        # trigger the computation
         # do not mutate directly `self._cache` during the execution of Parallel
         results_to_cache: dict[tuple[Any, ...], Any] = {}
-        for results in generator:
+
+        for results in track(
+            parallel(
+                delayed(_get_cached_response_values)(
+                    cache=self._cache,
+                    estimator_hash=self._hash,
+                    estimator=self._estimator,
+                    X=X,
+                    response_method=response_method,
+                    pos_label=pos_label,
+                    data_source=data_source,
+                )
+                for response_method, pos_label, (data_source, X) in product(
+                    response_methods, pos_labels, data_sources
+                )
+            ),
+            description="Caching predictions",
+            total=(len(response_methods) * len(pos_labels) * len(data_sources)),
+        ):
             results_to_cache.update(
                 (key, value) for key, value, is_cached in results if not is_cached
             )
-            progress.advance()
 
         if results_to_cache:
             self._cache.update(results_to_cache)

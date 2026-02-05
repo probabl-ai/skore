@@ -1,6 +1,6 @@
-from collections.abc import Callable
-from functools import partial, wraps
-from inspect import signature
+from collections.abc import Iterable
+from functools import partial
+from operator import length_hint
 from typing import Any, TypeVar
 
 from rich.progress import (
@@ -32,7 +32,7 @@ SkinnedProgress = partial(
 class ProgressBar:
     """Simplified progress bar based on ``rich.Progress``."""
 
-    def __init__(self, description=None, total=None):
+    def __init__(self, description: str, total: float | None):
         self._description = description
         self._total = total
         self._progress = SkinnedProgress()
@@ -46,23 +46,23 @@ class ProgressBar:
         self._progress.stop()
 
     @property
-    def description(self) -> str | None:
+    def description(self) -> str:
         """Description of the progress bar."""
         return self._description
 
     @description.setter
-    def description(self, value: str | None):
+    def description(self, value: str):
         """Set description of the progress bar."""
         self._description = value
         self._progress.update(self._task, description=value, refresh=True)
 
     @property
-    def total(self) -> float:
+    def total(self) -> float | None:
         """Total number of steps before the progress bar is considered completed."""
         return self._total
 
     @total.setter
-    def total(self, value: float | None):
+    def total(self, value: float):
         """Set total number of steps before the progress bar is considered completed."""
         self._total = value
         self._progress.update(self._task, total=value, refresh=True)
@@ -72,45 +72,14 @@ class ProgressBar:
         self._progress.update(self._task, advance=1, refresh=True)
 
 
-def progress_decorator(
-    description: str | Callable[..., str],
-) -> Callable[[Callable[..., T]], Callable[..., T]]:
-    """
-    Decorate class methods to track progress.
+def track(
+    sequence: Iterable[Any], description: str, total: float | None = None
+) -> Iterable[Any]:
+    """Track progress by iterating over a sequence."""
+    if total is None:
+        total = float(length_hint(sequence)) or None
 
-    This decorator injects a ``ProgressBar`` object to the wrapped method, used to track
-    progress during execution. The progress bar automatically disappears after
-    completion.
-
-    The wrapped method is responsible for advancing the progress bar and managing its
-    size.
-
-    Parameters
-    ----------
-    description : str or callable
-        The description of the progress bar. If a callable, it should take the
-        self object as an argument and return a string.
-
-    Returns
-    -------
-    decorator : function
-        A decorator that wraps the input function, and injects the progress bar as
-        parameter.
-    """
-
-    def decorator(func: Callable[..., T]) -> Callable[..., T]:
-        assert "progress" in signature(func).parameters, (
-            "You can only decorate functions with `progress` parameter"
-        )
-
-        @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> T:
-            report = args[0]._parent if hasattr(args[0], "_parent") else args[0]
-            task = description(report) if callable(description) else description
-
-            with ProgressBar(task) as progress:
-                return func(*args, **kwargs, progress=progress)
-
-        return wrapper
-
-    return decorator
+    with ProgressBar(description=description, total=total) as progress:
+        for value in sequence:
+            yield value
+            progress.advance()
