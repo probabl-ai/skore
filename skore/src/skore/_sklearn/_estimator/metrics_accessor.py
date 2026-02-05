@@ -556,14 +556,17 @@ class _MetricsAccessor(
 
             if hasattr(score, "item"):
                 score = score.item()
-
-            if isinstance(score, list) and len(score) == 1:
-                score = score[0]
-
-            if isinstance(score, list) and "classification" in self._parent._ml_task:
-                score = dict(
-                    zip(self._parent._estimator.classes_.tolist(), score, strict=False)
-                )
+            elif isinstance(score, list):
+                if len(score) == 1:
+                    score = score[0]
+                elif "classification" in self._parent._ml_task:
+                    score = dict(
+                        zip(
+                            self._parent._estimator.classes_.tolist(),
+                            score,
+                            strict=False,
+                        )
+                    )
 
             self._parent._cache[cache_key] = score
 
