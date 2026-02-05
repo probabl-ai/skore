@@ -551,11 +551,11 @@ class _MetricsAccessor(
 
             score = metric_fn(y_true, y_pred, **kwargs)
 
-            if hasattr(score, "item"):
-                score = score.item()
-
             if isinstance(score, np.ndarray):
                 score = score.tolist()
+
+            if hasattr(score, "item"):
+                score = score.item()
 
             if isinstance(score, list) and len(score) == 1:
                 score = score[0]
