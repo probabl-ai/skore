@@ -26,15 +26,19 @@ def get_doc_first_line(obj):
 
 
 def get_accessor_methods(cls: type, accessor_name: str) -> list[tuple[str, str]]:
-    """
-    Get methods from an accessor by introspecting the accessor class.
+    """Get methods from an accessor by introspecting the accessor class.
 
-    Args:
-        cls: The report class (e.g., EstimatorReport)
-        accessor_name: The accessor name (e.g., 'metrics')
+    Parameters
+    ----------
+    cls : type
+        The report class (e.g., EstimatorReport).
+    accessor_name : str
+        The accessor name (e.g., 'metrics').
 
-    Returns:
-        List of (method_name, description) tuples
+    Returns
+    -------
+    list of tuple of (str, str)
+        List of (method_name, description) tuples.
     """
     accessor_cls = getattr(cls, accessor_name)
 
@@ -78,14 +82,17 @@ def get_accessor_methods(cls: type, accessor_name: str) -> list[tuple[str, str]]
 
 
 def get_accessor_data(cls: type) -> dict[str, Any]:
-    """
-    Get accessor data for template rendering.
+    """Get accessor data for template rendering.
 
-    Args:
-        cls: The class object
+    Parameters
+    ----------
+    cls : type
+        The class object.
 
-    Returns:
-        Dictionary with accessor data for template
+    Returns
+    -------
+    dict
+        Dictionary with accessor data for template.
     """
     if not hasattr(cls, "_ACCESSOR_CONFIG"):
         raise ValueError(f"{cls} has no attribute '_ACCESSOR_CONFIG'.")
@@ -108,11 +115,17 @@ def get_accessor_data(cls: type) -> dict[str, Any]:
 
 
 def generate_accessor_tables(app: Sphinx, config: Any) -> None:
-    """
-    Generate accessor table RST files using Jinja template during config-inited event.
+    """Generate accessor table RST files using Jinja template during config-inited event.
 
     This function reads the `accessor_summary_classes` config value and generates
     RST snippets for each class that can be included in documentation.
+
+    Parameters
+    ----------
+    app : Sphinx
+        The Sphinx application object.
+    config : Any
+        The Sphinx configuration object.
     """
     classes_to_process = config.accessor_summary_classes
 
@@ -146,7 +159,18 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
 
 
 def setup(app: Sphinx) -> dict[str, Any]:
-    """Setup the extension."""
+    """Setup the extension.
+
+    Parameters
+    ----------
+    app : Sphinx
+        The Sphinx application object.
+
+    Returns
+    -------
+    dict
+        Extension metadata including version and parallel safety flags.
+    """
     app.add_config_value("accessor_summary_classes", [], "html")
     app.connect("config-inited", generate_accessor_tables)
 
