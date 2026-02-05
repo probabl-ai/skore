@@ -1,29 +1,8 @@
 import numpy as np
-import pandas as pd
-import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 
-from skore import CoefficientsDisplay, CrossValidationReport, EstimatorReport
-
-
-@pytest.mark.parametrize("method", ["frame", "plot"])
-def test_coefficients_display_invalid_report_type(pyplot, method):
-    """Check that CoefficientsDisplay raises TypeError for invalid `report_type`."""
-    coefficients = pd.DataFrame(
-        {
-            "estimator": ["estimator1"],
-            "split": [0],
-            "feature": ["feature1"],
-            "label": [np.nan],
-            "output": [np.nan],
-            "coefficients": [1.0],
-        }
-    )
-
-    display = CoefficientsDisplay(coefficients=coefficients, report_type="invalid-type")
-    with pytest.raises(TypeError, match="Unexpected report type: 'invalid-type'"):
-        getattr(display, method)()
+from skore import CrossValidationReport, EstimatorReport
 
 
 def test_coefficients_display_barplot_kwargs(

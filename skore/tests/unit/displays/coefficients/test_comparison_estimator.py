@@ -77,7 +77,7 @@ def test_binary_classification(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame(sorting_order=None)
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["estimator", "feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == (["Intercept"] + columns_names) * len(
@@ -194,7 +194,7 @@ def test_multiclass_classification(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame(sorting_order=None)
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["estimator", "feature", "label", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["label"]).tolist() == np.unique(y_train).tolist()
@@ -317,7 +317,7 @@ def test_single_output_regression(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame(sorting_order=None)
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["estimator", "feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == (["Intercept"] + columns_names) * len(
@@ -441,7 +441,7 @@ def test_multi_output_regression(
 
         np.testing.assert_allclose(coef_split, coef_with_intercept)
 
-    df = display.frame(sorting_order=None)
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["estimator", "feature", "output", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["output"]).tolist() == [f"{i}" for i in range(n_outputs)]
@@ -560,7 +560,7 @@ def test_different_features(
     display = report.inspection.coefficients()
     assert isinstance(display, CoefficientsDisplay)
 
-    df = display.frame(sorting_order=None)
+    df = display.frame(format="long", sorting_order=None)
     expected_features = [
         "Intercept"
     ] + report_simple.estimator_.feature_names_in_.tolist()
@@ -621,10 +621,80 @@ def test_include_intercept(
 
     display = report.inspection.coefficients()
 
-    assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
+    assert (
+        display.frame(format="long", include_intercept=False)
+        .query("feature == 'Intercept'")
+        .empty
+    )
 
     display.plot(include_intercept=False)
     assert all(
         label.get_text() != "Intercept" for label in display.ax_.get_yticklabels()
     )
     assert display.figure_.get_suptitle() == "Coefficients"
+
+
+def test_wide_format_binary_classification(
+    pyplot,
+    logistic_binary_classification_with_train_test,
+):
+    """Check wide format for comparison of binary classification EstimatorReports."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    report1 = EstimatorReport(
+        clone(estimator),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report2 = EstimatorReport(
+        clone(estimator),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    comparison = ComparisonReport({"model_1": report1, "model_2": report2})
+    display = comparison.inspection.coefficients()
+
+    df_wide = display.frame(format="wide")
+    assert df_wide.index.name == "feature"
+    assert df_wide.columns.name == "estimator"
+
+
+def test_wide_format_single_output_regression(
+    pyplot,
+    linear_regression_with_train_test,
+):
+    """Check wide format for comparison of regression EstimatorReports."""
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    report1 = EstimatorReport(
+        clone(estimator),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report2 = EstimatorReport(
+        clone(estimator),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    comparison = ComparisonReport({"model_1": report1, "model_2": report2})
+    display = comparison.inspection.coefficients()
+
+    df_wide = display.frame(format="wide")
+    assert df_wide.index.name == "feature"
+    assert df_wide.columns.name == "estimator"

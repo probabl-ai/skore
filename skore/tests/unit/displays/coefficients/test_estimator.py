@@ -62,7 +62,7 @@ def test_binary_classification(
     ).ravel()
     np.testing.assert_allclose(df["coefficients"].to_numpy(), coef)
 
-    df = display.frame(sorting_order=None)
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == ["Intercept"] + columns_names
@@ -141,7 +141,7 @@ def test_multiclass_classification(
     ).ravel()
     np.testing.assert_allclose(df["coefficients"].to_numpy(), coef)
 
-    df = display.frame(sorting_order=None)
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["feature", "label", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["label"]).tolist() == np.unique(y_train).tolist()
@@ -240,7 +240,7 @@ def test_single_output_regression(
     ).ravel()
     np.testing.assert_allclose(df["coefficients"].to_numpy(), coef)
 
-    df = display.frame(sorting_order=None)
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["feature", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == ["Intercept"] + columns_names
@@ -327,7 +327,7 @@ def test_multi_output_regression(
     coef = np.concatenate([intercept, fitted_predictor.coef_], axis=1).ravel()
     np.testing.assert_allclose(df["coefficients"].to_numpy(), coef)
 
-    df = display.frame(sorting_order=None)
+    df = display.frame(format="long", sorting_order=None)
     expected_columns = ["feature", "output", "coefficients"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["output"]).tolist() == [f"{i}" for i in range(n_outputs)]
@@ -383,7 +383,11 @@ def test_include_intercept(
     )
     display = report.inspection.coefficients()
 
-    assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
+    assert (
+        display.frame(format="long", include_intercept=False)
+        .query("feature == 'Intercept'")
+        .empty
+    )
 
     display.plot(include_intercept=False)
     assert all(
@@ -391,3 +395,105 @@ def test_include_intercept(
     )
     estimator_name = display.coefficients["estimator"][0]
     assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
+
+
+def test_wide_format_binary_classification(
+    pyplot,
+    logistic_binary_classification_with_train_test,
+):
+    """Check wide format for binary classification."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    report = EstimatorReport(
+        clone(estimator),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.inspection.coefficients()
+
+    df_wide = display.frame(format="wide")
+    assert df_wide.index.name == "feature"
+    assert "coefficients" in df_wide.columns
+
+
+def test_wide_format_multiclass_classification(
+    pyplot,
+    logistic_multiclass_classification_with_train_test,
+):
+    """Check wide format for multiclass classification has labels as columns."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_multiclass_classification_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    report = EstimatorReport(
+        clone(estimator),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.inspection.coefficients()
+
+    df_wide = display.frame(format="wide")
+    assert df_wide.index.name == "feature"
+    assert df_wide.columns.name == "label"
+
+
+def test_wide_format_single_output_regression(
+    pyplot,
+    linear_regression_with_train_test,
+):
+    """Check wide format for single output regression."""
+    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    report = EstimatorReport(
+        clone(estimator),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.inspection.coefficients()
+
+    df_wide = display.frame(format="wide")
+    assert df_wide.index.name == "feature"
+    assert "coefficients" in df_wide.columns
+
+
+def test_wide_format_multi_output_regression(
+    pyplot,
+    linear_regression_multioutput_with_train_test,
+):
+    """Check wide format for multi-output regression has outputs as columns."""
+    estimator, X_train, X_test, y_train, y_test = (
+        linear_regression_multioutput_with_train_test
+    )
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
+    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+
+    report = EstimatorReport(
+        clone(estimator),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.inspection.coefficients()
+
+    df_wide = display.frame(format="wide")
+    assert df_wide.index.name == "feature"
+    assert df_wide.columns.name == "output"

@@ -12,7 +12,7 @@ def test_estimator(logistic_binary_classification_with_train_test):
         estimator, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
     )
 
-    frame = report.inspection.coefficients().frame(select_k=3)
+    frame = report.inspection.coefficients().frame(select_k=3, format="long")
 
     assert set(frame["feature"]) == {"Feature #10", "Feature #1", "Feature #15"}
 
@@ -22,7 +22,7 @@ def test_cross_validation(logistic_binary_classification_data):
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
 
-    frame = report.inspection.coefficients().frame(select_k=3)
+    frame = report.inspection.coefficients().frame(select_k=3, format="long")
 
     assert [list(group["feature"]) for _, group in frame.groupby("split")] == [
         ["Feature #10", "Feature #1", "Feature #15"],
@@ -37,7 +37,7 @@ def test_comparison_cross_validation(logistic_binary_classification_data):
     report_2 = CrossValidationReport(estimator, X, y)
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
 
-    coefficients = report.inspection.coefficients().frame(select_k=3)
+    coefficients = report.inspection.coefficients().frame(select_k=3, format="long")
 
     assert set(coefficients["feature"]) == {"Feature #10", "Feature #1", "Feature #15"}
 
@@ -45,13 +45,15 @@ def test_comparison_cross_validation(logistic_binary_classification_data):
 def test_zero(comparison_report):
     """If `select_k` is zero then the output is an empty dataframe."""
 
-    frame = comparison_report.inspection.coefficients().frame(select_k=0)
+    frame = comparison_report.inspection.coefficients().frame(select_k=0, format="long")
     assert frame.empty
 
 
 def test_negative(comparison_report):
     """If `select_k` is negative then the features are the bottom `-select_k`."""
-    frame = comparison_report.inspection.coefficients().frame(select_k=-3)
+    frame = comparison_report.inspection.coefficients().frame(
+        select_k=-3, format="long"
+    )
     assert set(frame["feature"]) == {"Feature #17", "Feature #16", "Feature #0"}
 
 
@@ -73,7 +75,7 @@ def test_multiclass(multiclass_classification_train_test_split):
         y_test=y_test,
     )
     report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-    frame = report.inspection.coefficients().frame(select_k=2)
+    frame = report.inspection.coefficients().frame(select_k=2, format="long")
 
     assert {
         (report, int(label)): list(group["feature"])
@@ -93,7 +95,7 @@ def test_multi_output_regression(linear_regression_multioutput_data):
     estimator, X, y = linear_regression_multioutput_data
     report = EstimatorReport(estimator, X_train=X, X_test=X, y_train=y, y_test=y)
 
-    frame = report.inspection.coefficients().frame(select_k=2)
+    frame = report.inspection.coefficients().frame(select_k=2, format="long")
 
     assert [list(group["feature"]) for _, group in frame.groupby("output")] == [
         ["Feature #0", "Feature #4"],
