@@ -2,9 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import asdict
-from io import StringIO
 
-from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
 

@@ -1,5 +1,4 @@
 import inspect
-import re
 
 import joblib
 import numpy as np

@@ -3,7 +3,6 @@ Tests of ComparisonReport which work regardless whether it holds EstimatorReport
 CrossValidationReports.
 """
 
-import re
 from io import BytesIO
 
 import joblib

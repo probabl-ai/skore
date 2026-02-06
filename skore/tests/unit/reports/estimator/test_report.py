@@ -1,5 +1,4 @@
 import inspect
-import re
 from copy import deepcopy
 from io import BytesIO
 
