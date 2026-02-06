@@ -6,9 +6,9 @@ mpl.rc("figure", max_open_warning=False)
 
 @pytest.fixture(scope="module")
 def estimator_reports_binary_classification_figure_axes(
-    pyplot, estimator_report_binary_classification_0
+    pyplot, estimator_reports_binary_classification
 ):
-    report = estimator_report_binary_classification_0
+    report = estimator_reports_binary_classification[0]
     display = report.metrics.roc()
     display.plot()
     return display.figure_, display.ax_
@@ -16,9 +16,9 @@ def estimator_reports_binary_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def estimator_reports_multiclass_classification_figure_axes(
-    pyplot, estimator_report_multiclass_classification_0
+    pyplot, estimator_reports_multiclass_classification
 ):
-    report = estimator_report_multiclass_classification_0
+    report = estimator_reports_multiclass_classification[0]
     display = report.metrics.roc()
     display.plot()
     return display.figure_, display.ax_
@@ -26,9 +26,9 @@ def estimator_reports_multiclass_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def cross_validation_reports_binary_classification_figure_axes(
-    pyplot, cross_validation_report_binary_classification_0
+    pyplot, cross_validation_reports_binary_classification
 ):
-    report = cross_validation_report_binary_classification_0
+    report = cross_validation_reports_binary_classification[0]
     display = report.metrics.roc()
     display.plot()
     return display.figure_, display.ax_
@@ -36,9 +36,9 @@ def cross_validation_reports_binary_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def cross_validation_reports_multiclass_classification_figure_axes(
-    pyplot, cross_validation_report_multiclass_classification_0
+    pyplot, cross_validation_reports_multiclass_classification
 ):
-    report = cross_validation_report_multiclass_classification_0
+    report = cross_validation_reports_multiclass_classification[0]
     display = report.metrics.roc()
     display.plot()
     return display.figure_, display.ax_

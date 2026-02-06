@@ -19,10 +19,10 @@ def test_legend(
 
 def test_legend_actual_vs_predicted(
     pyplot,
-    estimator_report_regression_0,
+    estimator_reports_regression,
 ):
     """Check the legend when kind is actual_vs_predicted."""
-    report = estimator_report_regression_0
+    report = estimator_reports_regression[0]
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
     legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
@@ -30,11 +30,11 @@ def test_legend_actual_vs_predicted(
     assert legend_texts[0] == "Perfect predictions"
 
 
-def test_invalid_subplot_by(estimator_report_regression_0):
+def test_invalid_subplot_by(estimator_reports_regression):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `subplot_by` argument.
     """
-    report = estimator_report_regression_0
+    report = estimator_reports_regression[0]
     display = report.metrics.prediction_error()
     with pytest.raises(
         ValueError,
@@ -47,17 +47,17 @@ def test_invalid_subplot_by(estimator_report_regression_0):
 
 
 @pytest.mark.parametrize("subplot_by", [None, "auto"])
-def test_valid_subplot_by(pyplot, estimator_report_regression_0, subplot_by):
+def test_valid_subplot_by(pyplot, estimator_reports_regression, subplot_by):
     """Check that we can pass valid values to `subplot_by`."""
-    report = estimator_report_regression_0
+    report = estimator_reports_regression[0]
     display = report.metrics.prediction_error()
     display.plot(subplot_by=subplot_by)
     assert isinstance(display.ax_, mpl.axes.Axes)
 
 
-def test_subplot_by_data_source(pyplot, estimator_report_regression_0):
+def test_subplot_by_data_source(pyplot, estimator_reports_regression):
     """Check the behaviour when `subplot_by` is `data_source`."""
-    report = estimator_report_regression_0
+    report = estimator_reports_regression[0]
     display = report.metrics.prediction_error(data_source="both")
     display.plot(subplot_by="data_source")
     assert isinstance(display.ax_[0], mpl.axes.Axes)
@@ -67,9 +67,9 @@ def test_subplot_by_data_source(pyplot, estimator_report_regression_0):
     assert legend_texts[0] == "Perfect predictions"
 
 
-def test_source_both(pyplot, estimator_report_regression_0):
+def test_source_both(pyplot, estimator_reports_regression):
     """Check the behaviour of the plot when data_source='both'."""
-    report = estimator_report_regression_0
+    report = estimator_reports_regression[0]
     display = report.metrics.prediction_error(data_source="both")
     display.plot()
     assert len(display.figure_.legends) == 1
@@ -87,16 +87,16 @@ def test_source_both(pyplot, estimator_report_regression_0):
         ({"subsample": -20.0}, "When a floating-point, subsample=-20.0 should be"),
     ],
 )
-def test_wrong_subsample(pyplot, params, err_msg, estimator_report_regression_0):
+def test_wrong_subsample(pyplot, params, err_msg, estimator_reports_regression):
     """Check that we raise the proper error when making the parameters validation."""
-    report = estimator_report_regression_0
+    report = estimator_reports_regression[0]
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.prediction_error(**params)
 
 
-def test_pass_kind_to_plot(pyplot, estimator_report_regression_0):
+def test_pass_kind_to_plot(pyplot, estimator_reports_regression):
     """Check that we raise an error when passing an invalid `kind` to plot."""
-    report = estimator_report_regression_0
+    report = estimator_reports_regression[0]
     display = report.metrics.prediction_error()
     with pytest.raises(
         ValueError,

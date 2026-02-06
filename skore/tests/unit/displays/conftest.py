@@ -1,6 +1,6 @@
 import pytest
 from sklearn.datasets import make_classification, make_regression
-from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
@@ -18,73 +18,61 @@ def binary_classification_train_test_split(binary_classification):
 
 
 @pytest.fixture(scope="module")
-def estimator_report_binary_classification_0(binary_classification_train_test_split):
+def estimator_reports_binary_classification(binary_classification_train_test_split):
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
-    return EstimatorReport(
-        DummyClassifier(strategy="uniform", random_state=0),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
+    return (
+        EstimatorReport(
+            LogisticRegression(random_state=0),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        ),
+        EstimatorReport(
+            LogisticRegression(random_state=1),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        ),
     )
 
 
 @pytest.fixture(scope="module")
-def estimator_report_binary_classification_1(binary_classification_train_test_split):
-    X_train, X_test, y_train, y_test = binary_classification_train_test_split
-    return EstimatorReport(
-        DummyClassifier(strategy="uniform", random_state=1),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-
-@pytest.fixture(scope="module")
-def cross_validation_report_binary_classification_0(
+def cross_validation_reports_binary_classification(
     binary_classification,
 ):
     X, y = binary_classification
-    return CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=0), X=X, y=y, splitter=2
-    )
-
-
-@pytest.fixture(scope="module")
-def cross_validation_report_binary_classification_1(
-    binary_classification,
-):
-    X, y = binary_classification
-    return CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=1), X=X, y=y, splitter=2
+    return (
+        CrossValidationReport(
+            LogisticRegression(random_state=0),
+            X=X,
+            y=y,
+            splitter=2,
+        ),
+        CrossValidationReport(
+            LogisticRegression(random_state=1),
+            X=X,
+            y=y,
+            splitter=2,
+        ),
     )
 
 
 @pytest.fixture(scope="module")
 def comparison_estimator_reports_binary_classification(
-    estimator_report_binary_classification_0,
-    estimator_report_binary_classification_1,
+    estimator_reports_binary_classification,
 ):
-    return ComparisonReport(
-        [
-            estimator_report_binary_classification_0,
-            estimator_report_binary_classification_1,
-        ]
-    )
+    report_1, report_2 = estimator_reports_binary_classification
+    return ComparisonReport([report_1, report_2])
 
 
 @pytest.fixture(scope="module")
 def comparison_cross_validation_reports_binary_classification(
-    cross_validation_report_binary_classification_0,
-    cross_validation_report_binary_classification_1,
+    cross_validation_reports_binary_classification,
 ):
-    return ComparisonReport(
-        [
-            cross_validation_report_binary_classification_0,
-            cross_validation_report_binary_classification_1,
-        ]
-    )
+    report_1, report_2 = cross_validation_reports_binary_classification
+    return ComparisonReport([report_1, report_2])
 
 
 @pytest.fixture(scope="module")
@@ -106,77 +94,63 @@ def multiclass_classification_train_test_split(multiclass_classification):
 
 
 @pytest.fixture(scope="module")
-def estimator_report_multiclass_classification_0(
+def estimator_reports_multiclass_classification(
     multiclass_classification_train_test_split,
 ):
     X_train, X_test, y_train, y_test = multiclass_classification_train_test_split
-    return EstimatorReport(
-        DummyClassifier(strategy="uniform", random_state=0),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
+    return (
+        EstimatorReport(
+            LogisticRegression(random_state=0),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        ),
+        EstimatorReport(
+            LogisticRegression(random_state=1),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        ),
     )
 
 
 @pytest.fixture(scope="module")
-def estimator_report_multiclass_classification_1(
-    multiclass_classification_train_test_split,
-):
-    X_train, X_test, y_train, y_test = multiclass_classification_train_test_split
-    return EstimatorReport(
-        DummyClassifier(strategy="uniform", random_state=1),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-
-@pytest.fixture(scope="module")
-def cross_validation_report_multiclass_classification_0(
+def cross_validation_reports_multiclass_classification(
     multiclass_classification,
 ):
     X, y = multiclass_classification
-    return CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=0), X=X, y=y, splitter=2
-    )
-
-
-@pytest.fixture(scope="module")
-def cross_validation_report_multiclass_classification_1(
-    multiclass_classification,
-):
-    X, y = multiclass_classification
-    return CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=1), X=X, y=y, splitter=2
+    return (
+        CrossValidationReport(
+            LogisticRegression(random_state=0),
+            X=X,
+            y=y,
+            splitter=2,
+        ),
+        CrossValidationReport(
+            LogisticRegression(random_state=1),
+            X=X,
+            y=y,
+            splitter=2,
+        ),
     )
 
 
 @pytest.fixture(scope="module")
 def comparison_estimator_reports_multiclass_classification(
-    estimator_report_multiclass_classification_0,
-    estimator_report_multiclass_classification_1,
+    estimator_reports_multiclass_classification,
 ):
-    return ComparisonReport(
-        [
-            estimator_report_multiclass_classification_0,
-            estimator_report_multiclass_classification_1,
-        ]
-    )
+    report_1, report_2 = estimator_reports_multiclass_classification
+    return ComparisonReport([report_1, report_2])
 
 
 @pytest.fixture(scope="module")
 def comparison_cross_validation_reports_multiclass_classification(
-    cross_validation_report_multiclass_classification_0,
-    cross_validation_report_multiclass_classification_1,
+    cross_validation_reports_multiclass_classification,
 ):
-    return ComparisonReport(
-        [
-            cross_validation_report_multiclass_classification_0,
-            cross_validation_report_multiclass_classification_1,
-        ]
-    )
+    report_1, report_2 = cross_validation_reports_multiclass_classification
+    return ComparisonReport([report_1, report_2])
 
 
 @pytest.fixture(scope="module")
@@ -191,66 +165,107 @@ def regression_train_test_split(regression):
 
 
 @pytest.fixture(scope="module")
-def estimator_report_regression_0(regression_train_test_split):
+def estimator_reports_regression(regression_train_test_split):
     X_train, X_test, y_train, y_test = regression_train_test_split
-    return EstimatorReport(
-        DummyRegressor(),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
+    return (
+        EstimatorReport(
+            LinearRegression(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        ),
+        EstimatorReport(
+            LinearRegression(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        ),
     )
 
 
 @pytest.fixture(scope="module")
-def estimator_report_regression_1(regression_train_test_split):
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    return EstimatorReport(
-        DummyRegressor(),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
+def cross_validation_reports_regression(
+    regression,
+):
+    X, y = regression
+    return (
+        CrossValidationReport(LinearRegression(), X=X, y=y, splitter=2),
+        CrossValidationReport(LinearRegression(), X=X, y=y, splitter=2),
     )
-
-
-@pytest.fixture(scope="module")
-def cross_validation_report_regression_0(
-    regression,
-):
-    X, y = regression
-    return CrossValidationReport(DummyRegressor(), X=X, y=y, splitter=2)
-
-
-@pytest.fixture(scope="module")
-def cross_validation_report_regression_1(
-    regression,
-):
-    X, y = regression
-    return CrossValidationReport(DummyRegressor(), X=X, y=y, splitter=2)
 
 
 @pytest.fixture(scope="module")
 def comparison_estimator_reports_regression(
-    estimator_report_regression_0,
-    estimator_report_regression_1,
+    estimator_reports_regression,
 ):
-    return ComparisonReport(
-        [
-            estimator_report_regression_0,
-            estimator_report_regression_1,
-        ]
-    )
+    report_1, report_2 = estimator_reports_regression
+    return ComparisonReport([report_1, report_2])
 
 
 @pytest.fixture(scope="module")
 def comparison_cross_validation_reports_regression(
-    cross_validation_report_regression_0,
-    cross_validation_report_regression_1,
+    cross_validation_reports_regression,
 ):
-    return ComparisonReport(
-        [
-            cross_validation_report_regression_0,
-            cross_validation_report_regression_1,
-        ]
+    report_1, report_2 = cross_validation_reports_regression
+    return ComparisonReport([report_1, report_2])
+
+
+@pytest.fixture(scope="module")
+def multioutput_regression():
+    return make_regression(n_features=4, n_targets=2, random_state=0)
+
+
+@pytest.fixture(scope="module")
+def multioutput_regression_train_test_split(multioutput_regression):
+    X, y = multioutput_regression
+    return train_test_split(X, y, test_size=0.2, random_state=0)
+
+
+@pytest.fixture(scope="module")
+def estimator_reports_multioutput_regression(multioutput_regression_train_test_split):
+    X_train, X_test, y_train, y_test = multioutput_regression_train_test_split
+    return (
+        EstimatorReport(
+            LinearRegression(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        ),
+        EstimatorReport(
+            LinearRegression(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        ),
     )
+
+
+@pytest.fixture(scope="module")
+def cross_validation_reports_multioutput_regression(
+    multioutput_regression,
+):
+    X, y = multioutput_regression
+    return (
+        CrossValidationReport(LinearRegression(), X=X, y=y, splitter=2),
+        CrossValidationReport(LinearRegression(), X=X, y=y, splitter=2),
+    )
+
+
+@pytest.fixture(scope="module")
+def comparison_estimator_reports_multioutput_regression(
+    estimator_reports_multioutput_regression,
+):
+    report_1, report_2 = estimator_reports_multioutput_regression
+    return ComparisonReport([report_1, report_2])
+
+
+@pytest.fixture(scope="module")
+def comparison_cross_validation_reports_multioutput_regression(
+    cross_validation_reports_multioutput_regression,
+):
+    report_1, report_2 = cross_validation_reports_multioutput_regression
+    return ComparisonReport([report_1, report_2])

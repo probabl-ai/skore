@@ -590,7 +590,7 @@ class CoefficientsDisplay(DisplayMixin):
         columns_to_groupby = self._get_columns_to_groupby(frame=frame)
         if subplot_by not in ("auto", None) and subplot_by not in columns_to_groupby:
             additional_subplot_by = ["auto"]
-            if "label" in frame.columns and frame["label"].nunique() > 1:
+            if "label" not in frame.columns and "output" not in frame.columns:
                 additional_subplot_by.append("None")
 
             raise ValueError(
@@ -600,8 +600,11 @@ class CoefficientsDisplay(DisplayMixin):
         elif subplot_by is None:
             if "label" in frame.columns:
                 n_unique = frame["label"].nunique()
-            else:
+            elif "output" in frame.columns:
                 n_unique = frame["output"].nunique()
+            else:
+                # binary classification or single output regression
+                n_unique = 1
             if n_unique > 1:
                 raise ValueError(
                     "There are multiple labels or outputs and `subplot_by` is `None`. "
@@ -625,6 +628,11 @@ class CoefficientsDisplay(DisplayMixin):
 
         if subplot_by is None:
             hue, col = columns_to_groupby[0], None
+            if not has_same_features and hue == "estimator":
+                raise ValueError(
+                    "The estimators have different features and should be plotted on "
+                    "different axis using `subplot_by='estimator'`."
+                )
         else:
             # infer if we should group by another column using hue
             hue_groupby = [col for col in columns_to_groupby if col != subplot_by]

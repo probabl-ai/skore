@@ -5,8 +5,8 @@ mpl.rc("figure", max_open_warning=False)
 
 
 @pytest.fixture
-def estimator_reports_regression_figure_axes(pyplot, estimator_report_regression_0):
-    report = estimator_report_regression_0
+def estimator_reports_regression_figure_axes(pyplot, estimator_reports_regression):
+    report = estimator_reports_regression[0]
     display = report.metrics.prediction_error()
     display.plot()
     return display.figure_, display.ax_
@@ -14,9 +14,9 @@ def estimator_reports_regression_figure_axes(pyplot, estimator_report_regression
 
 @pytest.fixture
 def cross_validation_reports_regression_figure_axes(
-    pyplot, cross_validation_report_regression_0
+    pyplot, cross_validation_reports_regression
 ):
-    report = cross_validation_report_regression_0
+    report = cross_validation_reports_regression[0]
     display = report.metrics.prediction_error()
     display.plot()
     return display.figure_, display.ax_

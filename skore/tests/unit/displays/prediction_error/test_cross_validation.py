@@ -17,9 +17,9 @@ def test_legend(
     assert legend_texts[2] == "Perfect predictions"
 
 
-def test_legend_actual_vs_predicted(pyplot, cross_validation_report_regression_0):
+def test_legend_actual_vs_predicted(pyplot, cross_validation_reports_regression):
     """Check the legend when kind is actual_vs_predicted."""
-    report = cross_validation_report_regression_0
+    report = cross_validation_reports_regression[0]
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
     legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
@@ -30,11 +30,11 @@ def test_legend_actual_vs_predicted(pyplot, cross_validation_report_regression_0
     assert legend_texts[2] == "Perfect predictions"
 
 
-def test_invalid_subplot_by(pyplot, cross_validation_report_regression_0):
+def test_invalid_subplot_by(pyplot, cross_validation_reports_regression):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `subplot_by` argument.
     """
-    report = cross_validation_report_regression_0
+    report = cross_validation_reports_regression[0]
     display = report.metrics.prediction_error()
     with pytest.raises(
         ValueError,
@@ -47,9 +47,9 @@ def test_invalid_subplot_by(pyplot, cross_validation_report_regression_0):
 
 
 @pytest.mark.parametrize("subplot_by", [None, "split", "auto"])
-def test_valid_subplot_by(pyplot, cross_validation_report_regression_0, subplot_by):
+def test_valid_subplot_by(pyplot, cross_validation_reports_regression, subplot_by):
     """Check that we can pass valid values to `subplot_by`."""
-    report = cross_validation_report_regression_0
+    report = cross_validation_reports_regression[0]
     display = report.metrics.prediction_error()
     display.plot(subplot_by=subplot_by)
     if subplot_by == "split":

@@ -10,193 +10,33 @@ from sklearn.utils._testing import _convert_container
 from skore import CoefficientsDisplay, CrossValidationReport
 
 
-@pytest.mark.parametrize(
-    "fit_intercept,with_preprocessing",
-    [(True, True), (False, False)],
-)
-def test_binary_classification(
-    pyplot,
-    logistic_binary_classification_data,
-    fit_intercept,
-    with_preprocessing,
+def test_invalid_subplot_by(
+    pyplot, coefficients_cross_validation_reports_multiclass_classification
 ):
-    """Check the attributes and default plotting behaviour of the coefficients plot with
-    binary data."""
-    estimator, X, y = logistic_binary_classification_data
-    columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
-    X = _convert_container(X, "dataframe", columns_name=columns_names)
-    splitter = 2
+    display = coefficients_cross_validation_reports_multiclass_classification.inspection.coefficients()
+    with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
+        display.plot(subplot_by="incorrect")
 
-    predictor = clone(estimator).set_params(fit_intercept=fit_intercept)
-    if with_preprocessing:
-        model = Pipeline([("scaler", StandardScaler()), ("predictor", predictor)])
-    else:
-        model = predictor
 
-    report = CrossValidationReport(model, X, y, splitter=splitter)
-
-    display = report.inspection.coefficients()
-    assert isinstance(display, CoefficientsDisplay)
-
-    expected_columns = [
-        "estimator",
-        "split",
-        "feature",
-        "label",
-        "output",
-        "coefficients",
-    ]
-    df = display.coefficients
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-    assert df["split"].nunique() == splitter
-    for col in ("output", "label"):
-        assert df[col].isna().all()
-    assert df["estimator"].nunique() == 1
-
-    for split_index, estimator_report in enumerate(report.estimator_reports_):  # noqa: B007
-        # split_index is used in the pandas.query as an string which is not detected by
-        # ruff as a used variable
-        fitted_predictor = estimator_report.estimator_
-        if with_preprocessing:
-            fitted_predictor = fitted_predictor.named_steps["predictor"]
-        coef_with_intercept = np.concatenate(
-            [fitted_predictor.intercept_[np.newaxis, :], fitted_predictor.coef_.T]
-        )
-
-        coef_split = (
-            df.query("split == @split_index")[["feature", "coefficients"]]
-            .set_index("feature")
-            .loc[["Intercept"] + columns_names]
-            .to_numpy()
-        )
-
-        np.testing.assert_allclose(coef_split, coef_with_intercept)
-
-    df = display.frame(sorting_order=None)
-    expected_columns = ["split", "feature", "coefficients"]
-    assert df.columns.tolist() == expected_columns
-    feature_names = (["Intercept"] + columns_names) * splitter
-    assert df["feature"].tolist() == feature_names
-    assert df["split"].nunique() == splitter
-    if not fit_intercept:
-        mask = df["feature"] == "Intercept"
-        np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
-
-    display.plot()
-    assert hasattr(display, "facet_")
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-
-    assert display.ax_.get_xlabel() == "Magnitude of coefficient"
-    assert display.ax_.get_ylabel() == ""
-    estimator_name = display.coefficients["estimator"][0]
-    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
-
+def test_subplot_by_no_columns_to_group(
+    pyplot, coefficients_cross_validation_reports_binary_classification
+):
+    display = coefficients_cross_validation_reports_binary_classification.inspection.coefficients()
     with pytest.raises(ValueError, match="No columns to group by."):
         display.plot(subplot_by="label")
 
 
-@pytest.mark.parametrize(
-    "fit_intercept,with_preprocessing",
-    [(True, True), (False, False)],
-)
-def test_multiclass_classification(
-    pyplot,
-    logistic_multiclass_classification_data,
-    fit_intercept,
-    with_preprocessing,
+def test_subplot_by_label_multiclass(
+    pyplot, coefficients_cross_validation_reports_multiclass_classification
 ):
-    """Check the attributes and default plotting behaviour of the coefficients plot with
-    binary data."""
-    estimator, X, y = logistic_multiclass_classification_data
-    columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
-    X = _convert_container(X, "dataframe", columns_name=columns_names)
-    n_classes, splitter = len(np.unique(y)), 2
-
-    predictor = clone(estimator).set_params(fit_intercept=fit_intercept)
-    if with_preprocessing:
-        model = Pipeline([("scaler", StandardScaler()), ("predictor", predictor)])
-    else:
-        model = predictor
-
-    report = CrossValidationReport(model, X, y, splitter=splitter)
-
-    display = report.inspection.coefficients()
-    assert isinstance(display, CoefficientsDisplay)
-
-    expected_columns = [
-        "estimator",
-        "split",
-        "feature",
-        "label",
-        "output",
-        "coefficients",
-    ]
-    df = display.coefficients
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-    assert df["split"].nunique() == splitter
-    assert df["output"].isna().all()
-    np.testing.assert_allclose(np.unique(df["label"]).astype(y.dtype), range(n_classes))
-    assert df["estimator"].nunique() == 1
-
-    for split_index, estimator_report in enumerate(report.estimator_reports_):  # noqa: B007
-        # split_index is used in the pandas.query as an string which is not detected by
-        # ruff as a used variable
-        fitted_predictor = estimator_report.estimator_
-        if with_preprocessing:
-            fitted_predictor = fitted_predictor.named_steps["predictor"]
-        coef_with_intercept = np.concatenate(
-            [fitted_predictor.intercept_[np.newaxis, :], fitted_predictor.coef_.T]
-        )
-
-        coef_split = (
-            df.query("split == @split_index")[["feature", "label", "coefficients"]]
-            .pivot(index="feature", columns="label", values="coefficients")
-            .loc[["Intercept"] + columns_names]
-            .to_numpy()
-        )
-
-        np.testing.assert_allclose(coef_split, coef_with_intercept)
-
-    df = display.frame(sorting_order=None)
-    expected_columns = ["split", "feature", "label", "coefficients"]
-    assert df.columns.tolist() == expected_columns
-    feature_names = (["Intercept"] + columns_names) * splitter * n_classes
-    assert df["feature"].tolist() == feature_names
-    assert df["split"].nunique() == splitter
-    if not fit_intercept:
-        mask = df["feature"] == "Intercept"
-        np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
-
-    display.plot()
-    assert hasattr(display, "facet_")
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-
-    assert display.ax_.get_xlabel() == "Magnitude of coefficient"
-    assert display.ax_.get_ylabel() == ""
-    estimator_name = display.coefficients["estimator"][0]
-    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
-
+    display = coefficients_cross_validation_reports_multiclass_classification.inspection.coefficients()
+    n_classes = len(display.coefficients["label"].dropna().unique())
     display.plot(subplot_by="label")
-    assert hasattr(display, "facet_")
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
     assert isinstance(display.ax_, np.ndarray)
     assert len(display.ax_) == n_classes
     for label, ax in enumerate(display.ax_):
         assert isinstance(ax, mpl.axes.Axes)
         assert ax.get_title() == f"label = {label}"
-        assert ax.get_xlabel() == "Magnitude of coefficient"
-        assert ax.get_ylabel() == ""
-    assert (
-        display.figure_.get_suptitle() == f"Coefficients of {estimator_name} by label"
-    )
-
-    with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
-        display.plot(subplot_by="incorrect")
 
 
 @pytest.mark.parametrize(
