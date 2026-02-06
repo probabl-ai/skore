@@ -20,7 +20,7 @@ def test_aggregate_none(comparison_cross_validation_reports_binary_classificatio
 
     assert_index_equal(result_df.columns, pd.Index(["Value"]))
     assert result_df.index.names == ["Metric", "Label / Average", "Estimator", "Split"]
-    assert len(result_df) == 90
+    assert len(result_df) == 36
 
 
 def test_aggregate_none_flat_index(
@@ -33,7 +33,7 @@ def test_aggregate_none_flat_index(
     result = report.metrics.summarize(aggregate=None, flat_index=True).frame()
 
     assert_index_equal(result.columns, pd.Index(["Value"]))
-    assert len(result) == 90
+    assert len(result) == 36
 
 
 def test_default(comparison_cross_validation_reports_binary_classification):
@@ -45,10 +45,10 @@ def test_default(comparison_cross_validation_reports_binary_classification):
         result.columns,
         pd.MultiIndex.from_tuples(
             [
-                ("mean", "DummyClassifier_1"),
-                ("mean", "DummyClassifier_2"),
-                ("std", "DummyClassifier_1"),
-                ("std", "DummyClassifier_2"),
+                ("mean", "LogisticRegression_1"),
+                ("mean", "LogisticRegression_2"),
+                ("std", "LogisticRegression_1"),
+                ("std", "LogisticRegression_2"),
             ],
             names=[None, "Estimator"],
         ),
@@ -68,10 +68,10 @@ def test_default_regression(comparison_cross_validation_reports_regression):
         result.columns,
         pd.MultiIndex.from_tuples(
             [
-                ("mean", "DummyRegressor_1"),
-                ("mean", "DummyRegressor_2"),
-                ("std", "DummyRegressor_1"),
-                ("std", "DummyRegressor_2"),
+                ("mean", "LinearRegression_1"),
+                ("mean", "LinearRegression_2"),
+                ("std", "LinearRegression_1"),
+                ("std", "LinearRegression_2"),
             ],
             names=[None, "Estimator"],
         ),
@@ -117,16 +117,10 @@ def test_metric(comparison_cross_validation_reports_binary_classification):
         result.index,
         pd.MultiIndex.from_tuples(
             [
-                ("Accuracy", "DummyClassifier_1", "Split #0"),
-                ("Accuracy", "DummyClassifier_1", "Split #1"),
-                ("Accuracy", "DummyClassifier_1", "Split #2"),
-                ("Accuracy", "DummyClassifier_1", "Split #3"),
-                ("Accuracy", "DummyClassifier_1", "Split #4"),
-                ("Accuracy", "DummyClassifier_2", "Split #0"),
-                ("Accuracy", "DummyClassifier_2", "Split #1"),
-                ("Accuracy", "DummyClassifier_2", "Split #2"),
-                ("Accuracy", "DummyClassifier_2", "Split #3"),
-                ("Accuracy", "DummyClassifier_2", "Split #4"),
+                ("Accuracy", "LogisticRegression_1", "Split #0"),
+                ("Accuracy", "LogisticRegression_1", "Split #1"),
+                ("Accuracy", "LogisticRegression_2", "Split #0"),
+                ("Accuracy", "LogisticRegression_2", "Split #1"),
             ],
             names=("Metric", "Estimator", "Split"),
         ),
@@ -142,10 +136,10 @@ def test_favorability(comparison_cross_validation_reports_binary_classification)
         result.columns,
         pd.MultiIndex.from_tuples(
             [
-                ("mean", "DummyClassifier_1"),
-                ("mean", "DummyClassifier_2"),
-                ("std", "DummyClassifier_1"),
-                ("std", "DummyClassifier_2"),
+                ("mean", "LogisticRegression_1"),
+                ("mean", "LogisticRegression_2"),
+                ("std", "LogisticRegression_1"),
+                ("std", "LogisticRegression_2"),
                 ("Favorability", ""),
             ],
             names=[None, "Estimator"],
@@ -154,9 +148,10 @@ def test_favorability(comparison_cross_validation_reports_binary_classification)
     assert len(result) == 9
 
 
-def test_cache(comparison_cross_validation_reports_binary_classification):
+def test_cache(cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` results are cached."""
-    report = comparison_cross_validation_reports_binary_classification
+    cv_report_1, cv_report_2 = cross_validation_reports_binary_classification
+    report = ComparisonReport([cv_report_1, cv_report_2])
     with check_cache_changed(report._cache):
         result = report.metrics.summarize().frame()
 
@@ -202,10 +197,10 @@ def test_data_source_external(
         result.columns,
         pd.MultiIndex.from_tuples(
             [
-                ("mean", "DummyClassifier_1"),
-                ("mean", "DummyClassifier_2"),
-                ("std", "DummyClassifier_1"),
-                ("std", "DummyClassifier_2"),
+                ("mean", "LogisticRegression_1"),
+                ("mean", "LogisticRegression_2"),
+                ("std", "LogisticRegression_1"),
+                ("std", "LogisticRegression_2"),
             ],
             names=[None, "Estimator"],
         ),

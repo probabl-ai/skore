@@ -174,6 +174,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             response_method=response_method,
         )
         if flat_index:
+            results = results.copy()
             if isinstance(results.columns, pd.MultiIndex):
                 results.columns = flatten_multi_index(results.columns)
             if isinstance(results.index, pd.MultiIndex):

@@ -45,8 +45,8 @@ def test_not_fitted_error(regression_train_test_split, n_jobs):
 @pytest.mark.parametrize(
     "at_step, expected_features",
     [
-        (0, ["Feature #0", "Feature #1", "Feature #2", "Feature #3", "Feature #4"]),
-        (1, ["x0", "x1", "x2", "x3", "x4"]),
+        (0, ["Feature #0", "Feature #1", "Feature #2", "Feature #3"]),
+        (1, ["x0", "x1", "x2", "x3"]),
         (-1, ["pca0", "pca1"]),
     ],
 )
@@ -83,7 +83,7 @@ def test_at_step_str(regression_train_test_split, n_jobs):
     )
 
     assert isinstance(display, PermutationImportanceDisplay)
-    expected_features = ["x0", "x1", "x2", "x3", "x4"]
+    expected_features = ["x0", "x1", "x2", "x3"]
     actual_features = sorted(display.importances["feature"].unique())
     assert actual_features == sorted(expected_features)
 

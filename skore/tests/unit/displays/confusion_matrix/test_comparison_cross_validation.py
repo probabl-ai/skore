@@ -8,7 +8,7 @@ from sklearn.svm import SVC
 from skore import ComparisonReport, CrossValidationReport
 
 
-def test_normalization(pyplot, forest_binary_classification_data):
+def test_normalization(forest_binary_classification_data):
     """Check that normalized values are correctly computed."""
     (estimator, X, y), cv = forest_binary_classification_data, 3
     cv_report_1 = CrossValidationReport(estimator, X, y, splitter=cv)
