@@ -85,3 +85,83 @@ def cross_validation_reports_multioutput_regression_figure_axes(
     display = report.inspection.impurity_decrease()
     display.plot()
     return display.figure_, display.ax_
+
+
+@pytest.fixture(scope="module")
+def comparison_estimator_reports_binary_classification_figure_axes(
+    pyplot, comparison_estimator_reports_binary_classification
+):
+    report = comparison_estimator_reports_binary_classification
+    display = report.inspection.impurity_decrease()
+    display.plot()
+    return display.figure_, display.ax_
+
+
+@pytest.fixture(scope="module")
+def comparison_estimator_reports_multiclass_classification_figure_axes(
+    pyplot, comparison_estimator_reports_multiclass_classification
+):
+    report = comparison_estimator_reports_multiclass_classification
+    display = report.inspection.impurity_decrease()
+    display.plot()
+    return display.figure_, display.ax_
+
+
+@pytest.fixture(scope="module")
+def comparison_estimator_reports_regression_figure_axes(
+    pyplot, comparison_estimator_reports_regression
+):
+    report = comparison_estimator_reports_regression
+    display = report.inspection.impurity_decrease()
+    display.plot()
+    return display.figure_, display.ax_
+
+
+@pytest.fixture(scope="module")
+def comparison_estimator_reports_multioutput_regression_figure_axes(
+    pyplot, comparison_estimator_reports_multioutput_regression
+):
+    report = comparison_estimator_reports_multioutput_regression
+    display = report.inspection.impurity_decrease()
+    display.plot()
+    return display.figure_, display.ax_
+
+
+@pytest.fixture(scope="module")
+def comparison_cross_validation_reports_binary_classification_figure_axes(
+    pyplot, comparison_cross_validation_reports_binary_classification
+):
+    report = comparison_cross_validation_reports_binary_classification
+    display = report.inspection.impurity_decrease()
+    display.plot()
+    return display.figure_, display.ax_
+
+
+@pytest.fixture(scope="module")
+def comparison_cross_validation_reports_multiclass_classification_figure_axes(
+    pyplot, comparison_cross_validation_reports_multiclass_classification
+):
+    report = comparison_cross_validation_reports_multiclass_classification
+    display = report.inspection.impurity_decrease()
+    display.plot()
+    return display.figure_, display.ax_
+
+
+@pytest.fixture(scope="module")
+def comparison_cross_validation_reports_regression_figure_axes(
+    pyplot, comparison_cross_validation_reports_regression
+):
+    report = comparison_cross_validation_reports_regression
+    display = report.inspection.impurity_decrease()
+    display.plot()
+    return display.figure_, display.ax_
+
+
+@pytest.fixture(scope="module")
+def comparison_cross_validation_reports_multioutput_regression_figure_axes(
+    pyplot, comparison_cross_validation_reports_multioutput_regression
+):
+    report = comparison_cross_validation_reports_multioutput_regression
+    display = report.inspection.impurity_decrease()
+    display.plot()
+    return display.figure_, display.ax_
