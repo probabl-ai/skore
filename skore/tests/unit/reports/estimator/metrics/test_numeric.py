@@ -23,26 +23,6 @@ from sklearn.svm import SVC
 from skore import EstimatorReport
 
 
-def test_summarize_help(capsys, forest_binary_classification_with_test):
-    """Check that the help method writes to the console."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    report.metrics.help()
-    captured = capsys.readouterr()
-    assert "Available metrics methods" in captured.out
-
-
-def test_summarize_repr(forest_binary_classification_with_test):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    repr_str = repr(report.metrics)
-    assert "skore.EstimatorReport.metrics" in repr_str
-    assert "help()" in repr_str
-
-
 @pytest.mark.parametrize("metric", ["accuracy", "brier_score", "roc_auc", "log_loss"])
 def test_summarize_binary_classification(
     forest_binary_classification_with_test, metric

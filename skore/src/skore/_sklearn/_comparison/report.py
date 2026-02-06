@@ -484,8 +484,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Tools to compare estimators[/bold cyan]"
+    def _get_help_title(self) -> str:
+        return "Tools to compare estimators"
 
     def _get_help_legend(self) -> str:
         return (

@@ -1,14 +1,10 @@
-import inspect
-import re
-from abc import ABC, abstractmethod
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
 
 import joblib
 from numpy.typing import ArrayLike, NDArray
-from rich.console import Console, Group
+from rich.console import Console
 from rich.panel import Panel
-from rich.tree import Tree
 from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
@@ -16,90 +12,37 @@ from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._measure_time import MeasureTime
+from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
-class _HelpMixin(ABC):
-    """Mixin class providing help for the `help` method and the `__repr__` method."""
+class _BaseReport(ReportHelpMixin):
+    """Base class for all reports.
 
-    def _get_methods_for_help(self) -> list[tuple[str, Any]]:
-        """Get the methods to display in help."""
-        methods = inspect.getmembers(self, predicate=inspect.ismethod)
-        filtered_methods = []
-        for name, method in methods:
-            is_private_method = name.startswith("_")
-            # we cannot use `isinstance(method, classmethod)` because it is already
-            # transformed by the decorator `@classmethod`.
-            is_class_method = inspect.ismethod(method) and method.__self__ is type(self)
-            is_help_method = name == "help"
-            if not (is_private_method or is_class_method or is_help_method):
-                filtered_methods.append((name, method))
-        return filtered_methods
+    This class centralizes shared report logic (e.g. configuration, accessors) and
+    inherits from ``ReportHelpMixin`` to provide a consistent ``help()`` and rich/HTML
+    representation across all report types.
+    """
 
-    def _sort_methods_for_help(
-        self, methods: list[tuple[str, Any]]
-    ) -> list[tuple[str, Any]]:
-        """Sort methods for help display."""
-        return sorted(methods)
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]]
 
-    def _format_method_name(self, name: str) -> str:
-        """Format method name for display."""
-        return f"{name}(...)"
 
-    def _get_method_description(self, method: Any) -> str:
-        """Get the description for a method."""
-        return (
-            method.__doc__.split("\n")[0]
-            if method.__doc__
-            else "No description available"
-        )
+ParentT = TypeVar("ParentT", bound="_BaseReport")
 
-    def _get_attribute_description(self, name: str) -> str:
-        """Get the description of an attribute from its class docstring."""
-        if self.__doc__ is None:
-            return "No description available"
-        # Look for the first sentence on the line below the pattern 'attribute_name : '
-        regex_pattern = rf"{name} : .*?\n\s*(.*?)\."
-        search_result = re.search(regex_pattern, self.__doc__)
-        return search_result.group(1) if search_result else "No description available"
 
-    def _get_help_legend(self) -> str | None:
-        """Get the help legend."""
-        return None
+class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
+    """Base class for all accessors.
 
-    @abstractmethod
-    def _create_help_tree(self) -> Tree:
-        """Create the help tree."""
+    Accessors expose additional views on a report (e.g. data, metrics) and inherit from
+    ``AccessorHelpMixin`` to provide a dedicated ``help()`` and rich/HTML help tree.
+    """
 
-    @abstractmethod
-    def _get_help_panel_title(self) -> str:
-        """Get the help panel title."""
+    _verbose_name: str = "accessor"
 
-    def _create_help_panel(self) -> Panel:
-        """Create the help panel."""
-        content: Tree | Group
-        if self._get_help_legend():
-            content = Group(
-                self._create_help_tree(),
-                f"\n\nLegend:\n{self._get_help_legend()}",
-            )
-        else:
-            content = self._create_help_tree()
-
-        return Panel(
-            content,
-            title=self._get_help_panel_title(),
-            expand=False,
-            border_style="orange1",
-        )
-
-    def help(self) -> None:
-        """Display available methods using rich."""
-        from skore import console  # avoid circular import
-
-        console.print(self._create_help_panel())
+    def __init__(self, parent: ParentT) -> None:
+        self._parent = parent
 
     def _rich_repr(self, class_name: str) -> str:
-        """Return a string representation using rich."""
+        """Return a string representation using rich for accessors."""
         string_buffer = StringIO()
         console = Console(file=string_buffer, force_terminal=False)
         console.print(
@@ -111,137 +54,6 @@ class _HelpMixin(ABC):
             )
         )
         return string_buffer.getvalue()
-
-
-class _BaseReport(_HelpMixin):
-    """Base class for all reports."""
-
-    _ACCESSOR_CONFIG: dict[str, dict[str, str]]
-    _X_train: ArrayLike | None
-    _X_test: ArrayLike | None
-    _y_train: ArrayLike | None
-    _y_test: ArrayLike | None
-    _cache: Cache
-    estimator_: BaseEstimator
-
-    def _get_help_panel_title(self) -> str:
-        return ""
-
-    def _get_help_legend(self) -> str:
-        return ""
-
-    def _get_attributes_for_help(self) -> list[str]:
-        """Get the public attributes to display in help."""
-        attributes = []
-        xy_attributes = []
-
-        for name in dir(self):
-            # Skip private attributes, callables, and accessors
-            if (
-                name.startswith("_")
-                or callable(getattr(self, name))
-                or isinstance(getattr(self, name), _BaseAccessor)
-            ):
-                continue
-
-            # Group X and y attributes separately
-            value = getattr(self, name)
-            if name.startswith(("X", "y")):
-                if value is not None:  # Only include non-None X/y attributes
-                    xy_attributes.append(name)
-            else:
-                attributes.append(name)
-
-        # Sort X/y attributes to keep them grouped
-        xy_attributes.sort()
-        attributes.sort()
-
-        # Return X/y attributes first, followed by other attributes
-        return xy_attributes + attributes
-
-    def _create_help_tree(self) -> Tree:
-        """Create a rich Tree with the available tools and accessor methods."""
-        tree = Tree(self.__class__.__name__)
-
-        # Add accessor methods first
-        for accessor_attr, config in self._ACCESSOR_CONFIG.items():
-            accessor = getattr(self, accessor_attr)
-            branch = tree.add(f"[bold cyan].{config['name']}[/bold cyan]")
-
-            # Add main accessor methods first
-            methods = accessor._get_methods_for_help()
-            methods = accessor._sort_methods_for_help(methods)
-
-            # Add methods
-            for name, method in methods:
-                displayed_name = accessor._format_method_name(name)
-                description = accessor._get_method_description(method)
-                branch.add(f".{displayed_name} - {description}")
-
-            # Add sub-accessors after main methods
-            for sub_attr, sub_obj in inspect.getmembers(accessor):
-                if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith("_"):
-                    sub_branch = branch.add(f"[bold cyan].{sub_attr}[/bold cyan]")
-
-                    # Add sub-accessor methods
-                    sub_methods = sub_obj._get_methods_for_help()
-                    sub_methods = sub_obj._sort_methods_for_help(sub_methods)
-
-                    for name, method in sub_methods:
-                        displayed_name = sub_obj._format_method_name(name)
-                        description = sub_obj._get_method_description(method)
-                        sub_branch.add(f".{displayed_name.ljust(25)} - {description}")
-
-        # Add base methods
-        base_methods = self._get_methods_for_help()
-        base_methods = self._sort_methods_for_help(base_methods)
-
-        for name, method in base_methods:
-            description = self._get_method_description(method)
-            tree.add(f".{name}(...)".ljust(34) + f" - {description}")
-
-        # Add attributes section
-        attributes = self._get_attributes_for_help()
-        if attributes:
-            attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
-            for attr_name in attributes:
-                description = self._get_attribute_description(attr_name)
-                attr_branch.add(f".{attr_name.ljust(29)} - {description}")
-
-        return tree
-
-
-ParentT = TypeVar("ParentT", bound="_BaseReport")
-
-
-class _BaseAccessor(_HelpMixin, Generic[ParentT]):
-    """Base class for all accessors."""
-
-    def __init__(self, parent: ParentT) -> None:
-        self._parent = parent
-
-    @abstractmethod
-    def _get_help_tree_title(self) -> str:
-        """Get the title for the help tree."""
-        pass
-
-    def _get_help_panel_title(self) -> str:
-        name = self.__class__.__name__.replace("_", "").replace("Accessor", "").lower()
-        return f"Available {name} methods"
-
-    def _create_help_tree(self) -> Tree:
-        """Create a rich Tree with the available methods."""
-        tree = Tree(self._get_help_tree_title())
-
-        methods = self._get_methods_for_help()
-        methods = self._sort_methods_for_help(methods)
-
-        for name, method in methods:
-            displayed_name = self._format_method_name(name)
-            description = self._get_method_description(method)
-            tree.add(f".{displayed_name}".ljust(26) + f" - {description}")
-
-        return tree
 
     def _get_X_y_and_data_source_hash(
         self,
@@ -342,18 +154,18 @@ def _get_cached_response_values(
 
     Parameters
     ----------
-    cache : dict
-        The cache to use.
+    cache : Cache
+        The cache backend to use.
 
     estimator_hash : int
         A hash associated with the estimator such that we can retrieve the data from
         the cache.
 
     estimator : estimator object
-        The estimator.
+        The estimator used to generate the predictions.
 
     X : {array-like, sparse matrix} of shape (n_samples, n_features) or None
-        The data.
+        The input data on which to compute the responses when needed.
 
     response_method : str, list of str or tuple of str
         The response method.
@@ -453,52 +265,15 @@ class _BaseMetricsAccessor:
     # Methods related to the help tree
     ####################################################################################
 
-    def _sort_methods_for_help(self, methods: list[tuple]) -> list[tuple]:
-        """Override sort method for metrics-specific ordering.
+    _verbose_name: str = "metrics"
 
-        In short, we display the `summarize` first and then the `custom_metric`.
-        """
-
-        def _sort_key(method):
-            name = method[0]
-            if name == "custom_metric":
-                priority = 1
-            elif name == "summarize":
-                priority = 2
-            else:
-                priority = 0
-            return priority, name
-
-        return sorted(methods, key=_sort_key)
-
-    def _format_method_name(self, name: str) -> str:
-        """Override format method for metrics-specific naming."""
-        method_name = f"{name}(...)"
-        method_name = method_name.ljust(22)
-        if name in self._score_or_loss_info and self._score_or_loss_info[name][
-            "icon"
-        ] in (
-            "(↗︎)",
-            "(↘︎)",
-        ):
-            if self._score_or_loss_info[name]["icon"] == "(↗︎)":
-                method_name += f"[cyan]{self._score_or_loss_info[name]['icon']}[/cyan]"
-                return method_name.ljust(43)
-            else:  # (↘︎)
-                method_name += (
-                    f"[orange1]{self._score_or_loss_info[name]['icon']}[/orange1]"
-                )
-                return method_name.ljust(49)
-        else:
-            return method_name.ljust(29)
-
-    def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available metrics methods[/bold cyan]"
-
-    def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.metrics[/bold cyan]"
-
-    def _get_help_legend(self) -> str:
-        return (
-            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
-        )
+    def _get_favorability_text(self, name: str) -> str | None:
+        """Get favorability text for a method, or None if not applicable."""
+        if name not in self._score_or_loss_info:
+            return None
+        icon = self._score_or_loss_info[name]["icon"]
+        if icon == "(↗︎)":
+            return "Higher value is better."
+        elif icon == "(↘︎)":
+            return "Lower value is better."
+        return None

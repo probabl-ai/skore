@@ -1,0 +1,44 @@
+<div class="container">
+    <header class="title">{{ title }}</header>
+    <div class="tree">
+        {# Root node #}
+        <div class="node">
+            <span class="label">{{ root_node }}</span>
+        </div>
+        <div class="root-content">
+            {# Methods section #}
+            {% if methods %}
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="section-name">Methods</span>
+                    </label>
+                    <div class="branch-content" id="{{ methods_section.branch_id }}">
+                        {% for method in methods %}
+                            <div class="node method">
+                                <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}</span></a>{{ method.parameters }}</span>
+                                </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            {# Attributes section #}
+            {% if attributes %}
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="section-name">Attributes</span>
+                    </label>
+                    <div class="branch-content" id="{{ attributes_section.branch_id }}">
+                        {% for attr in attributes %}
+                            <div class="node method">
+                                <span class="method-name">.<a href="{{ attr.doc_url }}" target="_blank" class="method-tooltip">{{ attr.name }}<span class="tooltip-text">{{ attr.description|e }}</span></a></span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

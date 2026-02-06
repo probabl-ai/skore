@@ -8,7 +8,7 @@ def test_feature_importance_help(capsys, linear_regression_with_test):
 
     report.inspection.help()
     captured = capsys.readouterr()
-    assert "Available model inspection methods" in captured.out
+    assert "Inspection accessor" in captured.out
     assert "coefficients" in captured.out
 
     report.inspection.coefficients().help()

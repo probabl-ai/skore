@@ -1,0 +1,289 @@
+/* Light theme (default) */
+.container,
+:host {
+    --color-blue: #3043f0;
+    --color-orange: #f97316;
+    --color-text: #000;
+    --color-background: #fff;
+    --color-orange-hover: rgba(249, 115, 22, 0.1);
+    --color-blue-hover: rgba(48, 67, 240, 0.1);
+}
+
+/* Dark theme */
+.container.dark-theme,
+.container[data-theme="dark"],
+:host(.dark-theme),
+:host([data-theme="dark"]) {
+    --color-blue: #6b42f6;
+    --color-orange: #f97316;
+    --color-text: #fff;
+    --color-background: #000;
+    --color-orange-hover: rgba(249, 115, 22, 0.2);
+    --color-blue-hover: rgba(107, 66, 246, 0.2);
+}
+
+.container {
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px;
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    background-color: var(--color-background);
+    margin: 10px 0;
+    width: fit-content;
+    min-width: 500px;
+    max-width: 800px;
+}
+
+.title {
+    font-weight: bold;
+    color: var(--color-text);
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.tree {
+    margin-left: 0;
+}
+
+.node {
+    margin: 0;
+    padding: 0;
+}
+
+.label {
+    color: var(--color-text);
+    font-weight: bold;
+}
+
+.root-content {
+    margin-left: 16px;
+    position: relative;
+}
+
+/* Vertical lines for root content items - using border-left pattern */
+.root-content > .node,
+.root-content > .method {
+    border-left: 2px solid var(--color-text);
+    padding-left: 16px;
+    position: relative;
+    margin-left: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Extend border to connect with previous element */
+.root-content > .node:not(:first-child),
+.root-content > .method:not(:first-child) {
+    border-top: 2px solid transparent;
+    margin-top: -2px;
+    padding-top: 2px;
+}
+
+/* Hide vertical line on last item below middle */
+.root-content > .node:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Add half-height vertical line for last item */
+.root-content > .node:last-child::after,
+.root-content > .method:last-child::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    height: calc(1.5em / 2); /* Half of line-height */
+    width: 2px;
+    background-color: var(--color-text);
+}
+
+/* Hide border below middle for last item */
+.root-content > .node:last-child,
+.root-content > .method:last-child {
+    border-left-color: transparent;
+}
+
+/* Horizontal connector lines for root content items */
+.root-content > .node::before,
+.root-content > .method::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: calc(1.5em / 2); /* Half of line-height */
+    width: 12px;
+    height: 2px;
+    background-color: var(--color-text);
+}
+
+.toggle {
+    display: none;
+}
+
+.branch-label {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    color: var(--color-blue);
+    font-weight: bold;
+    position: relative;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5em;
+}
+
+/* Orange hover for accessors */
+.branch-label:has(.name):hover {
+    background-color: var(--color-orange-hover);
+}
+
+/* Blue hover for Methods and Attributes sections */
+.branch-label:has(.section-name):hover {
+    background-color: var(--color-blue-hover);
+}
+
+.name {
+    color: var(--color-orange);
+}
+
+.section-name {
+    color: var(--color-blue);
+}
+
+.branch-content {
+    margin-left: 16px;
+    position: relative;
+    padding-left: 0;
+    display: none;
+}
+
+.branch-label:has(.toggle:checked) + .branch-content {
+    display: block;
+}
+
+/* Vertical lines for items inside branch content */
+.branch-content > .node,
+.branch-content > .method {
+    border-left: 2px solid var(--color-text);
+    padding-left: 16px;
+    position: relative;
+    margin-left: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Extend border to connect with previous element */
+.branch-content > .node:not(:first-child),
+.branch-content > .method:not(:first-child) {
+    border-top: 2px solid transparent;
+    margin-top: -2px;
+    padding-top: 2px;
+}
+
+/* Hide vertical line on last item below middle */
+.branch-content > .node:last-child,
+.branch-content > .method:last-child {
+    border-left-color: transparent;
+}
+
+/* Add half-height vertical line for last items */
+.branch-content > .node:last-child::after,
+.branch-content > .method:last-child::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    height: calc(1.5em / 2); /* Half of line-height */
+    width: 2px;
+    background-color: var(--color-text);
+}
+
+/* Horizontal connector lines for items inside branch content */
+.branch-content > .node::before,
+.branch-content > .method::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: calc(1.5em / 2); /* Half of line-height */
+    width: 12px;
+    height: 2px;
+    background-color: var(--color-text);
+}
+
+.method {
+    color: var(--color-text);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5em;
+}
+
+.method-name {
+    color: var(--color-text);
+}
+
+
+.method-tooltip {
+    position: relative;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-underline-offset: 0.3em;
+    cursor: help;
+    color: inherit;
+    text-decoration-color: inherit;
+}
+
+.method-tooltip:hover {
+    color: inherit;
+}
+
+.method-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    background-color: var(--color-text);
+    color: var(--color-background);
+    text-align: left;
+    border-radius: 4px;
+    padding: 8px 10px;
+    position: absolute;
+    z-index: 1000;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    margin-left: 8px;
+    white-space: normal;
+    width: 250px;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: opacity 0.2s, visibility 0.2s;
+}
+
+.arrow {
+    vertical-align: text-top;
+}
+
+.tooltip-text::before {
+    content: "";
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: var(--color-text);
+}
+
+.legend {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-text);
+    font-size: 12px;
+    color: var(--color-text);
+}

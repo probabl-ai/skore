@@ -1,0 +1,39 @@
+<div id="{{ container_id }}-wrapper">
+    <template id="{{ container_id }}-template">
+        <style>
+{% include "help.css" %}
+        </style>
+        {% include "display_help-content.html.j2" %}
+    </template>
+
+    <div id="{{ container_id }}"></div>
+
+    <script>
+{% include "help.js" %}
+    </script>
+</div>
+
+<script>
+(function() {
+    const wrapper = document.getElementById('{{ container_id }}-wrapper');
+    const container = document.getElementById('{{ container_id }}');
+    if (!wrapper || !container) {
+        return;
+    }
+
+    const template = document.getElementById('{{ container_id }}-template');
+    if (!template) {
+        return;
+    }
+
+    // Create shadow root with closed mode for better isolation
+    const shadowRoot = container.attachShadow({ mode: 'closed' });
+    shadowRoot.appendChild(template.content.cloneNode(true));
+
+    // Apply theme to the container (wrapper is ref for luma-based detection)
+    const helpContainer = shadowRoot.querySelector('.container');
+    if (helpContainer) {
+        applyThemeToHelpContainer(helpContainer, '{{ container_id }}-wrapper');
+    }
+})();
+</script>

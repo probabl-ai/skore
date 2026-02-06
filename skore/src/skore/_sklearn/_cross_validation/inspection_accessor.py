@@ -15,6 +15,8 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     You can access this accessor using the `inspection` attribute.
     """
 
+    _verbose_name: str = "feature_importance"
+
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
@@ -76,15 +78,6 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
-
-    def _format_method_name(self, name: str) -> str:
-        return f"{name}(...)".ljust(29)
-
-    def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available model inspection methods[/bold cyan]"
-
-    def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.inspection[/bold cyan]"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""

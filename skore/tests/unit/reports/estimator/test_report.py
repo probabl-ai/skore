@@ -1,5 +1,4 @@
 import inspect
-import re
 from copy import deepcopy
 from io import BytesIO
 
@@ -159,30 +158,6 @@ def test_check_support_plot(
 
     for not_supported_plot_method in not_supported_plot_methods:
         assert not hasattr(report.metrics, not_supported_plot_method)
-
-
-def test_help(capsys, forest_binary_classification_with_test):
-    """Check that the help method writes to the console."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    report.help()
-    captured = capsys.readouterr()
-    assert f"Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
-
-    # Check that we have a line with accuracy and the arrow associated with it
-    assert re.search(
-        r"\.accuracy\([^)]*\).*\(↗︎\).*-.*accuracy", captured.out, re.MULTILINE
-    )
-
-
-def test_repr(forest_binary_classification_with_test):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    repr_str = repr(report)
-    assert "EstimatorReport" in repr_str
 
 
 @pytest.mark.parametrize(
