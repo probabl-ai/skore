@@ -216,9 +216,6 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         feature using seaborn's catplot. For cross-validation reports, it uses a
         strip plot with boxplot overlay to show the distribution across splits.
         """
-        barplot_kwargs = self._default_barplot_kwargs.copy()
-        stripplot_kwargs = self._default_stripplot_kwargs.copy()
-        boxplot_kwargs = self._default_boxplot_kwargs.copy()
         frame = self.frame()
 
         # Make copy of the dictionary since we are going to pop some keys later
@@ -352,11 +349,19 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         add_background_features = hue is not None
 
         self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
-        for ax in self.ax_.flatten():
+        n_features = (
+            [frame["feature"].nunique()]
+            if col is None
+            else [
+                frame.query(f"{col} == '{col_value}'")["feature"].nunique()
+                for col_value in frame[col].unique()
+            ]
+        )
+        for ax, n_feature in zip(self.ax_.flatten(), n_features, strict=True):
             _decorate_matplotlib_axis(
                 ax=ax,
                 add_background_features=add_background_features,
-                n_features=frame["feature"].nunique(),
+                n_features=n_feature,
                 xlabel="Mean decrease in impurity",
                 ylabel="",
             )
@@ -431,7 +436,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             col=col,
             barplot_kwargs={"sharey": has_same_features} | barplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
-            stripplot_kwargs=stripplot_kwargs,
+            stripplot_kwargs={"sharey": has_same_features} | stripplot_kwargs,
         )
         self.figure_.suptitle("Mean decrease in impurity (MDI)")
 

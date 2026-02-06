@@ -25,6 +25,8 @@ def test_impurity_decrease_display_invalid_report_type():
     [
         "estimator_reports",
         "cross_validation_reports",
+        "comparison_estimator_reports",
+        "comparison_cross_validation_reports",
     ],
 )
 @pytest.mark.parametrize("task", ["binary_classification", "regression"])
@@ -50,8 +52,10 @@ class TestImpurityDecreaseDisplay:
         display = report.inspection.impurity_decrease()
         frame = display.frame()
         expected = {"feature", "importance"}
-        if fixture_prefix == "cross_validation_reports":
+        if "cross_validation" in fixture_prefix:
             expected.add("split")
+        if "comparison" in fixture_prefix:
+            expected.add("estimator")
         assert set(frame.columns) == expected
 
     def test_internal_data_structure(self, fixture_prefix, task, request):
@@ -69,7 +73,7 @@ class TestImpurityDecreaseDisplay:
         _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         if hasattr(ax, "flatten"):
             ax = ax.flatten()[0]
-        assert ax.get_xlabel() == "Mean Decrease in Impurity (MDI)"
+        assert ax.get_xlabel() == "Mean decrease in impurity"
         assert ax.get_ylabel() == ""
 
     def test_title(self, pyplot, fixture_prefix, task, request):
@@ -79,9 +83,10 @@ class TestImpurityDecreaseDisplay:
         display = report.inspection.impurity_decrease()
         figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         title = figure.get_suptitle()
-        assert "Mean Decrease in Impurity (MDI)" in title
-        estimator_name = display.importances["estimator"].iloc[0]
-        assert estimator_name in title
+        assert "Mean decrease in impurity (MDI)" in title
+        if "comparison" not in fixture_prefix:
+            estimator_name = display.importances["estimator"].iloc[0]
+            assert estimator_name in title
 
     def test_kwargs(self, pyplot, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -90,9 +95,9 @@ class TestImpurityDecreaseDisplay:
         display = report.inspection.impurity_decrease()
         figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         assert figure.get_figheight() == 6
-        if fixture_prefix == "estimator_reports":
+        if "estimator" in fixture_prefix:
             display.set_style(barplot_kwargs={"height": 8}).plot()
-        else:
+        else:  # "cross_validation"
             display.set_style(stripplot_kwargs={"height": 8}).plot()
         assert display.figure_.get_figheight() == 8
 
@@ -102,6 +107,8 @@ class TestImpurityDecreaseDisplay:
     [
         "estimator_reports",
         "cross_validation_reports",
+        "comparison_estimator_reports",
+        "comparison_cross_validation_reports",
     ],
 )
 @pytest.mark.parametrize(
@@ -126,4 +133,4 @@ def test_multiclass_and_multioutput(pyplot, fixture_prefix, task, request):
 
     _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
     assert isinstance(ax, mpl.axes.Axes)
-    assert ax.get_xlabel() == "Mean Decrease in Impurity (MDI)"
+    assert ax.get_xlabel() == "Mean decrease in impurity"
