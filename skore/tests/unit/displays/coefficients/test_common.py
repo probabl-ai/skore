@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from skore import CoefficientsDisplay
@@ -41,7 +42,7 @@ class TestCoefficientsDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.inspection.coefficients()
-        frame = display.frame(sorting_order=None)
+        frame = display.frame()
 
         expected = {"feature", "coefficients"}
         if "cross_validation" in fixture_prefix:
@@ -105,3 +106,60 @@ class TestCoefficientsDisplay:
         else:
             display.set_style(stripplot_kwargs={"height": 8}).plot()
         assert display.figure_.get_figheight() == 8
+
+    def test_frame_select_k(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.coefficients()
+        full = display.frame(sorting_order=None)
+        sub = display.frame(select_k=2)
+        group_cols = [
+            c for c in ("split", "estimator", "label", "output") if c in sub.columns
+        ]
+        assert set(sub.columns) == set(full.columns)
+        if group_cols:
+            for _, group in sub.groupby(group_cols, sort=False):
+                assert len(group) == 2
+        else:
+            assert len(sub) == 2
+        assert set(sub["feature"]).issubset(set(full["feature"]))
+
+    @pytest.mark.parametrize(
+        "sorting_order",
+        ["descending", "ascending"],
+    )
+    def test_frame_sorting_order(self, fixture_prefix, task, sorting_order, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.coefficients()
+        frame = display.frame(sorting_order=sorting_order)
+        group_cols = [
+            c for c in frame.columns if c not in ("feature", "coefficients", "split")
+        ]
+        if group_cols:
+            groups = frame.groupby(group_cols, sort=False, observed=True)
+        else:
+            groups = [(None, frame)]
+        for _, group in groups:
+            if "cross_validation" in fixture_prefix:
+                feature_order = group["feature"].unique()
+                mean_abs = group.groupby("feature", sort=False)["coefficients"].apply(
+                    lambda x: x.abs().mean()
+                )
+                coefs = [mean_abs.loc[f] for f in feature_order]
+            else:
+                coefs = group["coefficients"].tolist()
+            expected = sorted(coefs, key=abs, reverse=(sorting_order == "descending"))
+            np.testing.assert_array_equal(coefs, expected)
+
+    def test_include_intercept(self, fixture_prefix, task, request):
+        """Check whether or not we can include or exclude the intercept."""
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.coefficients()
+        assert (
+            display.frame(include_intercept=False).query("feature == 'Intercept'").empty
+        )

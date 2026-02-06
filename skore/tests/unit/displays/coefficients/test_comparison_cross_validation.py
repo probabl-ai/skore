@@ -122,24 +122,3 @@ def test_different_features(pyplot, fixture_name, subplot_by, request):
 
     display.plot(subplot_by="estimator")
     assert hasattr(display, "facet_")
-
-
-@pytest.mark.parametrize(
-    "fixture_name",
-    [
-        "comparison_cross_validation_reports_binary_classification",
-        "comparison_cross_validation_reports_multiclass_classification",
-        "comparison_cross_validation_reports_regression",
-        "comparison_cross_validation_reports_multioutput_regression",
-    ],
-)
-def test_include_intercept(pyplot, fixture_name, request):
-    """Check whether or not we can include or exclude the intercept."""
-    report = request.getfixturevalue(fixture_name)
-    display = report.inspection.coefficients()
-
-    assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
-
-    display.plot(include_intercept=False)
-    ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
-    assert all(label.get_text() != "Intercept" for label in ax.get_yticklabels())

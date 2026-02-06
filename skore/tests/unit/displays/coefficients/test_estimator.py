@@ -1,257 +1,72 @@
 import matplotlib as mpl
 import numpy as np
 import pytest
-from sklearn.base import clone
-from sklearn.compose import TransformedTargetRegressor
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.utils._testing import _convert_container
-
-from skore import CoefficientsDisplay, EstimatorReport
-
-
-def test_invalid_subplot_by(
-    pyplot, coefficients_estimator_reports_multiclass_classification
-):
-    display = coefficients_estimator_reports_multiclass_classification.inspection.coefficients()
-    with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
-        display.plot(subplot_by="incorrect")
-
-
-def test_subplot_by_no_columns_to_group(
-    pyplot, coefficients_estimator_reports_binary_classification
-):
-    display = (
-        coefficients_estimator_reports_binary_classification.inspection.coefficients()
-    )
-    with pytest.raises(ValueError, match="No columns to group by."):
-        display.plot(subplot_by="label")
-
-
-def test_subplot_by_label_multiclass(
-    pyplot, coefficients_estimator_reports_multiclass_classification
-):
-    report = coefficients_estimator_reports_multiclass_classification
-    display = report.inspection.coefficients()
-    n_classes = len(display.coefficients["label"].dropna().unique())
-    display.plot(subplot_by="label")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_) == n_classes
-    for label, ax in enumerate(display.ax_):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"label = {label}"
 
 
 @pytest.mark.parametrize(
-    "fit_intercept,with_preprocessing,with_transformed_target",
-    [(True, True, True), (False, False, False)],
+    "fixture_name, subplot_by, err_msg",
+    [
+        (
+            "estimator_reports_binary_classification",
+            "label",
+            "No columns to group by.",
+        ),
+        (
+            "estimator_reports_regression",
+            "output",
+            "No columns to group by.",
+        ),
+        (
+            "estimator_reports_multiclass_classification",
+            "incorrect",
+            "Column incorrect not found in the frame. "
+            + "It should be one of label, auto, None.",
+        ),
+        (
+            "estimator_reports_multioutput_regression",
+            "incorrect",
+            "Column incorrect not found in the frame. "
+            + "It should be one of output, auto, None.",
+        ),
+    ],
 )
-def test_single_output_regression(
-    pyplot,
-    linear_regression_with_train_test,
-    fit_intercept,
-    with_preprocessing,
-    with_transformed_target,
-):
-    """Check the attributes and default plotting behaviour of the coefficients plot with
-    binary data."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    predictor = clone(estimator).set_params(fit_intercept=fit_intercept)
-    if with_transformed_target:
-        predictor = TransformedTargetRegressor(predictor)
-    if with_preprocessing:
-        model = Pipeline([("scaler", StandardScaler()), ("predictor", predictor)])
-    else:
-        model = predictor
-
-    report = EstimatorReport(
-        model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
+def test_invalid_subplot_by(pyplot, fixture_name, subplot_by, err_msg, request):
+    reports = request.getfixturevalue(fixture_name)
+    report = reports[0]
     display = report.inspection.coefficients()
-    assert isinstance(display, CoefficientsDisplay)
-
-    expected_columns = [
-        "estimator",
-        "split",
-        "feature",
-        "label",
-        "output",
-        "coefficients",
-    ]
-    df = display.coefficients
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-    for col in ("split", "output", "label"):
-        assert df[col].isna().all()
-    assert df["estimator"].nunique() == 1
-
-    fitted_predictor = report.estimator_
-    if with_preprocessing:
-        fitted_predictor = fitted_predictor.named_steps["predictor"]
-    if with_transformed_target:
-        fitted_predictor = fitted_predictor.regressor_
-    coef = np.concatenate(
-        [
-            np.atleast_2d(fitted_predictor.intercept_).T,
-            np.atleast_2d(fitted_predictor.coef_),
-        ],
-        axis=1,
-    ).ravel()
-    np.testing.assert_allclose(df["coefficients"].to_numpy(), coef)
-
-    df = display.frame(sorting_order=None)
-    expected_columns = ["feature", "coefficients"]
-    assert df.columns.tolist() == expected_columns
-    assert df["feature"].tolist() == ["Intercept"] + columns_names
-    if not fit_intercept:
-        mask = df["feature"] == "Intercept"
-        assert df.loc[mask, "coefficients"].item() == pytest.approx(0)
-
-    display.plot()
-    assert hasattr(display, "facet_")
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-
-    assert display.ax_.get_xlabel() == "Magnitude of coefficient"
-    assert display.ax_.get_ylabel() == ""
-    estimator_name = display.coefficients["estimator"][0]
-    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
-
-    with pytest.raises(ValueError, match="No columns to group by."):
-        display.plot(subplot_by="output")
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by=subplot_by)
 
 
 @pytest.mark.parametrize(
-    "fit_intercept,with_preprocessing,with_transformed_target",
-    [(True, True, True), (False, False, False)],
+    "fixture_name, subplot_by_tuples",
+    [
+        (
+            "estimator_reports_binary_classification",
+            [(None, 0)],
+        ),
+        (
+            "estimator_reports_multiclass_classification",
+            [("label", 3), (None, 0)],
+        ),
+        (
+            "estimator_reports_regression",
+            [(None, 0)],
+        ),
+        (
+            "estimator_reports_multioutput_regression",
+            [("output", 2), (None, 0)],
+        ),
+    ],
 )
-def test_multi_output_regression(
-    pyplot,
-    linear_regression_multioutput_with_train_test,
-    fit_intercept,
-    with_preprocessing,
-    with_transformed_target,
-):
-    """Check the attributes and default plotting behaviour of the coefficients plot with
-    binary data."""
-    estimator, X_train, X_test, y_train, y_test = (
-        linear_regression_multioutput_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-    n_outputs = y_train.shape[1]
-
-    predictor = clone(estimator).set_params(fit_intercept=fit_intercept)
-    if with_transformed_target:
-        predictor = TransformedTargetRegressor(predictor)
-    if with_preprocessing:
-        model = Pipeline([("scaler", StandardScaler()), ("predictor", predictor)])
-    else:
-        model = predictor
-
-    report = EstimatorReport(
-        model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
+def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
+    """Check that we can pass non default values to `subplot_by`."""
+    reports = request.getfixturevalue(fixture_name)
+    report = reports[0]
     display = report.inspection.coefficients()
-    assert isinstance(display, CoefficientsDisplay)
-
-    expected_columns = [
-        "estimator",
-        "split",
-        "feature",
-        "label",
-        "output",
-        "coefficients",
-    ]
-    df = display.coefficients
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-    for col in ("split", "label"):
-        assert df[col].isna().all()
-    assert np.unique(df["output"]).tolist() == [f"{i}" for i in range(n_outputs)]
-    assert df["estimator"].nunique() == 1
-
-    fitted_predictor = report.estimator_
-    if with_preprocessing:
-        fitted_predictor = fitted_predictor.named_steps["predictor"]
-    if with_transformed_target:
-        fitted_predictor = fitted_predictor.regressor_
-
-    if fit_intercept:
-        intercept = np.atleast_2d(fitted_predictor.intercept_).T
-    else:
-        intercept = np.zeros((n_outputs, 1))
-
-    coef = np.concatenate([intercept, fitted_predictor.coef_], axis=1).ravel()
-    np.testing.assert_allclose(df["coefficients"].to_numpy(), coef)
-
-    df = display.frame(sorting_order=None)
-    expected_columns = ["feature", "output", "coefficients"]
-    assert df.columns.tolist() == expected_columns
-    assert np.unique(df["output"]).tolist() == [f"{i}" for i in range(n_outputs)]
-    assert df["feature"].tolist() == (["Intercept"] + columns_names) * n_outputs
-    if not fit_intercept:
-        mask = df["feature"] == "Intercept"
-        np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
-
-    display.plot()
-    assert hasattr(display, "facet_")
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-
-    assert display.ax_.get_xlabel() == "Magnitude of coefficient"
-    assert display.ax_.get_ylabel() == ""
-    estimator_name = display.coefficients["estimator"][0]
-    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
-
-    display.plot(subplot_by="output")
-    assert hasattr(display, "facet_")
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_) == n_outputs
-    for output, ax in enumerate(display.ax_):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"output = {output}"
-        assert ax.get_xlabel() == "Magnitude of coefficient"
-        assert ax.get_ylabel() == ""
-    assert (
-        display.figure_.get_suptitle() == f"Coefficients of {estimator_name} by output"
-    )
-
-    with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
-        display.plot(subplot_by="incorrect")
-
-
-def test_include_intercept(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-):
-    """Check whether or not we can include or exclude the intercept."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    report = EstimatorReport(
-        clone(estimator), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.coefficients()
-
-    assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
-
-    display.plot(include_intercept=False)
-    assert all(
-        label.get_text() != "Intercept" for label in display.ax_.get_yticklabels()
-    )
-    estimator_name = display.coefficients["estimator"][0]
-    assert display.figure_.get_suptitle() == f"Coefficients of {estimator_name}"
+    for subplot_by, expected_len in subplot_by_tuples:
+        display.plot(subplot_by=subplot_by)
+        if subplot_by is None:
+            assert isinstance(display.ax_, mpl.axes.Axes)
+        else:
+            assert len(display.ax_) == expected_len

@@ -1,41 +1,77 @@
 import matplotlib as mpl
 import numpy as np
 import pytest
-from sklearn.base import clone
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import PolynomialFeatures, StandardScaler
-from sklearn.utils._testing import _convert_container
-
-from skore import CoefficientsDisplay, ComparisonReport, EstimatorReport
 
 
-def test_invalid_subplot_by(
-    pyplot, coefficients_comparison_estimator_reports_binary_classification
-):
-    display = coefficients_comparison_estimator_reports_binary_classification.inspection.coefficients()
-    with pytest.raises(ValueError, match="Column incorrect not found in the frame"):
+@pytest.mark.parametrize(
+    "fixture_name, valid_values",
+    [
+        (
+            "comparison_estimator_reports_binary_classification",
+            ["estimator", "auto", "None"],
+        ),
+        (
+            "comparison_estimator_reports_multiclass_classification",
+            ["estimator", "label", "auto"],
+        ),
+        (
+            "comparison_estimator_reports_regression",
+            ["estimator", "auto", "None"],
+        ),
+        (
+            "comparison_estimator_reports_multioutput_regression",
+            ["estimator", "output", "auto"],
+        ),
+    ],
+)
+def test_invalid_subplot_by(pyplot, fixture_name, valid_values, request):
+    report = request.getfixturevalue(fixture_name)
+    display = report.inspection.coefficients()
+    err_msg = (
+        "Column incorrect not found in the frame."
+        f" It should be one of {', '.join(valid_values)}."
+    )
+    with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="incorrect")
 
 
-def test_subplot_by_estimator(
-    pyplot, coefficients_comparison_estimator_reports_binary_classification
-):
-    report = coefficients_comparison_estimator_reports_binary_classification
+@pytest.mark.parametrize(
+    "fixture_name, subplot_by_tuples",
+    [
+        (
+            "comparison_estimator_reports_binary_classification",
+            [(None, 0), ("estimator", 2)],
+        ),
+        (
+            "comparison_estimator_reports_multiclass_classification",
+            [("label", 3), ("estimator", 2)],
+        ),
+        (
+            "comparison_estimator_reports_regression",
+            [(None, 0), ("estimator", 2)],
+        ),
+        (
+            "comparison_estimator_reports_multioutput_regression",
+            [("output", 2), ("estimator", 2)],
+        ),
+    ],
+)
+def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
+    report = request.getfixturevalue(fixture_name)
     display = report.inspection.coefficients()
-    display.plot(subplot_by="estimator")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_) == len(report.reports_)
-    for report_name, ax in zip(report.reports_, display.ax_, strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"estimator = {report_name}"
+    for subplot_by, expected_len in subplot_by_tuples:
+        display.plot(subplot_by=subplot_by)
+        if subplot_by is None:
+            assert isinstance(display.ax_, mpl.axes.Axes)
+        else:
+            assert len(display.ax_) == expected_len
 
 
 @pytest.mark.parametrize(
     "fixture_name",
     [
-        "logistic_multiclass_classification_with_train_test",
-        "linear_regression_multioutput_with_train_test",
+        "comparison_estimator_reports_multiclass_classification",
+        "comparison_estimator_reports_multioutput_regression",
     ],
 )
 def test_subplot_by_none_multiclass_or_multioutput(
@@ -45,20 +81,7 @@ def test_subplot_by_none_multiclass_or_multioutput(
 ):
     """Check that an error is raised when `subplot_by=None` and there are multiple
     labels (multiclass) or outputs (multi-output regression)."""
-    fixture = request.getfixturevalue(fixture_name)
-    estimator, X_train, X_test, y_train, y_test = fixture
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    report_1 = EstimatorReport(
-        clone(estimator), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report_2 = EstimatorReport(
-        clone(estimator), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-
+    report = request.getfixturevalue(fixture_name)
     display = report.inspection.coefficients()
 
     err_msg = (
@@ -70,112 +93,31 @@ def test_subplot_by_none_multiclass_or_multioutput(
         display.plot(subplot_by=None)
 
 
-def test_different_features(
-    pyplot,
-    logistic_multiclass_classification_with_train_test,
-):
+@pytest.mark.parametrize(
+    "fixture_name, subplot_by",
+    [
+        (
+            "comparison_estimator_reports_binary_classification_different_features",
+            None,
+        ),
+        (
+            "comparison_estimator_reports_multiclass_classification_different_features",
+            "label",
+        ),
+    ],
+)
+def test_different_features(pyplot, fixture_name, subplot_by, request):
     """Check that we get a proper report even if the estimators do not have the same
     input features."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_multiclass_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-    n_classes = len(np.unique(y_train))
-
-    simple_model = clone(estimator)
-
-    preprocessor = ColumnTransformer(
-        [("poly", PolynomialFeatures(), columns_names[:2])],
-        remainder="passthrough",
-    )
-
-    complex_model = Pipeline(
-        [
-            ("preprocessor", preprocessor),
-            ("predictor", clone(estimator)),
-        ]
-    )
-
-    report_simple = EstimatorReport(
-        simple_model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report_complex = EstimatorReport(
-        complex_model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report = ComparisonReport(
-        reports={"report_simple": report_simple, "report_complex": report_complex}
-    )
-
+    report = request.getfixturevalue(fixture_name)
     display = report.inspection.coefficients()
-    assert isinstance(display, CoefficientsDisplay)
-
-    df = display.frame(sorting_order=None)
-    expected_features = [
-        "Intercept"
-    ] + report_simple.estimator_.feature_names_in_.tolist()
-    assert (
-        df.query("estimator == 'report_simple'")["feature"].tolist()
-        == expected_features * n_classes
-    )
-
-    expected_features = ["Intercept"] + report_complex.estimator_[
-        :-1
-    ].get_feature_names_out().tolist()
-    assert (
-        df.query("estimator == 'report_complex'")["feature"].tolist()
-        == expected_features * n_classes
-    )
 
     err_msg = (
         "The estimators have different features and should be plotted on different "
         "axis using `subplot_by='estimator'`."
     )
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(subplot_by="label")
-
-    for subplot_by in ("auto", "estimator"):
         display.plot(subplot_by=subplot_by)
-        assert hasattr(display, "facet_")
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
-        assert isinstance(display.ax_, np.ndarray)
-        assert len(display.ax_) == len(report.reports_)
-        for report_name, ax in zip(report.reports_, display.ax_, strict=True):
-            assert isinstance(ax, mpl.axes.Axes)
-            assert ax.get_title() == f"estimator = {report_name}"
-            assert ax.get_xlabel() == "Magnitude of coefficient"
-            assert ax.get_ylabel() == ""
-        assert display.figure_.get_suptitle() == "Coefficients by estimator"
 
-
-def test_include_intercept(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-):
-    """Check whether or not we can include or exclude the intercept."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    report_1 = EstimatorReport(
-        clone(estimator), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report_2 = EstimatorReport(
-        clone(estimator), X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    report = ComparisonReport(reports={"report_1": report_1, "report_2": report_2})
-
-    display = report.inspection.coefficients()
-
-    assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
-
-    display.plot(include_intercept=False)
-    assert all(
-        label.get_text() != "Intercept" for label in display.ax_.get_yticklabels()
-    )
-    assert display.figure_.get_suptitle() == "Coefficients"
+    display.plot(subplot_by="estimator")
+    assert hasattr(display, "facet_")

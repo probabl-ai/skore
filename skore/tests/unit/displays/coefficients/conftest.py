@@ -172,8 +172,10 @@ def comparison_cross_validation_reports_multioutput_regression_figure_axes(
 
 
 @pytest.fixture(scope="module")
-def binary_classification_half():
-    return make_classification(random_state=0, n_features=2, n_redundant=0)
+def binary_classification_half(binary_classification):
+    X, y = binary_classification
+    X = X[:, :2]
+    return X, y
 
 
 @pytest.fixture(scope="module")
@@ -227,15 +229,10 @@ def comparison_cross_validation_reports_binary_classification_different_features
 
 
 @pytest.fixture(scope="module")
-def multiclass_classification_half():
-    return make_classification(
-        n_classes=3,
-        n_clusters_per_class=1,
-        n_informative=3,
-        n_redundant=0,
-        n_features=3,
-        random_state=0,
-    )
+def multiclass_classification_half(multiclass_classification):
+    X, y = multiclass_classification
+    X = X[:, :2]
+    return X, y
 
 
 @pytest.fixture(scope="module")
