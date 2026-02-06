@@ -5,7 +5,7 @@ import pytest
 from sklearn.base import clone
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
@@ -234,6 +234,18 @@ def forest_multiclass_classification_with_train_test(
         y_train,
         y_test,
     )
+
+
+@pytest.fixture
+def forest_regression_data(regression_data):
+    X, y = regression_data
+    return RandomForestRegressor(random_state=42), X, y
+
+
+@pytest.fixture
+def forest_regression_multioutput_data(regression_multioutput_data):
+    X, y = regression_multioutput_data
+    return RandomForestRegressor(random_state=42), X, y
 
 
 @pytest.fixture
