@@ -182,7 +182,12 @@ class Project:
         TypeError
             If the combination of parameters are not valid.
         """
-        from ..report import CrossValidationReportPayload, EstimatorReportPayload
+        from skore import config_context as set_skore_configuration
+
+        from skore_hub_project.report import (
+            CrossValidationReportPayload,
+            EstimatorReportPayload,
+        )
 
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
@@ -207,7 +212,7 @@ class Project:
             transient=True,
         )
 
-        with progress:
+        with set_skore_configuration(show_progress=False), progress:
             task = progress.add_task(
                 description=f"[bold red1]Putting [bright_white on red1 blink]{key}"
             )
