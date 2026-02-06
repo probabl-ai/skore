@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import seaborn as sns
-from matplotlib.lines import Line2D
 from numpy.typing import NDArray
 from pandas import DataFrame
 from sklearn.base import BaseEstimator

@@ -1,7 +1,4 @@
 import pytest
-from sklearn.base import clone
-
-from skore import ComparisonReport, EstimatorReport
 
 
 @pytest.mark.parametrize("sorting_order", ["descending", "ascending"])

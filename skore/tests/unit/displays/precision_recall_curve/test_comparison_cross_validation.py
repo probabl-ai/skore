@@ -3,7 +3,6 @@ import re
 import matplotlib as mpl
 import numpy as np
 import pytest
-import seaborn as sns
 from sklearn.datasets import load_iris
 from sklearn.linear_model import LogisticRegression
 
@@ -30,7 +29,6 @@ def test_binary_classification(
 
     pos_label = 1
     n_reports = len(report.reports_)
-    n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
 
     display.plot()
     assert hasattr(display, "facet_")
@@ -77,7 +75,6 @@ def test_multiclass_classification(
 
     labels = display.precision_recall["label"].cat.categories
     n_reports = len(report.reports_)
-    n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
 
     display.plot()
     assert hasattr(display, "facet_")
