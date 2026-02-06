@@ -30,17 +30,6 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             "comparison-cross-validation"}
         Report type from which the display is created.
 
-    Attributes
-    ----------
-    ax_ : matplotlib Axes
-        Matplotlib Axes with the plot.
-
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the plot.
-
-    figure_ : matplotlib Figure
-        Figure containing the plot.
-
     Examples
     --------
     >>> from sklearn.datasets import load_iris
@@ -209,7 +198,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         """
         return self._plot()
 
-    def _plot_matplotlib(self) -> None:
+    def _plot_matplotlib(self) -> Any:
         """Dispatch the plotting function for matplotlib backend.
 
         This method creates a bar plot showing the mean decrease in impurity for each
@@ -221,7 +210,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         frame = self.frame()
 
-        self._plot_single_estimator(
+        return self._plot_single_estimator(
             frame=frame,
             estimator_name=self.importances["estimator"].unique()[0],
             report_type=self.report_type,
@@ -301,7 +290,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
         self.ax_ = self.ax_[()]  # 0-d array
         _decorate_matplotlib_axis(
-            ax=self.ax_,
+            ax=ax_,
             add_background_features=False,
             n_features=frame["feature"].nunique(),
             xlabel="Mean Decrease in Impurity (MDI)",

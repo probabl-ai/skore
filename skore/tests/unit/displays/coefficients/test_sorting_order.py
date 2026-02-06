@@ -2,62 +2,41 @@ import pytest
 
 
 @pytest.mark.parametrize("sorting_order", ["descending", "ascending"])
-def test_frame_sorts_per_estimator(
-    comparison_estimator_reports_binary_classification, sorting_order
-):
+def test(comparison_report, sorting_order):
     """`sorting_order` sorts per estimator."""
-    report = comparison_estimator_reports_binary_classification
-    frame = report.inspection.coefficients().frame(sorting_order=sorting_order)
+    frame = comparison_report.inspection.coefficients().frame(
+        sorting_order=sorting_order
+    )
 
     for estimator in set(frame["estimator"]):
-        coefs = list(frame.query(f"estimator == '{estimator}'")["coefficient"])
+        coefs = list(frame.query(f"estimator == '{estimator}'")["coefficients"])
         assert coefs == sorted(coefs, key=abs, reverse=(sorting_order == "descending"))
 
 
-@pytest.mark.parametrize(
-    "sorting_order, expected_features",
-    [
-        (
-            "descending",
-            [
-                "Feature #2",
-                "Feature #1",
-                "Feature #3",
-                "Intercept",
-                "Feature #0",
-                "Feature #2",
-                "Feature #1",
-                "Feature #3",
-                "Intercept",
-                "Feature #0",
-            ],
-        ),
-        (
-            "ascending",
-            [
-                "Feature #0",
-                "Intercept",
-                "Feature #3",
-                "Feature #1",
-                "Feature #2",
-                "Feature #0",
-                "Intercept",
-                "Feature #3",
-                "Feature #1",
-                "Feature #2",
-            ],
-        ),
-    ],
-)
-def test_plot_different_features(
-    pyplot,
-    comparison_estimator_reports_binary_classification,
-    sorting_order,
-    expected_features,
-):
-    """`sorting_order` works for plotting when estimators have different features."""
-    report = comparison_estimator_reports_binary_classification
-    display = report.inspection.coefficients()
-    frame = display.frame(sorting_order=sorting_order)
+def test_plot(comparison_report):
+    """`sorting_order` works for plotting."""
+    display = comparison_report.inspection.coefficients()
 
-    assert frame["feature"].tolist() == expected_features
+    display.plot(sorting_order="ascending")
+
+    assert display.ax_ is not None
+    assert display.figure_ is not None
+
+
+@pytest.mark.parametrize("sorting_order", ["descending", "ascending"])
+def test_plot_different_features(comparison_report_different_features, sorting_order):
+    """
+    `sorting_order` works for plotting when the estimators have different features.
+    """
+    report = comparison_report_different_features
+
+    display = report.inspection.coefficients()
+    result = display.plot(sorting_order=sorting_order, select_k=25)
+
+    bar_widths = [
+        [bar.get_width() for bar in ax.patches] for ax in result.axes.flatten()
+    ]
+    assert len(bar_widths[0]) == 21
+    assert len(bar_widths[1]) == 5 + 1  # 5 features + intercept
+    for coefs in bar_widths:
+        assert coefs == sorted(coefs, key=abs, reverse=(sorting_order == "descending"))

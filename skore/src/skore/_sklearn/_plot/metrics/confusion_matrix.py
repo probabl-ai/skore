@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -53,21 +53,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         The estimator's method that was used to get the predictions. The possible
         values are: "predict", "predict_proba", and "decision_function".
 
-    Attributes
-    ----------
-    thresholds : ndarray of shape (n_thresholds,)
-        Thresholds of the decision function. Each threshold is associated with a
-        confusion matrix. Only available for binary classification. Thresholds are
-        sorted in ascending order.
-
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the confusion matrix.
-
-    figure_ : matplotlib Figure
-        Figure containing the confusion matrix.
-
-    ax_ : matplotlib Axes
-        Axes with confusion matrix.
     """
 
     _default_heatmap_kwargs: dict = {
@@ -109,7 +94,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         normalize: Literal["true", "pred", "all"] | None = None,
         threshold_value: float | None = None,
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
-    ):
+    ) -> Any:
         """Plot the confusion matrix.
 
         In binary classification, the confusion matrix can be displayed at various
@@ -138,8 +123,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         Returns
         -------
-        self : ConfusionMatrixDisplay
-            Configured with the confusion matrix.
+        facet : seaborn.FacetGrid
+            Confusion matrix visualization.
         """
         return self._plot(
             normalize=normalize,
@@ -153,7 +138,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         normalize: Literal["true", "pred", "all"] | None = None,
         threshold_value: float | None = None,
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
-    ) -> None:
+    ) -> Any:
         """Matplotlib implementation of the `plot` method.
 
         Parameters
@@ -206,11 +191,11 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         facet_grid_kwargs_validated = _validate_style_kwargs(
             {"col": subplot_by_validated, **self._default_facet_grid_kwargs}, {}
         )
-        self.facet_ = sns.FacetGrid(
+        facet_ = sns.FacetGrid(
             data=frame,
             **facet_grid_kwargs_validated,
         )
-        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.flatten()
+        figure_, ax_ = facet_.figure, facet_.axes.flatten()
 
         def plot_heatmap(data, **kwargs):
             """Plot heatmap for each facet."""
@@ -228,7 +213,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
             sns.heatmap(heatmap_data, **kwargs)
 
-        self.facet_.map_dataframe(plot_heatmap, **heatmap_kwargs_validated)
+        facet_.map_dataframe(plot_heatmap, **heatmap_kwargs_validated)
 
         info_data_source = (
             f"Data source: {self.data_source.capitalize()} set"
@@ -243,10 +228,10 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             if threshold_value is None:
                 threshold_value = 0.5 if self.response_method == "predict_proba" else 0
             title = f"{title}\nDecision threshold: {threshold_value:.2f}"
-        self.figure_.suptitle(f"{title}\n{info_data_source}")
+        figure_.suptitle(f"{title}\n{info_data_source}")
 
-        for ax in self.ax_:
-            ax.set(
+        for axis in ax_:
+            axis.set(
                 xlabel="Predicted label",
                 ylabel="True label",
             )
@@ -256,12 +241,12 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     for label in self.display_labels
                 ]
 
-                ax.set(
+                axis.set(
                     xticklabels=ticklabels,
                     yticklabels=ticklabels,
                 )
 
-                ax.text(
+                axis.text(
                     -0.15,
                     -0.15,
                     "*: the positive class",
@@ -269,7 +254,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     style="italic",
                     verticalalignment="bottom",
                     horizontalalignment="left",
-                    transform=ax.transAxes,
+                    transform=axis.transAxes,
                     bbox={
                         "boxstyle": "round",
                         "facecolor": "white",
@@ -278,8 +263,9 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     },
                 )
 
-        if len(self.ax_) == 1:
-            self.ax_ = self.ax_[0]
+        if len(ax_) == 1:
+            ax_ = ax_[0]
+        return facet_
 
     def _validate_subplot_by(
         self,
