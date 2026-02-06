@@ -8,7 +8,11 @@ from sklearn.utils.metaestimators import available_if
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
-from skore._utils._accessor import _check_comparison_report_sub_estimators_have_coef
+from skore._sklearn._plot.inspection.impurity_decrease import ImpurityDecreaseDisplay
+from skore._utils._accessor import (
+    _check_comparison_report_sub_estimators_have_coef,
+    _check_comparison_report_sub_estimators_have_feature_importances,
+)
 
 if TYPE_CHECKING:
     from skore import ComparisonReport
@@ -111,6 +115,78 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
                 names=names,
                 splits=splits,
                 report_type=self._parent._report_type,
+            )
+
+    @available_if(_check_comparison_report_sub_estimators_have_feature_importances())
+    def impurity_decrease(self) -> ImpurityDecreaseDisplay:
+        """Retrieve the mean decrease impurity for each report.
+
+        If the compared reports are :class:`EstimatorReport` instances, the mean
+        decrease impurity from each report's estimator are returned.
+
+        If the compared reports are :class:`CrossValidationReport` instances, the
+        mean decrease impurity across all cross-validation splits are retained and the
+        columns are prefixed with the corresponding estimator name to distinguish them.
+
+        Returns
+        -------
+        :class:`ImpurityDecreaseDisplay`
+            The impurity decrease display containing the feature importances.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_iris
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from skore import train_test_split
+        >>> from skore import ComparisonReport, EstimatorReport
+        >>> X, y = load_iris(return_X_y=True, as_frame=True)
+        >>> split_data = train_test_split(X=X, y=y, shuffle=False, as_dict=True)
+        >>> report_small_trees = EstimatorReport(
+        ...     RandomForestClassifier(max_depth=2, random_state=0), **split_data
+        ... )
+        >>> report_big_trees = EstimatorReport(
+        ...     RandomForestClassifier(random_state=0), **split_data
+        ... )
+        >>> report = ComparisonReport({
+        ...     "small trees": report_small_trees,
+        ...     "big trees": report_big_trees,
+        ... })
+        >>> display = report.inspection.impurity_decrease()
+        >>> display.frame()
+             estimator            feature  importances
+        0  small trees  sepal length (cm)       0.1...
+        1  small trees   sepal width (cm)       0.0...
+        2  small trees  petal length (cm)       0.4...
+        3  small trees   petal width (cm)       0.4...
+        4    big trees  sepal length (cm)       0.0...
+        5    big trees   sepal width (cm)       0.0...
+        6    big trees  petal length (cm)       0.4...
+        7    big trees   petal width (cm)       0.4...
+        >>> display.plot() # shows plot
+        """
+        if self._parent._reports_type == "EstimatorReport":
+            return ImpurityDecreaseDisplay._compute_data_for_display(
+                estimators=[
+                    report.estimator_ for report in self._parent.reports_.values()
+                ],
+                names=list(self._parent.reports_.keys()),
+                splits=[np.nan] * len(self._parent.reports_),
+                report_type="comparison-estimator",
+            )
+        else:  # self._parent._reports_type == "CrossValidationReport":
+            estimators, names = [], []
+            splits: list[int | float] = []
+            for name, report in self._parent.reports_.items():
+                report = cast("CrossValidationReport", report)
+                for split_idx, estimator_report in enumerate(report.estimator_reports_):
+                    estimators.append(estimator_report.estimator_)
+                    names.append(name)
+                    splits.append(split_idx)
+            return ImpurityDecreaseDisplay._compute_data_for_display(
+                estimators=estimators,
+                names=names,
+                splits=splits,
+                report_type="comparison-cross-validation",
             )
 
     ####################################################################################
