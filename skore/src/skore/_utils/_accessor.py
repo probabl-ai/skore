@@ -271,6 +271,26 @@ def _check_comparison_report_sub_estimators_have_coef() -> Callable:
     return check
 
 
+def _check_comparison_report_sub_estimators_have_feature_importances() -> Callable:
+    def check(accessor: Any) -> bool:
+        """Check if all the estimators have a `feature_importances_` attribute."""
+        parent = accessor._parent
+        if parent._reports_type == "CrossValidationReport":
+            parent_estimators = [
+                parent_report.estimator_reports_[0].estimator_
+                for parent_report in parent.reports_.values()
+            ]
+        elif parent._reports_type == "EstimatorReport":
+            parent_estimators = [
+                parent_report.estimator_ for parent_report in parent.reports_.values()
+            ]
+        else:
+            raise TypeError(f"Unexpected report type: {type(parent.reports_[0])}")
+        return all(_check_has_feature_importances(e) for e in parent_estimators)
+
+    return check
+
+
 ########################################################################################
 # Accessor related to `ComparisonReport`
 ########################################################################################
