@@ -1,7 +1,7 @@
 from functools import partialmethod
 from io import BytesIO
 from json import dumps, loads
-from urllib.parse import unquote, urljoin
+from urllib.parse import urljoin
 
 import joblib
 from httpx import Client, Response

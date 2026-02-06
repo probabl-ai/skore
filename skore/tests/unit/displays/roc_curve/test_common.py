@@ -1,7 +1,5 @@
 """Common tests for RocCurveDisplay."""
 
-import pytest
-
 from skore import EstimatorReport
 
 

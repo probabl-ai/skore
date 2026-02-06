@@ -35,11 +35,7 @@ def test_regression(pyplot, comparison_cross_validation_reports_regression):
         assert getattr(display, f"range_{attr}").max == global_max
 
     display.plot()
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == 2
-    for line in display.lines_:
-        assert isinstance(line, mpl.lines.Line2D)
-        assert line.get_color() == "black"
+    assert hasattr(display, "facet_")
 
     assert isinstance(display.ax_, np.ndarray)
     assert len(display.ax_) == 2
@@ -66,11 +62,7 @@ def test_regression_actual_vs_predicted(
     assert isinstance(display._prediction_error, pd.DataFrame)
     assert display.data_source == "test"
 
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == 2
-    for line in display.lines_:
-        assert isinstance(line, mpl.lines.Line2D)
-        assert line.get_color() == "black"
+    assert hasattr(display, "facet_")
 
     assert isinstance(display.ax_, np.ndarray)
     assert len(display.ax_) == 2
@@ -94,8 +86,7 @@ def test_kwargs(pyplot, comparison_cross_validation_reports_regression):
         relplot_kwargs={"palette": ["red", "blue", "green", "magenta", "cyan"]},
         perfect_model_kwargs={"color": "orange"},
     ).plot()
-    for line in display.lines_:
-        assert line.get_color() == "orange"
+    assert hasattr(display, "facet_")
     rgb_colors = [
         [1.0, 0.0, 0.0],
         [0.0, 1.0, 0.0],

@@ -40,6 +40,7 @@ def test_coefficients_display_barplot_kwargs(
     display = report.inspection.coefficients()
     display.set_style(barplot_kwargs={"color": "red"}).plot()
 
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     patches = display.ax_.patches
@@ -63,6 +64,7 @@ def test_coefficients_display_boxplot_kwargs(pyplot):
         stripplot_kwargs={"color": "red"},
     ).plot()
 
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     patches = display.ax_.patches

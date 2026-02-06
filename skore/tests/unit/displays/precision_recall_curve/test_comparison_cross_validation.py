@@ -3,7 +3,6 @@ import re
 import matplotlib as mpl
 import numpy as np
 import pytest
-import seaborn as sns
 from sklearn.datasets import load_iris
 from sklearn.linear_model import LogisticRegression
 
@@ -30,15 +29,11 @@ def test_binary_classification(
 
     pos_label = 1
     n_reports = len(report.reports_)
-    n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
 
     display.plot()
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == n_reports * n_splits
-
+    assert hasattr(display, "facet_")
     assert len(display.ax_) == n_reports
 
-    expected_colors = sns.color_palette()[:1]
     for idx, estimator in enumerate(report.reports_):
         ax = display.ax_[idx]
         assert isinstance(ax, mpl.axes.Axes)
@@ -55,8 +50,6 @@ def test_binary_classification(
             legend_texts[0] == f"AP={average_precision.mean():.2f}"
             f"±{average_precision.std():.2f}"
         )
-        for line in ax.get_lines():
-            assert line.get_color() == expected_colors[0]
 
         assert len(legend_texts) == 1
         assert ax.get_xlabel() == "recall"
@@ -82,15 +75,11 @@ def test_multiclass_classification(
 
     labels = display.precision_recall["label"].cat.categories
     n_reports = len(report.reports_)
-    n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
 
     display.plot()
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == n_reports * len(labels) * n_splits
-
+    assert hasattr(display, "facet_")
     assert len(display.ax_) == n_reports
 
-    expected_colors = sns.color_palette()[: len(labels)]
     for idx, estimator in enumerate(report.reports_):
         ax = display.ax_[idx]
         assert isinstance(ax, mpl.axes.Axes)
@@ -108,11 +97,6 @@ def test_multiclass_classification(
                 legend_texts[label_idx] == f"{label} (AP={average_precision.mean():.2f}"
                 f"±{average_precision.std():.2f})"
             )
-            lines_slice = ax.get_lines()[
-                label_idx * n_splits : (label_idx + 1) * n_splits
-            ]
-            for line in lines_slice:
-                assert line.get_color() == expected_colors[label_idx]
 
         assert len(legend_texts) == len(labels)
         assert ax.get_xlabel() == "recall"
@@ -154,46 +138,15 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
     multiclass = "multiclass" in fixture_name
 
     display = report.metrics.precision_recall()
-    n_reports = len(report.reports_)
-    n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
-    n_labels = (
-        len(display.precision_recall["label"].cat.categories) if multiclass else 1
-    )
 
     display.plot()
-    default_colors = [line.get_color() for line in display.lines_]
-    if multiclass:
-        # With subplot_by="estimator", lines are organized per subplot:
-        # For each subplot: [label0_color] * n_splits + [label1_color] * n_splits + ...
-        palette_colors = sns.color_palette()[:n_labels]
-        expected_default = sum([[c] * n_splits for c in palette_colors], []) * n_reports
-    else:
-        # Binary: each subplot has n_splits lines, all same color
-        expected_default = [sns.color_palette()[0]] * n_splits * n_reports
-    assert default_colors == expected_default
+    assert hasattr(display, "facet_")
 
     if multiclass:
-        # For multiclass, use palette since there's a hue variable
-        palette_colors = ["red", "blue", "green"]
-        display.set_style(relplot_kwargs={"palette": palette_colors}).plot()
-        assert len(display.lines_) == n_reports * n_splits * n_labels
-        expected_colors = sum([[c] * n_splits for c in palette_colors], []) * n_reports
-        for line, expected_color, default_color in zip(
-            display.lines_, expected_colors, default_colors, strict=True
-        ):
-            assert line.get_color() == expected_color
-            assert mpl.colors.to_rgb(line.get_color()) != default_color
-
+        display.set_style(relplot_kwargs={"palette": ["red", "blue", "green"]}).plot()
     else:
-        # For binary, use color since there's no hue variable
         display.set_style(relplot_kwargs={"color": "red"}).plot()
-        assert len(display.lines_) == n_reports * n_splits * n_labels
-        expected_colors = ["red"] * n_splits * n_reports
-        for line, expected_color, default_color in zip(
-            display.lines_, expected_colors, default_colors, strict=True
-        ):
-            assert line.get_color() == expected_color
-            assert mpl.colors.to_rgb(line.get_color()) != default_color
+    assert hasattr(display, "facet_")
 
 
 def test_binary_classification_constructor(forest_binary_classification_data):

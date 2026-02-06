@@ -5,16 +5,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from threading import RLock
 from time import sleep
-from typing import cast
 from urllib.parse import urljoin
 from webbrowser import open as open_webbrowser
 
 from httpx import HTTPStatusError, TimeoutException
 from rich.align import Align
-from rich.console import Group
 from rich.live import Live
 from rich.panel import Panel
-from rich.text import Text
 
 from skore_hub_project import console
 from skore_hub_project.authentication.uri import URI

@@ -24,6 +24,9 @@ from skore._sklearn import (
 )
 from skore._sklearn._plot.base import Display
 from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
+from skore._sklearn._plot.inspection.impurity_decrease import (
+    ImpurityDecreaseDisplay,
+)
 from skore._sklearn._plot.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
@@ -52,6 +55,7 @@ __all__ = [
     "CrossValidationReport",
     "Display",
     "EstimatorReport",
+    "ImpurityDecreaseDisplay",
     "MetricsSummaryDisplay",
     "PermutationImportanceDisplay",
     "PrecisionRecallCurveDisplay",

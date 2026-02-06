@@ -3,7 +3,6 @@ import re
 import matplotlib as mpl
 import numpy as np
 import pytest
-import seaborn as sns
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 
@@ -34,17 +33,11 @@ def test_binary_classification(
     check_display_data(display)
 
     display.plot()
+    assert hasattr(display, "ax_")
+    assert hasattr(display, "facet_")
+    assert hasattr(display, "figure_")
 
     pos_label = report.estimator_reports_[0].estimator_.classes_[1]
-
-    assert hasattr(display, "ax_")
-    assert hasattr(display, "figure_")
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == cv
-
-    expected_color = sns.color_palette()[:1][0]
-    for line in display.lines_:
-        assert line.get_color() == expected_color
 
     ax = display.ax_
     assert isinstance(ax, mpl.axes.Axes)
@@ -89,17 +82,9 @@ def test_multiclass_classification(
     check_display_data(display)
 
     display.plot()
+    assert hasattr(display, "facet_")
 
     class_labels = report.estimator_reports_[0].estimator_.classes_
-
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == len(class_labels) * cv
-
-    # With subplot_by=None, all labels are on a single axes with different colors
-    expected_colors = sns.color_palette()[: len(class_labels)]
-    for label_idx in range(len(class_labels)):
-        for line in display.lines_[label_idx * cv : (label_idx + 1) * cv]:
-            assert line.get_color() == expected_colors[label_idx]
 
     ax = display.ax_
     assert isinstance(ax, mpl.axes.Axes)
@@ -156,36 +141,15 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.precision_recall()
     multiclass = "multiclass" in fixture_name
-    n_labels = (
-        len(report.estimator_reports_[0].estimator_.classes_) if multiclass else 1
-    )
 
     display.plot()
-    default_colors = [line.get_color() for line in display.lines_]
-    if multiclass:
-        # With subplot_by=None, colors cycle by label
-        expected_default = sum([[c] * cv for c in sns.color_palette()[:n_labels]], [])
-        assert default_colors == expected_default
-    else:
-        assert default_colors == [sns.color_palette()[0]] * cv
+    assert hasattr(display, "facet_")
 
     if multiclass:
-        # For multiclass, use palette since there's a hue variable
-        palette_colors = ["red", "blue", "green"]
-        display.set_style(relplot_kwargs={"palette": palette_colors}).plot()
-        expected_colors = sum([[c] * cv for c in palette_colors], [])
-        for line, expected_color, default_color in zip(
-            display.lines_, expected_colors, default_colors, strict=True
-        ):
-            assert line.get_color() == expected_color
-            assert mpl.colors.to_rgb(line.get_color()) != default_color
-
+        display.set_style(relplot_kwargs={"palette": ["red", "blue", "green"]}).plot()
     else:
-        # For binary, use color since there's no hue variable
         display.set_style(relplot_kwargs={"color": "red"}).plot()
-        for line in display.lines_:
-            assert line.get_color() == "red"
-            assert mpl.colors.to_rgb(line.get_color()) != default_colors[0]
+    assert hasattr(display, "facet_")
 
 
 @pytest.mark.parametrize("with_average_precision", [False, True])

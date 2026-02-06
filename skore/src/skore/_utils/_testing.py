@@ -212,7 +212,10 @@ def check_frame_structure(df, expected_index, expected_data_columns):
 
 
 def custom_r2_score(estimator, X, y):
-    """Custom callable scorer for testing permutation importance with callable metrics.
+    """Compute the R^2 score.
+
+    This is a custom callable scorer for testing permutation importance with callable
+    metrics.
 
     This function has the signature required by sklearn's permutation_importance:
     (estimator, X, y) -> score.

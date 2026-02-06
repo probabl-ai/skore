@@ -1,5 +1,6 @@
-from collections.abc import Callable
-from functools import wraps
+from collections.abc import Iterable
+from functools import partial
+from operator import length_hint
 from typing import Any, TypeVar
 
 from rich.progress import (
@@ -12,99 +13,73 @@ from rich.progress import (
 from skore._config import get_config
 
 T = TypeVar("T")
-DescriptionType = str | Callable[..., str]
+SkinnedProgress = partial(
+    Progress,
+    SpinnerColumn(),
+    TextColumn("[bold cyan]{task.description}"),
+    BarColumn(
+        complete_style="dark_orange",
+        finished_style="dark_orange",
+        pulse_style="orange1",
+    ),
+    TextColumn("[orange1]{task.percentage:>3.0f}%"),
+    expand=False,
+    transient=True,
+    disable=(not get_config()["show_progress"]),
+)
 
 
-def progress_decorator(
-    description: DescriptionType,
-) -> Callable[[Callable[..., T]], Callable[..., T]]:
-    """Decorate class methods to add a progress bar.
+class ProgressBar:
+    """Simplified progress bar based on ``rich.Progress``."""
 
-    This decorator adds a Rich progress bar to class methods, displaying progress
-    during execution. The progress bar automatically disappears after completion.
+    def __init__(self, description: str, total: float | None):
+        self._description = description
+        self._total = total
+        self._progress = SkinnedProgress()
+        self._task = self._progress.add_task(description, total=total)
 
-    Parameters
-    ----------
-    description : str or callable
-        The description of the progress bar. If a callable, it should take the
-        self object as an argument and return a string.
+    def __enter__(self):
+        self._progress.start()
+        return self
 
-    Returns
-    -------
-    decorator : function
-        A decorator that wraps the input function and adds a progress bar to it.
-    """
+    def __exit__(self, type, value, traceback):
+        self._progress.stop()
 
-    def decorator(func: Callable[..., T]) -> Callable[..., T]:
-        @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> T:
-            self_obj: Any = args[0]
+    @property
+    def description(self) -> str:
+        """Description of the progress bar."""
+        return self._description
 
-            if hasattr(self_obj, "_parent"):
-                # self_obj is an accessor
-                self_obj = self_obj._parent
+    @description.setter
+    def description(self, value: str):
+        """Set description of the progress bar."""
+        self._description = value
+        self._progress.update(self._task, description=value, refresh=True)
 
-            desc = description(self_obj) if callable(description) else description
+    @property
+    def total(self) -> float | None:
+        """Total number of steps before the progress bar is considered completed."""
+        return self._total
 
-            created_progress = False
+    @total.setter
+    def total(self, value: float):
+        """Set total number of steps before the progress bar is considered completed."""
+        self._total = value
+        self._progress.update(self._task, total=value, refresh=True)
 
-            if getattr(self_obj, "_progress_info", None) is not None:
-                progress = self_obj._progress_info["current_progress"]
-            else:
-                progress = Progress(
-                    SpinnerColumn(),
-                    TextColumn("[bold cyan]{task.description}"),
-                    BarColumn(
-                        complete_style="dark_orange",
-                        finished_style="dark_orange",
-                        pulse_style="orange1",
-                    ),
-                    TextColumn("[orange1]{task.percentage:>3.0f}%"),
-                    expand=False,
-                    transient=True,
-                    disable=not get_config()["show_progress"],
-                )
-                progress.start()
-                created_progress = True
+    def advance(self):
+        """Advance the progress bar by one step."""
+        self._progress.update(self._task, advance=1, refresh=True)
 
-            # assigning progress to child reports
-            reports_to_cleanup: list[Any] = []
-            if hasattr(self_obj, "reports_"):
-                for report in self_obj.reports_.values():
-                    if hasattr(report, "_progress_info"):
-                        report._progress_info = {"current_progress": progress}
-                        reports_to_cleanup.append(report)
 
-            task = progress.add_task(desc, total=None)
-            self_obj._progress_info = {
-                "current_progress": progress,
-                "current_task": task,
-            }
-            has_errored = False
-            try:
-                result = func(*args, **kwargs)
-                progress.update(
-                    task, completed=progress.tasks[task].total, refresh=True
-                )
-                return result
-            except Exception:
-                has_errored = True
-                raise
-            finally:
-                if created_progress:
-                    if not has_errored:
-                        progress.update(
-                            task, completed=progress.tasks[task].total, refresh=True
-                        )
-                    progress.stop()
+def track(
+    sequence: Iterable[Any], description: str, total: float | None = None
+) -> Iterable[Any]:
+    """Track progress by iterating over a sequence."""
+    if total is None:
+        total = float(length_hint(sequence)) or None
 
-                # clean up child reports
-                for report in reports_to_cleanup:
-                    report._progress_info = None
-
-                # clean up to make object pickable
-                self_obj._progress_info = None
-
-        return wrapper
-
-    return decorator
+    with ProgressBar(description=description, total=total) as progress:
+        for value in sequence:
+            yield value
+            progress.advance()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -20,7 +20,7 @@ from skore._sklearn.types import _DEFAULT, MLTask, PositiveLabel, SKLearnCrossVa
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import Parallel, delayed
-from skore._utils._progress_bar import progress_decorator
+from skore._utils._progress_bar import ProgressBar, track
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -159,9 +159,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         splitter: int | SKLearnCrossValidator | Generator | None = None,
         n_jobs: int | None = None,
     ) -> None:
-        # used to know if a parent launch a progress bar manager
-        self._progress_info: dict[str, Any] | None = None
-
         self._estimator = clone(estimator)
 
         # private storage to be able to invalidate the cache when the user alters
@@ -184,52 +181,38 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             y, estimator=self.estimator_reports_[0]._estimator
         )
 
-    @progress_decorator(
-        description=lambda self: (
-            f"Processing cross-validation\nfor {self.estimator_name_}"
-        )
-    )
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
-
-        This function is created to be able to use the progress bar. It works well
-        with the patch of `rich` in VS Code.
 
         Returns
         -------
         estimator_reports : list of EstimatorReport
             The estimator reports.
         """
-        assert self._progress_info is not None, (
-            "The rich Progress class was not initialized."
-        )
-        progress = self._progress_info["current_progress"]
-        task = self._progress_info["current_task"]
-
-        progress.update(task, total=len(self.split_indices))
-
         parallel = Parallel(
             **_validate_joblib_parallel_params(
                 n_jobs=self.n_jobs, return_as="generator"
             )
         )
-        # do not split the data to take advantage of the memory mapping
-        generator = parallel(
-            delayed(_generate_estimator_report)(
-                clone(self._estimator),
-                self._X,
-                self._y,
-                self._pos_label,
-                train_indices,
-                test_indices,
-            )
-            for (train_indices, test_indices) in self.split_indices
-        )
 
-        estimator_reports = []
-        for report in generator:
-            estimator_reports.append(report)
-            progress.update(task, advance=1, refresh=True)
+        # do not split the data to take advantage of the memory mapping
+        estimator_reports = list(
+            track(
+                parallel(
+                    delayed(_generate_estimator_report)(
+                        clone(self._estimator),
+                        self._X,
+                        self._y,
+                        self._pos_label,
+                        train_indices,
+                        test_indices,
+                    )
+                    for (train_indices, test_indices) in self.split_indices
+                ),
+                description=f"Processing cross-validation\nfor {self.estimator_name_}",
+                total=len(self.split_indices),
+            )
+        )
 
         warn_msg = None
         if not any(isinstance(report, EstimatorReport) for report in estimator_reports):
@@ -301,10 +284,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         self._cache = Cache()
 
-    @progress_decorator(description="Cross-validation predictions")
     def cache_predictions(
         self,
-        response_methods: str = "auto",
+        response_methods: list[str] | Literal["auto"] = "auto",
         n_jobs: int | None = None,
     ) -> None:
         """Cache the predictions for sub-estimators reports.
@@ -334,36 +316,21 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
-        assert self._progress_info is not None, (
-            "The rich Progress class was not initialized."
-        )
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
+        total = len(self.estimator_reports_)
 
-        total_estimators = len(self.estimator_reports_)
-        progress.update(main_task, total=total_estimators)
+        with ProgressBar(description="Cross-validation predictions", total=total) as pb:
+            for split_idx, estimator_report in enumerate(self.estimator_reports_, 1):
+                pb.description = (
+                    f"Cross-validation predictions for split #{split_idx}/{total}"
+                )
 
-        for split_idx, estimator_report in enumerate(self.estimator_reports_, 1):
-            # Share the parent's progress bar with child report
-            estimator_report._progress_info = {
-                "current_progress": progress,
-                "split_info": {"current": split_idx, "total": total_estimators},
-            }
+                # Call cache_predictions without printing a separate message
+                estimator_report.cache_predictions(
+                    response_methods=response_methods,
+                    n_jobs=n_jobs,
+                )
 
-            # Update the progress bar description to include the split number
-            progress.update(
-                main_task,
-                description=(
-                    "Cross-validation predictions for split "
-                    f"#{split_idx}/{total_estimators}"
-                ),
-            )
-
-            # Call cache_predictions without printing a separate message
-            estimator_report.cache_predictions(
-                response_methods=response_methods, n_jobs=n_jobs
-            )
-            progress.update(main_task, advance=1, refresh=True)
+                pb.advance()
 
     def get_predictions(
         self,
