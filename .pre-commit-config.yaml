@@ -27,7 +27,7 @@ repos:
 
       - id: ruff-check
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
-        args: [--fix, --select, I]
+        args: [--fix, --extend-select, I]
 
       - id: ruff-format
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/

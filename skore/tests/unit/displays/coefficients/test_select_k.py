@@ -22,13 +22,13 @@ def test_different_features(
     frame = display.frame(select_k=3)
 
     assert frame.query("estimator == 'LogisticRegression_1'")["feature"].tolist() == [
-        "Feature #2",
         "Feature #1",
+        "Feature #2",
         "Feature #3",
     ]
 
     assert frame.query("estimator == 'LogisticRegression_2'")["feature"].tolist() == [
-        "Feature #1",
-        "Feature #0",
         "Intercept",
+        "Feature #0",
+        "Feature #1",
     ]

@@ -4,11 +4,11 @@ import pytest
 
 def test_legend_binary_classification(
     pyplot,
-    cross_validation_report_binary_classification_0,
+    cross_validation_reports_binary_classification,
     cross_validation_reports_binary_classification_figure_axes,
 ):
     """Check the legend of the precision-recall curve plot with binary data."""
-    report = cross_validation_report_binary_classification_0
+    report = cross_validation_reports_binary_classification[0]
     display = report.metrics.precision_recall()
     _, ax = cross_validation_reports_binary_classification_figure_axes
     assert isinstance(ax, mpl.axes.Axes)
@@ -26,11 +26,11 @@ def test_legend_binary_classification(
 
 def test_legend_multiclass_classification(
     pyplot,
-    cross_validation_report_multiclass_classification_0,
+    cross_validation_reports_multiclass_classification,
     cross_validation_reports_multiclass_classification_figure_axes,
 ):
     """Check the legend of the precision-recall curve plot with multiclass data."""
-    report = cross_validation_report_multiclass_classification_0
+    report = cross_validation_reports_multiclass_classification[0]
     display = report.metrics.precision_recall()
     _, ax = cross_validation_reports_multiclass_classification_figure_axes
     labels = display.precision_recall["label"].cat.categories
@@ -51,9 +51,9 @@ def test_legend_multiclass_classification(
 @pytest.mark.parametrize(
     "fixture_name, valid_values",
     [
-        ("cross_validation_report_binary_classification_0", ["None", "auto"]),
+        ("cross_validation_reports_binary_classification", ["None", "auto"]),
         (
-            "cross_validation_report_multiclass_classification_0",
+            "cross_validation_reports_multiclass_classification",
             ["None", "auto", "label"],
         ),
     ],
@@ -62,7 +62,7 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `subplot_by` argument.
     """
-    report = request.getfixturevalue(fixture_name)
+    report = request.getfixturevalue(fixture_name)[0]
 
     display = report.metrics.precision_recall()
     err_msg = (
@@ -75,16 +75,16 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
 @pytest.mark.parametrize(
     "fixture_name, subplot_by_tuples",
     [
-        ("cross_validation_report_binary_classification_0", [(None, 0)]),
+        ("cross_validation_reports_binary_classification", [(None, 0)]),
         (
-            "cross_validation_report_multiclass_classification_0",
+            "cross_validation_reports_multiclass_classification",
             [("label", 3)],
         ),
     ],
 )
 def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     """Check that we can pass non default values to `subplot_by`."""
-    report = request.getfixturevalue(fixture_name)
+    report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.precision_recall()
     for subplot_by, expected_len in subplot_by_tuples:
         display.plot(subplot_by=subplot_by)
