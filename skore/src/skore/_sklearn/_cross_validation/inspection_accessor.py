@@ -39,7 +39,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = make_regression(n_features=3, random_state=42)
         >>> report = CrossValidationReport(
-        >>>     estimator=Ridge(), X=X, y=y, splitter=5, n_jobs=4
+        >>>     estimator=Ridge(), X=X, y=y, splitter=5
         >>> )
         >>> display = report.inspection.coefficients()
         >>> display.frame()
@@ -95,8 +95,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> X, y = iris.data, iris.target
         >>> y = iris.target_names[y]
         >>> report = CrossValidationReport(
-        ...     estimator=RandomForestClassifier(random_state=0),
-        ...     X=X, y=y, splitter=5, n_jobs=4
+        ...     estimator=RandomForestClassifier(random_state=0), X=X, y=y, splitter=5
         ... )
         >>> display = report.inspection.impurity_decrease()
         >>> display.frame()
