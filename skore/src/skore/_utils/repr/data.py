@@ -4,9 +4,10 @@ import inspect
 import re
 import uuid
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
 from importlib.metadata import version
-from typing import Any, Callable
+from typing import Any
 from urllib.parse import quote
 
 from skore._externals._sklearn_compat import parse_version
@@ -261,8 +262,7 @@ def get_public_attributes(obj: Any) -> list[str]:
 def get_attribute_short_summary(obj: Any, name: str) -> str:
     """Extract a short description of an attribute from the class docstring.
 
-    Looks for a numpydoc-style "Attributes" entry ``{name} : type\\n    Description.``
-    and returns the description text.
+    Looks for a numpydoc-style "Attributes" entry and returns the description text.
 
     Parameters
     ----------

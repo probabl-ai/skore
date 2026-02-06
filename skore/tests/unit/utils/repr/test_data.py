@@ -86,7 +86,9 @@ class _ReportWithExplicitMethods(MockReport, _ReportHelpDataMixin):
 
 
 class _ReportWithAccessor(_ReportWithExplicitMethods):
-    """Report with _ACCESSOR_CONFIG and attached accessor for _build_help_data coverage."""
+    """Report with _ACCESSOR_CONFIG and attached accessor for _build_help_data
+    coverage.
+    """
 
     _ACCESSOR_CONFIG = {"metrics": {"name": "metrics"}}
 
@@ -98,7 +100,9 @@ class _ReportWithAccessor(_ReportWithExplicitMethods):
 
 
 class _AccessorWithExplicitMethods(MockAccessor, _AccessorHelpDataMixin):
-    """Accessor with explicit public, private, and class methods; used for help tests."""
+    """Accessor with explicit public, private, and class methods; used for help
+    tests.
+    """
 
     def fetch(self):
         """Fetch data."""
@@ -197,7 +201,9 @@ def report_with_methods():
 
 @pytest.fixture
 def accessor_with_methods(report_with_methods):
-    """Accessor with explicit public/private methods; used as main accessor fixture."""
+    """Accessor with explicit public/private methods; used as main accessor
+    fixture.
+    """
     return _AccessorWithExplicitMethods(parent=report_with_methods)
 
 
@@ -217,7 +223,9 @@ def report_with_accessor():
 
 
 def test_get_public_methods_display(display_with_methods):
-    """get_public_methods returns public instance methods, excludes help, private, class."""
+    """get_public_methods returns public instance methods, excludes help, private,
+    class.
+    """
     methods = get_public_methods(display_with_methods)
     names = [n for n, _ in methods]
     for excluded in ("help", "_private_helper", "class_factory"):
@@ -228,7 +236,9 @@ def test_get_public_methods_display(display_with_methods):
 
 
 def test_get_public_methods_report_excludes_help(report_with_methods):
-    """get_public_methods excludes help, private, and class methods, includes public ones."""
+    """get_public_methods excludes help, private, and class methods, includes public
+    ones.
+    """
     methods = get_public_methods(report_with_methods)
     names = [n for n, _ in methods]
     for excluded in ("help", "_private_helper", "class_factory"):
@@ -237,7 +247,9 @@ def test_get_public_methods_report_excludes_help(report_with_methods):
 
 
 def test_get_public_methods_accessor_excludes_help(accessor_with_methods):
-    """get_public_methods excludes help, private, and class methods, includes public ones."""
+    """get_public_methods excludes help, private, and class methods, includes public
+    ones.
+    """
     methods = get_public_methods(accessor_with_methods)
     names = [n for n, _ in methods]
     for excluded in ("help", "_internal", "class_factory"):
@@ -309,7 +321,9 @@ def test_get_attribute_short_summary_no_docstring():
 
 
 def test_get_documentation_url_class_only(report_with_methods, display_with_methods):
-    """get_documentation_url returns base class URL with no accessor/method/attribute."""
+    """get_documentation_url returns base class URL with no accessor/method/
+    attribute.
+    """
     for obj in (report_with_methods, display_with_methods):
         url = get_documentation_url(obj=obj)
         assert re.match(
@@ -322,7 +336,9 @@ def test_get_documentation_url_class_only(report_with_methods, display_with_meth
 def test_get_documentation_url_method_no_accessor(
     report_with_methods, display_with_methods
 ):
-    """get_documentation_url appends #skore.Class.method when method set, no accessor."""
+    """get_documentation_url appends #skore.Class.method when method set, no
+    accessor.
+    """
     for obj in (report_with_methods, display_with_methods):
         url = get_documentation_url(obj=obj, method_name="help")
         assert url.startswith("https://docs.skore.probabl.ai/")
@@ -380,7 +396,9 @@ def test_get_documentation_url_version_branches(
 
 
 def test_accessor_build_help_data_output(accessor_with_methods):
-    """_AccessorHelpDataMixin._build_help_data returns AccessorHelpData with expected shape."""
+    """_AccessorHelpDataMixin._build_help_data returns AccessorHelpData with expected
+    shape.
+    """
     data = accessor_with_methods._build_help_data()
     assert isinstance(data, AccessorHelpData)
     assert data.title == "Mock accessor"
@@ -399,7 +417,9 @@ def test_accessor_build_help_data_output(accessor_with_methods):
 
 
 def test_report_build_help_data_output(report_with_methods):
-    """_ReportHelpDataMixin._build_help_data returns ReportHelpData with expected shape."""
+    """_ReportHelpDataMixin._build_help_data returns ReportHelpData with expected
+    shape.
+    """
     data = report_with_methods._build_help_data()
     assert isinstance(data, ReportHelpData)
     assert data.title == "Mock report"
@@ -420,7 +440,9 @@ def test_report_build_help_data_output(report_with_methods):
 
 
 def test_report_build_help_data_output_with_accessors(report_with_accessor):
-    """_ReportHelpDataMixin._build_help_data with _ACCESSOR_CONFIG builds accessor branches."""
+    """_ReportHelpDataMixin._build_help_data with _ACCESSOR_CONFIG builds accessor
+    branches.
+    """
     data = report_with_accessor._build_help_data()
     assert isinstance(data, ReportHelpData)
     assert len(data.accessors) == 1
@@ -451,7 +473,9 @@ def test_report_build_help_data_output_excludes_empty_accessor():
 
 
 def test_display_build_help_data_output(display_with_methods):
-    """_DisplayHelpDataMixin._build_help_data returns DisplayHelpData with expected shape."""
+    """_DisplayHelpDataMixin._build_help_data returns DisplayHelpData with expected
+    shape.
+    """
     data = display_with_methods._build_help_data()
     assert isinstance(data, DisplayHelpData)
     assert data.title == "Mock display"

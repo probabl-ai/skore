@@ -40,20 +40,26 @@ def report_with_html():
 
 
 def test_html_report_help_mixin_creates_container(report_with_html):
-    """_HTMLReportHelpMixin._create_help_html returns HTML containing the container id."""
+    """_HTMLReportHelpMixin._create_help_html returns HTML containing the container
+    id.
+    """
     html = report_with_html._create_help_html()
     assert "skore-help-" in html
 
 
 def test_html_accessor_help_mixin_creates_container(report_with_html):
-    """_HTMLAccessorHelpMixin._create_help_html returns HTML containing the container id."""
+    """_HTMLAccessorHelpMixin._create_help_html returns HTML containing the container
+    id.
+    """
     accessor = _AccessorWithHTML(parent=report_with_html)
     html = accessor._create_help_html()
     assert "skore-accessor-help-" in html
 
 
 def test_html_display_help_mixin_creates_container():
-    """_HTMLHelpDisplayMixin._create_help_html returns HTML containing the container id."""
+    """_HTMLHelpDisplayMixin._create_help_html returns HTML containing the container
+    id.
+    """
     display = _DisplayWithHTML()
     html = display._create_help_html()
     assert "skore-display-help-" in html

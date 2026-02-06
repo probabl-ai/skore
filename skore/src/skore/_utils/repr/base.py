@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from io import StringIO
-from typing import Callable
 
 from rich.console import Console
 from rich.panel import Panel
@@ -23,8 +23,7 @@ from skore._utils.repr.rich_repr import (
 
 
 class _HelpDisplay:
-    """Displayable help with ``_repr_html_`` and ``_repr_mimebundle_`` for
-    sphinx-gallery."""
+    """Displayable help with ``_repr_html_`` and ``_repr_mimebundle_`` for sphinx."""
 
     __slots__ = ("_html", "_plain")
 
@@ -51,7 +50,7 @@ def _help_dispatch(
     html_help_factory: Callable[[], str],
     rich_help_factory: Callable[[], Panel],
 ) -> _HelpDisplay | None:
-    """Dispatch help to sphinx (mimebundle), notebook (display HTML), or terminal (Rich).
+    """Dispatch help to sphinx, notebook, or terminal.
 
     Each specialized ``help()`` calls this with ``_create_help_html`` and
     ``_create_help_panel``. Behaviour is unchanged.

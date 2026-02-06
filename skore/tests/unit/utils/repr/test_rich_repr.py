@@ -107,7 +107,9 @@ def test_rich_report_help_mixin_tree_and_title(report_with_rich):
 
 
 def test_rich_accessor_help_mixin_tree_and_title(accessor_with_rich):
-    """_RichAccessorHelpMixin tree contains root node, accessor branch, method entries and panel title."""
+    """_RichAccessorHelpMixin tree contains root node, accessor branch, method entries
+    and panel title.
+    """
     panel = accessor_with_rich._create_help_panel()
     out = _render_panel(panel)
     # Check for title, root node (parent class), accessor name, and method
