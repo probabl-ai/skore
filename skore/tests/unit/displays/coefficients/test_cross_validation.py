@@ -1,5 +1,4 @@
 import matplotlib as mpl
-import numpy as np
 import pytest
 
 
@@ -19,12 +18,14 @@ import pytest
         (
             "cross_validation_reports_multiclass_classification",
             "incorrect",
-            "Column incorrect not found in the frame. It should be one of label, auto, None.",
+            "Column incorrect not found in the frame."
+            + " It should be one of label, auto, None.",
         ),
         (
             "cross_validation_reports_multioutput_regression",
             "incorrect",
-            "Column incorrect not found in the frame. It should be one of output, auto, None.",
+            "Column incorrect not found in the frame."
+            + " It should be one of output, auto, None.",
         ),
     ],
 )
