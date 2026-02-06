@@ -3,7 +3,6 @@ import re
 import matplotlib as mpl
 import numpy as np
 import pytest
-import seaborn as sns
 from sklearn.base import clone
 
 from skore import ComparisonReport, EstimatorReport

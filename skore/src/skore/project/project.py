@@ -169,8 +169,8 @@ class Project:
         name : str
             The name of the project:
 
-            - if the ``name`` takes the form of the URI ``hub://<workspace>/<name>``, the
-              project is configured to communicate with the ``skore hub``,
+            - if the ``name`` takes the form of the URI ``hub://<workspace>/<name>``,
+              the project is configured to communicate with the ``skore hub``,
             - otherwise, the project is configured to communicate with a local storage,
               on the user machine.
         **kwargs : dict
@@ -290,8 +290,8 @@ class Project:
         name : str
             The name of the project:
 
-            - if the ``name`` takes the form of the URI ``hub://<workspace>/<name>``, the
-              project is configured to communicate with the ``skore hub``,
+            - if the ``name`` takes the form of the URI ``hub://<workspace>/<name>``,
+              the project is configured to communicate with the ``skore hub``,
             - otherwise, the project is configured to communicate with a local storage,
               on the user machine.
         **kwargs : dict

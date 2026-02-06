@@ -24,7 +24,6 @@ def test_binary_classification(
 
     pos_label = 1
     n_reports = len(report.reports_)
-    n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
 
     display.plot()
     assert hasattr(display, "facet_")

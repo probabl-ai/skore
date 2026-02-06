@@ -50,8 +50,8 @@ def test_with_model_exposing_mean_decrease_impurity(train_test_split, estimator)
 def test_with_model_not_exposing_mean_decrease_impurity(
     binary_classification_train_test_split,
 ):
-    """Check that we cannot create an impurity decrease display from model not exposing a
-    `feature_importances_` attribute."""
+    """Check that we cannot create an impurity decrease display from model not exposing
+    a `feature_importances_` attribute."""
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
     report = EstimatorReport(
         LogisticRegression(),

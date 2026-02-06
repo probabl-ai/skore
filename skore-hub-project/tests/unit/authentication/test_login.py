@@ -1,10 +1,6 @@
 from datetime import datetime, timezone
-from urllib.parse import urljoin
 
 from httpx import (
-    HTTPStatusError,
-    NetworkError,
-    RemoteProtocolError,
     Response,
     TimeoutException,
 )
