@@ -600,8 +600,11 @@ class CoefficientsDisplay(DisplayMixin):
         elif subplot_by is None:
             if "label" in frame.columns:
                 n_unique = frame["label"].nunique()
-            else:
+            elif "output" in frame.columns:
                 n_unique = frame["output"].nunique()
+            else:
+                # binary classification or single output regression
+                n_unique = 1
             if n_unique > 1:
                 raise ValueError(
                     "There are multiple labels or outputs and `subplot_by` is `None`. "
