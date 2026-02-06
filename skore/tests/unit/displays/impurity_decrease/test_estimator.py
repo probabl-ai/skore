@@ -38,7 +38,7 @@ def test_binary_classification(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importances"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1
@@ -95,7 +95,7 @@ def test_multiclass_classification(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importances"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1
@@ -150,7 +150,7 @@ def test_single_output_regression(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importances"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1
@@ -205,7 +205,7 @@ def test_multi_output_regression(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importances"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1

@@ -41,6 +41,24 @@ def _check_has_coef(parent_estimator) -> bool:
     )
 
 
+def _check_has_feature_importances(parent_estimator) -> bool:
+    """Check if the estimator has a feature_importances_ attribute.
+
+    This is a generic helper function. Please use the appropriate check for your report
+    type.
+    """
+    estimator = (
+        parent_estimator.steps[-1][1]
+        if isinstance(parent_estimator, Pipeline)
+        else parent_estimator
+    )
+    if hasattr(estimator, "feature_importances_"):
+        return True
+    raise AttributeError(
+        f"Estimator '{estimator}' is not a supported estimator by the function called."
+    )
+
+
 def _check_roc_auc(ml_task_and_methods: list[tuple[str, list[str]]]):
     def check(accessor: Any) -> bool:
         are_supported_cases = []
@@ -172,21 +190,10 @@ def _check_estimator_has_coef() -> Callable:
     return check
 
 
-def _check_has_feature_importances() -> Callable:
+def _check_estimator_has_feature_importances() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the estimator has a `feature_importances_` attribute."""
-        parent_estimator = accessor._parent.estimator_
-        estimator = (
-            parent_estimator.steps[-1][1]
-            if isinstance(parent_estimator, Pipeline)
-            else parent_estimator
-        )
-        if hasattr(estimator, "feature_importances_"):
-            return True
-        raise AttributeError(
-            f"Estimator '{parent_estimator}' is not a supported estimator by "
-            "the function called."
-        )
+        return _check_has_feature_importances(accessor._parent.estimator_)
 
     return check
 
@@ -229,6 +236,16 @@ def _check_cross_validation_sub_estimator_has_coef() -> Callable:
     return check
 
 
+def _check_cross_validation_sub_estimator_has_feature_importances() -> Callable:
+    def check(accessor: Any) -> bool:
+        """Check if the underlying estimator has a `feature_importances_` attribute."""
+        return _check_has_feature_importances(
+            accessor._parent.estimator_reports_[0].estimator_
+        )
+
+    return check
+
+
 ########################################################################################
 # Accessor related to `ComparisonReport`
 ########################################################################################
@@ -237,19 +254,39 @@ def _check_cross_validation_sub_estimator_has_coef() -> Callable:
 def _check_comparison_report_sub_estimators_have_coef() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if all the estimators have a `coef_` attribute."""
-        from skore import CrossValidationReport
-
         parent = accessor._parent
-        parent_estimators = []
-        for parent_report in parent.reports_.values():
-            if parent._reports_type == "CrossValidationReport":
-                parent_report = cast(CrossValidationReport, parent_report)
-                parent_estimators.append(parent_report.estimator_reports_[0].estimator_)
-            elif parent._reports_type == "EstimatorReport":
-                parent_estimators.append(parent_report.estimator_)
-            else:
-                raise TypeError(f"Unexpected report type: {type(parent.reports_[0])}")
+        if parent._reports_type == "CrossValidationReport":
+            parent_estimators = [
+                parent_report.estimator_reports_[0].estimator_
+                for parent_report in parent.reports_.values()
+            ]
+        elif parent._reports_type == "EstimatorReport":
+            parent_estimators = [
+                parent_report.estimator_ for parent_report in parent.reports_.values()
+            ]
+        else:
+            raise TypeError(f"Unexpected report type: {type(parent.reports_[0])}")
         return all(_check_has_coef(e) for e in parent_estimators)
+
+    return check
+
+
+def _check_comparison_report_sub_estimators_have_feature_importances() -> Callable:
+    def check(accessor: Any) -> bool:
+        """Check if all the estimators have a `feature_importances_` attribute."""
+        parent = accessor._parent
+        if parent._reports_type == "CrossValidationReport":
+            parent_estimators = [
+                parent_report.estimator_reports_[0].estimator_
+                for parent_report in parent.reports_.values()
+            ]
+        elif parent._reports_type == "EstimatorReport":
+            parent_estimators = [
+                parent_report.estimator_ for parent_report in parent.reports_.values()
+            ]
+        else:
+            raise TypeError(f"Unexpected report type: {type(parent.reports_[0])}")
+        return all(_check_has_feature_importances(e) for e in parent_estimators)
 
     return check
 
