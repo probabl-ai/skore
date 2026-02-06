@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from numpy.typing import ArrayLike

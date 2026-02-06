@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from collections import Counter
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import joblib
 import numpy as np
