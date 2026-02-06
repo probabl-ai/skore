@@ -5,9 +5,9 @@ from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.artifact.media import (
     EstimatorHtmlRepr,
-    MeanDecreaseImpurity,
-    PermutationTest,
-    PermutationTrain,
+    ImpurityDecrease,
+    PermutationImportanceTest,
+    PermutationImportanceTrain,
     PrecisionRecallTest,
     PrecisionRecallTrain,
     RocTest,
@@ -69,8 +69,10 @@ def project():
 @fixture
 def payload(project, binary_classification):
     # Force the compute of the permutations
-    binary_classification.feature_importance.permutation(data_source="train", seed=42)
-    binary_classification.feature_importance.permutation(data_source="test", seed=42)
+    binary_classification.inspection.permutation_importance(
+        data_source="train", seed=42
+    )
+    binary_classification.inspection.permutation_importance(data_source="test", seed=42)
 
     return EstimatorReportPayload(
         project=project,
@@ -147,9 +149,9 @@ class TestEstimatorReportPayload:
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
             EstimatorHtmlRepr,
-            MeanDecreaseImpurity,
-            PermutationTest,
-            PermutationTrain,
+            ImpurityDecrease,
+            PermutationImportanceTest,
+            PermutationImportanceTrain,
             PrecisionRecallTest,
             PrecisionRecallTrain,
             RocTest,
