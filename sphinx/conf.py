@@ -214,3 +214,18 @@ linkcode_resolve = make_linkcode_resolve(
         "{package}/src/skore/{path}#L{lineno}"
     ),
 )
+
+# -- Build hook: generate landing Plotly snippet ------------------------------
+# Generates the Plotly HTML fragment at build time, then include it via:
+#   {% include "landing/project_summary_plot.html" %}
+
+def setup(app):
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    def _gen(app):
+        script = Path(__file__).parent / "_scripts" / "generate_landing_project_summary_plot.py"
+        subprocess.check_call([sys.executable, str(script)])
+
+    app.connect("builder-inited", _gen)
