@@ -188,8 +188,6 @@ class PermutationImportanceDisplay(DisplayMixin):
             - if a tuple of 2 strings, the corresponding columns are used to create
               subplots in a grid. The first element is the row, the second is the
               column.
-            - if a tuple of 3 strings, all three facets (row, column, hue) are used.
-              The order is (row, col, hue).
             - if `None`, all information is plotted on a single plot. An error is raised
               if there is too much information to plot on a single plot.
 
