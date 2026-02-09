@@ -325,11 +325,11 @@ def unscale_coefficients(df, feature_mean, feature_std):
     mask_intercept_column = df.index == "Intercept"
     # rescale the intercept
     df.loc[mask_intercept_column] = df.loc[mask_intercept_column] - np.sum(
-        df.loc[~mask_intercept_column, "coefficients"] * feature_mean / feature_std
+        df.loc[~mask_intercept_column, "coefficient"] * feature_mean / feature_std
     )
     # rescale the other coefficients
-    df.loc[~mask_intercept_column, "coefficients"] = (
-        df.loc[~mask_intercept_column, "coefficients"] / feature_std
+    df.loc[~mask_intercept_column, "coefficient"] = (
+        df.loc[~mask_intercept_column, "coefficient"] / feature_std
     )
     return df.reset_index()
 
@@ -454,7 +454,7 @@ engineered_ridge_report_coefficients = (
     engineered_ridge_report.inspection.coefficients()
     .frame()
     .set_index("feature")
-    .sort_values(by="coefficients", key=abs, ascending=True)
+    .sort_values(by="coefficient", key=abs, ascending=True)
     .tail(15)
 )
 
@@ -714,7 +714,7 @@ print(selectk_features)
     selectk_ridge_report.inspection.coefficients()
     .frame()
     .set_index("feature")
-    .sort_values(by="coefficients", key=abs, ascending=True)
+    .sort_values(by="coefficient", key=abs, ascending=True)
     .tail(15)
     .plot.barh(title="Model weights", xlabel="Coefficient", ylabel="Feature")
 )

@@ -24,7 +24,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
 
         - `estimator`
         - `feature`
-        - `importances`
+        - `importance`
 
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
@@ -57,7 +57,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
     ... )
     >>> display = report.inspection.impurity_decrease()
     >>> display.frame()
-                    feature  importances
+                    feature  importance
     0  sepal length (cm)     0.1...
     1   sepal width (cm)     0.0...
     2  petal length (cm)     0.4...
@@ -135,7 +135,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 "estimator": est_names,
                 "split": split_indices,
                 "feature": feature_names,
-                "importances": importances_list,
+                "importance": importances_list,
             }
         )
 
@@ -168,7 +168,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         ... )
         >>> display = report.inspection.impurity_decrease()
         >>> display.frame()
-                     feature  importances
+                     feature  importance
         0  sepal length (cm)     0.1...
         1   sepal width (cm)     0.0...
         2  petal length (cm)     0.4...
@@ -276,7 +276,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         if "estimator" in report_type:
             self.facet_ = sns.catplot(
                 data=frame,
-                x="importances",
+                x="importance",
                 y="feature",
                 kind="bar",
                 **barplot_kwargs,
@@ -284,14 +284,14 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         else:  # "cross-validation" in report_type
             self.facet_ = sns.catplot(
                 data=frame,
-                x="importances",
+                x="importance",
                 y="feature",
                 kind="strip",
                 dodge=True,
                 **stripplot_kwargs,
             ).map_dataframe(
                 sns.boxplot,
-                x="importances",
+                x="importance",
                 y="feature",
                 dodge=True,
                 **boxplot_kwargs,

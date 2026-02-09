@@ -17,7 +17,7 @@ def test_coefficients_display_invalid_report_type(pyplot, method):
             "feature": ["feature1"],
             "label": [np.nan],
             "output": [np.nan],
-            "coefficients": [1.0],
+            "coefficient": [1.0],
         }
     )
 

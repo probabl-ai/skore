@@ -11,7 +11,7 @@ def test_impurity_decrease_display_invalid_report_type(pyplot, method):
         {
             "estimator": ["estimator1"],
             "feature": ["feature1"],
-            "importances": [1.0],
+            "importance": [1.0],
         }
     )
 
