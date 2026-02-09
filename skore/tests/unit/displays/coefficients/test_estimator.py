@@ -46,7 +46,7 @@ def test_binary_classification(
         "feature",
         "label",
         "output",
-        "coefficients",
+        "coefficient",
     ]
     df = display.coefficients
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
@@ -60,15 +60,15 @@ def test_binary_classification(
     coef = np.concatenate(
         [fitted_predictor.intercept_[:, np.newaxis], fitted_predictor.coef_], axis=1
     ).ravel()
-    np.testing.assert_allclose(df["coefficients"].to_numpy(), coef)
+    np.testing.assert_allclose(df["coefficient"].to_numpy(), coef)
 
     df = display.frame(sorting_order=None)
-    expected_columns = ["feature", "coefficients"]
+    expected_columns = ["feature", "coefficient"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == ["Intercept"] + columns_names
     if not fit_intercept:
         mask = df["feature"] == "Intercept"
-        assert df.loc[mask, "coefficients"].item() == pytest.approx(0)
+        assert df.loc[mask, "coefficient"].item() == pytest.approx(0)
 
     display.plot()
     assert hasattr(display, "facet_")
@@ -122,7 +122,7 @@ def test_multiclass_classification(
         "feature",
         "label",
         "output",
-        "coefficients",
+        "coefficient",
     ]
     df = display.coefficients
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
@@ -139,16 +139,16 @@ def test_multiclass_classification(
     coef = np.concatenate(
         [fitted_predictor.intercept_[:, np.newaxis], fitted_predictor.coef_], axis=1
     ).ravel()
-    np.testing.assert_allclose(df["coefficients"].to_numpy(), coef)
+    np.testing.assert_allclose(df["coefficient"].to_numpy(), coef)
 
     df = display.frame(sorting_order=None)
-    expected_columns = ["feature", "label", "coefficients"]
+    expected_columns = ["feature", "label", "coefficient"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["label"]).tolist() == np.unique(y_train).tolist()
     assert df["feature"].tolist() == (["Intercept"] + columns_names) * n_classes
     if not fit_intercept:
         mask = df["feature"] == "Intercept"
-        np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
+        np.testing.assert_allclose(df.loc[mask, "coefficient"], 0)
 
     display.plot()
     assert hasattr(display, "facet_")
@@ -218,7 +218,7 @@ def test_single_output_regression(
         "feature",
         "label",
         "output",
-        "coefficients",
+        "coefficient",
     ]
     df = display.coefficients
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
@@ -238,15 +238,15 @@ def test_single_output_regression(
         ],
         axis=1,
     ).ravel()
-    np.testing.assert_allclose(df["coefficients"].to_numpy(), coef)
+    np.testing.assert_allclose(df["coefficient"].to_numpy(), coef)
 
     df = display.frame(sorting_order=None)
-    expected_columns = ["feature", "coefficients"]
+    expected_columns = ["feature", "coefficient"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == ["Intercept"] + columns_names
     if not fit_intercept:
         mask = df["feature"] == "Intercept"
-        assert df.loc[mask, "coefficients"].item() == pytest.approx(0)
+        assert df.loc[mask, "coefficient"].item() == pytest.approx(0)
 
     display.plot()
     assert hasattr(display, "facet_")
@@ -304,7 +304,7 @@ def test_multi_output_regression(
         "feature",
         "label",
         "output",
-        "coefficients",
+        "coefficient",
     ]
     df = display.coefficients
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
@@ -325,16 +325,16 @@ def test_multi_output_regression(
         intercept = np.zeros((n_outputs, 1))
 
     coef = np.concatenate([intercept, fitted_predictor.coef_], axis=1).ravel()
-    np.testing.assert_allclose(df["coefficients"].to_numpy(), coef)
+    np.testing.assert_allclose(df["coefficient"].to_numpy(), coef)
 
     df = display.frame(sorting_order=None)
-    expected_columns = ["feature", "output", "coefficients"]
+    expected_columns = ["feature", "output", "coefficient"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["output"]).tolist() == [f"{i}" for i in range(n_outputs)]
     assert df["feature"].tolist() == (["Intercept"] + columns_names) * n_outputs
     if not fit_intercept:
         mask = df["feature"] == "Intercept"
-        np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
+        np.testing.assert_allclose(df.loc[mask, "coefficient"], 0)
 
     display.plot()
     assert hasattr(display, "facet_")

@@ -15,7 +15,7 @@ def _check_impurity_decrease_display(
     """Helper function to check impurity decrease display attributes."""
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "split", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importance"]
     df = display.importances
     assert df.columns.tolist() == expected_columns
     assert df["split"].nunique() == splitter
@@ -27,7 +27,7 @@ def _check_impurity_decrease_display(
             fitted_predictor = fitted_predictor.named_steps["predictor"]
 
         importances_split = (
-            df.query(f"split == {split_index}")[["feature", "importances"]]
+            df.query(f"split == {split_index}")[["feature", "importance"]]
             .set_index("feature")
             .loc[columns_names]
             .to_numpy()
@@ -39,7 +39,7 @@ def _check_impurity_decrease_display(
         )
 
     df = display.frame()
-    expected_columns = ["split", "feature", "importances"]
+    expected_columns = ["split", "feature", "importance"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == columns_names * splitter
     assert df["split"].nunique() == splitter

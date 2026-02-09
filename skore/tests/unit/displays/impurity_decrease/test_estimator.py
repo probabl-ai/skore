@@ -38,7 +38,7 @@ def test_binary_classification(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "split", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importance"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1
@@ -47,10 +47,10 @@ def test_binary_classification(
     if with_preprocessing:
         fitted_predictor = fitted_predictor.named_steps["predictor"]
     feature_importances = fitted_predictor.feature_importances_
-    np.testing.assert_allclose(df["importances"].to_numpy(), feature_importances)
+    np.testing.assert_allclose(df["importance"].to_numpy(), feature_importances)
 
     df = display.frame()
-    expected_columns = ["feature", "importances"]
+    expected_columns = ["feature", "importance"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == columns_names
 
@@ -96,7 +96,7 @@ def test_multiclass_classification(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "split", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importance"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1
@@ -105,10 +105,10 @@ def test_multiclass_classification(
     if with_preprocessing:
         fitted_predictor = fitted_predictor.named_steps["predictor"]
     feature_importances = fitted_predictor.feature_importances_
-    np.testing.assert_allclose(df["importances"].to_numpy(), feature_importances)
+    np.testing.assert_allclose(df["importance"].to_numpy(), feature_importances)
 
     df = display.frame()
-    expected_columns = ["feature", "importances"]
+    expected_columns = ["feature", "importance"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == columns_names
 
@@ -152,7 +152,7 @@ def test_single_output_regression(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "split", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importance"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1
@@ -161,10 +161,10 @@ def test_single_output_regression(
     if with_preprocessing:
         fitted_predictor = fitted_predictor.named_steps["predictor"]
     feature_importances = fitted_predictor.feature_importances_
-    np.testing.assert_allclose(df["importances"].to_numpy(), feature_importances)
+    np.testing.assert_allclose(df["importance"].to_numpy(), feature_importances)
 
     df = display.frame()
-    expected_columns = ["feature", "importances"]
+    expected_columns = ["feature", "importance"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == columns_names
 
@@ -208,7 +208,7 @@ def test_multi_output_regression(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "split", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importance"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1
@@ -217,10 +217,10 @@ def test_multi_output_regression(
     if with_preprocessing:
         fitted_predictor = fitted_predictor.named_steps["predictor"]
     feature_importances = fitted_predictor.feature_importances_
-    np.testing.assert_allclose(df["importances"].to_numpy(), feature_importances)
+    np.testing.assert_allclose(df["importance"].to_numpy(), feature_importances)
 
     df = display.frame()
-    expected_columns = ["feature", "importances"]
+    expected_columns = ["feature", "importance"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == columns_names
 

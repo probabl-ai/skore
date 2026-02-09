@@ -44,7 +44,7 @@ def test_binary_classification(
         "feature",
         "label",
         "output",
-        "coefficients",
+        "coefficient",
     ]
     df = display.coefficients
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
@@ -66,7 +66,7 @@ def test_binary_classification(
 
             coef_split = (
                 df.query("estimator == @report_name & split == @split_index")
-                .loc[:, ["feature", "coefficients"]]
+                .loc[:, ["feature", "coefficient"]]
                 .set_index("feature")
                 .loc[["Intercept"] + columns_names]
                 .to_numpy()
@@ -76,7 +76,7 @@ def test_binary_classification(
             np.testing.assert_allclose(coef_split, coef_with_intercept)
 
     df = display.frame(sorting_order=None)
-    expected_columns = ["estimator", "split", "feature", "coefficients"]
+    expected_columns = ["estimator", "split", "feature", "coefficient"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == (["Intercept"] + columns_names) * splitter * len(
         report.reports_
@@ -85,7 +85,7 @@ def test_binary_classification(
     assert df["split"].nunique() == splitter
     if not fit_intercept:
         mask = df["feature"] == "Intercept"
-        np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
+        np.testing.assert_allclose(df.loc[mask, "coefficient"], 0)
 
     display.plot()
     assert hasattr(display, "facet_")
@@ -147,7 +147,7 @@ def test_multiclass_classification(
         "feature",
         "label",
         "output",
-        "coefficients",
+        "coefficient",
     ]
     df = display.coefficients
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
@@ -169,8 +169,8 @@ def test_multiclass_classification(
 
             coef_split = (
                 df.query("estimator == @report_name & split == @split_index")
-                .loc[:, ["feature", "label", "coefficients"]]
-                .pivot(index="feature", columns="label", values="coefficients")
+                .loc[:, ["feature", "label", "coefficient"]]
+                .pivot(index="feature", columns="label", values="coefficient")
                 .loc[["Intercept"] + columns_names]
                 .to_numpy()
                 .ravel()
@@ -179,7 +179,7 @@ def test_multiclass_classification(
             np.testing.assert_allclose(coef_split, coef_with_intercept)
 
     df = display.frame(sorting_order=None)
-    expected_columns = ["estimator", "split", "feature", "label", "coefficients"]
+    expected_columns = ["estimator", "split", "feature", "label", "coefficient"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["label"]).tolist() == np.unique(y).tolist()
     assert df["feature"].tolist() == (
@@ -189,7 +189,7 @@ def test_multiclass_classification(
     assert df["split"].nunique() == splitter
     if not fit_intercept:
         mask = df["feature"] == "Intercept"
-        np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
+        np.testing.assert_allclose(df.loc[mask, "coefficient"], 0)
 
     display.plot()
     assert hasattr(display, "facet_")
@@ -260,7 +260,7 @@ def test_single_output_regression(
         "feature",
         "label",
         "output",
-        "coefficients",
+        "coefficient",
     ]
     df = display.coefficients
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
@@ -288,7 +288,7 @@ def test_single_output_regression(
 
             coef_split = (
                 df.query("estimator == @report_name & split == @split_index")
-                .loc[:, ["feature", "coefficients"]]
+                .loc[:, ["feature", "coefficient"]]
                 .set_index("feature")
                 .loc[["Intercept"] + columns_names]
                 .to_numpy()
@@ -298,7 +298,7 @@ def test_single_output_regression(
             np.testing.assert_allclose(coef_split, coef_with_intercept)
 
     df = display.frame(sorting_order=None)
-    expected_columns = ["estimator", "split", "feature", "coefficients"]
+    expected_columns = ["estimator", "split", "feature", "coefficient"]
     assert df.columns.tolist() == expected_columns
     assert df["feature"].tolist() == (["Intercept"] + columns_names) * splitter * len(
         report.reports_
@@ -307,7 +307,7 @@ def test_single_output_regression(
     assert df["split"].nunique() == splitter
     if not fit_intercept:
         mask = df["feature"] == "Intercept"
-        np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
+        np.testing.assert_allclose(df.loc[mask, "coefficient"], 0)
 
     display.plot()
     assert hasattr(display, "facet_")
@@ -373,7 +373,7 @@ def test_multi_output_regression(
         "feature",
         "label",
         "output",
-        "coefficients",
+        "coefficient",
     ]
     df = display.coefficients
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
@@ -404,8 +404,8 @@ def test_multi_output_regression(
 
             coef_split = (
                 df.query("estimator == @report_name & split == @split_index")
-                .loc[:, ["feature", "output", "coefficients"]]
-                .pivot(index="feature", columns="output", values="coefficients")
+                .loc[:, ["feature", "output", "coefficient"]]
+                .pivot(index="feature", columns="output", values="coefficient")
                 .loc[["Intercept"] + columns_names]
                 .to_numpy()
                 .ravel()
@@ -414,7 +414,7 @@ def test_multi_output_regression(
             np.testing.assert_allclose(coef_split, coef_with_intercept)
 
     df = display.frame(sorting_order=None)
-    expected_columns = ["estimator", "split", "feature", "output", "coefficients"]
+    expected_columns = ["estimator", "split", "feature", "output", "coefficient"]
     assert df.columns.tolist() == expected_columns
     assert np.unique(df["output"]).tolist() == [f"{i}" for i in range(n_outputs)]
     assert df["feature"].tolist() == (
@@ -424,7 +424,7 @@ def test_multi_output_regression(
     assert df["split"].nunique() == splitter
     if not fit_intercept:
         mask = df["feature"] == "Intercept"
-        np.testing.assert_allclose(df.loc[mask, "coefficients"], 0)
+        np.testing.assert_allclose(df.loc[mask, "coefficient"], 0)
 
     display.plot()
     assert hasattr(display, "facet_")

@@ -9,7 +9,7 @@ def test(comparison_report, sorting_order):
     )
 
     for estimator in set(frame["estimator"]):
-        coefs = list(frame.query(f"estimator == '{estimator}'")["coefficients"])
+        coefs = list(frame.query(f"estimator == '{estimator}'")["coefficient"])
         assert coefs == sorted(coefs, key=abs, reverse=(sorting_order == "descending"))
 
 
