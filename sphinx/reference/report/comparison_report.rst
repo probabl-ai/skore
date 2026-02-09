@@ -48,17 +48,21 @@ get the common performance metric representations.
 
     ComparisonReport.metrics.help
     ComparisonReport.metrics.summarize
-    ComparisonReport.metrics.custom_metric
+
     ComparisonReport.metrics.accuracy
     ComparisonReport.metrics.brier_score
+    ComparisonReport.metrics.confusion_matrix
+    ComparisonReport.metrics.custom_metric
     ComparisonReport.metrics.log_loss
     ComparisonReport.metrics.precision
+    ComparisonReport.metrics.precision_recall
+    ComparisonReport.metrics.prediction_error
     ComparisonReport.metrics.r2
     ComparisonReport.metrics.recall
     ComparisonReport.metrics.rmse
+    ComparisonReport.metrics.roc
     ComparisonReport.metrics.roc_auc
     ComparisonReport.metrics.timings
-    ComparisonReport.metrics.confusion_matrix
 
 Inspection
 ----------

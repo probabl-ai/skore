@@ -66,9 +66,11 @@ estimator across cross-validation splits.
 
     CrossValidationReport.metrics.help
     CrossValidationReport.metrics.summarize
-    CrossValidationReport.metrics.custom_metric
+
     CrossValidationReport.metrics.accuracy
     CrossValidationReport.metrics.brier_score
+    CrossValidationReport.metrics.confusion_matrix
+    CrossValidationReport.metrics.custom_metric
     CrossValidationReport.metrics.log_loss
     CrossValidationReport.metrics.precision
     CrossValidationReport.metrics.precision_recall
@@ -79,7 +81,6 @@ estimator across cross-validation splits.
     CrossValidationReport.metrics.roc
     CrossValidationReport.metrics.roc_auc
     CrossValidationReport.metrics.timings
-    CrossValidationReport.metrics.confusion_matrix
 
 Inspection
 ----------
