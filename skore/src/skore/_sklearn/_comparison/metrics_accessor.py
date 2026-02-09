@@ -134,7 +134,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        MetricsSummaryDisplay
+        :class:`MetricsSummaryDisplay`
             A display containing the statistics for the metrics.
 
         Examples
@@ -1352,7 +1352,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        RocCurveDisplay
+        :class:`RocCurveDisplay`
             The ROC curve display.
 
         Examples
@@ -1432,7 +1432,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        PrecisionRecallCurveDisplay
+        :class:`PrecisionRecallCurveDisplay`
             The precision-recall curve display.
 
         Examples
@@ -1520,7 +1520,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        PredictionErrorDisplay
+        :class:`PredictionErrorDisplay`
             The prediction error display.
 
         Examples
@@ -1597,7 +1597,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        display : :class:`~skore._sklearn._plot.ConfusionMatrixDisplay`
+        :class:`ConfusionMatrixDisplay`
             The confusion matrix display.
 
         Examples
