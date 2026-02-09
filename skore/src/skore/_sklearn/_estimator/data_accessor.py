@@ -126,7 +126,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Returns
         -------
-        TableReportDisplay
+        :class:`TableReportDisplay`
             A display object containing the dataset statistics and plots.
 
         Examples

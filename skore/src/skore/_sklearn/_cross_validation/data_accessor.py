@@ -97,7 +97,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         Returns
         -------
-        TableReportDisplay
+        :class:`TableReportDisplay`
             A display object containing the dataset statistics and plots.
 
         Examples
