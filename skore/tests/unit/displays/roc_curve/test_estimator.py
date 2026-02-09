@@ -3,7 +3,6 @@ import re
 import matplotlib as mpl
 import numpy as np
 import pytest
-import seaborn as sns
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -36,11 +35,8 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
 
     display.plot()
     assert hasattr(display, "ax_")
+    assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == 1 + 1
-    roc_curve_mpl = display.lines_[0]
-    assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
 
     ax = display.ax_
     assert isinstance(ax, mpl.axes.Axes)
@@ -50,8 +46,6 @@ def test_binary_classification(pyplot, logistic_binary_classification_with_train
     plot_data = display.frame(with_roc_auc=True)
     roc_auc = plot_data["roc_auc"].iloc[0]
     assert legend_texts[0] == f"AUC={roc_auc:.2f}"
-    expected_color = sns.color_palette()[:1][0]
-    assert roc_curve_mpl.get_color() == expected_color
 
     assert ax.get_xlabel() == "False Positive Rate"
     assert ax.get_ylabel() in ("True Positive Rate", "")
@@ -86,8 +80,7 @@ def test_multiclass_classification(
     np.testing.assert_array_equal(display.roc_auc["label"].unique(), estimator.classes_)
 
     display.plot()
-    assert isinstance(display.lines_, list)
-    assert len(display.lines_) == len(estimator.classes_) + 1
+    assert hasattr(display, "facet_")
 
     ax = display.ax_
     assert isinstance(ax, mpl.axes.Axes)
@@ -95,15 +88,11 @@ def test_multiclass_classification(
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
 
-    expected_colors = sns.color_palette()[: len(estimator.classes_)]
     for class_label_idx, class_label in enumerate(estimator.classes_):
-        roc_curve_mpl = display.lines_[class_label_idx]
-        assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
         plot_data = display.frame(with_roc_auc=True)
         roc_auc = plot_data.query(f"label == {class_label}")["roc_auc"].iloc[0]
         expected_text = f"{class_label} (AUC={roc_auc:.2f})"
         assert legend_texts[class_label_idx] == expected_text
-        assert roc_curve_mpl.get_color() == expected_colors[class_label_idx]
 
     assert len(legend_texts) == len(estimator.classes_) + 1
     assert "Chance level (AUC = 0.5)" in legend_texts
@@ -175,30 +164,15 @@ def test_relplot_kwargs(pyplot, fixture_name, request):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.roc()
-    multiclass = "multiclass" in fixture_name
-    n_labels = len(estimator.classes_) if multiclass else 1
 
     display.plot()
-    default_colors = [line.get_color() for line in display.lines_[:n_labels]]
-    if multiclass:
-        expected_default = sns.color_palette()[:n_labels]
-        assert default_colors == expected_default
-    else:
-        assert default_colors == [sns.color_palette()[0]]
+    assert hasattr(display, "facet_")
 
-    if multiclass:
-        palette_colors = ["red", "blue", "green"]
-        display.set_style(relplot_kwargs={"palette": palette_colors}).plot()
-        expected_colors = palette_colors
+    if "multiclass" in fixture_name:
+        display.set_style(relplot_kwargs={"palette": ["red", "blue", "green"]}).plot()
     else:
         display.set_style(relplot_kwargs={"color": "red"}).plot()
-        expected_colors = ["red"] * n_labels
-
-    for line, expected_color, default_color in zip(
-        display.lines_[:n_labels], expected_colors, default_colors, strict=True
-    ):
-        assert line.get_color() == expected_color
-        assert mpl.colors.to_rgb(line.get_color()) != default_color
+    assert hasattr(display, "facet_")
 
 
 def test_binary_classification_data_source(
@@ -279,7 +253,7 @@ def test_binary_classification_data_source_both(
     )
     display = report.metrics.roc(data_source="both")
     display.plot()
-    assert len(display.lines_) == 3
+    assert hasattr(display, "facet_")
     plot_data = display.frame(with_roc_auc=True)
     roc_auc_train = plot_data.query("data_source == 'train'")["roc_auc"].iloc[0]
     roc_auc_test = plot_data.query("data_source == 'test'")["roc_auc"].iloc[0]
@@ -303,9 +277,9 @@ def test_multiclass_classification_data_source_both(
     )
     display = report.metrics.roc(data_source="both")
     display.plot()
+    assert hasattr(display, "facet_")
 
     n_classes = len(estimator.classes_)
-    assert len(display.lines_) == n_classes * 2 + 1
     ax = display.ax_
     assert isinstance(ax, mpl.axes.Axes)
 

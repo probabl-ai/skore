@@ -34,6 +34,17 @@ class PermutationImportanceDisplay(DisplayMixin):
 
     report_type : {"estimator", "cross-validation"}
         Report type from which the display is created.
+
+    Attributes
+    ----------
+    facet_ : seaborn FacetGrid
+        FacetGrid containing the permutation importance.
+
+    figure_ : matplotlib Figure
+        Figure containing the permutation importance.
+
+    ax_ : matplotlib Axes
+        Axes with permutation importance.
     """
 
     _default_boxplot_kwargs: dict[str, Any] = {
@@ -174,7 +185,8 @@ class PermutationImportanceDisplay(DisplayMixin):
               several subplots. Those plots will be a organized in a grid of a single
               row and several columns.
             - if a tuple of 2 strings, the corresponding columns are used to create
-              subplots in a grid. The first element is the row, the second is the column.
+              subplots in a grid. The first element is the row, the second is the
+              column.
             - if a tuple of 3 strings, all three facets (row, column, hue) are used.
               The order is (row, col, hue).
             - if `None`, all information is plotted on a single plot. An error is raised

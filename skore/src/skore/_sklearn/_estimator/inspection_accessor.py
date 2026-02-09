@@ -5,7 +5,6 @@ from typing import Any
 
 import joblib
 import numpy as np
-import pandas as pd
 from numpy.typing import ArrayLike
 from scipy.sparse import issparse
 from sklearn.pipeline import Pipeline
@@ -16,6 +15,7 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
+from skore._sklearn._plot.inspection.impurity_decrease import ImpurityDecreaseDisplay
 from skore._sklearn._plot.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
@@ -23,7 +23,7 @@ from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import DataSource
 from skore._utils._accessor import (
     _check_estimator_has_coef,
-    _check_has_feature_importances,
+    _check_estimator_has_feature_importances,
 )
 
 Metric = str | Callable | list[str] | tuple[str] | dict[str, Callable] | None
@@ -61,17 +61,17 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display = report.inspection.coefficients()
         >>> display.frame()
                feature  coefficients
-        0   Feature #2      254.8...
-        1   Feature #8      242.1...
-        2   Feature #3      168.3...
-        3    Intercept      151.4...
-        4   Feature #6     -134.6...
-        5   Feature #7      117.2...
-        6   Feature #9      113.2...
-        7   Feature #1      -69.8...
-        8   Feature #0       30.6...
-        9   Feature #5      -19.5...
-        10  Feature #4       18.3...
+        0    Intercept      151.4...
+        1   Feature #0       30.6...
+        2   Feature #1      -69.8...
+        3   Feature #2      254.8...
+        4   Feature #3      168.3...
+        5   Feature #4       18.3...
+        6   Feature #5      -19.5...
+        7   Feature #6     -134.6...
+        8   Feature #7      117.2...
+        9   Feature #8      242.1...
+        10  Feature #9      113.2...
         >>> display.plot() # shows plot
         """
         return CoefficientsDisplay._compute_data_for_display(
@@ -81,15 +81,20 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report_type="estimator",
         )
 
-    @available_if(_check_has_feature_importances())
-    def impurity_decrease(self):
-        """Retrieve the mean decrease impurity (MDI) of a tree-based model.
+    @available_if(_check_estimator_has_feature_importances())
+    def impurity_decrease(self) -> ImpurityDecreaseDisplay:
+        """Retrieve the Mean Decrease in Impurity (MDI) of a tree-based model.
 
         This method is available for estimators that expose a `feature_importances_`
         attribute. See for example
         :attr:`sklearn.ensemble.GradientBoostingClassifier.inspections_`.
         In particular, note that the MDI is computed at fit time, i.e. using the
         training data.
+
+        Returns
+        -------
+        :class:`ImpurityDecreaseDisplay`
+            The feature importance display containing the mean decrease in impurity.
 
         Examples
         --------
@@ -101,40 +106,21 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> forest = RandomForestClassifier(n_estimators=5, random_state=0)
         >>> report = EstimatorReport(forest, **split_data)
-        >>> report.inspection.impurity_decrease()
-                   Mean decrease impurity
-        Feature #0                0.06...
-        Feature #1                0.19...
-        Feature #2                0.01...
-        Feature #3                0.69...
-        Feature #4                0.02...
+        >>> display = report.inspection.impurity_decrease()
+        >>> display.frame()
+              feature  importances
+        0  Feature #0     0.06...
+        1  Feature #1     0.19...
+        2  Feature #2     0.01...
+        3  Feature #3     0.69...
+        4  Feature #4     0.02...
         """
-        parent_estimator = self._parent.estimator_
-        estimator = (
-            parent_estimator.steps[-1][1]
-            if isinstance(parent_estimator, Pipeline)
-            else parent_estimator
+        return ImpurityDecreaseDisplay._compute_data_for_display(
+            estimators=[self._parent.estimator_],
+            names=[self._parent.estimator_name_],
+            splits=[np.nan],
+            report_type="estimator",
         )
-
-        data = estimator.feature_importances_
-
-        if isinstance(parent_estimator, Pipeline):
-            feature_names = parent_estimator[:-1].get_feature_names_out()
-        else:
-            if hasattr(parent_estimator, "feature_names_in_"):
-                feature_names = parent_estimator.feature_names_in_
-            else:
-                feature_names = [
-                    f"Feature #{i}" for i in range(parent_estimator.n_features_in_)
-                ]
-
-        df = pd.DataFrame(
-            data=data,
-            index=feature_names,
-            columns=["Mean decrease impurity"],
-        )
-
-        return df
 
     def permutation_importance(
         self,

@@ -1,6 +1,4 @@
 from datetime import datetime, timezone
-from itertools import repeat
-from json import dumps, loads
 from urllib.parse import urljoin
 
 from httpx import HTTPError, Response, TimeoutException

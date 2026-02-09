@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import seaborn as sns
-from matplotlib.lines import Line2D
 from numpy.typing import NDArray
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
@@ -67,17 +66,14 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
     Attributes
     ----------
-    ax_ : matplotlib axes or array of axes
-        The axes on which the ROC curve is plotted.
+    facet_ : seaborn FacetGrid
+        FacetGrid containing the ROC curve.
 
     figure_ : matplotlib figure
         The figure on which the ROC curve is plotted.
 
-    lines_ : list of matplotlib lines
-        The lines of the ROC curve.
-
-    chance_level_ : matplotlib line or list of lines or None
-        The chance level line.
+    ax_ : matplotlib axes or array of axes
+        The axes on which the ROC curve is plotted.
 
     Examples
     --------
@@ -126,8 +122,6 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
-
-        self.chance_level_: Line2D | list[Line2D] | None
 
     @DisplayMixin.style_plot
     def plot(
@@ -224,7 +218,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             # warning. See: https://github.com/mwaskom/seaborn/issues/3891
             plot_data["split"] = plot_data["split"].astype(str)
 
-        facet_grid = sns.relplot(
+        self.facet_ = sns.relplot(
             data=plot_data,
             kind="line",
             estimator=None,
@@ -233,8 +227,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             **_validate_style_kwargs(relplot_kwargs, self._default_relplot_kwargs),
         )
 
-        self.figure_, self.ax_ = facet_grid.figure, facet_grid.axes.flatten()
-        self.lines_ = [line for ax in self.ax_ for line in ax.get_lines()]
+        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.flatten()
 
         # Create space under the plot to fit the manually created legends.
         n_legend_rows = plot_data[hue].nunique() if hue else 1
@@ -248,9 +241,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         # Build a legend for each subplot.
         for idx, ax in enumerate(self.ax_):
             if plot_chance_level:
-                self.lines_.append(
-                    ax.plot((0, 1), (0, 1), **self._default_chance_level_kwargs)[0]
-                )
+                ax.plot((0, 1), (0, 1), **self._default_chance_level_kwargs)
             col_value = (
                 relplot_kwargs["col_order"][idx]
                 if relplot_kwargs["col_order"]

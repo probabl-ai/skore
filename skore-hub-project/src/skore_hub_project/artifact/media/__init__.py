@@ -1,11 +1,11 @@
 """Class definitions of the payloads used to send a media to ``hub``."""
 
 from .data import TableReportTest, TableReportTrain
-from .feature_importance import (
+from .inspection import (
     Coefficients,
-    MeanDecreaseImpurity,
-    PermutationTest,
-    PermutationTrain,
+    ImpurityDecrease,
+    PermutationImportanceTest,
+    PermutationImportanceTrain,
 )
 from .model import EstimatorHtmlRepr
 from .performance import (
@@ -20,9 +20,9 @@ from .performance import (
 __all__ = [
     "Coefficients",
     "EstimatorHtmlRepr",
-    "MeanDecreaseImpurity",
-    "PermutationTest",
-    "PermutationTrain",
+    "ImpurityDecrease",
+    "PermutationImportanceTest",
+    "PermutationImportanceTrain",
     "PrecisionRecallTest",
     "PrecisionRecallTrain",
     "PredictionErrorTest",

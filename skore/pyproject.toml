@@ -35,7 +35,7 @@ dependencies = [
   "numpy",
   "pandas",
   "plotly",
-  "rich",
+  "rich>=14.1",
   "scikit-learn",
   "skore[local]",
   "skrub",

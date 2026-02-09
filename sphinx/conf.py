@@ -39,8 +39,16 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
     "sphinx_autosummary_accessors",
+    "generate_accessor_tables",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
+
+# Configuration for generate_accessor_tables extension
+accessor_summary_classes = [
+    "skore.EstimatorReport",
+    "skore.CrossValidationReport",
+    "skore.ComparisonReport",
+]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.

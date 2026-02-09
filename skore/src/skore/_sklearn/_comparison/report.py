@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from collections import Counter
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import joblib
 import numpy as np
@@ -16,7 +16,7 @@ from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import _DEFAULT, PositiveLabel
 from skore._utils._cache import Cache
-from skore._utils._progress_bar import progress_decorator
+from skore._utils._progress_bar import track
 
 if TYPE_CHECKING:
     from skore._sklearn._comparison.inspection_accessor import (
@@ -114,10 +114,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     @staticmethod
     def _validate_reports(
-        reports: list[EstimatorReport]
-        | dict[str, EstimatorReport]
-        | list[CrossValidationReport]
-        | dict[str, CrossValidationReport],
+        reports: (
+            list[EstimatorReport]
+            | dict[str, EstimatorReport]
+            | list[CrossValidationReport]
+            | dict[str, CrossValidationReport]
+        ),
     ) -> tuple[
         dict[str, EstimatorReport] | dict[str, CrossValidationReport],
         ReportType,
@@ -224,10 +226,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        reports: list[EstimatorReport]
-        | dict[str, EstimatorReport]
-        | list[CrossValidationReport]
-        | dict[str, CrossValidationReport],
+        reports: (
+            list[EstimatorReport]
+            | dict[str, EstimatorReport]
+            | list[CrossValidationReport]
+            | dict[str, CrossValidationReport]
+        ),
         *,
         n_jobs: int | None = None,
     ) -> None:
@@ -245,8 +249,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self.reports_, self._reports_type, self._pos_label = (
             ComparisonReport._validate_reports(reports)
         )
-
-        self._progress_info: dict[str, Any] | None = None
 
         self.n_jobs = n_jobs
         self._rng = np.random.default_rng(time.time_ns())
@@ -282,7 +284,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         self._cache = Cache()
 
-    @progress_decorator(description="Estimator predictions")
     def cache_predictions(
         self,
         response_methods: Literal[
@@ -322,20 +323,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
-        assert self._progress_info is not None, (
-            "The rich Progress class was not initialized."
-        )
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
-
-        total_estimators = len(self.reports_)
-        progress.update(main_task, total=total_estimators)
-
-        for report in self.reports_.values():
-            # Share the parent's progress bar with child report
-            report._progress_info = {"current_progress": progress}
+        for report in track(
+            self.reports_.values(),
+            description="Estimator predictions",
+            total=len(self.reports_),
+        ):
             report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
-            progress.update(main_task, advance=1, refresh=True)
 
     def get_predictions(
         self,

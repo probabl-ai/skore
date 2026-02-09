@@ -63,22 +63,14 @@ class PredictionErrorDisplay(DisplayMixin):
 
     Attributes
     ----------
-    line_ : matplotlib Artist
-        Optimal line representing `y_true == y_pred`. Therefore, it is a
-        diagonal line for `kind="predictions"` and a horizontal line for
-        `kind="residuals"`.
-
-    errors_lines_ : matplotlib Artist or None
-        Residual lines. If `with_errors=False`, then it is set to `None`.
-
-    scatter_ : list of matplotlib Artist
-        Scatter data points.
-
-    ax_ : matplotlib Axes
-        Axes with the different matplotlib axis.
+    facet_ : seaborn FacetGrid
+        FacetGrid containing the prediction error.
 
     figure_ : matplotlib Figure
-        Figure containing the scatter and lines.
+        The figure on which the prediction error is plotted.
+
+    ax_ : matplotlib Axes
+        The axes on which the prediction error is plotted.
 
     Examples
     --------
@@ -229,15 +221,14 @@ class PredictionErrorDisplay(DisplayMixin):
             relplot_kwargs["style_order"] = ["train", "test"]
             relplot_kwargs["hue_order"] = ["train", "test"]
 
-        facet_grid = sns.relplot(
+        self.facet_ = sns.relplot(
             data=self.frame(),
             x="y_pred",
             y=y_plot,
             kind="scatter",
             **_validate_style_kwargs(relplot_kwargs, {}),
         )
-        self.figure_, self.ax_ = facet_grid.figure, facet_grid.axes.flatten()
-        self.lines_ = []
+        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.flatten()
 
         title = "Prediction Error"
         if "comparison" not in self.report_type:
@@ -252,12 +243,10 @@ class PredictionErrorDisplay(DisplayMixin):
         self.figure_.suptitle(title)
 
         for ax in self.ax_:
-            self.lines_.append(
-                ax.plot(
-                    x_range_perfect_pred,
-                    y_line,
-                    **self._default_perfect_model_kwargs,
-                )[0]
+            ax.plot(
+                x_range_perfect_pred,
+                y_line,
+                **self._default_perfect_model_kwargs,
             )
             ax.set(
                 xlabel=xlabel,
@@ -282,13 +271,13 @@ class PredictionErrorDisplay(DisplayMixin):
         # and create a new legend manually.
         handles = []
         labels = []
-        if facet_grid._legend is not None:
-            handles = list(facet_grid._legend.legend_handles)
-            labels = [t.get_text() for t in facet_grid._legend.get_texts()]
-            facet_grid._legend.remove()
+        if self.facet_._legend is not None:
+            handles = list(self.facet_._legend.legend_handles)
+            labels = [t.get_text() for t in self.facet_._legend.get_texts()]
+            self.facet_._legend.remove()
             if hue == "split":
                 labels = [f"Split #{label}" for label in labels]
-        handles.append(self.lines_[0])
+        handles.append(ax.lines[0])
         labels.append("Perfect predictions")
 
         self.figure_.legend(
