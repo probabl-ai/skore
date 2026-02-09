@@ -205,16 +205,6 @@ class PermutationImportanceDisplay(DisplayMixin):
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
         frame = self.frame(metric=metric, aggregate=None)
 
-        err_msg = (
-            "You try to plot the permutation importance of metrics averaged over {} "
-            "and other without averaging. This setting is not supported. Please filter "
-            "a group of consistent metrics using the `metric` parameter."
-        )
-        if "label" in frame.columns and frame["label"].isna().any():
-            raise ValueError(err_msg.format("labels"))
-        elif "output" in frame.columns and frame["output"].isna().any():
-            raise ValueError(err_msg.format("outputs"))
-
         self._plot_single_estimator(
             subplot_by=subplot_by,
             frame=frame,
@@ -290,11 +280,9 @@ class PermutationImportanceDisplay(DisplayMixin):
                         subplot_cols[1],
                         (next(iter(remaining)) if remaining else None),
                     )
-                case 3:
-                    row, col, hue = subplot_cols[0], subplot_cols[1], subplot_cols[2]
                 case _:
                     raise ValueError(
-                        "Expected 1 to 3 columns for subplot_by, got "
+                        "Expected 1 to 2 columns for subplot_by, got "
                         f"{len(subplot_cols)}. You can use the following values: "
                         f"{', '.join(columns_to_groupby)}"
                     )

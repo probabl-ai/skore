@@ -128,7 +128,6 @@ def test_single_output_regression(
     )
 
 
-@pytest.mark.parametrize("data_source", ["train", "test"])
 def test_subplot_by_split(
     pyplot,
     cross_validation_report_binary_classification,
@@ -156,7 +155,67 @@ def test_subplot_by_split(
     )
 
 
-@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_subplot_by_label_aggregates_split_in_remaining(
+    pyplot,
+    cross_validation_report_multiclass_classification,
+    data_source,
+):
+    """Check that when subplot_by='label' and split is in remaining (not used for
+    subplotting), we aggregate over splits and title includes 'averaged over splits'."""
+    report = cross_validation_report_multiclass_classification
+    metric = make_scorer(precision_score, average=None)
+    n_classes = len(report.estimator_reports_[0].estimator_.classes_)
+
+    display = report.inspection.permutation_importance(
+        n_repeats=2, data_source=data_source, metric=metric, seed=0
+    )
+    display.plot(metric="precision score", subplot_by="label")
+
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_.flatten()) == n_classes
+    for ax in display.ax_.flatten():
+        assert isinstance(ax, mpl.axes.Axes)
+        assert ax.get_xlabel() == "Decrease in precision score"
+    estimator_name = display.importances["estimator"].unique()[0]
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance averaged over splits \nof {estimator_name} "
+        f"on {data_source} set"
+    )
+
+
+def test_subplot_by_tuple_label_split(
+    pyplot,
+    cross_validation_report_multiclass_classification,
+    data_source,
+):
+    """Check subplot_by=('label', 'split') creates a 2D grid: row=label, col=split."""
+    report = cross_validation_report_multiclass_classification
+    metric = make_scorer(precision_score, average=None)
+    n_classes = len(report.estimator_reports_[0].estimator_.classes_)
+    splitter = len(report.estimator_reports_)
+
+    display = report.inspection.permutation_importance(
+        n_repeats=2, data_source=data_source, metric=metric, seed=0
+    )
+    display.plot(metric="precision score", subplot_by=("label", "split"))
+
+    assert isinstance(display.ax_, np.ndarray)
+    assert display.ax_.shape == (n_classes, splitter)
+    for row_idx in range(n_classes):
+        for col_idx in range(splitter):
+            ax = display.ax_[row_idx, col_idx]
+            assert isinstance(ax, mpl.axes.Axes)
+            assert ax.get_xlabel() == "Decrease in precision score"
+            assert f"label = {row_idx}" in ax.get_title()
+            assert f"split = {col_idx}" in ax.get_title()
+    estimator_name = display.importances["estimator"].unique()[0]
+    assert (
+        display.figure_.get_suptitle()
+        == f"Permutation importance  \nof {estimator_name} on {data_source} set"
+    )
+
+
 def test_subplot_by_auto_single_metric_multiclass(
     pyplot,
     cross_validation_report_multiclass_classification,
@@ -185,7 +244,6 @@ def test_subplot_by_auto_single_metric_multiclass(
     )
 
 
-@pytest.mark.parametrize("data_source", ["train", "test"])
 def test_subplot_by_None_averaged_over_splits(
     pyplot,
     cross_validation_report_binary_classification,
@@ -210,7 +268,6 @@ def test_subplot_by_None_averaged_over_splits(
     )
 
 
-@pytest.mark.parametrize("data_source", ["train", "test"])
 def test_frame_metric_parameter(
     pyplot,
     linear_regression_data,

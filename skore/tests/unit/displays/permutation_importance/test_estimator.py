@@ -1122,7 +1122,6 @@ def test_plot_mixed_averaged_and_non_averaged_metrics_classification_raises_erro
     assert hasattr(display, "ax_")
 
 
-@pytest.mark.parametrize("data_source", ["train", "test"])
 def test_plot_mixed_averaged_and_non_averaged_metrics_regression_raises_error(
     pyplot,
     linear_regression_multioutput_with_train_test,
