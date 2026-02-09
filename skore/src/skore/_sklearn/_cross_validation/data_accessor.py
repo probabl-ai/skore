@@ -16,6 +16,8 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     It provides methods to create plots and to visualise the dataset.
     """
 
+    _verbose_name: str = "data"
+
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
@@ -129,15 +131,6 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
-
-    def _format_method_name(self, name: str) -> str:
-        return f"{name}(...)".ljust(29)
-
-    def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available data methods[/bold cyan]"
-
-    def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.data[/bold cyan]"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
