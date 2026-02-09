@@ -155,8 +155,6 @@ class PermutationImportanceDisplay(DisplayMixin):
     def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
         """Get the available columns from which to group by."""
         columns_to_groupby = list[str]()
-        if "metric" in frame.columns and frame["metric"].nunique() > 1:
-            columns_to_groupby.append("metric")
         if "label" in frame.columns and frame["label"].nunique() > 1:
             columns_to_groupby.append("label")
         if "output" in frame.columns and frame["output"].nunique() > 1:
@@ -169,13 +167,16 @@ class PermutationImportanceDisplay(DisplayMixin):
     def plot(
         self,
         *,
+        metric: str,
         subplot_by: str | tuple[str, ...] | None = "auto",
-        metric: str | list[str] | None = None,
     ) -> None:
         """Plot the permutation importance.
 
         Parameters
         ----------
+        metric : str
+            Metric to plot.
+
         subplot_by : str, tuple of str or None, default="auto"
             Column(s) to use for subplotting. The possible values are:
 
@@ -192,17 +193,14 @@ class PermutationImportanceDisplay(DisplayMixin):
             - if `None`, all information is plotted on a single plot. An error is raised
               if there is too much information to plot on a single plot.
 
-        metric : str or list of str, default=None
-            Filter the importances by metric. If `None`, all importances associated with
-            each metric are plotted.
         """
         return self._plot(subplot_by=subplot_by, metric=metric)
 
     def _plot_matplotlib(
         self,
         *,
+        metric: str,
         subplot_by: str | tuple[str, ...] | None = "auto",
-        metric: str | list[str] | None = None,
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
@@ -238,7 +236,6 @@ class PermutationImportanceDisplay(DisplayMixin):
     ) -> None:
         """Plot the permutation importance for an `EstimatorReport`."""
         if subplot_by == "auto":
-            is_multi_metric = frame["metric"].nunique() > 1
             is_multi_target = any(name in frame.columns for name in ["label", "output"])
             is_cross_validation = self.report_type == "cross-validation"
 
@@ -247,8 +244,6 @@ class PermutationImportanceDisplay(DisplayMixin):
             dimensions = []
             if is_multi_target:
                 dimensions.append(target_col)
-            if is_multi_metric:
-                dimensions.append("metric")
             if is_cross_validation:
                 dimensions.append("split")
 
@@ -262,7 +257,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                 case _:
                     hue, col, row = dimensions[0], dimensions[1], dimensions[2]
         elif subplot_by is None:
-            # Possible accepted values: {"metric"}, {"label"}, {"output"}, {"split"}
+            # Possible accepted values: {"label"}, {"output"}, {"split"}
             columns_to_groupby = self._get_columns_to_groupby(frame=frame)
             n_columns_to_groupby = len(columns_to_groupby)
             if n_columns_to_groupby > 1:
@@ -277,9 +272,8 @@ class PermutationImportanceDisplay(DisplayMixin):
             else:
                 hue, col, row = None, None, None
         else:
-            # Possible accepted values: {"metric"}, {"label"}, {"output"}, {"split"},
-            # {"metric", "label"}, {"metric", "output"}, {"metric", "split"},
-            # {"metric", "label", "split"}, {"metric", "output", "split"}
+            # Possible accepted values: {"label"}, {"output"}, {"split"},
+            # {"label", "split"}, {"output", "split"}, {"label", "output", "split"}
             columns_to_groupby = self._get_columns_to_groupby(frame=frame)
             subplot_cols = (subplot_by,) if isinstance(subplot_by, str) else subplot_by
             invalid = [c for c in subplot_cols if c not in columns_to_groupby]
@@ -340,25 +334,15 @@ class PermutationImportanceDisplay(DisplayMixin):
         )
         add_background_features = hue is not None
 
-        metrics = frame["metric"].unique()
+        metric_name = frame["metric"].unique()[0]
         self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
-        for row_index, row_axes in enumerate(self.facet_.axes):
-            for col_index, ax in enumerate(row_axes):
-                if len(metrics) > 1:
-                    if row == "metric":
-                        xlabel = f"Decrease in {metrics[row_index]}"
-                    elif col == "metric":
-                        xlabel = f"Decrease in {metrics[col_index]}"
-                    else:
-                        xlabel = "Decrease in metric"
-                else:
-                    xlabel = f"Decrease in {metrics[0]}"
-
+        for row_axes in self.facet_.axes:
+            for ax in row_axes:
                 _decorate_matplotlib_axis(
                     ax=ax,
                     add_background_features=add_background_features,
                     n_features=frame["feature"].nunique(),
-                    xlabel=xlabel,
+                    xlabel=f"Decrease in {metric_name}",
                     ylabel="",
                 )
         if len(self.ax_.flatten()) == 1:

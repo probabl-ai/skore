@@ -49,6 +49,7 @@ def test_binary_classification_averaged_metrics(
         "label",
         "output",
         "repetition",
+        "split",
         "value",
     ]
     df = display.importances
@@ -64,7 +65,7 @@ def test_binary_classification_averaged_metrics(
     expected_columns = ["data_source", "metric", "feature", "value_mean", "value_std"]
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
 
-    display.plot()
+    display.plot(metric="accuracy")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
@@ -116,6 +117,7 @@ def test_binary_classification_per_label_metrics(
         "label",
         "output",
         "repetition",
+        "split",
         "value",
     ]
     df = display.importances
@@ -140,16 +142,22 @@ def test_binary_classification_per_label_metrics(
     ]
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
 
-    display.plot()
+    display.plot(metric="precision")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, np.ndarray)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
-        assert ax.get_ylabel() == ""
-        assert ax.get_title() == f"metric = {metric_name}"
+    ax = (
+        display.ax_.flatten()[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+    )
+    assert isinstance(ax, mpl.axes.Axes)
+    assert ax.get_xlabel() == "Decrease in precision"
+    assert ax.get_ylabel() == ""
+    legend_labels = [text.get_text() for text in display.facet_.legend.get_texts()]
+    assert legend_labels == [str(label) for label in report.estimator_.classes_]
+    display.plot(metric="recall")
+    ax = (
+        display.ax_.flatten()[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+    )
+    assert ax.get_xlabel() == "Decrease in recall"
     estimator_name = display.importances["estimator"].unique()[0]
     assert (
         display.figure_.get_suptitle()
@@ -189,6 +197,7 @@ def test_single_output_regression(
         "label",
         "output",
         "repetition",
+        "split",
         "value",
     ]
     df = display.importances
@@ -204,7 +213,7 @@ def test_single_output_regression(
     expected_columns = ["data_source", "metric", "feature", "value_mean", "value_std"]
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
 
-    display.plot()
+    display.plot(metric="r2")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
@@ -238,7 +247,7 @@ def test_callable_metric(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=custom_r2_score
     )
-    display.plot()
+    display.plot(metric="custom r2 score")
     assert display.ax_.get_xlabel() == "Decrease in custom r2 score"
 
 
@@ -280,6 +289,7 @@ def test_multi_output_regression(
         "label",
         "output",
         "repetition",
+        "split",
         "value",
     ]
     df = display.importances
@@ -304,16 +314,21 @@ def test_multi_output_regression(
     ]
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
 
-    display.plot()
+    display.plot(metric="r2")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, np.ndarray)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
-        assert ax.get_ylabel() == ""
-        assert ax.get_title() == f"metric = {metric_name}"
+    ax = (
+        display.ax_.flatten()[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+    )
+    assert isinstance(ax, mpl.axes.Axes)
+    assert ax.get_xlabel() == "Decrease in r2"
+    legend_labels = [text.get_text() for text in display.facet_.legend.get_texts()]
+    assert legend_labels == [str(output) for output in range(y_train.shape[1])]
+    display.plot(metric="mse")
+    ax = (
+        display.ax_.flatten()[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+    )
+    assert ax.get_xlabel() == "Decrease in mse"
     estimator_name = display.importances["estimator"].unique()[0]
     assert (
         display.figure_.get_suptitle()
@@ -344,7 +359,7 @@ def test_subplot_by_None_single_metric_single_value(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source
     )
-    display.plot(subplot_by=None)
+    display.plot(metric="accuracy", subplot_by=None)
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert len(display.facet_.legend.get_texts()) == 0
     assert display.ax_.get_xlabel() == "Decrease in accuracy"
@@ -378,7 +393,7 @@ def test_subplot_by_None_single_metric_multiple_labels(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by=None)
+    display.plot(metric="precision score", subplot_by=None)
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.facet_.legend
     assert legend is not None
@@ -393,8 +408,8 @@ def test_subplot_by_None_multiple_metrics_single_value(
     logistic_binary_classification_with_train_test,
     data_source,
 ):
-    """Check the behaviour of `subplot_by=None` with multiple metrics returning
-    single values grouped by metric."""
+    """Check the behaviour of `subplot_by=None` with multiple metrics - plotting
+    one metric at a time shows a single plot per metric."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -411,13 +426,11 @@ def test_subplot_by_None_multiple_metrics_single_value(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by=None)
+    display.plot(metric="precision", subplot_by=None)
     assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.facet_.legend
-    assert legend is not None
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == metric
-    assert display.ax_.get_xlabel() == "Decrease in metric"
+    assert display.ax_.get_xlabel() == "Decrease in precision"
+    display.plot(metric="recall", subplot_by=None)
+    assert display.ax_.get_xlabel() == "Decrease in recall"
     assert (
         display.figure_.get_suptitle()
         == f"Permutation importance of {report.estimator_name_} on {data_source} set"
@@ -448,7 +461,7 @@ def test_subplot_by_None_single_metric_multiple_outputs(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by=None)
+    display.plot(metric="r2 score", subplot_by=None)
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.facet_.legend
     assert legend is not None
@@ -462,13 +475,13 @@ def test_subplot_by_None_single_metric_multiple_outputs(
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_None_multiple_metrics_multiple_outputs_raises_error(
+def test_subplot_by_None_multiple_metrics_multiple_outputs(
     pyplot,
     linear_regression_multioutput_with_train_test,
     data_source,
 ):
-    """Check that `subplot_by=None` raises an error when there are multiple metrics
-    with multiple outputs."""
+    """Check that with multiple metrics in report, plotting a single metric with
+    multiple outputs uses hue=output and subplot_by=None works."""
     estimator, X_train, X_test, y_train, y_test = (
         linear_regression_multioutput_with_train_test
     )
@@ -488,9 +501,11 @@ def test_subplot_by_None_multiple_metrics_multiple_outputs_raises_error(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    err_msg = "Cannot plot all the available information available on a single plot."
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(subplot_by=None)
+    display.plot(metric="r2", subplot_by=None)
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    legend_labels = [text.get_text() for text in display.facet_.legend.get_texts()]
+    assert legend_labels == [str(output) for output in range(y_train.shape[1])]
+    assert display.ax_.get_xlabel() == "Decrease in r2"
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -515,7 +530,7 @@ def test_subplot_by_auto_single_metric_single_target_classification(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source
     )
-    display.plot(subplot_by="auto")
+    display.plot(metric="accuracy", subplot_by="auto")
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert len(display.facet_.legend.get_texts()) == 0
     assert display.ax_.get_xlabel() == "Decrease in accuracy"
@@ -545,7 +560,7 @@ def test_subplot_by_auto_single_metric_single_target_regression(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source
     )
-    display.plot(subplot_by="auto")
+    display.plot(metric="r2", subplot_by="auto")
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert len(display.facet_.legend.get_texts()) == 0
     assert display.ax_.get_xlabel() == "Decrease in r2"
@@ -581,14 +596,12 @@ def test_subplot_by_auto_multiple_metrics_single_target_classification(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
-    assert len(display.facet_.legend.get_texts()) == 0
+    display.plot(metric="precision", subplot_by="auto")
+    ax = (
+        display.ax_.flatten()[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+    )
+    assert isinstance(ax, mpl.axes.Axes)
+    assert ax.get_xlabel() == "Decrease in precision"
     assert (
         display.figure_.get_suptitle()
         == f"Permutation importance of {report.estimator_name_} on {data_source} set"
@@ -619,14 +632,12 @@ def test_subplot_by_auto_multiple_metrics_single_target_regression(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
-    assert len(display.facet_.legend.get_texts()) == 0
+    display.plot(metric="r2", subplot_by="auto")
+    ax = (
+        display.ax_.flatten()[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+    )
+    assert isinstance(ax, mpl.axes.Axes)
+    assert ax.get_xlabel() == "Decrease in r2"
     assert (
         display.figure_.get_suptitle()
         == f"Permutation importance of {report.estimator_name_} on {data_source} set"
@@ -656,7 +667,7 @@ def test_subplot_by_auto_single_metric_multiple_labels(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by="auto")
+    display.plot(metric="precision score", subplot_by="auto")
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.facet_.legend
     legend_labels = [text.get_text() for text in legend.get_texts()]
@@ -691,7 +702,7 @@ def test_subplot_by_auto_single_metric_multiple_outputs(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by="auto")
+    display.plot(metric="r2 score", subplot_by="auto")
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.facet_.legend
     legend_labels = [text.get_text() for text in legend.get_texts()]
@@ -709,8 +720,8 @@ def test_subplot_by_auto_multiple_metrics_multiple_labels(
     logistic_multiclass_classification_with_train_test,
     data_source,
 ):
-    """Check the behaviour of `subplot_by="auto"` with multiple metrics and
-    multiple labels (hue=label, col=metric, no row)."""
+    """Check the behaviour of `subplot_by="auto"` with single metric and
+    multiple labels (hue=label, no col, no row)."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_multiclass_classification_with_train_test
     )
@@ -729,16 +740,14 @@ def test_subplot_by_auto_multiple_metrics_multiple_labels(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
+    display.plot(metric="precision", subplot_by="auto")
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    assert display.ax_.get_xlabel() == "Decrease in precision"
     legend = display.facet_.legend
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(label) for label in report.estimator_.classes_]
+    display.plot(metric="recall", subplot_by="auto")
+    assert display.ax_.get_xlabel() == "Decrease in recall"
     assert (
         display.figure_.get_suptitle()
         == f"Permutation importance of {report.estimator_name_} on {data_source} set"
@@ -751,8 +760,8 @@ def test_subplot_by_auto_multiple_metrics_multiple_outputs(
     linear_regression_multioutput_with_train_test,
     data_source,
 ):
-    """Check the behaviour of `subplot_by="auto"` with multiple metrics and
-    multiple outputs (hue=output, col=metric, no row)."""
+    """Check the behaviour of `subplot_by="auto"` with single metric and
+    multiple outputs (hue=output, no col, no row)."""
     estimator, X_train, X_test, y_train, y_test = (
         linear_regression_multioutput_with_train_test
     )
@@ -771,16 +780,14 @@ def test_subplot_by_auto_multiple_metrics_multiple_outputs(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
+    display.plot(metric="r2", subplot_by="auto")
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    assert display.ax_.get_xlabel() == "Decrease in r2"
     legend = display.facet_.legend
     legend_labels = [text.get_text() for text in legend.get_texts()]
     assert legend_labels == [str(output) for output in range(y_train.shape[1])]
+    display.plot(metric="mse", subplot_by="auto")
+    assert display.ax_.get_xlabel() == "Decrease in mse"
     assert (
         display.figure_.get_suptitle()
         == f"Permutation importance of {report.estimator_name_} on {data_source} set"
@@ -807,11 +814,11 @@ def test_subplot_by_invalid_column_raises_error(
     )
     display = report.inspection.permutation_importance(n_repeats=2, metric=metric)
     err_msg = (
-        "The column label is not available. You can use the following values to "
-        "create subplots: metric"
+        "The column\\(s\\) \\['label'\\] are not available\\. You can use the "
+        "following values to create subplots:"
     )
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(subplot_by="label")
+        display.plot(metric="r2", subplot_by="label")
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -820,8 +827,8 @@ def test_subplot_by_string_multiple_metrics_multiclass_with_remaining_column(
     logistic_multiclass_classification_with_train_test,
     data_source,
 ):
-    """Check that when subplot_by is a string and there's a remaining column,
-    it becomes the hue (multiple metrics + multiclass case)."""
+    """Check that when subplot_by is a string with label and metric is specified,
+    it shows one metric with hue=label (multiclass case)."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_multiclass_classification_with_train_test
     )
@@ -840,16 +847,13 @@ def test_subplot_by_string_multiple_metrics_multiclass_with_remaining_column(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by="metric")
+    display.plot(metric="precision", subplot_by="label")
     assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
+    assert len(display.ax_.flatten()) == len(report.estimator_.classes_)
+    for ax in display.ax_.flatten():
         assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
     legend = display.facet_.legend
     assert legend is not None
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(label) for label in report.estimator_.classes_]
     assert (
         display.figure_.get_suptitle()
         == f"Permutation importance of {report.estimator_name_} on {data_source} set"
@@ -862,8 +866,8 @@ def test_subplot_by_string_multiple_metrics_binary_class_no_remaining_column(
     logistic_binary_classification_with_train_test,
     data_source,
 ):
-    """Check that when subplot_by is a string and there's no remaining column,
-    hue is None (multiple metrics + binary class case)."""
+    """Check that when subplot_by is a string with no remaining column,
+    hue is None (single metric + binary class case)."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -882,13 +886,9 @@ def test_subplot_by_string_multiple_metrics_binary_class_no_remaining_column(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by="metric")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
+    display.plot(metric="precision")
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    assert display.ax_.get_xlabel() == "Decrease in precision"
     assert len(display.facet_.legend.get_texts()) == 0
     assert (
         display.figure_.get_suptitle()
@@ -917,29 +917,20 @@ def test_subplot_by_invalid_tuple_columns_raises_error(
     )
     display = report.inspection.permutation_importance(n_repeats=2, metric=metric)
     err_msg = (
-        r"The columns \('metric', 'label'\) are not available\. You can use the "
-        r"following values to create subplots: metric"
+        r"The column\(s\) \['metric', 'label'\] are not available\. You can use the "
+        r"following values to create subplots:"
     )
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(subplot_by=("metric", "label"))
+        display.plot(metric="r2", subplot_by=("metric", "label"))
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
-@pytest.mark.parametrize(
-    "subplot_by",
-    [
-        ("metric", "label"),
-        ("label", "metric"),
-    ],
-)
-def test_subplot_by_tuple_order_determines_row_and_col(
+def test_subplot_by_string_label_creates_column_subplots(
     pyplot,
     logistic_multiclass_classification_with_train_test,
     data_source,
-    subplot_by,
 ):
-    """Check that the order of the tuple in `subplot_by` determines which column
-    goes to row and which goes to col, verified by checking subplot titles."""
+    """Check that subplot_by with label creates a column of subplots."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_multiclass_classification_with_train_test
     )
@@ -948,42 +939,18 @@ def test_subplot_by_tuple_order_determines_row_and_col(
     X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
 
     estimator = clone(estimator)
-    metric = {
-        "precision": make_scorer(precision_score, average=None),
-        "recall": make_scorer(recall_score, average=None),
-    }
+    metric = make_scorer(precision_score, average=None)
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-    display.plot(subplot_by=subplot_by)
+    display.plot(metric="precision score", subplot_by="label")
     assert isinstance(display.ax_, np.ndarray)
-
-    # Get row and column names from tuple
-    row_col_name = subplot_by[0]  # First element goes to row
-    col_col_name = subplot_by[1]  # Second element goes to col
-
-    if row_col_name == "metric":
-        row_values = list(metric.keys())
-    else:  # row_col_name == "label"
-        row_values = [str(label) for label in report.estimator_.classes_]
-
-    if col_col_name == "metric":
-        col_values = list(metric.keys())
-    else:  # col_col_name == "label"
-        col_values = [str(label) for label in report.estimator_.classes_]
-
-    for row_idx, row_value in enumerate(row_values):
-        for col_idx, col_value in enumerate(col_values):
-            ax = display.ax_[row_idx, col_idx]
-            assert isinstance(ax, mpl.axes.Axes)
-            expected_title = (
-                f"{row_col_name} = {row_value} | {col_col_name} = {col_value}"
-            )
-            assert ax.get_title() == expected_title
-
+    assert len(display.ax_.flatten()) == len(report.estimator_.classes_)
+    for ax in display.ax_.flatten():
+        assert isinstance(ax, mpl.axes.Axes)
     assert (
         display.figure_.get_suptitle()
         == f"Permutation importance of {report.estimator_name_} on {data_source} set"
@@ -1152,14 +1119,6 @@ def test_plot_mixed_averaged_and_non_averaged_metrics_classification_raises_erro
         n_repeats=2, data_source=data_source, metric=metric
     )
 
-    err_msg = (
-        "You try to plot the permutation importance of metrics averaged over labels "
-        "and other without averaging. This setting is not supported. Please filter "
-        "a group of consistent metrics using the `metric` parameter."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot()
-
     display.plot(metric="accuracy")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
@@ -1197,14 +1156,6 @@ def test_plot_mixed_averaged_and_non_averaged_metrics_regression_raises_error(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source=data_source, metric=metric
     )
-
-    err_msg = (
-        "You try to plot the permutation importance of metrics averaged over outputs "
-        "and other without averaging. This setting is not supported. Please filter "
-        "a group of consistent metrics using the `metric` parameter."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot()
 
     display.plot(metric="r2")
     assert hasattr(display, "figure_")
