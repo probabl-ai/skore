@@ -75,7 +75,7 @@ def test_binary_classification_averaged_metrics(
     estimator_name = display.importances["estimator"].unique()[0]
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {estimator_name} on {data_source} set"
+        == f"Permutation importance  \nof {estimator_name} on {data_source} set"
     )
 
 
@@ -145,23 +145,21 @@ def test_binary_classification_per_label_metrics(
     display.plot(metric="precision")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
-    ax = (
-        display.ax_.flatten()[0] if isinstance(display.ax_, np.ndarray) else display.ax_
-    )
-    assert isinstance(ax, mpl.axes.Axes)
-    assert ax.get_xlabel() == "Decrease in precision"
-    assert ax.get_ylabel() == ""
-    legend_labels = [text.get_text() for text in display.facet_.legend.get_texts()]
-    assert legend_labels == [str(label) for label in report.estimator_.classes_]
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_.flatten()) == len(report.estimator_.classes_)
+    for ax, label in zip(
+        display.ax_.flatten(), report.estimator_.classes_, strict=True
+    ):
+        assert isinstance(ax, mpl.axes.Axes)
+        assert ax.get_xlabel() == "Decrease in precision"
+        assert f"label = {label}" in ax.get_title()
     display.plot(metric="recall")
-    ax = (
-        display.ax_.flatten()[0] if isinstance(display.ax_, np.ndarray) else display.ax_
-    )
-    assert ax.get_xlabel() == "Decrease in recall"
+    assert len(display.ax_.flatten()) == len(report.estimator_.classes_)
+    assert display.ax_.flatten()[0].get_xlabel() == "Decrease in recall"
     estimator_name = display.importances["estimator"].unique()[0]
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {estimator_name} on {data_source} set"
+        == f"Permutation importance  \nof {estimator_name} on {data_source} set"
     )
 
 
@@ -223,7 +221,7 @@ def test_single_output_regression(
     estimator_name = display.importances["estimator"].unique()[0]
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {estimator_name} on {data_source} set"
+        == f"Permutation importance  \nof {estimator_name} on {data_source} set"
     )
 
 
@@ -317,22 +315,18 @@ def test_multi_output_regression(
     display.plot(metric="r2")
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
-    ax = (
-        display.ax_.flatten()[0] if isinstance(display.ax_, np.ndarray) else display.ax_
-    )
-    assert isinstance(ax, mpl.axes.Axes)
-    assert ax.get_xlabel() == "Decrease in r2"
-    legend_labels = [text.get_text() for text in display.facet_.legend.get_texts()]
-    assert legend_labels == [str(output) for output in range(y_train.shape[1])]
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_.flatten()) == y_train.shape[1]
+    for ax, output in zip(display.ax_.flatten(), range(y_train.shape[1]), strict=True):
+        assert isinstance(ax, mpl.axes.Axes)
+        assert ax.get_xlabel() == "Decrease in r2"
+        assert f"output = {output}" in ax.get_title()
     display.plot(metric="mse")
-    ax = (
-        display.ax_.flatten()[0] if isinstance(display.ax_, np.ndarray) else display.ax_
-    )
-    assert ax.get_xlabel() == "Decrease in mse"
+    assert display.ax_.flatten()[0].get_xlabel() == "Decrease in mse"
     estimator_name = display.importances["estimator"].unique()[0]
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {estimator_name} on {data_source} set"
+        == f"Permutation importance  \nof {estimator_name} on {data_source} set"
     )
 
 
@@ -365,7 +359,7 @@ def test_subplot_by_None_single_metric_single_value(
     assert display.ax_.get_xlabel() == "Decrease in accuracy"
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -433,7 +427,7 @@ def test_subplot_by_None_multiple_metrics_single_value(
     assert display.ax_.get_xlabel() == "Decrease in recall"
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -470,7 +464,7 @@ def test_subplot_by_None_single_metric_multiple_outputs(
     assert display.ax_.get_xlabel() == "Decrease in r2 score"
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -536,7 +530,7 @@ def test_subplot_by_auto_single_metric_single_target_classification(
     assert display.ax_.get_xlabel() == "Decrease in accuracy"
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -566,7 +560,7 @@ def test_subplot_by_auto_single_metric_single_target_regression(
     assert display.ax_.get_xlabel() == "Decrease in r2"
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -604,7 +598,7 @@ def test_subplot_by_auto_multiple_metrics_single_target_classification(
     assert ax.get_xlabel() == "Decrease in precision"
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -640,7 +634,7 @@ def test_subplot_by_auto_multiple_metrics_single_target_regression(
     assert ax.get_xlabel() == "Decrease in r2"
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -668,14 +662,16 @@ def test_subplot_by_auto_single_metric_multiple_labels(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(metric="precision score", subplot_by="auto")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.facet_.legend
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(label) for label in report.estimator_.classes_]
-    assert display.ax_.get_xlabel() == "Decrease in precision score"
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_.flatten()) == len(report.estimator_.classes_)
+    for ax, label in zip(
+        display.ax_.flatten(), report.estimator_.classes_, strict=True
+    ):
+        assert f"label = {label}" in ax.get_title()
+        assert ax.get_xlabel() == "Decrease in precision score"
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -703,14 +699,14 @@ def test_subplot_by_auto_single_metric_multiple_outputs(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(metric="r2 score", subplot_by="auto")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.facet_.legend
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(output) for output in range(y_train.shape[1])]
-    assert display.ax_.get_xlabel() == "Decrease in r2 score"
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_.flatten()) == y_train.shape[1]
+    for ax, output in zip(display.ax_.flatten(), range(y_train.shape[1]), strict=True):
+        assert f"output = {output}" in ax.get_title()
+        assert ax.get_xlabel() == "Decrease in r2 score"
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -741,16 +737,15 @@ def test_subplot_by_auto_multiple_metrics_multiple_labels(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(metric="precision", subplot_by="auto")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    assert display.ax_.get_xlabel() == "Decrease in precision"
-    legend = display.facet_.legend
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(label) for label in report.estimator_.classes_]
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_.flatten()) == len(report.estimator_.classes_)
+    for ax in display.ax_.flatten():
+        assert ax.get_xlabel() == "Decrease in precision"
     display.plot(metric="recall", subplot_by="auto")
-    assert display.ax_.get_xlabel() == "Decrease in recall"
+    assert display.ax_.flatten()[0].get_xlabel() == "Decrease in recall"
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -781,16 +776,15 @@ def test_subplot_by_auto_multiple_metrics_multiple_outputs(
         n_repeats=2, data_source=data_source, metric=metric
     )
     display.plot(metric="r2", subplot_by="auto")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    assert display.ax_.get_xlabel() == "Decrease in r2"
-    legend = display.facet_.legend
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(output) for output in range(y_train.shape[1])]
+    assert isinstance(display.ax_, np.ndarray)
+    assert len(display.ax_.flatten()) == y_train.shape[1]
+    for ax in display.ax_.flatten():
+        assert ax.get_xlabel() == "Decrease in r2"
     display.plot(metric="mse", subplot_by="auto")
-    assert display.ax_.get_xlabel() == "Decrease in mse"
+    assert display.ax_.flatten()[0].get_xlabel() == "Decrease in mse"
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -856,7 +850,7 @@ def test_subplot_by_string_multiple_metrics_multiclass_with_remaining_column(
     assert legend is not None
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -892,7 +886,7 @@ def test_subplot_by_string_multiple_metrics_binary_class_no_remaining_column(
     assert len(display.facet_.legend.get_texts()) == 0
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 
@@ -953,7 +947,7 @@ def test_subplot_by_string_label_creates_column_subplots(
         assert isinstance(ax, mpl.axes.Axes)
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
+        == f"Permutation importance  \nof {report.estimator_name_} on {data_source} set"
     )
 
 

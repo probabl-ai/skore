@@ -225,6 +225,17 @@ class PermutationImportanceDisplay(DisplayMixin):
             stripplot_kwargs=stripplot_kwargs,
         )
 
+    @staticmethod
+    def _aggregate_over_split(*, frame: pd.DataFrame) -> pd.DataFrame:
+        """Compute the averaged scores over the splits."""
+        group_by = frame.columns.difference(["repetition", "value"]).tolist()
+        return (
+            frame.drop(columns=["repetition"])
+            .groupby(group_by, sort=False, dropna=False)
+            .aggregate("mean")
+            .reset_index()
+        )
+
     def _plot_single_estimator(
         self,
         *,
@@ -235,45 +246,23 @@ class PermutationImportanceDisplay(DisplayMixin):
         stripplot_kwargs: dict[str, Any],
     ) -> None:
         """Plot the permutation importance for an `EstimatorReport`."""
-        if subplot_by == "auto":
-            is_multi_target = any(name in frame.columns for name in ["label", "output"])
-            is_cross_validation = self.report_type == "cross-validation"
-
-            # Build list of dimensions in priority order: hue > col > row
-            target_col = "label" if "label" in frame.columns else "output"
-            dimensions = []
-            if is_multi_target:
-                dimensions.append(target_col)
-            if is_cross_validation:
-                dimensions.append("split")
-
-            match len(dimensions):
-                case 0:
-                    hue, col, row = None, None, None
-                case 1:
-                    hue, col, row = dimensions[0], None, None
-                case 2:
-                    hue, col, row = dimensions[0], dimensions[1], None
-                case _:
-                    hue, col, row = dimensions[0], dimensions[1], dimensions[2]
-        elif subplot_by is None:
-            # Possible accepted values: {"label"}, {"output"}, {"split"}
+        aggregate_title = ""
+        if subplot_by == "auto" or subplot_by is None:
             columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-            n_columns_to_groupby = len(columns_to_groupby)
-            if n_columns_to_groupby > 1:
-                raise ValueError(
-                    "Cannot plot all the available information available on a single "
-                    "plot. Please set `subplot_by` to a string or a tuple of strings. "
-                    "You can use the following values to create subplots: "
-                    f"{', '.join(columns_to_groupby)}"
-                )
-            elif n_columns_to_groupby == 1:
-                hue, col, row = columns_to_groupby[0], None, None
+
+            if "split" in columns_to_groupby:
+                frame = self._aggregate_over_split(frame=frame)
+                columns_to_groupby.remove("split")
+                aggregate_title = "averaged over splits"
+
+            if subplot_by is not None:
+                col = columns_to_groupby[0] if columns_to_groupby else None
+                hue, row = None, None
             else:
-                hue, col, row = None, None, None
+                hue = columns_to_groupby[0] if columns_to_groupby else None
+                col, row = None, None
+
         else:
-            # Possible accepted values: {"label"}, {"output"}, {"split"},
-            # {"label", "split"}, {"output", "split"}, {"label", "output", "split"}
             columns_to_groupby = self._get_columns_to_groupby(frame=frame)
             subplot_cols = (subplot_by,) if isinstance(subplot_by, str) else subplot_by
             invalid = [c for c in subplot_cols if c not in columns_to_groupby]
@@ -285,6 +274,10 @@ class PermutationImportanceDisplay(DisplayMixin):
                 )
 
             remaining = set(columns_to_groupby) - set(subplot_cols)
+            if "split" in remaining:
+                frame = self._aggregate_over_split(frame=frame)
+                remaining.remove("split")
+                aggregate_title = "averaged over splits"
 
             match len(subplot_cols):
                 case 1:
@@ -349,7 +342,8 @@ class PermutationImportanceDisplay(DisplayMixin):
             self.ax_ = self.ax_.flatten()[0]
         data_source = frame["data_source"].unique()[0]
         self.figure_.suptitle(
-            f"Permutation importance of {estimator_name} on {data_source} set"
+            f"Permutation importance {aggregate_title} \nof {estimator_name} "
+            f"on {data_source} set"
         )
 
     def frame(
@@ -404,7 +398,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             frame = (
                 frame.drop(columns=["repetition"])
                 # avoid sorting the features by name and do not drop NA from
-                # output or labels in case of mixed metrics (i.e. averaged vs\
+                # output or labels in case of mixed metrics (i.e. averaged vs.
                 # non-averaged)
                 .groupby(group_by, sort=False, dropna=False)
                 .aggregate(aggregate)
