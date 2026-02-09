@@ -1,8 +1,9 @@
 import numbers
 from collections import namedtuple
-from typing import Any, Literal, cast
+from typing import Literal, cast
 
 import numpy as np
+import seaborn
 import seaborn as sns
 from pandas import DataFrame
 from sklearn.utils.validation import _num_samples, check_array
@@ -116,7 +117,7 @@ class PredictionErrorDisplay(DisplayMixin):
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
         despine: bool = True,
-    ) -> Any:
+    ) -> seaborn.FacetGrid:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.
@@ -175,7 +176,7 @@ class PredictionErrorDisplay(DisplayMixin):
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
         despine: bool = True,
-    ) -> Any:
+    ) -> seaborn.FacetGrid:
         """Matplolib implementation of the `plot` method."""
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:

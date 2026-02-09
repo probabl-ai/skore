@@ -1,4 +1,0 @@
-
-
-Plotting coefficients...
-Done.

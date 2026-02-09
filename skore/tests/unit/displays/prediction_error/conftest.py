@@ -8,8 +8,8 @@ mpl.rc("figure", max_open_warning=False)
 def estimator_reports_regression_figure_axes(pyplot, estimator_reports_regression):
     report = estimator_reports_regression[0]
     display = report.metrics.prediction_error()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet.figure, facet.axes.flatten()
 
 
 @pytest.fixture
@@ -18,8 +18,8 @@ def cross_validation_reports_regression_figure_axes(
 ):
     report = cross_validation_reports_regression[0]
     display = report.metrics.prediction_error()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet.figure, facet.axes.flatten()
 
 
 @pytest.fixture
@@ -28,8 +28,8 @@ def comparison_estimator_reports_regression_figure_axes(
 ):
     report = comparison_estimator_reports_regression
     display = report.metrics.prediction_error()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet.figure, facet.axes.flatten()
 
 
 @pytest.fixture
@@ -38,5 +38,5 @@ def comparison_cross_validation_reports_regression_figure_axes(
 ):
     report = comparison_cross_validation_reports_regression
     display = report.metrics.prediction_error()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet.figure, facet.axes.flatten()

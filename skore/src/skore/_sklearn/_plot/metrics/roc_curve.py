@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from typing import Any, Literal, cast
 
+import seaborn
 import seaborn as sns
 from numpy.typing import NDArray
 from pandas import DataFrame
@@ -122,7 +123,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         | None = "auto",
         plot_chance_level: bool = True,
         despine: bool = True,
-    ) -> Any:
+    ) -> seaborn.FacetGrid:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.
@@ -174,7 +175,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         | None = "auto",
         plot_chance_level: bool = True,
         despine: bool = True,
-    ) -> Any:
+    ) -> seaborn.FacetGrid:
         """Matplotlib implementation of the `plot` method."""
         plot_data = self.frame(with_roc_auc=True)
 

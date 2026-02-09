@@ -40,18 +40,17 @@ def test_permutation_importance_display_barplot_kwargs(
     )
 
     display = report.inspection.permutation_importance()
-    display.set_style(
+    facet = display.set_style(
         boxplot_kwargs={"boxprops": {"facecolor": "blue"}},
         stripplot_kwargs={"color": "red"},
     ).plot()
 
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    patches = display.ax_.patches
+    ax = facet.axes.squeeze().item()
+    patches = ax.patches
     for patch in patches:
         assert patch.get_facecolor() == (0.0, 0.0, 1.0, 1.0)  # blue in RGBA
     expected_red = np.array([1, 0, 0, 0.5])  # red in RGBA
-    for collection in display.ax_.collections:
+    for collection in ax.collections:
         for facecolor in collection.get_facecolor():
             np.testing.assert_allclose(facecolor, expected_red)
 
@@ -68,6 +67,7 @@ def test_set_style_with_single_kwarg(
     )
 
     display = report.inspection.permutation_importance()
-    display.set_style(stripplot_kwargs={"alpha": 0.8}).plot()
-    for collection in display.ax_.collections:
+    facet = display.set_style(stripplot_kwargs={"alpha": 0.8}).plot()
+    ax = facet.axes.squeeze().item()
+    for collection in ax.collections:
         assert collection.get_alpha() == 0.8

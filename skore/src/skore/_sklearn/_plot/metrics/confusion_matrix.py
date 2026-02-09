@@ -1,8 +1,9 @@
 from collections.abc import Sequence
-from typing import Any, Literal, cast
+from typing import Literal, cast
 
 import numpy as np
 import pandas as pd
+import seaborn
 import seaborn as sns
 from numpy.typing import NDArray
 from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
@@ -94,7 +95,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         normalize: Literal["true", "pred", "all"] | None = None,
         threshold_value: float | None = None,
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
-    ) -> Any:
+    ) -> seaborn.FacetGrid:
         """Plot the confusion matrix.
 
         In binary classification, the confusion matrix can be displayed at various
@@ -138,7 +139,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         normalize: Literal["true", "pred", "all"] | None = None,
         threshold_value: float | None = None,
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
-    ) -> Any:
+    ) -> seaborn.FacetGrid:
         """Matplotlib implementation of the `plot` method.
 
         Parameters

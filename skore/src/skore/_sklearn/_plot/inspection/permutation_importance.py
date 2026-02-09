@@ -3,6 +3,7 @@ from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
+import seaborn
 import seaborn as sns
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, is_classifier
@@ -156,7 +157,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         *,
         subplot_by: str | tuple[str, str] | None = "auto",
         metric: str | list[str] | None = None,
-    ) -> Any:
+    ) -> seaborn.FacetGrid:
         """Plot the permutation importance.
 
         Parameters
@@ -187,7 +188,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         *,
         subplot_by: str | tuple[str, str] | None = "auto",
         metric: str | list[str] | None = None,
-    ) -> Any:
+    ) -> seaborn.FacetGrid:
         """Dispatch the plotting function for matplotlib backend."""
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
@@ -219,7 +220,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         estimator_name: str,
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
-    ) -> Any:
+    ) -> seaborn.FacetGrid:
         """Plot the permutation importance for an `EstimatorReport`."""
         if subplot_by == "auto":
             is_multi_metric = frame["metric"].nunique() > 1
@@ -309,9 +310,9 @@ class PermutationImportanceDisplay(DisplayMixin):
         add_background_features = hue is not None
 
         metrics = frame["metric"].unique()
-        figure_, ax_ = facet_.figure, facet_.axes.squeeze()
+        _, ax_ = facet_.figure, facet_.axes.squeeze()
         for row_index, row_axes in enumerate(facet_.axes):
-            for col_index, axis in enumerate(row_axes):
+            for col_index, ax in enumerate(row_axes):
                 if len(metrics) > 1:
                     if row == "metric":
                         xlabel = f"Decrease in {metrics[row_index]}"
@@ -323,7 +324,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                     xlabel = f"Decrease in {metrics[0]}"
 
                 _decorate_matplotlib_axis(
-                    ax=axis,
+                    ax=ax,
                     add_background_features=add_background_features,
                     n_features=frame["feature"].nunique(),
                     xlabel=xlabel,
@@ -332,7 +333,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         if len(ax_.flatten()) == 1:
             ax_ = ax_.flatten()[0]
         data_source = frame["data_source"].unique()[0]
-        figure_.suptitle(
+        facet_.figure.suptitle(
             f"Permutation importance of {estimator_name} on {data_source} set"
         )
         return facet_

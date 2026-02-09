@@ -39,7 +39,7 @@ def test_with_pipeline(pyplot, forest_binary_classification_with_train_test):
     frame = display.frame()
     assert list(frame.columns) == ["feature", "importance"]
     assert frame["feature"].tolist() == columns_names
-    display.plot()
-    assert hasattr(display, "figure_") and hasattr(display, "ax_")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    assert display.ax_.get_xlabel() == "Mean Decrease in Impurity (MDI)"
+    facet = display.plot()
+    ax = facet.axes.squeeze().item()
+    assert isinstance(ax, mpl.axes.Axes)
+    assert ax.get_xlabel() == "Mean Decrease in Impurity (MDI)"

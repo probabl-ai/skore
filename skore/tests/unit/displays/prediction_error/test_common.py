@@ -34,10 +34,8 @@ class TestPredictionErrorDisplay:
         assert hasattr(display, "ml_task")
         assert hasattr(display, "data_source")
 
-        display.plot()
-        assert hasattr(display, "facet_")
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
+        facet = display.plot()
+        assert isinstance(facet, sns.FacetGrid)
 
     def test_frame_structure(self, fixture_prefix, request):
         report = request.getfixturevalue(f"{fixture_prefix}_regression")
@@ -87,10 +85,10 @@ class TestPredictionErrorDisplay:
             if "estimator_reports" in fixture_prefix
             else {"palette": ["red", "blue"]}
         )
-        display.set_style(
+        facet = display.set_style(
             relplot_kwargs=relplot_kwargs,
         ).plot()
-        ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+        ax = facet.axes.flatten()[0]
         np.testing.assert_array_equal(
             ax.collections[0].get_facecolor()[0][:3], [1.0, 0.0, 0.0]
         )

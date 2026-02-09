@@ -23,14 +23,14 @@ def test_legend_actual_vs_predicted(
     """Check the legend when kind is actual_vs_predicted."""
     report = comparison_cross_validation_reports_regression
     display = report.metrics.prediction_error()
-    display.plot(kind="actual_vs_predicted")
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    facet = display.plot(kind="actual_vs_predicted")
+    legend_texts = [t.get_text() for t in facet.figure.legends[0].get_texts()]
     assert len(legend_texts) == 3
     assert legend_texts[0] == "Split #0"
     assert legend_texts[1] == "Split #1"
     assert legend_texts[2] == "Perfect predictions"
 
-    for ax in display.ax_:
+    for ax in facet.axes.flatten():
         assert ax.get_xlim() == ax.get_ylim()
         assert np.array_equal(ax.get_xticks(), ax.get_yticks())
 
@@ -58,10 +58,11 @@ def test_valid_subplot_by(
     """Check that we can pass valid values to `subplot_by`."""
     report = comparison_cross_validation_reports_regression
     display = report.metrics.prediction_error()
-    display.plot(subplot_by=subplot_by)
-    assert isinstance(display.ax_[0], mpl.axes.Axes)
+    facet = display.plot(subplot_by=subplot_by)
+    ax_ = facet.axes.flatten()
+    assert isinstance(ax_[0], mpl.axes.Axes)
     if subplot_by == "estimator":
-        assert len(display.ax_) == len(report.reports_)
+        assert len(ax_) == len(report.reports_)
     elif subplot_by == "split":
         n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
-        assert len(display.ax_) == n_splits
+        assert len(ax_) == n_splits

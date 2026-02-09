@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from typing import Any, Literal, cast
 
+import seaborn
 import seaborn as sns
 from numpy.typing import NDArray
 from pandas import DataFrame
@@ -117,7 +118,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         subplot_by: Literal["auto", "label", "estimator", "data_source"]
         | None = "auto",
         despine: bool = True,
-    ) -> Any:
+    ) -> seaborn.FacetGrid:
         """Plot visualization.
 
         Parameters
@@ -165,7 +166,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         subplot_by: Literal["auto", "label", "estimator", "data_source"]
         | None = "auto",
         despine: bool = True,
-    ) -> Any:
+    ) -> seaborn.FacetGrid:
         """Matplotlib implementation of the `plot` method."""
         plot_data = self.frame(with_average_precision=True)
 
@@ -266,8 +267,10 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             for axis in ax_:
                 _despine_matplotlib_axis(axis)
 
-        if len(ax_) == 1:
-            ax_ = ax_[0]
+        self.figure_ = facet_.figure
+        self.ax_ = facet_.axes.flatten()[0]
+        self.facet_ = facet_
+
         return facet_
 
     @classmethod

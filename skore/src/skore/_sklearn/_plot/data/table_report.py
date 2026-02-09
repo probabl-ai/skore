@@ -69,6 +69,7 @@ def _truncate_top_k_categories(
         col = col.apply(
             lambda x: ellide_string(x, max_len=20) if isinstance(x, str) else x
         )
+        col = col.astype(object)
     return col
 
 

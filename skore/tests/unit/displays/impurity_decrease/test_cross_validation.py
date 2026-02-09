@@ -38,7 +38,7 @@ def test_with_pipeline(pyplot, forest_binary_classification_data):
         np.testing.assert_allclose(imp, fitted.feature_importances_)
     frame = display.frame()
     assert list(frame.columns) == ["split", "feature", "importance"]
-    display.plot()
-    assert hasattr(display, "facet_") and hasattr(display, "figure_")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    assert display.ax_.get_xlabel() == "Mean Decrease in Impurity (MDI)"
+    facet = display.plot()
+    ax = facet.axes.squeeze().item()
+    assert isinstance(ax, mpl.axes.Axes)
+    assert ax.get_xlabel() == "Mean Decrease in Impurity (MDI)"

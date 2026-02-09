@@ -33,6 +33,7 @@ def test_legend_multiclass_classification(
     report = cross_validation_reports_multiclass_classification[0]
     display = report.metrics.precision_recall()
     _, ax = cross_validation_reports_multiclass_classification_figure_axes
+    ax = ax[0]
     labels = display.precision_recall["label"].cat.categories
     assert isinstance(ax, mpl.axes.Axes)
     legend = ax.get_legend()
@@ -87,8 +88,10 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.precision_recall()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
+        facet = display.plot(subplot_by=subplot_by)
         if subplot_by is None:
-            assert isinstance(display.ax_, mpl.axes.Axes)
+            ax = facet.axes.squeeze().item()
+            assert isinstance(ax, mpl.axes.Axes)
         else:
-            assert len(display.ax_) == expected_len
+            ax_ = facet.axes.flatten()
+            assert len(ax_) == expected_len

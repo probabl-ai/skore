@@ -18,8 +18,8 @@ def test_legend_actual_vs_predicted(pyplot, comparison_estimator_reports_regress
     """Check the legend when kind is actual_vs_predicted."""
     report = comparison_estimator_reports_regression
     display = report.metrics.prediction_error()
-    display.plot(kind="actual_vs_predicted")
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    facet = display.plot(kind="actual_vs_predicted")
+    legend_texts = [t.get_text() for t in facet.figure.legends[0].get_texts()]
     assert len(legend_texts) == 1
     assert legend_texts[0] == "Perfect predictions"
 
@@ -45,18 +45,19 @@ def test_valid_subplot_by(pyplot, comparison_estimator_reports_regression, subpl
     """Check that we can pass valid values to `subplot_by`."""
     report = comparison_estimator_reports_regression
     display = report.metrics.prediction_error()
-    display.plot(subplot_by=subplot_by)
-    assert isinstance(display.ax_[0], mpl.axes.Axes)
-    assert len(display.ax_) == len(report.reports_)
+    facet = display.plot(subplot_by=subplot_by)
+    ax_ = facet.axes.flatten()
+    assert isinstance(ax_[0], mpl.axes.Axes)
+    assert len(ax_) == len(report.reports_)
 
 
 def test_subplot_by_data_source(pyplot, comparison_estimator_reports_regression):
     """Check the behaviour when `subplot_by` is `data_source`."""
     report = comparison_estimator_reports_regression
     display = report.metrics.prediction_error(data_source="both")
-    display.plot(subplot_by="data_source")
-    assert len(display.ax_) == 2
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    facet = display.plot(subplot_by="data_source")
+    assert len(facet.axes.flatten()) == 2
+    legend_texts = [t.get_text() for t in facet.figure.legends[0].get_texts()]
     assert len(legend_texts) == 3
     assert legend_texts[0] == "DummyRegressor_1"
     assert legend_texts[1] == "DummyRegressor_2"
@@ -67,9 +68,9 @@ def test_source_both(pyplot, linear_regression_comparison_report):
     """Check the behaviour of the plot when data_source='both'."""
     report = linear_regression_comparison_report
     display = report.metrics.prediction_error(data_source="both")
-    display.plot()
-    assert len(display.figure_.legends) == 1
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    facet = display.plot()
+    assert len(facet.figure.legends) == 1
+    legend_texts = [t.get_text() for t in facet.figure.legends[0].get_texts()]
     assert len(legend_texts) == 3
     assert legend_texts[0] == "train"
     assert legend_texts[1] == "test"

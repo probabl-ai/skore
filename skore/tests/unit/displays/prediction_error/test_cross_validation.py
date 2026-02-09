@@ -21,8 +21,8 @@ def test_legend_actual_vs_predicted(pyplot, cross_validation_reports_regression)
     """Check the legend when kind is actual_vs_predicted."""
     report = cross_validation_reports_regression[0]
     display = report.metrics.prediction_error()
-    display.plot(kind="actual_vs_predicted")
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    facet = display.plot(kind="actual_vs_predicted")
+    legend_texts = [t.get_text() for t in facet.figure.legends[0].get_texts()]
 
     assert len(legend_texts) == 3
     assert legend_texts[0] == "Split #0"
@@ -51,9 +51,11 @@ def test_valid_subplot_by(pyplot, cross_validation_reports_regression, subplot_b
     """Check that we can pass valid values to `subplot_by`."""
     report = cross_validation_reports_regression[0]
     display = report.metrics.prediction_error()
-    display.plot(subplot_by=subplot_by)
+    facet = display.plot(subplot_by=subplot_by)
     if subplot_by == "split":
-        assert isinstance(display.ax_[0], mpl.axes.Axes)
-        assert len(display.ax_) == len(report.estimator_reports_)
+        ax_ = facet.axes.flatten()
+        assert isinstance(ax_[0], mpl.axes.Axes)
+        assert len(ax_) == len(report.estimator_reports_)
     else:
-        assert isinstance(display.ax_, mpl.axes.Axes)
+        ax = facet.axes.squeeze().item()
+        assert isinstance(ax, mpl.axes.Axes)

@@ -99,11 +99,13 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.precision_recall()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
+        facet = display.plot(subplot_by=subplot_by)
         if subplot_by is None:
-            assert isinstance(display.ax_, mpl.axes.Axes)
+            ax = facet.axes.squeeze().item()
+            assert isinstance(ax, mpl.axes.Axes)
         else:
-            assert len(display.ax_) == expected_len
+            ax_ = facet.axes.flatten()
+            assert len(ax_) == expected_len
 
 
 @pytest.mark.parametrize(
@@ -125,8 +127,8 @@ def test_subplot_by_data_source(fixture_name, request):
         with pytest.raises(ValueError, match=err_msg):
             display.plot(subplot_by="data_source")
     else:
-        display.plot(subplot_by="data_source")
-        assert len(display.ax_) == 2
+        facet = display.plot(subplot_by="data_source")
+        assert len(facet.axes.flatten()) == 2
 
 
 @pytest.mark.parametrize(
@@ -140,14 +142,14 @@ def test_source_both(pyplot, fixture_name, request):
     """Check the behaviour of the plot when data_source='both'."""
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.precision_recall(data_source="both")
-    display.plot()
+    facet = display.plot()
     plot_data = display.frame(with_average_precision=True)
     labels = (
         display.precision_recall["label"].cat.categories
         if display.ml_task == "multiclass-classification"
         else [None]
     )
-    for ax, estimator in zip(display.ax_, report.reports_, strict=True):
+    for ax, estimator in zip(facet.axes.flatten(), report.reports_, strict=True):
         assert isinstance(ax, mpl.axes.Axes)
         assert len(ax.get_lines()) == 2 if "binary" in fixture_name else 6
         legend = ax.get_legend()
