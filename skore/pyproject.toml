@@ -113,6 +113,7 @@ addopts = [
   "--no-header",
   "--verbosity=2",
   "--dist=loadscope",
+  "--durations=25",
 ]
 xfail_strict = true
 log_cli_level = "info"
