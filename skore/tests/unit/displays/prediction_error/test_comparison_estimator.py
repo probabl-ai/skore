@@ -58,8 +58,8 @@ def test_subplot_by_data_source(pyplot, comparison_estimator_reports_regression)
     assert len(display.ax_) == 2
     legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
     assert len(legend_texts) == 3
-    assert legend_texts[0] == "LinearRegression_1"
-    assert legend_texts[1] == "LinearRegression_2"
+    assert legend_texts[0] == "DummyRegressor_1"
+    assert legend_texts[1] == "DummyRegressor_2"
     assert legend_texts[-1] == "Perfect predictions"
 
 

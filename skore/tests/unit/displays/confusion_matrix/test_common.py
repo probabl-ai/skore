@@ -94,10 +94,7 @@ class TestConfusionMatrixDisplay:
             "data_source",
         ]
         n_classes = len(display.display_labels)
-        if task == "binary":
-            n_thresholds = 50 if "cross_validation" in fixture_prefix else 20
-        else:
-            n_thresholds = 1
+        n_thresholds = len(display.thresholds)
         n_splits = 2 if "cross_validation" in fixture_prefix else 1
         n_reports = 2 if "comparison" in fixture_prefix else 1
         expected_rows = n_thresholds * n_classes * n_classes * n_splits * n_reports

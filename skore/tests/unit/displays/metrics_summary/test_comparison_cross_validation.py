@@ -45,10 +45,10 @@ def test_default(comparison_cross_validation_reports_binary_classification):
         result.columns,
         pd.MultiIndex.from_tuples(
             [
-                ("mean", "LogisticRegression_1"),
-                ("mean", "LogisticRegression_2"),
-                ("std", "LogisticRegression_1"),
-                ("std", "LogisticRegression_2"),
+                ("mean", "DummyClassifier_1"),
+                ("mean", "DummyClassifier_2"),
+                ("std", "DummyClassifier_1"),
+                ("std", "DummyClassifier_2"),
             ],
             names=[None, "Estimator"],
         ),
@@ -68,10 +68,10 @@ def test_default_regression(comparison_cross_validation_reports_regression):
         result.columns,
         pd.MultiIndex.from_tuples(
             [
-                ("mean", "LinearRegression_1"),
-                ("mean", "LinearRegression_2"),
-                ("std", "LinearRegression_1"),
-                ("std", "LinearRegression_2"),
+                ("mean", "DummyRegressor_1"),
+                ("mean", "DummyRegressor_2"),
+                ("std", "DummyRegressor_1"),
+                ("std", "DummyRegressor_2"),
             ],
             names=[None, "Estimator"],
         ),
@@ -117,10 +117,10 @@ def test_metric(comparison_cross_validation_reports_binary_classification):
         result.index,
         pd.MultiIndex.from_tuples(
             [
-                ("Accuracy", "LogisticRegression_1", "Split #0"),
-                ("Accuracy", "LogisticRegression_1", "Split #1"),
-                ("Accuracy", "LogisticRegression_2", "Split #0"),
-                ("Accuracy", "LogisticRegression_2", "Split #1"),
+                ("Accuracy", "DummyClassifier_1", "Split #0"),
+                ("Accuracy", "DummyClassifier_1", "Split #1"),
+                ("Accuracy", "DummyClassifier_2", "Split #0"),
+                ("Accuracy", "DummyClassifier_2", "Split #1"),
             ],
             names=("Metric", "Estimator", "Split"),
         ),
@@ -136,10 +136,10 @@ def test_favorability(comparison_cross_validation_reports_binary_classification)
         result.columns,
         pd.MultiIndex.from_tuples(
             [
-                ("mean", "LogisticRegression_1"),
-                ("mean", "LogisticRegression_2"),
-                ("std", "LogisticRegression_1"),
-                ("std", "LogisticRegression_2"),
+                ("mean", "DummyClassifier_1"),
+                ("mean", "DummyClassifier_2"),
+                ("std", "DummyClassifier_1"),
+                ("std", "DummyClassifier_2"),
                 ("Favorability", ""),
             ],
             names=[None, "Estimator"],
@@ -197,10 +197,10 @@ def test_data_source_external(
         result.columns,
         pd.MultiIndex.from_tuples(
             [
-                ("mean", "LogisticRegression_1"),
-                ("mean", "LogisticRegression_2"),
-                ("std", "LogisticRegression_1"),
-                ("std", "LogisticRegression_2"),
+                ("mean", "DummyClassifier_1"),
+                ("mean", "DummyClassifier_2"),
+                ("std", "DummyClassifier_1"),
+                ("std", "DummyClassifier_2"),
             ],
             names=[None, "Estimator"],
         ),

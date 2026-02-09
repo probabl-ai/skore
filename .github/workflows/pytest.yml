@@ -217,13 +217,13 @@ jobs:
 
       - name: Test without coverage
         if: ${{ ! matrix.coverage }}
-        timeout-minutes: 15
+        timeout-minutes: 10
         working-directory: ${{ matrix.package }}/
         run: python -m pytest src/ tests/ --no-cov --durations=10
 
       - name: Test with coverage
         if: ${{ matrix.coverage }}
-        timeout-minutes: 15
+        timeout-minutes: 10
         working-directory: ${{ matrix.package }}/
         run: |
           mkdir coverage

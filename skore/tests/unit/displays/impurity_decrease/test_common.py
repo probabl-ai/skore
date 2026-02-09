@@ -1,12 +1,12 @@
+import matplotlib as mpl
 import pandas as pd
 import pytest
 
-from skore import EstimatorReport, ImpurityDecreaseDisplay
+from skore import ImpurityDecreaseDisplay
 
 
 @pytest.mark.parametrize("method", ["frame", "plot"])
 def test_impurity_decrease_display_invalid_report_type(pyplot, method):
-    """Check that ImpurityDecreaseDisplay raises TypeError for invalid `report_type`."""
     importances = pd.DataFrame(
         {
             "estimator": ["estimator1"],
@@ -14,7 +14,6 @@ def test_impurity_decrease_display_invalid_report_type(pyplot, method):
             "importances": [1.0],
         }
     )
-
     display = ImpurityDecreaseDisplay(
         importances=importances, report_type="invalid-type"
     )
@@ -22,23 +21,110 @@ def test_impurity_decrease_display_invalid_report_type(pyplot, method):
         getattr(display, method)()
 
 
-def test_impurity_decrease_display_barplot_kwargs(
-    pyplot, forest_binary_classification_with_train_test
-):
-    """Check that custom `barplot_kwargs` are applied to `EstimatorReport` plots."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
+@pytest.mark.parametrize(
+    "fixture_prefix",
+    [
+        "estimator_reports",
+        "cross_validation_reports",
+    ],
+)
+@pytest.mark.parametrize("task", ["binary_classification", "regression"])
+class TestImpurityDecreaseDisplay:
+    def test_class_attributes(self, pyplot, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.impurity_decrease()
+        assert isinstance(display, ImpurityDecreaseDisplay)
+        assert hasattr(display, "importances")
+        assert hasattr(display, "report_type")
+        display.plot()
+        assert hasattr(display, "figure_")
+        assert hasattr(display, "ax_")
+        if fixture_prefix == "cross_validation_reports":
+            assert hasattr(display, "facet_")
 
+    def test_frame_structure(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.impurity_decrease()
+        frame = display.frame()
+        expected = {"feature", "importances"}
+        if fixture_prefix == "cross_validation_reports":
+            expected.add("split")
+        assert set(frame.columns) == expected
+
+    def test_internal_data_structure(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.impurity_decrease()
+        expected = {"estimator", "split", "feature", "importances"}
+        assert set(display.importances.columns) == expected
+
+    def test_plot_structure(self, pyplot, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        if hasattr(ax, "flatten"):
+            ax = ax.flatten()[0]
+        assert ax.get_xlabel() == "Mean Decrease in Impurity (MDI)"
+        assert ax.get_ylabel() == ""
+
+    def test_title(self, pyplot, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.impurity_decrease()
+        figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        title = figure.get_suptitle()
+        assert "Mean Decrease in Impurity (MDI)" in title
+        estimator_name = display.importances["estimator"].iloc[0]
+        assert estimator_name in title
+
+    def test_kwargs(self, pyplot, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.impurity_decrease()
+        figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        assert figure.get_figheight() == 6
+        if fixture_prefix == "estimator_reports":
+            display.set_style(barplot_kwargs={"height": 8}).plot()
+        else:
+            display.set_style(stripplot_kwargs={"height": 8}).plot()
+        assert display.figure_.get_figheight() == 8
+
+
+@pytest.mark.parametrize(
+    "fixture_prefix",
+    [
+        "estimator_reports",
+        "cross_validation_reports",
+    ],
+)
+@pytest.mark.parametrize(
+    "task", ["multiclass_classification", "multioutput_regression"]
+)
+def test_multiclass_and_multioutput(pyplot, fixture_prefix, task, request):
+    report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+    if isinstance(report, tuple):
+        report = report[0]
     display = report.inspection.impurity_decrease()
-    display.set_style(barplot_kwargs={"color": "red"}).plot()
+    assert isinstance(display, ImpurityDecreaseDisplay)
+    assert set(display.importances.columns) == {
+        "estimator",
+        "split",
+        "feature",
+        "importances",
+    }
+    frame = display.frame()
+    assert set(frame.columns) >= {"feature", "importances"}
+    if fixture_prefix == "cross_validation_reports":
+        assert "split" in frame.columns
 
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    patches = display.ax_.patches
-    assert len(patches) > 0
-    for patch in patches:
-        assert patch.get_facecolor() == (0.875, 0.125, 0.125, 1.0)  # red in RGBA
+    _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+    assert isinstance(ax, mpl.axes.Axes)
+    assert ax.get_xlabel() == "Mean Decrease in Impurity (MDI)"

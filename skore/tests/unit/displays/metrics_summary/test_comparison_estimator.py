@@ -33,7 +33,7 @@ def test_data_source_external(
         names=["Metric", "Label / Average"],
     )
     expected_columns = pd.Index(
-        ["LogisticRegression_1", "LogisticRegression_2"],
+        ["DummyClassifier_1", "DummyClassifier_2"],
         name="Estimator",
     )
 
@@ -73,10 +73,10 @@ def test_data_source_both(
     )
     expected_columns = pd.Index(
         [
-            "LogisticRegression_1 (train)",
-            "LogisticRegression_1 (test)",
-            "LogisticRegression_2 (train)",
-            "LogisticRegression_2 (test)",
+            "DummyClassifier_1 (train)",
+            "DummyClassifier_1 (test)",
+            "DummyClassifier_2 (train)",
+            "DummyClassifier_2 (test)",
         ],
         name="Estimator",
     )
