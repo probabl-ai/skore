@@ -38,7 +38,7 @@ def test_binary_classification(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importances"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1
@@ -59,11 +59,12 @@ def test_binary_classification(
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
 
-    assert display.ax_.get_xlabel() == "Mean decrease impurity"
+    assert display.ax_.get_xlabel() == "Mean Decrease in Impurity (MDI)"
     assert display.ax_.get_ylabel() == ""
     estimator_name = display.importances["estimator"][0]
     assert (
-        display.figure_.get_suptitle() == f"Mean decrease impurity of {estimator_name}"
+        display.figure_.get_suptitle()
+        == f"Mean Decrease in Impurity (MDI) of {estimator_name}"
     )
 
 
@@ -95,7 +96,7 @@ def test_multiclass_classification(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importances"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1
@@ -116,11 +117,12 @@ def test_multiclass_classification(
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
 
-    assert display.ax_.get_xlabel() == "Mean decrease impurity"
+    assert display.ax_.get_xlabel() == "Mean Decrease in Impurity (MDI)"
     assert display.ax_.get_ylabel() == ""
     estimator_name = display.importances["estimator"][0]
     assert (
-        display.figure_.get_suptitle() == f"Mean decrease impurity of {estimator_name}"
+        display.figure_.get_suptitle()
+        == f"Mean Decrease in Impurity (MDI) of {estimator_name}"
     )
 
 
@@ -150,7 +152,7 @@ def test_single_output_regression(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importances"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1
@@ -171,11 +173,12 @@ def test_single_output_regression(
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
 
-    assert display.ax_.get_xlabel() == "Mean decrease impurity"
+    assert display.ax_.get_xlabel() == "Mean Decrease in Impurity (MDI)"
     assert display.ax_.get_ylabel() == ""
     estimator_name = display.importances["estimator"][0]
     assert (
-        display.figure_.get_suptitle() == f"Mean decrease impurity of {estimator_name}"
+        display.figure_.get_suptitle()
+        == f"Mean Decrease in Impurity (MDI) of {estimator_name}"
     )
 
 
@@ -205,7 +208,7 @@ def test_multi_output_regression(
     display = report.inspection.impurity_decrease()
     assert isinstance(display, ImpurityDecreaseDisplay)
 
-    expected_columns = ["estimator", "feature", "importances"]
+    expected_columns = ["estimator", "split", "feature", "importances"]
     df = display.importances
     assert sorted(df.columns.tolist()) == sorted(expected_columns)
     assert df["estimator"].nunique() == 1
@@ -226,9 +229,10 @@ def test_multi_output_regression(
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
 
-    assert display.ax_.get_xlabel() == "Mean decrease impurity"
+    assert display.ax_.get_xlabel() == "Mean Decrease in Impurity (MDI)"
     assert display.ax_.get_ylabel() == ""
     estimator_name = display.importances["estimator"][0]
     assert (
-        display.figure_.get_suptitle() == f"Mean decrease impurity of {estimator_name}"
+        display.figure_.get_suptitle()
+        == f"Mean Decrease in Impurity (MDI) of {estimator_name}"
     )
