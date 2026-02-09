@@ -97,10 +97,13 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         ----------
         estimators : list of estimator
             The estimators to compute the data for.
+
         names : list of str
             The names of the estimators.
+
         splits : list of int or np.nan
             The splits to compute the data for.
+
         report_type : {"estimator", "cross-validation", "comparison-estimator", \
                 "comparison-cross-validation"}
             The type of report to compute the data for.
@@ -247,19 +250,24 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         ----------
         frame : pd.DataFrame
             The frame to plot.
+
         estimator_name : str
             The name of the estimator to plot.
+
         report_type : {"estimator", "cross-validation", "comparison-estimator", \
                 "comparison-cross-validation"}
             The type of report to compute the data for.
+
         barplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.barplot` for
             rendering the mean decrease in impurity with an
             :class:`~skore.EstimatorReport`.
+
         stripplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.stripplot` for
             rendering the mean decrease in impurity with a
             :class:`~skore.CrossValidationReport`.
+
         boxplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.boxplot` for
             rendering the mean decrease in impurity with a
