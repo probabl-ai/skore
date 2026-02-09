@@ -50,11 +50,12 @@ def _check_impurity_decrease_display(
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
 
-    assert display.ax_.get_xlabel() == "Mean decrease impurity"
+    assert display.ax_.get_xlabel() == "Mean Decrease in Impurity (MDI)"
     assert display.ax_.get_ylabel() == ""
     estimator_name = display.importances["estimator"][0]
     assert (
-        display.figure_.get_suptitle() == f"Mean decrease impurity of {estimator_name}"
+        display.figure_.get_suptitle()
+        == f"Mean Decrease in Impurity (MDI) of {estimator_name}"
     )
 
 

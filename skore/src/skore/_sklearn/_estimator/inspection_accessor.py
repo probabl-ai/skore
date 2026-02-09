@@ -84,7 +84,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     @available_if(_check_estimator_has_feature_importances())
     def impurity_decrease(self) -> ImpurityDecreaseDisplay:
-        """Retrieve the mean decrease impurity (MDI) of a tree-based model.
+        """Retrieve the Mean Decrease in Impurity (MDI) of a tree-based model.
 
         This method is available for estimators that expose a `feature_importances_`
         attribute. See for example
@@ -95,7 +95,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Returns
         -------
         :class:`ImpurityDecreaseDisplay`
-            The feature importance display containing the mean decrease impurity.
+            The feature importance display containing the mean decrease in impurity.
 
         Examples
         --------

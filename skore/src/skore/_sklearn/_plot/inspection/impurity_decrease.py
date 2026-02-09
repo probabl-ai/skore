@@ -15,7 +15,7 @@ from skore._sklearn.types import ReportType
 
 
 class ImpurityDecreaseDisplay(DisplayMixin):
-    """Display to inspect the mean decrease impurity of tree-based models.
+    """Display to inspect the Mean Decrease in Impurity (MDI) of tree-based models.
 
     Parameters
     ----------
@@ -139,7 +139,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         return cls(importances=importances, report_type=report_type)
 
     def frame(self) -> pd.DataFrame:
-        """Get the mean decrease impurity in a dataframe format.
+        """Get the mean decrease in impurity in a dataframe format.
 
         The returned dataframe is not going to contain constant columns or columns
         containing only NaN values.
@@ -147,7 +147,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         Returns
         -------
         DataFrame
-            Dataframe containing the mean decrease impurity of the tree-based model.
+            Dataframe containing the mean decrease in impurity of the tree-based model.
 
         Examples
         --------
@@ -187,7 +187,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
 
     @DisplayMixin.style_plot
     def plot(self) -> None:
-        """Plot the mean decrease impurity for the different features.
+        """Plot the mean decrease in impurity for the different features.
 
         Examples
         --------
@@ -209,7 +209,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
     def _plot_matplotlib(self) -> None:
         """Dispatch the plotting function for matplotlib backend.
 
-        This method creates a bar plot showing the mean decrease impurity for each
+        This method creates a bar plot showing the mean decrease in impurity for each
         feature using seaborn's catplot. For cross-validation reports, it uses a
         strip plot with boxplot overlay to show the distribution across splits.
         """
@@ -237,9 +237,9 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         stripplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
     ) -> None:
-        """Plot the mean decrease impurity.
+        """Plot the mean decrease in impurity.
 
-        For EstimatorReport, a bar plot is used to display the mean decrease impurity
+        For EstimatorReport, a bar plot is used to display the mean decrease in impurity
         values. For CrossValidationReport, a strip plot with boxplot overlay is used to
         show the distribution across splits.
 
@@ -254,15 +254,15 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             The type of report to compute the data for.
         barplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.barplot` for
-            rendering the mean decrease impurity with an
+            rendering the mean decrease in impurity with an
             :class:`~skore.EstimatorReport`.
         stripplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.stripplot` for
-            rendering the mean decrease impurity with a
+            rendering the mean decrease in impurity with a
             :class:`~skore.CrossValidationReport`.
         boxplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.boxplot` for
-            rendering the mean decrease impurity with a
+            rendering the mean decrease in impurity with a
             :class:`~skore.CrossValidationReport`.
         """
         if "estimator" in report_type:
@@ -295,10 +295,10 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             ax=self.ax_,
             add_background_features=False,
             n_features=frame["feature"].nunique(),
-            xlabel="Mean decrease impurity",
+            xlabel="Mean Decrease in Impurity (MDI)",
             ylabel="",
         )
-        self.figure_.suptitle(f"Mean decrease impurity of {estimator_name}")
+        self.figure_.suptitle(f"Mean Decrease in Impurity (MDI) of {estimator_name}")
 
     # ignore the type signature because we override kwargs by specifying the name of
     # the parameters for the user.
@@ -322,17 +322,17 @@ class ImpurityDecreaseDisplay(DisplayMixin):
 
         barplot_kwargs : dict, default=None
             Keyword arguments to be passed to :func:`seaborn.barplot` for
-            rendering the mean decrease impurity with an
+            rendering the mean decrease in impurity with an
             :class:`~skore.EstimatorReport`.
 
         stripplot_kwargs : dict, default=None
             Keyword arguments to be passed to :func:`seaborn.stripplot` for
-            rendering the mean decrease impurity with a
+            rendering the mean decrease in impurity with a
             :class:`~skore.CrossValidationReport`.
 
         boxplot_kwargs : dict, default=None
             Keyword arguments to be passed to :func:`seaborn.boxplot` for
-            rendering the mean decrease impurity with a
+            rendering the mean decrease in impurity with a
             :class:`~skore.CrossValidationReport`.
 
         Returns

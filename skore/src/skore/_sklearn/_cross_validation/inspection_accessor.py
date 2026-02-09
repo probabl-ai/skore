@@ -79,7 +79,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
     @available_if(_check_cross_validation_sub_estimator_has_feature_importances())
     def impurity_decrease(self) -> ImpurityDecreaseDisplay:
-        """Retrieve the mean decrease impurity across splits.
+        """Retrieve the Mean Decrease in Impurity (MDI) across splits.
 
         Returns
         -------
