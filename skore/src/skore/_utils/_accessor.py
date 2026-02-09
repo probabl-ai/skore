@@ -41,6 +41,24 @@ def _check_has_coef(parent_estimator) -> bool:
     )
 
 
+def _check_has_feature_importances(parent_estimator) -> bool:
+    """Check if the estimator has a feature_importances_ attribute.
+
+    This is a generic helper function. Please use the appropriate check for your report
+    type.
+    """
+    estimator = (
+        parent_estimator.steps[-1][1]
+        if isinstance(parent_estimator, Pipeline)
+        else parent_estimator
+    )
+    if hasattr(estimator, "feature_importances_"):
+        return True
+    raise AttributeError(
+        f"Estimator '{estimator}' is not a supported estimator by the function called."
+    )
+
+
 def _check_roc_auc(ml_task_and_methods: list[tuple[str, list[str]]]):
     def check(accessor: Any) -> bool:
         are_supported_cases = []
@@ -172,21 +190,10 @@ def _check_estimator_has_coef() -> Callable:
     return check
 
 
-def _check_has_feature_importances() -> Callable:
+def _check_estimator_has_feature_importances() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the estimator has a `feature_importances_` attribute."""
-        parent_estimator = accessor._parent.estimator_
-        estimator = (
-            parent_estimator.steps[-1][1]
-            if isinstance(parent_estimator, Pipeline)
-            else parent_estimator
-        )
-        if hasattr(estimator, "feature_importances_"):
-            return True
-        raise AttributeError(
-            f"Estimator '{parent_estimator}' is not a supported estimator by "
-            "the function called."
-        )
+        return _check_has_feature_importances(accessor._parent.estimator_)
 
     return check
 
@@ -225,6 +232,16 @@ def _check_cross_validation_sub_estimator_has_coef() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the underlying estimator has a `coef_` attribute."""
         return _check_has_coef(accessor._parent.estimator_reports_[0].estimator)
+
+    return check
+
+
+def _check_cross_validation_sub_estimator_has_feature_importances() -> Callable:
+    def check(accessor: Any) -> bool:
+        """Check if the underlying estimator has a `feature_importances_` attribute."""
+        return _check_has_feature_importances(
+            accessor._parent.estimator_reports_[0].estimator_
+        )
 
     return check
 

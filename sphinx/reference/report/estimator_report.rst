@@ -63,10 +63,11 @@ estimator.
 
     EstimatorReport.metrics.help
     EstimatorReport.metrics.summarize
-    EstimatorReport.metrics.custom_metric
-    EstimatorReport.metrics.timings
+
     EstimatorReport.metrics.accuracy
     EstimatorReport.metrics.brier_score
+    EstimatorReport.metrics.confusion_matrix
+    EstimatorReport.metrics.custom_metric
     EstimatorReport.metrics.log_loss
     EstimatorReport.metrics.precision
     EstimatorReport.metrics.precision_recall
@@ -76,6 +77,7 @@ estimator.
     EstimatorReport.metrics.rmse
     EstimatorReport.metrics.roc
     EstimatorReport.metrics.roc_auc
+    EstimatorReport.metrics.timings
 
 Inspection
 ----------
