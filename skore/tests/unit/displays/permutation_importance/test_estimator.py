@@ -1125,7 +1125,6 @@ def test_plot_mixed_averaged_and_non_averaged_metrics_classification_raises_erro
 def test_plot_mixed_averaged_and_non_averaged_metrics_regression_raises_error(
     pyplot,
     linear_regression_multioutput_with_train_test,
-    data_source,
 ):
     """Check that plotting mixed averaged and non-averaged metrics raises an error.
 
@@ -1147,7 +1146,7 @@ def test_plot_mixed_averaged_and_non_averaged_metrics_regression_raises_error(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
+        n_repeats=2, data_source="train", metric=metric
     )
 
     display.plot(metric="r2")

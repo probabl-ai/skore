@@ -131,14 +131,13 @@ def test_single_output_regression(
 def test_subplot_by_split(
     pyplot,
     cross_validation_report_binary_classification,
-    data_source,
 ):
     """Check that subplot_by='split' creates one subplot per fold."""
     report = cross_validation_report_binary_classification
     splitter = len(report.estimator_reports_)
 
     display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, seed=0
+        n_repeats=2, data_source="train", seed=0
     )
     display.plot(metric="accuracy", subplot_by="split")
 
@@ -151,14 +150,13 @@ def test_subplot_by_split(
     estimator_name = display.importances["estimator"].unique()[0]
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance  \nof {estimator_name} on {data_source} set"
+        == f"Permutation importance  \nof {estimator_name} on train set"
     )
 
 
 def test_subplot_by_label_aggregates_split_in_remaining(
     pyplot,
     cross_validation_report_multiclass_classification,
-    data_source,
 ):
     """Check that when subplot_by='label' and split is in remaining (not used for
     subplotting), we aggregate over splits and title includes 'averaged over splits'."""
@@ -167,7 +165,7 @@ def test_subplot_by_label_aggregates_split_in_remaining(
     n_classes = len(report.estimator_reports_[0].estimator_.classes_)
 
     display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric, seed=0
+        n_repeats=2, data_source="train", metric=metric, seed=0
     )
     display.plot(metric="precision score", subplot_by="label")
 
@@ -180,14 +178,13 @@ def test_subplot_by_label_aggregates_split_in_remaining(
     assert (
         display.figure_.get_suptitle()
         == f"Permutation importance averaged over splits \nof {estimator_name} "
-        f"on {data_source} set"
+        "on train set"
     )
 
 
 def test_subplot_by_tuple_label_split(
     pyplot,
     cross_validation_report_multiclass_classification,
-    data_source,
 ):
     """Check subplot_by=('label', 'split') creates a 2D grid: row=label, col=split."""
     report = cross_validation_report_multiclass_classification
@@ -196,7 +193,7 @@ def test_subplot_by_tuple_label_split(
     splitter = len(report.estimator_reports_)
 
     display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric, seed=0
+        n_repeats=2, data_source="train", metric=metric, seed=0
     )
     display.plot(metric="precision score", subplot_by=("label", "split"))
 
@@ -212,21 +209,20 @@ def test_subplot_by_tuple_label_split(
     estimator_name = display.importances["estimator"].unique()[0]
     assert (
         display.figure_.get_suptitle()
-        == f"Permutation importance  \nof {estimator_name} on {data_source} set"
+        == f"Permutation importance  \nof {estimator_name} on train set"
     )
 
 
 def test_subplot_by_auto_single_metric_multiclass(
     pyplot,
     cross_validation_report_multiclass_classification,
-    data_source,
 ):
     """Check subplot_by='auto' with multiclass: label on columns, split averaged."""
     report = cross_validation_report_multiclass_classification
     metric = make_scorer(precision_score, average=None)
 
     display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric, seed=0
+        n_repeats=2, data_source="train", metric=metric, seed=0
     )
     display.plot(metric="precision score", subplot_by="auto")
 
@@ -240,20 +236,19 @@ def test_subplot_by_auto_single_metric_multiclass(
     assert (
         display.figure_.get_suptitle()
         == f"Permutation importance averaged over splits \nof {estimator_name} "
-        f"on {data_source} set"
+        "on train set"
     )
 
 
 def test_subplot_by_None_averaged_over_splits(
     pyplot,
     cross_validation_report_binary_classification,
-    data_source,
 ):
     """Check subplot_by=None with only split: averages over splits, single plot."""
     report = cross_validation_report_binary_classification
 
     display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, seed=0
+        n_repeats=2, data_source="train", seed=0
     )
     display.plot(metric="accuracy", subplot_by=None)
 
@@ -264,14 +259,13 @@ def test_subplot_by_None_averaged_over_splits(
     assert (
         display.figure_.get_suptitle()
         == f"Permutation importance averaged over splits \nof {estimator_name} "
-        f"on {data_source} set"
+        "on train set"
     )
 
 
 def test_frame_metric_parameter(
     pyplot,
     linear_regression_data,
-    data_source,
 ):
     """Check that the metric parameter correctly filters the output dataframe."""
     estimator, X, y = linear_regression_data
@@ -282,7 +276,7 @@ def test_frame_metric_parameter(
     report = CrossValidationReport(clone(estimator), X, y, splitter=2)
     display = report.inspection.permutation_importance(
         n_repeats=2,
-        data_source=data_source,
+        data_source="train",
         metric=["r2", "neg_mean_squared_error"],
         seed=0,
     )
