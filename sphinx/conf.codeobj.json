@@ -1,0 +1,20 @@
+{
+ "ExplicitOrder": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "sphinx_gallery.sorting",
+   "module_short": "sphinx_gallery.sorting",
+   "name": "ExplicitOrder"
+  }
+ ],
+ "os.environ": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "os",
+   "module_short": "os",
+   "name": "environ"
+  }
+ ]
+}

@@ -1,3 +1,10 @@
+"""
+Configuration file for the Sphinx documentation builder.
+
+This file configures the Sphinx documentation build for skore, including
+extensions, themes, and gallery settings.
+"""
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -33,7 +40,7 @@ extensions = [
     "sphinxext.generate_accessor_tables",
     "sphinxext.github_link",
     "sphinxext.matplotlib_skore_scraper",
-    "sphinxext.report_help",
+    "report_help",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
@@ -94,7 +101,7 @@ sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
     "filename_pattern": "plot_",  # pattern to select examples; change this to only build some of the examples
-    "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections
+    "subsection_order": ExplicitOrder(subsections_order + ["*"]),  # sorting gallery subsections - add wildcard for missing folders
     # see https://sphinx-gallery.github.io/stable/configuration.html#sub-gallery-order
     "within_subsection_order": "ExampleTitleSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,

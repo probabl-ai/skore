@@ -1,0 +1,38 @@
+{
+ "fetch_employee_salaries": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skrub.datasets",
+   "module_short": "skrub.datasets",
+   "name": "fetch_employee_salaries"
+  }
+ ],
+ "sklearn.linear_model.Ridge": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "sklearn.linear_model",
+   "module_short": "sklearn.linear_model",
+   "name": "Ridge"
+  }
+ ],
+ "skore.CrossValidationReport": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skore",
+   "module_short": "skore",
+   "name": "CrossValidationReport"
+  }
+ ],
+ "skrub.tabular_pipeline": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "skrub",
+   "module_short": "skrub",
+   "name": "tabular_pipeline"
+  }
+ ]
+}
