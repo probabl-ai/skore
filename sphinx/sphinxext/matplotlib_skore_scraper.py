@@ -8,6 +8,7 @@ class matplotlib_skore_scraper:  # defining matplotlib scraper as a class not a 
 
 
 def setup(app):
+    """Configure matplotlib scraper for sphinx-gallery."""
     if "sphinx_gallery_conf" not in app.config:
         app.config["sphinx_gallery_conf"] = {}
 

@@ -46,6 +46,7 @@ jobs:
         uses: ./.github/actions/sphinx/deploy-aws
         with:
           BUCKET: ${{ vars.DOCUMENTATION_PREVIEW_BUCKET }}
+          ACL: public-read
           ROLE_TO_ASSUME: ${{ vars.AWS_ROLE }}
           SOURCE: html/
           DESTINATION: ${{ steps.acquire-pr-context.outputs.pr-number }}/
