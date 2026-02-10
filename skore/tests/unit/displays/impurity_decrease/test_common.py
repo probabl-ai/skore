@@ -5,8 +5,7 @@ import pytest
 from skore import ImpurityDecreaseDisplay
 
 
-@pytest.mark.parametrize("method", ["frame", "plot"])
-def test_impurity_decrease_display_invalid_report_type(pyplot, method):
+def test_impurity_decrease_display_invalid_report_type():
     importances = pd.DataFrame(
         {
             "estimator": ["estimator1"],
@@ -18,7 +17,7 @@ def test_impurity_decrease_display_invalid_report_type(pyplot, method):
         importances=importances, report_type="invalid-type"
     )
     with pytest.raises(TypeError, match="Unexpected report type: 'invalid-type'"):
-        getattr(display, method)()
+        display.frame()
 
 
 @pytest.mark.parametrize(

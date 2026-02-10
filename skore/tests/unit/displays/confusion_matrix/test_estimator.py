@@ -8,8 +8,10 @@ from sklearn.svm import SVC
 from skore import EstimatorReport
 
 
-def test_normalization(pyplot, forest_binary_classification_with_train_test):
-    """Check that normalized values are correctly computed."""
+def test_multiple_thresholds_different_confusion_matrices(
+    forest_binary_classification_with_train_test,
+):
+    """Check that different thresholds produce different confusion matrices."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
@@ -17,24 +19,42 @@ def test_normalization(pyplot, forest_binary_classification_with_train_test):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.confusion_matrix()
-    threshold_val = display.thresholds[len(display.thresholds) // 2]
-    cm_true = display.frame(threshold_value=threshold_val, normalize="true")
-    pivoted_true = cm_true.pivot(
-        index="true_label", columns="predicted_label", values="value"
-    )
-    np.testing.assert_allclose(pivoted_true.sum(axis=1), 1.0)
 
-    cm_pred = display.frame(threshold_value=threshold_val, normalize="pred")
-    pivoted_pred = cm_pred.pivot(
-        index="true_label", columns="predicted_label", values="value"
-    )
-    np.testing.assert_allclose(pivoted_pred.sum(axis=0), 1.0)
+    low_threshold = display.thresholds[len(display.thresholds) // 4]
+    high_threshold = display.thresholds[3 * len(display.thresholds) // 4]
 
-    cm_all = display.frame(threshold_value=threshold_val, normalize="all")
-    pivoted_all = cm_all.pivot(
-        index="true_label", columns="predicted_label", values="value"
+    frame_low = display.frame(threshold_value=low_threshold)
+    frame_high = display.frame(threshold_value=high_threshold)
+
+    assert frame_low.shape == frame_high.shape
+    assert frame_low["threshold"].iloc[0] != frame_high["threshold"].iloc[0]
+    assert not np.array_equal(frame_low["value"].values, frame_high["value"].values)
+
+
+@pytest.mark.parametrize("subplot_by", [None, "auto", "invalid"])
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "forest_binary_classification_with_train_test",
+        "forest_multiclass_classification_with_train_test",
+    ],
+)
+def test_subplot_by(pyplot, subplot_by, fixture_name, request):
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    np.testing.assert_allclose(pivoted_all.sum().sum(), 1.0)
+    display = report.metrics.confusion_matrix()
+    if subplot_by == "invalid":
+        err_msg = (
+            "Invalid `subplot_by` parameter. Valid options are: None or auto. "
+            f"Got '{subplot_by}' instead."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            display.plot(subplot_by=subplot_by)
+    else:
+        display.plot(subplot_by=subplot_by)
+        assert isinstance(display.ax_, mpl.axes.Axes)
 
 
 @pytest.mark.parametrize(
@@ -117,66 +137,3 @@ def test_pos_label(pyplot, forest_binary_classification_with_train_test):
     display.plot()
     assert display.ax_.get_xticklabels()[1].get_text() == "B*"
     assert display.ax_.get_yticklabels()[1].get_text() == "B*"
-
-
-def test_multiple_thresholds_different_confusion_matrices(
-    forest_binary_classification_with_train_test,
-):
-    """Check that different thresholds produce different confusion matrices."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.metrics.confusion_matrix()
-
-    low_threshold = display.thresholds[len(display.thresholds) // 4]
-    high_threshold = display.thresholds[3 * len(display.thresholds) // 4]
-
-    frame_low = display.frame(threshold_value=low_threshold)
-    frame_high = display.frame(threshold_value=high_threshold)
-
-    assert frame_low.shape == frame_high.shape
-    assert frame_low["threshold"].iloc[0] != frame_high["threshold"].iloc[0]
-    assert not np.array_equal(frame_low["value"].values, frame_high["value"].values)
-
-
-def test_threshold_greater_than_max(forest_binary_classification_with_train_test):
-    """Check that a threshold greater than the maximum threshold is set to the maximum
-    threshold."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.metrics.confusion_matrix()
-    frame = display.frame(threshold_value=1.1)
-    assert frame["threshold"].unique() == display.thresholds[-1]
-
-
-@pytest.mark.parametrize("subplot_by", [None, "auto", "invalid"])
-@pytest.mark.parametrize(
-    "fixture_name",
-    [
-        "forest_binary_classification_with_train_test",
-        "forest_multiclass_classification_with_train_test",
-    ],
-)
-def test_subplot_by(pyplot, subplot_by, fixture_name, request):
-    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.metrics.confusion_matrix()
-    if subplot_by == "invalid":
-        err_msg = (
-            "Invalid `subplot_by` parameter. Valid options are: None or auto. "
-            f"Got '{subplot_by}' instead."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            display.plot(subplot_by=subplot_by)
-    else:
-        display.plot(subplot_by=subplot_by)
-        assert isinstance(display.ax_, mpl.axes.Axes)

@@ -124,3 +124,11 @@ class TestPredictionErrorDisplay:
             assert "Data source" in title
         else:
             assert "Data source" not in title
+
+    @pytest.mark.parametrize("subsample", [20, 0.25, None])
+    def test_subsample(pyplot, fixture_prefix, request, subsample):
+        report = request.getfixturevalue(f"{fixture_prefix}_regression")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.metrics.prediction_error(subsample=subsample, seed=0)
+        assert isinstance(display, PredictionErrorDisplay)

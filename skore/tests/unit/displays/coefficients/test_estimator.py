@@ -1,5 +1,9 @@
 import matplotlib as mpl
+import numpy as np
 import pytest
+from sklearn.linear_model import LinearRegression
+
+from skore import EstimatorReport
 
 
 @pytest.mark.parametrize(
@@ -69,3 +73,24 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
             assert isinstance(display.ax_, mpl.axes.Axes)
         else:
             assert len(display.ax_) == expected_len
+
+
+def test_include_intercept_multioutput_fit_intercept_false(request):
+    """fit_intercept=False multi-output: scalar intercept is repeated per output."""
+    X_train, X_test, y_train, y_test = request.getfixturevalue(
+        "multioutput_regression_train_test_split"
+    )
+    report = EstimatorReport(
+        LinearRegression(fit_intercept=False),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.inspection.coefficients()
+    frame = display.frame(include_intercept=True)
+    intercept_rows = frame.query("feature == 'Intercept'")
+    assert len(intercept_rows) == 2
+    assert set(intercept_rows["output"].astype(str)) == {"0", "1"}
+    np.testing.assert_array_equal(intercept_rows["coefficients"].values, [0.0, 0.0])
+    assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
