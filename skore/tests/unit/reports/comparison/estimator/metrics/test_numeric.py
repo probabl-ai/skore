@@ -19,7 +19,7 @@ from skore import ComparisonReport, EstimatorReport
                     ["DummyClassifier_1", "DummyClassifier_2"],
                     name="Estimator",
                 ),
-                index=pd.Index(["Accuracy"], dtype="str", name="Metric"),
+                index=pd.Index(["Accuracy"], dtype="object", name="Metric"),
             ),
         ),
         (
@@ -64,7 +64,7 @@ from skore import ComparisonReport, EstimatorReport
                     ["DummyClassifier_1", "DummyClassifier_2"],
                     name="Estimator",
                 ),
-                index=pd.Index(["Brier score"], dtype="str", name="Metric"),
+                index=pd.Index(["Brier score"], dtype="object", name="Metric"),
             ),
         ),
         (
@@ -75,7 +75,7 @@ from skore import ComparisonReport, EstimatorReport
                     ["DummyClassifier_1", "DummyClassifier_2"],
                     name="Estimator",
                 ),
-                index=pd.Index(["ROC AUC"], dtype="str", name="Metric"),
+                index=pd.Index(["ROC AUC"], dtype="object", name="Metric"),
             ),
         ),
         (
@@ -86,7 +86,7 @@ from skore import ComparisonReport, EstimatorReport
                     ["DummyClassifier_1", "DummyClassifier_2"],
                     name="Estimator",
                 ),
-                index=pd.Index(["Log loss"], dtype="str", name="Metric"),
+                index=pd.Index(["Log loss"], dtype="object", name="Metric"),
             ),
         ),
     ],
