@@ -21,7 +21,8 @@ def generate_help_demo():
 
 def setup(app):
     """Generate demo help HTML during Sphinx build."""
-    generate_help_demo()
+    app.connect("config-inited", generate_help_demo)
+    
     return {
         "version": "0.1",
         "parallel_read_safe": True,
