@@ -76,3 +76,4 @@ of the features in your model.
 
     ComparisonReport.inspection.help
     ComparisonReport.inspection.coefficients
+    ComparisonReport.inspection.impurity_decrease
