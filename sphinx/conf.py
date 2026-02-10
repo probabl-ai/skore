@@ -34,6 +34,7 @@ extensions = [
     "sphinxext.generate_accessor_tables",
     "sphinxext.github_link",
     "sphinxext.matplotlib_skore_scraper",
+    "sphinxext.report_help",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
