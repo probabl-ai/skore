@@ -14,7 +14,7 @@ from skore import ComparisonReport, EstimatorReport
         (
             "accuracy",
             pd.DataFrame(
-                [[0.6, 0.5]],
+                [[0.45, 0.55]],
                 columns=pd.Index(
                     ["DummyClassifier_1", "DummyClassifier_2"],
                     name="Estimator",
@@ -26,8 +26,8 @@ from skore import ComparisonReport, EstimatorReport
             "precision",
             pd.DataFrame(
                 [
-                    [0.7777777777777778, 0.6666666666666666],
-                    [0.45454545454545453, 0.36363636363636365],
+                    [0.333333, 0.444444],
+                    [0.545455, 0.636364],
                 ],
                 columns=pd.Index(
                     ["DummyClassifier_1", "DummyClassifier_2"],
@@ -43,8 +43,8 @@ from skore import ComparisonReport, EstimatorReport
             "recall",
             pd.DataFrame(
                 [
-                    [0.5384615384615384, 0.46153846153846156],
-                    [0.7142857142857143, 0.5714285714285714],
+                    [0.375, 0.5],
+                    [0.5, 0.583333],
                 ],
                 columns=pd.Index(
                     ["DummyClassifier_1", "DummyClassifier_2"],
@@ -128,7 +128,7 @@ def test_binary_classification(
         (
             "rmse",
             pd.DataFrame(
-                [[145.0950520567547, 145.0950520567547]],
+                [[94.426101, 94.426101]],
                 columns=pd.Index(
                     ["DummyRegressor_1", "DummyRegressor_2"],
                     name="Estimator",
@@ -139,7 +139,7 @@ def test_binary_classification(
         (
             "r2",
             pd.DataFrame(
-                [[-0.0012562120106678343, -0.0012562120106678343]],
+                [[-0.061173, -0.061173]],
                 columns=pd.Index(
                     ["DummyRegressor_1", "DummyRegressor_2"],
                     name="Estimator",
@@ -184,7 +184,7 @@ def test_custom_metric_data_source_external(
     report = comparison_estimator_reports_binary_classification
 
     expected = pd.DataFrame(
-        [[0.54, 0.39]],
+        [[0.48, 0.41]],
         columns=pd.Index(["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"),
         index=pd.Index(["Acc"], name="Metric"),
     )
