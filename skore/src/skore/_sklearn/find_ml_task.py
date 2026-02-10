@@ -17,7 +17,7 @@ def _column_is_classification(y) -> bool:
     """
     y_unique = np.unique(y)
     if np.any(y_unique == 0):
-        sequential = np.arange(y_unique[0], y_unique.size + 1)
+        sequential = np.arange(y_unique[0], y_unique.size)
         return np.array_equal(y_unique, sequential)
     return False
 
