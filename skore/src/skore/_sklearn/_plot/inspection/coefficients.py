@@ -441,11 +441,19 @@ class CoefficientsDisplay(DisplayMixin):
         add_background_features = hue is not None
 
         self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
-        for ax in self.ax_.flatten():
+        n_features = (
+            [frame["feature"].nunique()]
+            if col is None
+            else [
+                frame.query(f"{col} == '{col_value}'")["feature"].nunique()
+                for col_value in frame[col].unique()
+            ]
+        )
+        for ax, n_feature in zip(self.ax_.flatten(), n_features, strict=True):
             _decorate_matplotlib_axis(
                 ax=ax,
                 add_background_features=add_background_features,
-                n_features=frame["feature"].nunique(),
+                n_features=n_feature,
                 xlabel="Magnitude of coefficient",
                 ylabel="",
             )
@@ -656,7 +664,7 @@ class CoefficientsDisplay(DisplayMixin):
             col=col,
             barplot_kwargs={"sharey": has_same_features} | barplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
-            stripplot_kwargs=stripplot_kwargs,
+            stripplot_kwargs={"sharey": has_same_features} | stripplot_kwargs,
         )
 
         title = "Coefficients"
