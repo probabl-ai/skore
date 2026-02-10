@@ -9,6 +9,11 @@ import sys
 import os
 from sphinx_gallery.sorting import ExplicitOrder
 
+sys.path.append(os.path.relpath("."))
+from report_help import generate_help_demo  # noqa
+
+generate_help_demo()
+
 project = "skore"
 copyright = "2026, Probabl"
 author = "Probabl"
