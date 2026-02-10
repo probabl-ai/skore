@@ -5,6 +5,11 @@ mpl.rc("figure", max_open_warning=False)
 
 
 @pytest.fixture(scope="module")
+def estimator_type():
+    return "linear"
+
+
+@pytest.fixture(scope="module")
 def estimator_reports_binary_classification_figure_axes(
     pyplot, estimator_reports_binary_classification
 ):

@@ -93,10 +93,12 @@ class TestConfusionMatrixDisplay:
             "data_source",
         ]
         n_classes = len(display.display_labels)
-        n_thresholds = len(display.thresholds)
-        n_splits = 2 if "cross_validation" in fixture_prefix else 1
-        n_reports = 2 if "comparison" in fixture_prefix else 1
-        expected_rows = n_thresholds * n_classes * n_classes * n_splits * n_reports
+        expected_rows = 0
+        for _, group in display.confusion_matrix.groupby(
+            ["split", "estimator"], dropna=False
+        ):
+            n_t = max(1, group["threshold"].nunique())
+            expected_rows += n_classes * n_classes * n_t
         assert display.confusion_matrix.shape[0] == expected_rows
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
@@ -231,10 +233,16 @@ class TestConfusionMatrixDisplay:
             report = report[0]
         display = report.metrics.confusion_matrix()
         frame = display.frame(threshold_value=1.1)
+        cm = display.confusion_matrix
 
         for (_est, _split), group in frame.groupby(["estimator", "split"]):
             assert group["threshold"].nunique() == 1
-            assert group["threshold"].iloc[0] == display.thresholds[-1]
+            mask_est = cm["estimator"] == _est
+            mask_split = (
+                cm["split"].isna() if pd.isna(_split) else cm["split"] == _split
+            )
+            full = cm[mask_est & mask_split]
+            assert group["threshold"].iloc[0] == full["threshold"].max()
 
     def test_threshold_lower_than_min(self, fixture_prefix, request):
         report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
@@ -242,10 +250,16 @@ class TestConfusionMatrixDisplay:
             report = report[0]
         display = report.metrics.confusion_matrix()
         frame = display.frame(threshold_value=-0.1)
+        cm = display.confusion_matrix
 
         for (_est, _split), group in frame.groupby(["estimator", "split"]):
             assert group["threshold"].nunique() == 1
-            assert group["threshold"].iloc[0] == display.thresholds[0]
+            mask_est = cm["estimator"] == _est
+            mask_split = (
+                cm["split"].isna() if pd.isna(_split) else cm["split"] == _split
+            )
+            full = cm[mask_est & mask_split]
+            assert group["threshold"].iloc[0] == full["threshold"].min()
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_normalization(self, pyplot, fixture_prefix, task, request):
