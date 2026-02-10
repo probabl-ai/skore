@@ -25,7 +25,7 @@ def flatten_multi_index(index: pd.MultiIndex) -> pd.Index:
     ...     [('a', ''), ('b', '2')], names=['letter', 'number']
     ... )
     >>> flatten_multi_index(mi)
-    Index(['a', 'b_2'], dtype='object')
+    Index(['a', 'b_2'], dtype='str')
     """
     if not isinstance(index, pd.MultiIndex):
         raise ValueError("`index` must be a MultiIndex.")

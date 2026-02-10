@@ -6,16 +6,15 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import sys
 import os
 from sphinx_gallery.sorting import ExplicitOrder
+
+import matplotlib
+matplotlib.use('Agg')
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath("sphinxext"))
-from github_link import make_linkcode_resolve  # noqa
-from matplotlib_skore_scraper import matplotlib_skore_scraper  # noqa
 
 project = "skore"
 copyright = "2026, Probabl"
@@ -39,7 +38,8 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
     "sphinx_autosummary_accessors",
-    "generate_accessor_tables",
+    "sphinxext.generate_accessor_tables",
+    "sphinxext.skore_sphinxext",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
@@ -112,7 +112,7 @@ sphinx_gallery_conf = {
     "backreferences_dir": "reference/api",
     "doc_module": "skore",
     # "reset_modules": (reset_mpl, "seaborn"),
-    "image_scrapers": [matplotlib_skore_scraper()],  # using the custom class scraper
+    "image_scrapers": [],  # using the custom class scraper
     "abort_on_example_error": True,
 }
 
@@ -214,11 +214,4 @@ issues_github_path = "probabl-ai/skore"
 issues_user_uri = "https://github.com/{user}"
 
 # The following is used by sphinx.ext.linkcode to provide links to github
-linkcode_resolve = make_linkcode_resolve(
-    "skore",
-    (
-        "https://github.com/probabl-ai/"
-        "skore/blob/{revision}/"
-        "{package}/src/skore/{path}#L{lineno}"
-    ),
-)
+linkcode_resolve = None

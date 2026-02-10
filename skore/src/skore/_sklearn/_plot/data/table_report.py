@@ -69,6 +69,9 @@ def _truncate_top_k_categories(
         col = col.apply(
             lambda x: ellide_string(x, max_len=20) if isinstance(x, str) else x
         )
+        # Preserve original dtype for object columns to avoid StringDtype conversion
+        if col.dtype != "object":
+            col = col.astype("object")
     return col
 
 
