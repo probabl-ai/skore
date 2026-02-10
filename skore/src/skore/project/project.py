@@ -10,6 +10,8 @@ from skore import CrossValidationReport, EstimatorReport
 from skore._sklearn.types import MLTask
 from skore.project._summary import Summary
 
+Mode = Literal["hub", "local"]
+
 
 class Project:
     r"""
@@ -23,20 +25,20 @@ class Project:
     insert a key-report pair into the project, to obtain the metadata/metrics of the
     inserted reports and to get a specific report by its id.
 
-    Two mutually exclusive modes are available and can be configured using the ``name``
+    Two mutually exclusive modes are available and can be configured using the ``mode``
     parameter of the constructor:
 
     .. rubric:: Hub mode
 
-    If the ``name`` takes the form of the URI ``hub://<workspace>/<name>``, the project
-    is configured to the ``hub`` mode to communicate with the ``skore hub``.
+    The project is configured to the ``hub`` mode to communicate with the ``skore hub``.
 
-    A workspace is a ``skore hub`` concept that must be configured on the ``skore hub``
-    interface. It represents an isolated entity managing users, projects, and
-    resources. It can be a company, organization, or team that operates
-    independently within the system.
+    In this mode, the ``name`` takes the form ``<workspace>/<name>``, where the
+    workspace is a ``skore hub`` concept that must be configured on the ``skore hub``
+    interface. It represents an isolated entity managing users, projects, and resources.
+    It can be a company, organization, or team that operates independently within the
+    system.
 
-    In this mode, you must have an account to the ``skore hub`` and must be
+    Also in this mode, you must have an account to the ``skore hub`` and must be
     authorized to the specified workspace. You must also be authenticated beforehand,
     by calling the ``skore.login()`` function at the top of your script.
 
@@ -60,12 +62,9 @@ class Project:
     Parameters
     ----------
     name : str
-        The name of the project:
-
-        - if the ``name`` takes the form of the URI ``hub://<workspace>/<name>``, the
-          project is configured to communicate with the ``skore hub``,
-        - otherwise, the project is configured to communicate with a local storage, on
-          the user machine.
+        The name of the project.
+    mode : {"hub", "local"}
+        The mode of the project.
     **kwargs : dict
         Extra keyword arguments passed to the project, depending on its mode.
 
@@ -75,9 +74,9 @@ class Project:
     Attributes
     ----------
     name : str
-        The name of the project, extrapolated from the ``name`` parameter.
-    mode : str
-        The mode of the project, extrapolated from the ``name`` parameter.
+        The name of the project.
+    mode : {"hub", "local"}
+        The mode of the project.
     ml_task : MLTask
         The ML task of the project; unset until a first report is put.
 
@@ -121,7 +120,7 @@ class Project:
     >>> from skore import Project
     >>>
     >>> tmpdir = TemporaryDirectory().name
-    >>> local_project = Project("my-xp", workspace=Path(tmpdir))
+    >>> local_project = Project(mode="local", name="my-xp", workspace=Path(tmpdir))
 
     Put reports in the project.
 
@@ -140,39 +139,38 @@ class Project:
         Create a summary view to investigate persisted reports' metadata/metrics.
     """
 
-    __HUB_NAME_PATTERN = re.compile(r"hub://(?P<workspace>[^/]+)/(?P<name>.+)")
+    __HUB_NAME_PATTERN = re.compile(r"(?P<workspace>[^/]+)/(?P<name>.+)")
 
     @staticmethod
-    def __setup_plugin(name: str) -> tuple[Literal["local", "hub"], str, Any, dict]:
+    def __setup_plugin(mode: Mode, name: str) -> tuple[Any, dict]:
         PLUGINS = entry_points(group="skore.plugins.project")
-        mode: Literal["local", "hub"]
 
-        if match := re.match(Project.__HUB_NAME_PATTERN, name):
-            mode = "hub"
-            name = match["name"]
-            parameters = {"workspace": match["workspace"], "name": name}
+        if mode == "hub":
+            if not (match := re.match(Project.__HUB_NAME_PATTERN, name)):
+                raise ValueError(
+                    f'In hub mode, the name must be formatted as "<workspace>/<name>" '
+                    f"(found {name})"
+                )
+
+            parameters = {"workspace": match["workspace"], "name": match["name"]}
         else:
-            mode = "local"
             parameters = {"name": name}
 
         if mode not in PLUGINS.names:
             raise ValueError(f"Unknown mode `{mode}`. Please install `skore[{mode}]`.")
 
-        return mode, name, PLUGINS[mode].load(), parameters
+        return PLUGINS[mode].load(), parameters
 
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str, *, mode: Mode, **kwargs):
         r"""
         Initialize a project.
 
         Parameters
         ----------
         name : str
-            The name of the project:
-
-            - if the ``name`` takes the form of the URI ``hub://<workspace>/<name>``,
-              the project is configured to communicate with the ``skore hub``,
-            - otherwise, the project is configured to communicate with a local storage,
-              on the user machine.
+            The name of the project.
+        mode : {"hub", "local"}
+            The mode of the project.
         **kwargs : dict
             Extra keyword arguments passed to the project, depending on its mode.
 
@@ -189,7 +187,10 @@ class Project:
                 - on Linux, usually ``${HOME}/.cache/skore``,
                 - on macOS, usually ``${HOME}/Library/Caches/skore``.
         """
-        mode, name, plugin, parameters = Project.__setup_plugin(name)
+        if mode not in ("hub", "local"):
+            raise ValueError(f'`mode` must be "hub" or "local" (found {mode})')
+
+        plugin, parameters = Project.__setup_plugin(mode, name)
 
         self.__mode = mode
         self.__name = name
@@ -281,19 +282,16 @@ class Project:
         return self.__project.__repr__()
 
     @staticmethod
-    def delete(name: str, **kwargs):
+    def delete(name: str, *, mode: Mode, **kwargs):
         r"""
         Delete a project.
 
         Parameters
         ----------
         name : str
-            The name of the project:
-
-            - if the ``name`` takes the form of the URI ``hub://<workspace>/<name>``,
-              the project is configured to communicate with the ``skore hub``,
-            - otherwise, the project is configured to communicate with a local storage,
-              on the user machine.
+            The name of the project.
+        mode : {"hub", "local"}
+            The mode of the project.
         **kwargs : dict
             Extra keyword arguments passed to the project, depending on its mode.
 
@@ -310,6 +308,9 @@ class Project:
                 - on Linux, usually ``${HOME}/.cache/skore``,
                 - on macOS, usually ``${HOME}/Library/Caches/skore``.
         """
-        _, _, plugin, parameters = Project.__setup_plugin(name)
+        if mode not in ("hub", "local"):
+            raise ValueError(f'`mode` must be "hub" or "local" (found {mode})')
+
+        plugin, parameters = Project.__setup_plugin(mode, name)
 
         return plugin.delete(**(kwargs | parameters))

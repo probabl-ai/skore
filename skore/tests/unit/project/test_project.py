@@ -93,7 +93,7 @@ def cv_regression() -> CrossValidationReport:
 
 class TestProject:
     def test_init_local(self, FakeLocalProject):
-        project = Project("<name>", workspace="<workspace>")
+        project = Project(mode="local", name="<name>", workspace="<workspace>")
 
         assert isinstance(project, Project)
         assert project._Project__mode == "local"
@@ -115,14 +115,14 @@ class TestProject:
             ValueError,
             match=escape("Unknown mode `local`. Please install `skore[local]`."),
         ):
-            Project("<name>")
+            Project(mode="local", name="<name>")
 
     def test_init_hub(self, FakeHubProject):
-        project = Project("hub://<workspace>/<name>")
+        project = Project(mode="hub", name="<workspace>/<name>")
 
         assert isinstance(project, Project)
         assert project._Project__mode == "hub"
-        assert project._Project__name == "<name>"
+        assert project._Project__name == "<workspace>/<name>"
         assert FakeHubProject.called
         assert not FakeHubProject.call_args.args
         assert FakeHubProject.call_args.kwargs == {
@@ -140,7 +140,7 @@ class TestProject:
             ValueError,
             match=escape("Unknown mode `hub`. Please install `skore[hub]`."),
         ):
-            Project("hub://<workspace>/<name>")
+            Project(mode="hub", name="<workspace>/<name>")
 
     def test_init_exception_wrong_ml_task(self, monkeypatch):
         """If the underlying Project implementation contains reports with
@@ -173,15 +173,17 @@ class TestProject:
             "Got ML tasks "
         )
         with raises(RuntimeError, match=err_msg):
-            Project("<name>", workspace="<workspace>")
+            Project(mode="local", name="<name>", workspace="<workspace>")
 
     def test_mode(self):
-        assert Project("<name>").mode == "local"
-        assert Project("hub://<workspace>/<name>").mode == "hub"
+        assert Project(mode="local", name="<name>").mode == "local"
+        assert Project(mode="hub", name="<workspace>/<name>").mode == "hub"
 
     def test_name(self):
-        assert Project("<name>").name == "<name>"
-        assert Project("hub://<workspace>/<name>").name == "<name>"
+        assert Project(mode="local", name="<name>").name == "<name>"
+        assert (
+            Project(mode="hub", name="<workspace>/<name>").name == "<workspace>/<name>"
+        )
 
     @mark.parametrize(
         "report",
@@ -192,7 +194,7 @@ class TestProject:
     )
     def test_put(self, report, FakeLocalProject, request):
         report = request.getfixturevalue(report)
-        project = Project("<name>")
+        project = Project(mode="local", name="<name>")
 
         project.put("<key>", report)
 
@@ -206,13 +208,13 @@ class TestProject:
 
     def test_put_exception(self):
         with raises(TypeError, match="Key must be a string"):
-            Project("<name>").put(None, "<value>")
+            Project(mode="local", name="<name>").put(None, "<value>")
 
         with raises(TypeError, match="Report must be `EstimatorReport` or"):
-            Project("<name>").put("<key>", "<value>")
+            Project(mode="local", name="<name>").put("<key>", "<value>")
 
     def test_put_exception_wrong_ml_task(self, regression, classification):
-        project = Project("<name>", workspace="<workspace>")
+        project = Project(mode="local", name="<name>", workspace="<workspace>")
         project.put("classification", classification)
         assert project.ml_task == "binary-classification"
 
@@ -224,7 +226,7 @@ class TestProject:
             project.put("regression", regression)
 
     def test_get(self, FakeLocalProject):
-        project = Project("<name>")
+        project = Project(mode="local", name="<name>")
 
         project.get("<id>")
 
@@ -234,7 +236,7 @@ class TestProject:
         assert not project._Project__project.get.call_args.kwargs
 
     def test_summarize(self):
-        project = Project("<name>")
+        project = Project(mode="local", name="<name>")
         project._Project__project.summarize.return_value = [
             {
                 "learner": "<learner>",
@@ -288,7 +290,7 @@ class TestProject:
             y_test=y_test,
         )
 
-        project = Project("<project>", workspace=Path(r"{tmpdir}"))
+        project = Project(mode="local", name="<project>", workspace=Path(r"{tmpdir}"))
         project.put("<report>", regression)
         project.summarize()
         """
@@ -300,11 +302,11 @@ class TestProject:
         execution_result.raise_error()
 
     def test_repr(self):
-        project = Project("<name>")
+        project = Project(mode="local", name="<name>")
         assert repr(project) == repr(project._Project__project)
 
     def test_delete_local(self, FakeLocalProject):
-        Project.delete("<name>", workspace="<workspace>")
+        Project.delete(mode="local", name="<name>", workspace="<workspace>")
 
         assert not FakeLocalProject.called
         assert FakeLocalProject.delete.called
@@ -315,7 +317,7 @@ class TestProject:
         }
 
     def test_delete_hub(self, FakeHubProject):
-        Project.delete("hub://<workspace>/<name>")
+        Project.delete(mode="hub", name="<workspace>/<name>")
 
         assert not FakeHubProject.called
         assert FakeHubProject.delete.called
