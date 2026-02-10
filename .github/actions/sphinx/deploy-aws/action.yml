@@ -1,0 +1,36 @@
+name: Deploy sphinx documentation
+
+inputs:
+  ACTION:
+    required: false
+    default: sync
+    type: choice
+    options:
+      - cp
+      - sync
+  BUCKET:
+    required: true
+  SOURCE:
+    required: true
+  DESTINATION:
+    required: true
+  ROLE_TO_ASSUME:
+    description: "IAM Role ARN to assume (Required for OIDC)"
+    required: true
+  AWS_REGION:
+    description: "AWS Region"
+    required: true
+    default: "eu-west-3"
+
+runs:
+  using: composite
+  steps:
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ inputs.ROLE_TO_ASSUME }}
+        aws-region: ${{ inputs.AWS_REGION }}
+
+    - name: Run AWS S3 Command
+      shell: bash
+      run: aws s3  ${{ inputs.ACTION }} "${{ inputs.SOURCE }}" "s3://${{ inputs.BUCKET }}/${{ inputs.DESTINATION }}" --delete
