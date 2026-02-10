@@ -21,6 +21,10 @@ inputs:
     description: "AWS Region"
     required: true
     default: "eu-west-3"
+  ACL:
+    description: "Canned ACL to apply. Defaults to private."
+    required: false
+    default: "private"
 
 runs:
   using: composite
@@ -33,4 +37,4 @@ runs:
 
     - name: Run AWS S3 Command
       shell: bash
-      run: aws s3  ${{ inputs.ACTION }} "${{ inputs.SOURCE }}" "s3://${{ inputs.BUCKET }}/${{ inputs.DESTINATION }}" --delete
+      run: aws s3 ${{ inputs.ACTION }} "${{ inputs.SOURCE }}" "s3://${{ inputs.BUCKET }}/${{ inputs.DESTINATION }}" --acl ${{ inputs.ACL }} --delete
