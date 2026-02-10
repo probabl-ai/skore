@@ -40,6 +40,7 @@ dependencies = [
   "skore[local]",
   "skrub",
   "seaborn",
+  "jinja2",
 ]
 
 [project.optional-dependencies]
@@ -113,6 +114,7 @@ addopts = [
   "--no-header",
   "--verbosity=2",
   "--dist=loadscope",
+  "--durations=25",
 ]
 xfail_strict = true
 log_cli_level = "info"
@@ -164,6 +166,7 @@ exclude = ["src/skore/_externals/", "hatch/", "tests/"]
 ignore_missing_imports = true
 module = [
   "ipywidgets.*",
+  "jinja2.*",
   "joblib.*",
   "pandas.*",
   "plotly.*",

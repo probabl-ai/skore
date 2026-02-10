@@ -17,6 +17,11 @@ sys.path.insert(0, os.path.abspath("sphinxext"))
 from github_link import make_linkcode_resolve  # noqa
 from matplotlib_skore_scraper import matplotlib_skore_scraper  # noqa
 
+sys.path.append(os.path.relpath("."))
+from report_help import generate_help_demo  # noqa
+
+generate_help_demo()
+
 project = "skore"
 copyright = "2026, Probabl"
 author = "Probabl"

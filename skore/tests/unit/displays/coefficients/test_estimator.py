@@ -92,5 +92,5 @@ def test_include_intercept_multioutput_fit_intercept_false(request):
     intercept_rows = frame.query("feature == 'Intercept'")
     assert len(intercept_rows) == 2
     assert set(intercept_rows["output"].astype(str)) == {"0", "1"}
-    np.testing.assert_array_equal(intercept_rows["coefficients"].values, [0.0, 0.0])
+    np.testing.assert_array_equal(intercept_rows["coefficient"].values, [0.0, 0.0])
     assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty

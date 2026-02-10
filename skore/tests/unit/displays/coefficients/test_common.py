@@ -10,8 +10,11 @@ def test_coefficients_display_invalid_report_type():
         coefficients=pd.DataFrame(
             {
                 "estimator": ["estimator1"],
+                "split": [0],
                 "feature": ["feature1"],
-                "coefficients": [1.0],
+                "label": [np.nan],
+                "output": [np.nan],
+                "coefficient": [1.0],
             }
         ),
         report_type="invalid-type",
@@ -60,7 +63,7 @@ class TestCoefficientsDisplay:
         display = report.inspection.coefficients()
         frame = display.frame()
 
-        expected = {"feature", "coefficients"}
+        expected = {"feature", "coefficient"}
         if "cross_validation" in fixture_prefix:
             expected.add("split")
         if "comparison" in fixture_prefix:
@@ -82,7 +85,7 @@ class TestCoefficientsDisplay:
             "feature",
             "label",
             "output",
-            "coefficients",
+            "coefficient",
         }
         assert set(display.coefficients.columns) == expected
 
@@ -103,7 +106,7 @@ class TestCoefficientsDisplay:
         display = report.inspection.coefficients()
         figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         title = figure.get_suptitle()
-        assert "Coefficients" in title
+        assert "Coefficient" in title
         if "comparison" not in fixture_prefix:
             estimator_name = display.coefficients["estimator"].iloc[0]
             assert estimator_name in title
@@ -152,7 +155,7 @@ class TestCoefficientsDisplay:
         display = report.inspection.coefficients()
         frame = display.frame(sorting_order=sorting_order)
         group_cols = [
-            c for c in frame.columns if c not in ("feature", "coefficients", "split")
+            c for c in frame.columns if c not in ("feature", "coefficient", "split")
         ]
         if group_cols:
             groups = frame.groupby(group_cols, sort=False, observed=True)
@@ -161,12 +164,12 @@ class TestCoefficientsDisplay:
         for _, group in groups:
             if "cross_validation" in fixture_prefix:
                 feature_order = group["feature"].unique()
-                mean_abs = group.groupby("feature", sort=False)["coefficients"].apply(
+                mean_abs = group.groupby("feature", sort=False)["coefficient"].apply(
                     lambda x: x.abs().mean()
                 )
                 coefs = [mean_abs.loc[f] for f in feature_order]
             else:
-                coefs = group["coefficients"].tolist()
+                coefs = group["coefficient"].tolist()
             expected = sorted(coefs, key=abs, reverse=(sorting_order == "descending"))
             np.testing.assert_array_equal(coefs, expected)
 

@@ -29,15 +29,15 @@ def test_with_pipeline(pyplot, forest_binary_classification_with_train_test):
         "estimator",
         "split",
         "feature",
-        "importances",
+        "importance",
     }
     fitted_predictor = report.estimator_.named_steps["predictor"]
     np.testing.assert_allclose(
-        display.importances["importances"].to_numpy(),
+        display.importances["importance"].to_numpy(),
         fitted_predictor.feature_importances_,
     )
     frame = display.frame()
-    assert list(frame.columns) == ["feature", "importances"]
+    assert list(frame.columns) == ["feature", "importance"]
     assert frame["feature"].tolist() == columns_names
     display.plot()
     assert hasattr(display, "figure_") and hasattr(display, "ax_")

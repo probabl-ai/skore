@@ -10,7 +10,7 @@ def test_frame_sorts_per_estimator(
     frame = report.inspection.coefficients().frame(sorting_order=sorting_order)
 
     for estimator in set(frame["estimator"]):
-        coefs = list(frame.query(f"estimator == '{estimator}'")["coefficients"])
+        coefs = list(frame.query(f"estimator == '{estimator}'")["coefficient"])
         assert coefs == sorted(coefs, key=abs, reverse=(sorting_order == "descending"))
 
 

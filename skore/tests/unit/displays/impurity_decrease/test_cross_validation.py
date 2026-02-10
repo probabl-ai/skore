@@ -24,7 +24,7 @@ def test_with_pipeline(pyplot, forest_binary_classification_data):
         "estimator",
         "split",
         "feature",
-        "importances",
+        "importance",
     ]
     assert display.importances["split"].nunique() == 2
     for split_index, est_report in enumerate(report.estimator_reports_):
@@ -32,12 +32,12 @@ def test_with_pipeline(pyplot, forest_binary_classification_data):
         imp = (
             display.importances.query(f"split == {split_index}")
             .set_index("feature")
-            .loc[columns_names, "importances"]
+            .loc[columns_names, "importance"]
             .to_numpy()
         )
         np.testing.assert_allclose(imp, fitted.feature_importances_)
     frame = display.frame()
-    assert list(frame.columns) == ["split", "feature", "importances"]
+    assert list(frame.columns) == ["split", "feature", "importance"]
     display.plot()
     assert hasattr(display, "facet_") and hasattr(display, "figure_")
     assert isinstance(display.ax_, mpl.axes.Axes)

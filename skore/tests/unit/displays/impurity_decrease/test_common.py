@@ -10,7 +10,7 @@ def test_impurity_decrease_display_invalid_report_type():
         {
             "estimator": ["estimator1"],
             "feature": ["feature1"],
-            "importances": [1.0],
+            "importance": [1.0],
         }
     )
     display = ImpurityDecreaseDisplay(
@@ -49,7 +49,7 @@ class TestImpurityDecreaseDisplay:
             report = report[0]
         display = report.inspection.impurity_decrease()
         frame = display.frame()
-        expected = {"feature", "importances"}
+        expected = {"feature", "importance"}
         if fixture_prefix == "cross_validation_reports":
             expected.add("split")
         assert set(frame.columns) == expected
@@ -59,7 +59,7 @@ class TestImpurityDecreaseDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.inspection.impurity_decrease()
-        expected = {"estimator", "split", "feature", "importances"}
+        expected = {"estimator", "split", "feature", "importance"}
         assert set(display.importances.columns) == expected
 
     def test_plot_structure(self, pyplot, fixture_prefix, task, request):
@@ -117,10 +117,10 @@ def test_multiclass_and_multioutput(pyplot, fixture_prefix, task, request):
         "estimator",
         "split",
         "feature",
-        "importances",
+        "importance",
     }
     frame = display.frame()
-    assert set(frame.columns) >= {"feature", "importances"}
+    assert set(frame.columns) >= {"feature", "importance"}
     if fixture_prefix == "cross_validation_reports":
         assert "split" in frame.columns
 
