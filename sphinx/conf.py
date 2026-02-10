@@ -5,16 +5,15 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-
+import sys
 import os
 from sphinx_gallery.sorting import ExplicitOrder
 
-import matplotlib
-matplotlib.use('Agg')
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.insert(0, os.path.abspath("sphinxext"))
 
 project = "skore"
 copyright = "2026, Probabl"
@@ -112,7 +111,6 @@ sphinx_gallery_conf = {
     "backreferences_dir": "reference/api",
     "doc_module": "skore",
     # "reset_modules": (reset_mpl, "seaborn"),
-    "image_scrapers": [],  # using the custom class scraper
     "abort_on_example_error": True,
 }
 
@@ -213,5 +211,3 @@ issues_uri = "https://github.com/probabl-ai/skore/issues/{issue}"
 issues_github_path = "probabl-ai/skore"
 issues_user_uri = "https://github.com/{user}"
 
-# The following is used by sphinx.ext.linkcode to provide links to github
-linkcode_resolve = None
