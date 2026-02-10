@@ -452,33 +452,10 @@ print("Number of features after feature engineering:", n_features_engineered)
 # Let us display the 15 largest absolute coefficients:
 
 # %%
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< conflict 1 of 1
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ywulqxoo 5f4e2726 "feat: Extend .frame() API with format and query parameters" (rebased revision)
 engineered_ridge_report_coefficients = (
-    engineered_ridge_report.inspection.coefficients()
-    .frame()
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% diff from: znkxumpv 6faaf1f4 "Merge branch 'main' into issue-2161" (parents of rebased revision)
-\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\        to: rytokvlt e9252b12 "feat: Extend .frame() API with format and query parameters" (rebased revision)
- engineered_ridge_report_feature_importance = (
-     engineered_ridge_report.feature_importance.coefficients()
--    .frame()
-+    .frame(format="long")
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% diff from: zlqnrlzs b459ed23 "chore(dependencies): GITHUB-ACTIONS: Bump actions/checkout from 6.0.1 to 6.0.2 (#2349)"
-\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\        to: uyxuplwy 5eeef3f8 "ci: Increase the timeout on `pytest` workflow (#2344)"
- engineered_ridge_report_feature_importance = (
--    engineered_ridge_report.inspection.coefficients()
-+    engineered_ridge_report.feature_importance.coefficients()
-     .frame()
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% diff from: pontloqt fe68d3ca "feat: Extend .frame() API with format and query parameters"
-\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\        to: zqzptpvm 973258b5 "fix doctest" (rebased revision)
- engineered_ridge_report_feature_importance = (
--    engineered_ridge_report.feature_importance.coefficients()
-+    engineered_ridge_report.inspection.coefficients()
-     .frame(format="long")
->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> conflict 1 of 1 ends
-    .set_index("feature")
-    .sort_values(by="coefficient", key=abs, ascending=True)
-    .tail(15)
+    engineered_ridge_report.inspection.coefficients().frame(
+        select_k=15, sorting_order="descending"
+    )
 )
 
 engineered_ridge_report_coefficients.index = (

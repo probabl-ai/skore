@@ -83,7 +83,7 @@ class CoefficientsDisplay(DisplayMixin):
     }
 
     def __init__(self, *, coefficients: pd.DataFrame, report_type: ReportType):
-        if report_type not in ReportType.__args__:
+        if report_type not in ReportType.__args__:  # type: ignore
             raise TypeError(f"Unexpected report type: {report_type!r}")
 
         self.coefficients = coefficients
