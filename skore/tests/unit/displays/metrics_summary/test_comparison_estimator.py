@@ -7,12 +7,14 @@ from skore import ComparisonReport, MetricsSummaryDisplay
 
 
 def test_data_source_external(
-    binary_classification_data, comparison_estimator_reports_binary_classification
+    binary_classification_data, estimator_reports_binary_classification
 ):
     """Check that `MetricsSummaryDisplay` works with an "X_y" data source."""
     X, y = binary_classification_data
 
-    report = comparison_estimator_reports_binary_classification
+    estimator_report_1, estimator_report_2 = estimator_reports_binary_classification
+    report = ComparisonReport([estimator_report_1, estimator_report_2])
+
     result = report.metrics.summarize(data_source="X_y", X=X[:10], y=y[:10]).frame()
     assert "Favorability" not in result.columns
 
@@ -45,12 +47,13 @@ def test_data_source_external(
 
 
 def test_data_source_both(
-    binary_classification_data, comparison_estimator_reports_binary_classification
+    binary_classification_data, estimator_reports_binary_classification
 ):
     """Check that `MetricsSummaryDisplay` works with `data_source="both"`."""
     X, y = binary_classification_data
 
-    report = comparison_estimator_reports_binary_classification
+    estimator_report_1, estimator_report_2 = estimator_reports_binary_classification
+    report = ComparisonReport([estimator_report_1, estimator_report_2])
     result = report.metrics.summarize(data_source="both", X=X[:10], y=y[:10]).frame()
     assert "Favorability" not in result.columns
 

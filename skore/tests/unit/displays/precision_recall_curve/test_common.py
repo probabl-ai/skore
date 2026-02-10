@@ -1,10 +1,8 @@
-"""Common tests for RocCurveDisplay."""
-
 import numpy as np
 import pytest
 import seaborn as sns
 
-from skore._sklearn._plot import RocCurveDisplay
+from skore._sklearn._plot import PrecisionRecallCurveDisplay
 from skore._utils._testing import check_frame_structure
 
 
@@ -17,18 +15,18 @@ from skore._utils._testing import check_frame_structure
         "comparison_cross_validation_reports",
     ],
 )
-class TestRocCurveDisplay:
+class TestPrecisionRecallCurveDisplay:
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_class_attributes(self, pyplot, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
 
-        display = report.metrics.roc()
-        assert isinstance(display, RocCurveDisplay)
+        display = report.metrics.precision_recall()
+        assert isinstance(display, PrecisionRecallCurveDisplay)
 
-        assert hasattr(display, "roc_curve")
-        assert hasattr(display, "roc_auc")
+        assert hasattr(display, "precision_recall")
+        assert hasattr(display, "average_precision")
         assert hasattr(display, "report_type")
         assert hasattr(display, "ml_task")
         assert hasattr(display, "data_source")
@@ -40,19 +38,22 @@ class TestRocCurveDisplay:
         assert hasattr(display, "ax_")
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    @pytest.mark.parametrize("with_roc_auc", [False, True])
-    def test_frame_structure(self, fixture_prefix, task, with_roc_auc, request):
+    @pytest.mark.parametrize("with_average_precision", [False, True])
+    def test_frame_structure(
+        self, fixture_prefix, task, with_average_precision, request
+    ):
+        """Check that the frame method returns a properly structured dataframe."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
 
-        display = report.metrics.roc()
-        frame = display.frame(with_roc_auc=with_roc_auc)
+        display = report.metrics.precision_recall()
+        frame = display.frame(with_average_precision=with_average_precision)
 
-        expected_columns = ["threshold", "fpr", "tpr"]
+        expected_columns = ["threshold", "precision", "recall"]
         expected_index = []
-        if with_roc_auc:
-            expected_columns.append("roc_auc")
+        if with_average_precision:
+            expected_columns.append("average_precision")
         if "cross_validation" in fixture_prefix:
             expected_index.append("split")
         if "comparison" in fixture_prefix:
@@ -64,34 +65,36 @@ class TestRocCurveDisplay:
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_internal_data_structure(self, fixture_prefix, task, request):
+        """Check the structure of the precision_recall attribute."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
-        display = report.metrics.roc()
+        display = report.metrics.precision_recall()
 
-        assert list(display.roc_curve.columns) == [
+        assert list(display.precision_recall.columns) == [
             "estimator",
             "data_source",
             "split",
             "label",
             "threshold",
-            "fpr",
-            "tpr",
+            "precision",
+            "recall",
         ]
-        assert list(display.roc_auc.columns) == [
+        assert list(display.average_precision.columns) == [
             "estimator",
             "data_source",
             "split",
             "label",
-            "roc_auc",
+            "average_precision",
         ]
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_relplot_kwargs(self, pyplot, fixture_prefix, task, request):
+        """Check that heatmap kwargs are applied correctly and can be changed."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
-        display = report.metrics.roc()
+        display = report.metrics.precision_recall()
 
         _, ax = request.getfixturevalue(
             f"{fixture_prefix}_{task}_classification_figure_axes"
@@ -110,6 +113,7 @@ class TestRocCurveDisplay:
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_plot_structure(self, pyplot, fixture_prefix, task, request):
+        """Check that the plot has correct structure"""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
@@ -120,11 +124,11 @@ class TestRocCurveDisplay:
 
         n_splits = 2 if "cross_validation" in fixture_prefix else 1
         n_labels = 3 if task == "multiclass" else 1
-        n_lines = n_splits * n_labels + 1
+        n_lines = n_splits * n_labels
         assert len(ax.get_lines()) == n_lines
 
-        assert ax.get_xlabel() == "False Positive Rate"
-        assert ax.get_ylabel() in ("True Positive Rate", "")
+        assert ax.get_xlabel() == "recall"
+        assert ax.get_ylabel() in ("precision", "")
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
@@ -132,15 +136,15 @@ class TestRocCurveDisplay:
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
-        display = report.metrics.roc()
+        display = report.metrics.precision_recall()
         figure, _ = request.getfixturevalue(
             f"{fixture_prefix}_{task}_classification_figure_axes"
         )
         title = figure.get_suptitle()
 
-        assert "ROC Curve" in title
+        assert "Precision-Recall Curve" in title
         if "comparison" not in fixture_prefix:
-            estimator_name = display.roc_curve["estimator"].cat.categories[0]
+            estimator_name = display.precision_recall["estimator"].cat.categories[0]
             assert estimator_name in title
         else:
             assert "for" not in title

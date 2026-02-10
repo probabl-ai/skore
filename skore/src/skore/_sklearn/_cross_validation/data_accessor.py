@@ -106,8 +106,8 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, pos_label=1)
+        >>> classifier = LogisticRegression()
+        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.data.analyze().frame()
         """
         if subsample_strategy not in (subsample_strategy_options := ("head", "random")):
