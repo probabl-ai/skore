@@ -40,7 +40,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> from sklearn.linear_model import Ridge
         >>> from skore import CrossValidationReport
         >>> X, y = make_regression(n_features=3, random_state=42)
-        >>> report = CrossValidationReport(estimator=Ridge(), X=X, y=y, splitter=2)
+        >>> report = CrossValidationReport(estimator=Ridge(), X=X, y=y)
         >>> display = report.inspection.coefficients()
         >>> display.frame()
         split                    0         1         2         3         4

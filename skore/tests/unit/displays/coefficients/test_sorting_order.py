@@ -7,7 +7,9 @@ def test_frame_sorts_per_estimator(
 ):
     """`sorting_order` sorts per estimator."""
     report = comparison_estimator_reports_binary_classification
-    frame = report.inspection.coefficients().frame(sorting_order=sorting_order)
+    frame = report.inspection.coefficients().frame(
+        sorting_order=sorting_order, format="long"
+    )
 
     for estimator in set(frame["estimator"]):
         coefs = list(frame.query(f"estimator == '{estimator}'")["coefficient"])
@@ -58,6 +60,6 @@ def test_plot_different_features(
     """`sorting_order` works for plotting when estimators have different features."""
     report = comparison_estimator_reports_binary_classification
     display = report.inspection.coefficients()
-    frame = display.frame(sorting_order=sorting_order)
+    frame = display.frame(sorting_order=sorting_order, format="long")
 
     assert frame["feature"].tolist() == expected_features

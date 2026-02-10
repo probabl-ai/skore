@@ -83,6 +83,9 @@ class CoefficientsDisplay(DisplayMixin):
     }
 
     def __init__(self, *, coefficients: pd.DataFrame, report_type: ReportType):
+        if report_type not in ReportType.__args__:
+            raise TypeError(f"Unexpected report type: {report_type!r}")
+
         self.coefficients = coefficients
         self.report_type = report_type
 
@@ -284,7 +287,7 @@ class CoefficientsDisplay(DisplayMixin):
         if format == "long":
             return frame.reset_index(drop=True)
 
-        if self.report_type.startswith("comparison") and not self._has_same_features(
+        if "comparison" in self.report_type and not self._has_same_features(
             frame=frame
         ):
             raise ValueError(
@@ -293,7 +296,7 @@ class CoefficientsDisplay(DisplayMixin):
             )
 
         index = ["feature"]
-        values = ["coefficients"]
+        values = ["coefficient"]
         columns = [col for col in frame.columns if col not in index + values]
 
         if columns:
@@ -304,7 +307,6 @@ class CoefficientsDisplay(DisplayMixin):
                 columns=columns,
                 values=values,
                 aggfunc="first",
-                sort=False,
             )
             if isinstance(frame.columns, pd.MultiIndex):
                 frame.columns = frame.columns.droplevel(0)

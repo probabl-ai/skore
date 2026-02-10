@@ -88,7 +88,7 @@ def test_include_intercept_multioutput_fit_intercept_false(request):
         y_test=y_test,
     )
     display = report.inspection.coefficients()
-    frame = display.frame(include_intercept=True)
+    frame = display.frame(include_intercept=True, format="long")
     intercept_rows = frame.query("feature == 'Intercept'")
     assert len(intercept_rows) == 2
     assert set(intercept_rows["output"].astype(str)) == {"0", "1"}
