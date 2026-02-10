@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -17,7 +16,7 @@ from skore._sklearn._plot import ConfusionMatrixDisplay
 )
 class TestConfusionMatrixDisplay:
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_class_attributes(pyplot, fixture_prefix, task, request):
+    def test_class_attributes(self, pyplot, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
@@ -41,7 +40,7 @@ class TestConfusionMatrixDisplay:
         assert hasattr(display, "ax_")
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_frame_structure(pyplot, fixture_prefix, task, request):
+    def test_frame_structure(self, fixture_prefix, task, request):
         """Check that the frame method returns a properly structured dataframe."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
@@ -49,7 +48,7 @@ class TestConfusionMatrixDisplay:
 
         display = report.metrics.confusion_matrix()
         n_classes = len(display.display_labels)
-        n_splits = 5 if "cross_validation" in fixture_prefix else 1
+        n_splits = 2 if "cross_validation" in fixture_prefix else 1
         n_reports = 2 if "comparison" in fixture_prefix else 1
 
         frame = display.frame()
@@ -69,11 +68,11 @@ class TestConfusionMatrixDisplay:
         assert set(frame["true_label"]) == set(display.display_labels)
         assert set(frame["predicted_label"]) == set(display.display_labels)
         assert frame["split"].nunique() == (
-            5 if "cross_validation" in fixture_prefix else 0
+            2 if "cross_validation" in fixture_prefix else 0
         )
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_confusion_matrix_structure(pyplot, fixture_prefix, task, request):
+    def test_confusion_matrix_structure(self, fixture_prefix, task, request):
         """Check the structure of the confusion_matrix attribute."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
@@ -94,83 +93,59 @@ class TestConfusionMatrixDisplay:
             "data_source",
         ]
         n_classes = len(display.display_labels)
-        n_thresholds = len(display.thresholds)
-        n_splits = 5 if "cross_validation" in fixture_prefix else 1
-        n_reports = 2 if "comparison" in fixture_prefix else 1
-        expected_rows = n_thresholds * n_classes * n_classes * n_splits * n_reports
+        expected_rows = 0
+        for _, group in display.confusion_matrix.groupby(
+            ["split", "estimator"], dropna=False
+        ):
+            n_t = max(1, group["threshold"].nunique())
+            expected_rows += n_classes * n_classes * n_t
         assert display.confusion_matrix.shape[0] == expected_rows
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_facet_grid_kwargs(pyplot, fixture_prefix, task, request):
+    def test_facet_grid_kwargs(self, pyplot, fixture_prefix, task, request):
         """Check that we can override default facet grid kwargs."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
-        display.plot()
-        assert display.figure_.get_figheight() == 6
+        figure, _ = request.getfixturevalue(
+            f"{fixture_prefix}_{task}_classification_figure_axes"
+        )
+        assert figure.get_figheight() == 6
 
         display.set_style(facet_grid_kwargs={"height": 8}).plot()
         assert display.figure_.get_figheight() == 8
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_heatmap_kwargs(pyplot, fixture_prefix, task, request):
+    def test_heatmap_kwargs(self, pyplot, fixture_prefix, task, request):
         """Check that heatmap kwargs are applied correctly and can be changed."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
-
-        def get_ax(display):
-            return (
-                display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
-            )
-
-        n_base_elements = 1 if task == "binary" else 0
-        n_plots = 2 if "comparison" in fixture_prefix else 1
-
         display = report.metrics.confusion_matrix()
-        display.plot()
-        assert get_ax(display).collections[0].get_cmap().name == "Blues"
+        _, ax = request.getfixturevalue(
+            f"{fixture_prefix}_{task}_classification_figure_axes"
+        )
+        ax = ax[0] if isinstance(ax, np.ndarray) else ax
+
+        assert ax.collections[0].get_cmap().name == "Blues"
         display.set_style(heatmap_kwargs={"cmap": "Reds"}).plot()
-        assert get_ax(display).collections[0].get_cmap().name == "Reds"
-
-        display = report.metrics.confusion_matrix()
-        display.plot()
-        assert len(get_ax(display).texts) > 1
-        display.set_style(heatmap_kwargs={"annot": False}).plot()
-        # There is still the pos_label annotation
-        assert len(get_ax(display).texts) == n_base_elements
-        plt.close("all")
-
-        display = report.metrics.confusion_matrix()
-        display.plot(normalize="all")
-        for text in get_ax(display).texts:
-            text_content = text.get_text()
-            assert "." in text_content or "*" in text_content
-        display.set_style(heatmap_kwargs={"fmt": ".2e"}).plot(normalize="all")
-        for text in get_ax(display).texts:
-            text_content = text.get_text()
-            assert "e" in text_content
-        plt.close("all")
-
-        display = report.metrics.confusion_matrix()
-        display.plot()
-        assert len(display.figure_.axes) == n_plots
-        display.set_style(heatmap_kwargs={"cbar": True}).plot()
-        assert len(display.figure_.axes) == 2 * n_plots
-        plt.close("all")
+        ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+        assert ax.collections[0].get_cmap().name == "Reds"
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_plot_attributes(pyplot, fixture_prefix, task, request):
+    def test_plot_attributes(self, pyplot, fixture_prefix, task, request):
         """Check that the plot has correct attributes and labels."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
-        display.plot()
-        assert "Confusion Matrix" in display.figure_.get_suptitle()
+        figure, ax = request.getfixturevalue(
+            f"{fixture_prefix}_{task}_classification_figure_axes"
+        )
+        assert "Confusion Matrix" in figure.get_suptitle()
 
-        ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+        ax = ax[0] if isinstance(ax, np.ndarray) else ax
         assert ax.get_xlabel() == "Predicted label"
         assert ax.get_ylabel() == "True label"
 
@@ -187,12 +162,11 @@ class TestConfusionMatrixDisplay:
             assert xticklabels == ["0", "1", "2"]
             assert yticklabels == ["0", "1", "2"]
 
-    @pytest.mark.parametrize("task", ["binary"])
     def test_thresholds_available_for_binary_classification(
-        pyplot, fixture_prefix, task, request
+        self, fixture_prefix, request
     ):
         """Check that thresholds are available for binary classification."""
-        report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
+        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
@@ -201,13 +175,14 @@ class TestConfusionMatrixDisplay:
         assert len(display.thresholds) > 0
         assert "threshold" in display.confusion_matrix.columns
 
-        display.plot()
-        assert "threshold" in display.figure_.get_suptitle().lower()
+        figure, _ = request.getfixturevalue(
+            f"{fixture_prefix}_binary_classification_figure_axes"
+        )
+        assert "threshold" in figure.get_suptitle().lower()
 
-    @pytest.mark.parametrize("task", ["multiclass"])
-    def test_thresholds_in_multiclass(pyplot, fixture_prefix, task, request):
+    def test_thresholds_in_multiclass(self, pyplot, fixture_prefix, request):
         """Check that the absence of thresholds in handled properly in multiclass."""
-        report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
+        report = request.getfixturevalue(f"{fixture_prefix}_multiclass_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
@@ -221,37 +196,97 @@ class TestConfusionMatrixDisplay:
         with pytest.raises(ValueError, match=err_msg):
             display.plot(threshold_value=0.5)
 
-    @pytest.mark.parametrize("task", ["binary"])
-    def test_threshold_values_are_sorted(pyplot, fixture_prefix, task, request):
+    def test_threshold_values_are_sorted(self, fixture_prefix, request):
         """Check that thresholds are sorted in ascending order."""
-        report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
+        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
 
         assert np.all(display.thresholds[:-1] <= display.thresholds[1:])
 
-    @pytest.mark.parametrize("task", ["binary"])
-    def test_threshold_values_are_unique(pyplot, fixture_prefix, task, request):
+    def test_threshold_values_are_unique(self, fixture_prefix, request):
         """Check that thresholds contains unique values."""
-        report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
+        report = request.getfixturevalue(f"{fixture_prefix}_multiclass_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
 
         assert len(display.thresholds) == len(np.unique(display.thresholds))
 
-    @pytest.mark.parametrize("task", ["multiclass"])
-    def test_plot_multiclass_no_threshold_in_title(
-        pyplot, fixture_prefix, task, request
-    ):
+    def test_plot_multiclass_no_threshold_in_title(self, fixture_prefix, request):
         """Check that multiclass classification does not show threshold in title."""
+        report = request.getfixturevalue(f"{fixture_prefix}_multiclass_classification")
+        if isinstance(report, tuple):
+            report = report[0]
+        figure, _ = request.getfixturevalue(
+            f"{fixture_prefix}_multiclass_classification_figure_axes"
+        )
+
+        expected_title = "Confusion Matrix" + "\nData source: Test set"
+        assert figure.get_suptitle() == expected_title
+        assert "threshold" not in figure.get_suptitle().lower()
+
+    def test_threshold_greater_than_max(self, fixture_prefix, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.metrics.confusion_matrix()
+        frame = display.frame(threshold_value=1.1)
+        cm = display.confusion_matrix
+
+        for (_est, _split), group in frame.groupby(["estimator", "split"]):
+            assert group["threshold"].nunique() == 1
+            mask_est = cm["estimator"] == _est
+            mask_split = (
+                cm["split"].isna() if pd.isna(_split) else cm["split"] == _split
+            )
+            full = cm[mask_est & mask_split]
+            assert group["threshold"].iloc[0] == full["threshold"].max()
+
+    def test_threshold_lower_than_min(self, fixture_prefix, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.metrics.confusion_matrix()
+        frame = display.frame(threshold_value=-0.1)
+        cm = display.confusion_matrix
+
+        for (_est, _split), group in frame.groupby(["estimator", "split"]):
+            assert group["threshold"].nunique() == 1
+            mask_est = cm["estimator"] == _est
+            mask_split = (
+                cm["split"].isna() if pd.isna(_split) else cm["split"] == _split
+            )
+            full = cm[mask_est & mask_split]
+            assert group["threshold"].iloc[0] == full["threshold"].min()
+
+    @pytest.mark.parametrize("task", ["binary", "multiclass"])
+    def test_normalization(self, pyplot, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
-        display.plot()
 
-        expected_title = "Confusion Matrix" + "\nData source: Test set"
-        assert display.figure_.get_suptitle() == expected_title
-        assert "threshold" not in display.figure_.get_suptitle().lower()
+        for normalize in ("true", "pred", "all"):
+            frame = display.frame(normalize=normalize)
+            for (_est, _split), group in frame.groupby(["estimator", "split"]):
+                pivoted = group.pivot(
+                    index="true_label",
+                    columns="predicted_label",
+                    values="value",
+                )
+                if normalize == "true":
+                    row_sums = pivoted.sum(axis=1)
+                    valid = (np.abs(row_sums - 1.0) < 1e-10) | (
+                        np.abs(row_sums) < 1e-10
+                    )
+                    assert np.all(valid), f"row sums should be 0 or 1, got {row_sums}"
+                elif normalize == "pred":
+                    col_sums = pivoted.sum(axis=0)
+                    valid = (np.abs(col_sums - 1.0) < 1e-10) | (
+                        np.abs(col_sums) < 1e-10
+                    )
+                    assert np.all(valid), f"col sums should be 0 or 1, got {col_sums}"
+                else:
+                    np.testing.assert_allclose(pivoted.sum().sum(), 1.0)

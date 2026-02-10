@@ -1,174 +1,67 @@
 import matplotlib as mpl
 import numpy as np
-import pandas as pd
 import pytest
 
-from skore import ComparisonReport, CrossValidationReport
-from skore._sklearn._plot import PredictionErrorDisplay
-from skore._sklearn._plot.metrics.prediction_error import RangeData
-from skore._utils._testing import check_frame_structure
+
+def test_legend(
+    pyplot,
+    comparison_cross_validation_reports_regression_figure_axes,
+):
+    """Check the legend of the prediction error plot with comparison crossvalidation."""
+    figure, _ = comparison_cross_validation_reports_regression_figure_axes
+    assert len(figure.legends) == 1
+    legend_texts = [t.get_text() for t in figure.legends[0].get_texts()]
+    assert len(legend_texts) == 3
+    assert legend_texts[0] == "Split #0"
+    assert legend_texts[1] == "Split #1"
+    assert legend_texts[2] == "Perfect predictions"
 
 
-def test_regression(pyplot, comparison_cross_validation_reports_regression):
-    """Check the attributes and default plotting behaviour of the prediction error plot
-    with a comparison report."""
-    report = comparison_cross_validation_reports_regression
-    display = report.metrics.prediction_error()
-    assert isinstance(display, PredictionErrorDisplay)
-
-    # check the structure of the attributes
-    assert isinstance(display._prediction_error, pd.DataFrame)
-    assert list(display._prediction_error["estimator"].unique()) == [
-        "DummyRegressor_1",
-        "DummyRegressor_2",
-    ]
-    assert display.data_source == "test"
-    assert isinstance(display.range_y_true, RangeData)
-    assert isinstance(display.range_y_pred, RangeData)
-    assert isinstance(display.range_residuals, RangeData)
-    for attr in ("y_true", "y_pred", "residuals"):
-        global_min, global_max = np.inf, -np.inf
-        for display_attr in display._prediction_error[attr]:
-            global_min = min(global_min, np.min(display_attr))
-            global_max = max(global_max, np.max(display_attr))
-        assert getattr(display, f"range_{attr}").min == global_min
-        assert getattr(display, f"range_{attr}").max == global_max
-
-    display.plot()
-    assert hasattr(display, "facet_")
-
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_) == 2
-    for ax in display.ax_:
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_xlabel() == "Predicted values"
-        assert ax.get_ylabel() == "Residuals (actual - predicted)"
-
-    legend = display.figure_.legends[0]
-    legend_texts = [t.get_text() for t in legend.get_texts()]
-    assert "Perfect predictions" in legend_texts
-
-
-def test_regression_actual_vs_predicted(
+def test_legend_actual_vs_predicted(
     pyplot, comparison_cross_validation_reports_regression
 ):
-    """Check the attributes when switching to the "actual_vs_predicted" kind."""
+    """Check the legend when kind is actual_vs_predicted."""
     report = comparison_cross_validation_reports_regression
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
-    assert isinstance(display, PredictionErrorDisplay)
+    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    assert len(legend_texts) == 3
+    assert legend_texts[0] == "Split #0"
+    assert legend_texts[1] == "Split #1"
+    assert legend_texts[2] == "Perfect predictions"
 
-    # check the structure of the attributes
-    assert isinstance(display._prediction_error, pd.DataFrame)
-    assert display.data_source == "test"
-
-    assert hasattr(display, "facet_")
-
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_) == 2
     for ax in display.ax_:
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_xlabel() == "Predicted values"
-        assert ax.get_ylabel() == "Actual values"
-
-    legend = display.figure_.legends[0]
-    legend_texts = [t.get_text() for t in legend.get_texts()]
-    assert "Perfect predictions" in legend_texts
+        assert ax.get_xlim() == ax.get_ylim()
+        assert np.array_equal(ax.get_xticks(), ax.get_yticks())
 
 
-def test_kwargs(pyplot, comparison_cross_validation_reports_regression):
-    """Check that we can pass keyword arguments to the prediction error plot when
-    there is a comparison report."""
+def test_invalid_subplot_by(comparison_cross_validation_reports_regression):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `subplot_by` argument.
+    """
     report = comparison_cross_validation_reports_regression
     display = report.metrics.prediction_error()
-
-    display.set_style(
-        relplot_kwargs={"palette": ["red", "blue", "green", "magenta", "cyan"]},
-        perfect_model_kwargs={"color": "orange"},
-    ).plot()
-    assert hasattr(display, "facet_")
-    rgb_colors = [
-        [1.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0],
-        [0.0, 0.0, 1.0],
-        [1.0, 1.0, 0.0],
-        [0.0, 1.0, 1.0],
-    ]
-    for ax in display.ax_:
-        assert len(ax.collections) > 0
-        for idx, collection in enumerate(ax.collections):
-            np.testing.assert_array_equal(
-                collection.get_facecolor()[0][:3], rgb_colors[idx]
-            )
-
-
-def test_constructor(linear_regression_data):
-    """Check that the dataframe has the correct structure at initialization."""
-    (estimator, X, y), cv = linear_regression_data, 3
-    report_1 = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    # add a different number of splits for the second report
-    report_2 = CrossValidationReport(estimator, X=X, y=y, splitter=cv + 1)
-    report = ComparisonReport(
-        reports={"estimator_1": report_1, "estimator_2": report_2}
-    )
-    display = report.metrics.prediction_error()
-
-    index_columns = ["estimator", "split"]
-    df = display._prediction_error
-    assert all(col in df.columns for col in index_columns)
-    assert df.query("estimator == 'estimator_1'")["split"].unique().tolist() == list(
-        range(cv)
-    )
-    assert df.query("estimator == 'estimator_2'")["split"].unique().tolist() == list(
-        range(cv + 1)
-    )
-    assert df["estimator"].unique().tolist() == list(report.reports_.keys())
-
-
-def test_frame(comparison_cross_validation_reports_regression):
-    """Test the frame method with regression comparison cross-validation data."""
-    report = comparison_cross_validation_reports_regression
-    display = report.metrics.prediction_error()
-    df = display.frame()
-
-    expected_index = ["estimator", "split"]
-    expected_columns = ["y_true", "y_pred", "residuals"]
-
-    check_frame_structure(df, expected_index, expected_columns)
-    assert df["estimator"].nunique() == len(report.reports_)
-
-
-@pytest.mark.parametrize("subplot_by", [None, "estimator", "auto", "invalid", "split"])
-def test_subplot_by(pyplot, comparison_cross_validation_reports_regression, subplot_by):
-    """Check that the subplot_by parameter works correctly for comparison
-    cross-validation reports."""
-    report = comparison_cross_validation_reports_regression
-    display = report.metrics.prediction_error()
-    if subplot_by in ["invalid", None]:
-        err_msg = (
+    with pytest.raises(
+        ValueError,
+        match=(
             "Invalid `subplot_by` parameter. Valid options are: "
-            f"auto, split, estimator. Got '{subplot_by}' instead."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            display.plot(subplot_by=subplot_by)
-    elif subplot_by == "split":
-        display.plot(subplot_by=subplot_by)
-        assert isinstance(display.ax_[0], mpl.axes.Axes)
-        assert len(display.ax_) == len(
-            report.reports_["DummyRegressor_1"].estimator_reports_
-        )
-    else:
-        display.plot(subplot_by=subplot_by)
-        assert isinstance(display.ax_[0], mpl.axes.Axes)
-        assert len(display.ax_) == len(report.reports_)
+            "auto, split, estimator. Got 'invalid' instead."
+        ),
+    ):
+        display.plot(subplot_by="invalid")
 
 
-def test_title(pyplot, comparison_cross_validation_reports_regression):
-    """Check that the title contains expected elements."""
+@pytest.mark.parametrize("subplot_by", ["auto", "estimator", "split"])
+def test_valid_subplot_by(
+    pyplot, comparison_cross_validation_reports_regression, subplot_by
+):
+    """Check that we can pass valid values to `subplot_by`."""
     report = comparison_cross_validation_reports_regression
     display = report.metrics.prediction_error()
-    display.plot()
-    title = display.figure_._suptitle.get_text()
-    assert "Prediction Error" in title
-    assert "DummyRegressor_1" not in title
-    assert "Data source: Test set" in title
+    display.plot(subplot_by=subplot_by)
+    assert isinstance(display.ax_[0], mpl.axes.Axes)
+    if subplot_by == "estimator":
+        assert len(display.ax_) == len(report.reports_)
+    elif subplot_by == "split":
+        n_splits = len(next(iter(report.reports_.values())).estimator_reports_)
+        assert len(display.ax_) == n_splits

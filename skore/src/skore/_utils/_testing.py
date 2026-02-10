@@ -15,6 +15,26 @@ from skore._sklearn._plot.metrics.precision_recall_curve import (
 from skore._sklearn._plot.metrics.roc_curve import RocCurveDisplay
 
 
+def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDisplay):
+    """Check the structure of the display's internal data."""
+    assert list(display.precision_recall.columns) == [
+        "estimator",
+        "data_source",
+        "split",
+        "label",
+        "threshold",
+        "precision",
+        "recall",
+    ]
+    assert list(display.average_precision.columns) == [
+        "estimator",
+        "data_source",
+        "split",
+        "label",
+        "average_precision",
+    ]
+
+
 @contextlib.contextmanager
 def check_cache_changed(value):
     """Assert that `value` has changed during context execution."""
@@ -149,26 +169,6 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
         "split",
         "label",
         "roc_auc",
-    ]
-
-
-def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDisplay):
-    """Check the structure of the display's internal data."""
-    assert list(display.precision_recall.columns) == [
-        "estimator",
-        "data_source",
-        "split",
-        "label",
-        "threshold",
-        "precision",
-        "recall",
-    ]
-    assert list(display.average_precision.columns) == [
-        "estimator",
-        "data_source",
-        "split",
-        "label",
-        "average_precision",
     ]
 
 
