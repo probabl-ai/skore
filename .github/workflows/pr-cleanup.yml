@@ -58,22 +58,17 @@ jobs:
   pr-clean-documentation-preview:
     if: always()
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
-      - name: Install `rclone`
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y rclone
-
-      - name: Copy configuration
-        shell: bash
-        run: echo "${CONFIGURATION}" > rclone.configuration
-        env:
-          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOC_PREVIEW }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Clean documentation preview
-        run: rclone --config rclone.configuration purge "${PROVIDER}:${BUCKET}/${PULL_REQUEST_NUMBER}"
+        run: aws s3 rm "s3://${BUCKET}/${PULL_REQUEST_NUMBER}/" --recursive
         env:
-          PROVIDER: scaleway
           BUCKET: ${{ vars.DOCUMENTATION_PREVIEW_BUCKET }}
           PULL_REQUEST_NUMBER: ${{ github.event.number }}
