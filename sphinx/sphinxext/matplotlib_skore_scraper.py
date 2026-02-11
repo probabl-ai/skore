@@ -18,7 +18,7 @@ def setup(app):
     """Configure matplotlib scraper for sphinx-gallery."""
 
     if "sphinx_gallery_conf" not in app.config:
-        app.config["sphinx_gallery_conf"] = {}
+        return
 
     if "image_scrapers" not in app.config["sphinx_gallery_conf"]:
         app.config["sphinx_gallery_conf"]["image_scrapers"] = []

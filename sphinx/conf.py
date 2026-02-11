@@ -16,8 +16,10 @@ extensions, themes, and gallery settings.
 import sys
 import os
 from sphinx_gallery.sorting import ExplicitOrder
+from pathlib import Path
 
-sys.path.append(os.path.relpath("."))
+# Make it possible to load custom extensions from sphinxext directory
+sys.path.append(str(Path("sphinxext").resolve()))
 
 project = "skore"
 copyright = "2026, Probabl"
@@ -37,14 +39,15 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.linkcode",
     "sphinx_design",
-    "sphinx_gallery.gen_gallery",  
+    "sphinx_gallery.gen_gallery",
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
     "sphinx_autosummary_accessors",
-    "sphinxext.generate_accessor_tables",
-    "sphinxext.github_link",
-    "sphinxext.matplotlib_skore_scraper",
-    "report_help", 
+    # Custom extensions
+    "generate_accessor_tables",
+    "github_link",
+    "matplotlib_skore_scraper",
+    "report_help",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
