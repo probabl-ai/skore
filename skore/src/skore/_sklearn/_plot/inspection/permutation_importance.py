@@ -296,7 +296,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             stripplot_kwargs.pop("palette", None)
         else:
             boxplot_kwargs.setdefault("palette", "tab10")
-            
+
         self.facet_ = sns.catplot(
             data=frame,
             x="value",
