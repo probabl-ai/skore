@@ -3,6 +3,7 @@ from time import sleep
 
 from pytest import raises
 
+from skore import config_context, get_config
 from skore._utils._progress_bar import ProgressBar, track
 
 
@@ -155,3 +156,17 @@ def test_track(monkeypatch):
     assert progress._progress.live._started is False
     assert progress._progress.finished
     assert progress._progress.tasks[0].finished
+
+
+def test_disable_progress_bar():
+    with ProgressBar(description="progress1", total=0) as progress1:
+        assert get_config()["show_progress"] is True
+        assert progress1._progress.disable is False
+
+        with (
+            config_context(show_progress=False),
+            ProgressBar(description="progress2", total=0) as progress2,
+        ):
+            assert get_config()["show_progress"] is False
+            assert progress1._progress.disable is False
+            assert progress2._progress.disable is True
