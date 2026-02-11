@@ -47,7 +47,9 @@ ipywidgets==8.1.8
     #   skore (skore/pyproject.toml)
     #   anywidget
 jedi==0.19.2
-    # via ipython
+    # via
+    #   skore (skore/pyproject.toml)
+    #   ipython
 jinja2==3.1.6
     # via
     #   skore (skore/pyproject.toml)
