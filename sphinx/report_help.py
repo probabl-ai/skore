@@ -16,3 +16,13 @@ def generate_help_demo():
         "_templates/demo_report_help_generated.html", "w", encoding="utf-8"
     ) as f:
         f.write(report_ridge._create_help_html())
+
+def setup(app):
+    """Sphinx extension to generate demo help HTML."""
+
+    generate_help_demo()
+    return {
+        "version": "0.1",
+        "parallel_read_safe": True,
+        "parallel_write_safe": True,
+    }
