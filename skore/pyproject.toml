@@ -54,7 +54,7 @@ test-base = [
   "scipy-stubs",
   "xdoctest",
 ]
-test = ["skore[test-base]", "polars", "pyarrow"]
+test = ["skore[test-base]", "polars", "pyarrow", "jedi"]
 test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
 sphinx-base = [
   "altair",

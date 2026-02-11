@@ -2,6 +2,7 @@ import inspect
 from copy import deepcopy
 from io import BytesIO
 
+import jedi
 import joblib
 import numpy as np
 import pandas as pd
@@ -208,6 +209,19 @@ def test_pickle(forest_binary_classification_with_test):
 
     with BytesIO() as stream:
         joblib.dump(report, stream)
+
+
+def test_ipython_completion(forest_binary_classification_with_test):
+    """Non-regression test for #2386.
+
+    We get no tab completions from IPython if jedi raises an exception, so we
+    check here that jedi can produce completions without errors.
+    """
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    interp = jedi.Interpreter("r.", [{"r": report}])
+    interp.complete(line=1, column=2)
 
 
 def test_flat_index(forest_binary_classification_with_test):
