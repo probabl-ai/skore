@@ -121,7 +121,10 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
             for task in progress.track(
                 as_completed(tasks),
-                description=f"Computing {self.report.__class__.__name__} metrics",
+                description=(
+                    f"Computing {self.report.__class__.__name__} "
+                    f"#{self.report._hash} metrics"
+                ),
                 total=len(tasks),
             ):
                 task.result()
@@ -142,11 +145,19 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         """
         payloads = []
 
-        for media_cls in self.MEDIAS:
-            payload = media_cls(project=self.project, report=self.report)
+        with switch_mpl_backend(), SkinnedProgress() as progress:
+            for media_cls in progress.track(
+                self.MEDIAS,
+                description=(
+                    f"Computing/uploading {self.report.__class__.__name__} "
+                    f"#{self.report._hash} media"
+                ),
+                total=len(self.MEDIAS),
+            ):
+                payload = media_cls(project=self.project, report=self.report)
 
-            if payload.checksum is not None:
-                payloads.append(payload)
+                if payload.checksum is not None:
+                    payloads.append(payload)
 
         return payloads
 
