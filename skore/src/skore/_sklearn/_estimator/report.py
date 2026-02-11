@@ -397,7 +397,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return results[0][1]  # return the predictions only
 
     @property
-    def ml_task(self) -> str:
+    def ml_task(self):
         return self._ml_task
 
     @property

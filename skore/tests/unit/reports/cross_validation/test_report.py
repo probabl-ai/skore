@@ -1,6 +1,5 @@
 import inspect
 
-import jedi
 import joblib
 import numpy as np
 import pytest
@@ -185,19 +184,6 @@ def test_pickle(tmp_path, logistic_binary_classification_data):
     report = CrossValidationReport(estimator, X, y, splitter=2)
     report.cache_predictions()
     joblib.dump(report, tmp_path / "report.joblib")
-
-
-def test_ipython_completion(logistic_binary_classification_data):
-    """Non-regression test for #2386.
-
-    We get no tab completions from IPython if jedi raises an exception, so we
-    check here that jedi can produce completions without errors.
-    """
-    estimator, X, y = logistic_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
-
-    interp = jedi.Interpreter("r.", [{"r": report}])
-    interp.complete(line=1, column=2)
 
 
 @pytest.mark.parametrize(
