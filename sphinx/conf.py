@@ -37,14 +37,14 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.linkcode",
     "sphinx_design",
-    # "sphinx_gallery.gen_gallery",  # Disabled to avoid memory errors
+    "sphinx_gallery.gen_gallery",  
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
     "sphinx_autosummary_accessors",
     "sphinxext.generate_accessor_tables",
     "sphinxext.github_link",
     "sphinxext.matplotlib_skore_scraper",
-    # "report_help",  # Disabled to avoid memory errors during demo generation
+    "report_help", 
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
