@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from functools import partial
 from operator import length_hint
 from typing import Any, TypeVar
 
@@ -13,29 +12,29 @@ from rich.progress import (
 from skore._config import get_config
 
 T = TypeVar("T")
-SkinnedProgress = partial(
-    Progress,
-    SpinnerColumn(),
-    TextColumn("[bold cyan]{task.description}"),
-    BarColumn(
-        complete_style="dark_orange",
-        finished_style="dark_orange",
-        pulse_style="orange1",
-    ),
-    TextColumn("[orange1]{task.percentage:>3.0f}%"),
-    expand=False,
-    transient=True,
-    disable=(not get_config()["show_progress"]),
-)
 
 
 class ProgressBar:
     """Simplified progress bar based on ``rich.Progress``."""
 
     def __init__(self, description: str, total: float | None):
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[bold cyan]{task.description}"),
+            BarColumn(
+                complete_style="dark_orange",
+                finished_style="dark_orange",
+                pulse_style="orange1",
+            ),
+            TextColumn("[orange1]{task.percentage:>3.0f}%"),
+            expand=False,
+            transient=True,
+            disable=(not get_config()["show_progress"]),
+        )
+
         self._description = description
         self._total = total
-        self._progress = SkinnedProgress()
+        self._progress = progress
         self._task = self._progress.add_task(description, total=total)
 
     def __enter__(self):
