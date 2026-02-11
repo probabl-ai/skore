@@ -118,7 +118,10 @@ def test_find_ml_task_pandas():
 
 
 def test_find_ml_task_pandas_large_label_gap():
-    # non regression-test for PR
+    """"
+    Check that `_find_ml_task` does not fail on large arrays.
+    Non-regression test for https://github.com/probabl-ai/skore/pull/2404
+    """
     y = pandas.Series(numpy.repeat(numpy.array([0, 1, 10**12], dtype=numpy.int64), 100))
     assert _find_ml_task(y, None) == "regression"
 
