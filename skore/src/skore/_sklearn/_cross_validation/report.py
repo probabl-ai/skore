@@ -16,7 +16,7 @@ from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.find_ml_task import _find_ml_task
-from skore._sklearn.types import _DEFAULT, MLTask, PositiveLabel, SKLearnCrossValidator
+from skore._sklearn.types import _DEFAULT, PositiveLabel, SKLearnCrossValidator
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import Parallel, delayed
@@ -448,7 +448,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return report
 
     @property
-    def ml_task(self) -> MLTask:
+    def ml_task(self) -> str:
         return self._ml_task
 
     @property
