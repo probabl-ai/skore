@@ -435,6 +435,7 @@ class CoefficientsDisplay(DisplayMixin):
                 x="coefficient",
                 y="feature",
                 hue=hue,
+                palette="tab10" if hue is not None else None,
                 dodge=True,
                 **boxplot_kwargs,
             )

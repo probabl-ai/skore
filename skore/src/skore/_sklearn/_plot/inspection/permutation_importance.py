@@ -290,10 +290,8 @@ class PermutationImportanceDisplay(DisplayMixin):
                     )
                 (row, col), hue = subplot_by, None
 
-        if hue is None:
-            # we don't need the palette and we are at risk of raising an error or
-            # deprecation warning if passing palette without a hue
-            stripplot_kwargs.pop("palette", None)
+        if hue is not None:
+            boxplot_kwargs.setdefault("palette", "tab10")
 
         self.facet_ = sns.catplot(
             data=frame,
