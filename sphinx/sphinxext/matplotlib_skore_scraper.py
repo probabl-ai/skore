@@ -1,3 +1,10 @@
+"""
+Matplotlib scraper extension for sphinx-gallery.
+
+This extension provides a custom matplotlib scraper that sets bbox_inches="tight"
+for better figure cropping in sphinx-gallery examples.
+"""
+
 from sphinx_gallery.scrapers import matplotlib_scraper
 
 

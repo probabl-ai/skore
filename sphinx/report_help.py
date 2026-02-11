@@ -1,3 +1,10 @@
+"""
+Sphinx extension for generating demo help HTML.
+
+This module generates a demo help HTML file during the Sphinx build process
+to showcase the skore reporting functionality.
+"""
+
 import sklearn
 import skore
 import skrub

@@ -1,3 +1,10 @@
+"""
+Configuration file for the Sphinx documentation builder.
+
+This file configures the Sphinx documentation build for skore, including
+extensions, themes, and gallery settings.
+"""
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -30,14 +37,14 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.linkcode",
     "sphinx_design",
-    "sphinx_gallery.gen_gallery",
+    # "sphinx_gallery.gen_gallery",  # Disabled to avoid memory errors
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
     "sphinx_autosummary_accessors",
     "sphinxext.generate_accessor_tables",
     "sphinxext.github_link",
     "sphinxext.matplotlib_skore_scraper",
-    "report_help",
+    # "report_help",  # Disabled to avoid memory errors during demo generation
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
