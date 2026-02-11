@@ -162,26 +162,6 @@ def test_analyze_subsampling(
         assert display.summary["dataframe"].index.to_list() != list(range(10))
 
 
-def test_data_accessor_help(capsys, forest_binary_classification_with_test):
-    """Check that the help method writes to the console."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    report.data.help()
-    captured = capsys.readouterr()
-    assert "Available data methods" in captured.out
-
-
-def test_data_accessor_repr(forest_binary_classification_with_test):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    repr_str = repr(report.data)
-    assert "skore.EstimatorReport.data" in repr_str
-    assert "help()" in repr_str
-
-
 def test_data_accessor_clustering():
     X, y = make_classification(random_state=42)
     X_train, X_test, _, _ = train_test_split(X, y, random_state=42)

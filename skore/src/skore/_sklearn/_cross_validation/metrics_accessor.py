@@ -135,7 +135,7 @@ class _MetricsAccessor(
 
         Returns
         -------
-        MetricsSummaryDisplay
+        :class:`MetricsSummaryDisplay`
             A display containing the statistics for the metrics.
 
         Examples
@@ -173,6 +173,7 @@ class _MetricsAccessor(
             response_method=response_method,
         )
         if flat_index:
+            results = results.copy()
             if isinstance(results.columns, pd.MultiIndex):
                 results.columns = flatten_multi_index(results.columns)
             if isinstance(results.index, pd.MultiIndex):
@@ -1048,11 +1049,6 @@ class _MetricsAccessor(
     # Methods related to the help tree
     ####################################################################################
 
-    def _get_methods_for_help(self) -> list[tuple[str, Callable]]:
-        """Override to exclude the plot accessor from methods list."""
-        methods = super()._get_methods_for_help()
-        return [(name, method) for name, method in methods if name != "plot"]
-
     def __repr__(self) -> str:
         """Return a string representation using rich."""
         return self._rich_repr(class_name="skore.CrossValidationReport.metrics")
@@ -1224,7 +1220,7 @@ class _MetricsAccessor(
 
         Returns
         -------
-        RocCurveDisplay
+        :class:`RocCurveDisplay`
             The ROC curve display.
 
         Examples
@@ -1292,7 +1288,7 @@ class _MetricsAccessor(
 
         Returns
         -------
-        PrecisionRecallCurveDisplay
+        :class:`PrecisionRecallCurveDisplay`
             The precision-recall curve display.
 
         Examples
@@ -1367,7 +1363,7 @@ class _MetricsAccessor(
 
         Returns
         -------
-        PredictionErrorDisplay
+        :class:`PredictionErrorDisplay`
             The prediction error display.
 
         Examples
@@ -1437,7 +1433,7 @@ class _MetricsAccessor(
 
         Returns
         -------
-        display : :class:`~skore._sklearn._plot.ConfusionMatrixDisplay`
+        :class:`ConfusionMatrixDisplay`
             The confusion matrix display.
 
         Examples

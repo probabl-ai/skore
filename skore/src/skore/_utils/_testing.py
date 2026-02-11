@@ -1,6 +1,6 @@
 import contextlib
 import copy
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -8,10 +8,31 @@ from matplotlib.legend import Legend
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.metrics import r2_score
 
+from skore._sklearn._base import _BaseAccessor, _BaseReport
 from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
 from skore._sklearn._plot.metrics.roc_curve import RocCurveDisplay
+
+
+def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDisplay):
+    """Check the structure of the display's internal data."""
+    assert list(display.precision_recall.columns) == [
+        "estimator",
+        "data_source",
+        "split",
+        "label",
+        "threshold",
+        "precision",
+        "recall",
+    ]
+    assert list(display.average_precision.columns) == [
+        "estimator",
+        "data_source",
+        "split",
+        "label",
+        "average_precision",
+    ]
 
 
 @contextlib.contextmanager
@@ -50,6 +71,87 @@ class MockEstimator(ClassifierMixin, BaseEstimator):
         return np.ones(X.shape[0])
 
 
+class MockReport(_BaseReport):
+    """Minimal report for testing.
+
+    Attributes
+    ----------
+    no_private : object
+        Public attribute for tests.
+    """
+
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {}
+
+    def __init__(
+        self,
+        estimator,
+        X_train=None,
+        y_train=None,
+        X_test=None,
+        y_test=None,
+    ):
+        self._estimator = estimator
+        self._X_train = X_train
+        self._y_train = y_train
+        self._X_test = X_test
+        self._y_test = y_test
+        self.no_private = "no_private"
+        self.attr_without_description = "attr_without_description"
+
+    @property
+    def estimator_(self):
+        return self._estimator
+
+    @property
+    def X_train(self):
+        return self._X_train
+
+    @property
+    def y_train(self):
+        return self._y_train
+
+    @property
+    def X_test(self):
+        return self._X_test
+
+    @property
+    def y_test(self):
+        return self._y_test
+
+    def _get_help_title(self) -> str:
+        return "Mock report"
+
+
+class MockAccessor(_BaseAccessor):
+    """Minimal accessor for testing."""
+
+    _verbose_name = "mock_accessor"
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+    def _get_help_tree_title(self) -> str:
+        return "Mock accessor"
+
+
+class MockDisplay:
+    """Minimal display for testing, following the Display protocol."""
+
+    def plot(self, **kwargs: Any) -> None:
+        pass
+
+    def set_style(
+        self, *, policy: Literal["override", "update"] = "update", **kwargs: Any
+    ) -> None:
+        pass
+
+    def frame(self, **kwargs: Any) -> pd.DataFrame:
+        return pd.DataFrame()
+
+    def help(self) -> None:
+        pass
+
+
 def check_roc_curve_display_data(display: RocCurveDisplay):
     """Check the structure of the display's internal data."""
     assert list(display.roc_curve.columns) == [
@@ -67,26 +169,6 @@ def check_roc_curve_display_data(display: RocCurveDisplay):
         "split",
         "label",
         "roc_auc",
-    ]
-
-
-def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDisplay):
-    """Check the structure of the display's internal data."""
-    assert list(display.precision_recall.columns) == [
-        "estimator",
-        "data_source",
-        "split",
-        "label",
-        "threshold",
-        "precision",
-        "recall",
-    ]
-    assert list(display.average_precision.columns) == [
-        "estimator",
-        "data_source",
-        "split",
-        "label",
-        "average_precision",
     ]
 
 

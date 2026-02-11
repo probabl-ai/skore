@@ -498,10 +498,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _get_help_panel_title(self) -> str:
-        return (
-            f"[bold cyan]Tools to diagnose estimator {self.estimator_name_}[/bold cyan]"
-        )
+    def _get_help_title(self) -> str:
+        return f"Tools to diagnose estimator {self.estimator_name_}"
 
     def _get_help_legend(self) -> str:
         return (

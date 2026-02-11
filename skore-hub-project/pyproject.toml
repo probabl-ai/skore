@@ -27,7 +27,7 @@ test = [
   "pytest-xdist",
   "pytest",
   "respx",
-  "skore>=0.11.5",
+  "skore>=0.12",
   "xdoctest",
 ]
 
@@ -63,6 +63,7 @@ addopts = [
   "--no-header",
   "--verbosity=2",
   "--dist=loadscope",
+  "--durations=25",
 ]
 xfail_strict = true
 filterwarnings = ["error"]
