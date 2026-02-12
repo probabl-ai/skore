@@ -55,7 +55,10 @@ def switch_mpl_backend() -> Iterator[None]:
 
     https://matplotlib.org/stable/users/explain/figure/backends.html#selecting-a-backend
     """
+    import importlib
+
     import matplotlib
+    import matplotlib.pyplot
 
     original_backend = matplotlib.get_backend()
 
@@ -63,4 +66,6 @@ def switch_mpl_backend() -> Iterator[None]:
         matplotlib.use("agg")
         yield
     finally:
+        importlib.reload(matplotlib)
         matplotlib.use(original_backend)
+        importlib.reload(matplotlib.pyplot)
