@@ -230,7 +230,7 @@ class Project:
             if isinstance(report, EstimatorReport):
                 target = report.estimator_.classes_
             else:  # CrossValidationReport
-                target = list(report.estimator_reports_.values())[0].estimator_.classes_
+                target = report.estimator_reports_[0].estimator_.classes_
 
             try:
                 _check_pos_label_consistency(report.pos_label, target)
