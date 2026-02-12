@@ -20,7 +20,7 @@ from skore._sklearn.types import _DEFAULT, PositiveLabel, SKLearnCrossValidator
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import Parallel, delayed
-from skore._utils._progress_bar import ProgressBar, track
+from skore._utils._progress_bar import track
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -316,21 +316,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
-        total = len(self.estimator_reports_)
-
-        with ProgressBar(description="Cross-validation predictions", total=total) as pb:
-            for split_idx, estimator_report in enumerate(self.estimator_reports_, 1):
-                pb.description = (
-                    f"Cross-validation predictions for split #{split_idx}/{total}"
-                )
-
-                # Call cache_predictions without printing a separate message
-                estimator_report.cache_predictions(
-                    response_methods=response_methods,
-                    n_jobs=n_jobs,
-                )
-
-                pb.advance()
+        for estimator_report in track(
+            self.estimator_reports_,
+            description="Cross-validation predictions for split",
+        ):
+            estimator_report.cache_predictions(
+                response_methods=response_methods,
+                n_jobs=n_jobs,
+            )
 
     def get_predictions(
         self,
