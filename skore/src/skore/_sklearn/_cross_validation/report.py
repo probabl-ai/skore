@@ -171,17 +171,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self.n_jobs = n_jobs
 
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
-        self._initialize_state()
-
-    def _initialize_state(self) -> None:
-        """Initialize/reset the random number generator, hash, and cache."""
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
         self._ml_task = _find_ml_task(
-            self._y, estimator=self.estimator_reports_[0]._estimator
+            y, estimator=self.estimator_reports_[0]._estimator
         )
 
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
@@ -485,10 +481,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     @pos_label.setter
     def pos_label(self, value: PositiveLabel | None) -> None:
-        self._pos_label = value
-        self._initialize_state()
-        for estimator_report in self.estimator_reports_:
-            estimator_report.pos_label = value
+        raise AttributeError(
+            "The pos_label attribute is immutable. "
+            f"Call the constructor of {self.__class__.__name__} to create a new report."
+        )
 
     ####################################################################################
     # Methods related to the help and repr
