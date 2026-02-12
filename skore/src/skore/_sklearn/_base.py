@@ -8,6 +8,7 @@ from numpy.typing import ArrayLike, NDArray
 from rich.console import Console
 from rich.panel import Panel
 from sklearn.base import BaseEstimator
+from sklearn.utils import check_array
 from sklearn.utils._response import _check_response_method, _get_response_values
 from skrub import _dataframe as sbd
 
@@ -140,7 +141,7 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 def _normalize_X_as_dataframe(X: ArrayLike) -> pd.DataFrame:
     """Normalize feature data as a pandas DataFrame with string column names."""
     if not sbd.is_dataframe(X):
-        X = np.asarray(X)
+        X = cast(np.ndarray, check_array(X, accept_sparse=False, ensure_2d=True))
         columns = [f"Feature {i}" for i in range(X.shape[1])]
         return pd.DataFrame(X, columns=columns)
 
