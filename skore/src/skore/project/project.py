@@ -7,7 +7,6 @@ from importlib.metadata import entry_points
 from typing import Any, Literal
 
 from skore import CrossValidationReport, EstimatorReport
-from skore._sklearn.types import MLTask
 from skore.project._summary import Summary
 
 
@@ -203,7 +202,7 @@ class Project:
                 f"Got ML tasks {ml_tasks}."
             )
 
-        self.ml_task: MLTask | None = ml_tasks.pop() if ml_tasks else None
+        self.ml_task = ml_tasks.pop() if ml_tasks else None
 
     @property
     def mode(self):

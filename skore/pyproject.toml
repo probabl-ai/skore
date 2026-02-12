@@ -40,6 +40,7 @@ dependencies = [
   "skore[local]",
   "skrub",
   "seaborn",
+  "jinja2",
 ]
 
 [project.optional-dependencies]
@@ -52,6 +53,7 @@ test-base = [
   "pytest-xdist",
   "scipy-stubs",
   "xdoctest",
+  "jedi",
 ]
 test = ["skore[test-base]", "polars", "pyarrow"]
 test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
@@ -113,6 +115,7 @@ addopts = [
   "--no-header",
   "--verbosity=2",
   "--dist=loadscope",
+  "--durations=25",
 ]
 xfail_strict = true
 log_cli_level = "info"
@@ -164,6 +167,7 @@ exclude = ["src/skore/_externals/", "hatch/", "tests/"]
 ignore_missing_imports = true
 module = [
   "ipywidgets.*",
+  "jinja2.*",
   "joblib.*",
   "pandas.*",
   "plotly.*",

@@ -63,6 +63,7 @@ jedi==0.19.2
     # via ipython
 jinja2==3.1.6
     # via
+    #   skore (skore/pyproject.toml)
     #   altair
     #   skrub
     #   sphinx
@@ -135,7 +136,7 @@ parso==0.8.5
     # via jedi
 pexpect==4.9.0
     # via ipython
-pillow==12.1.0
+pillow==12.1.1
     # via
     #   matplotlib
     #   sphinx-gallery

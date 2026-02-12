@@ -41,6 +41,6 @@ def _decorate_matplotlib_axis(
                 feature_idx - 0.5,
                 feature_idx + 0.5,
                 color="lightgray",
-                alpha=0.1,
+                alpha=0.4,
                 zorder=0,
             )

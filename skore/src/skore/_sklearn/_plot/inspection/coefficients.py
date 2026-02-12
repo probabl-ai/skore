@@ -26,7 +26,7 @@ class CoefficientsDisplay(DisplayMixin):
         - `split`
         - `feature`
         - `label` or `output` (classification vs. regression)
-        - `coefficients`
+        - `coefficient`
 
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
@@ -57,7 +57,7 @@ class CoefficientsDisplay(DisplayMixin):
     >>> report = EstimatorReport(LogisticRegression(), **split_data)
     >>> display = report.inspection.coefficients()
     >>> display.frame()
-                  feature       label  coefficients
+                  feature       label  coefficient
     0           Intercept      setosa        9.2...
     1   sepal length (cm)      setosa       -0.4...
     2    sepal width (cm)      setosa        0.8...
@@ -98,7 +98,7 @@ class CoefficientsDisplay(DisplayMixin):
     def _select_k_features_in_group(
         self, frame: pd.DataFrame, select_k: int
     ) -> pd.DataFrame:
-        coefs = frame.groupby("feature")["coefficients"]
+        coefs = frame.groupby("feature")["coefficient"]
 
         if "split" in frame:
             # Cross-validation
@@ -122,7 +122,7 @@ class CoefficientsDisplay(DisplayMixin):
         ascending = sorting_order == "ascending"
         if "split" in frame:
             # Cross-validation
-            scores = frame.groupby("feature")["coefficients"].apply(
+            scores = frame.groupby("feature")["coefficient"].apply(
                 lambda x: x.abs().mean()
             )
             scores = cast(pd.Series, scores)
@@ -130,7 +130,7 @@ class CoefficientsDisplay(DisplayMixin):
             return frame.set_index("feature").loc[feature_order].reset_index()
 
         return frame.sort_values(
-            by="coefficients",
+            by="coefficient",
             key=lambda s: s.abs(),
             ascending=ascending,
         ).reset_index(drop=True)
@@ -233,7 +233,7 @@ class CoefficientsDisplay(DisplayMixin):
         >>> report = EstimatorReport(LogisticRegression(), **split_data)
         >>> display = report.inspection.coefficients()
         >>> display.frame()
-                      feature       label  coefficients
+                      feature       label  coefficient
         0           Intercept      setosa        9.2...
         1   sepal length (cm)      setosa       -0.4...
         2    sepal width (cm)      setosa        0.8...
@@ -413,7 +413,7 @@ class CoefficientsDisplay(DisplayMixin):
         if "estimator" in report_type:
             self.facet_ = sns.catplot(
                 data=frame,
-                x="coefficients",
+                x="coefficient",
                 y="feature",
                 hue=hue,
                 col=col,
@@ -423,7 +423,7 @@ class CoefficientsDisplay(DisplayMixin):
         else:  # "cross-validation" in report_type
             self.facet_ = sns.catplot(
                 data=frame,
-                x="coefficients",
+                x="coefficient",
                 y="feature",
                 hue=hue,
                 col=col,
@@ -432,20 +432,29 @@ class CoefficientsDisplay(DisplayMixin):
                 **stripplot_kwargs,
             ).map_dataframe(
                 sns.boxplot,
-                x="coefficients",
+                x="coefficient",
                 y="feature",
                 hue=hue,
+                palette="tab10" if hue is not None else None,
                 dodge=True,
                 **boxplot_kwargs,
             )
         add_background_features = hue is not None
 
         self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
-        for ax in self.ax_.flatten():
+        n_features = (
+            [frame["feature"].nunique()]
+            if col is None
+            else [
+                frame.query(f"{col} == '{col_value}'")["feature"].nunique()
+                for col_value in frame[col].unique()
+            ]
+        )
+        for ax, n_feature in zip(self.ax_.flatten(), n_features, strict=True):
             _decorate_matplotlib_axis(
                 ax=ax,
                 add_background_features=add_background_features,
-                n_features=frame["feature"].nunique(),
+                n_features=n_feature,
                 xlabel="Magnitude of coefficient",
                 ylabel="",
             )
@@ -590,7 +599,7 @@ class CoefficientsDisplay(DisplayMixin):
         columns_to_groupby = self._get_columns_to_groupby(frame=frame)
         if subplot_by not in ("auto", None) and subplot_by not in columns_to_groupby:
             additional_subplot_by = ["auto"]
-            if "label" in frame.columns and frame["label"].nunique() > 1:
+            if "label" not in frame.columns and "output" not in frame.columns:
                 additional_subplot_by.append("None")
 
             raise ValueError(
@@ -628,6 +637,11 @@ class CoefficientsDisplay(DisplayMixin):
 
         if subplot_by is None:
             hue, col = columns_to_groupby[0], None
+            if not has_same_features and hue == "estimator":
+                raise ValueError(
+                    "The estimators have different features and should be plotted on "
+                    "different axis using `subplot_by='estimator'`."
+                )
         else:
             # infer if we should group by another column using hue
             hue_groupby = [col for col in columns_to_groupby if col != subplot_by]
@@ -651,7 +665,7 @@ class CoefficientsDisplay(DisplayMixin):
             col=col,
             barplot_kwargs={"sharey": has_same_features} | barplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
-            stripplot_kwargs=stripplot_kwargs,
+            stripplot_kwargs={"sharey": has_same_features} | stripplot_kwargs,
         )
 
         title = "Coefficients"
@@ -724,7 +738,7 @@ class CoefficientsDisplay(DisplayMixin):
 
         if coef.shape[1] == 1:
             # binary or single output regression
-            columns, require_melting = ["coefficients"], False
+            columns, require_melting = ["coefficient"], False
             index["label"], index["output"] = np.nan, np.nan
         else:
             require_melting = True
@@ -736,7 +750,7 @@ class CoefficientsDisplay(DisplayMixin):
                 # multi-output regression
                 columns, var_name = [f"{i}" for i in range(coef.shape[1])], "output"
                 index["label"] = np.nan
-            id_vars, value_name = index.columns.tolist(), "coefficients"
+            id_vars, value_name = index.columns.tolist(), "coefficient"
 
         coefficients = pd.DataFrame(
             np.concatenate(coefficients, axis=0), columns=columns

@@ -128,7 +128,7 @@ parso==0.8.5
     # via jedi
 pexpect==4.9.0
     # via ipython
-pillow==12.1.0
+pillow==12.1.1
     # via matplotlib
 platformdirs==4.5.1
     # via
@@ -213,7 +213,7 @@ seaborn==0.13.2
     # via skore
 six==1.17.0
     # via python-dateutil
-skore==0.11.7
+skore==0.12.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 skore-local-project==0.0.5
     # via skore
