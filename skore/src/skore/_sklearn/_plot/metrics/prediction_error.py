@@ -231,8 +231,6 @@ class PredictionErrorDisplay(DisplayMixin):
             relplot_kwargs["hue_order"] = plot_data[hue].unique().tolist()
         if style == "data_source":
             relplot_kwargs["style_order"] = ["train", "test"]
-            if hue == "data_source":
-                relplot_kwargs["hue_order"] = ["train", "test"]
 
         self.facet_ = sns.relplot(
             data=plot_data,
@@ -441,7 +439,7 @@ class PredictionErrorDisplay(DisplayMixin):
                 "(0, 1) range."
             )
 
-        if ml_task not in ["regression", "multioutput-regression"]:
+        if ml_task not in ["regression", "multioutput-regression"]:  # pragma: no cover
             raise ValueError(
                 "The machine learning task must be 'regression' or"
                 f" 'multioutput-regression'. Got {ml_task} instead."
