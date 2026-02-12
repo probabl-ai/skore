@@ -4,6 +4,7 @@ from importlib import reload
 from unittest.mock import Mock
 from urllib.parse import urljoin
 
+import numpy as np
 from httpx import Client, Response
 from pytest import fixture
 from sklearn.datasets import make_classification, make_regression
@@ -106,6 +107,41 @@ def cv_binary_classification() -> CrossValidationReport:
 @fixture(scope="module")
 def small_cv_binary_classification() -> CrossValidationReport:
     X, y = make_classification(random_state=42, n_samples=10)
+
+    return CrossValidationReport(
+        RandomForestClassifier(random_state=42), X, y, splitter=2
+    )
+
+
+# this fixture should be at the level of function since we want to modify pos_label
+# sometime in the test
+@fixture(scope="function")
+def binary_classification_string_labels() -> EstimatorReport:
+    """Binary classification with string y labels ('negative', 'positive')."""
+    X, y = make_classification(random_state=42)
+    labels = np.array(["negative", "positive"])
+    y = labels[y]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    return EstimatorReport(
+        RandomForestClassifier(random_state=42),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+
+
+# this fixture should be at the level of function since we want to modify pos_label
+# sometime in the test
+@fixture(scope="function")
+def cv_binary_classification_string_labels() -> CrossValidationReport:
+    """Cross-validation binary classification with string y labels."""
+    X, y = make_classification(random_state=42, n_samples=50)
+    labels = np.array(["negative", "positive"])
+    y = labels[y]
 
     return CrossValidationReport(
         RandomForestClassifier(random_state=42), X, y, splitter=2

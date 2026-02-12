@@ -25,6 +25,7 @@ from unicodedata import normalize
 import joblib
 import orjson
 from httpx import HTTPStatusError
+from sklearn.utils.validation import _check_pos_label_consistency
 
 from skore_hub_project.client.client import Client, HUBClient
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
@@ -224,12 +225,20 @@ class Project:
         """
         from ..report import CrossValidationReportPayload, EstimatorReportPayload
 
-        if report.ml_task == "binary-classification" and report.pos_label is None:
-            raise ValueError(
-                "For binary classification, you need to specify the positive label "
-                "to serialize the expected metrics and displays. You can set it using "
-                "`report.pos_label = <positive_label>`."
-            )
+        if report.ml_task == "binary-classification":
+            # check that pos_label is either specified or can be inferred from the data
+            if isinstance(report, EstimatorReport):
+                target = report.estimator_.classes_
+            else:  # CrossValidationReport
+                target = list(report.estimator_reports_.values())[0].estimator_.classes_
+
+            try:
+                _check_pos_label_consistency(report.pos_label, target)
+            except ValueError as exc:
+                raise ValueError(
+                    "For binary classification, the positive label must be specified. "
+                    "You can set it using `report.pos_label = <positive_label>`."
+                ) from exc
 
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
