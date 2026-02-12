@@ -15,6 +15,7 @@ from sklearn.utils.validation import check_is_fitted
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
+from skore._externals._skrub_compat import sbd
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import _DEFAULT, PositiveLabel
@@ -141,6 +142,23 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
         return estimator
 
+    @staticmethod
+    def _validate_X_y_index_alignment(
+        X: ArrayLike | None,
+        y: ArrayLike | None,
+        *,
+        dataset: Literal["train", "test"],
+    ) -> None:
+        """Validate index alignment when both X and y expose an index."""
+        if X is None or y is None:
+            return
+
+        X_index = sbd.index(X)
+        y_index = sbd.index(y)
+
+        if X_index is not None and y_index is not None and not X_index.equals(y_index):
+            raise ValueError(f"X_{dataset} and y_{dataset} must have aligned indexes.")
+
     def __init__(
         self,
         estimator: BaseEstimator,
@@ -153,6 +171,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         pos_label: PositiveLabel | None = None,
     ) -> None:
         self._fit = fit
+        self._validate_X_y_index_alignment(X_train, y_train, dataset="train")
+        self._validate_X_y_index_alignment(X_test, y_test, dataset="test")
 
         fit_time: float | None = None
         if fit == "auto":
@@ -422,6 +442,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     @X_test.setter
     def X_test(self, value):
+        self._validate_X_y_index_alignment(value, self._y_test, dataset="test")
         self._X_test = value
         self._initialize_state()
 
@@ -431,6 +452,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     @y_test.setter
     def y_test(self, value):
+        self._validate_X_y_index_alignment(self._X_test, value, dataset="test")
         self._y_test = value
         self._initialize_state()
 

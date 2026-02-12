@@ -123,6 +123,29 @@ def test_invalidate_cache_data(forest_binary_classification_with_test):
         assert report._cache == {}
 
 
+def test_error_on_misaligned_indexes_at_init():
+    X = pd.DataFrame({"feature": [1.0, 2.0, 3.0]}, index=[0, 1, 2])
+    y = pd.Series([0.0, 1.0, 2.0], index=[3, 4, 5])
+
+    err_msg = "X_train and y_train must have aligned indexes."
+    with pytest.raises(ValueError, match=err_msg):
+        EstimatorReport(LinearRegression(), fit=False, X_train=X, y_train=y)
+
+
+def test_error_on_misaligned_indexes_in_test_setter(
+    forest_binary_classification_with_test,
+):
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    index = np.arange(100, 100 + len(y_test))
+    X_test = pd.DataFrame(X_test, index=index)
+    y_test_series = pd.Series(y_test, index=index)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test_series)
+
+    err_msg = "X_test and y_test must have aligned indexes."
+    with pytest.raises(ValueError, match=err_msg):
+        report.y_test = y_test_series.rename(index=lambda x: x + len(y_test))
+
+
 @pytest.mark.parametrize(
     "Estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods",
     [
