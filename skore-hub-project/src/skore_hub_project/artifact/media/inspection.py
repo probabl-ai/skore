@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from abc import ABC
 from collections.abc import Callable
 from functools import reduce
@@ -27,7 +28,13 @@ class Inspection(Media[Report], ABC):  # noqa: D101
             return None
 
         display = function()
-        frame = display.frame()
+        # FIXME: in the future, all inspection methods should have an aggregate
+        # parameter and we should be sending unaggreagted data to the hub.
+        sig = inspect.signature(display.frame)
+        if "aggregate" in sig.parameters:
+            frame = display.frame(aggregate=None)
+        else:
+            frame = display.frame()
 
         return dumps(
             frame.fillna("NaN").to_dict(orient="tight"),
@@ -53,7 +60,7 @@ class PermutationImportance(Inspection[EstimatorReport], ABC):  # noqa: D101
                 and at_step == 0
                 and metric is None
             ):
-                frame = display.frame()
+                frame = display.frame(aggregate=None)
 
                 return dumps(
                     frame.fillna("NaN").to_dict(orient="tight"),
