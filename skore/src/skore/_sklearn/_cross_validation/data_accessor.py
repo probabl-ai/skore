@@ -1,10 +1,13 @@
 from typing import Literal
 
-import pandas as pd
 from skrub import _dataframe as sbd
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor
+from skore._sklearn._base import (
+    _BaseAccessor,
+    _normalize_X_as_dataframe,
+    _normalize_y_as_dataframe,
+)
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot import TableReportDisplay
 
@@ -43,22 +46,13 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         X = self._parent.X
         y = self._parent.y
 
-        if not sbd.is_dataframe(X):
-            X = pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])])  # type: ignore
+        X = _normalize_X_as_dataframe(X)
 
         if with_y:
             if y is None:
                 raise ValueError("y is required when `with_y=True`.")
 
-            if isinstance(y, pd.Series):
-                name = y.name if y.name is not None else "Target"
-                y = y.to_frame(name=name)
-            elif not sbd.is_dataframe(y):
-                if y.ndim == 1:  # type: ignore
-                    columns = ["Target"]
-                else:
-                    columns = [f"Target {i}" for i in range(y.shape[1])]  # type: ignore
-                y = pd.DataFrame(y, columns=columns)
+            y = _normalize_y_as_dataframe(y)
 
         return X, y
 
