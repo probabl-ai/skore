@@ -38,7 +38,6 @@ class EstimatorReport(Protocol):
     X_test: Any
     y_test: Any
     fit: Any
-    pos_label: Any
 
 
 @runtime_checkable
@@ -59,4 +58,3 @@ class CrossValidationReport(Protocol):
     y: Any
     splitter: Any
     split_indices: Any
-    pos_label: Any
