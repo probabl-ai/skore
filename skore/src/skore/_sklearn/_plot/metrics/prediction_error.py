@@ -38,11 +38,12 @@ class PredictionErrorDisplay(DisplayMixin):
         The prediction error data to display. The columns are
 
         - `estimator`
+        - `data_source`
         - `split` (may be null)
+        - `output`
         - `y_true`
         - `y_pred`
-        - `residuals`
-        - `output`.
+        - `residuals`.
 
     range_y_true : RangeData
         Global range of the true values.
@@ -136,8 +137,8 @@ class PredictionErrorDisplay(DisplayMixin):
 
         Parameters
         ----------
-        subplot_by : {"auto", "data_source", "split", "estimator", "output", \
-                None}, default="auto"
+        subplot_by : {"auto", "data_source", "split", "estimator", "output"} or \
+                None, default="auto"
             The variable to use for creating subplots:
 
             - "auto" creates subplots by estimator for comparison reports, otherwise
@@ -145,7 +146,7 @@ class PredictionErrorDisplay(DisplayMixin):
             - "data_source" creates subplots by data source (train/test).
             - "split" creates subplots by cross-validation split.
             - "estimator" creates subplots by estimator.
-            - "output" creates subplots by output target
+            - "output" creates subplots by output target.
             - None creates a single plot.
 
         kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
@@ -317,8 +318,8 @@ class PredictionErrorDisplay(DisplayMixin):
 
         Parameters
         ----------
-        subplot_by : {"auto", "estimator", "data_source", "split", "output", \
-                None}
+        subplot_by : {"auto", "estimator", "data_source", "split", "output"} or \
+                None, default="auto"
             The variable to use for subplotting.
 
         Returns
@@ -329,28 +330,28 @@ class PredictionErrorDisplay(DisplayMixin):
             - hue: Variable for color encoding
             - style: Variable for marker style
         """
+        is_comparison = "comparison" in self.report_type
+        is_crossvalidation = "cross-validation" in self.report_type
+        is_multioutput = self.ml_task == "multioutput-regression"
+        has_both_sources = self.data_source == "both"
+        allow_extra_dims = not (is_multioutput and is_comparison)
+
         valid_subplot_by: list[str | None] = ["auto"]
         hue_candidates = []
 
-        if self.data_source == "both" and (
-            self.ml_task != "multioutput-regression"
-            or "comparison" not in self.report_type
-        ):
+        if has_both_sources and allow_extra_dims:
             valid_subplot_by.append("data_source")
-        if self.ml_task == "multioutput-regression":
+        if is_multioutput:
             valid_subplot_by.append("output")
             hue_candidates.append("output")
-        if "comparison" in self.report_type:
+        if is_crossvalidation and allow_extra_dims:
+            valid_subplot_by.append("split")
+            hue_candidates.append("split")
+        if is_comparison:
             valid_subplot_by.append("estimator")
             hue_candidates.append("estimator")
         else:
             valid_subplot_by.append(None)
-        if "cross-validation" in self.report_type and (
-            self.ml_task != "multioutput-regression"
-            or "comparison" not in self.report_type
-        ):
-            valid_subplot_by.append("split")
-            hue_candidates.append("split")
 
         if subplot_by not in valid_subplot_by:
             raise ValueError(
@@ -360,15 +361,11 @@ class PredictionErrorDisplay(DisplayMixin):
             )
 
         if subplot_by == "auto":
-            col = "estimator" if "comparison" in self.report_type else None
+            col = "estimator" if is_comparison else None
         else:
             col = subplot_by
         hue = hue[0] if (hue := [c for c in hue_candidates if c != col]) else None
-        style = (
-            "data_source"
-            if self.data_source == "both" and col != "data_source"
-            else None
-        )
+        style = "data_source" if has_both_sources and col != "data_source" else None
 
         return col, hue, style
 
@@ -550,11 +547,12 @@ class PredictionErrorDisplay(DisplayMixin):
 
             - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
+            - `data_source` : train or test set (when displaying both data sources)
+            - `output`: Index of the output target (for multioutput-regression)
             - `y_true`: True target values
             - `y_pred`: Predicted target values
             - `residuals`: Difference between true and predicted values
               `(y_true - y_pred)`
-            - `output`: Index of the output target (for multioutput-regression)
 
 
         Examples
@@ -573,9 +571,8 @@ class PredictionErrorDisplay(DisplayMixin):
 
         if self.data_source == "both":
             statistical_columns = ["data_source"] + statistical_columns
-
         if self.ml_task == "multioutput-regression":
-            statistical_columns.append("output")
+            statistical_columns = ["output"] + statistical_columns
 
         if self.report_type == "estimator":
             columns = statistical_columns
