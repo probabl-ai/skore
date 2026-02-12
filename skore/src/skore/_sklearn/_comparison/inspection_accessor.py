@@ -32,13 +32,6 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
     def coefficients(self) -> CoefficientsDisplay:
         """Retrieve the coefficients for each report, including the intercepts.
 
-        If the compared reports are :class:`EstimatorReport` instances, the coefficients
-        from each report's estimator are returned as a single-column DataFrame.
-
-        If the compared reports are :class:`CrossValidationReport` instances, the
-        coefficients across all cross-validation splits are retained and the columns are
-        prefixed with the corresponding estimator name to distinguish them.
-
         Comparison reports with the same features are put under one key and are plotted
         together. When some reports share the same features and others do not, those
         with the same features are plotted together.
@@ -119,14 +112,11 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
 
     @available_if(_check_comparison_report_sub_estimators_have_feature_importances())
     def impurity_decrease(self) -> ImpurityDecreaseDisplay:
-        """Retrieve the mean decrease impurity for each report.
+        """Retrieve the Mean Decrease in Impurity (MDI) for each report.
 
-        If the compared reports are :class:`EstimatorReport` instances, the mean
-        decrease impurity from each report's estimator are returned.
-
-        If the compared reports are :class:`CrossValidationReport` instances, the
-        mean decrease impurity across all cross-validation splits are retained and the
-        columns are prefixed with the corresponding estimator name to distinguish them.
+        Comparison reports with the same features are put under one key and are plotted
+        together. When some reports share the same features and others do not, those
+        with the same features are plotted together.
 
         Returns
         -------

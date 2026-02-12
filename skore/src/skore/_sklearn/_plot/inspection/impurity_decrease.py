@@ -181,10 +181,8 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             columns_to_drop = ["estimator"]
         elif self.report_type == "comparison-estimator":
             columns_to_drop = ["split"]
-        elif self.report_type == "comparison-cross-validation":
+        else:  # comparison-cross-validation
             columns_to_drop = []
-        else:
-            raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
         return self.importances.drop(columns=columns_to_drop)
 
@@ -298,14 +296,6 @@ class ImpurityDecreaseDisplay(DisplayMixin):
 
         self.figure_.suptitle(f"Mean decrease in impurity (MDI) of {estimator_name}")
 
-    @staticmethod
-    def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
-        """Get the available columns from which to group by."""
-        columns_to_groupby = list[str]()
-        if "estimator" in frame.columns:
-            columns_to_groupby.append("estimator")
-        return columns_to_groupby
-
     def _categorical_plot(
         self,
         *,
@@ -418,16 +408,13 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         # help mypy to understand the following variable types
         hue: str | None = None
 
-        # {"estimator"}
-        columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-
         has_same_features = self._has_same_features(frame=frame)
         if not has_same_features:
             # features cannot be compared across estimators and we therefore
-            # need to subplots by estimator
+            # need to subplot by estimator
             hue, col = None, "estimator"
         else:
-            hue, col = columns_to_groupby[0], None
+            hue, col = "estimator", None
 
         self._categorical_plot(
             frame=frame,
