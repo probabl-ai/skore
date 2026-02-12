@@ -72,8 +72,6 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 y = y.to_frame()
             elif not sbd.is_dataframe(y):
                 y = np.asarray(y)
-                # note: this loose the index information if y is a Series
-                # but anyway indexes are ignored by skb.concat(..., axis=1)
                 if y.ndim == 1:
                     columns = ["Target"]
                 else:
