@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from rich.console import Console
 from rich.theme import Theme
 
-from skore._config import config_context, get_config, set_config
+from skore._config import configuration
 from skore._externals._sklearn_compat import parse_version
 from skore._login import login
 from skore._sklearn import (
@@ -40,7 +40,7 @@ setup_jupyter_display()
 
 
 if parse_version(joblib_version) < parse_version("1.4"):
-    set_config(show_progress=False)
+    configuration.show_progress = False
     warn(
         "Because your version of joblib is older than 1.4, some of the features of "
         "skore will not be enabled (e.g. progress bars). You can update joblib to "
@@ -64,10 +64,8 @@ __all__ = [
     "Project",
     "RocCurveDisplay",
     "TableReportDisplay",
-    "config_context",
-    "get_config",
+    "configuration",
     "login",
-    "set_config",
     "show_versions",
     "train_test_split",
 ]
