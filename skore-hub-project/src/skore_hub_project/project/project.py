@@ -228,6 +228,12 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
+        if not isinstance(report, EstimatorReport | CrossValidationReport):
+            raise TypeError(
+                f"Report must be a `skore.EstimatorReport` or "
+                f"`skore.CrossValidationReport` (found '{type(report)}')"
+            )
+
         if report.ml_task == "binary-classification":
             # check that pos_label is either specified or can be inferred from the data
             if isinstance(report, EstimatorReport):
@@ -248,14 +254,9 @@ class Project:
         if isinstance(report, EstimatorReport):
             payload = EstimatorReportPayload(project=self, key=key, report=report)
             endpoint = "estimator-reports"
-        elif isinstance(report, CrossValidationReport):
+        else:  # CrossValidationReport
             payload = CrossValidationReportPayload(project=self, key=key, report=report)
             endpoint = "cross-validation-reports"
-        else:
-            raise TypeError(
-                f"Report must be a `skore.EstimatorReport` or "
-                f"`skore.CrossValidationReport` (found '{type(report)}')"
-            )
 
         payload_dict = payload.model_dump()
         payload_json_bytes = orjson.dumps(payload_dict, option=orjson.OPT_NON_STR_KEYS)
