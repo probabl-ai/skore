@@ -441,7 +441,7 @@ class PredictionErrorDisplay(DisplayMixin):
                 "(0, 1) range."
             )
 
-        if ml_task not in ["regression", "multioutput-regression"]:  # pragma: no cover
+        if ml_task not in ["regression", "multioutput-regression"]:
             raise ValueError(
                 "The machine learning task must be 'regression' or"
                 f" 'multioutput-regression'. Got {ml_task} instead."
@@ -489,10 +489,10 @@ class PredictionErrorDisplay(DisplayMixin):
                                 "estimator": y_true_i.estimator_name,
                                 "data_source": y_true_i.data_source,
                                 "split": y_true_i.split,
+                                "output": output,
                                 "y_true": y_true_sample_i,
                                 "y_pred": y_pred_sample_i,
                                 "residuals": residuals_sample_i,
-                                "output": output,
                             }
                         )
             else:
@@ -504,10 +504,10 @@ class PredictionErrorDisplay(DisplayMixin):
                             "estimator": y_true_i.estimator_name,
                             "data_source": y_true_i.data_source,
                             "split": y_true_i.split,
+                            "output": np.nan,
                             "y_true": y_true_sample_i,
                             "y_pred": y_pred_sample_i,
                             "residuals": residuals_sample_i,
-                            "output": np.nan,
                         }
                     )
 
@@ -526,9 +526,8 @@ class PredictionErrorDisplay(DisplayMixin):
             "estimator": "category",
             "data_source": "category",
             "split": "category",
+            "output": "category",
         }
-        if ml_task == "multioutput-regression":
-            dtypes["output"] = "category"
 
         return cls(
             prediction_error=DataFrame.from_records(prediction_error_records).astype(
