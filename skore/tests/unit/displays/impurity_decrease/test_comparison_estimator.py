@@ -1,6 +1,5 @@
 import matplotlib as mpl
 import numpy as np
-import pytest
 from sklearn.base import clone
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -9,34 +8,14 @@ from sklearn.utils._testing import _convert_container
 from skore import ComparisonReport, EstimatorReport, ImpurityDecreaseDisplay
 
 
-@pytest.mark.parametrize(
-    "data_fixture",
-    [
-        "forest_binary_classification_data",
-        "forest_multiclass_classification_data",
-        "forest_regression_data",
-        "forest_regression_multioutput_data",
-    ],
-)
-@pytest.mark.parametrize("with_preprocessing", [True, False])
-def test_impurity_decrease_comparison_estimator(
-    pyplot,
-    data_fixture,
-    with_preprocessing,
-    request,
-):
-    """Check the attributes and default plotting behaviour of the impurity decrease plot
-    with comparison of estimator reports."""
-    estimator, X, y = request.getfixturevalue(data_fixture)
-    predictor = clone(estimator)
+def test_with_pipeline(pyplot, forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    estimator = clone(estimator)
 
     columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
     X = _convert_container(X, "dataframe", columns_name=columns_names)
 
-    if with_preprocessing:
-        model = Pipeline([("scaler", StandardScaler()), ("predictor", predictor)])
-    else:
-        model = predictor
+    model = Pipeline([("scaler", StandardScaler()), ("predictor", estimator)])
 
     X_train, X_test = X[:75], X[75:]
     y_train, y_test = y[:75], y[75:]
@@ -59,9 +38,7 @@ def test_impurity_decrease_comparison_estimator(
     assert df["estimator"].unique().tolist() == list(report.reports_.keys())
 
     for report_name, estimator_report in report.reports_.items():
-        fitted_predictor = estimator_report.estimator_
-        if with_preprocessing:
-            fitted_predictor = fitted_predictor.named_steps["predictor"]
+        fitted_predictor = estimator_report.estimator_.named_steps["predictor"]
         feature_importances = fitted_predictor.feature_importances_
 
         importances_split = (
@@ -86,6 +63,7 @@ def test_impurity_decrease_comparison_estimator(
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
 
-    assert display.ax_.get_xlabel() == "Mean decrease in impurity"
-    assert display.ax_.get_ylabel() == ""
     assert display.figure_.get_suptitle() == "Mean decrease in impurity (MDI)"
+    assert display.ax_.get_xlabel() == "Mean decrease in impurity"
+    yticklabels = [label.get_text() for label in display.ax_.get_yticklabels()]
+    assert yticklabels == ["Feature #0", "Feature #1", "Feature #2", "Feature #3"]

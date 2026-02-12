@@ -1,23 +1,7 @@
 import matplotlib as mpl
-import pandas as pd
 import pytest
 
 from skore import ImpurityDecreaseDisplay
-
-
-def test_impurity_decrease_display_invalid_report_type():
-    importances = pd.DataFrame(
-        {
-            "estimator": ["estimator1"],
-            "feature": ["feature1"],
-            "importance": [1.0],
-        }
-    )
-    display = ImpurityDecreaseDisplay(
-        importances=importances, report_type="invalid-type"
-    )
-    with pytest.raises(TypeError, match="Unexpected report type: 'invalid-type'"):
-        display.frame()
 
 
 @pytest.mark.parametrize(

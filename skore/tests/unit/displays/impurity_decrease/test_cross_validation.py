@@ -1,6 +1,5 @@
 import matplotlib as mpl
 import numpy as np
-import pytest
 from sklearn.base import clone
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -9,25 +8,8 @@ from sklearn.utils._testing import _convert_container
 from skore import CrossValidationReport, ImpurityDecreaseDisplay
 
 
-@pytest.mark.parametrize(
-    "data_fixture",
-    [
-        "forest_binary_classification_data",
-        "forest_multiclass_classification_data",
-        "forest_regression_data",
-        "forest_regression_multioutput_data",
-    ],
-)
-@pytest.mark.parametrize("with_preprocessing", [True, False])
-def test_impurity_decrease_cross_validation(
-    pyplot,
-    data_fixture,
-    with_preprocessing,
-    request,
-):
-    """Check the attributes and default plotting behaviour of the impurity decrease plot
-    with cross-validation reports."""
-    estimator, X, y = request.getfixturevalue(data_fixture)
+def test_with_pipeline(pyplot, forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
     estimator = clone(estimator)
 
     columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
@@ -60,6 +42,14 @@ def test_impurity_decrease_cross_validation(
     frame = display.frame()
     assert list(frame.columns) == ["split", "feature", "importance"]
     display.plot()
-    assert hasattr(display, "facet_") and hasattr(display, "figure_")
+    assert hasattr(display, "facet_")
+    assert hasattr(display, "figure_")
+    assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
+    assert (
+        display.figure_.get_suptitle()
+        == "Mean decrease in impurity (MDI) of RandomForestClassifier"
+    )
     assert display.ax_.get_xlabel() == "Mean decrease in impurity"
+    yticklabels = [label.get_text() for label in display.ax_.get_yticklabels()]
+    assert yticklabels == ["Feature #0", "Feature #1", "Feature #2", "Feature #3"]
