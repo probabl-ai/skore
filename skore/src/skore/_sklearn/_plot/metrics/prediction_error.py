@@ -4,6 +4,7 @@ from typing import Literal, cast
 
 import numpy as np
 import seaborn as sns
+from matplotlib.lines import Line2D
 from pandas import DataFrame
 from sklearn.utils.validation import _num_samples, check_array
 
@@ -40,7 +41,8 @@ class PredictionErrorDisplay(DisplayMixin):
         - `split` (may be null)
         - `y_true`
         - `y_pred`
-        - `residuals`.
+        - `residuals`
+        - `output`.
 
     range_y_true : RangeData
         Global range of the true values.
@@ -87,7 +89,7 @@ class PredictionErrorDisplay(DisplayMixin):
     """
 
     _default_relplot_kwargs = {
-        "alpha": 0.3,
+        "alpha": 0.5,
         "s": 15,
         "marker": "o",
         "aspect": 1.0,
@@ -121,7 +123,7 @@ class PredictionErrorDisplay(DisplayMixin):
     def plot(
         self,
         *,
-        subplot_by: Literal["auto", "data_source", "split", "estimator"]
+        subplot_by: Literal["auto", "data_source", "split", "estimator", "output"]
         | None = "auto",
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
@@ -134,8 +136,8 @@ class PredictionErrorDisplay(DisplayMixin):
 
         Parameters
         ----------
-        subplot_by : {"auto", "data_source", "split", "estimator", None}, \
-                default="auto"
+        subplot_by : {"auto", "data_source", "split", "estimator", "output", \
+                None}, default="auto"
             The variable to use for creating subplots:
 
             - "auto" creates subplots by estimator for comparison reports, otherwise
@@ -143,6 +145,7 @@ class PredictionErrorDisplay(DisplayMixin):
             - "data_source" creates subplots by data source (train/test).
             - "split" creates subplots by cross-validation split.
             - "estimator" creates subplots by estimator.
+            - "output" creates subplots by output target
             - None creates a single plot.
 
         kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
@@ -180,7 +183,7 @@ class PredictionErrorDisplay(DisplayMixin):
     def _plot_matplotlib(
         self,
         *,
-        subplot_by: Literal["auto", "data_source", "split", "estimator"]
+        subplot_by: Literal["auto", "data_source", "split", "estimator", "output"]
         | None = "auto",
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
@@ -216,6 +219,7 @@ class PredictionErrorDisplay(DisplayMixin):
             ]
             y_line = [0, 0]
 
+        plot_data = self.frame()
         col, hue, style = self._get_plot_columns(subplot_by)
         relplot_kwargs = {
             "col": col,
@@ -223,12 +227,15 @@ class PredictionErrorDisplay(DisplayMixin):
             "style": style,
             **self._default_relplot_kwargs,
         }
-        if style:
+        if hue:
+            relplot_kwargs["hue_order"] = plot_data[hue].unique().tolist()
+        if style == "data_source":
             relplot_kwargs["style_order"] = ["train", "test"]
-            relplot_kwargs["hue_order"] = ["train", "test"]
+            if hue == "data_source":
+                relplot_kwargs["hue_order"] = ["train", "test"]
 
         self.facet_ = sns.relplot(
-            data=self.frame(),
+            data=plot_data,
             x="y_pred",
             y=y_plot,
             kind="scatter",
@@ -283,7 +290,12 @@ class PredictionErrorDisplay(DisplayMixin):
             self.facet_._legend.remove()
             if hue == "split":
                 labels = [f"Split #{label}" for label in labels]
-        handles.append(ax.lines[0])
+            if hue == "output" and style is None:
+                labels = [f"Output #{label}" for label in labels]
+        handles.append(
+            Line2D([0], [0], **self._default_perfect_model_kwargs)  # type: ignore[arg-type]
+        )
+
         labels.append("Perfect predictions")
 
         self.figure_.legend(
@@ -300,13 +312,15 @@ class PredictionErrorDisplay(DisplayMixin):
 
     def _get_plot_columns(
         self,
-        subplot_by: Literal["auto", "estimator", "data_source", "split"] | None,
+        subplot_by: Literal["auto", "estimator", "data_source", "split", "output"]
+        | None,
     ) -> tuple[str | None, str | None, str | None]:
         """Validate the `subplot_by` parameter.
 
         Parameters
         ----------
-        subplot_by : {"auto", "estimator", "data_source", "split", None}
+        subplot_by : {"auto", "estimator", "data_source", "split", "output", \
+                None}
             The variable to use for subplotting.
 
         Returns
@@ -319,17 +333,26 @@ class PredictionErrorDisplay(DisplayMixin):
         """
         valid_subplot_by: list[str | None] = ["auto"]
         hue_candidates = []
-        if "estimator" in self.report_type and self.data_source == "both":
+
+        if self.data_source == "both" and (
+            self.ml_task != "multioutput-regression"
+            or "comparison" not in self.report_type
+        ):
             valid_subplot_by.append("data_source")
-            hue_candidates.append("data_source")
-        if "cross-validation" in self.report_type:
-            valid_subplot_by.append("split")
-            hue_candidates.append("split")
+        if self.ml_task == "multioutput-regression":
+            valid_subplot_by.append("output")
+            hue_candidates.append("output")
         if "comparison" in self.report_type:
             valid_subplot_by.append("estimator")
             hue_candidates.append("estimator")
         else:
             valid_subplot_by.append(None)
+        if "cross-validation" in self.report_type and (
+            self.ml_task != "multioutput-regression"
+            or "comparison" not in self.report_type
+        ):
+            valid_subplot_by.append("split")
+            hue_candidates.append("split")
 
         if subplot_by not in valid_subplot_by:
             raise ValueError(
@@ -418,10 +441,10 @@ class PredictionErrorDisplay(DisplayMixin):
                 "(0, 1) range."
             )
 
-        if ml_task != "regression":  # pragma: no cover
+        if ml_task not in ["regression", "multioutput-regression"]:  # pragma: no cover
             raise ValueError(
-                "The machine learning task must be 'regression'. "
-                f"Got {ml_task} instead."
+                "The machine learning task must be 'regression' or"
+                f" 'multioutput-regression'. Got {ml_task} instead."
             )
 
         prediction_error_records = []
@@ -448,28 +471,33 @@ class PredictionErrorDisplay(DisplayMixin):
                 y_pred_sample = check_array(
                     _safe_indexing(y_pred_i.y, indices, axis=0), ensure_2d=False
                 )
-                residuals_sample = y_true_sample - y_pred_sample
-
-                for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
-                    y_true_sample, y_pred_sample, residuals_sample, strict=False
-                ):
-                    prediction_error_records.append(
-                        {
-                            "estimator": y_true_i.estimator_name,
-                            "data_source": y_true_i.data_source,
-                            "split": y_true_i.split,
-                            "y_true": y_true_sample_i,
-                            "y_pred": y_pred_sample_i,
-                            "residuals": residuals_sample_i,
-                        }
-                    )
             else:
                 y_true_sample = cast(np.typing.NDArray, y_true_i.y)
                 y_pred_sample = cast(np.typing.NDArray, y_pred_i.y)
-                residuals_sample = y_true_sample - y_pred_sample
 
+            residuals_sample = y_true_sample - y_pred_sample
+            if ml_task == "multioutput-regression":
+                for output in range(y_true_sample.shape[1]):
+                    for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
+                        y_true_sample[:, output],
+                        y_pred_sample[:, output],
+                        residuals_sample[:, output],
+                        strict=True,
+                    ):
+                        prediction_error_records.append(
+                            {
+                                "estimator": y_true_i.estimator_name,
+                                "data_source": y_true_i.data_source,
+                                "split": y_true_i.split,
+                                "y_true": y_true_sample_i,
+                                "y_pred": y_pred_sample_i,
+                                "residuals": residuals_sample_i,
+                                "output": output,
+                            }
+                        )
+            else:
                 for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
-                    y_true_sample, y_pred_sample, residuals_sample, strict=False
+                    y_true_sample, y_pred_sample, residuals_sample, strict=True
                 ):
                     prediction_error_records.append(
                         {
@@ -479,6 +507,7 @@ class PredictionErrorDisplay(DisplayMixin):
                             "y_true": y_true_sample_i,
                             "y_pred": y_pred_sample_i,
                             "residuals": residuals_sample_i,
+                            "output": np.nan,
                         }
                     )
 
@@ -493,13 +522,17 @@ class PredictionErrorDisplay(DisplayMixin):
         range_y_pred = RangeData(min=y_pred_min, max=y_pred_max)
         range_residuals = RangeData(min=residuals_min, max=residuals_max)
 
+        dtypes = {
+            "estimator": "category",
+            "data_source": "category",
+            "split": "category",
+        }
+        if ml_task == "multioutput-regression":
+            dtypes["output"] = "category"
+
         return cls(
             prediction_error=DataFrame.from_records(prediction_error_records).astype(
-                {
-                    "estimator": "category",
-                    "data_source": "category",
-                    "split": "category",
-                }
+                dtypes
             ),
             range_y_true=range_y_true,
             range_y_pred=range_y_pred,
@@ -524,6 +557,7 @@ class PredictionErrorDisplay(DisplayMixin):
             - `y_pred`: Predicted target values
             - `residuals`: Difference between true and predicted values
               `(y_true - y_pred)`
+            - `output`: Index of the output target (for multioutput-regression)
 
 
         Examples
@@ -542,6 +576,9 @@ class PredictionErrorDisplay(DisplayMixin):
 
         if self.data_source == "both":
             statistical_columns = ["data_source"] + statistical_columns
+
+        if self.ml_task == "multioutput-regression":
+            statistical_columns.append("output")
 
         if self.report_type == "estimator":
             columns = statistical_columns
