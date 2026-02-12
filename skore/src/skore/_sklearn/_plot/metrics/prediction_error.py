@@ -3,7 +3,6 @@ from collections import namedtuple
 from typing import Literal, cast
 
 import numpy as np
-import seaborn
 import seaborn as sns
 from pandas import DataFrame
 from sklearn.utils.validation import _num_samples, check_array
@@ -62,6 +61,17 @@ class PredictionErrorDisplay(DisplayMixin):
             "cross-validation", "estimator"}
         The type of report.
 
+    Attributes
+    ----------
+    facet_ : seaborn FacetGrid
+        FacetGrid containing the prediction error.
+
+    figure_ : matplotlib Figure
+        The figure on which the prediction error is plotted.
+
+    ax_ : matplotlib Axes
+        The axes on which the prediction error is plotted.
+
     Examples
     --------
     >>> from sklearn.datasets import load_diabetes
@@ -117,7 +127,7 @@ class PredictionErrorDisplay(DisplayMixin):
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
         despine: bool = True,
-    ) -> seaborn.FacetGrid:
+    ) -> None:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.
@@ -176,7 +186,7 @@ class PredictionErrorDisplay(DisplayMixin):
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
         despine: bool = True,
-    ) -> seaborn.FacetGrid:
+    ) -> sns.axisgrid.FacetGrid:
         """Matplolib implementation of the `plot` method."""
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
@@ -217,14 +227,14 @@ class PredictionErrorDisplay(DisplayMixin):
             relplot_kwargs["style_order"] = ["train", "test"]
             relplot_kwargs["hue_order"] = ["train", "test"]
 
-        facet_ = sns.relplot(
+        self.facet_ = sns.relplot(
             data=self.frame(),
             x="y_pred",
             y=y_plot,
             kind="scatter",
             **_validate_style_kwargs(relplot_kwargs, {}),
         )
-        figure_, ax_ = facet_.figure, facet_.axes.flatten()
+        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.flatten()
 
         title = "Prediction Error"
         if "comparison" not in self.report_type:
@@ -236,15 +246,15 @@ class PredictionErrorDisplay(DisplayMixin):
             if self.data_source == "X_y"
             else "\nData source: Train and Test"
         )
-        figure_.suptitle(title)
+        self.figure_.suptitle(title)
 
-        for axis in ax_:
-            axis.plot(
+        for ax in self.ax_:
+            ax.plot(
                 x_range_perfect_pred,
                 y_line,
                 **self._default_perfect_model_kwargs,
             )
-            axis.set(
+            ax.set(
                 xlabel=xlabel,
                 ylabel=ylabel,
                 xlim=x_range_perfect_pred,
@@ -259,7 +269,7 @@ class PredictionErrorDisplay(DisplayMixin):
 
             if despine:
                 _despine_matplotlib_axis(
-                    axis, x_range=axis.get_xlim(), y_range=axis.get_ylim()
+                    ax, x_range=ax.get_xlim(), y_range=ax.get_ylim()
                 )
 
         # Add the perfect model line to the legend
@@ -267,16 +277,16 @@ class PredictionErrorDisplay(DisplayMixin):
         # and create a new legend manually.
         handles = []
         labels = []
-        if facet_._legend is not None:
-            handles = list(facet_._legend.legend_handles)
-            labels = [t.get_text() for t in facet_._legend.get_texts()]
-            facet_._legend.remove()
+        if self.facet_._legend is not None:
+            handles = list(self.facet_._legend.legend_handles)
+            labels = [t.get_text() for t in self.facet_._legend.get_texts()]
+            self.facet_._legend.remove()
             if hue == "split":
                 labels = [f"Split #{label}" for label in labels]
-        handles.append(ax_.flatten()[0].lines[0])
+        handles.append(ax.lines[0])
         labels.append("Perfect predictions")
 
-        figure_.legend(
+        self.facet_.figure.legend(
             handles,
             labels,
             loc="upper center",
@@ -285,9 +295,10 @@ class PredictionErrorDisplay(DisplayMixin):
             frameon=True,
         )
 
-        if len(ax_) == 1:
-            ax_ = ax_[0]
-        return facet_
+        if len(self.ax_) == 1:
+            self.ax_ = self.ax_[0]
+
+        return self.facet_
 
     def _get_plot_columns(
         self,

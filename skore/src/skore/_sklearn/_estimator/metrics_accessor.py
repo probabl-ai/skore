@@ -407,10 +407,10 @@ class _MetricsAccessor(
                             names=["Metric", "Label / Average"],
                         )
                     else:
-                        index = pd.Index([metric_name], name="Metric")
+                        index = pd.Index([metric_name], name="Metric", dtype=object)
                     score_array = np.array(score).reshape(-1, 1)
                 else:
-                    index = pd.Index([metric_name], name="Metric")
+                    index = pd.Index([metric_name], name="Metric", dtype=object)
                     score_array = np.array(score).reshape(-1, 1)
             elif self._parent._ml_task == "multiclass-classification":
                 if isinstance(score, dict):
@@ -430,7 +430,7 @@ class _MetricsAccessor(
                     )
                     score_array = np.array(score).reshape(-1, 1)
                 else:
-                    index = pd.Index([metric_name], name="Metric")
+                    index = pd.Index([metric_name], name="Metric", dtype=object)
                     score_array = np.array(score).reshape(-1, 1)
             elif self._parent._ml_task in ("regression", "multioutput-regression"):
                 if isinstance(score, list):
@@ -440,7 +440,7 @@ class _MetricsAccessor(
                     )
                     score_array = np.array(score).reshape(-1, 1)
                 else:
-                    index = pd.Index([metric_name], name="Metric")
+                    index = pd.Index([metric_name], name="Metric", dtype=object)
                     score_array = np.array(score).reshape(-1, 1)
             else:  # unknown task - try our best
                 index = None if isinstance(score, Iterable) else [metric_name]
