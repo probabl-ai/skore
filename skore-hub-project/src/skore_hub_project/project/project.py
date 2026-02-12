@@ -225,6 +225,9 @@ class Project:
         """
         from ..report import CrossValidationReportPayload, EstimatorReportPayload
 
+        if not isinstance(key, str):
+            raise TypeError(f"Key must be a string (found '{type(key)}')")
+
         if report.ml_task == "binary-classification":
             # check that pos_label is either specified or can be inferred from the data
             if isinstance(report, EstimatorReport):
@@ -239,9 +242,6 @@ class Project:
                     "For binary classification, the positive label must be specified. "
                     "You can set it using `report.pos_label = <positive_label>`."
                 ) from exc
-
-        if not isinstance(key, str):
-            raise TypeError(f"Key must be a string (found '{type(key)}')")
 
         payload: EstimatorReportPayload | CrossValidationReportPayload
 

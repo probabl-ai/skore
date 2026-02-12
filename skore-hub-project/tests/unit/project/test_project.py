@@ -131,7 +131,12 @@ class TestProject:
         else:
             assert Project("myworkspace", input).name == output
 
-    def test_put_exception(self, respx_mock):
+    def test_put_exception(
+        self,
+        respx_mock,
+        binary_classification_string_labels,
+        cv_binary_classification_string_labels,
+    ):
         respx_mock.post("projects/myworkspace/myname").mock(Response(200))
 
         with raises(TypeError, match="Key must be a string"):
@@ -142,6 +147,19 @@ class TestProject:
             match="must be a `skore.EstimatorReport` or `skore.CrossValidationReport`",
         ):
             Project("myworkspace", "myname").put("<key>", "<value>")
+
+        pos_label_msg = (
+            "For binary classification, the positive label must be specified. "
+            "You can set it using `report.pos_label = <positive_label>`."
+        )
+        with raises(ValueError, match=pos_label_msg):
+            Project("myworkspace", "myname").put(
+                "<key>", binary_classification_string_labels
+            )
+        with raises(ValueError, match=pos_label_msg):
+            Project("myworkspace", "myname").put(
+                "<key>", cv_binary_classification_string_labels
+            )
 
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
         respx_mock.post("projects/myworkspace/myname").mock(Response(200))
@@ -203,26 +221,10 @@ class TestProject:
         # Compare content with the desired output
         assert content == desired
 
-    def test_put_estimator_report_missing_pos_label(
-        self, binary_classification_string_labels, respx_mock
+    def test_put_estimator_report_string_labels_with_pos_label(
+        self, binary_classification_string_labels_with_pos_label, respx_mock
     ):
-        """Put with binary string labels and no pos_label raises."""
-        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
-
-        project = Project("myworkspace", "myname")
-        with raises(
-            ValueError,
-            match=(
-                "For binary classification, the positive label must be specified. "
-                "You can set it using `report.pos_label = <positive_label>`."
-            ),
-        ):
-            project.put("<key>", binary_classification_string_labels)
-
-    def test_put_estimator_report_with_pos_label(
-        self, binary_classification_string_labels, respx_mock
-    ):
-        """Put with binary string labels succeeds when pos_label is set."""
+        """Put with binary string labels and pos_label set works."""
         respx_mock.post("projects/myworkspace/myname").mock(Response(200))
         respx_mock.post("projects/myworkspace/myname/artifacts").mock(
             Response(200, json=[])
@@ -231,9 +233,8 @@ class TestProject:
             Response(200)
         )
 
-        report = binary_classification_string_labels
-        report.pos_label = "positive"
         project = Project("myworkspace", "myname")
+        report = binary_classification_string_labels_with_pos_label
         project.put("<key>", report)
 
         content = loads(respx_mock.calls.last.request.content.decode())
@@ -246,30 +247,14 @@ class TestProject:
         )
         assert content == desired
 
-    def test_put_cross_validation_report_missing_pos_label(
-        self, cv_binary_classification_string_labels, respx_mock
-    ):
-        """Put with CV binary string labels and no pos_label raises."""
-        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
-
-        project = Project("myworkspace", "myname")
-        with raises(
-            ValueError,
-            match=(
-                "For binary classification, the positive label must be specified. "
-                "You can set it using `report.pos_label = <positive_label>`."
-            ),
-        ):
-            project.put("<key>", cv_binary_classification_string_labels)
-
     @mark.filterwarnings(
         "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning",
         "ignore:The default of observed=False is deprecated.*:FutureWarning:seaborn",
     )
-    def test_put_cross_validation_report_with_pos_label(
-        self, cv_binary_classification_string_labels, respx_mock
+    def test_put_cross_validation_report_string_labels_with_pos_label(
+        self, cv_binary_classification_string_labels_with_pos_label, respx_mock
     ):
-        """Put with CV binary string labels succeeds when pos_label is set."""
+        """Put with CV binary string labels and pos_label set works."""
         respx_mock.post("projects/myworkspace/myname").mock(Response(200))
         respx_mock.post("projects/myworkspace/myname/artifacts").mock(
             Response(200, json=[])
@@ -278,9 +263,8 @@ class TestProject:
             Response(200)
         )
 
-        report = cv_binary_classification_string_labels
-        report.pos_label = "positive"
         project = Project("myworkspace", "myname")
+        report = cv_binary_classification_string_labels_with_pos_label
         project.put("<key>", report)
 
         content = loads(respx_mock.calls.last.request.content.decode())
