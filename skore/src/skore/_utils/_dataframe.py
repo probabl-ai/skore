@@ -3,8 +3,9 @@ from typing import cast
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
-from sklearn.utils import check_array
 from skrub import _dataframe as sbd
+
+from skore._externals._sklearn_compat import check_array
 
 
 def _normalize_X_as_dataframe(X: ArrayLike) -> pd.DataFrame:
