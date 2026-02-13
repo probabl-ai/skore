@@ -159,7 +159,7 @@ def test_cache_key_with_string_aggregate_is_not_split(
 ):
     """
     Check that string aggregate values are stored as a single cache-key item.
-
+    Non-regression test for: https://github.com/probabl-ai/skore/issues/2450
     """
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
