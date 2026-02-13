@@ -1,14 +1,14 @@
 def test_zero(comparison_estimator_reports_binary_classification):
     """If `select_k` is zero then the output is an empty dataframe."""
     report = comparison_estimator_reports_binary_classification
-    frame = report.inspection.coefficients().frame(select_k=0)
+    frame = report.inspection.coefficients().frame(select_k=0, format="long")
     assert frame.empty
 
 
 def test_negative(comparison_estimator_reports_binary_classification):
     """If `select_k` is negative then the features are the bottom `-select_k`."""
     report = comparison_estimator_reports_binary_classification
-    frame = report.inspection.coefficients().frame(select_k=-3)
+    frame = report.inspection.coefficients().frame(select_k=-3, format="long")
     assert set(frame["feature"]) == {"Feature #3", "Feature #0", "Intercept"}
 
 
@@ -19,7 +19,7 @@ def test_different_features(
     report = comparison_estimator_reports_binary_classification_different_features
 
     display = report.inspection.coefficients()
-    frame = display.frame(select_k=3)
+    frame = display.frame(select_k=3, format="long")
 
     assert frame.query("estimator == 'LogisticRegression_1'")["feature"].tolist() == [
         "Feature #1",

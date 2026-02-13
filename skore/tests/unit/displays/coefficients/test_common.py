@@ -1,26 +1,12 @@
 import numpy as np
-import pandas as pd
 import pytest
 
 from skore import CoefficientsDisplay
 
 
 def test_coefficients_display_invalid_report_type():
-    display = CoefficientsDisplay(
-        coefficients=pd.DataFrame(
-            {
-                "estimator": ["estimator1"],
-                "split": [0],
-                "feature": ["feature1"],
-                "label": [np.nan],
-                "output": [np.nan],
-                "coefficient": [1.0],
-            }
-        ),
-        report_type="invalid-type",
-    )
     with pytest.raises(TypeError, match="Unexpected report type: 'invalid-type'"):
-        display.frame()
+        CoefficientsDisplay(coefficients=None, report_type="invalid-type")
 
 
 @pytest.mark.parametrize(
@@ -61,7 +47,7 @@ class TestCoefficientsDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.inspection.coefficients()
-        frame = display.frame()
+        frame = display.frame(format="long")
 
         expected = {"feature", "coefficient"}
         if "cross_validation" in fixture_prefix:
@@ -131,8 +117,8 @@ class TestCoefficientsDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.inspection.coefficients()
-        full = display.frame(sorting_order=None)
-        sub = display.frame(select_k=2)
+        full = display.frame(sorting_order=None, format="long")
+        sub = display.frame(select_k=2, format="long")
         group_cols = [
             c for c in ("split", "estimator", "label", "output") if c in sub.columns
         ]
@@ -153,7 +139,7 @@ class TestCoefficientsDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.inspection.coefficients()
-        frame = display.frame(sorting_order=sorting_order)
+        frame = display.frame(sorting_order=sorting_order, format="long")
         group_cols = [
             c for c in frame.columns if c not in ("feature", "coefficient", "split")
         ]
