@@ -481,21 +481,27 @@ class CoefficientsDisplay(DisplayMixin):
         ----------
         frame : pd.DataFrame
             The frame to plot.
+
         estimator_name : str
             The name of the estimator to plot.
+
         report_type : {"estimator", "cross-validation"}
             The type of report to plot.
+
         subplot_by : {"auto", "estimator", "label", "output"} or None
             The column to use for subplotting and dividing the coefficients into
             subplots.
+
         barplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.barplot` for
             rendering the coefficients with an :class:`~skore.EstimatorReport` or
             :class:`~skore.ComparisonReport` of :class:`~skore.EstimatorReport`.
+
         boxplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.boxplot` for
             rendering the coefficients with a :class:`~skore.CrossValidationReport` or
             :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
+
         stripplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.stripplot` for
             rendering the coefficients with a :class:`~skore.CrossValidationReport` or
@@ -573,20 +579,25 @@ class CoefficientsDisplay(DisplayMixin):
         ----------
         frame : pd.DataFrame
             The frame to plot.
+
         report_type : {"comparison-estimator", "comparison-cross-validation"}
             The type of report to plot.
+
         subplot_by : {"auto", "estimator", "label", "output"} or None
             The column to use for subplotting and dividing the coefficients into
             subplots. If `None`, an automatic choice is made depending on the type of
             reports at hand.
+
         barplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.barplot` for
             rendering the coefficients with an :class:`~skore.ComparisonReport` of
             :class:`~skore.EstimatorReport`.
+
         boxplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.boxplot` for
             rendering the coefficients with a :class:`~skore.ComparisonReport` of
             :class:`~skore.CrossValidationReport`.
+
         stripplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.stripplot` for
             rendering the coefficients with a :class:`~skore.ComparisonReport` of
@@ -688,10 +699,13 @@ class CoefficientsDisplay(DisplayMixin):
         ----------
         estimators : list of estimator
             The estimators to compute the data for.
+
         names : list of str
             The names of the estimators.
+
         splits : list of int or np.nan
             The splits to compute the data for.
+
         report_type : {"estimator", "cross-validation", "comparison-estimator", \
                 "comparison-cross-validation"}
             The type of report to compute the data for.
