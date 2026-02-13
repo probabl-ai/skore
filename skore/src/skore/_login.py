@@ -7,7 +7,7 @@ from typing import Literal
 logger = getLogger(__name__)
 
 
-def login(*, mode: Literal["local", "hub"] = "hub", **kwargs):
+def login(*, mode: Literal["hub", "local"] = "hub", **kwargs):
     """
     Login to the storage backend.
 
