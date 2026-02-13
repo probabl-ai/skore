@@ -1,8 +1,6 @@
 from collections.abc import Callable
 from typing import Any, Literal, cast
 
-import joblib
-import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
@@ -32,6 +30,7 @@ from skore._utils._accessor import (
     _check_estimator_report_has_method,
     _get_ys_for_single_report,
 )
+from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
 from skore._utils._parallel import Parallel, delayed
@@ -201,26 +200,16 @@ class _MetricsAccessor(
         else:
             data_source_hash = None
 
-        cache_key_parts: list[Any] = [
-            self._parent._hash,
-            report_metric_name,
-            data_source,
-        ]
-
-        if data_source_hash is not None:
-            cache_key_parts.append(data_source_hash)
-
-        if aggregate is None or isinstance(aggregate, str):
-            cache_key_parts.append(aggregate)
-        else:
-            cache_key_parts.extend(tuple(aggregate))
-        ordered_metric_kwargs = sorted(metric_kwargs.keys())
-        for key in ordered_metric_kwargs:
-            if isinstance(metric_kwargs[key], np.ndarray | list | dict):
-                cache_key_parts.append(joblib.hash(metric_kwargs[key]))
-            else:
-                cache_key_parts.append(metric_kwargs[key])
-        cache_key = tuple(cache_key_parts)
+        cache_key = deep_key_sanitize(
+            (
+                self._parent._hash,
+                report_metric_name,
+                data_source,
+                data_source_hash,
+                aggregate,
+                metric_kwargs,
+            )
+        )
 
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]

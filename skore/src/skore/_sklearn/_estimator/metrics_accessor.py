@@ -4,7 +4,6 @@ from functools import partial
 from operator import attrgetter
 from typing import Any, Literal, cast
 
-import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
@@ -41,6 +40,7 @@ from skore._utils._accessor import (
     _expand_data_sources,
     _get_ys_for_single_report,
 )
+from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._index import flatten_multi_index
 
 
@@ -499,31 +499,18 @@ class _MetricsAccessor(
                 data_source=data_source, X=X, y=y_true
             )
 
-        # build the cache key components to finally create a tuple that will be used
-        # to check if the metric has already been computed
-        cache_key_parts: list[Any] = [
-            self._parent._hash,
-            metric_fn.__name__,
-            data_source,
-        ]
-
-        if data_source_hash is not None:
-            cache_key_parts.append(data_source_hash)
-
         metric_params = inspect.signature(metric_fn).parameters
-        if "pos_label" in metric_params:
-            cache_key_parts.append(pos_label)
 
-        # add the ordered metric kwargs to the cache key
-        ordered_metric_kwargs = sorted(metric_kwargs.keys())
-        for key in ordered_metric_kwargs:
-            value = metric_kwargs[key]
-            if isinstance(value, np.ndarray):
-                cache_key_parts.append(joblib.hash(value))
-            else:
-                cache_key_parts.append(value)
-
-        cache_key = tuple(cache_key_parts)
+        cache_key = deep_key_sanitize(
+            (
+                self._parent._hash,
+                metric_fn.__name__,
+                data_source,
+                data_source_hash,
+                pos_label if "pos_label" in metric_params else None,
+                metric_kwargs,
+            )
+        )
 
         if cache_key in self._parent._cache:
             score = self._parent._cache[cache_key]
