@@ -59,7 +59,13 @@ def login(*, mode: Literal["local", "hub"] = "hub", **kwargs):
     plugins = entry_points(group="skore.plugins.login")
 
     if mode not in plugins.names:
-        raise ValueError(f"Unknown mode `{mode}`. Please install `skore[{mode}]`.")
+        raise ValueError(
+            f"The mode `{mode}` is not supported. You need to install "
+            f"`skore-{mode}-project` to use it. You can install it with pip:\n"
+            f'    pip install "skore[{mode}]"'
+            f"or via conda where it is included in the `skore` package\n"
+            f"    conda install skore -c conda-forge"
+        )
 
     logger.debug("Login to hub storage.")
 
