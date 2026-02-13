@@ -3,13 +3,10 @@ from typing import Literal
 from skrub import _dataframe as sbd
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import (
-    _BaseAccessor,
-    _normalize_X_as_dataframe,
-    _normalize_y_as_dataframe,
-)
+from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot import TableReportDisplay
+from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
 
 
 class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
