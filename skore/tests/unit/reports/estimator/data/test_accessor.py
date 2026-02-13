@@ -5,6 +5,7 @@ from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeRegressor
 
 from skore import EstimatorReport
 
@@ -108,15 +109,14 @@ def test_analyze_data_source_with_y():
     )
 
 
-def test_analyze_with_list_target():
-    """Check that list/tuples are supported for y"""
-    X, y = make_regression(n_samples=30, n_features=2, random_state=42)
-    X = pd.DataFrame(X, columns=["feature_0", "feature_1"])
+@pytest.mark.parametrize(
+    "X", [[[0, 1], [2, 3]], ((0, 1), (2, 3)), [[0, np.nan], [np.nan, 1]]]
+)
+@pytest.mark.parametrize("y", [[0, 1], (0, 1)])
+def test_analyze_sequence(X, y):
+    """Check that lists/tuples are supported for X and y (like in scikit-learn)"""
 
-    report = EstimatorReport(LinearRegression(), X_train=X, y_train=list(y))
-    report.data.analyze(data_source="train")  # should not crash
-
-    report = EstimatorReport(LinearRegression(), X_train=X, y_train=tuple(y))
+    report = EstimatorReport(DecisionTreeRegressor(), X_train=X, y_train=y)
     report.data.analyze(data_source="train")  # should not crash
 
 
