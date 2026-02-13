@@ -6,10 +6,7 @@ from typing import Any
 import joblib
 import numpy as np
 from numpy.typing import ArrayLike
-from scipy.sparse import issparse
-from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
-from sklearn.utils.validation import _num_features
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
@@ -19,7 +16,6 @@ from skore._sklearn._plot.inspection.impurity_decrease import ImpurityDecreaseDi
 from skore._sklearn._plot.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
-from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import DataSource
 from skore._utils._accessor import (
     _check_estimator_has_coef,
@@ -137,7 +133,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
     ) -> PermutationImportanceDisplay:
-        """Report the permutation feature importance.
+        """Display to inspect feature importance via feature permutation.
 
         This computes the permutation importance using sklearn's
         :func:`~sklearn.inspection.permutation_importance` function,
@@ -224,8 +220,8 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame
-            The permutation importance.
+        :class:`PermutationImportanceDisplay`
+            The permutation importance display.
 
         Examples
         --------
@@ -357,51 +353,14 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             # earlier.
             display = self._parent._cache[cache_key]
         else:
-            if not isinstance(self._parent.estimator_, Pipeline) or at_step == 0:
-                feature_engineering, estimator = None, self._parent.estimator_
-                X_transformed = X_
-
-            else:
-                pipeline = self._parent.estimator_
-                if not isinstance(at_step, str | int):
-                    raise ValueError(
-                        f"at_step must be an integer or a string; got {at_step!r}"
-                    )
-
-                if isinstance(at_step, str):
-                    # Make at_step an int and process it as usual
-                    at_step = list(pipeline.named_steps.keys()).index(at_step)
-
-                if isinstance(at_step, int):
-                    if abs(at_step) >= len(pipeline.steps):
-                        raise ValueError(
-                            "at_step must be strictly smaller in magnitude than the "
-                            "number of steps in the Pipeline, which is "
-                            f"{len(pipeline.steps)}; got {at_step}"
-                        )
-                    feature_engineering, estimator = (
-                        pipeline[:at_step],
-                        pipeline[at_step:],
-                    )
-                    X_transformed = feature_engineering.transform(X_)
-
-            feature_names = _get_feature_names(
-                estimator,
-                n_features=_num_features(X_transformed),
-                X=X_transformed,
-                transformer=feature_engineering,
-            )
-
-            if issparse(X_transformed):
-                X_transformed = X_transformed.todense()
-
             display = PermutationImportanceDisplay._compute_data_for_display(
                 data_source=data_source,
-                estimator=estimator,
-                estimator_name=self._parent.estimator_name_,
-                X=X_transformed,
+                estimators=[self._parent.estimator_],
+                estimator_names=[self._parent.estimator_name_],
+                splits=[np.nan],
+                X=X_,
                 y=y_true,
-                feature_names=feature_names,
+                at_step=at_step,
                 metric=metric,
                 n_repeats=n_repeats,
                 max_samples=max_samples,
