@@ -1,9 +1,10 @@
 from collections.abc import Callable
 from typing import Any, Literal, cast
 
-import joblib
 import numpy as np
 import pandas as pd
+from joblib import Parallel
+from joblib import hash as joblib_hash
 from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
@@ -34,7 +35,7 @@ from skore._utils._accessor import (
 )
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
-from skore._utils._parallel import Parallel, delayed
+from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
 DataSource = Literal["test", "train", "X_y"]
@@ -217,7 +218,7 @@ class _MetricsAccessor(
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
         for key in ordered_metric_kwargs:
             if isinstance(metric_kwargs[key], np.ndarray | list | dict):
-                cache_key_parts.append(joblib.hash(metric_kwargs[key]))
+                cache_key_parts.append(joblib_hash(metric_kwargs[key]))
             else:
                 cache_key_parts.append(metric_kwargs[key])
         cache_key = tuple(cache_key_parts)

@@ -5,6 +5,7 @@ from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
+from joblib import Parallel
 from numpy.typing import ArrayLike
 from rich.panel import Panel
 from sklearn.base import BaseEstimator, clone, is_classifier
@@ -19,7 +20,7 @@ from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import _DEFAULT, PositiveLabel, SKLearnCrossValidator
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
-from skore._utils._parallel import Parallel, delayed
+from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
 if TYPE_CHECKING:

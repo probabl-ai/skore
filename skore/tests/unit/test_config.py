@@ -1,127 +1,148 @@
 from concurrent.futures import ThreadPoolExecutor
 
-import pytest
+from joblib import Parallel, parallel_config
+from pytest import mark, raises
 
-from skore import config_context, get_config, set_config
-from skore._config import _set_show_progress_for_testing
-from skore._utils._parallel import Parallel, delayed
-
-
-def test_config_context():
-    assert get_config() == {
-        "show_progress": True,
-        "plot_backend": "matplotlib",
-    }
-
-    # Not using as a context manager affects nothing
-    config_context(show_progress=False)
-    assert get_config()["show_progress"] is True
-
-    with config_context(show_progress=False):
-        assert get_config() == {
-            "show_progress": False,
-            "plot_backend": "matplotlib",
-        }
-    assert get_config()["show_progress"] is True
-
-    with config_context(show_progress=False):
-        with config_context(show_progress=None):
-            assert get_config()["show_progress"] is False
-
-        assert get_config()["show_progress"] is False
-
-        with config_context(show_progress=None):
-            assert get_config()["show_progress"] is False
-
-            with config_context(show_progress=None):
-                assert get_config()["show_progress"] is False
-
-                # global setting will not be retained outside of context that
-                # did not modify this setting
-                set_config(show_progress=True)
-                assert get_config()["show_progress"] is True
-
-            assert get_config()["show_progress"] is False
-
-        assert get_config()["show_progress"] is False
-
-    assert get_config() == {
-        "show_progress": True,
-        "plot_backend": "matplotlib",
-    }
-
-    # No positional arguments
-    with pytest.raises(TypeError):
-        config_context(True)
-
-    # No unknown arguments
-    with pytest.raises(TypeError):
-        config_context(do_something_else=True).__enter__()
+from skore import configuration
+from skore._config import foo
+from skore._utils._parallel import delayed
 
 
-def test_config_context_exception():
-    assert get_config()["show_progress"] is True
-    try:
-        with config_context(show_progress=False):
-            assert get_config()["show_progress"] is False
-            raise ValueError()
-    except ValueError:
-        pass
-    assert get_config()["show_progress"] is True
+class CustomException(Exception): ...
 
 
-def test_set_config():
-    assert get_config()["show_progress"] is True
-    set_config(show_progress=None)
-    assert get_config()["show_progress"] is True
-    set_config(show_progress=False)
-    assert get_config()["show_progress"] is False
-    set_config(show_progress=None)
-    assert get_config()["show_progress"] is False
-    set_config(show_progress=None)
-    assert get_config()["show_progress"] is False
+def test_configuration_show_progress():
+    assert configuration.show_progress is True
 
-    # No unknown arguments
-    with pytest.raises(TypeError):
-        set_config(do_something_else=True)
+    configuration.show_progress = False
 
-    # reset the context to default for other tests
-    set_config(show_progress=True)
-    assert get_config()["show_progress"] is True
+    assert configuration.show_progress is False
 
 
-@pytest.mark.parametrize("backend", ["loky", "multiprocessing", "threading"])
-def test_config_threadsafe_joblib(backend):
-    """Test that the global config is threadsafe with all joblib backends.
-    Two jobs are spawned and each sets `show_progress` to two different values.
-    When the job with a duration of 0.1s completes, the `show_progress` value
-    should be the same as the value passed to the function. In other words,
-    it is not influenced by the other job setting `show_progress` to True.
+def test_configuration_plot_backend():
+    assert configuration.plot_backend == "matplotlib"
+
+    configuration.plot_backend = "plotly"
+
+    assert configuration.plot_backend == "plotly"
+
+
+def test_configuration_call():
+    assert configuration.show_progress is True
+    assert configuration.plot_backend == "matplotlib"
+
+    with configuration():
+        assert configuration.show_progress is True
+        assert configuration.plot_backend == "matplotlib"
+
+    assert configuration.show_progress is True
+    assert configuration.plot_backend == "matplotlib"
+
+    with configuration(show_progress=False):
+        assert configuration.show_progress is False
+        assert configuration.plot_backend == "matplotlib"
+
+    assert configuration.show_progress is True
+    assert configuration.plot_backend == "matplotlib"
+
+    with configuration(plot_backend="plotly"):
+        assert configuration.show_progress is True
+        assert configuration.plot_backend == "plotly"
+
+    assert configuration.show_progress is True
+    assert configuration.plot_backend == "matplotlib"
+
+    with configuration(show_progress=False):
+        assert configuration.show_progress is False
+        assert configuration.plot_backend == "matplotlib"
+
+        with configuration(plot_backend="plotly"):
+            assert configuration.show_progress is False
+            assert configuration.plot_backend == "plotly"
+
+    assert configuration.show_progress is True
+    assert configuration.plot_backend == "matplotlib"
+
+    with raises(CustomException), configuration(show_progress=False):
+        assert configuration.show_progress is False
+        assert configuration.plot_backend == "matplotlib"
+
+        raise CustomException()
+
+    assert configuration.show_progress is True
+    assert configuration.plot_backend == "matplotlib"
+
+
+@mark.parametrize("backend", ["loky", "multiprocessing", "threading"])
+def test_configuration_through_joblib(backend):
     """
-    show_progresses = [False, True, False, True]
-    sleep_durations = [0.1, 0.2, 0.1, 0.2]
+    Using joblib, ensure that:
+    - processes can't modify main process's configuration,
+    - processes inherit main process's configuration,
+    - tasks don't impact each other (one process can be shared between tasks in joblib).
+    """
+    assert configuration.show_progress is True
+    assert configuration.plot_backend == "matplotlib"
 
-    items = Parallel(backend=backend, n_jobs=2)(
-        delayed(_set_show_progress_for_testing)(show_progress, sleep_duration)
-        for show_progress, sleep_duration in zip(
-            show_progresses, sleep_durations, strict=False
+    # with default configuration
+    with parallel_config(backend=backend):
+        assert Parallel(n_jobs=2)(delayed(foo)() for _ in range(4)) == 4 * [
+            (
+                (True, "matplotlib"),
+                ("show_progress_thread", "plot_backend_thread"),
+            ),
+        ]
+
+    # ensure there is no impact on main process's configuration
+    assert configuration.show_progress is True
+    assert configuration.plot_backend == "matplotlib"
+
+    # with modified configuration
+    configuration.show_progress = False
+    configuration.plot_backend = "plotly"
+
+    with parallel_config(backend=backend):
+        assert Parallel(n_jobs=2)(delayed(foo)() for _ in range(4)) == 4 * [
+            (
+                (False, "plotly"),
+                ("show_progress_thread", "plot_backend_thread"),
+            ),
+        ]
+
+    # ensure there is no impact on main process's configuration
+    assert configuration.show_progress is False
+    assert configuration.plot_backend == "plotly"
+
+
+def test_configuration_through_threading():
+    """
+    Using threading from stdlib, ensure that:
+    - thread can't modify main thread's configuration,
+    - thread inherits main thread's configuration.
+    """
+    with ThreadPoolExecutor() as executor:
+        assert configuration.show_progress is True
+        assert configuration.plot_backend == "matplotlib"
+
+        # with default configuration
+        assert executor.submit(foo).result() == (
+            (True, "matplotlib"),
+            ("show_progress_thread", "plot_backend_thread"),
         )
-    )
 
-    assert items == [False, True, False, True]
+        # ensure there is no impact on main thread's configuration
+        assert configuration.show_progress is True
+        assert configuration.plot_backend == "matplotlib"
 
+        # with modified configuration
+        configuration.show_progress = False
+        configuration.plot_backend = "plotly"
 
-def test_config_threadsafe():
-    """Uses threads directly to test that the global config does not change
-    between threads. Same test as `test_config_threadsafe_joblib` but with
-    `ThreadPoolExecutor`."""
-
-    show_progresses = [False, True, False, True]
-    sleep_durations = [0.1, 0.2, 0.1, 0.2]
-
-    with ThreadPoolExecutor(max_workers=2) as e:
-        items = list(
-            e.map(_set_show_progress_for_testing, show_progresses, sleep_durations)
+        assert executor.submit(foo).result() == (
+            (False, "plotly"),
+            ("show_progress_thread", "plot_backend_thread"),
         )
 
-    assert items == [False, True, False, True]
+        # ensure there is no impact on main thread's configuration
+        assert configuration.show_progress is False
+        assert configuration.plot_backend == "plotly"
