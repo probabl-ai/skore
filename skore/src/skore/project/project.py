@@ -245,8 +245,10 @@ class Project:
         if self.ml_task is not None:
             if report.ml_task != self.ml_task:
                 raise ValueError(
-                    f"Expected a report meant for ML task {self.ml_task!r} "
-                    f"but the given report is for ML task {report.ml_task!r}"
+                    "At this time, a Project can only contain reports associated with "
+                    "a single ML task. "
+                    f"Project {self.name!r} expected ML task {self.ml_task!r}; "
+                    f"got a report associated with ML task {report.ml_task!r}."
                 )
         else:
             self.ml_task = report.ml_task
