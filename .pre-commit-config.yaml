@@ -32,47 +32,30 @@ repos:
       - id: ruff-format
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+  # ty type checker - https://github.com/astral-sh/ty
+  # Note: Using local hooks until official pre-commit support is added
+  - repo: local
     hooks:
-
-      - id: mypy
+      - id: ty-skore
+        name: ty skore/
+        entry: bash -c "cd skore && ty check --force-exclude ."
+        language: python
+        additional_dependencies: [ty]
         pass_filenames: false
-        alias: mypy-skore
-        name: mypy skore/
         files: ^skore/
-        args: [--config-file=skore/pyproject.toml, skore]
-        additional_dependencies:
-          # from dependencies
-          - IPython
-          - anywidget
-          - ipywidgets
-          - joblib
-          - matplotlib
-          - numpy
-          - pandas
-          - plotly
-          - rich
-          - scikit-learn
-          - skrub
-          - seaborn
-          # from test dependencies
-          - polars
-          - pyarrow
-          - scipy-stubs
 
-      - id: mypy
+      - id: ty-skore-hub-project
+        name: ty skore-hub-project/
+        entry: bash -c "cd skore-hub-project && ty check --force-exclude ."
+        language: python
+        additional_dependencies: [ty]
         pass_filenames: false
-        alias: mypy-skore-hub-project
-        name: mypy skore-hub-project/
         files: ^skore-hub-project/
-        args: [--config-file=skore-hub-project/pyproject.toml, skore-hub-project]
-        additional_dependencies: [skore, blake3, httpx, orjson, pandas-stubs, pydantic]
 
-      - id: mypy
+      - id: ty-skore-local-project
+        name: ty skore-local-project/
+        entry: bash -c "cd skore-local-project && ty check --force-exclude ."
+        language: python
+        additional_dependencies: [ty]
         pass_filenames: false
-        alias: mypy-skore-local-project
-        name: mypy skore-local-project/
         files: ^skore-local-project/
-        args: [--config-file=skore-local-project/pyproject.toml, skore-local-project]
-        additional_dependencies: [skore]

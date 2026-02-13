@@ -47,4 +47,6 @@ jobs:
           pre-commit run --all-files typos
           pre-commit run --all-files nbstripout
           pre-commit run --all-files ruff-check
-          pre-commit run --all-files mypy
+          pre-commit run --all-files ty-skore
+          pre-commit run --all-files ty-skore-hub-project
+          pre-commit run --all-files ty-skore-local-project
