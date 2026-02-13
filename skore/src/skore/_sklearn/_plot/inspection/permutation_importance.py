@@ -3,6 +3,7 @@ from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
+import seaborn
 import seaborn as sns
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, is_classifier
@@ -34,16 +35,6 @@ class PermutationImportanceDisplay(DisplayMixin):
     report_type : {"estimator"}
         Report type from which the display is created.
 
-    Attributes
-    ----------
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the permutation importance.
-
-    figure_ : matplotlib Figure
-        Figure containing the permutation importance.
-
-    ax_ : matplotlib Axes
-        Axes with permutation importance.
     """
 
     _default_boxplot_kwargs: dict[str, Any] = {
@@ -166,7 +157,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         *,
         subplot_by: str | tuple[str, str] | None = "auto",
         metric: str | list[str] | None = None,
-    ) -> None:
+    ) -> seaborn.FacetGrid:
         """Plot the permutation importance.
 
         Parameters
@@ -197,7 +188,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         *,
         subplot_by: str | tuple[str, str] | None = "auto",
         metric: str | list[str] | None = None,
-    ) -> None:
+    ) -> seaborn.FacetGrid:
         """Dispatch the plotting function for matplotlib backend."""
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
@@ -213,7 +204,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         elif "output" in frame.columns and frame["output"].isna().any():
             raise ValueError(err_msg.format("outputs"))
 
-        self._plot_single_estimator(
+        return self._plot_single_estimator(
             subplot_by=subplot_by,
             frame=frame,
             estimator_name=self.importances["estimator"].unique()[0],
@@ -229,7 +220,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         estimator_name: str,
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
-    ) -> None:
+    ) -> seaborn.FacetGrid:
         """Plot the permutation importance for an `EstimatorReport`."""
         if subplot_by == "auto":
             is_multi_metric = frame["metric"].nunique() > 1
@@ -297,7 +288,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         else:
             boxplot_kwargs.setdefault("palette", "tab10")
 
-        self.facet_ = sns.catplot(
+        facet_ = sns.catplot(
             data=frame,
             x="value",
             y="feature",
@@ -319,8 +310,8 @@ class PermutationImportanceDisplay(DisplayMixin):
         add_background_features = hue is not None
 
         metrics = frame["metric"].unique()
-        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
-        for row_index, row_axes in enumerate(self.facet_.axes):
+        _, ax_ = facet_.figure, facet_.axes.squeeze()
+        for row_index, row_axes in enumerate(facet_.axes):
             for col_index, ax in enumerate(row_axes):
                 if len(metrics) > 1:
                     if row == "metric":
@@ -339,12 +330,13 @@ class PermutationImportanceDisplay(DisplayMixin):
                     xlabel=xlabel,
                     ylabel="",
                 )
-        if len(self.ax_.flatten()) == 1:
-            self.ax_ = self.ax_.flatten()[0]
+        if len(ax_.flatten()) == 1:
+            ax_ = ax_.flatten()[0]
         data_source = frame["data_source"].unique()[0]
-        self.figure_.suptitle(
+        facet_.figure.suptitle(
             f"Permutation importance of {estimator_name} on {data_source} set"
         )
+        return facet_
 
     def frame(
         self,

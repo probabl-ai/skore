@@ -30,6 +30,7 @@ def test_legend_multiclass_classification(
     report = estimator_reports_multiclass_classification[0]
     display = report.metrics.precision_recall()
     _, ax = estimator_reports_multiclass_classification_figure_axes
+    ax = ax[0]
     labels = display.precision_recall["label"].cat.categories
 
     assert isinstance(ax, mpl.axes.Axes)
@@ -80,11 +81,13 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.precision_recall()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
+        facet = display.plot(subplot_by=subplot_by)
         if subplot_by is None:
-            assert isinstance(display.ax_, mpl.axes.Axes)
+            ax = facet.axes.squeeze().item()
+            assert isinstance(ax, mpl.axes.Axes)
         else:
-            assert len(display.ax_) == expected_len
+            ax_ = facet.axes.flatten()
+            assert len(ax_) == expected_len
 
 
 @pytest.mark.parametrize(
@@ -98,8 +101,8 @@ def test_source_both(pyplot, fixture_name, request):
     """Check the behaviour of the plot when data_source='both'."""
     report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.precision_recall(data_source="both")
-    display.plot()
-    ax = display.ax_
+    facet = display.plot()
+    ax = facet.axes.squeeze().item()
     assert isinstance(ax, mpl.axes.Axes)
     assert len(ax.get_lines()) == 2 if "binary" in fixture_name else 6
     legend = ax.get_legend()

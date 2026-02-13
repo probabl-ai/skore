@@ -1,6 +1,8 @@
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
+import seaborn as sns
 
 from skore._sklearn._plot import ConfusionMatrixDisplay
 
@@ -34,10 +36,10 @@ class TestConfusionMatrixDisplay:
 
         assert hasattr(display, "thresholds")
 
-        display.plot()
-        assert hasattr(display, "facet_")
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
+        facet = display.plot()
+        assert isinstance(facet, sns.FacetGrid)
+        assert isinstance(facet.figure, mpl.figure.Figure)
+        assert isinstance(facet.axes.flatten()[0], mpl.axes.Axes)
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_frame_structure(self, fixture_prefix, task, request):
@@ -113,8 +115,8 @@ class TestConfusionMatrixDisplay:
         )
         assert figure.get_figheight() == 6
 
-        display.set_style(facet_grid_kwargs={"height": 8}).plot()
-        assert display.figure_.get_figheight() == 8
+        facet = display.set_style(facet_grid_kwargs={"height": 8}).plot()
+        assert facet.figure.get_figheight() == 8
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_heatmap_kwargs(self, pyplot, fixture_prefix, task, request):
@@ -129,8 +131,8 @@ class TestConfusionMatrixDisplay:
         ax = ax[0] if isinstance(ax, np.ndarray) else ax
 
         assert ax.collections[0].get_cmap().name == "Blues"
-        display.set_style(heatmap_kwargs={"cmap": "Reds"}).plot()
-        ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+        facet = display.set_style(heatmap_kwargs={"cmap": "Reds"}).plot()
+        ax = facet.axes.flatten()[0]
         assert ax.collections[0].get_cmap().name == "Reds"
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])

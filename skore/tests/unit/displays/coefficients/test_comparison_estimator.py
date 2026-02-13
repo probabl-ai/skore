@@ -63,7 +63,7 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
         if subplot_by is None:
             assert isinstance(display.ax_, mpl.axes.Axes)
         else:
-            assert len(display.ax_) == expected_len
+            assert len(display.facet_.axes.flatten()) == expected_len
 
 
 @pytest.mark.parametrize(

@@ -28,9 +28,9 @@ def test_subplot_by(pyplot, subplot_by, fixture_name, request):
         with pytest.raises(ValueError, match=err_msg):
             display.plot(subplot_by=subplot_by)
     elif subplot_by in ["estimator", "auto"]:
-        display.plot(subplot_by=subplot_by)
-        assert isinstance(display.ax_[0], mpl.axes.Axes)
-        assert len(display.ax_) == len(report.reports_)
+        facet = display.plot(subplot_by=subplot_by)
+        assert isinstance(facet.axes.flatten()[0], mpl.axes.Axes)
+        assert len(facet.axes.flatten()) == len(report.reports_)
 
 
 @pytest.mark.parametrize(
@@ -100,16 +100,16 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_with_train
     ) / 2 - 1e-6
     assert threshold not in display.thresholds
 
-    display.plot(threshold_value=threshold)
+    facet = display.plot(threshold_value=threshold)
     expected_title = (
         f"Confusion Matrix\nDecision threshold: {threshold:.2f}"
         + "\nData source: Test set"
     )
-    assert display.figure_.get_suptitle() == expected_title
+    assert facet.figure.get_suptitle() == expected_title
 
     for idx, estimator in enumerate(report.reports_):
         np.testing.assert_allclose(
-            display.ax_[idx].collections[0].get_array(),
+            facet.axes.flatten()[idx].collections[0].get_array(),
             display.frame(normalize=None, threshold_value=threshold)
             .query(f"estimator == '{estimator}'")
             .pivot(index="true_label", columns="predicted_label", values="value")
@@ -144,14 +144,14 @@ def test_pos_label(pyplot, binary_classification_train_test_split):
     comparison_report = ComparisonReport([report_1, report_2])
 
     display = comparison_report.metrics.confusion_matrix(pos_label="A")
-    display.plot()
+    facet = display.plot()
     for idx in range(len(comparison_report.reports_)):
-        assert display.ax_[idx].get_xticklabels()[1].get_text() == "A*"
+        assert facet.axes.flatten()[idx].get_xticklabels()[1].get_text() == "A*"
     # Only the first subplot has yticklabels
-    assert display.ax_[0].get_yticklabels()[1].get_text() == "A*"
+    assert facet.axes.flatten()[0].get_yticklabels()[1].get_text() == "A*"
 
     display = comparison_report.metrics.confusion_matrix(pos_label="B")
-    display.plot()
+    facet = display.plot()
     for idx in range(len(comparison_report.reports_)):
-        assert display.ax_[idx].get_xticklabels()[1].get_text() == "B*"
-    assert display.ax_[0].get_yticklabels()[1].get_text() == "B*"
+        assert facet.axes.flatten()[idx].get_xticklabels()[1].get_text() == "B*"
+    assert facet.axes.flatten()[0].get_yticklabels()[1].get_text() == "B*"

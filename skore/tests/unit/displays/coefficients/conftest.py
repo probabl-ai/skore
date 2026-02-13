@@ -19,8 +19,8 @@ def estimator_reports_binary_classification_figure_axes(
 ):
     report = estimator_reports_binary_classification[0]
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -29,16 +29,16 @@ def estimator_reports_multiclass_classification_figure_axes(
 ):
     report = estimator_reports_multiclass_classification[0]
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
 def estimator_reports_regression_figure_axes(pyplot, estimator_reports_regression):
     report = estimator_reports_regression[0]
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -47,8 +47,8 @@ def estimator_reports_multioutput_regression_figure_axes(
 ):
     report = estimator_reports_multioutput_regression[0]
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -57,8 +57,8 @@ def cross_validation_reports_binary_classification_figure_axes(
 ):
     report = cross_validation_reports_binary_classification[0]
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -67,8 +67,8 @@ def cross_validation_reports_multiclass_classification_figure_axes(
 ):
     report = cross_validation_reports_multiclass_classification[0]
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -77,8 +77,8 @@ def cross_validation_reports_regression_figure_axes(
 ):
     report = cross_validation_reports_regression[0]
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -87,8 +87,8 @@ def cross_validation_reports_multioutput_regression_figure_axes(
 ):
     report = cross_validation_reports_multioutput_regression[0]
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -97,8 +97,8 @@ def comparison_estimator_reports_binary_classification_figure_axes(
 ):
     report = comparison_estimator_reports_binary_classification
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -107,8 +107,8 @@ def comparison_estimator_reports_multiclass_classification_figure_axes(
 ):
     report = comparison_estimator_reports_multiclass_classification
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -117,8 +117,8 @@ def comparison_estimator_reports_regression_figure_axes(
 ):
     report = comparison_estimator_reports_regression
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -127,8 +127,8 @@ def comparison_estimator_reports_multioutput_regression_figure_axes(
 ):
     report = comparison_estimator_reports_multioutput_regression
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -138,8 +138,8 @@ def comparison_cross_validation_reports_binary_classification_figure_axes(
 ):
     report = comparison_cross_validation_reports_binary_classification
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -149,8 +149,8 @@ def comparison_cross_validation_reports_multiclass_classification_figure_axes(
 ):
     report = comparison_cross_validation_reports_multiclass_classification
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -160,8 +160,8 @@ def comparison_cross_validation_reports_regression_figure_axes(
 ):
     report = comparison_cross_validation_reports_regression
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")
@@ -171,8 +171,8 @@ def comparison_cross_validation_reports_multioutput_regression_figure_axes(
 ):
     report = comparison_cross_validation_reports_multioutput_regression
     display = report.inspection.coefficients()
-    display.plot()
-    return display.figure_, display.ax_
+    facet = display.plot()
+    return facet
 
 
 @pytest.fixture(scope="module")

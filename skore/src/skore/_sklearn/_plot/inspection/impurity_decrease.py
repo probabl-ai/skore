@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Any, Literal
 
 import pandas as pd
+import seaborn
 import seaborn as sns
 from sklearn.base import BaseEstimator
 from sklearn.pipeline import Pipeline
@@ -30,17 +31,6 @@ class ImpurityDecreaseDisplay(DisplayMixin):
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
         Report type from which the display is created.
-
-    Attributes
-    ----------
-    ax_ : matplotlib Axes
-        Matplotlib Axes with the plot.
-
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the plot.
-
-    figure_ : matplotlib Figure
-        Figure containing the plot.
 
     Examples
     --------
@@ -190,8 +180,13 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         return self.importances.drop(columns=columns_to_drop)
 
     @DisplayMixin.style_plot
-    def plot(self) -> None:
+    def plot(self) -> seaborn.FacetGrid:
         """Plot the mean decrease in impurity for the different features.
+
+        Returns
+        -------
+        seaborn.FacetGrid
+            The generated plot.
 
         Examples
         --------
@@ -210,7 +205,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         """
         return self._plot()
 
-    def _plot_matplotlib(self) -> None:
+    def _plot_matplotlib(self) -> seaborn.FacetGrid:
         """Dispatch the plotting function for matplotlib backend.
 
         This method creates a bar plot showing the mean decrease in impurity for each
@@ -222,7 +217,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         frame = self.frame()
 
-        self._plot_single_estimator(
+        return self._plot_single_estimator(
             frame=frame,
             estimator_name=self.importances["estimator"].unique()[0],
             report_type=self.report_type,
@@ -240,7 +235,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         barplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
-    ) -> None:
+    ) -> seaborn.FacetGrid:
         """Plot the mean decrease in impurity.
 
         For EstimatorReport, a bar plot is used to display the mean decrease in impurity
@@ -275,7 +270,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             :class:`~skore.CrossValidationReport`.
         """
         if "estimator" in report_type:
-            self.facet_ = sns.catplot(
+            facet_ = sns.catplot(
                 data=frame,
                 x="importance",
                 y="feature",
@@ -283,7 +278,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 **barplot_kwargs,
             )
         else:  # "cross-validation" in report_type
-            self.facet_ = sns.catplot(
+            facet_ = sns.catplot(
                 data=frame,
                 x="importance",
                 y="feature",
@@ -299,16 +294,16 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 **boxplot_kwargs,
             )
 
-        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
-        self.ax_ = self.ax_[()]  # 0-d array
+        ax_ = facet_.axes.flatten()[0]
         _decorate_matplotlib_axis(
-            ax=self.ax_,
+            ax=ax_,
             add_background_features=False,
             n_features=frame["feature"].nunique(),
             xlabel="Mean Decrease in Impurity (MDI)",
             ylabel="",
         )
-        self.figure_.suptitle(f"Mean Decrease in Impurity (MDI) of {estimator_name}")
+        facet_.figure.suptitle(f"Mean Decrease in Impurity (MDI) of {estimator_name}")
+        return facet_
 
     # ignore the type signature because we override kwargs by specifying the name of
     # the parameters for the user.

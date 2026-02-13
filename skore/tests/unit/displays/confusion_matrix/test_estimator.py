@@ -53,8 +53,8 @@ def test_subplot_by(pyplot, subplot_by, fixture_name, request):
         with pytest.raises(ValueError, match=err_msg):
             display.plot(subplot_by=subplot_by)
     else:
-        display.plot(subplot_by=subplot_by)
-        assert isinstance(display.ax_, mpl.axes.Axes)
+        facet = display.plot(subplot_by=subplot_by)
+        assert isinstance(facet.axes.flatten()[0], mpl.axes.Axes)
 
 
 @pytest.mark.parametrize(
@@ -99,15 +99,15 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_with_train
     ) / 2 - 1e-6
     assert threshold not in display.thresholds
 
-    display.plot(threshold_value=threshold)
+    facet = display.plot(threshold_value=threshold)
     expected_title = (
         f"Confusion Matrix\nDecision threshold: {threshold:.2f}"
         + "\nData source: Test set"
     )
-    assert display.figure_.get_suptitle() == expected_title
+    assert facet.figure.get_suptitle() == expected_title
 
     np.testing.assert_allclose(
-        display.ax_.collections[0].get_array(),
+        facet.axes.flatten()[0].collections[0].get_array(),
         display.frame(normalize=None, threshold_value=threshold)
         .pivot(index="true_label", columns="predicted_label", values="value")
         .reindex(index=display.display_labels, columns=display.display_labels)
@@ -129,11 +129,11 @@ def test_pos_label(pyplot, forest_binary_classification_with_train_test):
     )
 
     display = report.metrics.confusion_matrix(pos_label="A")
-    display.plot()
-    assert display.ax_.get_xticklabels()[1].get_text() == "A*"
-    assert display.ax_.get_yticklabels()[1].get_text() == "A*"
+    facet = display.plot()
+    assert facet.axes.flatten()[0].get_xticklabels()[1].get_text() == "A*"
+    assert facet.axes.flatten()[0].get_yticklabels()[1].get_text() == "A*"
 
     display = report.metrics.confusion_matrix(pos_label="B")
-    display.plot()
-    assert display.ax_.get_xticklabels()[1].get_text() == "B*"
-    assert display.ax_.get_yticklabels()[1].get_text() == "B*"
+    facet = display.plot()
+    assert facet.axes.flatten()[0].get_xticklabels()[1].get_text() == "B*"
+    assert facet.axes.flatten()[0].get_yticklabels()[1].get_text() == "B*"
