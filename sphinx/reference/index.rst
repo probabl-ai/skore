@@ -79,20 +79,6 @@ Inspection
      - Display for permutation feature importance
 
 
-Configuration
-^^^^^^^^^^^^^
-
-.. list-table::
-   :widths: 30 70
-
-   * - :func:`config_context`
-     - Context manager for temporarily modifying skore configuration
-   * - :func:`get_config`
-     - Get current skore configuration values
-   * - :func:`set_config`
-     - Set skore configuration values
-
-
 Utilities
 ^^^^^^^^^
 
