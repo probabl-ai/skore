@@ -103,6 +103,12 @@ def slugify_and_warn(string: str, type: Literal["workspace", "name"]) -> str:
             stacklevel=2,
         )
 
+    if slug == "" and type == "name":
+        raise ValueError(
+            "Project name must not be empty. "
+            "This may happen if the given name contains only non-ASCII characters."
+        )
+
     return slug
 
 
