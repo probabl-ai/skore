@@ -62,7 +62,7 @@ def login(*, mode: Literal["local", "hub"] = "hub", **kwargs):
         raise ValueError(
             f"The mode `{mode}` is not supported. You need to install "
             f"`skore-{mode}-project` to use it. You can install it with pip:\n"
-            f'    pip install "skore[{mode}]"'
+            f'    pip install "skore[{mode}]"\n'
             f"or via conda where it is included in the `skore` package\n"
             f"    conda install skore -c conda-forge"
         )
