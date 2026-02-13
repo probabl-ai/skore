@@ -141,7 +141,8 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 def _normalize_X_as_dataframe(X: ArrayLike) -> pd.DataFrame:
     """Normalize feature data as a pandas DataFrame with string column names."""
     if not sbd.is_dataframe(X):
-        X = cast(np.ndarray, check_array(X, accept_sparse=False, ensure_2d=True))
+        X = check_array(X, accept_sparse=False, ensure_2d=True, ensure_all_finite=False)
+        X = cast(np.ndarray, X)
         columns = [f"Feature {i}" for i in range(X.shape[1])]
         return pd.DataFrame(X, columns=columns)
 
