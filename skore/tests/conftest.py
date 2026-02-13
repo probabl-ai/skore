@@ -40,6 +40,17 @@ def monkeypatch_tmpdir(monkeypatch, tmp_path):
     importlib.reload(tempfile)
 
 
+@pytest.fixture(autouse=True)
+def monkeypatch_configuration(monkeypatch):
+    from skore import configuration
+    from skore._config import LocalConfiguration
+
+    monkeypatch.setattr(
+        "skore._config.configuration.local",
+        LocalConfiguration(**configuration.local.__dict__),
+    )
+
+
 @pytest.fixture
 def mock_now():
     return datetime.now(tz=timezone.utc)
