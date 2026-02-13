@@ -217,8 +217,9 @@ class TestProject:
         assert project.ml_task == "binary-classification"
 
         err_msg = (
-            "Expected a report meant for ML task 'binary-classification' "
-            "but the given report is for ML task 'regression'"
+            "At this time, a Project can only contain reports associated with a single "
+            "ML task. Project '<name>' expected ML task 'binary-classification'; got a "
+            "report associated with ML task 'regression'."
         )
         with raises(ValueError, match=err_msg):
             project.put("regression", regression)
