@@ -118,7 +118,7 @@ def test_find_ml_task_pandas():
 
 
 def test_find_ml_task_pandas_large_label_gap():
-    """ "
+    """
     Check that `_find_ml_task` does not fail on large arrays.
     Non-regression test for https://github.com/probabl-ai/skore/pull/2404
     """
