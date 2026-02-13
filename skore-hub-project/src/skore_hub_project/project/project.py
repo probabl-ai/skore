@@ -25,6 +25,7 @@ from unicodedata import normalize
 import joblib
 import orjson
 from httpx import HTTPStatusError
+from sklearn.utils.validation import _check_pos_label_consistency
 
 from skore_hub_project.client.client import Client, HUBClient
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
@@ -233,19 +234,35 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
+        if not isinstance(report, EstimatorReport | CrossValidationReport):
+            raise TypeError(
+                f"Report must be a `skore.EstimatorReport` or "
+                f"`skore.CrossValidationReport` (found '{type(report)}')"
+            )
+
+        if report.ml_task == "binary-classification":
+            # check that pos_label is either specified or can be inferred from the data
+            if isinstance(report, EstimatorReport):
+                target = report.estimator_.classes_
+            else:  # CrossValidationReport
+                target = report.estimator_reports_[0].estimator_.classes_
+
+            try:
+                _check_pos_label_consistency(report.pos_label, target)
+            except ValueError as exc:
+                raise ValueError(
+                    "For binary classification, the positive label must be specified. "
+                    "You can set it using `report.pos_label = <positive_label>`."
+                ) from exc
+
         payload: EstimatorReportPayload | CrossValidationReportPayload
 
         if isinstance(report, EstimatorReport):
             payload = EstimatorReportPayload(project=self, key=key, report=report)
             endpoint = "estimator-reports"
-        elif isinstance(report, CrossValidationReport):
+        else:  # CrossValidationReport
             payload = CrossValidationReportPayload(project=self, key=key, report=report)
             endpoint = "cross-validation-reports"
-        else:
-            raise TypeError(
-                f"Report must be a `skore.EstimatorReport` or "
-                f"`skore.CrossValidationReport` (found '{type(report)}')"
-            )
 
         payload_dict = payload.model_dump()
         payload_json_bytes = orjson.dumps(payload_dict, option=orjson.OPT_NON_STR_KEYS)

@@ -1,13 +1,12 @@
 from typing import Literal
 
-import numpy as np
-import pandas as pd
 from skrub import _dataframe as sbd
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import TableReportDisplay
+from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
 
 
 class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -57,33 +56,13 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         if X is None:
             raise ValueError(err_msg.format(f"X_{dataset}", data_source))
-        elif not sbd.is_dataframe(X):
-            X = pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])])
-        else:
-            if not all(isinstance(col, str) for col in X.columns):
-                X = X.copy()
-                X.columns = [str(col) for col in X.columns]
+        X = _normalize_X_as_dataframe(X)
 
         if with_y:
             if y is None:
                 raise ValueError(err_msg.format(f"y_{dataset}", data_source))
 
-            if isinstance(y, pd.Series) and y.name is not None:
-                y = y.to_frame()
-            elif not sbd.is_dataframe(y):
-                y = np.asarray(y)
-                if y.ndim == 1:
-                    columns = ["Target"]
-                else:
-                    columns = [f"Target {i}" for i in range(y.shape[1])]
-                y = pd.DataFrame(y, columns=columns)
-            else:
-                if not all(isinstance(col, str) for col in y.columns):
-                    y = y.copy()
-                    if y.shape[1] == 1 and list(y.columns) == [0]:
-                        y.columns = ["Target"]
-                    else:
-                        y.columns = [str(col) for col in y.columns]
+            y = _normalize_y_as_dataframe(y)
 
         return X, y
 
