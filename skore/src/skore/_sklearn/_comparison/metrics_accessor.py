@@ -207,9 +207,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             )
         )
 
-        if cache_key in self._parent._cache:
-            results = self._parent._cache[cache_key]
-        else:
+        results = self._parent._cache.get(cache_key)
+        if results is None:
             parallel = joblib.Parallel(
                 **_validate_joblib_parallel_params(
                     n_jobs=self._parent.n_jobs, return_as="generator"
@@ -1187,13 +1186,18 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
-            cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            cache_key_parts.extend(display_kwargs.values())
-            cache_key_parts.append(data_source)
-            cache_key = tuple(cache_key_parts)
+            cache_key = deep_key_sanitize(
+                (
+                    self._parent._hash,
+                    display_class.__name__,
+                    display_kwargs,
+                    data_source,
+                )
+            )
 
-        if cache_key and cache_key in self._parent._cache:
-            return self._parent._cache[cache_key]
+        cache_value = self._parent._cache.get(cache_key)
+        if cache_value is not None:
+            return cache_value
 
         y_true: list[YPlotData] = []
         y_pred: list[YPlotData] = []

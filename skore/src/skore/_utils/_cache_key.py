@@ -35,6 +35,9 @@ def deep_key_sanitize(value: Any) -> Any:
             joblib.hash(array),
         )
 
+    if callable(value):
+        return ("callable", joblib.hash(value))
+
     if isinstance(value, Mapping):
         return (
             "mapping",

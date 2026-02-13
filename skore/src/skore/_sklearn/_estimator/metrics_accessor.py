@@ -512,9 +512,8 @@ class _MetricsAccessor(
             )
         )
 
-        if cache_key in self._parent._cache:
-            score = self._parent._cache[cache_key]
-        else:
+        score = self._parent._cache.get(cache_key)
+        if score is None:
             metric_params = inspect.signature(metric_fn).parameters
             kwargs = {**metric_kwargs}
             if "pos_label" in metric_params:
@@ -1712,13 +1711,18 @@ class _MetricsAccessor(
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
-            cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            cache_key_parts.extend(display_kwargs.values())
-            cache_key_parts.append(data_source)
-            cache_key = tuple(cache_key_parts)
+            cache_key = deep_key_sanitize(
+                (
+                    self._parent._hash,
+                    display_class.__name__,
+                    display_kwargs,
+                    data_source,
+                )
+            )
 
-        if cache_key and cache_key in self._parent._cache:
-            return self._parent._cache[cache_key]
+        cache_value = self._parent._cache.get(cache_key)
+        if cache_value is not None:
+            return cache_value
 
         y_true: list[YPlotData] = []
         y_pred: list[YPlotData] = []
