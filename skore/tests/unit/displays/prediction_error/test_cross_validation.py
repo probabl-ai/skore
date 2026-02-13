@@ -38,8 +38,8 @@ def test_legend_actual_vs_predicted(pyplot, task, legend_prefix, request):
 @pytest.mark.parametrize(
     "task, valid_values",
     [
-        ("regression", ["auto", "None", "split"]),
-        ("multioutput_regression", ["auto", "output", "None", "split"]),
+        ("regression", ["auto", "split", "None"]),
+        ("multioutput_regression", ["auto", "output", "split", "None"]),
     ],
 )
 def test_invalid_subplot_by(pyplot, task, valid_values, request):

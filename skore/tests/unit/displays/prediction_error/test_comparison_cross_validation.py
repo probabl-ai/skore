@@ -42,7 +42,7 @@ def test_legend_actual_vs_predicted(pyplot, task, legend_prefix, request):
 @pytest.mark.parametrize(
     "task, valid_values",
     [
-        ("regression", ["auto", "estimator", "split"]),
+        ("regression", ["auto", "split", "estimator"]),
         ("multioutput_regression", ["auto", "output", "estimator"]),
     ],
 )
