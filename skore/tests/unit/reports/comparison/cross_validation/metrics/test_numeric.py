@@ -243,6 +243,19 @@ def test_metrics_X_y(case_accuracy):
     assert_index_equal(result.columns, expected_columns)
 
 
+def test_cache_key_with_string_aggregate_is_not_split(
+    comparison_cross_validation_reports_binary_classification,
+):
+    """Check that string aggregate values are stored as a single cache-key item."""
+    report = comparison_cross_validation_reports_binary_classification
+
+    report.metrics.summarize(aggregate="mean")
+
+    summarize_cache_keys = [key for key in report._cache if key[1] == "summarize"]
+    assert summarize_cache_keys
+    assert any("mean" in key for key in summarize_cache_keys)
+
+
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_binary_classification_pos_label(pyplot, metric):
     """Check the behaviour of the display methods when `pos_label` needs to be set."""
