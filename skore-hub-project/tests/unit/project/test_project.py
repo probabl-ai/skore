@@ -170,6 +170,49 @@ class TestProject:
                 "<key>", cv_binary_classification_string_labels
             )
 
+    def test_put_estimator_report_without_test_data_when_unfitted(self, respx_mock):
+        from sklearn.datasets import make_regression
+        from sklearn.linear_model import LinearRegression
+
+        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
+
+        X_train, y_train = make_regression(random_state=42)
+        report = EstimatorReport(
+            LinearRegression(),
+            X_train=X_train,
+            y_train=y_train,
+        )
+        expected_error = (
+            "No test data (i.e. X_test and y_test) were provided when creating the "
+            "report. Please provide the test data either when creating the report "
+            "or by setting data_source to 'X_y' and providing X and y."
+        )
+
+        with raises(ValueError) as exc_info:
+            Project("myworkspace", "myname").put("<key>", report)
+
+        assert str(exc_info.value) == expected_error
+
+    def test_put_estimator_report_without_test_data_when_fitted(self, respx_mock):
+        from sklearn.datasets import make_regression
+        from sklearn.linear_model import LinearRegression
+
+        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
+
+        X_train, y_train = make_regression(random_state=42)
+        estimator = LinearRegression().fit(X_train, y_train)
+        report = EstimatorReport(estimator)
+        expected_error = (
+            "No test data (i.e. X_test and y_test) were provided when creating the "
+            "report. Please provide the test data either when creating the report "
+            "or by setting data_source to 'X_y' and providing X and y."
+        )
+
+        with raises(ValueError) as exc_info:
+            Project("myworkspace", "myname").put("<key>", report)
+
+        assert str(exc_info.value) == expected_error
+
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
         respx_mock.post("projects/myworkspace/myname").mock(Response(200))
         respx_mock.post("projects/myworkspace/myname/artifacts").mock(
