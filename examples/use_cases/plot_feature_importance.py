@@ -107,7 +107,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 sns.histplot(data=dataset, x=y.name, bins=100)
-plt.show()
+plt.show(block=True)
 
 # %%
 # There seems to be a threshold-effect for high-valued houses: all houses with a price
@@ -325,11 +325,11 @@ def unscale_coefficients(df, feature_mean, feature_std):
     mask_intercept_column = df.index == "Intercept"
     # rescale the intercept
     df.loc[mask_intercept_column] = df.loc[mask_intercept_column] - np.sum(
-        df.loc[~mask_intercept_column, "coefficients"] * feature_mean / feature_std
+        df.loc[~mask_intercept_column, "coefficient"] * feature_mean / feature_std
     )
     # rescale the other coefficients
-    df.loc[~mask_intercept_column, "coefficients"] = (
-        df.loc[~mask_intercept_column, "coefficients"] / feature_std
+    df.loc[~mask_intercept_column, "coefficient"] = (
+        df.loc[~mask_intercept_column, "coefficient"] / feature_std
     )
     return df.reset_index()
 
@@ -454,7 +454,7 @@ engineered_ridge_report_coefficients = (
     engineered_ridge_report.inspection.coefficients()
     .frame()
     .set_index("feature")
-    .sort_values(by="coefficients", key=abs, ascending=True)
+    .sort_values(by="coefficient", key=abs, ascending=True)
     .tail(15)
 )
 
@@ -574,7 +574,7 @@ X_y_plot.sample(10)
 # %%
 sns.histplot(data=X_y_plot, x="squared_error", hue="split", multiple="dodge", bins=30)
 plt.title("Train and test sets")
-plt.show()
+plt.show(block=True)
 
 # %%
 # Now, in order to assess which features might drive the prediction error, let us look
@@ -714,7 +714,7 @@ print(selectk_features)
     selectk_ridge_report.inspection.coefficients()
     .frame()
     .set_index("feature")
-    .sort_values(by="coefficients", key=abs, ascending=True)
+    .sort_values(by="coefficient", key=abs, ascending=True)
     .tail(15)
     .plot.barh(title="Model weights", xlabel="Coefficient", ylabel="Feature")
 )
@@ -1002,7 +1002,7 @@ def plot_permutation_train_test(importances):
     )
     ax.set_xlabel("Decrease of $R^2$ score")
     ax.set_title("Permutation feature importance (Train vs Test)")
-    plt.show()
+    plt.show(block=True)
 
 
 # %%

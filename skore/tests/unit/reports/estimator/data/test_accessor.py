@@ -108,6 +108,18 @@ def test_analyze_data_source_with_y():
     )
 
 
+def test_analyze_with_list_target():
+    """Check that list/tuples are supported for y"""
+    X, y = make_regression(n_samples=30, n_features=2, random_state=42)
+    X = pd.DataFrame(X, columns=["feature_0", "feature_1"])
+
+    report = EstimatorReport(LinearRegression(), X_train=X, y_train=list(y))
+    report.data.analyze(data_source="train")  # should not crash
+
+    report = EstimatorReport(LinearRegression(), X_train=X, y_train=tuple(y))
+    report.data.analyze(data_source="train")  # should not crash
+
+
 @pytest.mark.parametrize("data_source", ["train", "test", "both"])
 @pytest.mark.parametrize(
     "n_targets, target_column_names", [(1, ["Target"]), (2, ["Target 0", "Target 1"])]
@@ -160,26 +172,6 @@ def test_analyze_subsampling(
         assert display.summary["dataframe"].index.to_list() == list(range(10))
     else:
         assert display.summary["dataframe"].index.to_list() != list(range(10))
-
-
-def test_data_accessor_help(capsys, forest_binary_classification_with_test):
-    """Check that the help method writes to the console."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    report.data.help()
-    captured = capsys.readouterr()
-    assert "Available data methods" in captured.out
-
-
-def test_data_accessor_repr(forest_binary_classification_with_test):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    repr_str = repr(report.data)
-    assert "skore.EstimatorReport.data" in repr_str
-    assert "help()" in repr_str
 
 
 def test_data_accessor_clustering():

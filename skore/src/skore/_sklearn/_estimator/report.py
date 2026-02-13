@@ -17,7 +17,7 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
 from skore._sklearn.find_ml_task import _find_ml_task
-from skore._sklearn.types import _DEFAULT, MLTask, PositiveLabel
+from skore._sklearn.types import _DEFAULT, PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
@@ -397,7 +397,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return results[0][1]  # return the predictions only
 
     @property
-    def ml_task(self) -> MLTask:
+    def ml_task(self):
         return self._ml_task
 
     @property
@@ -452,17 +452,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return name
 
     @property
-    def fit(self) -> Literal["auto"] | bool:
+    def fit(self) -> str | bool:
         return self._fit
 
     ####################################################################################
     # Methods related to the help and repr
     ####################################################################################
 
-    def _get_help_panel_title(self) -> str:
-        return (
-            f"[bold cyan]Tools to diagnose estimator {self.estimator_name_}[/bold cyan]"
-        )
+    def _get_help_title(self) -> str:
+        return f"Tools to diagnose estimator {self.estimator_name_}"
 
     def _get_help_legend(self) -> str:
         return (

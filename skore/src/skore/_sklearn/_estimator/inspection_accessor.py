@@ -35,6 +35,8 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     You can access this accessor using the `inspection` attribute.
     """
 
+    _verbose_name: str = "feature_importance"
+
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
@@ -60,7 +62,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report = EstimatorReport(regressor, **split_data)
         >>> display = report.inspection.coefficients()
         >>> display.frame()
-               feature  coefficients
+               feature  coefficient
         0    Intercept      151.4...
         1   Feature #0       30.6...
         2   Feature #1      -69.8...
@@ -108,7 +110,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report = EstimatorReport(forest, **split_data)
         >>> display = report.inspection.impurity_decrease()
         >>> display.frame()
-              feature  importances
+              feature  importance
         0  Feature #0     0.06...
         1  Feature #1     0.19...
         2  Feature #2     0.01...
@@ -417,15 +419,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
-
-    def _format_method_name(self, name: str) -> str:
-        return f"{name}(...)".ljust(29)
-
-    def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available model inspection methods[/bold cyan]"
-
-    def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.inspection[/bold cyan]"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""

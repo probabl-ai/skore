@@ -46,10 +46,15 @@ ipywidgets==8.1.8
     # via
     #   skore (skore/pyproject.toml)
     #   anywidget
+    #   rich
 jedi==0.19.2
-    # via ipython
+    # via
+    #   skore (skore/pyproject.toml)
+    #   ipython
 jinja2==3.1.6
-    # via skrub
+    # via
+    #   skore (skore/pyproject.toml)
+    #   skrub
 joblib==1.5.3
     # via
     #   skore (skore/pyproject.toml)
@@ -106,7 +111,7 @@ parso==0.8.5
     # via jedi
 pexpect==4.9.0
     # via ipython
-pillow==12.1.0
+pillow==12.1.1
     # via matplotlib
 platformdirs==4.5.1
     # via
@@ -171,7 +176,7 @@ pyyaml==6.0.3
     # via pre-commit
 requests==2.32.5
     # via skrub
-rich==14.2.0
+rich[jupyter]==14.2.0
     # via
     #   skore (skore/pyproject.toml)
     #   skore-local-project

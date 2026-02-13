@@ -1,5 +1,4 @@
 import inspect
-import re
 
 import joblib
 import numpy as np
@@ -95,30 +94,6 @@ def test_attributes(fixture_name, request, cv, n_jobs):
         report.X = X
     with pytest.raises(AttributeError):
         report.y = y
-
-
-def test_help(capsys, forest_binary_classification_data):
-    """Check that the help method writes to the console."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y)
-
-    report.help()
-    captured = capsys.readouterr()
-    assert f"Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
-
-    # Check that we have a line with accuracy and the arrow associated with it
-    assert re.search(
-        r"\.accuracy\([^)]*\).*\(↗︎\).*-.*accuracy", captured.out, re.MULTILINE
-    )
-
-
-def test_repr(forest_binary_classification_data):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y)
-
-    repr_str = repr(report)
-    assert "CrossValidationReport" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -292,3 +267,25 @@ def test_create_estimator_report(container_types, forest_binary_classification_d
     assert joblib.hash(est_report_with_test.X_test) == joblib.hash(X_heldout)
     assert joblib.hash(est_report_with_test.y_test) == joblib.hash(y_heldout)
     assert est_report_with_test.pos_label == cv_report.pos_label
+
+
+def test_pos_label_setter_propagates_to_underlying_estimator_reports(
+    forest_binary_classification_data,
+):
+    """Check that setting pos_label on CrossValidationReport updates the report, all
+    underlying estimator reports, and re-initializes internal state (hash and RNG)."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+
+    assert report.pos_label is None
+
+    report.metrics.summarize()  # trigger cache usage
+    hash_before = report._hash
+    rng_id_before = id(report._rng)
+
+    report.pos_label = 1
+    assert report.pos_label == 1
+    for estimator_report in report.estimator_reports_:
+        assert estimator_report.pos_label == 1
+    assert report._hash != hash_before
+    assert id(report._rng) != rng_id_before

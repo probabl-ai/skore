@@ -1,5 +1,6 @@
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 from skrub import _dataframe as sbd
 
@@ -15,6 +16,8 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     It provides methods to create plots and to visualise the datasets.
     """
+
+    _verbose_name: str = "data"
 
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
@@ -68,6 +71,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if isinstance(y, pd.Series) and y.name is not None:
                 y = y.to_frame()
             elif not sbd.is_dataframe(y):
+                y = np.asarray(y)
                 if y.ndim == 1:
                     columns = ["Target"]
                 else:
@@ -124,7 +128,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Returns
         -------
-        TableReportDisplay
+        :class:`TableReportDisplay`
             A display object containing the dataset statistics and plots.
 
         Examples
@@ -180,15 +184,6 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
-
-    def _format_method_name(self, name: str) -> str:
-        return f"{name}(...)".ljust(29)
-
-    def _get_help_panel_title(self) -> str:
-        return "[bold cyan]Available data methods[/bold cyan]"
-
-    def _get_help_tree_title(self) -> str:
-        return "[bold cyan]report.data[/bold cyan]"
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""

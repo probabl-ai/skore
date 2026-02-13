@@ -188,6 +188,7 @@ sphinx/auto_examples/
 sphinx/reference/api/
 sphinx/sg_execution_times.rst
 examples/plot_*.png
+sphinx/_templates/demo_report_help_generated.html
 
 # Include excluded directories from github-actions
 !/.github/**/build/
@@ -197,3 +198,4 @@ examples/plot_*.png
 skore/LICENSE
 skore-hub-project/LICENSE
 skore-local-project/LICENSE
+.aider*

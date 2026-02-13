@@ -62,7 +62,7 @@ def MockDatetime(mock_now):
     return MockDatetime
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def pyplot():
     """Setup and teardown fixture for matplotlib.
 
@@ -82,7 +82,7 @@ def pyplot():
 
 @pytest.fixture
 def binary_classification_data():
-    return make_classification(random_state=42)
+    return make_classification(random_state=42, n_features=4)
 
 
 @pytest.fixture
@@ -94,7 +94,12 @@ def binary_classification_train_test_split(binary_classification_data):
 @pytest.fixture
 def multiclass_classification_data():
     return make_classification(
-        n_classes=3, n_clusters_per_class=1, random_state=42, n_informative=10
+        n_classes=3,
+        n_clusters_per_class=1,
+        n_informative=3,
+        n_redundant=0,
+        n_features=4,
+        random_state=42,
     )
 
 
@@ -106,18 +111,18 @@ def multiclass_classification_train_test_split(multiclass_classification_data):
 
 @pytest.fixture
 def regression_data():
-    return make_regression(n_features=5, random_state=42)
+    return make_regression(n_features=4, random_state=42)
 
 
 @pytest.fixture
 def positive_regression_data():
-    X, y = make_regression(n_features=5, random_state=42)
+    X, y = make_regression(n_features=4, random_state=42)
     return X, np.abs(y) + 0.1
 
 
 @pytest.fixture
 def regression_multioutput_data():
-    return make_regression(n_targets=2, n_features=5, random_state=42)
+    return make_regression(n_targets=2, n_features=4, random_state=42)
 
 
 @pytest.fixture
@@ -436,10 +441,10 @@ def comparison_estimator_reports_multiclass_classification(
 def cross_validation_reports_binary_classification(binary_classification_data):
     X, y = binary_classification_data
     cv_report_1 = CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=0), X, y
+        DummyClassifier(strategy="uniform", random_state=0), X, y, splitter=2
     )
     cv_report_2 = CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=1), X, y
+        DummyClassifier(strategy="uniform", random_state=1), X, y, splitter=2
     )
     return cv_report_1, cv_report_2
 
@@ -448,10 +453,10 @@ def cross_validation_reports_binary_classification(binary_classification_data):
 def cross_validation_reports_multiclass_classification(multiclass_classification_data):
     X, y = multiclass_classification_data
     cv_report_1 = CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=0), X, y
+        DummyClassifier(strategy="uniform", random_state=0), X, y, splitter=2
     )
     cv_report_2 = CrossValidationReport(
-        DummyClassifier(strategy="uniform", random_state=1), X, y
+        DummyClassifier(strategy="uniform", random_state=1), X, y, splitter=2
     )
     return cv_report_1, cv_report_2
 
@@ -505,8 +510,8 @@ def comparison_estimator_reports_regression(
 @pytest.fixture
 def cross_validation_reports_regression(regression_data):
     X, y = regression_data
-    cv_report_1 = CrossValidationReport(DummyRegressor(), X, y)
-    cv_report_2 = CrossValidationReport(DummyRegressor(), X, y)
+    cv_report_1 = CrossValidationReport(DummyRegressor(), X, y, splitter=2)
+    cv_report_2 = CrossValidationReport(DummyRegressor(), X, y, splitter=2)
     return cv_report_1, cv_report_2
 
 

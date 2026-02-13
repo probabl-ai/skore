@@ -131,6 +131,15 @@ class TestProject:
         else:
             assert Project("myworkspace", input).name == output
 
+    def test_name_empty(self):
+        err_msg = "Project name must not be empty."
+        with raises(ValueError, match=err_msg):
+            Project("myworkspace", "")
+
+        warn_msg = "Your project will be created as ''"
+        with warns(UserWarning, match=warn_msg), raises(ValueError, match=err_msg):
+            Project("myworkspace", "あいうえお")
+
     def test_put_exception(self, respx_mock):
         respx_mock.post("projects/myworkspace/myname").mock(Response(200))
 

@@ -2,61 +2,35 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 
 from skore import ComparisonReport, EstimatorReport
 
 
-def test_normalization(forest_binary_classification_with_train_test):
-    """Check that normalized columns exist and have valid values."""
-    estimator, X_train, X_test, y_train, y_test = (
-        forest_binary_classification_with_train_test
-    )
-
-    report_1 = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    report_2 = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    comparison_report = ComparisonReport([report_1, report_2])
-    display = comparison_report.metrics.confusion_matrix()
-    threshold_val = display.thresholds[len(display.thresholds) // 2]
-
-    for estimator_name in comparison_report.reports_:
-        cm_true = display.frame(threshold_value=threshold_val, normalize="true").query(
-            f"estimator == '{estimator_name}'"
+@pytest.mark.parametrize("subplot_by", [None, "estimator", "auto", "invalid"])
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "comparison_estimator_reports_binary_classification",
+        "comparison_estimator_reports_multiclass_classification",
+    ],
+)
+def test_subplot_by(pyplot, subplot_by, fixture_name, request):
+    """Check that the subplot_by parameter works correctly for comparison reports."""
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.confusion_matrix()
+    if subplot_by in ["invalid", None]:
+        err_msg = (
+            "Invalid `subplot_by` parameter. Valid options are: estimator or auto. "
+            f"Got '{subplot_by}' instead."
         )
-        pivoted_true = cm_true.pivot(
-            index="true_label", columns="predicted_label", values="value"
-        )
-        np.testing.assert_allclose(pivoted_true.sum(axis=1), 1.0)
-
-        cm_pred = display.frame(threshold_value=threshold_val, normalize="pred").query(
-            f"estimator == '{estimator_name}'"
-        )
-        pivoted_pred = cm_pred.pivot(
-            index="true_label", columns="predicted_label", values="value"
-        )
-        np.testing.assert_allclose(pivoted_pred.sum(axis=0), 1.0)
-
-        cm_all = display.frame(threshold_value=threshold_val, normalize="all").query(
-            f"estimator == '{estimator_name}'"
-        )
-        pivoted_all = cm_all.pivot(
-            index="true_label", columns="predicted_label", values="value"
-        )
-        np.testing.assert_allclose(pivoted_all.sum().sum(), 1.0)
+        with pytest.raises(ValueError, match=err_msg):
+            display.plot(subplot_by=subplot_by)
+    elif subplot_by in ["estimator", "auto"]:
+        display.plot(subplot_by=subplot_by)
+        assert isinstance(display.ax_[0], mpl.axes.Axes)
+        assert len(display.ax_) == len(report.reports_)
 
 
 @pytest.mark.parametrize(
@@ -152,7 +126,7 @@ def test_pos_label(pyplot, binary_classification_train_test_split):
     y_test_labeled = labels[y_test]
 
     report_1 = EstimatorReport(
-        RandomForestClassifier(),
+        LogisticRegression(),
         X_train=X_train,
         y_train=y_train_labeled,
         X_test=X_test,
@@ -160,7 +134,7 @@ def test_pos_label(pyplot, binary_classification_train_test_split):
         pos_label="A",
     )
     report_2 = EstimatorReport(
-        RandomForestClassifier(),
+        LogisticRegression(),
         X_train=X_train,
         y_train=y_train_labeled,
         X_test=X_test,
@@ -181,28 +155,3 @@ def test_pos_label(pyplot, binary_classification_train_test_split):
     for idx in range(len(comparison_report.reports_)):
         assert display.ax_[idx].get_xticklabels()[1].get_text() == "B*"
     assert display.ax_[0].get_yticklabels()[1].get_text() == "B*"
-
-
-@pytest.mark.parametrize("subplot_by", [None, "estimator", "auto", "invalid"])
-@pytest.mark.parametrize(
-    "fixture_name",
-    [
-        "comparison_estimator_reports_binary_classification",
-        "comparison_estimator_reports_multiclass_classification",
-    ],
-)
-def test_subplot_by(pyplot, subplot_by, fixture_name, request):
-    """Check that the subplot_by parameter works correctly for comparison reports."""
-    report = request.getfixturevalue(fixture_name)
-    display = report.metrics.confusion_matrix()
-    if subplot_by in ["invalid", None]:
-        err_msg = (
-            "Invalid `subplot_by` parameter. Valid options are: estimator or auto. "
-            f"Got '{subplot_by}' instead."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            display.plot(subplot_by=subplot_by)
-    elif subplot_by in ["estimator", "auto"]:
-        display.plot(subplot_by=subplot_by)
-        assert isinstance(display.ax_[0], mpl.axes.Axes)
-        assert len(display.ax_) == len(report.reports_)

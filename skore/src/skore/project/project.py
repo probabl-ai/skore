@@ -7,7 +7,6 @@ from importlib.metadata import entry_points
 from typing import Any, Literal
 
 from skore import CrossValidationReport, EstimatorReport
-from skore._sklearn.types import MLTask
 from skore.project._summary import Summary
 
 
@@ -203,7 +202,7 @@ class Project:
                 f"Got ML tasks {ml_tasks}."
             )
 
-        self.ml_task: MLTask | None = ml_tasks.pop() if ml_tasks else None
+        self.ml_task = ml_tasks.pop() if ml_tasks else None
 
     @property
     def mode(self):
@@ -246,8 +245,10 @@ class Project:
         if self.ml_task is not None:
             if report.ml_task != self.ml_task:
                 raise ValueError(
-                    f"Expected a report meant for ML task {self.ml_task!r} "
-                    f"but the given report is for ML task {report.ml_task!r}"
+                    "At this time, a Project can only contain reports associated with "
+                    "a single ML task. "
+                    f"Project {self.name!r} expected ML task {self.ml_task!r}; "
+                    f"got a report associated with ML task {report.ml_task!r}."
                 )
         else:
             self.ml_task = report.ml_task

@@ -16,11 +16,11 @@ from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.find_ml_task import _find_ml_task
-from skore._sklearn.types import _DEFAULT, MLTask, PositiveLabel, SKLearnCrossValidator
+from skore._sklearn.types import _DEFAULT, PositiveLabel, SKLearnCrossValidator
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import Parallel, delayed
-from skore._utils._progress_bar import ProgressBar, track
+from skore._utils._progress_bar import track
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -171,14 +171,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self.n_jobs = n_jobs
 
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
+        self._initialize_state()
 
+    def _initialize_state(self) -> None:
+        """Initialize/reset the random number generator, hash, and cache."""
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
         self._ml_task = _find_ml_task(
-            y, estimator=self.estimator_reports_[0]._estimator
+            self._y, estimator=self.estimator_reports_[0]._estimator
         )
 
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
@@ -316,21 +319,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
-        total = len(self.estimator_reports_)
-
-        with ProgressBar(description="Cross-validation predictions", total=total) as pb:
-            for split_idx, estimator_report in enumerate(self.estimator_reports_, 1):
-                pb.description = (
-                    f"Cross-validation predictions for split #{split_idx}/{total}"
-                )
-
-                # Call cache_predictions without printing a separate message
-                estimator_report.cache_predictions(
-                    response_methods=response_methods,
-                    n_jobs=n_jobs,
-                )
-
-                pb.advance()
+        for estimator_report in track(
+            self.estimator_reports_,
+            description="Cross-validation predictions for split",
+        ):
+            estimator_report.cache_predictions(
+                response_methods=response_methods,
+                n_jobs=n_jobs,
+            )
 
     def get_predictions(
         self,
@@ -448,7 +444,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return report
 
     @property
-    def ml_task(self) -> MLTask:
+    def ml_task(self) -> str:
         return self._ml_task
 
     @property
@@ -489,19 +485,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     @pos_label.setter
     def pos_label(self, value: PositiveLabel | None) -> None:
-        raise AttributeError(
-            "The pos_label attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
+        self._pos_label = value
+        self._initialize_state()
+        for estimator_report in self.estimator_reports_:
+            estimator_report.pos_label = value
 
     ####################################################################################
     # Methods related to the help and repr
     ####################################################################################
 
-    def _get_help_panel_title(self) -> str:
-        return (
-            f"[bold cyan]Tools to diagnose estimator {self.estimator_name_}[/bold cyan]"
-        )
+    def _get_help_title(self) -> str:
+        return f"Tools to diagnose estimator {self.estimator_name_}"
 
     def _get_help_legend(self) -> str:
         return (
