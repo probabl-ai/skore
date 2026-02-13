@@ -204,7 +204,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         ]
 
         if self._parent._reports_type == "CrossValidationReport":
-            if aggregate is None:
+            if aggregate is None or isinstance(aggregate, str):
                 cache_key_parts.append(aggregate)
             else:
                 cache_key_parts.extend(tuple(aggregate))
