@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from functools import partial
 from math import ceil
 from pathlib import Path
 from typing import TYPE_CHECKING
-
-from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
 from ..client.client import Client, HUBClient
 from .serializer import Serializer
@@ -19,20 +16,6 @@ if TYPE_CHECKING:
     import httpx
 
     from ..project.project import Project
-
-
-SkinnedProgress = partial(
-    Progress,
-    TextColumn("[bold cyan blink]Uploading..."),
-    BarColumn(
-        complete_style="dark_orange",
-        finished_style="dark_orange",
-        pulse_style="orange1",
-    ),
-    TextColumn("[orange1]{task.percentage:>3.0f}%"),
-    TimeElapsedColumn(),
-    transient=True,
-)
 
 
 def upload_chunk(
@@ -160,18 +143,15 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
                 task_to_chunk_id[task] = chunk_id
 
             try:
-                with SkinnedProgress() as progress:
-                    tasks = as_completed(task_to_chunk_id)
-                    total = len(task_to_chunk_id)
-                    etags = dict(
-                        sorted(
-                            (
-                                task_to_chunk_id[task],
-                                task.result(),
-                            )
-                            for task in progress.track(tasks, total=total)
+                etags = dict(
+                    sorted(
+                        (
+                            task_to_chunk_id[task],
+                            task.result(),
                         )
+                        for task in as_completed(task_to_chunk_id)
                     )
+                )
             except BaseException:
                 # Cancel all remaining tasks, especially on `KeyboardInterrupt`.
                 for task in task_to_chunk_id:

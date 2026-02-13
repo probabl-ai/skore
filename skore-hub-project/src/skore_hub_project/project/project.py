@@ -25,15 +25,14 @@ from unicodedata import normalize
 import joblib
 import orjson
 from httpx import HTTPStatusError
+from rich.progress import Progress, TextColumn, TimeElapsedColumn
 
 from skore_hub_project.client.client import Client, HUBClient
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
 if TYPE_CHECKING:
+    P = ParamSpec("P")
+    R = TypeVar("R")
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -222,7 +221,12 @@ class Project:
         TypeError
             If the combination of parameters are not valid.
         """
-        from ..report import CrossValidationReportPayload, EstimatorReportPayload
+        from skore import config_context as set_skore_configuration
+
+        from skore_hub_project.report import (
+            CrossValidationReportPayload,
+            EstimatorReportPayload,
+        )
 
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
@@ -241,18 +245,34 @@ class Project:
                 f"`skore.CrossValidationReport` (found '{type(report)}')"
             )
 
-        payload_dict = payload.model_dump()
-        payload_json_bytes = orjson.dumps(payload_dict, option=orjson.OPT_NON_STR_KEYS)
-
-        with HUBClient() as hub_client:
-            hub_client.post(
-                url=f"projects/{self.workspace}/{self.name}/{endpoint}",
-                content=payload_json_bytes,
-                headers={
-                    "Content-Length": str(len(payload_json_bytes)),
-                    "Content-Type": "application/json",
-                },
+        with (
+            set_skore_configuration(show_progress=False),
+            Progress(
+                TextColumn("{task.description}"),
+                TimeElapsedColumn(),
+                transient=True,
+            ) as progress,
+        ):
+            task = progress.add_task(
+                description=f"[cyan]Putting [bold bright_white on cyan blink]{key}"
             )
+
+            payload_dict = payload.model_dump()
+            payload_json_bytes = orjson.dumps(
+                payload_dict, option=orjson.OPT_NON_STR_KEYS
+            )
+
+            with HUBClient() as hub_client:
+                hub_client.post(
+                    url=f"projects/{self.workspace}/{self.name}/{endpoint}",
+                    content=payload_json_bytes,
+                    headers={
+                        "Content-Length": str(len(payload_json_bytes)),
+                        "Content-Type": "application/json",
+                    },
+                )
+
+            progress.update(task, completed=1)
 
     @ensure_project_is_created
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
