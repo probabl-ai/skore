@@ -68,6 +68,9 @@ def test_login_hub_without_plugin(monkeypatch):
     from skore import login
 
     with raises(
-        ValueError, match=escape("Unknown mode `hub`. Please install `skore[hub]`.")
+        ValueError,
+        match=escape(
+            "The mode `hub` is not supported. You need to install `skore-hub-project`"
+        ),
     ):
         login(arg1=1, arg2=2)
