@@ -1,20 +1,19 @@
 from importlib import import_module
 from sys import modules
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from pytest import warns
 
 
-def test_warning_old_joblib():
-    function = Mock()
+def test_warning_old_joblib(monkeypatch):
+    configuration = Mock()
 
-    with (
-        patch.dict("sys.modules"),
-        patch("joblib.__version__", "1.3.0"),
-        patch("skore._config.set_config", function),
-        warns(UserWarning, match="Because your version of joblib is older than 1.4"),
-    ):
-        modules.pop("skore", None)
+    monkeypatch.setattr("joblib.__version__", "1.3.0")
+    monkeypatch.setattr("skore._config.configuration", configuration)
+    monkeypatch.delitem(modules, "skore")
+
+    with warns(UserWarning, match="Because your version of joblib is older than 1.4"):
         import_module("skore")
 
-    function.assert_called_with(show_progress=False)
+    assert hasattr(configuration, "show_progress") is True
+    assert configuration.show_progress is False

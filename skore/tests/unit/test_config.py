@@ -4,7 +4,7 @@ from joblib import Parallel, parallel_config
 from pytest import mark, raises
 
 from skore import configuration
-from skore._config import foo
+from skore._config import _change_configuration_for_testing
 from skore._utils._parallel import delayed
 
 
@@ -81,12 +81,17 @@ def test_configuration_through_joblib(backend):
     - processes inherit main process's configuration,
     - tasks don't impact each other (one process can be shared between tasks in joblib).
     """
+
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
 
     # with default configuration
     with parallel_config(backend=backend):
-        assert Parallel(n_jobs=2)(delayed(foo)() for _ in range(4)) == 4 * [
+        tasks = Parallel(n_jobs=2)(
+            delayed(_change_configuration_for_testing)() for _ in range(4)
+        )
+
+        assert tasks == 4 * [
             (
                 (True, "matplotlib"),
                 ("show_progress_thread", "plot_backend_thread"),
@@ -102,7 +107,11 @@ def test_configuration_through_joblib(backend):
     configuration.plot_backend = "plotly"
 
     with parallel_config(backend=backend):
-        assert Parallel(n_jobs=2)(delayed(foo)() for _ in range(4)) == 4 * [
+        tasks = Parallel(n_jobs=2)(
+            delayed(_change_configuration_for_testing)() for _ in range(4)
+        )
+
+        assert tasks == 4 * [
             (
                 (False, "plotly"),
                 ("show_progress_thread", "plot_backend_thread"),
@@ -125,7 +134,7 @@ def test_configuration_through_threading():
         assert configuration.plot_backend == "matplotlib"
 
         # with default configuration
-        assert executor.submit(foo).result() == (
+        assert executor.submit(_change_configuration_for_testing).result() == (
             (True, "matplotlib"),
             ("show_progress_thread", "plot_backend_thread"),
         )
@@ -138,7 +147,7 @@ def test_configuration_through_threading():
         configuration.show_progress = False
         configuration.plot_backend = "plotly"
 
-        assert executor.submit(foo).result() == (
+        assert executor.submit(_change_configuration_for_testing).result() == (
             (False, "plotly"),
             ("show_progress_thread", "plot_backend_thread"),
         )

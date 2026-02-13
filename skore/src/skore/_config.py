@@ -76,7 +76,13 @@ class Configuration:
 configuration = Configuration()
 
 
-def foo():
+def _change_configuration_for_testing():
+    """
+    Change configuration for testing purposes, especially on ``joblib.Parallel``.
+
+    This function should exist in a Python module rather than in tests, otherwise joblib
+    will not be able to pickle it.
+    """
     show_progress_copy = configuration.show_progress
     plot_backend_copy = configuration.plot_backend
 
