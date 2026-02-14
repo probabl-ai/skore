@@ -261,6 +261,21 @@ class TestConfusionMatrixDisplay:
             full = cm[mask_est & mask_split]
             assert group["threshold"].iloc[0] == full["threshold"].min()
 
+    def test_frame_none_returns_all_thresholds_binary(self, fixture_prefix, request):
+        """Check that frame(threshold_value=None) returns all thresholds for binary."""
+        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.metrics.confusion_matrix()
+        # Binary classification has real thresholds (no nan)
+        n_thresholds = int(np.sum(~np.isnan(display.thresholds)))
+
+        frame_all = display.frame(threshold_value=None)
+        frame_default = display.frame(threshold_value="default")
+
+        assert frame_all["threshold"].nunique() == n_thresholds
+        assert frame_all.shape[0] == frame_default.shape[0] * n_thresholds
+
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_normalization(self, pyplot, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
