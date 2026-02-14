@@ -8,7 +8,6 @@ from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils._testing import _convert_container
@@ -187,43 +186,32 @@ def test_pickle(tmp_path, logistic_binary_classification_data):
 
 
 @pytest.mark.parametrize(
-    "error,error_message",
+    "error",
     [
-        (ValueError("No more fitting"), "Cross-validation interrupted by an error"),
-        (KeyboardInterrupt(), "Cross-validation interrupted manually"),
+        ValueError("No more fitting"),
+        KeyboardInterrupt(),
     ],
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
-def test_interrupted(binary_classification_data, capsys, error, error_message, n_jobs):
-    """Check that we can interrupt cross-validation without losing all
-    data."""
+def test_interrupted_propagates_error(binary_classification_data, error, n_jobs):
+    """Check that when a split fails during cross-validation, the error propagates."""
     X, y = binary_classification_data
 
     estimator = MockEstimator(error=error, n_call=0, fail_after_n_clone=8)
-    report = CrossValidationReport(estimator, X, y, splitter=10, n_jobs=n_jobs)
 
-    captured = capsys.readouterr()
-    assert all(word in captured.out for word in error_message.split(" "))
-
-    result = report.metrics.custom_metric(
-        metric_function=accuracy_score,
-        response_method="predict",
-    )
-    assert result.shape == (1, 2)
-    assert result.index == ["Accuracy Score"]
+    with pytest.raises(type(error), match=str(error) if str(error) else None):
+        CrossValidationReport(estimator, X, y, splitter=10, n_jobs=n_jobs)
 
 
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_failure_all_splits(n_jobs, binary_classification_data):
-    """Check that we raise an error when no estimators were successfully fitted.
-    during the cross-validation process."""
+    """Check that when the first split fails, the error propagates."""
     X, y = binary_classification_data
     estimator = MockEstimator(
         error=ValueError("Intentional failure for testing"), fail_after_n_clone=0
     )
 
-    err_msg = "Cross-validation failed: no estimators were successfully fitted"
-    with pytest.raises(RuntimeError, match=err_msg):
+    with pytest.raises(ValueError, match="Intentional failure for testing"):
         CrossValidationReport(estimator, X, y, n_jobs=n_jobs)
 
 
