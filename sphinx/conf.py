@@ -46,6 +46,7 @@ extensions = [
     # Custom extensions
     "generate_accessor_tables",
     "github_link",
+    "landing_project_summary_plot",
     "matplotlib_skore_scraper",
     "report_help",
 ]
