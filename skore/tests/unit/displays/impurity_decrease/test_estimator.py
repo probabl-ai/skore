@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+from sklearn.base import clone
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils._testing import _convert_container
@@ -11,6 +12,7 @@ def test_with_pipeline(pyplot, forest_binary_classification_with_train_test):
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
+    estimator = clone(estimator)
     columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
     X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
     X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
@@ -40,6 +42,14 @@ def test_with_pipeline(pyplot, forest_binary_classification_with_train_test):
     assert list(frame.columns) == ["feature", "importance"]
     assert frame["feature"].tolist() == columns_names
     display.plot()
-    assert hasattr(display, "figure_") and hasattr(display, "ax_")
+    assert hasattr(display, "figure_")
+    assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
-    assert display.ax_.get_xlabel() == "Mean Decrease in Impurity (MDI)"
+    estimator_name = display.importances["estimator"][0]
+    assert (
+        display.figure_.get_suptitle()
+        == f"Mean decrease in impurity (MDI) of {estimator_name}"
+    )
+    assert display.ax_.get_xlabel() == "Mean decrease in impurity"
+    yticklabels = [label.get_text() for label in display.ax_.get_yticklabels()]
+    assert yticklabels == ["Feature #0", "Feature #1", "Feature #2", "Feature #3"]
