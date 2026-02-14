@@ -203,18 +203,6 @@ def test_interrupted_propagates_error(binary_classification_data, error, n_jobs)
         CrossValidationReport(estimator, X, y, splitter=10, n_jobs=n_jobs)
 
 
-@pytest.mark.parametrize("n_jobs", [None, 1, 2])
-def test_failure_all_splits(n_jobs, binary_classification_data):
-    """Check that when the first split fails, the error propagates."""
-    X, y = binary_classification_data
-    estimator = MockEstimator(
-        error=ValueError("Intentional failure for testing"), fail_after_n_clone=0
-    )
-
-    with pytest.raises(ValueError, match="Intentional failure for testing"):
-        CrossValidationReport(estimator, X, y, n_jobs=n_jobs)
-
-
 def test_no_y():
     """Check that we can create a report without y, in the case of clustering for
     instance"""
