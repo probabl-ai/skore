@@ -32,47 +32,52 @@ repos:
       - id: ruff-format
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+  - repo: local
     hooks:
+    - id: ty
+      alias: ty-skore
+      name: ty skore/
+      entry: ty check --project skore skore
+      language: python
+      pass_filenames: false
+      additional_dependencies:
+        - ty
+        - IPython
+        - anywidget
+        - ipywidgets
+        - joblib
+        - matplotlib
+        - numpy
+        - pandas
+        - plotly
+        - rich
+        - scikit-learn
+        - skrub
+        - seaborn
+        - polars
+        - pyarrow
 
-      - id: mypy
-        pass_filenames: false
-        alias: mypy-skore
-        name: mypy skore/
-        files: ^skore/
-        args: [--config-file=skore/pyproject.toml, skore]
-        additional_dependencies:
-          # from dependencies
-          - IPython
-          - anywidget
-          - ipywidgets
-          - joblib
-          - matplotlib
-          - numpy
-          - pandas
-          - plotly
-          - rich
-          - scikit-learn
-          - skrub
-          - seaborn
-          # from test dependencies
-          - polars
-          - pyarrow
-          - scipy-stubs
+    - id: ty
+      alias: ty-skore-hub-project
+      name: ty skore-hub-project/
+      entry: ty check --project skore-hub-project skore-hub-project
+      language: python
+      pass_filenames: false
+      additional_dependencies:
+        - ty
+        - skore
+        - blake3
+        - httpx
+        - orjson
+        - pandas-stubs
+        - pydantic
 
-      - id: mypy
-        pass_filenames: false
-        alias: mypy-skore-hub-project
-        name: mypy skore-hub-project/
-        files: ^skore-hub-project/
-        args: [--config-file=skore-hub-project/pyproject.toml, skore-hub-project]
-        additional_dependencies: [skore, blake3, httpx, orjson, pandas-stubs, pydantic]
-
-      - id: mypy
-        pass_filenames: false
-        alias: mypy-skore-local-project
-        name: mypy skore-local-project/
-        files: ^skore-local-project/
-        args: [--config-file=skore-local-project/pyproject.toml, skore-local-project]
-        additional_dependencies: [skore]
+    - id: ty
+      alias: ty-skore-local-project
+      name: ty skore-local-project/
+      entry: ty check --project skore-local-project skore-local-project
+      language: python
+      pass_filenames: false
+      additional_dependencies:
+        - ty
+        - skore
