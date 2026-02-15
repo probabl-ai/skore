@@ -184,4 +184,34 @@ def test_check_has_feature_importance():
 
     err_msg = "Estimator 'hello' is not a supported estimator by the function called."
     with pytest.raises(AttributeError, match=err_msg):
-        assert _check_estimator_has_feature_importances()(accessor)
+        _check_estimator_has_feature_importances()(accessor)
+
+
+def test_inspection_accessor_verbose_name():
+    """Test that inspection accessor _verbose_name matches registered name.
+
+    This is a non-regression test for issue #2441 to ensure that the
+    _verbose_name attribute of inspection accessors is aligned with
+    the name used to register the accessor.
+    """
+    from skore._sklearn._comparison.inspection_accessor import (
+        _InspectionAccessor as ComparisonInspectionAccessor,
+    )
+    from skore._sklearn._cross_validation.inspection_accessor import (
+        _InspectionAccessor as CVInspectionAccessor,
+    )
+    from skore._sklearn._estimator.inspection_accessor import (
+        _InspectionAccessor as EstimatorInspectionAccessor,
+    )
+
+    # All inspection accessors should have _verbose_name set to "inspection"
+    # to match the registered accessor name
+    assert (
+        ComparisonInspectionAccessor._verbose_name == "inspection"
+    ), "ComparisonReport inspection accessor _verbose_name should be 'inspection'"
+    assert (
+        CVInspectionAccessor._verbose_name == "inspection"
+    ), "CrossValidationReport inspection accessor _verbose_name should be 'inspection'"
+    assert (
+        EstimatorInspectionAccessor._verbose_name == "inspection"
+    ), "EstimatorReport inspection accessor _verbose_name should be 'inspection'"
