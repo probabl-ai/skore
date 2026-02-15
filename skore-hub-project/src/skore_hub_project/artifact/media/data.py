@@ -6,6 +6,15 @@ from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.protocol import EstimatorReport
 
 
+def _orjson_default(obj):
+    """Default serializer for orjson to handle non-serializable types."""
+    import pandas as pd
+
+    if isinstance(obj, pd.Timestamp):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
 class TableReport(Media[Report]):  # noqa: D101
     name: Literal["table_report"] = "table_report"
     data_source: Literal["train", "test"] | None = None
@@ -35,6 +44,7 @@ class TableReport(Media[Report]):  # noqa: D101
         return orjson.dumps(
             table_report,
             option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
+            default=_orjson_default,
         )
 
 

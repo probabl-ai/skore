@@ -11,7 +11,7 @@ from sklearn.pipeline import Pipeline
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
 from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import ReportType
+from skore._sklearn.types import Aggregate, ReportType
 
 
 class CoefficientsDisplay(DisplayMixin):
@@ -173,6 +173,7 @@ class CoefficientsDisplay(DisplayMixin):
         include_intercept: bool = True,
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
+        aggregate: Aggregate | None = None,
     ):
         """Get the coefficients in a dataframe format.
 
@@ -213,6 +214,11 @@ class CoefficientsDisplay(DisplayMixin):
 
             Can be used independently of `select_k`. Sorting is performed within the
             same groups as selection.
+
+        aggregate : {"mean", "std"}, ("mean", std) or None, default=None
+            Aggregate the coefficients by the given statistic. This is useful when
+            dealing with cross-validation reports where coefficients are available for
+            each split. If None, coefficients from each split are returned separately.
 
         Returns
         -------
@@ -277,6 +283,21 @@ class CoefficientsDisplay(DisplayMixin):
 
         if select_k is not None:
             coefficients = self._select_k_features(coefficients, select_k)
+
+        # Apply aggregation if requested (for cross-validation reports)
+        if aggregate is not None and "split" in coefficients.columns:
+            group_by = [col for col in coefficients.columns if col != "coefficient"]
+            coefficients = (
+                coefficients
+                .groupby(group_by, sort=False, dropna=False)
+                .aggregate(aggregate)
+            ).reset_index()
+            # Flatten multi-index columns if present
+            if isinstance(coefficients.columns, pd.MultiIndex):
+                coefficients.columns = [
+                    "_".join(map(str, col)).strip("_") if isinstance(col, tuple) else col
+                    for col in coefficients.columns
+                ]
 
         return coefficients
 

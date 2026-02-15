@@ -11,7 +11,7 @@ from sklearn.pipeline import Pipeline
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
 from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import ReportType
+from skore._sklearn.types import Aggregate, ReportType
 
 
 class ImpurityDecreaseDisplay(DisplayMixin):
@@ -142,11 +142,18 @@ class ImpurityDecreaseDisplay(DisplayMixin):
 
         return cls(importances=importances, report_type=report_type)
 
-    def frame(self) -> pd.DataFrame:
+    def frame(self, *, aggregate: Aggregate | None = None) -> pd.DataFrame:
         """Get the mean decrease in impurity in a dataframe format.
 
         The returned dataframe is not going to contain constant columns or columns
         containing only NaN values.
+
+        Parameters
+        ----------
+        aggregate : {"mean", "std"}, ("mean", std) or None, default=None
+            Aggregate the importances by the given statistic. This is useful when
+            dealing with cross-validation reports where importances are available for
+            each split. If None, importances from each split are returned separately.
 
         Returns
         -------
@@ -187,7 +194,24 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         else:
             raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
-        return self.importances.drop(columns=columns_to_drop)
+        importances = self.importances.drop(columns=columns_to_drop)
+
+        # Apply aggregation if requested (for cross-validation reports)
+        if aggregate is not None and "split" in self.importances.columns:
+            group_by = [col for col in importances.columns if col != "importance"]
+            importances = (
+                importances
+                .groupby(group_by, sort=False, dropna=False)
+                .aggregate(aggregate)
+            ).reset_index()
+            # Flatten multi-index columns if present
+            if isinstance(importances.columns, pd.MultiIndex):
+                importances.columns = [
+                    "_".join(map(str, col)).strip("_") if isinstance(col, tuple) else col
+                    for col in importances.columns
+                ]
+
+        return importances
 
     @DisplayMixin.style_plot
     def plot(self) -> None:
