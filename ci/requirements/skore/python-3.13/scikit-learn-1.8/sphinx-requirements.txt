@@ -4,8 +4,6 @@ alabaster==1.0.0
     # via sphinx
 altair==6.0.0
     # via skore (skore/pyproject.toml)
-anywidget==0.9.21
-    # via skore (skore/pyproject.toml)
 asttokens==3.0.1
     # via stack-data
 attrs==25.4.0
@@ -50,16 +48,11 @@ imagesize==1.4.1
 iniconfig==2.3.0
     # via pytest
 ipython==9.9.0
-    # via
-    #   skore (skore/pyproject.toml)
-    #   ipywidgets
+    # via ipywidgets
 ipython-pygments-lexers==1.1.1
     # via ipython
 ipywidgets==8.1.8
-    # via
-    #   skore (skore/pyproject.toml)
-    #   anywidget
-    #   rich
+    # via rich
 jedi==0.19.2
     # via ipython
 jinja2==3.1.6
@@ -153,8 +146,6 @@ polars-runtime-32==1.36.1
     # via polars
 prompt-toolkit==3.0.52
     # via ipython
-psygnal==0.15.1
-    # via anywidget
 ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.3
@@ -271,7 +262,6 @@ traitlets==5.14.3
 typing-extensions==4.15.0
     # via
     #   altair
-    #   anywidget
     #   beautifulsoup4
     #   pydata-sphinx-theme
 tzdata==2025.3
