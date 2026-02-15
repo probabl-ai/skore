@@ -152,7 +152,7 @@ precision_recall.help()
 # %%
 # .. note::
 #
-#     The output of :meth:`~skore.CrossValidation.precision_recall` is a
+#     The output of :meth:`~skore.CrossValidationReport.metrics.precision_recall` is a
 #     :class:`~skore.Display` object. This is a common pattern in skore which allows us
 #     to access the information in several ways.
 
