@@ -10,7 +10,6 @@ from typing import ClassVar, Literal, cast
 
 from matplotlib import pyplot as plt
 
-from skore_hub_project import switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.protocol import Display
 
@@ -34,7 +33,7 @@ class Performance(Media[Report], ABC):  # noqa: D101
             else function(data_source=self.data_source)
         )
 
-        with switch_mpl_backend(), BytesIO() as stream:
+        with BytesIO() as stream:
             display.plot()
             display.figure_.savefig(stream, format="svg", bbox_inches="tight")  # type: ignore[attr-defined]
             plt.close(display.figure_)  # type: ignore[attr-defined]

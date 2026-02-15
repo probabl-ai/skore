@@ -64,9 +64,11 @@ def test_table_report_display_frame(cross_validation_report, display):
     "X",
     [
         np.random.rand(100, 5),
+        pd.DataFrame(np.random.rand(100, 5)),
         pd.DataFrame(
             np.random.rand(100, 5), columns=[f"Feature number {i}" for i in range(5)]
         ),
+        pd.DataFrame(np.random.rand(100, 5), columns=["a", 1, "c", 3, "e"]),
     ],
 )
 @pytest.mark.parametrize(
@@ -76,6 +78,7 @@ def test_table_report_display_frame(cross_validation_report, display):
         np.ones(100),
         pd.Series(np.ones(100)),
         pd.Series(np.ones(100), name="Target"),
+        pd.DataFrame(np.ones((100, 1))),
         pd.DataFrame(np.ones((100, 1)), columns=["Target"]),
     ],
 )

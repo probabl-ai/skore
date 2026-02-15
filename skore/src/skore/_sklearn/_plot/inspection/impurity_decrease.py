@@ -24,6 +24,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         The importances data to display. The columns are:
 
         - `estimator`
+        - `split`
         - `feature`
         - `importance`
 

@@ -17,9 +17,10 @@ from skore._utils._testing import check_frame_structure
         "comparison_cross_validation_reports",
     ],
 )
+@pytest.mark.parametrize("task", ["regression", "multioutput_regression"])
 class TestPredictionErrorDisplay:
-    def test_class_attributes(self, fixture_prefix, request):
-        report = request.getfixturevalue(f"{fixture_prefix}_regression")
+    def test_class_attributes(self, fixture_prefix, request, task):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
 
@@ -37,8 +38,8 @@ class TestPredictionErrorDisplay:
         facet = display.plot()
         assert isinstance(facet, sns.FacetGrid)
 
-    def test_frame_structure(self, fixture_prefix, request):
-        report = request.getfixturevalue(f"{fixture_prefix}_regression")
+    def test_frame_structure(self, fixture_prefix, request, task):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
 
@@ -51,11 +52,13 @@ class TestPredictionErrorDisplay:
             expected_index.append("split")
         if "comparison" in fixture_prefix:
             expected_index.append("estimator")
+        if task == "multioutput_regression":
+            expected_index.append("output")
 
         check_frame_structure(frame, expected_index, expected_columns)
 
-    def test_internal_data_structure(self, fixture_prefix, request):
-        report = request.getfixturevalue(f"{fixture_prefix}_regression")
+    def test_internal_data_structure(self, fixture_prefix, request, task):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.prediction_error()
@@ -64,17 +67,18 @@ class TestPredictionErrorDisplay:
             "estimator",
             "data_source",
             "split",
+            "output",
             "y_true",
             "y_pred",
             "residuals",
         ]
 
-    def test_relplot_kwargs(self, pyplot, fixture_prefix, request):
-        report = request.getfixturevalue(f"{fixture_prefix}_regression")
+    def test_relplot_kwargs(self, pyplot, fixture_prefix, request, task):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.prediction_error()
-        _, ax = request.getfixturevalue(f"{fixture_prefix}_regression_figure_axes")
+        _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         ax = ax[0] if isinstance(ax, np.ndarray) else ax
         np.testing.assert_array_equal(
             ax.collections[0].get_facecolor()[0][:3], sns.color_palette()[0]
@@ -82,7 +86,7 @@ class TestPredictionErrorDisplay:
 
         relplot_kwargs = (
             {"color": "red"}
-            if "estimator_reports" in fixture_prefix
+            if "estimator_reports" in fixture_prefix and task == "regression"
             else {"palette": ["red", "blue"]}
         )
         facet = display.set_style(
@@ -93,23 +97,23 @@ class TestPredictionErrorDisplay:
             ax.collections[0].get_facecolor()[0][:3], [1.0, 0.0, 0.0]
         )
 
-    def test_plot_structure(self, pyplot, fixture_prefix, request):
-        report = request.getfixturevalue(f"{fixture_prefix}_regression")
+    def test_plot_structure(self, pyplot, fixture_prefix, request, task):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
-        _, ax = request.getfixturevalue(f"{fixture_prefix}_regression_figure_axes")
+        _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         ax = ax[0] if isinstance(ax, np.ndarray) else ax
 
         assert len(ax.get_lines()) >= 1
         assert ax.get_xlabel() == "Predicted values"
         assert ax.get_ylabel() == "Residuals (actual - predicted)"
 
-    def test_title(self, pyplot, fixture_prefix, request):
-        report = request.getfixturevalue(f"{fixture_prefix}_regression")
+    def test_title(self, pyplot, fixture_prefix, request, task):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.prediction_error()
-        figure, _ = request.getfixturevalue(f"{fixture_prefix}_regression_figure_axes")
+        figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         title = figure.get_suptitle()
 
         assert "Prediction Error" in title
@@ -124,8 +128,8 @@ class TestPredictionErrorDisplay:
             assert "Data source" not in title
 
     @pytest.mark.parametrize("subsample", [20, 0.25, None])
-    def test_subsample(pyplot, fixture_prefix, request, subsample):
-        report = request.getfixturevalue(f"{fixture_prefix}_regression")
+    def test_subsample(pyplot, fixture_prefix, request, task, subsample):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.prediction_error(subsample=subsample, seed=0)

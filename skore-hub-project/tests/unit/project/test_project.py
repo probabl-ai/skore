@@ -131,7 +131,21 @@ class TestProject:
         else:
             assert Project("myworkspace", input).name == output
 
-    def test_put_exception(self, respx_mock):
+    def test_name_empty(self):
+        err_msg = "Project name must not be empty."
+        with raises(ValueError, match=err_msg):
+            Project("myworkspace", "")
+
+        warn_msg = "Your project will be created as ''"
+        with warns(UserWarning, match=warn_msg), raises(ValueError, match=err_msg):
+            Project("myworkspace", "あいうえお")
+
+    def test_put_exception(
+        self,
+        respx_mock,
+        binary_classification_string_labels,
+        cv_binary_classification_string_labels,
+    ):
         respx_mock.post("projects/myworkspace/myname").mock(Response(200))
 
         with raises(TypeError, match="Key must be a string"):
@@ -142,6 +156,19 @@ class TestProject:
             match="must be a `skore.EstimatorReport` or `skore.CrossValidationReport`",
         ):
             Project("myworkspace", "myname").put("<key>", "<value>")
+
+        pos_label_msg = (
+            "For binary classification, the positive label must be specified. "
+            "You can set it using `report.pos_label = <positive_label>`."
+        )
+        with raises(ValueError, match=pos_label_msg):
+            Project("myworkspace", "myname").put(
+                "<key>", binary_classification_string_labels
+            )
+        with raises(ValueError, match=pos_label_msg):
+            Project("myworkspace", "myname").put(
+                "<key>", cv_binary_classification_string_labels
+            )
 
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
         respx_mock.post("projects/myworkspace/myname").mock(Response(200))
@@ -201,6 +228,62 @@ class TestProject:
         )
 
         # Compare content with the desired output
+        assert content == desired
+
+    def test_put_estimator_report_string_labels_with_pos_label(
+        self, binary_classification_string_labels_with_pos_label, respx_mock
+    ):
+        """Put with binary string labels and pos_label set works."""
+        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
+        respx_mock.post("projects/myworkspace/myname/artifacts").mock(
+            Response(200, json=[])
+        )
+        respx_mock.post("projects/myworkspace/myname/estimator-reports").mock(
+            Response(200)
+        )
+
+        project = Project("myworkspace", "myname")
+        report = binary_classification_string_labels_with_pos_label
+        project.put("<key>", report)
+
+        content = loads(respx_mock.calls.last.request.content.decode())
+        desired = loads(
+            dumps(
+                EstimatorReportPayload(
+                    project=project, key="<key>", report=report
+                ).model_dump()
+            )
+        )
+        assert content == desired
+
+    @mark.filterwarnings(
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning",
+        "ignore:The default of observed=False is deprecated.*:FutureWarning:seaborn",
+    )
+    def test_put_cross_validation_report_string_labels_with_pos_label(
+        self, cv_binary_classification_string_labels_with_pos_label, respx_mock
+    ):
+        """Put with CV binary string labels and pos_label set works."""
+        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
+        respx_mock.post("projects/myworkspace/myname/artifacts").mock(
+            Response(200, json=[])
+        )
+        respx_mock.post("projects/myworkspace/myname/cross-validation-reports").mock(
+            Response(200)
+        )
+
+        project = Project("myworkspace", "myname")
+        report = cv_binary_classification_string_labels_with_pos_label
+        project.put("<key>", report)
+
+        content = loads(respx_mock.calls.last.request.content.decode())
+        desired = loads(
+            dumps(
+                CrossValidationReportPayload(
+                    project=project, key="<key>", report=report
+                ).model_dump()
+            )
+        )
         assert content == desired
 
     def test_get_estimator_report(self, respx_mock, regression):
