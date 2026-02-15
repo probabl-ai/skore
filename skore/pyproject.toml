@@ -32,7 +32,7 @@ dependencies = [
   "numpy",
   "pandas",
   "plotly",
-  "rich[jupyter]>=14.2",
+  "rich>=14.2",
   "scikit-learn",
   "skore[local]",
   "skrub",
