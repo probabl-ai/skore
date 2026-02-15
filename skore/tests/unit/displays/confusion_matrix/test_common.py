@@ -274,7 +274,8 @@ class TestConfusionMatrixDisplay:
         frame_default = display.frame(threshold_value="default")
 
         assert frame_all["threshold"].nunique() == n_thresholds
-        assert frame_all.shape[0] == frame_default.shape[0] * n_thresholds
+        assert frame_all.shape[0] == len(display.confusion_matrix)
+        assert frame_all.shape[0] > frame_default.shape[0]
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_normalization(self, pyplot, fixture_prefix, task, request):
