@@ -106,6 +106,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         "inspection": {"name": "inspection"},
     }
 
+    _report_type: Literal["estimator"] = "estimator"
+
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
     data: _DataAccessor

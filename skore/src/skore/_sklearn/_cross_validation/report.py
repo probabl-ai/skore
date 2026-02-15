@@ -147,6 +147,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
     }
+
+    _report_type: Literal["cross-validation"] = "cross-validation"
+
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
 

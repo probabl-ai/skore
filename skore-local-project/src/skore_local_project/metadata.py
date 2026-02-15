@@ -7,7 +7,7 @@ from contextlib import suppress
 from dataclasses import InitVar, dataclass, field, fields
 from datetime import datetime, timezone
 from math import isfinite
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from joblib import hash
 
@@ -33,14 +33,12 @@ def report_type(
     report: EstimatorReport | CrossValidationReport,
 ) -> Literal["cross-validation", "estimator"]:
     """Human readable type of a report."""
-    from skore import CrossValidationReport, EstimatorReport
-
-    if isinstance(report, CrossValidationReport):
-        return "cross-validation"
-    if isinstance(report, EstimatorReport):
-        return "estimator"
-
-    raise TypeError
+    # _report_type is defined on skore._sklearn._base._BaseReport; both report
+    # types inherit it (mypy may not resolve it when type-checking this package)
+    return cast(
+        Literal["cross-validation", "estimator"],
+        report._report_type,  # type: ignore[union-attr]
+    )
 
 
 @dataclass(kw_only=True)

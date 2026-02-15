@@ -62,7 +62,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 report.estimator_name_ for report in self._parent.estimator_reports_
             ],
             splits=list(range(len(self._parent.estimator_reports_))),
-            report_type="cross-validation",
+            report_type=self._parent._report_type,
         )
 
     @available_if(_check_cross_validation_sub_estimator_has_feature_importances())
@@ -104,7 +104,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 report.estimator_name_ for report in self._parent.estimator_reports_
             ],
             splits=list(range(len(self._parent.estimator_reports_))),
-            report_type="cross-validation",
+            report_type=self._parent._report_type,
         )
 
     ####################################################################################

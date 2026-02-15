@@ -1762,7 +1762,7 @@ class _MetricsAccessor(
         display = display_class._compute_data_for_display(
             y_true=y_true,
             y_pred=y_pred,
-            report_type="estimator",
+            report_type=self._parent._report_type,
             estimators=[self._parent.estimator_],
             ml_task=self._parent._ml_task,
             data_source=data_source,

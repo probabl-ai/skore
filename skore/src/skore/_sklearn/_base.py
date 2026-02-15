@@ -24,6 +24,12 @@ class _BaseReport(ReportHelpMixin):
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
+    _report_type: Literal[
+        "cross-validation",
+        "estimator",
+        "comparison-estimator",
+        "comparison-cross-validation",
+    ]
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")
