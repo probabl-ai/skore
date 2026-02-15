@@ -1,7 +1,7 @@
 [project]
 name = "skore"
 description = """\
-𝐓𝗿𝗮𝗰k 𝗬𝗼𝘂𝗿 𝗗𝗮𝘁𝗮 𝗦𝗰𝗶𝗲𝗻𝗰𝗲. \
+Track Your Data Sience. \
 Skore's open-source Python library accelerates ML model development with automated evaluation reports, \
 smart methodological guidance, and comprehensive cross-validation analysis.\
 """
@@ -27,9 +27,6 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-  "IPython",
-  "anywidget",
-  "ipywidgets",
   "joblib",
   "matplotlib",
   "numpy",
@@ -44,6 +41,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+jupyter = [
+  "IPython",
+  "anywidget",
+  "ipywidgets",
+]
 test-base = [
   "pre-commit",
   "pytest",
@@ -55,7 +57,7 @@ test-base = [
   "xdoctest",
   "jedi",
 ]
-test = ["skore[test-base]", "polars", "pyarrow"]
+test = ["skore[test-base]", "skore[jupyter]", "polars", "pyarrow"]
 test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
 sphinx-base = [
   "altair",
