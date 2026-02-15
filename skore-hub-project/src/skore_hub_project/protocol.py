@@ -32,12 +32,15 @@ class EstimatorReport(Protocol):
     data: Any
     ml_task: str
     estimator: Any
+    estimator_: Any
     estimator_name_: str
     X_train: Any
     y_train: Any
     X_test: Any
     y_test: Any
     fit: Any
+    fit_time_: Any
+    pos_label: Any
 
 
 @runtime_checkable
@@ -53,8 +56,11 @@ class CrossValidationReport(Protocol):
     estimator_reports_: Any
     ml_task: str
     estimator: Any
+    estimator_: Any
     estimator_name_: str
     X: Any
     y: Any
     splitter: Any
     split_indices: Any
+    pos_label: Any
+    n_jobs: Any

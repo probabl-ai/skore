@@ -92,5 +92,5 @@ def setup(app):
     """Configure linkcode_resolve for GitHub links."""
     app.config["linkcode_resolve"] = make_linkcode_resolve(
         package="skore",
-        url_fmt="https://github.com/Soham-47/skore/blob/{revision}/skore/{path}#L{lineno}",
+        url_fmt="https://github.com/probabl-ai/skore/blob/{revision}/skore/src/skore/{path}#L{lineno}",
     )
