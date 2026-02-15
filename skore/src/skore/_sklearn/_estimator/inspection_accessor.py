@@ -36,8 +36,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     You can access this accessor using the `inspection` attribute.
     """
 
-    _verbose_name: str = "feature_importance"
-
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 

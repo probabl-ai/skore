@@ -16,8 +16,6 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     It provides methods to create plots and to visualise the datasets.
     """
 
-    _verbose_name: str = "data"
-
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
