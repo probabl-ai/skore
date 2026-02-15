@@ -21,7 +21,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
     You can access this accessor using the `inspection` attribute.
     """
 
-    _verbose_name: str = "feature_importance"
+    _verbose_name: str = "inspection"
 
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
