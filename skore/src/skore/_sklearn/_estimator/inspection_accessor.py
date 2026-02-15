@@ -90,7 +90,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         This method is available for estimators that expose a `feature_importances_`
         attribute. See for example
-        :attr:`sklearn.ensemble.GradientBoostingClassifier.inspections_`.
+        :attr:`sklearn.ensemble.GradientBoostingClassifier.feature_importances_`.
         In particular, note that the MDI is computed at fit time, i.e. using the
         training data.
 
