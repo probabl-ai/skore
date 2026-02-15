@@ -293,26 +293,29 @@ pd.concat(
 # between our final model and the cross-validation:
 
 # %%
-
-# sphinx_gallery_start_ignore
-# TODO: Use native aggregation when available
-# sphinx_gallery_end_ignore
-
 final_coefficients = final_report.inspection.coefficients()
-final_top_15_features = final_coefficients.frame(select_k=15)["feature"]
+cv_coefficients = simple_cv_report.inspection.coefficients()
 
-simple_coefficients = simple_cv_report.inspection.coefficients()
-cv_top_15_features = (
-    simple_coefficients.frame(select_k=15)
-    .groupby("feature", sort=False)
-    .mean()
-    .drop(columns="split")
-    .reset_index()["feature"]
+features_final_coefficients = final_coefficients.frame(select_k=15)["feature"]
+features_cv_coefficients = cv_coefficients.frame(select_k=15)["feature"]
+
+print(
+    f"Most important features available in both models: "
+    f"{set(features_final_coefficients).intersection(set(features_cv_coefficients))}"
 )
 
-pd.concat(
-    [final_top_15_features, cv_top_15_features], axis="columns", ignore_index=True
+print(
+    f"Most important features available in final model but not in cross-validation: "
+    f"{set(features_final_coefficients).difference(set(features_cv_coefficients))}"
 )
+
+# %%
+# We can further check if there is a drastic difference in the ordering by plotting
+# those features with the largest absolute coefficients.
+
+# %%
+final_coefficients.plot(select_k=15, sorting_order="descending")
+cv_coefficients.plot(select_k=15, sorting_order="descending")
 
 # %%
 # They seem very similar, so we are done!
