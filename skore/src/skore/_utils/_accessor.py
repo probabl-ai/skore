@@ -208,7 +208,7 @@ def _check_estimator_report_has_method(
     method_name: str,
 ) -> Callable:
     def check(accessor: Any) -> bool:
-        estimator_report = accessor._parent.estimator_reports_[0]
+        estimator_report = accessor._parent.reports_[0]
 
         if not hasattr(estimator_report, accessor_name):
             raise AttributeError(
@@ -231,7 +231,7 @@ def _check_estimator_report_has_method(
 def _check_cross_validation_sub_estimator_has_coef() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the underlying estimator has a `coef_` attribute."""
-        return _check_has_coef(accessor._parent.estimator_reports_[0].estimator)
+        return _check_has_coef(accessor._parent.reports_[0].estimator)
 
     return check
 
@@ -239,9 +239,7 @@ def _check_cross_validation_sub_estimator_has_coef() -> Callable:
 def _check_cross_validation_sub_estimator_has_feature_importances() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the underlying estimator has a `feature_importances_` attribute."""
-        return _check_has_feature_importances(
-            accessor._parent.estimator_reports_[0].estimator_
-        )
+        return _check_has_feature_importances(accessor._parent.reports_[0].estimator_)
 
     return check
 
@@ -261,7 +259,7 @@ def _check_comparison_report_sub_estimators_have_coef() -> Callable:
         for parent_report in parent.reports_.values():
             if parent._reports_type == "CrossValidationReport":
                 parent_report = cast(CrossValidationReport, parent_report)
-                parent_estimators.append(parent_report.estimator_reports_[0].estimator_)
+                parent_estimators.append(parent_report.reports_[0].estimator_)
             elif parent._reports_type == "EstimatorReport":
                 parent_estimators.append(parent_report.estimator_)
             else:

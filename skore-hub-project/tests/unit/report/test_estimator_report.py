@@ -42,7 +42,7 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
 
     import joblib
 
-    reports = [object] + getattr(object, "estimator_reports_", [])
+    reports = [object] + getattr(object, "reports_", [])
     caches = [report_to_clear._cache for report_to_clear in reports]
 
     object.clear_cache()

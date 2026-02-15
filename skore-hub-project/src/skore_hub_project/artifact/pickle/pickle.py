@@ -47,7 +47,7 @@ class Pickle(Artifact):
         -----
         The report is pickled without its cache, to avoid salting the checksum.
         """
-        reports = [self.report] + getattr(self.report, "estimator_reports_", [])
+        reports = [self.report] + getattr(self.report, "reports_", [])
         caches = [report_to_clear._cache for report_to_clear in reports]
 
         self.report.clear_cache()

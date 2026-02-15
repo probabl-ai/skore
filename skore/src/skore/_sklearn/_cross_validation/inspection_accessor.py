@@ -55,13 +55,9 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> display.plot() # shows plot
         """
         return CoefficientsDisplay._compute_data_for_display(
-            estimators=[
-                report.estimator_ for report in self._parent.estimator_reports_
-            ],
-            names=[
-                report.estimator_name_ for report in self._parent.estimator_reports_
-            ],
-            splits=list(range(len(self._parent.estimator_reports_))),
+            estimators=[report.estimator_ for report in self._parent.reports_],
+            names=[report.estimator_name_ for report in self._parent.reports_],
+            splits=list(range(len(self._parent.reports_))),
             report_type="cross-validation",
         )
 
@@ -97,13 +93,9 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> display.plot() # shows plot
         """
         return ImpurityDecreaseDisplay._compute_data_for_display(
-            estimators=[
-                report.estimator_ for report in self._parent.estimator_reports_
-            ],
-            names=[
-                report.estimator_name_ for report in self._parent.estimator_reports_
-            ],
-            splits=list(range(len(self._parent.estimator_reports_))),
+            estimators=[report.estimator_ for report in self._parent.reports_],
+            names=[report.estimator_name_ for report in self._parent.reports_],
+            splits=list(range(len(self._parent.reports_))),
             report_type="cross-validation",
         )
 

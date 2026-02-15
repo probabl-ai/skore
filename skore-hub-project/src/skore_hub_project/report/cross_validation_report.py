@@ -264,5 +264,5 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 report=report,
                 key=f"{self.key}:estimator-report",
             )
-            for report in self.report.estimator_reports_
+            for report in self.report.reports_
         ]
