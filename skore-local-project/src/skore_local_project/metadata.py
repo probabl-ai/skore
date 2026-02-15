@@ -7,13 +7,13 @@ from contextlib import suppress
 from dataclasses import InitVar, dataclass, field, fields
 from datetime import datetime, timezone
 from math import isfinite
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 from joblib import hash
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from typing import Any, Literal
+    from typing import Any
 
     from skore import CrossValidationReport, EstimatorReport
 
