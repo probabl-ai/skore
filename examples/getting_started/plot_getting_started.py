@@ -46,13 +46,14 @@ TableReport(german_credit.frame)
 # Creating our experiment and held-out sets
 # -----------------------------------------
 #
-# We will use skore's enhanced :func:`~skore.train_test_split` function to create our experiment set
-# and a left-out test set. The experiment set will be used for model development and
-# cross-validation, while the left-out set will only be used at the end to validate
-# our final model.
+# We will use skore's enhanced :func:`~skore.train_test_split` function to create our
+# experiment set and a left-out test set. The experiment set will be used for model
+# development and cross-validation, while the left-out set will only be used at the end
+# to validate our final model.
 #
-# Unlike scikit-learn's :func:`~skore.train_test_split`, skore's version provides helpful diagnostics
-# about potential issues with your data split, such as class imbalance.
+# Unlike scikit-learn's :func:`~skore.train_test_split`, skore's version provides
+# helpful diagnostics about potential issues with your data split, such as class
+# imbalance.
 
 # %%
 X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
@@ -60,10 +61,11 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 )
 
 # %%
-# skore tells us we have class-imbalance issues with our data, which we confirm
-# with the :class:`~skore.TableReport` above by clicking on the "class" column and looking at the
-# class distribution: there are only 300 examples where the target is "bad".
-# The second warning concerns time-ordered data, but our data does not contain time-ordered columns so we can safely ignore it.
+# Skore tells us we have class-imbalance issues with our data, which we confirm with the
+# :class:`~skore.TableReport` above by clicking on the "class" column and looking at the
+# class distribution: there are only 300 examples where the target is "bad". The second
+# warning concerns time-ordered data, but our data does not contain time-ordered columns
+# so we can safely ignore it.
 
 # %%
 # Model development with cross-validation
@@ -188,9 +190,10 @@ coefficients.plot(select_k=15)
 # Model no. 2: Random forest
 # --------------------------
 #
-# Now, we cross-validate a more advanced model using :class:`~sklearn.ensemble.RandomForestClassifier`.
-# Again, we rely on :func:`~skrub.tabular_pipeline` to perform the appropriate
-# preprocessing to use with this model.
+# Now, we cross-validate a more advanced model using
+# :class:`~sklearn.ensemble.RandomForestClassifier`. Again, we rely on
+# :func:`~skrub.tabular_pipeline` to perform the appropriate preprocessing to use with
+# this model.
 
 # %%
 from sklearn.ensemble import RandomForestClassifier
@@ -210,8 +213,8 @@ advanced_cv_report = CrossValidationReport(
 # Comparing our models
 # ====================
 #
-# Now that we have our two models, we need to decide which one should go into production.
-# We can compare them with a :class:`skore.ComparisonReport`.
+# Now that we have our two models, we need to decide which one should go into
+# production. We can compare them with a :class:`skore.ComparisonReport`.
 
 # %%
 from skore import ComparisonReport
@@ -247,10 +250,10 @@ comparison.metrics.precision_recall().plot()
 # Final model evaluation on held-out data
 # =======================================
 #
-# Now that we have chosen to deploy the linear model, we will train it on
-# the full experiment set and evaluate it on our held-out data: training on more data
-# should help performance and we can also validate that our model generalizes well to
-# new data. This can be done in one step with :meth:`~skore.ComparisonReport.create_estimator_report`.
+# Now that we have chosen to deploy the linear model, we will train it on the full
+# experiment set and evaluate it on our held-out data: training on more data should help
+# performance and we can also validate that our model generalizes well to new data. This
+# can be done in one step with :meth:`~skore.ComparisonReport.create_estimator_report`.
 
 # %%
 
@@ -259,7 +262,8 @@ final_report = comparison.create_estimator_report(
 )
 
 # %%
-# This returns a :class:`~skore.EstimatorReport` which has a similar API to the other report classes:
+# This returns a :class:`~skore.EstimatorReport` which has a similar API to the other
+# report classes:
 
 # %%
 final_metrics = final_report.metrics.summarize()
