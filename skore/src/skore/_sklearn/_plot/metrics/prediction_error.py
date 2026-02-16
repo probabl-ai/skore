@@ -190,7 +190,7 @@ class PredictionErrorDisplay(DisplayMixin):
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
         despine: bool = True,
-    ) -> sns.axisgrid.FacetGrid:
+    ) -> sns.FacetGrid:
         """Matplolib implementation of the `plot` method."""
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:

@@ -183,7 +183,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         | None = "auto",
         plot_chance_level: bool = True,
         despine: bool = True,
-    ) -> sns.axisgrid.FacetGrid:
+    ) -> sns.FacetGrid:
         """Matplotlib implementation of the `plot` method."""
         plot_data = self.frame(with_roc_auc=True)
 

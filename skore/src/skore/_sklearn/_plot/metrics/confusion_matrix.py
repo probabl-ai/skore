@@ -153,7 +153,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         normalize: Literal["true", "pred", "all"] | None = None,
         threshold_value: float | None = None,
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
-    ) -> sns.axisgrid.FacetGrid:
+    ) -> sns.FacetGrid:
         """Matplotlib implementation of the `plot` method.
 
         Parameters
