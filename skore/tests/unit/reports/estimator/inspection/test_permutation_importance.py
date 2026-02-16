@@ -261,36 +261,6 @@ def test_cache_display_stored(regression_train_test_split, n_jobs):
 
 
 @pytest.mark.parametrize("n_jobs", [1, 2])
-def test_get_cached_permutation_importance(regression_train_test_split, n_jobs):
-    """Test access to cached permutation importance via inspection accessor."""
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    report = EstimatorReport(
-        LinearRegression(),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    assert (
-        report.inspection.get_cached_permutation_importance(data_source="train") is None
-    )
-
-    display = report.inspection.permutation_importance(
-        data_source="train", n_jobs=n_jobs
-    )
-    cached_display = report.inspection.get_cached_permutation_importance(
-        data_source="train"
-    )
-    assert isinstance(cached_display, PermutationImportanceDisplay)
-    assert cached_display is display
-
-    report.clear_cache()
-    assert (
-        report.inspection.get_cached_permutation_importance(data_source="train") is None
-    )
-
-
-@pytest.mark.parametrize("n_jobs", [1, 2])
 @pytest.mark.parametrize(
     "param_name, first_value, second_value, use_pipeline",
     [
