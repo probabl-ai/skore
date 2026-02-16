@@ -20,7 +20,7 @@ from skore._sklearn.types import (
     YPlotData,
 )
 
-ThresholdValue = float | Literal["default"] | None
+ThresholdValue = float | Literal["default"]
 
 
 class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
@@ -109,7 +109,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold_value: float | Literal["default"] = "default",
+        threshold_value: ThresholdValue = "default",
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
     ):
         """Plot the confusion matrix.
@@ -153,7 +153,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold_value: float | Literal["default"] = "default",
+        threshold_value: ThresholdValue = "default",
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
     ) -> None:
         """Matplotlib implementation of the `plot` method.
@@ -481,11 +481,17 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         return disp
 
+    @staticmethod
+    def _format_frame(
+        df: pd.DataFrame, columns: list[str], normalize_col: str
+    ) -> pd.DataFrame:
+        return df[columns].rename(columns={normalize_col: "value"})
+
     def frame(
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold_value: ThresholdValue = "default",
+        threshold_value: ThresholdValue | None = "default",
     ):
         """Return the confusion matrix as a long format dataframe.
 
@@ -525,43 +531,31 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         """
         normalize_col = "normalized_by_" + normalize if normalize else "count"
         if (
-            threshold_value is not None
-            and threshold_value != "default"
+            threshold_value not in ("default", None)
             and self.ml_task != "binary-classification"
         ):
             raise ValueError(
                 "Threshold support is only available for binary classification."
             )
+
+        columns = [
+            "true_label",
+            "predicted_label",
+            normalize_col,
+            "threshold",
+            "split",
+            "estimator",
+            "data_source",
+        ]
+
         if threshold_value is None:
             # Return all thresholds (binary) or full matrix (multiclass).
-            return self.confusion_matrix[
-                [
-                    "true_label",
-                    "predicted_label",
-                    normalize_col,
-                    "threshold",
-                    "split",
-                    "estimator",
-                    "data_source",
-                ]
-            ].rename(columns={normalize_col: "value"})
+            return self._format_frame(self.confusion_matrix, columns, normalize_col)
         if threshold_value == "default":
             if self.ml_task == "binary-classification":
-                threshold_value = (
-                    0.5 if self.response_method == "predict_proba" else 0
-                )
+                threshold_value = 0.5 if self.response_method == "predict_proba" else 0
             else:
-                return self.confusion_matrix[
-                    [
-                        "true_label",
-                        "predicted_label",
-                        normalize_col,
-                        "threshold",
-                        "split",
-                        "estimator",
-                        "data_source",
-                    ]
-                ].rename(columns={normalize_col: "value"})
+                return self._format_frame(self.confusion_matrix, columns, normalize_col)
 
         def select_threshold_and_format(group):
             thresholds = np.sort(group["threshold"].unique())
@@ -577,17 +571,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 index_right if diff_right < diff_left else index_left
             ]
             frame = group.query(f"threshold == {closest_threshold_value}")
-            return frame[
-                [
-                    "true_label",
-                    "predicted_label",
-                    normalize_col,
-                    "threshold",
-                    "split",
-                    "estimator",
-                    "data_source",
-                ]
-            ].rename(columns={normalize_col: "value"})
+            return self._format_frame(frame, columns, normalize_col)
 
         frames = []
         if self.report_type == "comparison-cross-validation":
