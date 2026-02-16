@@ -69,8 +69,8 @@ class PermutationImportanceDisplay(DisplayMixin):
         estimators: Sequence[BaseEstimator],
         estimator_names: Sequence[str],
         splits: Sequence[int | float],
-        X: ArrayLike,
-        y: ArrayLike,
+        Xs: Sequence[ArrayLike],
+        ys: Sequence[ArrayLike],
         at_step: int | str,
         metric: str | Callable | list[str] | tuple[str] | dict[str, Callable] | None,
         n_repeats: int,
@@ -91,8 +91,8 @@ class PermutationImportanceDisplay(DisplayMixin):
             at_step = list(first_estimator.named_steps.keys()).index(at_step)
 
         all_importances = []
-        for estimator, estimator_name, split in zip(
-            estimators, estimator_names, splits, strict=True
+        for estimator, estimator_name, split, X, y in zip(
+            estimators, estimator_names, splits, Xs, ys, strict=True
         ):
             if isinstance(estimator, Pipeline) and at_step != 0:
                 if abs(at_step) >= len(estimator.steps):
@@ -211,14 +211,14 @@ class PermutationImportanceDisplay(DisplayMixin):
     def plot(
         self,
         *,
-        metric: str,
+        metric: str | None = None,
         subplot_by: str | tuple[str, ...] | None = "auto",
     ) -> None:
         """Plot the permutation importance.
 
         Parameters
         ----------
-        metric : str
+        metric : str or None, default=None
             Metric to plot.
 
         subplot_by : str, tuple of str or None, default="auto"
@@ -287,10 +287,10 @@ class PermutationImportanceDisplay(DisplayMixin):
                 columns_to_groupby.remove("split")
                 aggregate_title = "averaged over splits"
 
-            if subplot_by is not None:
+            if subplot_by == "auto":
                 col = columns_to_groupby[0] if columns_to_groupby else None
                 hue, row = None, None
-            else:
+            else:  # subplot_by is None
                 hue = columns_to_groupby[0] if columns_to_groupby else None
                 col, row = None, None
 

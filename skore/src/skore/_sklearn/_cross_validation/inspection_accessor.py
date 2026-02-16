@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 import joblib
 from numpy.typing import ArrayLike
@@ -228,14 +228,17 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """
-        X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-        if y_true is None:
-            raise ValueError(
-                "The target should be provided when computing the permutation "
-                "importance."
+        if data_source == "X_y":
+            X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
             )
+            if y_true is None:
+                raise ValueError(
+                    "The target should be provided when computing the permutation "
+                    "importance."
+                )
+        else:
+            data_source_hash = None
 
         # NOTE: to temporary improve the `project.put` UX, we always store the
         # permutation importance into the cache dictionary even when seed is None.
@@ -278,6 +281,26 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             # earlier.
             display = self._parent._cache[cache_key]
         else:
+            Xs: list[ArrayLike] = []
+            ys: list[ArrayLike] = []
+            for report in self._parent.estimator_reports_:
+                if data_source == "X_y":
+                    Xs.append(X_)
+                    ys.append(cast(ArrayLike, y_true))
+                else:
+                    report_X, report_y, _ = (
+                        report.inspection._get_X_y_and_data_source_hash(
+                            data_source=data_source
+                        )
+                    )
+                    if report_y is None:
+                        raise ValueError(
+                            "The target should be provided when computing "
+                            "the permutation importance."
+                        )
+                    Xs.append(report_X)
+                    ys.append(report_y)
+
             display = PermutationImportanceDisplay._compute_data_for_display(
                 data_source=data_source,
                 estimators=[
@@ -287,8 +310,8 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     report.estimator_name_ for report in self._parent.estimator_reports_
                 ],
                 splits=list(range(len(self._parent.estimator_reports_))),
-                X=X_,
-                y=y_true,
+                Xs=Xs,
+                ys=ys,
                 at_step=at_step,
                 metric=metric,
                 n_repeats=n_repeats,
