@@ -313,16 +313,16 @@ class PermutationImportanceDisplay(DisplayMixin):
 
             match len(subplot_cols):
                 case 1:
-                    col, row, hue = (
-                        subplot_cols[0],
+                    row, col, hue = (
                         None,
-                        (next(iter(remaining)) if remaining else None),
+                        subplot_cols[0],
+                        next(iter(remaining), None),
                     )
                 case 2:
                     row, col, hue = (
                         subplot_cols[0],
                         subplot_cols[1],
-                        (next(iter(remaining)) if remaining else None),
+                        next(iter(remaining), None),
                     )
                 case _:
                     raise ValueError(
@@ -374,8 +374,8 @@ class PermutationImportanceDisplay(DisplayMixin):
             self.ax_ = self.ax_.flatten()[0]
         data_source = frame["data_source"].unique()[0]
         self.figure_.suptitle(
-            f"Permutation importance {aggregate_title} \nof {estimator_name} "
-            f"on {data_source} set"
+            f"Permutation importance {aggregate_title} \n"
+            f"of {estimator_name} on {data_source} set"
         )
 
     def frame(
