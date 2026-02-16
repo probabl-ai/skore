@@ -16,8 +16,6 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     It provides methods to create plots and to visualise the dataset.
     """
 
-    _verbose_name: str = "data"
-
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
