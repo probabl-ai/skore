@@ -142,7 +142,7 @@ def test_at_step_value_error(regression_train_test_split, n_jobs, at_step, err_m
         (make_scorer(root_mean_squared_error), "root mean squared error"),
     ],
 )
-def test_metric_parameter(
+def test_metrics_parameter(
     regression_train_test_split, n_jobs, metric, expected_metric_name
 ):
     """Test that different metric parameters work correctly."""
@@ -156,7 +156,7 @@ def test_metric_parameter(
     )
 
     display = report.inspection.permutation_importance(
-        seed=42, metric=metric, n_jobs=n_jobs
+        seed=42, metrics=metric, n_jobs=n_jobs
     )
 
     assert isinstance(display, PermutationImportanceDisplay)
@@ -166,8 +166,8 @@ def test_metric_parameter(
 
 
 @pytest.mark.parametrize("n_jobs", [1, 2])
-def test_metric_list(regression_train_test_split, n_jobs):
-    """Test that metric as a list works correctly."""
+def test_metrics_list(regression_train_test_split, n_jobs):
+    """Test that metrics as a list works correctly."""
     X_train, X_test, y_train, y_test = regression_train_test_split
     report = EstimatorReport(
         LinearRegression(),
@@ -178,7 +178,7 @@ def test_metric_list(regression_train_test_split, n_jobs):
     )
 
     display = report.inspection.permutation_importance(
-        seed=42, metric=["r2", "neg_mean_squared_error"], n_jobs=n_jobs
+        seed=42, metrics=["r2", "neg_mean_squared_error"], n_jobs=n_jobs
     )
 
     assert isinstance(display, PermutationImportanceDisplay)
@@ -188,7 +188,7 @@ def test_metric_list(regression_train_test_split, n_jobs):
 
 
 @pytest.mark.parametrize("n_jobs", [1, 2])
-def test_metric_dict(regression_train_test_split, n_jobs):
+def test_metrics_dict(regression_train_test_split, n_jobs):
     """Test that metric as a dict works correctly."""
     X_train, X_test, y_train, y_test = regression_train_test_split
     report = EstimatorReport(
@@ -199,12 +199,12 @@ def test_metric_dict(regression_train_test_split, n_jobs):
         y_test=y_test,
     )
 
-    metric_dict = {
+    metrics_dict = {
         "r2": make_scorer(r2_score),
         "rmse": make_scorer(root_mean_squared_error),
     }
     display = report.inspection.permutation_importance(
-        seed=42, metric=metric_dict, n_jobs=n_jobs
+        seed=42, metrics=metrics_dict, n_jobs=n_jobs
     )
 
     assert isinstance(display, PermutationImportanceDisplay)
@@ -264,7 +264,7 @@ def test_cache_display_stored(regression_train_test_split, n_jobs):
 @pytest.mark.parametrize(
     "param_name, first_value, second_value, use_pipeline",
     [
-        ("metric", "r2", make_scorer(root_mean_squared_error), False),
+        ("metrics", "r2", make_scorer(root_mean_squared_error), False),
         ("at_step", 0, -1, True),
         ("max_samples", 0.5, 0.8, False),
     ],
