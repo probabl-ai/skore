@@ -38,6 +38,14 @@ def monkeypatch_permutation_importance(monkeypatch):
     )
 
 
+@mark.filterwarnings(
+    # ignore deprecation warning due to `scikit-learn` misusing `scipy` arguments,
+    # raised by `scipy`
+    (
+        "ignore:scipy.optimize.*The `disp` and `iprint` options of the L-BFGS-B solver "
+        "are deprecated:DeprecationWarning"
+    ),
+)
 @mark.usefixtures("monkeypatch_artifact_hub_client")
 @mark.usefixtures("monkeypatch_upload_routes")
 @mark.usefixtures("monkeypatch_upload_with_mock")
