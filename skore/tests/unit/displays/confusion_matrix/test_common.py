@@ -261,8 +261,8 @@ class TestConfusionMatrixDisplay:
             full = cm[mask_est & mask_split]
             assert group["threshold"].iloc[0] == full["threshold"].min()
 
-    def test_frame_none_returns_all_thresholds_binary(self, fixture_prefix, request):
-        """Check that frame(threshold_value=None) returns all thresholds for binary."""
+    def test_frame_all_returns_all_thresholds_binary(self, fixture_prefix, request):
+        """Check that frame(threshold_value="all") returns all thresholds for binary."""
         report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
         if isinstance(report, tuple):
             report = report[0]
@@ -270,7 +270,7 @@ class TestConfusionMatrixDisplay:
         # Binary classification has real thresholds (no nan)
         n_thresholds = int(np.sum(~np.isnan(display.thresholds)))
 
-        frame_all = display.frame(threshold_value=None)
+        frame_all = display.frame(threshold_value="all")
         frame_default = display.frame(threshold_value="default")
 
         assert frame_all["threshold"].nunique() == n_thresholds

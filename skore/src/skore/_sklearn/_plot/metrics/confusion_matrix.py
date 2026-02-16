@@ -491,7 +491,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold_value: ThresholdValue | None = "default",
+        threshold_value: ThresholdValue = "default",
     ):
         """Return the confusion matrix as a long format dataframe.
 
@@ -500,7 +500,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         predictions change as the decision threshold varies. Use
         ``threshold_value="default"`` to return the confusion matrix at the default
         threshold (0.5 for `predict_proba` response method, 0 for `decision_function`
-        response method). Use ``threshold_value=None`` to return all available
+        response method). Use ``threshold_value="all"`` to return all available
         thresholds without filtering.
 
         The matrix is returned as a long format dataframe where each line represents one
@@ -516,11 +516,11 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             conditions or all the population. If None, the confusion matrix will not be
             normalized.
 
-        threshold_value : float, "default" or None, default="default"
+        threshold_value : float, "default" or "all", default="default"
             The decision threshold(s) to use when applicable (binary classification
             only). If ``"default"``, returns the confusion matrix at the default
             threshold (0.5 for `predict_proba` response method, 0 for
-            `decision_function` response method). If ``None``, returns all available
+            `decision_function` response method). If ``"all"``, returns all available
             thresholds without filtering. If a float, returns the confusion matrix at
             the closest available threshold to the given value.
 
@@ -531,7 +531,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         """
         normalize_col = "normalized_by_" + normalize if normalize else "count"
         if (
-            threshold_value not in ("default", None)
+            threshold_value not in ("default", "all")
             and self.ml_task != "binary-classification"
         ):
             raise ValueError(
@@ -548,7 +548,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             "data_source",
         ]
 
-        if threshold_value is None:
+        if threshold_value == "all":
             # Return all thresholds (binary) or full matrix (multiclass).
             return self._format_frame(self.confusion_matrix, columns, normalize_col)
         if threshold_value == "default":
