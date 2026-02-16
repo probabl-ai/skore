@@ -30,10 +30,10 @@ class Project:
 
     .. rubric:: Hub mode
 
-    The project is configured to communicate with the ``skore hub``.
+    The project is configured to communicate with ``skore hub``.
 
-    In this mode, the ``name`` is expected to be of the form ``<workspace>/<name>``,
-    where the workspace is a ``skore hub`` concept that must be configured on the
+    In this mode, ``name`` is expected to be of the form ``<workspace>/<name>``, where
+    the workspace is a ``skore hub`` concept that must be configured on the
     ``skore hub`` interface. It represents an isolated entity managing users, projects,
     and resources. It can be a company, organization, or team that operates
     independently within the system.
