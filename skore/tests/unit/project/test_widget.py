@@ -383,7 +383,7 @@ def test_model_explorer_widget_no_dataset_for_task(metadata, capsys):
 def test_model_explorer_widget_requires_jupyter_deps(metadata, monkeypatch):
     """ModelExplorerWidget raises ImportError when Jupyter deps are not installed."""
     monkeypatch.setattr(
-        "skore.project._widget._jupyter_dependencies_available",
+        "skore._project._widget._jupyter_dependencies_available",
         lambda: False,
     )
     with pytest.raises(ImportError, match="pip install skore"):

@@ -436,7 +436,7 @@ class TestSummary:
     ):
         """Without Jupyter deps, Summary shows table and warns instead of widget."""
         monkeypatch.setattr(
-            "skore.project._summary._jupyter_dependencies_available",
+            "skore._project._summary._jupyter_dependencies_available",
             lambda: False,
         )
         project = FakeProject(
