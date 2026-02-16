@@ -187,7 +187,6 @@ sphinx/build/
 sphinx/auto_examples/
 sphinx/reference/api/
 sphinx/sg_execution_times.rst
-sphinx/_templates/landing/project_summary_plot.html
 examples/plot_*.png
 sphinx/_templates/demo_report_help_generated.html
 

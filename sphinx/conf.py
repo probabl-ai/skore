@@ -1,10 +1,3 @@
-"""
-Configuration file for the Sphinx documentation builder.
-
-This file configures the Sphinx documentation build for skore, including
-extensions, themes, and gallery settings.
-"""
-
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -16,10 +9,13 @@ extensions, themes, and gallery settings.
 import sys
 import os
 from sphinx_gallery.sorting import ExplicitOrder
-from pathlib import Path
 
-# Make it possible to load custom extensions from sphinxext directory
-sys.path.append(str(Path("sphinxext").resolve()))
+# If extensions (or modules to document with autodoc) are in another directory,
+# add these directories to sys.path here. If the directory is relative to the
+# documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.insert(0, os.path.abspath("sphinxext"))
+from github_link import make_linkcode_resolve  # noqa
+from matplotlib_skore_scraper import matplotlib_skore_scraper  # noqa
 
 project = "skore"
 copyright = "2026, Probabl"
@@ -43,21 +39,8 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
     "sphinx_autosummary_accessors",
-    # Custom extensions
-    "generate_accessor_tables",
-    "github_link",
-    "landing_project_summary_plot",
-    "matplotlib_skore_scraper",
-    "report_help",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
-
-# Configuration for generate_accessor_tables extension
-accessor_summary_classes = [
-    "skore.EstimatorReport",
-    "skore.CrossValidationReport",
-    "skore.ComparisonReport",
-]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -121,6 +104,7 @@ sphinx_gallery_conf = {
     "backreferences_dir": "reference/api",
     "doc_module": "skore",
     # "reset_modules": (reset_mpl, "seaborn"),
+    "image_scrapers": [matplotlib_skore_scraper()],  # using the custom class scraper
     "abort_on_example_error": True,
 }
 
@@ -220,3 +204,28 @@ copybutton_prompt_is_regexp = True
 issues_uri = "https://github.com/probabl-ai/skore/issues/{issue}"
 issues_github_path = "probabl-ai/skore"
 issues_user_uri = "https://github.com/{user}"
+
+# The following is used by sphinx.ext.linkcode to provide links to github
+linkcode_resolve = make_linkcode_resolve(
+    "skore",
+    (
+        "https://github.com/probabl-ai/"
+        "skore/blob/{revision}/"
+        "{package}/src/skore/{path}#L{lineno}"
+    ),
+)
+
+# -- Build hook: generate landing Plotly snippet ------------------------------
+# Generates the Plotly HTML fragment at build time, then include it via:
+#   {% include "landing/project_summary_plot.html" %}
+
+def setup(app):
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    def _gen(app):
+        script = Path(__file__).parent / "_scripts" / "generate_landing_project_summary_plot.py"
+        subprocess.check_call([sys.executable, str(script)])
+
+    app.connect("builder-inited", _gen)
