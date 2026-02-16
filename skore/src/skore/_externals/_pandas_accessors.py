@@ -47,6 +47,7 @@ def _register_accessor(name, cls):
                 f"attribute with the same name."
             )
         setattr(cls, name, Accessor(name, accessor))
+        accessor._accessor_name = name
         cls._accessors.add(name)
         return accessor
 

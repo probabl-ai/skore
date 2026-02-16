@@ -20,7 +20,7 @@ class FakeEntryPoint(EntryPoint):
 
 def test_login_local(monkeypatch, FakeLogin):
     monkeypatch.setattr(
-        "skore._login.entry_points",
+        "skore._project.plugin.entry_points",
         lambda **kwargs: EntryPoints(
             [
                 FakeEntryPoint(
@@ -41,7 +41,7 @@ def test_login_local(monkeypatch, FakeLogin):
 
 def test_login_hub(monkeypatch, FakeLogin):
     monkeypatch.setattr(
-        "skore._login.entry_points",
+        "skore._project.plugin.entry_points",
         lambda **kwargs: EntryPoints(
             [
                 FakeEntryPoint(
@@ -63,7 +63,9 @@ def test_login_hub(monkeypatch, FakeLogin):
 
 
 def test_login_hub_without_plugin(monkeypatch):
-    monkeypatch.setattr("skore._login.entry_points", lambda **kwargs: EntryPoints([]))
+    monkeypatch.setattr(
+        "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
+    )
 
     from skore import login
 

@@ -1,13 +1,14 @@
 """Configure storage backend credentials."""
 
-from importlib.metadata import entry_points
 from logging import getLogger
-from typing import Literal
+
+from skore._project import plugin
+from skore._project.types import ProjectMode
 
 logger = getLogger(__name__)
 
 
-def login(*, mode: Literal["local", "hub"] = "hub", **kwargs):
+def login(*, mode: ProjectMode = "hub", **kwargs):
     """
     Login to the storage backend.
 
@@ -55,18 +56,6 @@ def login(*, mode: Literal["local", "hub"] = "hub", **kwargs):
         logger.debug("Login to local storage.")
         return
 
-    mode = "hub"
-    plugins = entry_points(group="skore.plugins.login")
-
-    if mode not in plugins.names:
-        raise ValueError(
-            f"The mode `{mode}` is not supported. You need to install "
-            f"`skore-{mode}-project` to use it. You can install it with pip:\n"
-            f'    pip install "skore[{mode}]"\n'
-            f"or via conda where it is included in the `skore` package\n"
-            f"    conda install skore -c conda-forge"
-        )
-
     logger.debug("Login to hub storage.")
 
-    return plugins[mode].load()(**kwargs)
+    return plugin.get(group="skore.plugins.login", mode="hub")(**kwargs)
