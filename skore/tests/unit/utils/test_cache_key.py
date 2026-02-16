@@ -7,7 +7,7 @@ from skore._utils._cache_key import deep_key_sanitize
 def test_deep_key_sanitize_hashes_numpy_array():
     array = np.array([1, 2, 3])
     sanitized = deep_key_sanitize(array)
-    assert sanitized == ("numpy.ndarray", joblib.hash(array))
+    assert sanitized == ("array", joblib.hash(array))
 
 
 def test_deep_key_sanitize_sequence_returns_tuple_value():
