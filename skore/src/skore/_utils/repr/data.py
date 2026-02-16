@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from importlib.metadata import version
-from typing import Any
+from typing import Any, ClassVar
 from urllib.parse import quote
 
 from skore._externals._sklearn_compat import parse_version
@@ -473,11 +473,12 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
     It defines ``_build_help_data`` by looking at methods of an accessor.
     """
 
-    _verbose_name: str
     _parent: Any
+    _accessor_name: ClassVar[str]  # set by _register_accessor on concrete classes
 
     def _build_help_data(self) -> AccessorHelpData:
         """Build data structure for Jinja2/Rich rendering for accessors."""
+        accessor_name = self.__class__._accessor_name
         root_node = self._parent.__class__.__name__
         methods = [
             self._build_method_data(
@@ -485,14 +486,14 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
                 method=method,
                 obj=self,
                 parent_obj=self._parent,
-                accessor_name=self._verbose_name,
+                accessor_name=accessor_name,
             )
             for name, method in get_public_methods(self)
         ]
         return AccessorHelpData(
             title=self._get_help_title(),
             root_node=root_node,
-            accessor_name=self._verbose_name,
+            accessor_name=accessor_name,
             accessor_branch_id=str(uuid.uuid4()),
             methods=methods,
         )

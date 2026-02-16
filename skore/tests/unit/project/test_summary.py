@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+import pytest
 from joblib import hash as joblib_hash
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
 from pandas.testing import assert_index_equal
@@ -426,3 +427,31 @@ class TestSummary:
             "or (log_loss >= 0.550000 and log_loss <= 0.550000)) "
             "and learner.isin(['learner1', 'learner3'])"
         )
+
+    def test_repr_mimebundle_fallback_without_jupyter_deps(
+        self,
+        monkeypatch,
+        estimator_report_regression,
+        estimator_report_binary_classification,
+    ):
+        """Without Jupyter deps, Summary shows table and warns instead of widget."""
+        monkeypatch.setattr(
+            "skore.project._summary._jupyter_dependencies_available",
+            lambda: False,
+        )
+        project = FakeProject(
+            estimator_report_regression,
+            estimator_report_binary_classification,
+        )
+        summary = Summary.factory(project)
+
+        with pytest.warns(UserWarning, match="Jupyter dependencies") as record:
+            result = summary._repr_mimebundle_()
+
+        assert len(record) == 1
+        assert "Jupyter dependencies" in record[0].message.args[0]
+        # Fallback is normal pandas DataFrame HTML table
+        assert "text/html" in result
+        assert "<table" in result["text/html"]
+        # Widget was not created
+        assert not hasattr(summary, "_plot_widget")

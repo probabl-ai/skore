@@ -90,12 +90,12 @@ def test_mock_report_accessor_config():
     assert MockReport._ACCESSOR_CONFIG == {}
 
 
-def test_mock_accessor_init_and_verbose_name(mock_estimator):
-    """MockAccessor stores parent, has _verbose_name."""
+def test_mock_accessor_init_and_accessor_name(mock_estimator):
+    """MockAccessor stores parent, has _accessor_name."""
     report = MockReport(mock_estimator)
     accessor = MockAccessor(parent=report)
     assert accessor._parent is report
-    assert MockAccessor._verbose_name == "mock_accessor"
+    assert MockAccessor._accessor_name == "mock_accessor"
 
 
 def test_mock_accessor_get_help_tree_title():
