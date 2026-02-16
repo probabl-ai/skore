@@ -27,7 +27,7 @@ def test_with_pipeline(pyplot, forest_binary_classification_data):
         "importance",
     ]
     assert display.importances["split"].nunique() == 2
-    for split_index, est_report in enumerate(report.estimator_reports_):
+    for split_index, est_report in enumerate(report.reports_):
         fitted = est_report.estimator_.named_steps["predictor"]
         imp = (
             display.importances.query(f"split == {split_index}")

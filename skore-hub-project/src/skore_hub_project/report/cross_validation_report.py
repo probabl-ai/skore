@@ -258,11 +258,17 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     @cached_property
     def estimators(self) -> list[EstimatorReportPayload]:
         """The estimators used in each split by the report in a payload format."""
+        # TODO: replace by self.report.reports_ when the minimum version of skore is
+        # 0.13. It is only necessary for backward compatibility
+        if hasattr(self.report, "reports_"):
+            reports = self.report.reports_
+        else:
+            reports = self.report.estimator_reports_  # type: ignore[attr-defined]
         return [
             EstimatorReportPayload(
                 project=self.project,
                 report=report,
                 key=f"{self.key}:estimator-report",
             )
-            for report in self.report.estimator_reports_
+            for report in reports
         ]

@@ -238,10 +238,10 @@ class _MetricsAccessor(
                         delayed(getattr(report.metrics, report_metric_name))(
                             data_source=data_source, X=X, y=y, **metric_kwargs
                         )
-                        for report in self._parent.estimator_reports_
+                        for report in self._parent.reports_
                     ),
                     description="Compute metric for each split",
-                    total=len(self._parent.estimator_reports_),
+                    total=len(self._parent.reports_),
                 )
             ]
 
@@ -314,12 +314,9 @@ class _MetricsAccessor(
         Predict time train (s)       ...       ...
         """
         timings: pd.DataFrame = pd.concat(
-            [
-                pd.Series(report.metrics.timings())
-                for report in self._parent.estimator_reports_
-            ],
+            [pd.Series(report.metrics.timings()) for report in self._parent.reports_],
             axis=1,
-            keys=[f"Split #{i}" for i in range(len(self._parent.estimator_reports_))],
+            keys=[f"Split #{i}" for i in range(len(self._parent.reports_))],
         )
         if aggregate:
             if isinstance(aggregate, str):
@@ -1135,9 +1132,9 @@ class _MetricsAccessor(
         y_pred: list[YPlotData] = []
 
         for report_idx, report in track(
-            enumerate(self._parent.estimator_reports_),
+            enumerate(self._parent.reports_),
             description="Computing predictions for display",
-            total=len(self._parent.estimator_reports_),
+            total=len(self._parent.reports_),
         ):
             if data_source == "X_y":
                 # Use the externally provided X and y for all splits
@@ -1169,9 +1166,7 @@ class _MetricsAccessor(
             y_true=y_true,
             y_pred=y_pred,
             report_type="cross-validation",
-            estimators=[
-                report.estimator_ for report in self._parent.estimator_reports_
-            ],
+            estimators=[report.estimator_ for report in self._parent.reports_],
             ml_task=self._parent._ml_task,
             data_source=data_source,
             **display_kwargs,
@@ -1461,9 +1456,7 @@ class _MetricsAccessor(
             response_method = "predict"
 
         display_kwargs = {
-            "display_labels": tuple(
-                self._parent.estimator_reports_[0].estimator_.classes_
-            ),
+            "display_labels": tuple(self._parent.reports_[0].estimator_.classes_),
             "pos_label": pos_label,
             "response_method": response_method,
         }

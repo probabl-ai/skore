@@ -101,7 +101,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
             for name, report in self._parent.reports_.items():
                 cross_validation_report = cast("CrossValidationReport", report)
                 for split_idx, estimator_report in enumerate(
-                    cross_validation_report.estimator_reports_
+                    cross_validation_report.reports_
                 ):
                     estimators.append(estimator_report.estimator_)
                     names.append(name)

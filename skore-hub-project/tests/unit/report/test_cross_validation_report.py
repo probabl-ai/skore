@@ -58,7 +58,7 @@ from skore_hub_project.report import (
 
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
-    reports = [object] + getattr(object, "estimator_reports_", [])
+    reports = [object] + getattr(object, "reports_", [])
     caches = [report_to_clear._cache for report_to_clear in reports]
 
     object.clear_cache()
@@ -256,16 +256,16 @@ class TestCrossValidationReportPayload:
     @mark.usefixtures("monkeypatch_upload_routes")
     @mark.usefixtures("monkeypatch_upload_with_mock")
     def test_estimators(self, project, payload, upload_mock):
-        assert len(payload.estimators) == len(payload.report.estimator_reports_)
+        assert len(payload.estimators) == len(payload.report.reports_)
 
         for i, estimator in enumerate(payload.estimators):
             # Ensure payload is well constructed
             assert isinstance(estimator, EstimatorReportPayload)
             assert estimator.project == project
-            assert estimator.report == payload.report.estimator_reports_[i]
+            assert estimator.report == payload.report.reports_[i]
 
             # ensure `upload` is well called
-            pickle, checksum = serialize(payload.report.estimator_reports_[i])
+            pickle, checksum = serialize(payload.report.reports_[i])
 
             estimator.model_dump()
 

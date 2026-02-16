@@ -1260,7 +1260,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 description="Computing predictions for display",
                 total=len(self._parent.reports_),
             ):
-                for split, estimator_report in enumerate(report.estimator_reports_):
+                for split, estimator_report in enumerate(report.reports_):
                     for ds in data_sources:
                         report_X, report_y, ds_hash = (
                             estimator_report.metrics._get_X_y_and_data_source_hash(
@@ -1293,7 +1293,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 estimators=[
                     estimator_report.estimator_
                     for report in self._parent.reports_.values()
-                    for estimator_report in report.estimator_reports_
+                    for estimator_report in report.reports_
                 ],
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
@@ -1623,7 +1623,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         if self._parent._reports_type == "CrossValidationReport":
             display_labels = tuple(
                 next(iter(self._parent.reports_.values()))
-                .estimator_reports_[0]
+                .reports_[0]
                 .estimator_.classes_
             )
         else:

@@ -249,7 +249,13 @@ class Project:
             if isinstance(report, EstimatorReport):
                 target = report.estimator_.classes_
             else:  # CrossValidationReport
-                target = report.estimator_reports_[0].estimator_.classes_
+                # TODO: replace by report.reports_[0] when the minimum version of skore
+                # is 0.13. It is only necessary for backward compatibility
+                if hasattr(report, "reports_"):
+                    estimator_report = report.reports_[0]
+                else:
+                    estimator_report = report.estimator_reports_[0]  # type: ignore[attr-defined]
+                target = estimator_report.estimator_.classes_
 
             try:
                 _check_pos_label_consistency(report.pos_label, target)
