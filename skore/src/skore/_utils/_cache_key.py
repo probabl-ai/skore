@@ -14,6 +14,14 @@ def deep_key_sanitize(value: Any) -> Any:
 
     This keeps key structures explicit (tuple-based)
     while ensuring values are hashable and deterministic.
+
+    Examples
+    --------
+    >>> deep_key_sanitize(["mean", "std"])
+    ('mean', 'std')
+
+    >>> deep_key_sanitize({"b": [1, 2], "a": {"x": 3}})
+    ('mapping', (('a', ('mapping', (('x', 3),))), ('b', (1, 2))))
     """
     if (
         value is None
