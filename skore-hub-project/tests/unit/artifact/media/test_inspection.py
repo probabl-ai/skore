@@ -67,6 +67,13 @@ def monkeypatch_permutation_importance(monkeypatch):
         ),
         param(
             Coefficients,
+            "multiclass_classification",
+            "coefficients",
+            None,
+            id="Coefficients",
+        ),
+        param(
+            Coefficients,
             "regression",
             "coefficients",
             None,
