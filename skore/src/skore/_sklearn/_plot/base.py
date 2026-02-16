@@ -1,3 +1,4 @@
+import threading
 from collections.abc import Callable
 from functools import wraps
 from typing import Any, Literal, Protocol, runtime_checkable
@@ -213,7 +214,14 @@ class StyleDisplayMixin:
             try:
                 result = plot_func(self, *args, **kwargs)
             finally:
-                plt.tight_layout()
+                try:
+                    if threading.current_thread() is threading.main_thread():
+                        # Only call `tight_layout` when we are inside the main thread
+                        # since that otherwise we are surely serializing figures instead
+                        # do not display them.
+                        plt.tight_layout()
+                except Exception:
+                    pass
                 plt.rcParams.update(original_params)
             return result
 
