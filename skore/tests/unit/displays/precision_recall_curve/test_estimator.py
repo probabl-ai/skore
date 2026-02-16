@@ -30,7 +30,6 @@ def test_legend_multiclass_classification(
     report = estimator_reports_multiclass_classification[0]
     display = report.metrics.precision_recall()
     _, ax = estimator_reports_multiclass_classification_figure_axes
-    ax = ax[0]
     labels = display.precision_recall["label"].cat.categories
 
     assert isinstance(ax, mpl.axes.Axes)

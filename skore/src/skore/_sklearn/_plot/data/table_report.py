@@ -229,7 +229,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         hue: str | None = None,
         kind: Literal["dist", "corr"] = "dist",
         top_k_categories: int = 20,
-    ) -> None:
+    ) -> sns.FacetGrid:
         """Plot distribution or correlation of the columns from the dataset.
 
         Parameters
