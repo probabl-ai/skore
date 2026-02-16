@@ -491,7 +491,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold_value: ThresholdValue = "default",
+        threshold_value: ThresholdValue | Literal["all"] = "default",
     ):
         """Return the confusion matrix as a long format dataframe.
 
