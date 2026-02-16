@@ -20,7 +20,7 @@ def serialize(result) -> bytes:
         result = result.frame()
 
     return orjson.dumps(
-        result.fillna("NaN").to_dict(orient="tight"),
+        result.infer_objects().fillna("NaN").to_dict(orient="tight"),
         option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
     )
 

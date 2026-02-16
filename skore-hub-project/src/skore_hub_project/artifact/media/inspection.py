@@ -28,7 +28,7 @@ class Inspection(Media[Report], ABC):  # noqa: D101
         display = function()
         frame = display.frame()
 
-        return dumps(frame.fillna("NaN").to_dict(orient="tight"))
+        return dumps(frame.infer_objects().fillna("NaN").to_dict(orient="tight"))
 
 
 class PermutationImportance(Inspection[EstimatorReport], ABC):  # noqa: D101
@@ -51,7 +51,9 @@ class PermutationImportance(Inspection[EstimatorReport], ABC):  # noqa: D101
             ):
                 frame = display.frame()
 
-                return dumps(frame.fillna("NaN").to_dict(orient="tight"))
+                return dumps(
+                    frame.infer_objects().fillna("NaN").to_dict(orient="tight")
+                )
 
         return None
 
