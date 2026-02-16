@@ -391,7 +391,7 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 # Let's first start with a basic confusion matrix:
 cm_display = report.metrics.confusion_matrix()
 cm_display.plot()
-plt.show()
+plt.show(block=True)
 
 # %%
 # In binary classification, a confusion matrix depends on the decision threshold used
@@ -407,19 +407,19 @@ print(
 # To visualize the confusion matrix at a different threshold, use the ``threshold_value``
 # parameter. For example, a threshold of 0.3 will classify more samples as positive:
 cm_display.plot(threshold_value=0.3)
-plt.show()
+plt.show(block=True)
 
 # %%
 # We can normalize the confusion matrix to get percentages instead of raw counts.
 # Here we normalize by true labels (rows):
 cm_display.plot(normalize="true")
-plt.show()
+plt.show(block=True)
 
 # %%
 # More plotting options are available via ``heatmap_kwargs``, which are passed to
 # seaborn's heatmap. For example, we can customize the colormap and number format:
 cm_display.set_style(heatmap_kwargs={"cmap": "Greens", "fmt": ".2e"}).plot()
-plt.show()
+plt.show(block=True)
 
 # %%
 # Finally, the confusion matrix can also be exported as a pandas DataFrame for further

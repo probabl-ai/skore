@@ -4,6 +4,7 @@ from logging import INFO, NullHandler, getLogger
 from warnings import warn
 
 from joblib import __version__ as joblib_version
+from matplotlib import pyplot as plt
 from rich.console import Console
 from rich.theme import Theme
 
@@ -34,7 +35,7 @@ from skore._sklearn._plot.inspection.permutation_importance import (
 from skore._utils._patch import setup_jupyter_display
 from skore._utils._show_versions import show_versions
 
-# Configure jupyter display for VS Code compatibility
+plt.ion()
 setup_jupyter_display()
 
 

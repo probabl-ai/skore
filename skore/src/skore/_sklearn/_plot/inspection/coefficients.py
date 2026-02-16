@@ -435,17 +435,26 @@ class CoefficientsDisplay(DisplayMixin):
                 x="coefficient",
                 y="feature",
                 hue=hue,
+                palette="tab10" if hue is not None else None,
                 dodge=True,
                 **boxplot_kwargs,
             )
         add_background_features = hue is not None
 
         self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
-        for ax in self.ax_.flatten():
+        n_features = (
+            [frame["feature"].nunique()]
+            if col is None
+            else [
+                frame.query(f"{col} == '{col_value}'")["feature"].nunique()
+                for col_value in frame[col].unique()
+            ]
+        )
+        for ax, n_feature in zip(self.ax_.flatten(), n_features, strict=True):
             _decorate_matplotlib_axis(
                 ax=ax,
                 add_background_features=add_background_features,
-                n_features=frame["feature"].nunique(),
+                n_features=n_feature,
                 xlabel="Magnitude of coefficient",
                 ylabel="",
             )
@@ -472,21 +481,27 @@ class CoefficientsDisplay(DisplayMixin):
         ----------
         frame : pd.DataFrame
             The frame to plot.
+
         estimator_name : str
             The name of the estimator to plot.
+
         report_type : {"estimator", "cross-validation"}
             The type of report to plot.
+
         subplot_by : {"auto", "estimator", "label", "output"} or None
             The column to use for subplotting and dividing the coefficients into
             subplots.
+
         barplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.barplot` for
             rendering the coefficients with an :class:`~skore.EstimatorReport` or
             :class:`~skore.ComparisonReport` of :class:`~skore.EstimatorReport`.
+
         boxplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.boxplot` for
             rendering the coefficients with a :class:`~skore.CrossValidationReport` or
             :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
+
         stripplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.stripplot` for
             rendering the coefficients with a :class:`~skore.CrossValidationReport` or
@@ -564,20 +579,25 @@ class CoefficientsDisplay(DisplayMixin):
         ----------
         frame : pd.DataFrame
             The frame to plot.
+
         report_type : {"comparison-estimator", "comparison-cross-validation"}
             The type of report to plot.
+
         subplot_by : {"auto", "estimator", "label", "output"} or None
             The column to use for subplotting and dividing the coefficients into
             subplots. If `None`, an automatic choice is made depending on the type of
             reports at hand.
+
         barplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.barplot` for
             rendering the coefficients with an :class:`~skore.ComparisonReport` of
             :class:`~skore.EstimatorReport`.
+
         boxplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.boxplot` for
             rendering the coefficients with a :class:`~skore.ComparisonReport` of
             :class:`~skore.CrossValidationReport`.
+
         stripplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.stripplot` for
             rendering the coefficients with a :class:`~skore.ComparisonReport` of
@@ -656,7 +676,7 @@ class CoefficientsDisplay(DisplayMixin):
             col=col,
             barplot_kwargs={"sharey": has_same_features} | barplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
-            stripplot_kwargs=stripplot_kwargs,
+            stripplot_kwargs={"sharey": has_same_features} | stripplot_kwargs,
         )
 
         title = "Coefficients"
@@ -679,10 +699,13 @@ class CoefficientsDisplay(DisplayMixin):
         ----------
         estimators : list of estimator
             The estimators to compute the data for.
+
         names : list of str
             The names of the estimators.
+
         splits : list of int or np.nan
             The splits to compute the data for.
+
         report_type : {"estimator", "cross-validation", "comparison-estimator", \
                 "comparison-cross-validation"}
             The type of report to compute the data for.

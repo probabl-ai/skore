@@ -87,3 +87,10 @@ def make_linkcode_resolve(package, url_fmt):
     return partial(
         _linkcode_resolve, revision=revision, package=package, url_fmt=url_fmt
     )
+
+def setup(app):
+    """Configure linkcode_resolve for GitHub links."""
+    app.config["linkcode_resolve"] = make_linkcode_resolve(
+        package="skore",
+        url_fmt="https://github.com/probabl-ai/skore/blob/{revision}/skore/src/skore/{path}#L{lineno}",
+    )

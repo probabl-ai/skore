@@ -1,13 +1,13 @@
 """Widget for interactive parallel coordinate plots of ML experiment metadata."""
 
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, cast
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from IPython.display import HTML, clear_output, display
-from ipywidgets import widgets
 from rich.panel import Panel
+
+from skore._utils._jupyter import _jupyter_dependencies_available
 
 
 class Axis(TypedDict):
@@ -106,7 +106,7 @@ class ModelExplorerWidget:
 
     def _create_multi_select_dropdown(
         self, options: list[tuple[str, str]], value: list[str], description: str
-    ) -> widgets.VBox:
+    ):
         """Create a compact multi-select dropdown widget.
 
         This creates a dropdown that shows selected items as a summary text and expands
@@ -123,9 +123,10 @@ class ModelExplorerWidget:
 
         Returns
         -------
-        widgets.VBox
+        ipywidgets.VBox
             The compact multi-select dropdown widget.
         """
+        widgets = cast(Any, self._widgets)
         checkboxes = {}
         checkbox_widgets = []
 
@@ -228,7 +229,19 @@ class ModelExplorerWidget:
         if dataframe.empty:
             self.dataframe = dataframe
             self.seed = seed
+            self._widgets = None
             return None
+
+        if not _jupyter_dependencies_available():
+            raise ImportError(
+                "The interactive ModelExplorerWidget requires Jupyter dependencies. "
+                "Install them with: pip install skore[jupyter]"
+            )
+        import IPython.display as ipython_display
+        from ipywidgets import widgets
+
+        self._widgets = widgets
+        self._ipython_display = ipython_display
 
         self._check_dataframe_schema(dataframe)
         self.dataframe = dataframe
@@ -279,8 +292,8 @@ class ModelExplorerWidget:
             layout=widgets.Layout(flex="1"),
         )
 
-        self._computation_metrics_dropdown: dict[str, widgets.SelectMultiple] = {}
-        self._statistical_metrics_dropdown: dict[str, widgets.SelectMultiple] = {}
+        self._computation_metrics_dropdown: dict[str, Any] = {}
+        self._statistical_metrics_dropdown: dict[str, Any] = {}
 
         metrics_for_classification = [
             metric
@@ -344,7 +357,7 @@ class ModelExplorerWidget:
                 description="Statistical Metrics:",
             )
         )
-        self._color_metric_dropdown: dict[str, widgets.Dropdown] = {
+        self._color_metric_dropdown: dict[str, Any] = {
             "classification": widgets.Dropdown(
                 options=[
                     self._metrics[metric]["name"]
@@ -543,8 +556,9 @@ class ModelExplorerWidget:
             dictionary containing information about a widget change event.
             Not used directly but required for widget callback compatibility.
         """
+        widgets = cast(Any, self._widgets)
         with self.output:
-            clear_output(wait=True)
+            self._ipython_display.clear_output(wait=True)
 
             ml_task = self._task_dropdown.value
             report_type = self._report_type_dropdown.value
@@ -553,7 +567,9 @@ class ModelExplorerWidget:
                 not hasattr(self._dataset_dropdown, "value")
                 or not self._dataset_dropdown.value
             ):
-                display(widgets.HTML("No dataset available for selected task."))
+                self._ipython_display.display(
+                    widgets.HTML("No dataset available for selected task.")
+                )
                 return
 
             df_dataset = self._filter_dataframe(ml_task, report_type).query(
@@ -629,7 +645,7 @@ class ModelExplorerWidget:
             # resizing, but this is the only way to achieve the correct width. This
             # issue can be tracked in the following bug report:
             # https://github.com/plotly/plotly.py/issues/5208
-            display(fig)
+            self._ipython_display.display(fig)
             fig.layout.autosize = True
 
     def update_selection(
@@ -687,8 +703,8 @@ class ModelExplorerWidget:
             )
             return None
 
-        display(
-            HTML(
+        self._ipython_display.display(
+            self._ipython_display.HTML(
                 """
 <style>
     /* Text-based widgets */
@@ -738,6 +754,6 @@ class ModelExplorerWidget:
             )
         )
 
-        display(self._layout)
+        self._ipython_display.display(self._layout)
         self._update_plot()
         self.update_selection()

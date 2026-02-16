@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING
 
 from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
 
-from skore._project._widget import ModelExplorerWidget
+from skore._utils._jupyter import _jupyter_dependencies_available
 
 if TYPE_CHECKING:
     from typing import Literal
@@ -121,6 +122,18 @@ class Summary(DataFrame):
 
     def _repr_mimebundle_(self, include=None, exclude=None):
         """Display the interactive plot and controls."""
+        if not _jupyter_dependencies_available():
+            warnings.warn(
+                "Jupyter dependencies (IPython, ipywidgets) are not installed. "
+                "Install them for the interactive widget: pip install skore[jupyter]. "
+                "Showing the summary as a table.",
+                UserWarning,
+                stacklevel=2,
+            )
+            return {"text/html": DataFrame._repr_html_(self)}
+
+        from skore._project._widget import ModelExplorerWidget
+
         self._plot_widget = ModelExplorerWidget(dataframe=self)
         return {"text/html": self._plot_widget.display()}
 

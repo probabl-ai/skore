@@ -1,3 +1,4 @@
+import jedi
 import numpy as np
 import pytest
 
@@ -54,3 +55,25 @@ class TestCustomMetricSummarize:
         err_msg = "response_method is required when the metric is a callable"
         with pytest.raises(ValueError, match=err_msg):
             report.metrics.summarize(metric=custom_metric).frame()
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "estimator_reports_regression",
+        "cross_validation_reports_regression",
+        "comparison_estimator_reports_regression",
+        "comparison_cross_validation_reports_regression",
+    ],
+)
+def test_ipython_completion(fixture_name, request):
+    """Non-regression test for #2386.
+
+    We get no tab completions from IPython if jedi raises an exception, so we
+    check here that jedi can produce completions without errors.
+    """
+    report = request.getfixturevalue(fixture_name)
+    if isinstance(report, tuple):
+        report = report[0]
+    interp = jedi.Interpreter("r.", [{"r": report}])
+    interp.complete(line=1, column=2)

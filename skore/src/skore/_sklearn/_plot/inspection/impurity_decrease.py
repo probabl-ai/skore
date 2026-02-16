@@ -23,6 +23,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         The importances data to display. The columns are:
 
         - `estimator`
+        - `split`
         - `feature`
         - `importance`
 
@@ -294,6 +295,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 x="importance",
                 y="feature",
                 dodge=True,
+                palette="tab10",
                 **boxplot_kwargs,
             )
 

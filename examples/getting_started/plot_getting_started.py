@@ -46,13 +46,14 @@ TableReport(german_credit.frame)
 # Creating our experiment and held-out sets
 # -----------------------------------------
 #
-# We will use skore's enhanced :func:`~skore.train_test_split` function to create our experiment set
-# and a left-out test set. The experiment set will be used for model development and
-# cross-validation, while the left-out set will only be used at the end to validate
-# our final model.
+# We will use skore's enhanced :func:`~skore.train_test_split` function to create our
+# experiment set and a left-out test set. The experiment set will be used for model
+# development and cross-validation, while the left-out set will only be used at the end
+# to validate our final model.
 #
-# Unlike scikit-learn's :func:`~skore.train_test_split`, skore's version provides helpful diagnostics
-# about potential issues with your data split, such as class imbalance.
+# Unlike scikit-learn's :func:`~skore.train_test_split`, skore's version provides
+# helpful diagnostics about potential issues with your data split, such as class
+# imbalance.
 
 # %%
 X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
@@ -60,10 +61,11 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 )
 
 # %%
-# skore tells us we have class-imbalance issues with our data, which we confirm
-# with the :class:`~skore.TableReport` above by clicking on the "class" column and looking at the
-# class distribution: there are only 300 examples where the target is "bad".
-# The second warning concerns time-ordered data, but our data does not contain time-ordered columns so we can safely ignore it.
+# Skore tells us we have class-imbalance issues with our data, which we confirm with the
+# :class:`~skore.TableReport` above by clicking on the "class" column and looking at the
+# class distribution: there are only 300 examples where the target is "bad". The second
+# warning concerns time-ordered data, but our data does not contain time-ordered columns
+# so we can safely ignore it.
 
 # %%
 # Model development with cross-validation
@@ -150,7 +152,7 @@ precision_recall.help()
 # %%
 # .. note::
 #
-#     The output of :meth:`~skore.CrossValidation.precision_recall` is a
+#     The output of :meth:`~skore.CrossValidationReport.metrics.precision_recall` is a
 #     :class:`~skore.Display` object. This is a common pattern in skore which allows us
 #     to access the information in several ways.
 
@@ -188,9 +190,10 @@ coefficients.plot(select_k=15)
 # Model no. 2: Random forest
 # --------------------------
 #
-# Now, we cross-validate a more advanced model using :class:`~sklearn.ensemble.RandomForestClassifier`.
-# Again, we rely on :func:`~skrub.tabular_pipeline` to perform the appropriate
-# preprocessing to use with this model.
+# Now, we cross-validate a more advanced model using
+# :class:`~sklearn.ensemble.RandomForestClassifier`. Again, we rely on
+# :func:`~skrub.tabular_pipeline` to perform the appropriate preprocessing to use with
+# this model.
 
 # %%
 from sklearn.ensemble import RandomForestClassifier
@@ -210,8 +213,8 @@ advanced_cv_report = CrossValidationReport(
 # Comparing our models
 # ====================
 #
-# Now that we have our two models, we need to decide which one should go into production.
-# We can compare them with a :class:`skore.ComparisonReport`.
+# Now that we have our two models, we need to decide which one should go into
+# production. We can compare them with a :class:`skore.ComparisonReport`.
 
 # %%
 from skore import ComparisonReport
@@ -247,10 +250,10 @@ comparison.metrics.precision_recall().plot()
 # Final model evaluation on held-out data
 # =======================================
 #
-# Now that we have chosen to deploy the linear model, we will train it on
-# the full experiment set and evaluate it on our held-out data: training on more data
-# should help performance and we can also validate that our model generalizes well to
-# new data. This can be done in one step with :meth:`~skore.ComparisonReport.create_estimator_report`.
+# Now that we have chosen to deploy the linear model, we will train it on the full
+# experiment set and evaluate it on our held-out data: training on more data should help
+# performance and we can also validate that our model generalizes well to new data. This
+# can be done in one step with :meth:`~skore.ComparisonReport.create_estimator_report`.
 
 # %%
 
@@ -259,7 +262,8 @@ final_report = comparison.create_estimator_report(
 )
 
 # %%
-# This returns a :class:`~skore.EstimatorReport` which has a similar API to the other report classes:
+# This returns a :class:`~skore.EstimatorReport` which has a similar API to the other
+# report classes:
 
 # %%
 final_metrics = final_report.metrics.summarize()
@@ -289,26 +293,29 @@ pd.concat(
 # between our final model and the cross-validation:
 
 # %%
-
-# sphinx_gallery_start_ignore
-# TODO: Use native aggregation when available
-# sphinx_gallery_end_ignore
-
 final_coefficients = final_report.inspection.coefficients()
-final_top_15_features = final_coefficients.frame(select_k=15)["feature"]
+cv_coefficients = simple_cv_report.inspection.coefficients()
 
-simple_coefficients = simple_cv_report.inspection.coefficients()
-cv_top_15_features = (
-    simple_coefficients.frame(select_k=15)
-    .groupby("feature", sort=False)
-    .mean()
-    .drop(columns="split")
-    .reset_index()["feature"]
+features_final_coefficients = final_coefficients.frame(select_k=15)["feature"]
+features_cv_coefficients = cv_coefficients.frame(select_k=15)["feature"]
+
+print(
+    f"Most important features available in both models: "
+    f"{set(features_final_coefficients).intersection(set(features_cv_coefficients))}"
 )
 
-pd.concat(
-    [final_top_15_features, cv_top_15_features], axis="columns", ignore_index=True
+print(
+    f"Most important features available in final model but not in cross-validation: "
+    f"{set(features_final_coefficients).difference(set(features_cv_coefficients))}"
 )
+
+# %%
+# We can further check if there is a drastic difference in the ordering by plotting
+# those features with the largest absolute coefficients.
+
+# %%
+final_coefficients.plot(select_k=15, sorting_order="descending")
+cv_coefficients.plot(select_k=15, sorting_order="descending")
 
 # %%
 # They seem very similar, so we are done!
