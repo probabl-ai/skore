@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from numpy.random import RandomState
@@ -237,7 +237,7 @@ def train_test_split(
     from skore import console  # avoid circular import
 
     for warning_class in TRAIN_TEST_SPLIT_WARNINGS:
-        warning = warning_class.check(**kwargs)
+        warning = cast(Any, warning_class).check(**kwargs)
 
         if warning is not None and (
             not warnings.filters

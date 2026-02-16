@@ -375,7 +375,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     }
                 )
         else:  # multiclass-classification
-            classes = estimators[0].classes_
+            classes = estimators[0].classes_  # type: ignore[assignment]
             for y_true_i, y_pred_i in zip(y_true, y_pred, strict=True):
                 label_binarizer = LabelBinarizer().fit(classes)
                 y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)

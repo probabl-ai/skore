@@ -164,15 +164,3 @@ convention = "numpy"
 
 [tool.ty.src]
 exclude = ["hatch/**", "src/skore/_externals/**", "tests/**"]
-
-[tool.ty.rules]
-unresolved-import = "ignore"
-unknown-argument = "ignore"
-invalid-argument-type = "ignore"
-missing-argument = "ignore"
-call-non-callable = "ignore"
-no-matching-overload = "ignore"
-redundant-cast = "ignore"
-unused-type-ignore-comment = "ignore"
-invalid-assignment = "ignore"
-unresolved-attribute = "ignore"

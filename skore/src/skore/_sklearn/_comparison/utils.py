@@ -1,5 +1,6 @@
 import copy
-from typing import Literal
+from collections.abc import Sequence
+from typing import Literal, cast
 
 import pandas as pd
 
@@ -331,8 +332,7 @@ def _combine_cross_validation_results(
 
     if aggregate:
         if isinstance(aggregate, str):
-            aggregate = [aggregate]
-
+            aggregate = cast(Sequence[Literal["mean", "std"]], [aggregate])
         if "Label / Average" in df.columns:
             index = ["Metric", "Label / Average"]
         else:

@@ -174,7 +174,7 @@ class Summary(DataFrame):
                 range_values = (range_values,)
 
             if column_name == "learner":
-                for dim in self._plot_widget.current_fig.data[0].dimensions:
+                for dim in self._plot_widget.current_fig.data[0].dimensions:  # type: ignore[assignment]
                     if dim["label"] == "Learner":
                         learner_values = dim["ticktext"]
                         learner_codes = dim["tickvals"]

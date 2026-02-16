@@ -388,7 +388,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 )
 
         else:  # multiclass-classification
-            classes = estimators[0].classes_
+            classes = estimators[0].classes_  # type: ignore[assignment]
             # OvR fashion to collect fpr, tpr, and roc_auc
             for y_true_i, y_pred_i in zip(y_true, y_pred, strict=True):
                 label_binarizer = LabelBinarizer().fit(classes)

@@ -392,7 +392,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
 
             if issparse(X_transformed):
-                X_transformed = X_transformed.todense()
+                X_transformed = X_transformed.todense()  # type: ignore[assignment]
 
             display = PermutationImportanceDisplay._compute_data_for_display(
                 data_source=data_source,

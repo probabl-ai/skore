@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Sequence
+from typing import cast
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -64,7 +65,7 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
             return None
 
         if isinstance(y, np.ndarray) and y.ndim >= 2:
-            y = y.flatten()
+            y = cast(np.ndarray, y).flatten()  # type: ignore[assignment]
 
         counter = Counter(y)
         counts = sorted(counter.values())

@@ -256,7 +256,7 @@ class _MetricsAccessor(
             metrics += ["_fit_time", "_predict_time"]
 
         if metric_names is None:
-            metric_names = [None] * len(metrics)  # type: ignore
+            metric_names = [None] * len(metrics)
 
         scores = []
         favorability_indicator = []
@@ -503,7 +503,7 @@ class _MetricsAccessor(
         # to check if the metric has already been computed
         cache_key_parts: list[Any] = [
             self._parent._hash,
-            metric_fn.__name__,
+            metric_fn.__name__,  # type: ignore[assignment]
             data_source,
         ]
 

@@ -153,8 +153,8 @@ class ModelExplorerWidget:
         accordion.add_class("no-padding-accordion")
 
         widget_container = widgets.VBox([accordion], layout=widgets.Layout(flex="1"))
-        widget_container._checkboxes = checkboxes
-        widget_container._get_selected_values = lambda: [
+        widget_container._checkboxes = checkboxes  # type: ignore[assignment]
+        widget_container._get_selected_values = lambda: [  # type: ignore[assignment]
             val for val, cb in checkboxes.items() if cb.value
         ]
 
@@ -314,7 +314,7 @@ class ModelExplorerWidget:
             (self._metrics[metric]["name"], metric) for metric in computation_metrics
         ]
         for task in ["classification", "regression"]:
-            self._computation_metrics_dropdown[task] = (
+            self._computation_metrics_dropdown[task] = (  # type: ignore[assignment]
                 self._create_multi_select_dropdown(
                     options=computation_options,
                     value=[],
@@ -342,7 +342,7 @@ class ModelExplorerWidget:
             metric for metric in regression_statistical if self._metrics[metric]["show"]
         ]
 
-        self._statistical_metrics_dropdown["classification"] = (
+        self._statistical_metrics_dropdown["classification"] = (  # type: ignore[assignment]
             self._create_multi_select_dropdown(
                 options=classification_stat_options,
                 value=classification_stat_default,
@@ -350,7 +350,7 @@ class ModelExplorerWidget:
             )
         )
 
-        self._statistical_metrics_dropdown["regression"] = (
+        self._statistical_metrics_dropdown["regression"] = (  # type: ignore[assignment]
             self._create_multi_select_dropdown(
                 options=regression_stat_options,
                 value=regression_stat_default,
@@ -416,11 +416,11 @@ class ModelExplorerWidget:
         self._dataset_dropdown.observe(self._update_plot, names="value")
         for task in ["classification", "regression"]:
             # Add observers to all checkboxes in the multi-select dropdowns
-            for checkbox in self._computation_metrics_dropdown[
+            for checkbox in self._computation_metrics_dropdown[  # type: ignore[assignment]
                 task
             ]._checkboxes.values():
                 checkbox.observe(self._update_plot, names="value")
-            for checkbox in self._statistical_metrics_dropdown[
+            for checkbox in self._statistical_metrics_dropdown[  # type: ignore[assignment]
                 task
             ]._checkboxes.values():
                 checkbox.observe(self._update_plot, names="value")
@@ -579,10 +579,10 @@ class ModelExplorerWidget:
                 df_dataset[col] = df_dataset[col].cat.remove_unused_categories()
 
             # Get selected metrics from both dropdowns
-            selected_computation_metrics = self._computation_metrics_dropdown[
+            selected_computation_metrics = self._computation_metrics_dropdown[  # type: ignore[assignment]
                 ml_task
             ]._get_selected_values()
-            selected_statistical_metrics = self._statistical_metrics_dropdown[
+            selected_statistical_metrics = self._statistical_metrics_dropdown[  # type: ignore[assignment]
                 ml_task
             ]._get_selected_values()
             selected_metrics = (

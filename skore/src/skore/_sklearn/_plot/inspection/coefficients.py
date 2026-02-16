@@ -418,7 +418,7 @@ class CoefficientsDisplay(DisplayMixin):
                 hue=hue,
                 col=col,
                 kind="bar",
-                **barplot_kwargs,
+                **cast(dict[str, Any], barplot_kwargs),
             )
         else:  # "cross-validation" in report_type
             self.facet_ = sns.catplot(
@@ -429,7 +429,7 @@ class CoefficientsDisplay(DisplayMixin):
                 col=col,
                 kind="strip",
                 dodge=True,
-                **stripplot_kwargs,
+                **cast(dict[str, Any], stripplot_kwargs),
             ).map_dataframe(
                 sns.boxplot,
                 x="coefficient",
@@ -437,7 +437,7 @@ class CoefficientsDisplay(DisplayMixin):
                 hue=hue,
                 palette="tab10" if hue is not None else None,
                 dodge=True,
-                **boxplot_kwargs,
+                **cast(dict[str, Any], barplot_kwargs),
             )
         add_background_features = hue is not None
 

@@ -32,19 +32,19 @@ def _get_feature_names(
         # list and so we need to check if we have an array-like before to make any
         # conversion
         if hasattr(feature_names, "tolist"):
-            return cast(list[str], feature_names.tolist())
+            return cast(Callable[[], list[str]], feature_names.tolist)()
 
         return cast(list[str], feature_names)
 
     elif (
         transformer is not None
         and hasattr(transformer, "get_feature_names_out")
-        and _function_call_succeeds(transformer.get_feature_names_out)
+        and _function_call_succeeds(cast(Callable, transformer.get_feature_names_out))
     ):
-        return transformer.get_feature_names_out().tolist()
+        return cast(Callable, transformer.get_feature_names_out)().tolist()
     elif X is not None:
         if hasattr(X, "columns"):
-            return X.columns.tolist()
+            return X.columns.tolist()  # type: ignore[assignment]
         else:
             return [f"Feature #{i}" for i in range(_num_features(X))]
 
