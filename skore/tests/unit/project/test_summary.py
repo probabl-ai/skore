@@ -9,8 +9,8 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 
+from skore._project._summary import Summary
 from skore._sklearn import ComparisonReport, CrossValidationReport, EstimatorReport
-from skore.project._summary import Summary
 
 
 @fixture
@@ -208,7 +208,7 @@ class TestSummary:
         ]
 
         monkeypatch.setattr(
-            "skore.project._summary.Summary._query_string_selection",
+            "skore._project._summary.Summary._query_string_selection",
             lambda self: "ml_task == 'regression'",
         )
 
@@ -241,7 +241,7 @@ class TestSummary:
         ]
 
         monkeypatch.setattr(
-            "skore.project._summary.Summary._query_string_selection",
+            "skore._project._summary.Summary._query_string_selection",
             lambda self: "ml_task == 'regression'",
         )
 
@@ -436,7 +436,7 @@ class TestSummary:
     ):
         """Without Jupyter deps, Summary shows table and warns instead of widget."""
         monkeypatch.setattr(
-            "skore.project._summary._jupyter_dependencies_available",
+            "skore._project._summary._jupyter_dependencies_available",
             lambda: False,
         )
         project = FakeProject(

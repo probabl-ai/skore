@@ -9,7 +9,7 @@ from httpx import Client, Response
 from pytest import fixture
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.model_selection import train_test_split
 from skore import CrossValidationReport, EstimatorReport
 
@@ -90,6 +90,22 @@ def binary_classification() -> EstimatorReport:
 
     return EstimatorReport(
         RandomForestClassifier(random_state=42),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+
+
+@fixture(scope="module")
+def multiclass_classification() -> EstimatorReport:
+    X, y = make_classification(n_classes=3, n_informative=4, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    return EstimatorReport(
+        LogisticRegression(random_state=42),
         X_train=X_train,
         X_test=X_test,
         y_train=y_train,
