@@ -33,12 +33,19 @@ def report_type(
     report: EstimatorReport | CrossValidationReport,
 ) -> Literal["cross-validation", "estimator"]:
     """Human readable type of a report."""
-    # _report_type is defined on skore._sklearn._base._BaseReport; both report
-    # types inherit it (mypy may not resolve it when type-checking this package)
-    return cast(
-        Literal["cross-validation", "estimator"],
-        report._report_type,  # type: ignore[union-attr]
-    )
+    if hasattr(report, "_report_type"):
+        return cast(
+            Literal["cross-validation", "estimator"],
+            report._report_type,
+        )
+
+    # TODO: remove this when the minimum version of skore is 0.13
+    # it is only necessary for backward compatibility with skore < 0.13
+    if isinstance(report, CrossValidationReport):
+        return "cross-validation"
+    if isinstance(report, EstimatorReport):
+        return "estimator"
+    raise TypeError
 
 
 @dataclass(kw_only=True)
