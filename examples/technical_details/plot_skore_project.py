@@ -24,8 +24,9 @@ from tempfile import TemporaryDirectory
 
 from skore import Project
 
-tmpdir = Path(TemporaryDirectory().name)
-project = Project("example-project", workspace=tmpdir)
+tmp_dir = TemporaryDirectory()
+tmp_path = Path(tmp_dir.name)
+project = Project("example-project", workspace=tmp_path)
 
 # %%
 from sklearn.datasets import load_breast_cancer
@@ -92,4 +93,5 @@ reports.metrics.summarize().frame()
 reports.metrics.roc().plot(subplot_by=None)
 
 # %%
-project.delete("example-project", workspace=tmpdir)
+project.delete("example-project", workspace=tmp_path)
+tmp_dir.cleanup()
