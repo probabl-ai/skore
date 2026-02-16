@@ -212,7 +212,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         self,
         *,
         metric: str | None = None,
-        subplot_by: str | tuple[str, ...] | None = "auto",
+        subplot_by: str | None = "auto",
     ) -> None:
         """Plot the permutation importance.
 
@@ -221,17 +221,14 @@ class PermutationImportanceDisplay(DisplayMixin):
         metric : str or None, default=None
             Metric to plot. Required when multiple metrics are computed.
 
-        subplot_by : str, tuple of str or None, default="auto"
-            Column(s) to use for subplotting. The possible values are:
+        subplot_by : str or None, default="auto"
+            Column to use for subplotting. The possible values are:
 
             - if `"auto"`, depending of the information available, a meaningful decision
               is made to create subplots.
             - if a string, the corresponding column of the dataframe is used to create
-              several subplots. Those plots will be a organized in a grid of a single
+              several subplots. Those plots will be organized in a grid of a single
               row and several columns.
-            - if a tuple of 2 strings, the corresponding columns are used to create
-              subplots in a grid. The first element is the row, the second is the
-              column.
             - if `None`, all information is plotted on a single plot. An error is raised
               if there is too much information to plot on a single plot.
 
@@ -242,7 +239,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         self,
         *,
         metric: str | None = None,
-        subplot_by: str | tuple[str, ...] | None = "auto",
+        subplot_by: str | None = "auto",
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
@@ -277,7 +274,7 @@ class PermutationImportanceDisplay(DisplayMixin):
     def _plot_single_estimator(
         self,
         *,
-        subplot_by: str | tuple[str, ...] | None,
+        subplot_by: str | None,
         frame: pd.DataFrame,
         estimator_name: str,
         boxplot_kwargs: dict[str, Any],
@@ -301,41 +298,29 @@ class PermutationImportanceDisplay(DisplayMixin):
                 col, row = None, None
 
         else:
-            columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-            subplot_cols = (subplot_by,) if isinstance(subplot_by, str) else subplot_by
-            invalid = [c for c in subplot_cols if c not in columns_to_groupby]
-            if invalid:
+            if subplot_by in ("label", "output") and subplot_by not in frame.columns:
                 raise ValueError(
-                    f"The column(s) {invalid} are not available. You can use the "
-                    "following values to create subplots: "
+                    f"Cannot use subplot_by='{subplot_by}' because the selected "
+                    f"metric does not provide per-{subplot_by} information."
+                )
+
+            columns_to_groupby = self._get_columns_to_groupby(frame=frame)
+            if subplot_by not in columns_to_groupby:
+                raise ValueError(
+                    f"The column '{subplot_by}' is not available for subplotting. "
+                    "You can use the following values to create subplots: "
                     f"{', '.join(columns_to_groupby)}"
                 )
 
-            remaining = set(columns_to_groupby) - set(subplot_cols)
+            remaining = set(columns_to_groupby) - {subplot_by}
             if "split" in remaining:
                 frame = self._aggregate_over_split(frame=frame)
                 remaining.remove("split")
                 aggregate_title = "averaged over splits"
 
-            match len(subplot_cols):
-                case 1:
-                    row, col, hue = (
-                        None,
-                        subplot_cols[0],
-                        next(iter(remaining), None),
-                    )
-                case 2:
-                    row, col, hue = (
-                        subplot_cols[0],
-                        subplot_cols[1],
-                        next(iter(remaining), None),
-                    )
-                case _:
-                    raise ValueError(
-                        "Expected 1 to 2 columns for subplot_by, got "
-                        f"{len(subplot_cols)}. You can use the following values: "
-                        f"{', '.join(columns_to_groupby)}"
-                    )
+            col = subplot_by
+            row = None
+            hue = next(iter(remaining), None)
 
         if hue is None:
             # we don't need the palette and we are at risk of raising an error or
