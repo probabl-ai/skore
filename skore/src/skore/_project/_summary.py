@@ -6,13 +6,12 @@ from typing import TYPE_CHECKING
 
 from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
 
-from skore import ComparisonReport
-from skore.project._widget import ModelExplorerWidget
+from skore._project._widget import ModelExplorerWidget
 
 if TYPE_CHECKING:
     from typing import Literal
 
-    from skore import CrossValidationReport, EstimatorReport
+    from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 
 
 class Summary(DataFrame):
@@ -90,6 +89,8 @@ class Summary(DataFrame):
         return_as : {"list", "comparison"}, default="list"
             In what form the reports should be returned.
         """
+        from skore import ComparisonReport
+
         if self.empty:
             return []
 

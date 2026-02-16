@@ -1,13 +1,14 @@
 """Configure storage backend credentials."""
 
-from importlib.metadata import entry_points
 from logging import getLogger
-from typing import Literal
+
+from skore._project import plugin
+from skore._project.types import ProjectMode
 
 logger = getLogger(__name__)
 
 
-def login(*, mode: Literal["hub", "local"] = "hub", **kwargs):
+def login(*, mode: ProjectMode = "hub", **kwargs):
     """
     Login to the storage backend.
 
@@ -55,12 +56,6 @@ def login(*, mode: Literal["hub", "local"] = "hub", **kwargs):
         logger.debug("Login to local storage.")
         return
 
-    mode = "hub"
-    plugins = entry_points(group="skore.plugins.login")
-
-    if mode not in plugins.names:
-        raise ValueError(f"Unknown mode `{mode}`. Please install `skore[{mode}]`.")
-
     logger.debug("Login to hub storage.")
 
-    return plugins[mode].load()(**kwargs)
+    return plugin.get(group="skore.plugins.login", mode="hub")(**kwargs)

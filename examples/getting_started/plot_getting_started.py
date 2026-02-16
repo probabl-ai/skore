@@ -341,7 +341,7 @@ temp_dir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 os.environ["SKORE_WORKSPACE"] = temp_dir.name
 # sphinx_gallery_end_ignore
 
-project = skore.Project(mode="local", name="german_credit_classification")
+project = skore.Project("german_credit_classification")
 
 # %%
 # We store our reports with descriptive keys:

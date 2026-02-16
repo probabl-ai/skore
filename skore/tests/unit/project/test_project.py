@@ -9,7 +9,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 
 from skore import CrossValidationReport, EstimatorReport, Project
-from skore.project._summary import Summary
+from skore._project._summary import Summary
 
 
 class FakeEntryPoint(EntryPoint):
@@ -36,7 +36,7 @@ def FakeHubProject():
 @fixture(autouse=True)
 def monkeypatch_entrypoints(monkeypatch, FakeLocalProject, FakeHubProject):
     monkeypatch.setattr(
-        "skore.project.project.entry_points",
+        "skore._project.plugin.entry_points",
         lambda **kwargs: EntryPoints(
             [
                 FakeEntryPoint(
@@ -108,7 +108,7 @@ class TestProject:
     def test_init_local_unknown_plugin(self, monkeypatch, tmp_path):
         monkeypatch.undo()
         monkeypatch.setattr(
-            "skore.project.project.entry_points", lambda **kwargs: EntryPoints([])
+            "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
         )
 
         with raises(
@@ -133,7 +133,7 @@ class TestProject:
     def test_init_hub_unknown_plugin(self, monkeypatch, tmp_path):
         monkeypatch.undo()
         monkeypatch.setattr(
-            "skore.project.project.entry_points", lambda **kwargs: EntryPoints([])
+            "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
         )
 
         with raises(
@@ -156,7 +156,7 @@ class TestProject:
         project_factory = Mock(return_value=project)
 
         monkeypatch.setattr(
-            "skore.project.project.entry_points",
+            "skore._project.plugin.entry_points",
             lambda **kwargs: EntryPoints(
                 [
                     FakeEntryPoint(

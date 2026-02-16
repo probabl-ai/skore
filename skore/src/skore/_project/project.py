@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import re
-from importlib.metadata import entry_points
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any
 
-from skore import CrossValidationReport, EstimatorReport
+from skore._project import plugin
+from skore._project._summary import Summary
+from skore._project.types import ProjectMode
 from skore._sklearn.types import MLTask
-from skore.project._summary import Summary
 
-Mode = Literal["hub", "local"]
+if TYPE_CHECKING:
+    from skore import CrossValidationReport, EstimatorReport
 
 
 class Project:
@@ -142,9 +143,7 @@ class Project:
     __HUB_NAME_PATTERN = re.compile(r"(?P<workspace>[^/]+)/(?P<name>.+)")
 
     @staticmethod
-    def __setup_plugin(mode: Mode, name: str) -> tuple[Any, dict]:
-        PLUGINS = entry_points(group="skore.plugins.project")
-
+    def __setup_plugin(mode: ProjectMode, name: str) -> tuple[Any, dict]:
         if mode == "hub":
             if not (match := re.match(Project.__HUB_NAME_PATTERN, name)):
                 raise ValueError(
@@ -156,12 +155,9 @@ class Project:
         else:
             parameters = {"name": name}
 
-        if mode not in PLUGINS.names:
-            raise ValueError(f"Unknown mode `{mode}`. Please install `skore[{mode}]`.")
+        return plugin.get(group="skore.plugins.project", mode=mode), parameters
 
-        return PLUGINS[mode].load(), parameters
-
-    def __init__(self, name: str, *, mode: Mode, **kwargs):
+    def __init__(self, name: str, *, mode: ProjectMode = "local", **kwargs):
         r"""
         Initialize a project.
 
@@ -169,7 +165,7 @@ class Project:
         ----------
         name : str
             The name of the project.
-        mode : {"hub", "local"}
+        mode : {"hub", "local"}, default "local"
             The mode of the project.
         **kwargs : dict
             Extra keyword arguments passed to the project, depending on its mode.
@@ -235,6 +231,8 @@ class Project:
         TypeError
             If the combination of parameters are not valid.
         """
+        from skore import CrossValidationReport, EstimatorReport
+
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
@@ -282,7 +280,7 @@ class Project:
         return self.__project.__repr__()
 
     @staticmethod
-    def delete(name: str, *, mode: Mode, **kwargs):
+    def delete(name: str, *, mode: ProjectMode = "local", **kwargs):
         r"""
         Delete a project.
 
@@ -290,7 +288,7 @@ class Project:
         ----------
         name : str
             The name of the project.
-        mode : {"hub", "local"}
+        mode : {"hub", "local"}, default "local"
             The mode of the project.
         **kwargs : dict
             Extra keyword arguments passed to the project, depending on its mode.
