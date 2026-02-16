@@ -1,9 +1,7 @@
 """Package that provides APIs to communicate between ``skore`` and ``skore hub``."""
 
-import logging
 from base64 import b64decode, b64encode
-from collections.abc import Iterator
-from contextlib import contextmanager
+from logging import basicConfig, getLogger
 
 from rich.console import Console
 from rich.theme import Theme
@@ -13,12 +11,11 @@ __all__ = [
     "b64_str_to_bytes",
     "bytes_to_b64_str",
     "console",
-    "switch_mpl_backend",
 ]
 
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
+basicConfig()
+logger = getLogger(__name__)
 
 console = Console(
     width=88,
@@ -40,27 +37,3 @@ def b64_str_to_bytes(literal: str) -> bytes:
 def bytes_to_b64_str(literal: bytes) -> str:
     """Encode the bytes-like object ``literal`` in a Base64 str."""
     return b64encode(literal).decode("utf-8")
-
-
-@contextmanager
-def switch_mpl_backend() -> Iterator[None]:
-    """
-    Context-manager for switching ``matplotlib.backend`` to ``agg``.
-
-    Notes
-    -----
-    The ``agg`` backend is a non-interactive backend that can only write to files.
-    It is used in ``skore-hub-project`` to generate artifacts where we don't need an
-    X display.
-
-    https://matplotlib.org/stable/users/explain/figure/backends.html#selecting-a-backend
-    """
-    import matplotlib
-
-    original_backend = matplotlib.get_backend()
-
-    try:
-        matplotlib.use("agg")
-        yield
-    finally:
-        matplotlib.use(original_backend)

@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from numpy.typing import ArrayLike
-from rich.panel import Panel
 from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
@@ -38,7 +37,7 @@ def _generate_estimator_report(
     pos_label: PositiveLabel | None,
     train_indices: ArrayLike,
     test_indices: ArrayLike,
-) -> EstimatorReport | KeyboardInterrupt | Exception:
+) -> EstimatorReport:
     if y is None:
         # In the case of clustering, we do not have y
         y_train = None
@@ -46,29 +45,22 @@ def _generate_estimator_report(
     else:
         y_train = _safe_indexing(y, train_indices)
         y_test = _safe_indexing(y, test_indices)
-    try:
-        return EstimatorReport(
-            estimator,
-            fit=True,
-            X_train=_safe_indexing(X, train_indices),
-            y_train=y_train,
-            X_test=_safe_indexing(X, test_indices),
-            y_test=y_test,
-            pos_label=pos_label,
-        )
-    except (KeyboardInterrupt, Exception) as e:
-        return e
+    return EstimatorReport(
+        estimator,
+        fit=True,
+        X_train=_safe_indexing(X, train_indices),
+        y_train=y_train,
+        X_test=_safe_indexing(X, test_indices),
+        y_test=y_test,
+        pos_label=pos_label,
+    )
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
     """Report for cross-validation results.
 
     Upon initialization, `CrossValidationReport` will clone ``estimator`` according to
-    ``splitter`` and fit the generated estimators. The fitting is done in parallel,
-    and can be interrupted: the estimators that have been fitted can be accessed even if
-    the full cross-validation process did not complete. In particular,
-    `KeyboardInterrupt` exceptions are swallowed and will only interrupt the
-    cross-validation process, rather than the entire program.
+    ``splitter`` and fit the generated estimators. The fitting is done in parallel.
 
     Refer to the :ref:`cross_validation_report` section of the user guide for more
     details.
@@ -171,14 +163,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self.n_jobs = n_jobs
 
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
+        self._initialize_state()
 
+    def _initialize_state(self) -> None:
+        """Initialize/reset the random number generator, hash, and cache."""
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
         self._ml_task = _find_ml_task(
-            y, estimator=self.estimator_reports_[0]._estimator
+            self._y, estimator=self.estimator_reports_[0]._estimator
         )
 
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
@@ -196,7 +191,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
 
         # do not split the data to take advantage of the memory mapping
-        estimator_reports = list(
+        return list(
             track(
                 parallel(
                     delayed(_generate_estimator_report)(
@@ -213,55 +208,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 total=len(self.split_indices),
             )
         )
-
-        warn_msg = None
-        if not any(isinstance(report, EstimatorReport) for report in estimator_reports):
-            traceback_msg = "\n".join(str(exc) for exc in estimator_reports)
-            raise RuntimeError(
-                "Cross-validation failed: no estimators were successfully fitted. "
-                "Please check your data, estimator, or cross-validation setup.\n"
-                f"Traceback: \n{traceback_msg}"
-            )
-        elif any(isinstance(report, Exception) for report in estimator_reports):
-            msg_traceback = "\n".join(
-                str(exc) for exc in estimator_reports if isinstance(exc, Exception)
-            )
-            warn_msg = (
-                "Cross-validation process was interrupted by an error before "
-                "all estimators could be fitted; CrossValidationReport object "
-                "might not contain all the expected results.\n"
-                f"Traceback: \n{msg_traceback}"
-            )
-            estimator_reports = [
-                report
-                for report in estimator_reports
-                if not isinstance(report, Exception)
-            ]
-        if any(isinstance(report, KeyboardInterrupt) for report in estimator_reports):
-            warn_msg = (
-                "Cross-validation process was interrupted manually before all "
-                "estimators could be fitted; CrossValidationReport object "
-                "might not contain all the expected results."
-            )
-            estimator_reports = [
-                report
-                for report in estimator_reports
-                if not isinstance(report, KeyboardInterrupt)
-            ]
-
-        if warn_msg is not None:
-            from skore import console  # avoid circular import
-
-            console.print(
-                Panel(
-                    title="Cross-validation interrupted",
-                    renderable=warn_msg,
-                    style="orange1",
-                    border_style="cyan",
-                )
-            )
-
-        return estimator_reports
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -482,10 +428,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     @pos_label.setter
     def pos_label(self, value: PositiveLabel | None) -> None:
-        raise AttributeError(
-            "The pos_label attribute is immutable. "
-            f"Call the constructor of {self.__class__.__name__} to create a new report."
-        )
+        self._pos_label = value
+        self._initialize_state()
+        for estimator_report in self.estimator_reports_:
+            estimator_report.pos_label = value
 
     ####################################################################################
     # Methods related to the help and repr

@@ -4,72 +4,105 @@ import pytest
 from skore import EstimatorReport
 
 
-def test_legend(
-    pyplot,
-    estimator_reports_regression_figure_axes,
-):
+@pytest.mark.parametrize(
+    "task, n_legend_entries",
+    [("regression", 1), ("multioutput_regression", 3)],
+)
+def test_legend(pyplot, task, n_legend_entries, request):
     """Check the legend of the prediction error plot."""
-    figure, _ = estimator_reports_regression_figure_axes
+    figure, _ = request.getfixturevalue(f"estimator_reports_{task}_figure_axes")
     assert len(figure.legends) == 1
     legend = figure.legends[0]
     legend_texts = [t.get_text() for t in legend.get_texts()]
-    assert len(legend_texts) == 1
-    assert legend_texts[0] == "Perfect predictions"
+    assert len(legend_texts) == n_legend_entries
+    if task == "multioutput_regression":
+        assert legend_texts[0] == "Output #0"
+        assert legend_texts[1] == "Output #1"
+    assert legend_texts[-1] == "Perfect predictions"
 
 
-def test_legend_actual_vs_predicted(
-    pyplot,
-    estimator_reports_regression,
-):
+@pytest.mark.parametrize(
+    "task, n_legend_entries",
+    [("regression", 1), ("multioutput_regression", 3)],
+)
+def test_legend_actual_vs_predicted(pyplot, task, n_legend_entries, request):
     """Check the legend when kind is actual_vs_predicted."""
-    report = estimator_reports_regression[0]
+    report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
     legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
-    assert len(legend_texts) == 1
-    assert legend_texts[0] == "Perfect predictions"
+    assert len(legend_texts) == n_legend_entries
+    if task == "multioutput_regression":
+        assert legend_texts[0] == "Output #0"
+        assert legend_texts[1] == "Output #1"
+    assert legend_texts[-1] == "Perfect predictions"
 
 
-def test_invalid_subplot_by(estimator_reports_regression):
+@pytest.mark.parametrize(
+    "task, valid_values",
+    [
+        ("regression", ["auto", "None"]),
+        ("multioutput_regression", ["auto", "output", "None"]),
+    ],
+)
+def test_invalid_subplot_by(pyplot, task, valid_values, request):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `subplot_by` argument.
     """
-    report = estimator_reports_regression[0]
+    report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.metrics.prediction_error()
     with pytest.raises(
         ValueError,
         match=(
             "Invalid `subplot_by` parameter. Valid options are: "
-            "auto, None. Got 'invalid' instead."
+            f"{', '.join(valid_values)}. Got 'invalid' instead."
         ),
     ):
         display.plot(subplot_by="invalid")
 
 
-@pytest.mark.parametrize("subplot_by", [None, "auto"])
-def test_valid_subplot_by(pyplot, estimator_reports_regression, subplot_by):
+@pytest.mark.parametrize(
+    "fixture_name, subplot_by_tuples",
+    [
+        ("estimator_reports_regression", [(None, 0)]),
+        (
+            "estimator_reports_multioutput_regression",
+            [("output", 2), (None, 0)],
+        ),
+    ],
+)
+def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
     """Check that we can pass valid values to `subplot_by`."""
-    report = estimator_reports_regression[0]
+    report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.prediction_error()
-    display.plot(subplot_by=subplot_by)
-    assert isinstance(display.ax_, mpl.axes.Axes)
+    for subplot_by, expected_len in subplot_by_tuples:
+        display.plot(subplot_by=subplot_by)
+        if subplot_by is None:
+            assert isinstance(display.ax_, mpl.axes.Axes)
+        else:
+            assert len(display.ax_) == expected_len
 
 
-def test_subplot_by_data_source(pyplot, estimator_reports_regression):
+@pytest.mark.parametrize("task", ["regression", "multioutput_regression"])
+def test_subplot_by_data_source(pyplot, task, request):
     """Check the behaviour when `subplot_by` is `data_source`."""
-    report = estimator_reports_regression[0]
+    report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.metrics.prediction_error(data_source="both")
     display.plot(subplot_by="data_source")
     assert isinstance(display.ax_[0], mpl.axes.Axes)
     assert len(display.ax_) == 2
     legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
-    assert len(legend_texts) == 1
-    assert legend_texts[0] == "Perfect predictions"
+    assert len(legend_texts) == 1 if task == "regression" else 2
+    assert legend_texts[-1] == "Perfect predictions"
+    if task == "multioutput_regression":
+        assert legend_texts[0] == "Output #0"
+        assert legend_texts[1] == "Output #1"
 
 
-def test_source_both(pyplot, estimator_reports_regression):
+@pytest.mark.parametrize("task", ["regression", "multioutput_regression"])
+def test_source_both(pyplot, task, request):
     """Check the behaviour of the plot when data_source='both'."""
-    report = estimator_reports_regression[0]
+    report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.metrics.prediction_error(data_source="both")
     display.plot()
     assert len(display.figure_.legends) == 1
@@ -77,6 +110,9 @@ def test_source_both(pyplot, estimator_reports_regression):
     assert legend_texts[-1] == "Perfect predictions"
     assert "train" in legend_texts
     assert "test" in legend_texts
+    if task == "multioutput_regression":
+        assert "0" in legend_texts
+        assert "1" in legend_texts
 
 
 @pytest.mark.parametrize(

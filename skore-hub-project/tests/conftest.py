@@ -4,6 +4,7 @@ from importlib import reload
 from unittest.mock import Mock
 from urllib.parse import urljoin
 
+import numpy as np
 from httpx import Client, Response
 from pytest import fixture
 from sklearn.datasets import make_classification, make_regression
@@ -110,6 +111,60 @@ def small_cv_binary_classification() -> CrossValidationReport:
     return CrossValidationReport(
         RandomForestClassifier(random_state=42), X, y, splitter=2
     )
+
+
+def _make_binary_estimator_report_string_labels(*, pos_label=None):
+    """Binary classification with string y labels ('negative', 'positive')."""
+    X, y = make_classification(random_state=42)
+    labels = np.array(["negative", "positive"])
+    y = labels[y]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    report = EstimatorReport(
+        RandomForestClassifier(random_state=42),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        pos_label=pos_label,
+    )
+    return report
+
+
+def _make_cv_binary_report_string_labels(*, pos_label=None):
+    """Cross-validation binary classification with string y labels."""
+    X, y = make_classification(random_state=42, n_samples=50)
+    labels = np.array(["negative", "positive"])
+    y = labels[y]
+    report = CrossValidationReport(
+        RandomForestClassifier(random_state=42), X, y, splitter=2, pos_label=pos_label
+    )
+    return report
+
+
+@fixture(scope="module")
+def binary_classification_string_labels() -> EstimatorReport:
+    """Binary classification with string labels, pos_label not set."""
+    return _make_binary_estimator_report_string_labels()
+
+
+@fixture(scope="module")
+def binary_classification_string_labels_with_pos_label() -> EstimatorReport:
+    """Binary classification with string labels and pos_label='positive'."""
+    return _make_binary_estimator_report_string_labels(pos_label="positive")
+
+
+@fixture(scope="module")
+def cv_binary_classification_string_labels() -> CrossValidationReport:
+    """CV binary classification with string labels, pos_label not set."""
+    return _make_cv_binary_report_string_labels()
+
+
+@fixture(scope="module")
+def cv_binary_classification_string_labels_with_pos_label() -> CrossValidationReport:
+    """CV binary classification with string labels and pos_label='positive'."""
+    return _make_cv_binary_report_string_labels(pos_label="positive")
 
 
 @fixture

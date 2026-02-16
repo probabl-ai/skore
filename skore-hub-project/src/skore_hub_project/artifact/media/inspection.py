@@ -7,9 +7,8 @@ from collections.abc import Callable
 from functools import reduce
 from typing import ClassVar, Literal, cast
 
-from orjson import OPT_NON_STR_KEYS, OPT_SERIALIZE_NUMPY, dumps
-
 from skore_hub_project.artifact.media.media import Media, Report
+from skore_hub_project.json import dumps
 from skore_hub_project.protocol import Display, EstimatorReport
 
 
@@ -29,10 +28,7 @@ class Inspection(Media[Report], ABC):  # noqa: D101
         display = function()
         frame = display.frame()
 
-        return dumps(
-            frame.fillna("NaN").to_dict(orient="tight"),
-            option=(OPT_NON_STR_KEYS | OPT_SERIALIZE_NUMPY),
-        )
+        return dumps(frame.fillna("NaN").to_dict(orient="tight"))
 
 
 class PermutationImportance(Inspection[EstimatorReport], ABC):  # noqa: D101
@@ -55,10 +51,7 @@ class PermutationImportance(Inspection[EstimatorReport], ABC):  # noqa: D101
             ):
                 frame = display.frame()
 
-                return dumps(
-                    frame.fillna("NaN").to_dict(orient="tight"),
-                    option=(OPT_NON_STR_KEYS | OPT_SERIALIZE_NUMPY),
-                )
+                return dumps(frame.fillna("NaN").to_dict(orient="tight"))
 
         return None
 
