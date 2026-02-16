@@ -23,11 +23,11 @@ from typing import (
 from unicodedata import normalize
 
 import joblib
-import orjson
 from httpx import HTTPStatusError
 from sklearn.utils.validation import _check_pos_label_consistency
 
 from skore_hub_project.client.client import Client, HUBClient
+from skore_hub_project.json import dumps
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 P = ParamSpec("P")
@@ -265,7 +265,7 @@ class Project:
             endpoint = "cross-validation-reports"
 
         payload_dict = payload.model_dump()
-        payload_json_bytes = orjson.dumps(payload_dict, option=orjson.OPT_NON_STR_KEYS)
+        payload_json_bytes = dumps(payload_dict)
 
         with HUBClient() as hub_client:
             hub_client.post(
