@@ -140,6 +140,11 @@ class TestProject:
         with warns(UserWarning, match=warn_msg), raises(ValueError, match=err_msg):
             Project("myworkspace", "あいうえお")
 
+    def test_name_too_long(self):
+        err_msg = "Project name must be no more than 64 characters long."
+        with raises(ValueError, match=err_msg):
+            Project("myworkspace", "a" * 500)
+
     def test_put_exception(
         self,
         respx_mock,
