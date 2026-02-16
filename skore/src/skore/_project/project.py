@@ -151,8 +151,10 @@ class Project:
                 )
 
             parameters = {"workspace": match["workspace"], "name": match["name"]}
-        else:
+        elif mode == "local":
             parameters = {"name": name}
+        else:
+            raise ValueError(f'`mode` must be "hub" or "local" (found {mode})')
 
         return plugin.get(group="skore.plugins.project", mode=mode), parameters
 
@@ -182,9 +184,6 @@ class Project:
                 - on Linux, usually ``${HOME}/.cache/skore``,
                 - on macOS, usually ``${HOME}/Library/Caches/skore``.
         """
-        if mode not in ("hub", "local"):
-            raise ValueError(f'`mode` must be "hub" or "local" (found {mode})')
-
         plugin, parameters = Project.__setup_plugin(mode, name)
 
         self.__mode = mode
@@ -307,9 +306,6 @@ class Project:
                 - on Linux, usually ``${HOME}/.cache/skore``,
                 - on macOS, usually ``${HOME}/Library/Caches/skore``.
         """
-        if mode not in ("hub", "local"):
-            raise ValueError(f'`mode` must be "hub" or "local" (found {mode})')
-
         plugin, parameters = Project.__setup_plugin(mode, name)
 
         return plugin.delete(**(kwargs | parameters))
