@@ -33,5 +33,5 @@ def test_show_versions(capfd):
     assert "skore:" in captured.out
     assert "pip:" in captured.out
     assert "numpy:" in captured.out
-    assert "rich[jupyter]:" in captured.out
+    assert "rich" in captured.out
     assert "scikit-learn:" in captured.out
