@@ -242,8 +242,10 @@ jobs:
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     needs: [sphinx-version, sphinx-build]
+    environment: prod
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -256,20 +258,29 @@ jobs:
           name: sphinx-html-artifact
           path: html/
 
-      - name: Deploy HTML artifacts
-        uses: ./.github/actions/sphinx/deploy
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
         with:
-          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
+          role-to-assume: ${{ vars.AWS_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy HTML artifacts
+        uses: ./.github/actions/sphinx/deploy-aws
+        with:
           BUCKET: ${{ vars.DOCUMENTATION_BUCKET }}
+          ROLE_TO_ASSUME: ${{ vars.AWS_ROLE }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
           SOURCE: html/
           DESTINATION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}/
 
   sphinx-deploy-root-files:
     if: ${{ (github.event_name == 'push') && (github.ref_type == 'tag') }}
     runs-on: ubuntu-latest
+    environment: prod
     needs: [sphinx-version, sphinx-build, sphinx-deploy-html]
     permissions:
       contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -329,16 +340,20 @@ jobs:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
           SPHINX_URL: https://${{ vars.DOCUMENTATION_DOMAIN }}
-      - uses: ./.github/actions/sphinx/deploy
+      - uses: ./.github/actions/sphinx/deploy-aws
         with:
-          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
           BUCKET: ${{ vars.DOCUMENTATION_BUCKET }}
-          ACTION: copy
+          ROLE_TO_ASSUME: ${{ vars.AWS_ROLE }}
+          DELETE: false
+          AWS_REGION: ${{ vars.AWS_REGION }}
           SOURCE: artifacts/
           DESTINATION:
 
   sphinx-purge-cdn-cache:
     runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      id-token: write
     #
     # Using `if: ${{ (! cancelled()) && contains(needs.*.result, 'success') }}` at
     # __job level__ doesn't work as expected. It always returns true if one of the needs
@@ -351,14 +366,17 @@ jobs:
       - sphinx-deploy-html
       - sphinx-deploy-root-files
     steps:
-      - run: |
-          curl --fail-with-body \
-          -X POST \
-          --url "https://api.bunny.net/pullzone/${PULLZONE}/purgeCache" \
-          --header "AccessKey: ${ACCESS_KEY}"
-        env:
-          PULLZONE: ${{ vars.BUNNY_PULLZONE }}
-          ACCESS_KEY: ${{ secrets.BUNNY_API_KEY }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
 
   sphinx-clean-artifacts:
     runs-on: ubuntu-latest
