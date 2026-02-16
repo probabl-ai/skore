@@ -13,7 +13,7 @@ def dumps(obj: Any, /) -> bytes:
     def default(obj: Any) -> str:
         if isinstance(obj, datetime):
             return obj.isoformat()
-        raise TypeError
+        raise TypeError()
 
     return orjson_dumps(
         obj,
