@@ -29,9 +29,8 @@ class Inspection(Media[Report], ABC):  # noqa: D101
 
         display = function()
         # FIXME: in the future, all inspection methods should have an aggregate
-        # parameter and we should be sending unaggreagted data to the hub.
-        sig = inspect.signature(display.frame)
-        if "aggregate" in sig.parameters:
+        # parameter and we should be sending unaggregated data to the hub.
+        if "aggregate" in inspect.signature(display.frame).parameters:
             frame = display.frame(aggregate=None)
         else:
             frame = display.frame()
