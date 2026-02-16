@@ -47,7 +47,13 @@ class Pickle(Artifact):
         -----
         The report is pickled without its cache, to avoid salting the checksum.
         """
-        reports = [self.report] + getattr(self.report, "reports_", [])
+        reports = [self.report]
+        if hasattr(self.report, "reports_"):
+            reports.extend(self.report.reports_)
+        elif hasattr(self.report, "estimator_reports_"):
+            # TODO: remove this when the minimum version of skore is 0.13
+            # it is only necessary for backward compatibility with skore < 0.13
+            reports.extend(self.report.estimator_reports_)
         caches = [report_to_clear._cache for report_to_clear in reports]
 
         self.report.clear_cache()
