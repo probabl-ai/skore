@@ -37,47 +37,20 @@ repos:
     - id: ty
       alias: ty-skore
       name: ty skore/
-      entry: ty check --project skore skore
-      language: python
+      entry: uv run ty check --project skore
+      language: system
       pass_filenames: false
-      additional_dependencies:
-        - ty
-        - IPython
-        - anywidget
-        - ipywidgets
-        - joblib
-        - matplotlib
-        - numpy
-        - pandas
-        - plotly
-        - rich
-        - scikit-learn
-        - skrub
-        - seaborn
-        - polars
-        - pyarrow
 
     - id: ty
       alias: ty-skore-hub-project
       name: ty skore-hub-project/
-      entry: ty check --project skore-hub-project skore-hub-project
-      language: python
+      entry: uv run ty check --project skore-hub-project
+      language: system
       pass_filenames: false
-      additional_dependencies:
-        - ty
-        - skore
-        - blake3
-        - httpx
-        - orjson
-        - pandas-stubs
-        - pydantic
 
     - id: ty
       alias: ty-skore-local-project
       name: ty skore-local-project/
-      entry: ty check --project skore-local-project skore-local-project
-      language: python
+      entry: uv run ty check --project skore-local-project
+      language: system
       pass_filenames: false
-      additional_dependencies:
-        - ty
-        - skore
