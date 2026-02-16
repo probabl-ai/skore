@@ -125,7 +125,7 @@ class MockReport(_BaseReport):
 class MockAccessor(_BaseAccessor):
     """Minimal accessor for testing."""
 
-    _verbose_name = "mock_accessor"
+    _accessor_name = "mock_accessor"  # registering an accessor will set this attribute
 
     def __init__(self, parent):
         super().__init__(parent)
