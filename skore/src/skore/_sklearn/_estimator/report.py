@@ -30,6 +30,9 @@ if TYPE_CHECKING:
         _InspectionAccessor,
     )
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
+    from skore._sklearn._plot.inspection.permutation_importance import (
+        PermutationImportanceDisplay,
+    )
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
@@ -109,6 +112,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
     data: _DataAccessor
+    _cached_permutation_importance_displays: dict[
+        tuple[Any, ...], PermutationImportanceDisplay
+    ]
 
     @staticmethod
     def _fit_estimator(
@@ -187,6 +193,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
+        self._cached_permutation_importance_displays = {}
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
 
     # NOTE:
@@ -215,6 +222,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         {}
         """
         self._cache = Cache()
+        self._cached_permutation_importance_displays = {}
 
     def cache_predictions(
         self,

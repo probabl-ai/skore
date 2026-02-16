@@ -29,6 +29,7 @@ class EstimatorReport(Protocol):
     clear_cache: Any
     _cache: Any
     metrics: Any
+    inspection: Any
     data: Any
     ml_task: str
     estimator: Any

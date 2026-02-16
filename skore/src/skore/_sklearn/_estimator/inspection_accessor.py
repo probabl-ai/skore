@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -37,6 +38,33 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
+
+    def _permutation_importance_lookup_key(
+        self,
+        *,
+        data_source: DataSource,
+        at_step: int | str,
+        metric: Metric,
+    ) -> tuple[Any, ...]:
+        return cast(
+            "tuple[Any, ...]",
+            deep_key_sanitize(("permutation_importance", data_source, at_step, metric)),
+        )
+
+    def get_cached_permutation_importance(
+        self,
+        *,
+        data_source: DataSource,
+        at_step: int | str = 0,
+        metric: Metric = None,
+    ) -> PermutationImportanceDisplay | None:
+        """Get a previously computed permutation importance display from cache."""
+        lookup_key = self._permutation_importance_lookup_key(
+            data_source=data_source,
+            at_step=at_step,
+            metric=metric,
+        )
+        return self._parent._cached_permutation_importance_displays.get(lookup_key)
 
     @available_if(_check_estimator_has_coef())
     def coefficients(self) -> CoefficientsDisplay:
@@ -327,6 +355,11 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         # n_jobs should not be in cache
         kwargs = {"n_repeats": n_repeats, "max_samples": max_samples, "seed": seed}
+        lookup_key = self._permutation_importance_lookup_key(
+            data_source=data_source,
+            at_step=at_step,
+            metric=metric,
+        )
         cache_key = deep_key_sanitize(
             (
                 self._parent._hash,
@@ -401,6 +434,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if cache_key is not None:
                 # NOTE: for the moment, we will always store the permutation importance
                 self._parent._cache[cache_key] = display
+        self._parent._cached_permutation_importance_displays[lookup_key] = display
 
         return display
 

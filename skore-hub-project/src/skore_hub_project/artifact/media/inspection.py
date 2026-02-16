@@ -40,27 +40,19 @@ class PermutationImportance(Inspection[EstimatorReport], ABC):  # noqa: D101
     name: Literal["permutation_importance"] = "permutation_importance"
 
     def content_to_upload(self) -> bytes | None:  # noqa: D102
-        for key, display in reversed(list(self.report._cache.items())):
-            if len(key) < 6:
-                continue
+        display = self.report.inspection.get_cached_permutation_importance(
+            data_source=self.data_source,
+            at_step=0,
+            metric=None,
+        )
+        if display is None:
+            return None
 
-            parent_hash, name, data_source, at_step, _, metric, *_ = key
-
-            if (
-                parent_hash == self.report._hash
-                and name == "permutation_importance"
-                and data_source == self.data_source
-                and at_step == 0
-                and metric is None
-            ):
-                frame = display.frame()
-
-                return dumps(
-                    frame.fillna("NaN").to_dict(orient="tight"),
-                    option=(OPT_NON_STR_KEYS | OPT_SERIALIZE_NUMPY),
-                )
-
-        return None
+        frame = display.frame()
+        return dumps(
+            frame.fillna("NaN").to_dict(orient="tight"),
+            option=(OPT_NON_STR_KEYS | OPT_SERIALIZE_NUMPY),
+        )
 
 
 class PermutationImportanceTrain(PermutationImportance):  # noqa: D101
