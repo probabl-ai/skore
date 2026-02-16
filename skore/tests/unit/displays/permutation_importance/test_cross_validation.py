@@ -44,7 +44,7 @@ def test_binary_classification_averaged_metrics(
     assert df["split"].nunique() == splitter
     assert df["estimator"].nunique() == 1
 
-    df_frame = display.frame(metric="accuracy")
+    df_frame = display.frame(metrics="accuracy")
     expected_frame_columns = [
         "data_source",
         "metric",
@@ -55,7 +55,7 @@ def test_binary_classification_averaged_metrics(
     ]
     assert sorted(df_frame.columns.tolist()) == sorted(expected_frame_columns)
 
-    display.plot(metric="accuracy")
+    display.plot()
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
@@ -104,7 +104,7 @@ def test_single_output_regression(
     assert df["metric"].unique() == ["r2"]
     assert df["split"].nunique() == 2
 
-    df_frame = display.frame(metric="r2")
+    df_frame = display.frame(metrics="r2")
     expected_frame_columns = [
         "data_source",
         "metric",
@@ -115,7 +115,7 @@ def test_single_output_regression(
     ]
     assert sorted(df_frame.columns.tolist()) == sorted(expected_frame_columns)
 
-    display.plot(metric="r2")
+    display.plot()
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
     assert isinstance(display.ax_, mpl.axes.Axes)
@@ -139,7 +139,7 @@ def test_subplot_by_split(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source="train", seed=0
     )
-    display.plot(metric="accuracy", subplot_by="split")
+    display.plot(subplot_by="split")
 
     assert isinstance(display.ax_, np.ndarray)
     assert len(display.ax_.flatten()) == splitter
@@ -165,7 +165,7 @@ def test_subplot_by_label_aggregates_split_in_remaining(
     n_classes = len(report.estimator_reports_[0].estimator_.classes_)
 
     display = report.inspection.permutation_importance(
-        n_repeats=2, data_source="train", metric=metric, seed=0
+        n_repeats=2, data_source="train", metrics=metric, seed=0
     )
     display.plot(metric="precision score", subplot_by="label")
 
@@ -193,7 +193,7 @@ def test_subplot_by_tuple_label_split(
     splitter = len(report.estimator_reports_)
 
     display = report.inspection.permutation_importance(
-        n_repeats=2, data_source="train", metric=metric, seed=0
+        n_repeats=2, data_source="train", metrics=metric, seed=0
     )
     display.plot(metric="precision score", subplot_by=("label", "split"))
 
@@ -222,7 +222,7 @@ def test_subplot_by_auto_single_metric_multiclass(
     metric = make_scorer(precision_score, average=None)
 
     display = report.inspection.permutation_importance(
-        n_repeats=2, data_source="train", metric=metric, seed=0
+        n_repeats=2, data_source="train", metrics=metric, seed=0
     )
     display.plot(metric="precision score", subplot_by="auto")
 
@@ -250,7 +250,7 @@ def test_subplot_by_None_averaged_over_splits(
     display = report.inspection.permutation_importance(
         n_repeats=2, data_source="train", seed=0
     )
-    display.plot(metric="accuracy", subplot_by=None)
+    display.plot(subplot_by=None)
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert len(display.facet_.legend.get_texts()) == 0
@@ -277,14 +277,14 @@ def test_frame_metric_parameter(
     display = report.inspection.permutation_importance(
         n_repeats=2,
         data_source="train",
-        metric=["r2", "neg_mean_squared_error"],
+        metrics=["r2", "neg_mean_squared_error"],
         seed=0,
     )
 
     df_all = display.frame()
     assert set(df_all["metric"].unique()) == {"r2", "neg_mean_squared_error"}
 
-    df_filtered = display.frame(metric="r2")
+    df_filtered = display.frame(metrics="r2")
     assert set(df_filtered["metric"].unique()) == {"r2"}
 
 
@@ -302,4 +302,4 @@ def test_subplot_by_invalid_column_raises_error(
         r"following values to create subplots:"
     )
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(metric="accuracy", subplot_by="label")
+        display.plot(subplot_by="label")

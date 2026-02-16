@@ -21,7 +21,7 @@ from skore._utils._accessor import (
     _check_cross_validation_sub_estimator_has_feature_importances,
 )
 
-Metric = str | Callable | list[str] | tuple[str] | dict[str, Callable] | None
+Metrics = str | Callable | list[str] | tuple[str] | dict[str, Callable] | None
 
 
 class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
@@ -83,7 +83,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         at_step: int | str = 0,
-        metric: Metric = None,
+        metrics: Metrics = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
         n_jobs: int | None = None,
@@ -135,15 +135,15 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
             Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
 
-        metric : str, callable, list, tuple, or dict, default=None
-            The metric to pass to :func:`~sklearn.inspection.permutation_importance`.
+        metrics : str, callable, list, tuple, or dict, default=None
+            The metrics to pass to :func:`~sklearn.inspection.permutation_importance`.
 
-            If `metric` represents a single metric, one can use:
+            If `metrics` represents a single metric, one can use:
 
             - a single string, which must be one of the supported metrics;
             - a callable that returns a single value.
 
-            If `metric` represents multiple metrics, one can use:
+            If `metrics` represents multiple metrics, one can use:
 
             - a list or tuple of unique strings, which must be one of the supported
               metrics;
@@ -195,7 +195,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         ... ).frame(aggregate=None)
 
         >>> report.inspection.permutation_importance(
-        ...    metric=["r2", "neg_mean_squared_error"],
+        ...    metrics=["r2", "neg_mean_squared_error"],
         ...    n_repeats=2,
         ...    seed=0,
         ... ).frame(aggregate=None)
@@ -261,10 +261,10 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         ]
         cache_key_parts.append(data_source_hash)
 
-        if callable(metric) or isinstance(metric, list | dict):
-            cache_key_parts.append(joblib.hash(metric))
+        if callable(metrics) or isinstance(metrics, list | dict):
+            cache_key_parts.append(joblib.hash(metrics))
         else:
-            cache_key_parts.append(metric)
+            cache_key_parts.append(metrics)
 
         # order arguments by key to ensure cache works n_jobs variable should not be in
         # the cache
@@ -313,7 +313,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 Xs=Xs,
                 ys=ys,
                 at_step=at_step,
-                metric=metric,
+                metrics=metrics,
                 n_repeats=n_repeats,
                 max_samples=max_samples,
                 n_jobs=n_jobs,

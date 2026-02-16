@@ -72,7 +72,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         Xs: Sequence[ArrayLike],
         ys: Sequence[ArrayLike],
         at_step: int | str,
-        metric: str | Callable | list[str] | tuple[str] | dict[str, Callable] | None,
+        metrics: str | Callable | list[str] | tuple[str] | dict[str, Callable] | None,
         n_repeats: int,
         max_samples: float,
         n_jobs: int | None,
@@ -123,7 +123,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                 estimator=estimator,
                 X=X_transformed,
                 y=y,
-                scoring=metric,
+                scoring=metrics,
                 n_repeats=n_repeats,
                 max_samples=max_samples,
                 n_jobs=n_jobs,
@@ -131,7 +131,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             )
 
             if "importances" in scores:
-                metric_obj = cast(str | Callable | _BaseScorer | None, metric)
+                metric_obj = cast(str | Callable | _BaseScorer | None, metrics)
                 if metric_obj is None:
                     metric_name = "accuracy" if is_classifier(estimator) else "r2"
                 elif isinstance(metric_obj, str):
@@ -219,7 +219,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         Parameters
         ----------
         metric : str or None, default=None
-            Metric to plot.
+            Metric to plot. Required when multiple metrics are computed.
 
         subplot_by : str, tuple of str or None, default="auto"
             Column(s) to use for subplotting. The possible values are:
@@ -241,13 +241,19 @@ class PermutationImportanceDisplay(DisplayMixin):
     def _plot_matplotlib(
         self,
         *,
-        metric: str,
+        metric: str | None = None,
         subplot_by: str | tuple[str, ...] | None = "auto",
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
-        frame = self.frame(metric=metric, aggregate=None)
+
+        if metric is None and self.importances["metric"].nunique() > 1:
+            raise ValueError(
+                "Please select a metric to plot the associated importances using the"
+                "`metric` parameter. Multiple metrics can not be plotted at once."
+            )
+        frame = self.frame(metrics=metric, aggregate=None)
 
         self._plot_single_estimator(
             subplot_by=subplot_by,
@@ -381,14 +387,14 @@ class PermutationImportanceDisplay(DisplayMixin):
     def frame(
         self,
         *,
-        metric: str | list[str] | None = None,
+        metrics: str | list[str] | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Get the feature importance in a dataframe format.
 
         Parameters
         ----------
-        metric : str or list of str, default=None
+        metrics : str or list of str, default=None
             Filter the importances by metric. If `None`, all importances associated with
             each metric are returned.
 
@@ -410,8 +416,8 @@ class PermutationImportanceDisplay(DisplayMixin):
             raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
         frame = self.importances.copy()
-        if metric is not None:
-            frame = frame.query("metric in @metric")
+        if metrics is not None:
+            frame = frame.query("metric in @metrics")
 
         if frame["label"].isna().all():
             # regression problem or averaged classification metric

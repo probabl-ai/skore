@@ -27,7 +27,7 @@ def test_permutation_importance_display_invalid_report_type(pyplot, method):
         importances=importances, report_type="invalid-type"
     )
     with pytest.raises(TypeError, match="Unexpected report type: 'invalid-type'"):
-        getattr(display, method)(metric="r2")
+        getattr(display, method)()
 
 
 def test_permutation_importance_display_barplot_kwargs(
@@ -45,7 +45,7 @@ def test_permutation_importance_display_barplot_kwargs(
     display.set_style(
         boxplot_kwargs={"boxprops": {"facecolor": "blue"}},
         stripplot_kwargs={"color": "red"},
-    ).plot(metric="accuracy")
+    ).plot()
 
     assert hasattr(display, "figure_")
     assert hasattr(display, "ax_")
@@ -70,6 +70,6 @@ def test_set_style_with_single_kwarg(
     )
 
     display = report.inspection.permutation_importance()
-    display.set_style(stripplot_kwargs={"alpha": 0.8}).plot(metric="accuracy")
+    display.set_style(stripplot_kwargs={"alpha": 0.8}).plot()
     for collection in display.ax_.collections:
         assert collection.get_alpha() == 0.8
