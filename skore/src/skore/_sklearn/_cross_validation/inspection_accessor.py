@@ -19,8 +19,6 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     You can access this accessor using the `inspection` attribute.
     """
 
-    _verbose_name: str = "feature_importance"
-
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
