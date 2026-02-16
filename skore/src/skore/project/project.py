@@ -30,17 +30,17 @@ class Project:
 
     .. rubric:: Hub mode
 
-    The project is configured to the ``hub`` mode to communicate with the ``skore hub``.
+    The project is configured to communicate with the ``skore hub``.
 
-    In this mode, the ``name`` takes the form ``<workspace>/<name>``, where the
-    workspace is a ``skore hub`` concept that must be configured on the ``skore hub``
-    interface. It represents an isolated entity managing users, projects, and resources.
-    It can be a company, organization, or team that operates independently within the
-    system.
+    In this mode, the ``name`` is expected to be of the form ``<workspace>/<name>``,
+    where the workspace is a ``skore hub`` concept that must be configured on the
+    ``skore hub`` interface. It represents an isolated entity managing users, projects,
+    and resources. It can be a company, organization, or team that operates
+    independently within the system.
 
-    Also in this mode, you must have an account to the ``skore hub`` and must be
-    authorized to the specified workspace. You must also be authenticated beforehand,
-    by calling the ``skore.login()`` function at the top of your script.
+    Note: Using Project in ``hub`` mode requires an account on ``skore hub``, with
+    access rights to the specified workspace. Authentication to ``skore hub`` is done by
+    running ``skore.login()`` before instantiating the Project.
 
     .. rubric:: Local mode
 
