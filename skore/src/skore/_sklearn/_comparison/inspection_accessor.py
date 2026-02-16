@@ -114,6 +114,13 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
     def impurity_decrease(self) -> ImpurityDecreaseDisplay:
         """Retrieve the Mean Decrease in Impurity (MDI) for each report.
 
+        This method is available for estimators that expose a `feature_importances_`
+        attribute. See for example
+        :attr:`sklearn.ensemble.GradientBoostingClassifier.inspections_`.
+
+        In particular, note that the MDI is computed at fit time, i.e. using the
+        training data.
+
         Comparison reports with the same features are put under one key and are plotted
         together. When some reports share the same features and others do not, those
         with the same features are plotted together.
