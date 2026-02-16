@@ -41,6 +41,8 @@ def report_type(
 
     # TODO: remove this when the minimum version of skore is 0.13
     # it is only necessary for backward compatibility with skore < 0.13
+    from skore import CrossValidationReport, EstimatorReport
+
     if isinstance(report, CrossValidationReport):
         return "cross-validation"
     if isinstance(report, EstimatorReport):

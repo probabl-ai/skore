@@ -25,8 +25,8 @@ class _BaseReport(ReportHelpMixin):
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
     _report_type: Literal[
-        "cross-validation",
         "estimator",
+        "cross-validation",
         "comparison-estimator",
         "comparison-cross-validation",
     ]
