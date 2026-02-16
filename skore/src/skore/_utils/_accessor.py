@@ -275,12 +275,12 @@ def _check_comparison_report_sub_estimators_have_feature_importances() -> Callab
     def check(accessor: Any) -> bool:
         """Check if all the estimators have a `feature_importances_` attribute."""
         parent = accessor._parent
-        if parent._reports_type == "CrossValidationReport":
+        if parent._report_type == "comparison-cross-validation":
             parent_estimators = [
                 parent_report.estimator_reports_[0].estimator_
                 for parent_report in parent.reports_.values()
             ]
-        elif parent._reports_type == "EstimatorReport":
+        elif parent._report_type == "comparison-estimator":
             parent_estimators = [
                 parent_report.estimator_ for parent_report in parent.reports_.values()
             ]
