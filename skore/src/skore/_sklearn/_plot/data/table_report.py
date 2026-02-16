@@ -27,7 +27,7 @@ from skore._utils.repr import ReprHTMLMixin
 
 def _truncate_top_k_categories(
     col: pd.Series | None, k: int, other_label: str = "other"
-) -> pd.Series:
+) -> pd.Series | None:
     """Truncate a column to the top k most frequent values.
 
     Replaces the rest with a label defined by ``other_label``. Note that if `col` is not

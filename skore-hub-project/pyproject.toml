@@ -124,10 +124,3 @@ include = ["skore/**"]
 
 [tool.ty.overrides.analysis]
 respect-type-ignore-comments = true
-
-[tool.ty.rules]
-unresolved-import = "ignore"
-unknown-argument = "ignore"
-invalid-argument-type = "ignore"
-unused-type-ignore-comment = "ignore"
-invalid-type-form = "ignore"

@@ -158,13 +158,13 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             self.__sample_to_class_index = None
             self.__classes = None
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @cached_property
     def dataset_size(self) -> int:
         """Size of the dataset."""
         return len(self.report.X)
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @cached_property
     def splitting_strategy(self) -> dict[str, Any]:
         """
@@ -240,13 +240,13 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
     groups: list[int] | None = None
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def class_names(self) -> list[str] | None:
         """In classification, the class names of the dataset used in the report."""
         return self.__classes
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @cached_property
     def target_range(self) -> list[float] | None:
         """The range of the target values of the dataset used in the report."""
@@ -254,7 +254,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             return None
         return [float(self.report.y.min()), float(self.report.y.max())]
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @cached_property
     def estimators(self) -> list[EstimatorReportPayload]:
         """The estimators used in each split by the report in a payload format."""

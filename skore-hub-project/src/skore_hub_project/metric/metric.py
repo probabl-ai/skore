@@ -68,7 +68,7 @@ class Metric(BaseModel, ABC, Generic[Report]):
     greater_is_better: bool | None = Field(init=False)
     position: int | None = Field(init=False)
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def value(self) -> float | None:
         """The value of the metric."""

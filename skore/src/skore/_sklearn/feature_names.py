@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import cast
 
 import pandas as pd
 from numpy.typing import ArrayLike
@@ -31,8 +32,9 @@ def _get_feature_names(
         # list and so we need to check if we have an array-like before to make any
         # conversion
         if hasattr(feature_names, "tolist"):
-            feature_names = feature_names.tolist()
-        return feature_names
+            return cast(list[str], feature_names.tolist())
+
+        return cast(list[str], feature_names)
 
     elif (
         transformer is not None

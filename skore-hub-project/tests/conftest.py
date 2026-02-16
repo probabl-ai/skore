@@ -127,7 +127,7 @@ def _make_binary_estimator_report_string_labels(*, pos_label=None):
         X_test=X_test,
         y_train=y_train,
         y_test=y_test,
-        pos_label=pos_label
+        pos_label=pos_label,
     )
     return report
 

@@ -7,7 +7,7 @@ from typing import Any
 
 from diskcache import Cache
 
-Cache = partial(Cache, size_limit=float("inf"), cull_limit=0, eviction=None)
+StorageCache = partial(Cache, size_limit=float("inf"), cull_limit=0, eviction=None)
 
 
 class DirectoryDoesNotExist(Exception):
@@ -28,7 +28,7 @@ class DiskCacheStorage:
 
     Attributes
     ----------
-    storage : Cache
+    storage : StorageCache
         The underlying diskcache Cache object.
     """
 
@@ -103,7 +103,7 @@ class DiskCacheStorage:
         KeyError
             If the key is not found in the storage.
         """
-        with Cache(self.directory) as storage:
+        with StorageCache(self.directory) as storage:
             return storage[key]
 
     def __setitem__(self, key: str, value: Any) -> None:
@@ -117,7 +117,7 @@ class DiskCacheStorage:
         value : Any
             The value to store.
         """
-        with Cache(self.directory) as storage:
+        with StorageCache(self.directory) as storage:
             storage[key] = value
 
     def __delitem__(self, key: str) -> None:
@@ -134,7 +134,7 @@ class DiskCacheStorage:
         KeyError
             If the key is not found in the storage.
         """
-        with Cache(self.directory) as storage:
+        with StorageCache(self.directory) as storage:
             del storage[key]
 
     def keys(self) -> Iterator[str]:
@@ -146,7 +146,7 @@ class DiskCacheStorage:
         Iterator[str]
             An iterator yielding all keys in the storage.
         """
-        with Cache(self.directory) as storage:
+        with StorageCache(self.directory) as storage:
             yield from storage
 
     def values(self) -> Iterator[Any]:
@@ -158,7 +158,7 @@ class DiskCacheStorage:
         Iterator[Any]
             An iterator yielding all values in the storage.
         """
-        with Cache(self.directory) as storage:
+        with StorageCache(self.directory) as storage:
             for key in storage:
                 yield storage[key]
 
@@ -171,7 +171,7 @@ class DiskCacheStorage:
         Iterator[tuple[str, Any]]
             An iterator yielding all (key, value) pairs in the storage.
         """
-        with Cache(self.directory) as storage:
+        with StorageCache(self.directory) as storage:
             for key in storage:
                 yield (key, storage[key])
 
