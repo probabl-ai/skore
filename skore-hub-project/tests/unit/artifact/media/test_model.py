@@ -4,20 +4,16 @@ from sklearn.utils import estimator_html_repr
 
 from skore_hub_project.artifact.media import EstimatorHtmlRepr
 from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.project.project import Project
 
 
-@mark.usefixtures("monkeypatch_artifact_hub_client")
-@mark.usefixtures("monkeypatch_upload_routes")
-@mark.usefixtures("monkeypatch_upload_with_mock")
-def test_estimator_html_repr(respx_mock, binary_classification, upload_mock):
+@mark.respx()
+def test_estimator_html_repr(binary_classification, upload_mock, project):
     content = estimator_html_repr(binary_classification.estimator_)
 
     with Serializer(content) as serializer:
         checksum = serializer.checksum
 
     # create media
-    project = Project("myworkspace", "myname")
     media = EstimatorHtmlRepr(project=project, report=binary_classification)
     media_dict = media.model_dump()
 

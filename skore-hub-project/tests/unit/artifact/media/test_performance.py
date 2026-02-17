@@ -13,7 +13,6 @@ from skore_hub_project.artifact.media import (
     RocTrain,
 )
 from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.project.project import Project
 
 
 def serialize(display) -> bytes:
@@ -32,9 +31,6 @@ def serialize(display) -> bytes:
     # which is a dependency of `skore`
     "ignore:The default of observed=False is deprecated.*:FutureWarning:seaborn",
 )
-@mark.usefixtures("monkeypatch_artifact_hub_client")
-@mark.usefixtures("monkeypatch_upload_routes")
-@mark.usefixtures("monkeypatch_upload_with_mock")
 @mark.parametrize(
     "Media,report,accessor,data_source",
     (
@@ -124,10 +120,17 @@ def serialize(display) -> bytes:
         ),
     ),
 )
+@mark.respx()
 def test_performance(
-    monkeypatch, Media, report, accessor, data_source, upload_mock, request
+    monkeypatch,
+    Media,
+    report,
+    accessor,
+    data_source,
+    upload_mock,
+    request,
+    project,
 ):
-    project = Project("myworkspace", "myname")
     report = request.getfixturevalue(report)
     display = getattr(report.metrics, accessor)(data_source=data_source)
     content = serialize(display)
