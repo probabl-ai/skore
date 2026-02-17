@@ -66,7 +66,11 @@ class TestProject:
     def test_workspace(self, respx_mock):
         mocks = [
             ("get", "/projects/available", Response(200)),
-            ("post", "/projects/available/name", Response(200)),
+            (
+                "post",
+                "/projects/available/name",
+                Response(200, json={"id": 42, "url": "http://domain/workspace/name"}),
+            ),
             ("get", "/projects/unavailable", Response(404)),
             ("get", "/projects/forbidden", Response(403)),
         ]
@@ -101,12 +105,16 @@ class TestProject:
     )
     @mark.respx(assert_all_called=False)
     def test_name(self, input, output, warning, respx_mock):
+        post_response = Response(
+            201,
+            json={"id": 42, "url": "http://domain/myworkspace/myname"},
+        )
         mocks = [
             ("get", "/projects/workspace", Response(200)),
-            ("post", "/projects/workspace/myname", Response(200)),
-            ("post", "/projects/workspace/my-name", Response(200)),
-            ("post", "/projects/workspace/my.name", Response(200)),
-            ("post", "/projects/workspace/my_name", Response(200)),
+            ("post", "/projects/workspace/myname", post_response),
+            ("post", "/projects/workspace/my-name", post_response),
+            ("post", "/projects/workspace/my.name", post_response),
+            ("post", "/projects/workspace/my_name", post_response),
         ]
 
         for method, url, response in mocks:
@@ -155,7 +163,14 @@ class TestProject:
     ):
         mocks = [
             ("get", "/projects/workspace", Response(200)),
-            ("post", "/projects/workspace/name", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
         ]
 
         for method, url, response in mocks:
@@ -187,9 +202,20 @@ class TestProject:
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
         mocks = [
             ("get", "/projects/workspace", Response(200)),
-            ("post", "/projects/workspace/name", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
             ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
-            ("post", "projects/workspace/name/estimator-reports", Response(200)),
+            (
+                "post",
+                "projects/workspace/name/estimator-reports",
+                Response(201, json={"id": 42}),
+            ),
         ]
 
         for method, url, response in mocks:
@@ -225,9 +251,20 @@ class TestProject:
     ):
         mocks = [
             ("get", "/projects/workspace", Response(200)),
-            ("post", "/projects/workspace/name", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
             ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
-            ("post", "projects/workspace/name/cross-validation-reports", Response(200)),
+            (
+                "post",
+                "projects/workspace/name/cross-validation-reports",
+                Response(200, json={"id": 42}),
+            ),
         ]
 
         for method, url, response in mocks:
@@ -256,9 +293,20 @@ class TestProject:
         """Put with binary string labels and pos_label set works."""
         mocks = [
             ("get", "/projects/workspace", Response(200)),
-            ("post", "/projects/workspace/name", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
             ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
-            ("post", "projects/workspace/name/estimator-reports", Response(200)),
+            (
+                "post",
+                "projects/workspace/name/estimator-reports",
+                Response(200, json={"id": 42}),
+            ),
         ]
 
         for method, url, response in mocks:
@@ -289,9 +337,20 @@ class TestProject:
         """Put with CV binary string labels and pos_label set works."""
         mocks = [
             ("get", "/projects/workspace", Response(200)),
-            ("post", "/projects/workspace/name", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
             ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
-            ("post", "projects/workspace/name/cross-validation-reports", Response(200)),
+            (
+                "post",
+                "projects/workspace/name/cross-validation-reports",
+                Response(201, json={"id": 42}),
+            ),
         ]
 
         for method, url, response in mocks:
@@ -318,7 +377,14 @@ class TestProject:
 
             mocks = [
                 ("get", "/projects/workspace", Response(200)),
-                ("post", "/projects/workspace/name", Response(200)),
+                (
+                    "post",
+                    "/projects/workspace/name",
+                    Response(
+                        201,
+                        json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                    ),
+                ),
                 (
                     "get",
                     "projects/workspace/name/estimator-reports/<report_id>",
@@ -344,7 +410,14 @@ class TestProject:
 
             mocks = [
                 ("get", "/projects/workspace", Response(200)),
-                ("post", "/projects/workspace/name", Response(200)),
+                (
+                    "post",
+                    "/projects/workspace/name",
+                    Response(
+                        201,
+                        json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                    ),
+                ),
                 (
                     "get",
                     "projects/workspace/name/cross-validation-reports/<report_id>",
@@ -367,7 +440,14 @@ class TestProject:
     def test_summarize(self, nowstr, respx_mock):
         mocks = [
             ("get", "/projects/workspace", Response(200)),
-            ("post", "/projects/workspace/name", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
             (
                 "get",
                 "projects/workspace/name/estimator-reports/",
@@ -535,3 +615,56 @@ class TestProject:
             ),
         ):
             Project.delete(workspace="workspace", name="name")
+
+    def test_put_reports_prints_console_message(
+        self, monkeypatch, binary_classification, respx_mock, cv_binary_classification
+    ):
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+            ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
+            (
+                "post",
+                "projects/workspace/name/estimator-reports",
+                Response(
+                    201,
+                    json={"id": 42},
+                ),
+            ),
+            (
+                "post",
+                "projects/workspace/name/cross-validation-reports",
+                Response(
+                    201,
+                    json={"id": 42},
+                ),
+            ),
+        ]
+
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
+
+        report_url = "http://domain/workspace/name/estimators/42"
+
+        def assert_report_url(msg, *args, **kwargs):
+            assert report_url in msg
+
+        monkeypatch.setattr("rich.console.Console", assert_report_url)
+        project.put("<key>", binary_classification)
+
+        cv_report_url = "http://domain/workspace/name/cross-validations/42"
+
+        def assert_cv_report_url(msg, *args, **kwargs):
+            assert cv_report_url in msg
+
+        monkeypatch.setattr("rich.console.Console", assert_cv_report_url)
+        project.put("<key>", cv_binary_classification)
