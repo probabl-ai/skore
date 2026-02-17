@@ -332,7 +332,6 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 x="importance",
                 y="feature",
                 hue=hue,
-                dodge=True,
                 palette="tab10",
                 **boxplot_kwargs,
             )
