@@ -307,9 +307,9 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             data_source=data_source, X=X, y=y
         )
         if y_true is None:
+            # Can only happen if the estimator is a clusterer
             raise ValueError(
-                "The target should be provided when computing the permutation "
-                "importance."
+                "Permutation importance can not be performed on a clustering model."
             )
 
         # NOTE: to temporary improve the `project.put` UX, we always store the

@@ -233,9 +233,9 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 data_source=data_source, X=X, y=y
             )
             if y_true is None:
+                # Can only happen if the estimator is a clusterer
                 raise ValueError(
-                    "The target should be provided when computing the permutation "
-                    "importance."
+                    "Permutation importance can not be performed on a clustering model."
                 )
         else:
             data_source_hash = None
@@ -295,8 +295,8 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     )
                     if report_y is None:
                         raise ValueError(
-                            "The target should be provided when computing "
-                            "the permutation importance."
+                            "Permutation importance can not be performed on a "
+                            "clustering model."
                         )
                     Xs.append(report_X)
                     ys.append(report_y)

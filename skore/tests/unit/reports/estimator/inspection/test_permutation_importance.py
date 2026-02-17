@@ -51,7 +51,7 @@ def test_at_step_str(regression_train_test_split):
     assert actual_features == sorted(["x0", "x1", "x2", "x3"])
 
 
-def test_at_step_non_pipeline(regression_train_test_split):
+def test_at_step_non_pipeline_int(regression_train_test_split):
     X_train, X_test, y_train, y_test = regression_train_test_split
     report = EstimatorReport(
         LinearRegression(),
@@ -63,6 +63,22 @@ def test_at_step_non_pipeline(regression_train_test_split):
     display_start = report.inspection.permutation_importance(seed=42, at_step=0)
     display_end = report.inspection.permutation_importance(seed=42, at_step=-1)
     assert len(display_start.importances) == len(display_end.importances)
+
+
+def test_at_step_non_pipeline_str(regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    with pytest.raises(
+        ValueError,
+        match="at_step can only be a string when the estimator is a Pipeline",
+    ):
+        report.inspection.permutation_importance(seed=42, at_step="StandardScaler")
 
 
 @pytest.mark.parametrize(
@@ -196,3 +212,34 @@ def test_feature_names_from_pipeline(regression_train_test_split):
     assert isinstance(display, PermutationImportanceDisplay)
     assert "feature" in display.importances.columns
     assert len(display.importances["feature"].unique()) > 0
+
+
+def test_seed_wrong_type(regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    with pytest.raises(
+        ValueError, match="seed must be an integer or None; got <class 'str'>"
+    ):
+        report.inspection.permutation_importance(seed="42")
+
+
+def test_no_target(regression_train_test_split):
+    from sklearn.cluster import KMeans
+
+    X_train, X_test, _, _ = regression_train_test_split
+    report = EstimatorReport(
+        KMeans(),
+        X_train=X_train,
+        X_test=X_test,
+    )
+    with pytest.raises(
+        ValueError,
+        match="Permutation importance can not be performed on a clustering model.",
+    ):
+        report.inspection.permutation_importance(seed=42)

@@ -112,3 +112,34 @@ def test_data_source(request, data_source):
         seed=42, n_repeats=2, data_source=data_source
     )
     assert display.importances["data_source"].unique() == [data_source]
+
+
+def test_data_source_X_y(regression_data):
+    X, y = regression_data
+    report = CrossValidationReport(Ridge(), X, y, splitter=2)
+    display = report.inspection.permutation_importance(
+        seed=42, n_repeats=2, data_source="X_y", X=X, y=y
+    )
+    assert isinstance(display, PermutationImportanceDisplay)
+    assert display.importances["data_source"].unique() == ["X_y"]
+
+
+def test_seed_wrong_type(regression_data):
+    X, y = regression_data
+    report = CrossValidationReport(Ridge(), X, y, splitter=2)
+    with pytest.raises(
+        ValueError, match="seed must be an integer or None; got <class 'str'>"
+    ):
+        report.inspection.permutation_importance(seed="42")
+
+
+def test_no_target(regression_data):
+    from sklearn.cluster import KMeans
+
+    X, _ = regression_data
+    report = CrossValidationReport(KMeans(), X, splitter=2)
+    with pytest.raises(
+        ValueError,
+        match="Permutation importance can not be performed on a clustering model.",
+    ):
+        report.inspection.permutation_importance(seed=42)
