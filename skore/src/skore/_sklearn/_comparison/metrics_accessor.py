@@ -195,7 +195,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         aggregate: Aggregate | None = ("mean", "std"),
         **metric_kwargs: Any,
     ):
-        is_cv_report = self._parent._reports_type == "comparison-cross-validation"
+        is_cv_report = self._parent._report_type == "comparison-cross-validation"
 
         cache_key = deep_key_sanitize(
             (
