@@ -24,7 +24,10 @@ if TYPE_CHECKING:
     )
     from skore._sklearn._comparison.metrics_accessor import _MetricsAccessor
 
-    ReportType = Literal["EstimatorReport", "CrossValidationReport"]
+    ComparisonReportType = Literal[
+        "comparison-estimator",
+        "comparison-cross-validation",
+    ]
 
 
 class ComparisonReport(_BaseReport, DirNamesMixin):
@@ -110,7 +113,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
 
-    _reports_type: ReportType
+    _report_type: ComparisonReportType
 
     @staticmethod
     def _validate_reports(
@@ -122,7 +125,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ),
     ) -> tuple[
         dict[str, EstimatorReport] | dict[str, CrossValidationReport],
-        ReportType,
+        ComparisonReportType,
         PositiveLabel,
     ]:
         """Validate that reports are in the right format for comparison.
@@ -136,8 +139,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         -------
         dict
             The validated reports.
-        {"EstimatorReport", "CrossValidationReport"}
-            The inferred type of the reports that will be compared.
+        {"comparison-estimator", "comparison-cross-validation"}
+            The report type for the comparison.
         int, float, bool, str or None
             The positive label used in the different reports.
         """
@@ -166,10 +169,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 list(reports.values()),
             )
 
-        reports_type: ReportType
+        report_type: ComparisonReportType
         if all(isinstance(report, EstimatorReport) for report in reports_list):
             reports_list = cast(list[EstimatorReport], reports_list)
-            reports_type = "EstimatorReport"
+            report_type = "comparison-estimator"
 
             test_dataset_hashes = {
                 joblib.hash(report.y_test)
@@ -183,7 +186,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         elif all(isinstance(report, CrossValidationReport) for report in reports_list):
             reports_list = cast(list[CrossValidationReport], reports_list)
-            reports_type = "CrossValidationReport"
+            report_type = "comparison-cross-validation"
         else:
             raise TypeError(
                 f"Expected list or dict of {EstimatorReport.__name__} "
@@ -222,7 +225,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             dict(zip(deduped_report_names, reports_list, strict=True)),
         )
 
-        return reports_dict, reports_type, pos_label
+        return reports_dict, report_type, pos_label
 
     def __init__(
         self,
@@ -246,7 +249,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
-        self.reports_, self._reports_type, self._pos_label = (
+        self.reports_, self._report_type, self._pos_label = (
             ComparisonReport._validate_reports(reports)
         )
 

@@ -86,16 +86,16 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         21    report big alpha  Feature #9        0.4...
         >>> display.plot() # shows plot
         """
-        if self._parent._reports_type == "EstimatorReport":
+        if self._parent._report_type == "comparison-estimator":
             return CoefficientsDisplay._compute_data_for_display(
                 estimators=[
                     report.estimator_ for report in self._parent.reports_.values()
                 ],
                 names=list(self._parent.reports_.keys()),
                 splits=[np.nan] * len(self._parent.reports_),
-                report_type="comparison-estimator",
+                report_type=self._parent._report_type,
             )
-        else:  # self._parent._reports_type == "CrossValidationReport":
+        else:  # self._parent._report_type == "comparison-cross-validation"
             estimators, names = [], []
             splits: list[int | float] = []
             for name, report in self._parent.reports_.items():
@@ -110,7 +110,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
                 estimators=estimators,
                 names=names,
                 splits=splits,
-                report_type="comparison-cross-validation",
+                report_type=self._parent._report_type,
             )
 
     ####################################################################################

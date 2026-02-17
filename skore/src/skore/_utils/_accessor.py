@@ -259,10 +259,10 @@ def _check_comparison_report_sub_estimators_have_coef() -> Callable:
         parent = accessor._parent
         parent_estimators = []
         for parent_report in parent.reports_.values():
-            if parent._reports_type == "CrossValidationReport":
+            if parent._report_type == "comparison-cross-validation":
                 parent_report = cast(CrossValidationReport, parent_report)
                 parent_estimators.append(parent_report.estimator_reports_[0].estimator_)
-            elif parent._reports_type == "EstimatorReport":
+            elif parent._report_type == "comparison-estimator":
                 parent_estimators.append(parent_report.estimator_)
             else:
                 raise TypeError(f"Unexpected report type: {type(parent.reports_[0])}")
