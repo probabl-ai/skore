@@ -55,7 +55,11 @@ class PermutationImportanceDisplay(DisplayMixin):
         "whis": 1e10,
         **BOXPLOT_STYLE,
     }
-    _default_stripplot_kwargs: dict[str, Any] = {"palette": "tab10", "alpha": 0.5}
+    _default_stripplot_kwargs: dict[str, Any] = {
+        "palette": "tab10",
+        "alpha": 0.5,
+        "height": 6,
+    }
 
     def __init__(self, *, importances: pd.DataFrame, report_type: ReportType):
         self.importances = importances

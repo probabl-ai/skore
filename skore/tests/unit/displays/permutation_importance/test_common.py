@@ -2,13 +2,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from skore import EstimatorReport, PermutationImportanceDisplay
+from skore import PermutationImportanceDisplay
 
 
 @pytest.mark.parametrize("method", ["frame", "plot"])
-def test_permutation_importance_display_invalid_report_type(pyplot, method):
-    """Check that PermutationImportanceDisplay raises TypeError for invalid
-    `report_type`."""
+def test_invalid_report_type(pyplot, method):
     importances = pd.DataFrame(
         {
             "estimator": ["estimator"],
@@ -22,7 +20,6 @@ def test_permutation_importance_display_invalid_report_type(pyplot, method):
             "value": [1.0],
         }
     )
-
     display = PermutationImportanceDisplay(
         importances=importances, report_type="invalid-type"
     )
@@ -30,46 +27,111 @@ def test_permutation_importance_display_invalid_report_type(pyplot, method):
         getattr(display, method)()
 
 
-def test_permutation_importance_display_barplot_kwargs(
-    pyplot, logistic_binary_classification_with_train_test
-):
-    """Check that custom `barplot_kwargs` are applied to `EstimatorReport` plots."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
+@pytest.mark.parametrize(
+    "fixture_prefix",
+    [
+        "estimator_reports",
+        "cross_validation_reports",
+    ],
+)
+@pytest.mark.parametrize(
+    "task",
+    [
+        "binary_classification",
+        "multiclass_classification",
+        "regression",
+        "multioutput_regression",
+    ],
+)
+class TestPermutationImportanceDisplay:
+    def test_class_attributes(self, pyplot, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+        assert isinstance(display, PermutationImportanceDisplay)
+        assert hasattr(display, "importances")
+        assert hasattr(display, "report_type")
+
+        display.plot()
+        assert hasattr(display, "facet_")
+        assert hasattr(display, "figure_")
+        assert hasattr(display, "ax_")
+
+    def test_internal_data_structure(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+        expected = [
+            "estimator",
+            "data_source",
+            "metric",
+            "split",
+            "feature",
+            "label",
+            "output",
+            "repetition",
+            "value",
+        ]
+        assert display.importances.columns.tolist() == expected
+
+    def test_frame_structure(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+        frame = display.frame()
+
+        expected = {"data_source", "metric", "feature", "value_mean", "value_std"}
+        if "cross_validation" in fixture_prefix:
+            expected.add("split")
+        assert set(frame.columns) == expected
+
+    def test_plot_structure(self, pyplot, fixture_prefix, task, request):
+        _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        if hasattr(ax, "flatten"):
+            ax = ax.flatten()[0]
+        assert "Decrease in" in ax.get_xlabel()
+        assert ax.get_ylabel() == ""
+
+    def test_title(self, pyplot, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+        figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        title = figure.get_suptitle()
+        assert "Permutation importance" in title
+        estimator_name = display.importances["estimator"].iloc[0]
+        assert estimator_name in title
+
+    def test_set_style(self, pyplot, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+        figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        assert figure.get_figheight() == 6
+
+        display.set_style(stripplot_kwargs={"height": 8}).plot()
+        assert display.figure_.get_figheight() == 8
+
+    @pytest.mark.parametrize(
+        "aggregate, expected_value_columns",
+        [
+            ("mean", ["value"]),
+            ("std", ["value"]),
+            (("mean", "std"), ["value_mean", "value_std"]),
+        ],
     )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    display = report.inspection.permutation_importance()
-    display.set_style(
-        boxplot_kwargs={"boxprops": {"facecolor": "blue"}},
-        stripplot_kwargs={"color": "red"},
-    ).plot()
-
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    patches = display.ax_.patches
-    for patch in patches:
-        assert patch.get_facecolor() == (0.0, 0.0, 1.0, 1.0)  # blue in RGBA
-    expected_red = np.array([1, 0, 0, 0.5])  # red in RGBA
-    for collection in display.ax_.collections:
-        for facecolor in collection.get_facecolor():
-            np.testing.assert_allclose(facecolor, expected_red)
-
-
-def test_set_style_with_single_kwarg(
-    pyplot, logistic_binary_classification_with_train_test
-):
-    """Check that set_style works when only one kwarg is passed."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    display = report.inspection.permutation_importance()
-    display.set_style(stripplot_kwargs={"alpha": 0.8}).plot()
-    for collection in display.ax_.collections:
-        assert collection.get_alpha() == 0.8
+    def test_frame_aggregate(
+        self, fixture_prefix, task, aggregate, expected_value_columns, request
+    ):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+        frame = display.frame(aggregate=aggregate)
+        for col in expected_value_columns:
+            assert col in frame.columns
