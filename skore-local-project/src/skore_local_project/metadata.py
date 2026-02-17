@@ -7,13 +7,13 @@ from contextlib import suppress
 from dataclasses import InitVar, dataclass, field, fields
 from datetime import datetime, timezone
 from math import isfinite
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, cast
 
 from joblib import hash
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from typing import Any, Literal
+    from typing import Any
 
     from skore import CrossValidationReport, EstimatorReport
 
@@ -33,13 +33,20 @@ def report_type(
     report: EstimatorReport | CrossValidationReport,
 ) -> Literal["cross-validation", "estimator"]:
     """Human readable type of a report."""
+    if hasattr(report, "_report_type"):
+        return cast(
+            Literal["cross-validation", "estimator"],
+            report._report_type,
+        )
+
+    # TODO: remove this when the minimum version of skore is 0.13
+    # it is only necessary for backward compatibility with skore < 0.13
     from skore import CrossValidationReport, EstimatorReport
 
     if isinstance(report, CrossValidationReport):
         return "cross-validation"
     if isinstance(report, EstimatorReport):
         return "estimator"
-
     raise TypeError
 
 

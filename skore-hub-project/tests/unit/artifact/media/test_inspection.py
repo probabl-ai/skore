@@ -10,7 +10,6 @@ from skore_hub_project.artifact.media import (
     PermutationImportanceTrain,
 )
 from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.project.project import Project
 
 
 def serialize(result) -> bytes:
@@ -20,7 +19,7 @@ def serialize(result) -> bytes:
         result = result.frame()
 
     return orjson.dumps(
-        result.fillna("NaN").to_dict(orient="tight"),
+        result.infer_objects().fillna("NaN").to_dict(orient="tight"),
         option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
     )
 
@@ -38,9 +37,14 @@ def monkeypatch_permutation_importance(monkeypatch):
     )
 
 
-@mark.usefixtures("monkeypatch_artifact_hub_client")
-@mark.usefixtures("monkeypatch_upload_routes")
-@mark.usefixtures("monkeypatch_upload_with_mock")
+@mark.filterwarnings(
+    # ignore deprecation warning due to `scikit-learn` misusing `scipy` arguments,
+    # raised by `scipy`
+    (
+        "ignore:scipy.optimize.*The `disp` and `iprint` options of the L-BFGS-B solver "
+        "are deprecated:DeprecationWarning"
+    ),
+)
 @mark.parametrize(
     "Media,report,accessor,data_source",
     (
@@ -67,6 +71,13 @@ def monkeypatch_permutation_importance(monkeypatch):
         ),
         param(
             Coefficients,
+            "multiclass_classification",
+            "coefficients",
+            None,
+            id="Coefficients",
+        ),
+        param(
+            Coefficients,
             "regression",
             "coefficients",
             None,
@@ -81,6 +92,7 @@ def monkeypatch_permutation_importance(monkeypatch):
         ),
     ),
 )
+@mark.respx()
 def test_inspection(
     monkeypatch,
     Media,
@@ -89,8 +101,8 @@ def test_inspection(
     data_source,
     upload_mock,
     request,
+    project,
 ):
-    project = Project("myworkspace", "myname")
     report = request.getfixturevalue(report)
 
     function = getattr(report.inspection, accessor)

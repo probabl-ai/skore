@@ -10,7 +10,8 @@ from rich.theme import Theme
 
 from skore._config import config_context, get_config, set_config
 from skore._externals._sklearn_compat import parse_version
-from skore._login import login
+from skore._project.login import login
+from skore._project.project import Project
 from skore._sklearn import (
     ComparisonReport,
     ConfusionMatrixDisplay,
@@ -33,7 +34,6 @@ from skore._sklearn._plot.inspection.permutation_importance import (
 )
 from skore._utils._patch import setup_jupyter_display
 from skore._utils._show_versions import show_versions
-from skore.project import Project
 
 plt.ion()
 setup_jupyter_display()

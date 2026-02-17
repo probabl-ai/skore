@@ -5,12 +5,8 @@ from pytest import mark, param, raises
 
 from skore_hub_project.artifact.media import TableReportTest, TableReportTrain
 from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.project.project import Project
 
 
-@mark.usefixtures("monkeypatch_artifact_hub_client")
-@mark.usefixtures("monkeypatch_upload_routes")
-@mark.usefixtures("monkeypatch_upload_with_mock")
 @mark.parametrize(
     "Media,data_source",
     (
@@ -18,10 +14,8 @@ from skore_hub_project.project.project import Project
         param(TableReportTrain, "train", id="TableReportTest"),
     ),
 )
-def test_table_report(
-    respx_mock, binary_classification, Media, data_source, upload_mock
-):
-    project = Project("myworkspace", "myname")
+@mark.respx()
+def test_table_report(binary_classification, Media, data_source, upload_mock, project):
     media = Media(project=project, report=binary_classification)
     media.model_dump()
 

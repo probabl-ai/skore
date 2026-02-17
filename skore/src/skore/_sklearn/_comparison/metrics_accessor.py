@@ -195,7 +195,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         aggregate: Aggregate | None = ("mean", "std"),
         **metric_kwargs: Any,
     ):
-        is_cv_report = self._parent._reports_type == "CrossValidationReport"
+        is_cv_report = self._parent._reports_type == "comparison-cross-validation"
 
         cache_key = deep_key_sanitize(
             (
@@ -238,7 +238,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 )
             ]
 
-            if self._parent._reports_type == "EstimatorReport":
+            if self._parent._report_type == "comparison-estimator":
                 results = _combine_estimator_results(
                     individual_results,
                     estimator_names=self._parent.reports_.keys(),
@@ -303,7 +303,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Predict time test (s)      ...       ...
         Predict time train (s)     ...       ...
         """
-        if self._parent._reports_type == "EstimatorReport":
+        if self._parent._report_type == "comparison-estimator":
             timings: pd.DataFrame = pd.concat(
                 [
                     pd.Series(report.metrics.timings())
@@ -1202,7 +1202,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         y_true: list[YPlotData] = []
         y_pred: list[YPlotData] = []
 
-        if self._parent._reports_type == "EstimatorReport":
+        if self._parent._report_type == "comparison-estimator":
             for report_name, report in track(
                 self._parent.reports_.items(),
                 description="Computing predictions for display",
@@ -1236,7 +1236,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             display = display_class._compute_data_for_display(
                 y_true=y_true,
                 y_pred=y_pred,
-                report_type="comparison-estimator",
+                report_type=self._parent._report_type,
                 estimators=[
                     report.estimator_ for report in self._parent.reports_.values()
                 ],
@@ -1280,7 +1280,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             display = display_class._compute_data_for_display(
                 y_true=y_true,
                 y_pred=y_pred,
-                report_type="comparison-cross-validation",
+                report_type=self._parent._report_type,
                 estimators=[
                     estimator_report.estimator_
                     for report in self._parent.reports_.values()
@@ -1611,7 +1611,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         else:
             response_method = "predict"
 
-        if self._parent._reports_type == "CrossValidationReport":
+        if self._parent._report_type == "comparison-cross-validation":
             display_labels = tuple(
                 next(iter(self._parent.reports_.values()))
                 .estimator_reports_[0]
