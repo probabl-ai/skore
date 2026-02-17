@@ -13,6 +13,24 @@ from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.model_selection import train_test_split
 from skore import CrossValidationReport, EstimatorReport
 
+from skore_hub_project.project.project import Project
+
+
+@fixture
+def project():
+    return Project(workspace="workspace", name="name")
+
+
+@fixture
+def monkeypatch_project_routes(respx_mock):
+    mocks = [
+        ("get", "/projects/workspace", Response(200)),
+        ("post", "/projects/workspace/name", Response(200)),
+    ]
+
+    for method, url, response in mocks:
+        respx_mock.request(method=method, url=url).mock(response)
+
 
 @fixture
 def upload_mock():
@@ -28,13 +46,18 @@ def monkeypatch_upload_with_mock(monkeypatch, upload_mock):
 
 @fixture
 def monkeypatch_upload_routes(respx_mock):
-    respx_mock.post("projects/myworkspace/myname/artifacts").mock(
-        Response(201, json=[{"upload_url": "http://chunk1.com/", "chunk_id": 1}])
-    )
-    respx_mock.put("http://chunk1.com").mock(
-        Response(200, headers={"etag": '"<etag1>"'})
-    )
-    respx_mock.post("projects/myworkspace/myname/artifacts/complete")
+    mocks = [
+        (
+            "post",
+            "projects/workspace/name/artifacts",
+            Response(201, json=[{"upload_url": "http://chunk1.com/", "chunk_id": 1}]),
+        ),
+        ("put", "http://chunk1.com", Response(200, headers={"etag": '"<etag1>"'})),
+        ("post", "projects/workspace/name/artifacts/complete", Response(200)),
+    ]
+
+    for method, url, response in mocks:
+        respx_mock.request(method=method, url=url).mock(response)
 
 
 class FakeClient(Client):
