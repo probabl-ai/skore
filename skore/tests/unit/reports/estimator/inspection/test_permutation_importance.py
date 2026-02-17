@@ -1,4 +1,5 @@
 import pytest
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
@@ -230,8 +231,6 @@ def test_seed_wrong_type(regression_train_test_split):
 
 
 def test_no_target(regression_train_test_split):
-    from sklearn.cluster import KMeans
-
     X_train, X_test, _, _ = regression_train_test_split
     report = EstimatorReport(
         KMeans(),

@@ -1,4 +1,5 @@
 import pytest
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import make_scorer, root_mean_squared_error
@@ -134,8 +135,6 @@ def test_seed_wrong_type(regression_data):
 
 
 def test_no_target(regression_data):
-    from sklearn.cluster import KMeans
-
     X, _ = regression_data
     report = CrossValidationReport(KMeans(), X, splitter=2)
     with pytest.raises(
@@ -143,3 +142,11 @@ def test_no_target(regression_data):
         match="Permutation importance can not be performed on a clustering model.",
     ):
         report.inspection.permutation_importance(seed=42)
+
+    with pytest.raises(
+        ValueError,
+        match="Permutation importance can not be performed on a clustering model.",
+    ):
+        report.inspection.permutation_importance(
+            seed=42, data_source="X_y", X=X, y=None
+        )
