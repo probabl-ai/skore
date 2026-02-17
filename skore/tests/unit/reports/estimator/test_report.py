@@ -6,6 +6,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -321,3 +322,13 @@ def test_get_predictions_error():
 
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid")
+
+
+def test_clustering():
+    """Check that we cannot create a report with a clustering model."""
+    with pytest.raises(
+        ValueError,
+        match="skore does not support clustering models yet. Please use a "
+        "classification or regression model instead.",
+    ):
+        EstimatorReport(KMeans())
