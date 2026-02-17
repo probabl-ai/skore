@@ -25,7 +25,17 @@ def project():
 def monkeypatch_project_routes(respx_mock):
     mocks = [
         ("get", "/projects/workspace", Response(200)),
-        ("post", "/projects/workspace/name", Response(200)),
+        (
+            "post",
+            "/projects/workspace/name",
+            Response(
+                200,
+                json={
+                    "id": 42,
+                    "url": "http://domain/workspace/name",
+                },
+            ),
+        ),
     ]
 
     for method, url, response in mocks:

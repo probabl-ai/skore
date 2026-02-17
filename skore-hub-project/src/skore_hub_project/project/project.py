@@ -17,6 +17,7 @@ from httpx import HTTPStatusError, codes
 from joblib import load as joblib_load
 from sklearn.utils.validation import _check_pos_label_consistency
 
+from skore_hub_project import console
 from skore_hub_project.client.client import Client, HUBClient
 from skore_hub_project.exception import ForbiddenException, NotFoundException
 from skore_hub_project.json import dumps
@@ -209,10 +210,11 @@ class Project:
             The name of the project.
         """
         with HUBClient() as hub_client:
-            hub_client.post(f"projects/{workspace}/{name}")
+            response = hub_client.post(f"projects/{workspace}/{name}")
 
         self.__workspace = workspace
         self.__name = name
+        self.__frontend_url = response.json()["url"]
 
     @property
     def workspace(self) -> str:
@@ -274,21 +276,30 @@ class Project:
         if isinstance(report, EstimatorReport):
             payload = EstimatorReportPayload(project=self, key=key, report=report)
             endpoint = "estimator-reports"
+            frontend_slug = "estimators"
         else:  # CrossValidationReport
             payload = CrossValidationReportPayload(project=self, key=key, report=report)
             endpoint = "cross-validation-reports"
+            frontend_slug = "cross-validations"
 
         payload_dict = payload.model_dump()
         payload_json_bytes = dumps(payload_dict)
 
         with HUBClient() as hub_client:
-            hub_client.post(
+            response = hub_client.post(
                 url=f"projects/{self.workspace}/{self.name}/{endpoint}",
                 content=payload_json_bytes,
                 headers={
                     "Content-Length": str(len(payload_json_bytes)),
                     "Content-Type": "application/json",
                 },
+            )
+
+            response_json = response.json()
+            report_url = f"{self.__frontend_url}/{frontend_slug}/{response_json['id']}"
+
+            console.print(
+                f"Consult your report at [link={report_url}]{report_url}[/link]"
             )
 
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
@@ -380,7 +391,7 @@ class Project:
         return sorted(map(dto, responses), key=itemgetter("date"))
 
     def __repr__(self) -> str:  # noqa: D105
-        return f"Project(mode='hub', name='{self.name}', workspace='{self.workspace}')"
+        return f"Project(mode='hub', name='{self.name}',workspace='{self.workspace}')"
 
     @staticmethod
     @ensure_workspace_is_valid
