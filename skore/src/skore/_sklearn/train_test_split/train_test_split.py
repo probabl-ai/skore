@@ -237,7 +237,7 @@ def train_test_split(
     from skore import console  # avoid circular import
 
     for warning_class in TRAIN_TEST_SPLIT_WARNINGS:
-        warning = cast(Any, warning_class).check(**kwargs)
+        warning = cast(TrainTestSplitWarning, warning_class).check(**kwargs)
 
         if warning is not None and (
             not warnings.filters
