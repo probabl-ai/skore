@@ -36,15 +36,4 @@ jobs:
         run: python -m pip install --upgrade pip pre-commit
 
       - name: Lint
-        run: |
-          pre-commit run --all-files check-yaml
-          pre-commit run --all-files check-toml
-          pre-commit run --all-files check-added-large-files
-          pre-commit run --all-files check-merge-conflict
-          pre-commit run --all-files detect-private-key
-          pre-commit run --all-files end-of-file-fixer
-          pre-commit run --all-files trailing-whitespace
-          pre-commit run --all-files typos
-          pre-commit run --all-files nbstripout
-          pre-commit run --all-files ruff-check
-          pre-commit run --all-files ty
+        run: pre-commit run --all-files

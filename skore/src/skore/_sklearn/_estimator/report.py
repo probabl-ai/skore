@@ -3,8 +3,9 @@ from __future__ import annotations
 import copy
 import time
 import warnings
+from collections.abc import Iterable
 from itertools import product
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -256,7 +257,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     response_methods += ["predict_proba"]
                 if hasattr(self._estimator, "decision_function"):
                     response_methods += ["decision_function"]
-            pos_labels = self._estimator.classes_.tolist() + [None]  # type: ignore[assignment]
+            if hasattr(self._estimator, "classes_"):
+                classes = cast(Iterable[Any], self._estimator.classes_)
+                pos_labels = list(classes) + [None]
+            else:
+                pos_labels = [None]
         else:
             if response_methods == "auto":
                 response_methods = ["predict"]

@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -533,10 +533,12 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 raise ValueError(
                     "If 'x' and 'y' are categories, 'hue' must be continuous."
                 )
-            assert x is not None
-            assert y is not None
-            assert hue is None or isinstance(hue, pd.Series)
-            contingency_table = _compute_contingency_table(x, y, hue, k)
+            x_series = cast(pd.Series, x)
+            y_series = cast(pd.Series, y)
+            hue_series = cast(pd.Series | None, hue)
+            contingency_table = _compute_contingency_table(
+                x_series, y_series, hue_series, k
+            )
             contingency_table.index = [
                 ellide_string(s) for s in contingency_table.index
             ]

@@ -501,9 +501,10 @@ class _MetricsAccessor(
 
         # build the cache key components to finally create a tuple that will be used
         # to check if the metric has already been computed
+        metric_fn_name = getattr(metric_fn, "__name__", "unknown")
         cache_key_parts: list[Any] = [
             self._parent._hash,
-            metric_fn.__name__,  # type: ignore[assignment]
+            metric_fn_name,
             data_source,
         ]
 

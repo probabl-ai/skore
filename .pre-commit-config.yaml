@@ -37,14 +37,14 @@ repos:
     - id: ty
       alias: ty-skore
       name: ty skore/
-      entry: uv run ty check --project skore
+      entry: uv run --with ty==0.0.17 ty check --project skore
       language: system
       pass_filenames: false
 
     - id: ty
       alias: ty-skore-hub-project
       name: ty skore-hub-project/
-      entry: uv run ty check --project skore-hub-project
+      entry: uv run --with ty==0.0.17 ty check --project skore-hub-project
       language: system
       pass_filenames: false
 
