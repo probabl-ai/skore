@@ -14,7 +14,7 @@
     <source srcset="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Dark@2x.svg" media="(prefers-color-scheme: dark)">
     <img width="200" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" alt="skore logo">
   </picture>
-  <h3>Own Your Data Science</h3>
+  <h3>Track Your Data Science</h3>
 
 Elevate ML Development with Built-in Recommended Practices \
 [Documentation](https://docs.skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3) — [Skore Hub](https://probabl.ai/skore)
