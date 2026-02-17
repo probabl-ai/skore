@@ -113,7 +113,10 @@ class TestProject:
 
         with raises(
             ValueError,
-            match=escape("Unknown mode `local`. Please install `skore[local]`."),
+            match=escape(
+                "The mode `local` is not supported. You need to install "
+                "`skore-local-project` to use it."
+            ),
         ):
             Project(mode="local", name="<name>")
 
@@ -138,7 +141,10 @@ class TestProject:
 
         with raises(
             ValueError,
-            match=escape("Unknown mode `hub`. Please install `skore[hub]`."),
+            match=escape(
+                "The mode `hub` is not supported. You need to install "
+                "`skore-hub-project` to use it."
+            ),
         ):
             Project(mode="hub", name="<workspace>/<name>")
 

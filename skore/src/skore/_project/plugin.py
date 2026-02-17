@@ -51,6 +51,11 @@ def get(*, group: PluginGroup, mode: ProjectMode) -> Any:
     plugins = entry_points(group=group)
 
     if mode not in plugins.names:
-        raise ValueError(f"Unknown mode `{mode}`. Please install `skore[{mode}]`.")
+        raise ValueError(
+            f"The mode `{mode}` is not supported. You need to install "
+            f"`skore-{mode}-project` to use it. You can install it with pip:\n"
+            f'    pip install "skore[{mode}]"\n'
+            f"`skore-{mode}-project` is already included in `skore` conda package."
+        )
 
     return plugins[mode].load()
