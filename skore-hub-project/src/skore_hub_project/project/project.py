@@ -391,7 +391,7 @@ class Project:
         return sorted(map(dto, responses), key=itemgetter("date"))
 
     def __repr__(self) -> str:  # noqa: D105
-        return f"Project(mode='hub', name='{self.name}',workspace='{self.workspace}')"
+        return f"Project(mode='hub', name='{self.name}', workspace='{self.workspace}')"
 
     @staticmethod
     @ensure_workspace_is_valid
