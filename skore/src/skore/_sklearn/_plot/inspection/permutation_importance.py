@@ -95,7 +95,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             elif isinstance(metric, _BaseScorer):
                 metric_name = metric._score_func.__name__.replace("_", " ")
             else:
-                metric_name = metric.__name__.replace("_", " ")  # type: ignore[assignment]
+                metric_name = metric.__name__.replace("_", " ")
             scores = {metric_name: scores}
 
         df_importances = []
@@ -118,7 +118,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                     df["label"], df["output"] = np.nan, np.nan
                 else:
                     if is_classifier(estimator):
-                        df["label"] = estimator.classes_[target_index]  # type: ignore[assignment]
+                        df["label"] = estimator.classes_[target_index]
                         df["output"] = np.nan
                     else:
                         df["output"], df["label"] = target_index, np.nan

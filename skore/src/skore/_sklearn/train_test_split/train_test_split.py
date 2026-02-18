@@ -14,6 +14,7 @@ from skore._sklearn.train_test_split.warning import TRAIN_TEST_SPLIT_WARNINGS
 
 if TYPE_CHECKING:
     ArrayLike = Any
+    from .warning.train_test_split_warning import TrainTestSplitWarning
 
 
 def train_test_split(

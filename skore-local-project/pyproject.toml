@@ -100,13 +100,4 @@ convention = "numpy"
 "tests/*" = ["D"]
 
 [tool.ty.src]
-exclude = [
-  "hatch/**",
-  "tests/**",
-]
-
-[tool.ty.analysis]
-allowed-unresolved-imports = [
-  "diskcache.**",
-  "joblib.**",
-]
+exclude = ["hatch/**", "tests/**"]

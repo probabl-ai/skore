@@ -76,7 +76,7 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
             return None
 
         if isinstance(y_test, np.ndarray) and y_test.ndim >= 2:
-            y_test = cast(np.ndarray, y_test).flatten()  # type: ignore[assignment]
+            y_test = cast(np.ndarray, y_test).flatten()
 
         counts = Counter(y_test)
 

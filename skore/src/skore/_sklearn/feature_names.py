@@ -43,7 +43,7 @@ def _get_feature_names(
         return cast(Callable, transformer.get_feature_names_out)().tolist()
     elif X is not None:
         if hasattr(X, "columns"):
-            return X.columns.tolist()  # type: ignore[assignment]
+            return X.columns.tolist()
         else:
             return [f"Feature #{i}" for i in range(_num_features(X))]
 

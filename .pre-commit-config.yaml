@@ -24,7 +24,6 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.14
     hooks:
-
       - id: ruff-check
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
         args: [--fix, --extend-select, I]
@@ -34,23 +33,23 @@ repos:
 
   - repo: local
     hooks:
-    - id: ty
-      alias: ty-skore
-      name: ty skore/
-      entry: uv run --with ty==0.0.17 ty check --project skore
-      language: system
-      pass_filenames: false
+      - id: ty
+        alias: ty-skore
+        name: ty skore/
+        entry: uv run --python 3.13 --with ty==0.0.17 ty check --project skore
+        language: unsupported
+        pass_filenames: false
 
-    - id: ty
-      alias: ty-skore-hub-project
-      name: ty skore-hub-project/
-      entry: uv run --with ty==0.0.17 ty check --project skore-hub-project
-      language: system
-      pass_filenames: false
+      - id: ty
+        alias: ty-skore-local-project
+        name: ty skore-local-project/
+        entry: uv run --python 3.13 --with ty==0.0.17 ty check --project skore-local-project
+        language: unsupported
+        pass_filenames: false
 
-    - id: ty
-      alias: ty-skore-local-project
-      name: ty skore-local-project/
-      entry: uv run ty check --project skore-local-project
-      language: system
-      pass_filenames: false
+      - id: ty
+        alias: ty-skore-hub-project
+        name: ty skore-hub-project/
+        entry: uv run --python 3.13 --with ty==0.0.17 ty check --project skore-hub-project
+        language: unsupported
+        pass_filenames: false

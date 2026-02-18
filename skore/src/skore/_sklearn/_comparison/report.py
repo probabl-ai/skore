@@ -406,7 +406,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(25,), (25,)]
         """
-        return [  # type: ignore
+        return [
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,

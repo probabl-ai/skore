@@ -111,16 +111,3 @@ convention = "numpy"
 
 [tool.ty.src]
 exclude = ["hatch/**", "tests/**"]
-
-[tool.ty.analysis]
-allowed-unresolved-imports = [
-  "joblib.**",
-  "scipy.**",
-  "sklearn.**",
-]
-
-[[tool.ty.overrides]]
-include = ["skore/**"]
-
-[tool.ty.overrides.analysis]
-respect-type-ignore-comments = true
