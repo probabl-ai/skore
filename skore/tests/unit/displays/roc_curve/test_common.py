@@ -34,10 +34,8 @@ class TestRocCurveDisplay:
         assert hasattr(display, "data_source")
         assert hasattr(display, "pos_label")
 
-        display.plot()
-        assert hasattr(display, "facet_")
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
+        facet = display.plot()
+        assert isinstance(facet, sns.FacetGrid)
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     @pytest.mark.parametrize("with_roc_auc", [False, True])
@@ -104,8 +102,8 @@ class TestRocCurveDisplay:
             else {"color": "red"}
         )
 
-        display.set_style(relplot_kwargs=relplot_kwargs).plot()
-        ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+        facet = display.set_style(relplot_kwargs=relplot_kwargs).plot()
+        ax = facet.axes.flatten()[0]
         assert ax.get_lines()[0].get_color() == "red"
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])

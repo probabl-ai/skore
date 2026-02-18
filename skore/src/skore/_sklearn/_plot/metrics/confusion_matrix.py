@@ -153,7 +153,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         normalize: Literal["true", "pred", "all"] | None = None,
         threshold_value: float | None = None,
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
-    ) -> None:
+    ) -> sns.FacetGrid:
         """Matplotlib implementation of the `plot` method.
 
         Parameters
@@ -243,9 +243,9 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             if threshold_value is None:
                 threshold_value = 0.5 if self.response_method == "predict_proba" else 0
             title = f"{title}\nDecision threshold: {threshold_value:.2f}"
-        self.figure_.suptitle(f"{title}\n{info_data_source}")
+        self.facet_.figure.suptitle(f"{title}\n{info_data_source}")
 
-        for ax in self.ax_:
+        for ax in self.facet_.axes.flatten():
             ax.set(
                 xlabel="Predicted label",
                 ylabel="True label",
@@ -280,6 +280,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         if len(self.ax_) == 1:
             self.ax_ = self.ax_[0]
+
+        return self.facet_
 
     def _validate_subplot_by(
         self,

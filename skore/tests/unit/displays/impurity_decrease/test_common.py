@@ -1,6 +1,7 @@
 import matplotlib as mpl
 import pandas as pd
 import pytest
+import seaborn as sns
 
 from skore import ImpurityDecreaseDisplay
 
@@ -37,11 +38,10 @@ class TestImpurityDecreaseDisplay:
         assert isinstance(display, ImpurityDecreaseDisplay)
         assert hasattr(display, "importances")
         assert hasattr(display, "report_type")
-        display.plot()
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
-        if fixture_prefix == "cross_validation_reports":
-            assert hasattr(display, "facet_")
+        facet = display.plot()
+        assert isinstance(facet, sns.FacetGrid)
+        assert isinstance(facet.figure, mpl.figure.Figure)
+        assert isinstance(facet.axes.flatten()[0], mpl.axes.Axes)
 
     def test_frame_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -91,10 +91,10 @@ class TestImpurityDecreaseDisplay:
         figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         assert figure.get_figheight() == 6
         if fixture_prefix == "estimator_reports":
-            display.set_style(barplot_kwargs={"height": 8}).plot()
+            facet = display.set_style(barplot_kwargs={"height": 8}).plot()
         else:
-            display.set_style(stripplot_kwargs={"height": 8}).plot()
-        assert display.figure_.get_figheight() == 8
+            facet = display.set_style(stripplot_kwargs={"height": 8}).plot()
+        assert facet.figure.get_figheight() == 8
 
 
 @pytest.mark.parametrize(

@@ -10,7 +10,8 @@ def test_legend_binary_classification(
     """Check the legend of the ROC curve plot with binary data."""
     report = cross_validation_reports_binary_classification[0]
     display = report.metrics.roc()
-    _, ax = cross_validation_reports_binary_classification_figure_axes
+    _, axes = cross_validation_reports_binary_classification_figure_axes
+    ax = axes[0]
     assert isinstance(ax, mpl.axes.Axes)
     legend = ax.get_legend()
     assert legend is not None
@@ -30,7 +31,8 @@ def test_legend_multiclass_classification(
     """Check the legend of the ROC curve plot with multiclass data."""
     report = cross_validation_reports_multiclass_classification[0]
     display = report.metrics.roc()
-    _, ax = cross_validation_reports_multiclass_classification_figure_axes
+    _, axes = cross_validation_reports_multiclass_classification_figure_axes
+    ax = axes[0]
     labels = display.roc_curve["label"].cat.categories
     assert isinstance(ax, mpl.axes.Axes)
     legend = ax.get_legend()
@@ -86,8 +88,10 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.roc()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
+        facet = display.plot(subplot_by=subplot_by)
+        ax_ = facet.axes.flatten()
         if subplot_by is None:
-            assert isinstance(display.ax_, mpl.axes.Axes)
+            ax = facet.axes.squeeze().item()
+            assert isinstance(ax, mpl.axes.Axes)
         else:
-            assert len(display.ax_) == expected_len
+            assert len(ax_) == expected_len

@@ -93,9 +93,8 @@ class TestCoefficientsDisplay:
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
-        _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
-        if hasattr(ax, "flatten"):
-            ax = ax.flatten()[0]
+        facet = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        ax = facet.axes.flatten()[0]
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
 
@@ -104,7 +103,8 @@ class TestCoefficientsDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.inspection.coefficients()
-        figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        facet = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        figure = facet.figure
         title = figure.get_suptitle()
         assert "Coefficient" in title
         if "comparison" not in fixture_prefix:
@@ -117,7 +117,8 @@ class TestCoefficientsDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.inspection.coefficients()
-        figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        facet = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        figure = facet.figure
         assert figure.get_figheight() == 6
 
         if "estimator_reports" in fixture_prefix:

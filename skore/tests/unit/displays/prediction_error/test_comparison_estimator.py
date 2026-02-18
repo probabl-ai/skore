@@ -27,8 +27,8 @@ def test_legend_actual_vs_predicted(pyplot, task, n_legend_entries, request):
     """Check the legend when kind is actual_vs_predicted."""
     report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.metrics.prediction_error()
-    display.plot(kind="actual_vs_predicted")
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    facet = display.plot(kind="actual_vs_predicted")
+    legend_texts = [t.get_text() for t in facet.figure.legends[0].get_texts()]
     assert len(legend_texts) == n_legend_entries
     if task == "multioutput_regression":
         assert legend_texts[0] == "Output #0"
@@ -74,8 +74,10 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.prediction_error()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
-        assert len(display.ax_) == expected_len
+        facet = display.plot(subplot_by=subplot_by)
+        ax_ = facet.axes.flatten()
+        assert isinstance(ax_[0], mpl.axes.Axes)
+        assert len(ax_) == expected_len
 
 
 @pytest.mark.parametrize("task", ["regression", "multioutput_regression"])
@@ -89,11 +91,12 @@ def test_subplot_by_data_source(pyplot, task, request):
             match="Invalid `subplot_by` parameter."
             + " Valid options are: auto, output, estimator. Got 'data_source' instead.",
         ):
-            display.plot(subplot_by="data_source")
+            facet = display.plot(subplot_by="data_source")
     else:
-        display.plot(subplot_by="data_source")
-        assert len(display.ax_) == 2
-        legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+        facet = display.plot(subplot_by="data_source")
+        ax_ = facet.axes.flatten()
+        assert len(ax_) == 2
+        legend_texts = [t.get_text() for t in facet.figure.legends[0].get_texts()]
         assert len(legend_texts) == 3
         assert legend_texts[0] == "DummyRegressor_1"
         assert legend_texts[1] == "DummyRegressor_2"
@@ -105,9 +108,9 @@ def test_source_both(pyplot, task, request):
     """Check the behaviour of the plot when data_source='both'."""
     report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.metrics.prediction_error(data_source="both")
-    display.plot()
-    assert len(display.figure_.legends) == 1
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    facet = display.plot()
+    assert len(facet.figure.legends) == 1
+    legend_texts = [t.get_text() for t in facet.figure.legends[0].get_texts()]
     assert len(legend_texts) == 3 if task == "regression" else 7
     assert legend_texts[-1] == "Perfect predictions"
     assert "train" in legend_texts
@@ -115,3 +118,4 @@ def test_source_both(pyplot, task, request):
     if task == "multioutput_regression":
         assert "0" in legend_texts
         assert "1" in legend_texts
+

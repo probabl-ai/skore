@@ -176,7 +176,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         subplot_by: Literal["auto", "label", "estimator", "data_source"]
         | None = "auto",
         despine: bool = True,
-    ) -> None:
+    ) -> sns.FacetGrid:
         """Matplotlib implementation of the `plot` method."""
         plot_data = self.frame(with_average_precision=True)
 
@@ -279,6 +279,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         if len(self.ax_) == 1:
             self.ax_ = self.ax_[0]
+
+        return self.facet_
 
     @classmethod
     def _compute_data_for_display(

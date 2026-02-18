@@ -190,7 +190,7 @@ class PredictionErrorDisplay(DisplayMixin):
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
         despine: bool = True,
-    ) -> None:
+    ) -> sns.FacetGrid:
         """Matplolib implementation of the `plot` method."""
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
@@ -297,7 +297,7 @@ class PredictionErrorDisplay(DisplayMixin):
 
         labels.append("Perfect predictions")
 
-        self.figure_.legend(
+        self.facet_.figure.legend(
             handles,
             labels,
             loc="upper center",
@@ -308,6 +308,8 @@ class PredictionErrorDisplay(DisplayMixin):
 
         if len(self.ax_) == 1:
             self.ax_ = self.ax_[0]
+
+        return self.facet_
 
     def _get_plot_columns(
         self,

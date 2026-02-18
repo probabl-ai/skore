@@ -26,8 +26,8 @@ def test_legend_actual_vs_predicted(pyplot, task, legend_prefix, request):
     """Check the legend when kind is actual_vs_predicted."""
     report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
     display = report.metrics.prediction_error()
-    display.plot(kind="actual_vs_predicted")
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    facet = display.plot(kind="actual_vs_predicted")
+    legend_texts = [t.get_text() for t in facet.figure.legends[0].get_texts()]
 
     assert len(legend_texts) == 3
     assert legend_texts[0] == f"{legend_prefix} #0"
@@ -73,8 +73,11 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.prediction_error()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
+        facet = display.plot(subplot_by=subplot_by)
         if subplot_by is None:
-            assert isinstance(display.ax_, mpl.axes.Axes)
+            ax = facet.axes.squeeze().item()
+            assert isinstance(ax, mpl.axes.Axes)
         else:
-            assert len(display.ax_) == expected_len
+            ax_ = facet.axes.flatten()
+            assert isinstance(ax_[0], mpl.axes.Axes)
+            assert len(ax_) == expected_len
