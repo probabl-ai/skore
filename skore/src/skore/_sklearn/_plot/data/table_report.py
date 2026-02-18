@@ -216,7 +216,15 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         display : TableReportDisplay
             Object that stores computed values.
         """
-        return cls(summarize_dataframe(dataset, with_plots=True, title=None, verbose=0))
+        with plt.ioff():
+            return cls(
+                summarize_dataframe(
+                    dataset,
+                    with_plots=True,
+                    title=None,
+                    verbose=0,
+                )
+            )
 
     @DisplayMixin.style_plot
     def plot(
