@@ -258,12 +258,6 @@ jobs:
           name: sphinx-html-artifact
           path: html/
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
-        with:
-          role-to-assume: ${{ vars.AWS_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
-
       - name: Deploy HTML artifacts
         uses: ./.github/actions/sphinx/deploy-aws
         with:
