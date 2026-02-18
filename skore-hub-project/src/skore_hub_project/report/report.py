@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
+from skore_hub_project import switch_mpl_backend
 from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
@@ -110,6 +111,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         metrics = [metric_cls(report=self.report) for metric_cls in self.METRICS]
 
         with (
+            switch_mpl_backend(),
             plt.ioff(),
             SkinnedProgress() as progress,
             ThreadPoolExecutor() as pool,
@@ -142,7 +144,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         """
         payloads = []
 
-        with plt.ioff():
+        with switch_mpl_backend(), plt.ioff():
             for media_cls in self.MEDIAS:
                 payload = media_cls(project=self.project, report=self.report)
 
