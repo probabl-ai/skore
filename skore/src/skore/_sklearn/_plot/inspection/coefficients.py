@@ -256,10 +256,8 @@ class CoefficientsDisplay(DisplayMixin):
             columns_to_drop = ["estimator"]
         elif self.report_type == "comparison-estimator":
             columns_to_drop = ["split"]
-        elif self.report_type == "comparison-cross-validation":
+        else:  # comparison-cross-validation
             columns_to_drop = []
-        else:
-            raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
         if self.coefficients["label"].isna().all():
             # regression problem
