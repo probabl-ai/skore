@@ -86,7 +86,7 @@ def test_frame_default_threshold(
     report = ComparisonReport([cv_report_1, cv_report_2])
     display = report.metrics.confusion_matrix()
 
-    frame = display.frame(threshold_value=None)
+    frame = display.frame()
     assert isinstance(frame, pd.DataFrame)
     n_classes = len(display.display_labels)
     n_estimators = 2
