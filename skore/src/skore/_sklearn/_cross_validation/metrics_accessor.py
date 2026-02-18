@@ -1168,7 +1168,7 @@ class _MetricsAccessor(
         display = display_class._compute_data_for_display(
             y_true=y_true,
             y_pred=y_pred,
-            report_type="cross-validation",
+            report_type=self._parent._report_type,
             estimators=[
                 report.estimator_ for report in self._parent.estimator_reports_
             ],

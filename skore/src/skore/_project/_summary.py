@@ -7,13 +7,12 @@ from typing import TYPE_CHECKING
 
 from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
 
-from skore import ComparisonReport
 from skore._utils._jupyter import _jupyter_dependencies_available
 
 if TYPE_CHECKING:
     from typing import Literal
 
-    from skore import CrossValidationReport, EstimatorReport
+    from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 
 
 class Summary(DataFrame):
@@ -91,6 +90,8 @@ class Summary(DataFrame):
         return_as : {"list", "comparison"}, default="list"
             In what form the reports should be returned.
         """
+        from skore import ComparisonReport
+
         if self.empty:
             return []
 
@@ -130,7 +131,8 @@ class Summary(DataFrame):
                 stacklevel=2,
             )
             return {"text/html": DataFrame._repr_html_(self)}
-        from skore.project._widget import ModelExplorerWidget
+
+        from skore._project._widget import ModelExplorerWidget
 
         self._plot_widget = ModelExplorerWidget(dataframe=self)
         return {"text/html": self._plot_widget.display()}
@@ -174,7 +176,7 @@ class Summary(DataFrame):
                 range_values = (range_values,)
 
             if column_name == "learner":
-                for dim in self._plot_widget.current_fig.data[0].dimensions:  # type: ignore[assignment]
+                for dim in self._plot_widget.current_fig.data[0].dimensions:
                     if dim["label"] == "Learner":
                         learner_values = dim["ticktext"]
                         learner_codes = dim["tickvals"]

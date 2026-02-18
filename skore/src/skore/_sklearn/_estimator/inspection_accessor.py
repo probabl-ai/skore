@@ -78,7 +78,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             estimators=[self._parent.estimator_],
             names=[self._parent.estimator_name_],
             splits=[np.nan],
-            report_type="estimator",
+            report_type=self._parent._report_type,
         )
 
     @available_if(_check_estimator_has_feature_importances())
@@ -119,7 +119,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             estimators=[self._parent.estimator_],
             names=[self._parent.estimator_name_],
             splits=[np.nan],
-            report_type="estimator",
+            report_type=self._parent._report_type,
         )
 
     def permutation_importance(
@@ -405,7 +405,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 max_samples=max_samples,
                 n_jobs=n_jobs,
                 seed=seed,
-                report_type="estimator",
+                report_type=self._parent._report_type,
             )
 
             if cache_key is not None:
