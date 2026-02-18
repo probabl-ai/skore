@@ -214,8 +214,6 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         feature using seaborn's catplot. For cross-validation reports, it uses a
         strip plot with boxplot overlay to show the distribution across splits.
         """
-        frame = self.frame()
-
         # Make copy of the dictionary since we are going to pop some keys later
         barplot_kwargs = self._default_barplot_kwargs.copy()
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
@@ -223,7 +221,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
 
         if "comparison" in self.report_type:
             return self._plot_comparison(
-                frame=frame,
+                frame=self.frame(),
                 report_type=self.report_type,
                 barplot_kwargs=barplot_kwargs,
                 boxplot_kwargs=boxplot_kwargs,
@@ -231,7 +229,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             )
         # EstimatorReport or CrossValidationReport
         return self._plot_single_estimator(
-            frame=frame,
+            frame=self.frame(),
             estimator_name=self.importances["estimator"][0],
             report_type=self.report_type,
             barplot_kwargs=barplot_kwargs,
@@ -269,20 +267,17 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         barplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.barplot` for
             rendering the mean decrease in impurity with an
-            :class:`~skore.EstimatorReport` or :class:`~skore.ComparisonReport` of
             :class:`~skore.EstimatorReport`.
 
         stripplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.stripplot` for
             rendering the mean decrease in impurity with a
-            :class:`~skore.CrossValidationReport` or :class:`~skore.ComparisonReport`
-            of :class:`~skore.CrossValidationReport`.
+            :class:`~skore.CrossValidationReport`.
 
         boxplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.boxplot` for
             rendering the mean decrease in impurity with a
-            :class:`~skore.CrossValidationReport` or :class:`~skore.ComparisonReport`
-            of :class:`~skore.CrossValidationReport`.
+            :class:`~skore.CrossValidationReport`.
         """
         self._categorical_plot(
             frame=frame,
