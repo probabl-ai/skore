@@ -207,8 +207,8 @@ def test_clustering():
     """Check that we cannot create a report with a clustering model."""
     with pytest.raises(
         ValueError,
-        match="skore does not support clustering models "
-        "yet. Please use a classification or regression model instead.",
+        match="Clustering models are not supported yet. "
+        "Please use a classification or regression model instead.",
     ):
         CrossValidationReport(KMeans(), X=np.random.rand(10, 5))
 
