@@ -1118,7 +1118,6 @@ class _MetricsAccessor(
             X, y, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
-            assert y is not None, "y must be provided"
         else:
             data_source_hash = None
 

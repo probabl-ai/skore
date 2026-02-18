@@ -118,7 +118,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         X_train: ArrayLike | None,
         y_train: ArrayLike | None,
     ) -> tuple[BaseEstimator, float]:
-        if X_train is None or (y_train is None and not is_clusterer(estimator)):
+        if X_train is None or y_train is None:
             raise ValueError(
                 "The training data is required to fit the estimator. "
                 "Please provide both X_train and y_train."
@@ -155,6 +155,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         pos_label: PositiveLabel | None = None,
     ) -> None:
         self._fit = fit
+
+        if is_clusterer(estimator):
+            raise ValueError(
+                "Clustering models are not supported yet. Please use a"
+                " classification or regression model instead."
+            )
 
         fit_time: float | None = None
         if fit == "auto":
