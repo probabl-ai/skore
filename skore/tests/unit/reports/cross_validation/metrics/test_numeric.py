@@ -240,3 +240,23 @@ def test_precision_recall_pos_label_overwrite(
             (metric.capitalize(), "A"), (report.estimator_name_, "mean")
         ]
     )
+
+
+def test_invalid_X_y_call_still_raises_after_cache_write(
+    logistic_binary_classification_data,
+):
+    """
+    Non regression for https://github.com/probabl-ai/skore/issues/2491:
+    Invalid `X`/`y` args should not be masked by a cache hit.
+    """
+    classifier, X, y = logistic_binary_classification_data
+    report = CrossValidationReport(classifier, X, y)
+
+    error_msg = "X and y must be None when data_source is test"
+    with pytest.raises(ValueError, match=error_msg):
+        report.metrics.accuracy(X=X, y=y)
+
+    report.metrics.accuracy()
+
+    with pytest.raises(ValueError, match=error_msg):
+        report.metrics.accuracy(X=X, y=y)
