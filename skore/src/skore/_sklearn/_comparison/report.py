@@ -406,15 +406,18 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(25,), (25,)]
         """
-        return [
-            report.get_predictions(
-                data_source=data_source,
-                response_method=response_method,
-                X=X,
-                pos_label=pos_label,
-            )
-            for report in self.reports_.values()
-        ]
+        return cast(
+            list[ArrayLike] | list[list[ArrayLike]],
+            [
+                report.get_predictions(
+                    data_source=data_source,
+                    response_method=response_method,
+                    X=X,
+                    pos_label=pos_label,
+                )
+                for report in self.reports_.values()
+            ],
+        )
 
     def create_estimator_report(
         self,

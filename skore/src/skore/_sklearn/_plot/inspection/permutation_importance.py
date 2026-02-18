@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -87,7 +87,6 @@ class PermutationImportanceDisplay(DisplayMixin):
         if "importances" in scores:
             # single metric case -> switch to multi-metric case by wrapping in a dict
             # with the name of the metric
-            metric = cast(str | Callable | _BaseScorer | None, metric)
             if metric is None:
                 metric_name = "accuracy" if is_classifier(estimator) else "r2"
             elif isinstance(metric, str):
@@ -95,7 +94,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             elif isinstance(metric, _BaseScorer):
                 metric_name = metric._score_func.__name__.replace("_", " ")
             else:
-                metric_name = metric.__name__.replace("_", " ")
+                metric_name = getattr(metric, "__name__", "unknown").replace("_", " ")
             scores = {metric_name: scores}
 
         df_importances = []
@@ -118,7 +117,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                     df["label"], df["output"] = np.nan, np.nan
                 else:
                     if is_classifier(estimator):
-                        df["label"] = estimator.classes_[target_index]
+                        df["label"] = estimator.classes_[target_index]  # type: ignore[attr-defined]
                         df["output"] = np.nan
                     else:
                         df["output"], df["label"] = target_index, np.nan

@@ -223,7 +223,7 @@ class ModelExplorerWidget:
         list[str]
             The unique datasets.
         """
-        return self._filter_dataframe(ml_task, report_type)["dataset"].unique()
+        return self._filter_dataframe(ml_task, report_type)["dataset"].unique().tolist()
 
     def __init__(self, dataframe: pd.DataFrame, seed: int = 0) -> None:
         if dataframe.empty:

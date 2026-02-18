@@ -76,7 +76,7 @@ def _combine_estimator_results(
         # Some metrics can be undefined for some estimators and NaN are
         # introduced after the concatenation. We fill the NaN using the
         # valid favorability
-        favorability_ = results.pop("Favorability").bfill(axis=1).iloc[:, 0]
+        favorability_ = results.pop("Favorability").bfill(axis=1).iloc[:, 0]  # type: ignore[arg-type]
     else:
         favorability_ = None
 
@@ -284,7 +284,7 @@ def _combine_cross_validation_results(
         7  Precision                1  DummyClassifier_2  Split #1   0.42
         """
         df["Metric"] = df["Metric"].astype(
-            pd.CategoricalDtype(df["Metric"].unique(), ordered=True)
+            pd.CategoricalDtype(df["Metric"].unique().tolist(), ordered=True)
         )
         df["metric_order_index"] = df["Metric"].cat.codes
 

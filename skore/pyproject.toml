@@ -164,3 +164,6 @@ convention = "numpy"
 
 [tool.ty.src]
 exclude = ["hatch/**", "src/skore/_externals/**", "tests/**"]
+
+[tool.ty.terminal]
+error-on-warning = true

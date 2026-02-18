@@ -118,8 +118,9 @@ class EstimatorReportMetadata(ReportMetadata):  # noqa: D101
 
         return cast_to_float(getattr(report.metrics, name)(data_source="test"))
 
-    def __post_init__(self, report: EstimatorReport) -> None:
+    def __post_init__(self, report: EstimatorReport | CrossValidationReport) -> None:
         """Initialize dynamic fields."""
+        report = cast(EstimatorReport, report)
         super().__post_init__(report)
 
         self.rmse = self.metric(report, "rmse")
@@ -164,8 +165,9 @@ class CrossValidationReportMetadata(ReportMetadata):  # noqa: D101
 
         return cast_to_float(series.iloc[0])
 
-    def __post_init__(self, report: CrossValidationReport) -> None:
+    def __post_init__(self, report) -> None:
         """Initialize dynamic fields."""
+        report = cast(CrossValidationReport, report)
         super().__post_init__(report)
 
         self.rmse_mean = self.metric(report, "rmse")

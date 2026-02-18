@@ -105,7 +105,6 @@ class CoefficientsDisplay(DisplayMixin):
             scores = coefs.apply(lambda x: x.abs().mean())
         else:
             scores = coefs.first().abs()
-        scores = cast(pd.Series, scores)
 
         if select_k > 0:
             selected_features = scores.nlargest(abs(select_k)).index
@@ -125,7 +124,6 @@ class CoefficientsDisplay(DisplayMixin):
             scores = frame.groupby("feature")["coefficient"].apply(
                 lambda x: x.abs().mean()
             )
-            scores = cast(pd.Series, scores)
             feature_order = scores.sort_values(ascending=ascending).index
             return frame.set_index("feature").loc[feature_order].reset_index()
 

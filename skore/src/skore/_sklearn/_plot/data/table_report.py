@@ -56,7 +56,7 @@ def _truncate_top_k_categories(
     _, counter = top_k_value_counts(col, k=k)
     values, _ = zip(*counter, strict=False)
     # we don't want to replace NaN with 'other'
-    keep = sbd.is_in(col, values) | sbd.is_null(col)
+    keep = sbd.is_in(col, values) | sbd.is_null(col)  # type: ignore[unresolved-attribute]
     if isinstance(col.dtype, pd.CategoricalDtype):
         col = col.cat.add_categories(other_label)
         col[~keep] = other_label
@@ -368,7 +368,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         if is_categorical := not (sbd.is_numeric(column) or sbd.is_any_date(column)):
             top_k = sbd.col(sbd.head(sbd.value_counts(column), k), "value")
 
-            column = sbd.filter(column, sbd.is_in(column, top_k))
+            column = sbd.filter(column, sbd.is_in(column, top_k))  # type: ignore[unresolved-attribute]
             column = sbd.to_pandas(column)
             column = column.astype(
                 pd.CategoricalDtype(categories=sbd.to_list(top_k), ordered=True)
@@ -467,7 +467,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
 
         despine_params = {"top": True, "right": True, "trim": True, "offset": 10}
         is_x_num, is_y_num = sbd.is_numeric(x), sbd.is_numeric(y)
-        hue = _truncate_top_k_categories(hue, k)
+        hue = _truncate_top_k_categories(hue, k)  # type: ignore[invalid-assignment]
 
         if is_x_num and is_y_num:
             scatterplot_kwargs_validated = _validate_style_kwargs(
@@ -507,9 +507,9 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             )
 
             if is_x_num:
-                y = _truncate_top_k_categories(y, k)
+                y = _truncate_top_k_categories(y, k)  # type: ignore[invalid-assignment]
             else:
-                x = _truncate_top_k_categories(x, k)
+                x = _truncate_top_k_categories(x, k)  # type: ignore[invalid-assignment]
 
             sns.boxplot(x=x, y=y, ax=self.ax_, **boxplot_kwargs_validated)
             sns.stripplot(x=x, y=y, hue=hue, ax=self.ax_, **stripplot_kwargs_validated)
@@ -546,7 +546,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 ellide_string(s) for s in contingency_table.columns
             ]
 
-            if max_value := contingency_table.max(axis=None) < 100_000:
+            if (max_value := cast(float, contingency_table.max(axis=None))) < 100_000:
                 # avoid scientific notation for small numbers
                 annotation_format = (
                     ".0f"

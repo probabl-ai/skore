@@ -65,9 +65,11 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
             return None
 
         if isinstance(y, np.ndarray) and y.ndim >= 2:
-            y = cast(np.ndarray, y).flatten()
+            y_ = cast(np.ndarray, y).flatten()
+        else:
+            y_ = y
 
-        counter = Counter(y)
+        counter = Counter(y_)
         counts = sorted(counter.values())
 
         if (counts[-1] / counts[0]) < 3:
