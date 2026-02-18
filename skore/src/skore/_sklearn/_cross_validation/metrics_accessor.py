@@ -198,8 +198,11 @@ class _MetricsAccessor(
             X, y, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
-        else:
+        elif X is None and y is None:
             data_source_hash = None
+        else:
+            err_msg = f"X and y must be None when data_source is {data_source}."
+            raise ValueError(err_msg)
 
         cache_key_parts: list[Any] = [
             self._parent._hash,
