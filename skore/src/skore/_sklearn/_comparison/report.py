@@ -11,7 +11,6 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
@@ -225,12 +224,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             dict[str, EstimatorReport] | dict[str, CrossValidationReport],
             dict(zip(deduped_report_names, reports_list, strict=True)),
         )
-
-        if any(is_clusterer(report.estimator) for report in reports_dict.values()):
-            raise ValueError(
-                "skore does not support clustering models yet. Please use a"
-                " classification or regression model instead."
-            )
 
         return reports_dict, report_type, pos_label
 

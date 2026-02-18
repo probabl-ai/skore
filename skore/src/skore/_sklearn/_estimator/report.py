@@ -158,7 +158,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         if is_clusterer(estimator):
             raise ValueError(
-                "skore does not support clustering models yet. Please use a"
+                "Clustering models are not supported yet. Please use a"
                 " classification or regression model instead."
             )
 

@@ -11,7 +11,7 @@ from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
+from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.find_ml_task import _find_ml_task
@@ -154,12 +154,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         splitter: int | SKLearnCrossValidator | Generator | None = None,
         n_jobs: int | None = None,
     ) -> None:
-        if is_clusterer(estimator):
-            raise ValueError(
-                "skore does not support clustering models yet. Please use a"
-                " classification or regression model instead."
-            )
-
         self._estimator = clone(estimator)
 
         # private storage to be able to invalidate the cache when the user alters
