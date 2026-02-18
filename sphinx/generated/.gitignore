@@ -1,0 +1,4 @@
+# This directory contains files auto-generated during the Sphinx docs build.
+# Do NOT manually edit or add files here.
+*
+!.gitignore

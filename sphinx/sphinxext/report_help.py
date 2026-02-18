@@ -24,7 +24,7 @@ def generate_help_demo(_app: Sphinx, _config: Any) -> None:
     report_ridge = skore.CrossValidationReport(
         skrub.tabular_pipeline(sklearn.linear_model.Ridge()), X, y
     )
-    with open("_templates/demo_report_help_generated.html", "w", encoding="utf-8") as f:
+    with open("generated/demo_report_help_generated.html", "w", encoding="utf-8") as f:
         f.write(report_ridge._create_help_html())
 
 
