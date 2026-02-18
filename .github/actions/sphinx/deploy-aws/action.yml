@@ -1,13 +1,6 @@
 name: Deploy sphinx documentation
 
 inputs:
-  ACTION:
-    required: false
-    default: sync
-    type: choice
-    options:
-      - cp
-      - sync
   BUCKET:
     required: true
   SOURCE:
@@ -25,16 +18,25 @@ inputs:
     description: "Canned ACL to apply. Defaults to private."
     required: false
     default: "private"
+  DELETE:
+    description: "Files that exist in the destination but not in the source are deleted during sync."
+    required: false
+    default: true
 
 runs:
   using: composite
   steps:
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v6
+      uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
       with:
         role-to-assume: ${{ inputs.ROLE_TO_ASSUME }}
         aws-region: ${{ inputs.AWS_REGION }}
 
     - name: Run AWS S3 Command
       shell: bash
-      run: aws s3 ${{ inputs.ACTION }} "${{ inputs.SOURCE }}" "s3://${{ inputs.BUCKET }}/${{ inputs.DESTINATION }}" --acl ${{ inputs.ACL }} --delete
+      run: |
+        DELETE_FLAG=""
+        if [ "${{ inputs.DELETE }}" == "true" ]; then
+          DELETE_FLAG="--delete"
+        fi
+        aws s3 sync "${{ inputs.SOURCE }}" "s3://${{ inputs.BUCKET }}/${{ inputs.DESTINATION }}" --acl ${{ inputs.ACL }} $DELETE_FLAG
