@@ -1,7 +1,5 @@
 import matplotlib as mpl
-import numpy as np
 import pytest
-from sklearn.base import clone
 from sklearn.metrics import (
     make_scorer,
     mean_squared_error,
@@ -9,1207 +7,221 @@ from sklearn.metrics import (
     r2_score,
     recall_score,
 )
-from sklearn.utils._testing import _convert_container
 
-from skore import EstimatorReport, PermutationImportanceDisplay
 from skore._utils._testing import custom_r2_score
 
 
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_binary_classification_averaged_metrics(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-    data_source,
-):
-    """Check the attributes and default plotting behaviour of the permutation
-    importance plot with binary classification data and averaged metrics returning
-    a single value."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    n_repeats = 2
-    display = report.inspection.permutation_importance(
-        n_repeats=n_repeats, data_source=data_source
-    )
-    assert isinstance(display, PermutationImportanceDisplay)
-
-    expected_columns = [
-        "estimator",
-        "data_source",
-        "metric",
-        "feature",
-        "label",
-        "output",
-        "repetition",
-        "value",
-    ]
-    df = display.importances
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-    for col in ("label", "output"):
-        assert df[col].isna().all()
-    assert df["data_source"].unique() == [data_source]
-    assert df["metric"].unique() == ["accuracy"]
-    assert df["estimator"].unique() == [report.estimator_name_]
-    assert df["feature"].tolist() == columns_names * n_repeats
-
-    df = display.frame()
-    expected_columns = ["data_source", "metric", "feature", "value_mean", "value_std"]
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-
-    display.plot()
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-
-    assert display.ax_.get_xlabel() == "Decrease in accuracy"
-    assert display.ax_.get_ylabel() == ""
-    estimator_name = display.importances["estimator"].unique()[0]
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {estimator_name} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_binary_classification_per_label_metrics(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-    data_source,
-):
-    """Check the attributes and default plotting behaviour of the permutation
-    importance plot with binary classification data and per-label metrics returning
-    a value for each label."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "precision": make_scorer(precision_score, average=None),
-        "recall": make_scorer(recall_score, average=None),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    n_repeats = 2
-    display = report.inspection.permutation_importance(
-        n_repeats=n_repeats, data_source=data_source, metric=metric
-    )
-    assert isinstance(display, PermutationImportanceDisplay)
-
-    expected_columns = [
-        "estimator",
-        "data_source",
-        "metric",
-        "feature",
-        "label",
-        "output",
-        "repetition",
-        "value",
-    ]
-    df = display.importances
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-    np.testing.assert_array_equal(df["label"].unique(), report.estimator_.classes_)
-    assert df["output"].isna().all()
-    assert df["data_source"].unique() == [data_source]
-    assert df["metric"].unique().tolist() == ["precision", "recall"]
-    assert df["estimator"].unique() == [report.estimator_name_]
-    assert df["feature"].tolist() == columns_names * n_repeats * len(
-        report.estimator_.classes_
-    ) * len(metric)
-
-    df = display.frame()
-    expected_columns = [
-        "data_source",
-        "metric",
-        "feature",
-        "label",
-        "value_mean",
-        "value_std",
-    ]
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-
-    display.plot()
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, np.ndarray)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
-        assert ax.get_ylabel() == ""
-        assert ax.get_title() == f"metric = {metric_name}"
-    estimator_name = display.importances["estimator"].unique()[0]
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {estimator_name} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_single_output_regression(
-    pyplot,
-    linear_regression_with_train_test,
-    data_source,
-):
-    """Check the attributes and default plotting behaviour of the permutation
-    importance plot with binary classification data and averaged metrics returning
-    a single value."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    n_repeats = 2
-    display = report.inspection.permutation_importance(
-        n_repeats=n_repeats, data_source=data_source
-    )
-    assert isinstance(display, PermutationImportanceDisplay)
-
-    expected_columns = [
-        "estimator",
-        "data_source",
-        "metric",
-        "feature",
-        "label",
-        "output",
-        "repetition",
-        "value",
-    ]
-    df = display.importances
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-    for col in ("label", "output"):
-        assert df[col].isna().all()
-    assert df["data_source"].unique() == [data_source]
-    assert df["metric"].unique() == ["r2"]
-    assert df["estimator"].unique() == [report.estimator_name_]
-    assert df["feature"].tolist() == columns_names * n_repeats
-
-    df = display.frame()
-    expected_columns = ["data_source", "metric", "feature", "value_mean", "value_std"]
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-
-    display.plot()
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-
-    assert display.ax_.get_xlabel() == "Decrease in r2"
-    assert display.ax_.get_ylabel() == ""
-    estimator_name = display.importances["estimator"].unique()[0]
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {estimator_name} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_callable_metric(
-    pyplot,
-    linear_regression_with_train_test,
-    data_source,
-):
-    """Test that callable metrics are properly formatted in xlabel (underscores
-    replaced with spaces)."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=custom_r2_score
-    )
-    display.plot()
-    assert display.ax_.get_xlabel() == "Decrease in custom r2 score"
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_multi_output_regression(
-    pyplot,
-    linear_regression_multioutput_with_train_test,
-    data_source,
-):
-    """Check the attributes and default plotting behaviour of the permutation
-    importance plot with binary classification data and averaged metrics returning
-    a single value."""
-    estimator, X_train, X_test, y_train, y_test = (
-        linear_regression_multioutput_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    n_repeats = 2
-    metric = {
-        "r2": make_scorer(r2_score, multioutput="raw_values"),
-        "mse": make_scorer(mean_squared_error, multioutput="raw_values"),
-    }
-    display = report.inspection.permutation_importance(
-        n_repeats=n_repeats, data_source=data_source, metric=metric
-    )
-    assert isinstance(display, PermutationImportanceDisplay)
-
-    expected_columns = [
-        "estimator",
-        "data_source",
-        "metric",
-        "feature",
-        "label",
-        "output",
-        "repetition",
-        "value",
-    ]
-    df = display.importances
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-    assert df["label"].isna().all()
-    assert df["output"].unique().tolist() == list(range(y_train.shape[1]))
-    assert df["data_source"].unique() == [data_source]
-    assert df["metric"].unique().tolist() == ["r2", "mse"]
-    assert df["estimator"].unique() == [report.estimator_name_]
-    assert df["feature"].tolist() == columns_names * n_repeats * y_train.shape[1] * len(
-        metric
-    )
-
-    df = display.frame()
-    expected_columns = [
-        "data_source",
-        "metric",
-        "feature",
-        "output",
-        "value_mean",
-        "value_std",
-    ]
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-
-    display.plot()
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, np.ndarray)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
-        assert ax.get_ylabel() == ""
-        assert ax.get_title() == f"metric = {metric_name}"
-    estimator_name = display.importances["estimator"].unique()[0]
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {estimator_name} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_None_single_metric_single_value(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by=None` with a single metric returning
-    a single value."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source
-    )
-    display.plot(subplot_by=None)
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    assert len(display.facet_.legend.get_texts()) == 0
-    assert display.ax_.get_xlabel() == "Decrease in accuracy"
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_None_single_metric_multiple_labels(
-    pyplot,
-    logistic_multiclass_classification_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by=None` with a single metric returning
-    multiple values grouped by label."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_multiclass_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    metric = make_scorer(precision_score, average=None)
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    display.plot(subplot_by=None)
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.facet_.legend
-    assert legend is not None
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(label) for label in report.estimator_.classes_]
-    assert display.ax_.get_xlabel() == "Decrease in precision score"
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_None_multiple_metrics_single_value(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by=None` with multiple metrics returning
-    single values grouped by metric."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    metric = ["precision", "recall"]
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    display.plot(subplot_by=None)
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.facet_.legend
-    assert legend is not None
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == metric
-    assert display.ax_.get_xlabel() == "Decrease in metric"
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_None_single_metric_multiple_outputs(
-    pyplot,
-    linear_regression_multioutput_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by=None` with a single metric returning
-    multiple values grouped by output."""
-    estimator, X_train, X_test, y_train, y_test = (
-        linear_regression_multioutput_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    metric = make_scorer(r2_score, multioutput="raw_values")
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    display.plot(subplot_by=None)
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.facet_.legend
-    assert legend is not None
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(output) for output in range(y_train.shape[1])]
-    assert display.ax_.get_xlabel() == "Decrease in r2 score"
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_None_multiple_metrics_multiple_outputs_raises_error(
-    pyplot,
-    linear_regression_multioutput_with_train_test,
-    data_source,
-):
-    """Check that `subplot_by=None` raises an error when there are multiple metrics
-    with multiple outputs."""
-    estimator, X_train, X_test, y_train, y_test = (
-        linear_regression_multioutput_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    metric = {
-        "r2": make_scorer(r2_score, multioutput="raw_values"),
-        "mse": make_scorer(mean_squared_error, multioutput="raw_values"),
-    }
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    err_msg = "Cannot plot all the available information available on a single plot."
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(subplot_by=None)
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_auto_single_metric_single_target_classification(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by="auto"` with a single metric and
-    single target for classification (no hue, no col, no row)."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source
-    )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    assert len(display.facet_.legend.get_texts()) == 0
-    assert display.ax_.get_xlabel() == "Decrease in accuracy"
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_auto_single_metric_single_target_regression(
-    pyplot,
-    linear_regression_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by="auto"` with a single metric and
-    single target for regression (no hue, no col, no row)."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source
-    )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    assert len(display.facet_.legend.get_texts()) == 0
-    assert display.ax_.get_xlabel() == "Decrease in r2"
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_auto_multiple_metrics_single_target_classification(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by="auto"` with multiple metrics and
-    single target for classification (col=metric, no hue, no row)."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "precision": make_scorer(precision_score, average="macro"),
-        "recall": make_scorer(recall_score, average="macro"),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
-    assert len(display.facet_.legend.get_texts()) == 0
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_auto_multiple_metrics_single_target_regression(
-    pyplot,
-    linear_regression_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by="auto"` with multiple metrics and
-    single target for regression (col=metric, no hue, no row)."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "r2": make_scorer(r2_score),
-        "mse": make_scorer(mean_squared_error),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
-    assert len(display.facet_.legend.get_texts()) == 0
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_auto_single_metric_multiple_labels(
-    pyplot,
-    logistic_multiclass_classification_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by="auto"` with a single metric and
-    multiple labels (hue=label, no col, no row)."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_multiclass_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = make_scorer(precision_score, average=None)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.facet_.legend
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(label) for label in report.estimator_.classes_]
-    assert display.ax_.get_xlabel() == "Decrease in precision score"
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_auto_single_metric_multiple_outputs(
-    pyplot,
-    linear_regression_multioutput_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by="auto"` with a single metric and
-    multiple outputs (hue=output, no col, no row)."""
-    estimator, X_train, X_test, y_train, y_test = (
-        linear_regression_multioutput_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = make_scorer(r2_score, multioutput="raw_values")
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, mpl.axes.Axes)
-    legend = display.facet_.legend
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(output) for output in range(y_train.shape[1])]
-    assert display.ax_.get_xlabel() == "Decrease in r2 score"
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_auto_multiple_metrics_multiple_labels(
-    pyplot,
-    logistic_multiclass_classification_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by="auto"` with multiple metrics and
-    multiple labels (hue=label, col=metric, no row)."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_multiclass_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "precision": make_scorer(precision_score, average=None),
-        "recall": make_scorer(recall_score, average=None),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
-    legend = display.facet_.legend
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(label) for label in report.estimator_.classes_]
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_auto_multiple_metrics_multiple_outputs(
-    pyplot,
-    linear_regression_multioutput_with_train_test,
-    data_source,
-):
-    """Check the behaviour of `subplot_by="auto"` with multiple metrics and
-    multiple outputs (hue=output, col=metric, no row)."""
-    estimator, X_train, X_test, y_train, y_test = (
-        linear_regression_multioutput_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "r2": make_scorer(r2_score, multioutput="raw_values"),
-        "mse": make_scorer(mean_squared_error, multioutput="raw_values"),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    display.plot(subplot_by="auto")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
-    legend = display.facet_.legend
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(output) for output in range(y_train.shape[1])]
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-def test_subplot_by_invalid_column_raises_error(
-    pyplot,
-    linear_regression_with_train_test,
-):
-    """Check that using an invalid column name for `subplot_by` raises an error."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "r2": make_scorer(r2_score),
-        "mse": make_scorer(mean_squared_error),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(n_repeats=2, metric=metric)
-    err_msg = (
-        "The column label is not available. You can use the following values to "
-        "create subplots: metric"
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(subplot_by="label")
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_string_multiple_metrics_multiclass_with_remaining_column(
-    pyplot,
-    logistic_multiclass_classification_with_train_test,
-    data_source,
-):
-    """Check that when subplot_by is a string and there's a remaining column,
-    it becomes the hue (multiple metrics + multiclass case)."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_multiclass_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "precision": make_scorer(precision_score, average=None),
-        "recall": make_scorer(recall_score, average=None),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    display.plot(subplot_by="metric")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
-    legend = display.facet_.legend
-    assert legend is not None
-    legend_labels = [text.get_text() for text in legend.get_texts()]
-    assert legend_labels == [str(label) for label in report.estimator_.classes_]
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_subplot_by_string_multiple_metrics_binary_class_no_remaining_column(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-    data_source,
-):
-    """Check that when subplot_by is a string and there's no remaining column,
-    hue is None (multiple metrics + binary class case)."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "precision": make_scorer(precision_score, average="macro"),
-        "recall": make_scorer(recall_score, average="macro"),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-    display.plot(subplot_by="metric")
-    assert isinstance(display.ax_, np.ndarray)
-    assert len(display.ax_.flatten()) == len(metric)
-    for ax, metric_name in zip(display.ax_.flatten(), metric.keys(), strict=True):
-        assert isinstance(ax, mpl.axes.Axes)
-        assert ax.get_title() == f"metric = {metric_name}"
-        assert ax.get_xlabel() == f"Decrease in {metric_name}"
-    assert len(display.facet_.legend.get_texts()) == 0
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
-
-
-def test_subplot_by_invalid_tuple_columns_raises_error(
-    pyplot,
-    linear_regression_with_train_test,
-):
-    """Check that using a tuple with invalid column names for `subplot_by` raises an
-    error."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "r2": make_scorer(r2_score),
-        "mse": make_scorer(mean_squared_error),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(n_repeats=2, metric=metric)
-    err_msg = (
-        r"The columns \('metric', 'label'\) are not available\. You can use the "
-        r"following values to create subplots: metric"
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(subplot_by=("metric", "label"))
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
 @pytest.mark.parametrize(
-    "subplot_by",
+    "task",
     [
-        ("metric", "label"),
-        ("label", "metric"),
+        "binary_classification",
+        "multiclass_classification",
+        "regression",
+        "multioutput_regression",
     ],
 )
-def test_subplot_by_tuple_order_determines_row_and_col(
-    pyplot,
-    logistic_multiclass_classification_with_train_test,
-    data_source,
-    subplot_by,
-):
-    """Check that the order of the tuple in `subplot_by` determines which column
-    goes to row and which goes to col, verified by checking subplot titles."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_multiclass_classification_with_train_test
+def test_invalid_subplot_by(pyplot, task, request):
+    report = request.getfixturevalue(f"estimator_reports_{task}")[0]
+    valid_values = ["auto", "None"]
+    err_msg = (
+        f"The column 'invalid' is not available for subplotting. You can use the "
+        f"following values to create subplots: {', '.join(valid_values)}"
     )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+    display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="invalid")
 
-    estimator = clone(estimator)
-    metric = {
-        "precision": make_scorer(precision_score, average=None),
-        "recall": make_scorer(recall_score, average=None),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
+
+@pytest.mark.parametrize(
+    "task",
+    [
+        "binary_classification",
+        "multiclass_classification",
+        "regression",
+        "multioutput_regression",
+    ],
+)
+@pytest.mark.parametrize(
+    "subplot_by, expected_len",
+    [
+        (None, 0),
+        ("auto", 0),
+    ],
+)
+def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
+    report = request.getfixturevalue(f"estimator_reports_{task}")[0]
+    display = report.inspection.permutation_importance(n_repeats=2, seed=0)
     display.plot(subplot_by=subplot_by)
-    assert isinstance(display.ax_, np.ndarray)
-
-    # Get row and column names from tuple
-    row_col_name = subplot_by[0]  # First element goes to row
-    col_col_name = subplot_by[1]  # Second element goes to col
-
-    if row_col_name == "metric":
-        row_values = list(metric.keys())
-    else:  # row_col_name == "label"
-        row_values = [str(label) for label in report.estimator_.classes_]
-
-    if col_col_name == "metric":
-        col_values = list(metric.keys())
-    else:  # col_col_name == "label"
-        col_values = [str(label) for label in report.estimator_.classes_]
-
-    for row_idx, row_value in enumerate(row_values):
-        for col_idx, col_value in enumerate(col_values):
-            ax = display.ax_[row_idx, col_idx]
-            assert isinstance(ax, mpl.axes.Axes)
-            expected_title = (
-                f"{row_col_name} = {row_value} | {col_col_name} = {col_value}"
-            )
-            assert ax.get_title() == expected_title
-
-    assert (
-        display.figure_.get_suptitle()
-        == f"Permutation importance of {report.estimator_name_} on {data_source} set"
-    )
+    if expected_len == 0:
+        assert isinstance(display.ax_, mpl.axes.Axes)
+    else:
+        assert len(display.ax_.flatten()) == expected_len
 
 
-@pytest.mark.parametrize("data_source", ["train", "test"])
 @pytest.mark.parametrize(
-    "aggregate, expected_value_columns",
+    "task, metric, metric_name, subplot_by, expected_len",
     [
-        ("mean", ["value"]),
-        ("std", ["value"]),
-        (("mean", "std"), ["value_mean", "value_std"]),
-        (("min", "max"), ["value_min", "value_max"]),
+        (
+            "multiclass_classification",
+            make_scorer(precision_score, average=None),
+            "precision score",
+            "label",
+            3,
+        ),
+        (
+            "multioutput_regression",
+            make_scorer(r2_score, multioutput="raw_values"),
+            "r2 score",
+            "output",
+            2,
+        ),
     ],
 )
-def test_frame_aggregate_parameter(
-    linear_regression_with_train_test,
-    data_source,
-    aggregate,
-    expected_value_columns,
+def test_subplot_by_non_averaged_metrics(
+    pyplot, task, metric, metric_name, subplot_by, expected_len, request
 ):
-    """Check that the aggregate parameter correctly affects the column names."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    n_repeats = 2
+    report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.inspection.permutation_importance(
-        n_repeats=n_repeats, data_source=data_source
+        n_repeats=2, seed=0, metric=metric
     )
+    display.plot(metric=metric_name, subplot_by=subplot_by)
+    assert len(display.ax_) == expected_len
 
-    df = display.frame(aggregate=aggregate)
-    base_columns = ["data_source", "metric", "feature"]
-    expected_columns = base_columns + expected_value_columns
-    assert sorted(df.columns.tolist()) == sorted(expected_columns)
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-@pytest.mark.parametrize(
-    "metric_filter, expected_metrics",
-    [
-        ("r2", ["r2"]),
-        (["r2"], ["r2"]),
-        (["r2", "mse"], ["r2", "mse"]),
-    ],
-)
-def test_frame_metric_parameter(
-    linear_regression_with_train_test,
-    data_source,
-    metric_filter,
-    expected_metrics,
-):
-    """Check that the metric parameter correctly filters the output dataframe."""
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "r2": make_scorer(r2_score),
-        "mse": make_scorer(mean_squared_error),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    n_repeats = 2
-    display = report.inspection.permutation_importance(
-        n_repeats=n_repeats, data_source=data_source, metric=metric
-    )
-
-    df_all = display.frame()
-    assert set(df_all["metric"].unique()) == {"r2", "mse"}
-
-    df_filtered = display.frame(metric=metric_filter)
-    assert set(df_filtered["metric"].unique()) == set(expected_metrics)
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-@pytest.mark.parametrize("aggregate", [None, ("mean", "std")])
-def test_frame_mixed_averaged_and_non_averaged_metrics(
-    logistic_binary_classification_with_train_test,
-    data_source,
-    aggregate,
-):
-    """Check that mixed averaged and non-averaged metrics are handled correctly.
-
-    Averaged metrics (like accuracy) should have NaN in label/output columns,
-    while non-averaged metrics (like precision/recall with average=None) should
-    have actual values in label columns.
-    """
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "accuracy": "accuracy",  # averaged metric
-        "precision": make_scorer(precision_score, average=None),  # non-averaged
-        "recall": make_scorer(recall_score, average=None),  # non-averaged
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    n_repeats = 2
-    display = report.inspection.permutation_importance(
-        n_repeats=n_repeats, data_source=data_source, metric=metric
-    )
-
-    df = display.frame(aggregate=aggregate)
-
-    assert set(df["metric"].unique()) == {"accuracy", "precision", "recall"}
-    assert "output" not in df.columns
-    assert "label" in df.columns
-
-    df_accuracy = df[df["metric"] == "accuracy"]
-    assert df_accuracy["label"].isna().all()
-
-    df_precision = df[df["metric"] == "precision"]
-    df_recall = df[df["metric"] == "recall"]
-    assert not df_precision["label"].isna().any()
-    assert not df_recall["label"].isna().any()
-    np.testing.assert_array_equal(
-        df_precision["label"].unique(), report.estimator_.classes_
-    )
-    np.testing.assert_array_equal(
-        df_recall["label"].unique(), report.estimator_.classes_
-    )
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_plot_mixed_averaged_and_non_averaged_metrics_classification_raises_error(
-    pyplot,
-    logistic_binary_classification_with_train_test,
-    data_source,
-):
-    """Check that plotting mixed averaged and non-averaged metrics raises an error.
-
-    Then verify that filtering by metric allows plotting to work for classification.
-    """
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "accuracy": "accuracy",
-        "precision": make_scorer(precision_score, average=None),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-    display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
-    )
-
+    valid_values = [subplot_by, "auto", "None"]
     err_msg = (
-        "You try to plot the permutation importance of metrics averaged over labels "
-        "and other without averaging. This setting is not supported. Please filter "
-        "a group of consistent metrics using the `metric` parameter."
+        f"The column 'invalid' is not available for subplotting. You can use the "
+        f"following values to create subplots: {', '.join(valid_values)}"
     )
     with pytest.raises(ValueError, match=err_msg):
-        display.plot()
-
-    display.plot(metric="accuracy")
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-
-    display.plot(metric="precision")
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
+        display.plot(subplot_by="invalid")
 
 
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_plot_mixed_averaged_and_non_averaged_metrics_regression_raises_error(
-    pyplot,
-    linear_regression_multioutput_with_train_test,
-    data_source,
-):
-    """Check that plotting mixed averaged and non-averaged metrics raises an error.
-
-    Then verify that filtering by metric allows plotting to work for regression.
-    """
-    estimator, X_train, X_test, y_train, y_test = (
-        linear_regression_multioutput_with_train_test
-    )
-    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
-
-    estimator = clone(estimator)
-    metric = {
-        "r2": make_scorer(r2_score),
-        "r2_raw": make_scorer(r2_score, multioutput="raw_values"),
-    }
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
+def test_multiple_metrics_require_metric_param(pyplot, estimator_reports_regression):
+    report = estimator_reports_regression[0]
     display = report.inspection.permutation_importance(
-        n_repeats=2, data_source=data_source, metric=metric
+        n_repeats=2, seed=0, metric=["r2", "neg_mean_squared_error"]
     )
-
-    err_msg = (
-        "You try to plot the permutation importance of metrics averaged over outputs "
-        "and other without averaging. This setting is not supported. Please filter "
-        "a group of consistent metrics using the `metric` parameter."
-    )
-    with pytest.raises(ValueError, match=err_msg):
+    with pytest.raises(ValueError, match="Please select a metric"):
         display.plot()
 
     display.plot(metric="r2")
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
+    assert display.ax_.get_xlabel() == "Decrease in r2"
+    display.plot(metric="neg_mean_squared_error")
+    assert display.ax_.get_xlabel() == "Decrease in neg_mean_squared_error"
 
-    display.plot(metric="r2_raw")
+
+def test_frame_metric_filter(estimator_reports_regression):
+    report = estimator_reports_regression[0]
+    display = report.inspection.permutation_importance(
+        n_repeats=2,
+        seed=0,
+        metric=["r2", "neg_mean_squared_error"],
+    )
+    assert set(display.frame()["metric"]) == {"r2", "neg_mean_squared_error"}
+    assert set(display.frame(metric="r2")["metric"]) == {"r2"}
+    assert set(display.frame(metric=["r2"])["metric"]) == {"r2"}
+
+
+def test_callable_metric_name(pyplot, estimator_reports_regression):
+    report = estimator_reports_regression[0]
+    display = report.inspection.permutation_importance(
+        n_repeats=2, seed=0, metric=custom_r2_score
+    )
+    display.plot(metric="custom r2 score")
+    assert display.ax_.get_xlabel() == "Decrease in custom r2 score"
+
+
+def test_per_label_metrics_frame(
+    estimator_reports_multiclass_classification,
+):
+    report = estimator_reports_multiclass_classification[0]
+    metrics = {
+        "precision": make_scorer(precision_score, average=None),
+        "recall": make_scorer(recall_score, average=None),
+    }
+    display = report.inspection.permutation_importance(
+        n_repeats=2, seed=0, metric=metrics
+    )
+    frame = display.frame()
+    assert set(frame["label"]) == {0, 1, 2}
+    assert set(frame["metric"]) == {"precision", "recall"}
+
+    assert "output" not in frame.columns
+    assert "label" in frame.columns
+
+
+def test_per_output_metrics_frame(
+    estimator_reports_multioutput_regression,
+):
+    report = estimator_reports_multioutput_regression[0]
+    metric = {
+        "r2": make_scorer(r2_score, multioutput="raw_values"),
+        "mse": make_scorer(mean_squared_error, multioutput="raw_values"),
+    }
+    display = report.inspection.permutation_importance(
+        n_repeats=2, seed=0, metric=metric
+    )
+    frame = display.frame()
+    assert set(frame["output"]) == {0, 1}
+    assert set(frame["metric"]) == {"r2", "mse"}
+
+    assert "output" in frame.columns
+    assert "label" not in frame.columns
+
+
+@pytest.mark.parametrize("aggregate", [None, ("mean", "std")])
+def test_frame_mixed_averaged_and_non_averaged_metrics(
+    estimator_reports_binary_classification, aggregate
+):
+    report = estimator_reports_binary_classification[0]
+    metrics = {
+        "accuracy": "accuracy",
+        "precision": make_scorer(precision_score, average=None),
+    }
+    display = report.inspection.permutation_importance(
+        n_repeats=2, seed=0, metric=metrics
+    )
+    frame = display.frame(aggregate=aggregate)
+
+    assert set(frame["metric"]) == {"accuracy", "precision"}
+    assert "label" in frame.columns
+    assert frame.query("metric == 'accuracy'")["label"].isna().all()
+    assert not frame.query("metric == 'precision'")["label"].isna().any()
+
+
+def test_plot_mixed_averaged_and_non_averaged_metrics(
+    pyplot, estimator_reports_binary_classification
+):
+    report = estimator_reports_binary_classification[0]
+    metrics = {
+        "accuracy": "accuracy",
+        "precision": make_scorer(precision_score, average=None),
+    }
+    display = report.inspection.permutation_importance(
+        n_repeats=2, seed=0, metric=metrics
+    )
+    display.plot(metric="accuracy")
     assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
+    display.plot(metric="precision")
+    assert hasattr(display, "figure_")
+
+
+def test_default_metric_name_classifier(estimator_reports_binary_classification):
+    report = estimator_reports_binary_classification[0]
+    display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+    assert set(display.importances["metric"]) == {"accuracy"}
+
+
+def test_default_metric_name_regressor(estimator_reports_regression):
+    report = estimator_reports_regression[0]
+    display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+    assert set(display.importances["metric"]) == {"r2"}
+
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_data_source(estimator_reports_binary_classification, data_source):
+    report = estimator_reports_binary_classification[0]
+    display = report.inspection.permutation_importance(
+        n_repeats=2, seed=0, data_source=data_source
+    )
+    assert set(display.importances["data_source"]) == {data_source}
