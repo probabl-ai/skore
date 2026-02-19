@@ -86,14 +86,14 @@ def test_cache_parameter_in_cache(request):
     report = CrossValidationReport(Ridge(), X, y, splitter=2)
 
     report.inspection.permutation_importance(
-        seed=42, n_repeats=2, data_source="test", metrics="r2"
+        seed=42, n_repeats=2, data_source="test", metric="r2"
     )
     with check_cache_changed(report._cache):
         report.inspection.permutation_importance(
             seed=42,
             n_repeats=2,
             data_source="test",
-            metrics=make_scorer(root_mean_squared_error),
+            metric=make_scorer(root_mean_squared_error),
         )
 
 

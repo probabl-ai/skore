@@ -73,7 +73,7 @@ def test_valid_subplot_by(
 ):
     report = request.getfixturevalue(fixture_name)[0]
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=metric
+        n_repeats=2, seed=0, metric=metric
     )
     for subplot_by, expected_len in subplot_by_tuples:
         display.plot(metric=metric_name, subplot_by=subplot_by)
@@ -86,7 +86,7 @@ def test_valid_subplot_by(
 def test_multiple_metrics_require_metric_param(pyplot, estimator_reports_regression):
     report = estimator_reports_regression[0]
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=["r2", "neg_mean_squared_error"]
+        n_repeats=2, seed=0, metric=["r2", "neg_mean_squared_error"]
     )
     with pytest.raises(ValueError, match="Please select a metric"):
         display.plot()
@@ -97,22 +97,22 @@ def test_multiple_metrics_require_metric_param(pyplot, estimator_reports_regress
     assert display.ax_.get_xlabel() == "Decrease in neg_mean_squared_error"
 
 
-def test_frame_metrics_filter(estimator_reports_regression):
+def test_frame_metric_filter(estimator_reports_regression):
     report = estimator_reports_regression[0]
     display = report.inspection.permutation_importance(
         n_repeats=2,
         seed=0,
-        metrics=["r2", "neg_mean_squared_error"],
+        metric=["r2", "neg_mean_squared_error"],
     )
     assert set(display.frame()["metric"].unique()) == {"r2", "neg_mean_squared_error"}
-    assert set(display.frame(metrics="r2")["metric"].unique()) == {"r2"}
-    assert set(display.frame(metrics=["r2"])["metric"].unique()) == {"r2"}
+    assert set(display.frame(metric="r2")["metric"].unique()) == {"r2"}
+    assert set(display.frame(metric=["r2"])["metric"].unique()) == {"r2"}
 
 
 def test_callable_metric_name(pyplot, estimator_reports_regression):
     report = estimator_reports_regression[0]
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=custom_r2_score
+        n_repeats=2, seed=0, metric=custom_r2_score
     )
     display.plot(metric="custom r2 score")
     assert display.ax_.get_xlabel() == "Decrease in custom r2 score"
@@ -127,7 +127,7 @@ def test_per_label_metrics_internal_data(
         "recall": make_scorer(recall_score, average=None),
     }
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=metrics
+        n_repeats=2, seed=0, metric=metrics
     )
     df = display.importances
     np.testing.assert_array_equal(df["label"].unique(), report.estimator_.classes_)
@@ -142,12 +142,12 @@ def test_per_output_metrics_internal_data(
     estimator_reports_multioutput_regression,
 ):
     report = estimator_reports_multioutput_regression[0]
-    metrics = {
+    metric = {
         "r2": make_scorer(r2_score, multioutput="raw_values"),
         "mse": make_scorer(mean_squared_error, multioutput="raw_values"),
     }
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=metrics
+        n_repeats=2, seed=0, metric=metric
     )
     df = display.importances
     assert df["label"].isna().all()
@@ -168,7 +168,7 @@ def test_frame_mixed_averaged_and_non_averaged_metrics(
         "precision": make_scorer(precision_score, average=None),
     }
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=metrics
+        n_repeats=2, seed=0, metric=metrics
     )
     frame = display.frame(aggregate=aggregate)
 
@@ -187,7 +187,7 @@ def test_plot_mixed_averaged_and_non_averaged_metrics(
         "precision": make_scorer(precision_score, average=None),
     }
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=metrics
+        n_repeats=2, seed=0, metric=metrics
     )
     display.plot(metric="accuracy")
     assert hasattr(display, "figure_")

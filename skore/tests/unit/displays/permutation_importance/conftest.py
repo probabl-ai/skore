@@ -30,7 +30,7 @@ def estimator_reports_multiclass_classification_figure_axes(
     report = estimator_reports_multiclass_classification[0]
     metric = make_scorer(precision_score, average=None)
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=metric
+        n_repeats=2, seed=0, metric=metric
     )
     display.plot(metric="precision score")
     return display.figure_, display.ax_
@@ -51,7 +51,7 @@ def estimator_reports_multioutput_regression_figure_axes(
     report = estimator_reports_multioutput_regression[0]
     metric = make_scorer(r2_score, multioutput="raw_values")
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=metric
+        n_repeats=2, seed=0, metric=metric
     )
     display.plot(metric="r2 score")
     return display.figure_, display.ax_
@@ -77,7 +77,7 @@ def cross_validation_reports_multiclass_classification_figure_axes(
     report = cross_validation_reports_multiclass_classification[0]
     metric = make_scorer(precision_score, average=None)
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=metric
+        n_repeats=2, seed=0, metric=metric
     )
     display.plot(metric="precision score")
     return display.figure_, display.ax_
@@ -100,7 +100,7 @@ def cross_validation_reports_multioutput_regression_figure_axes(
     report = cross_validation_reports_multioutput_regression[0]
     metric = make_scorer(r2_score, multioutput="raw_values")
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=metric
+        n_repeats=2, seed=0, metric=metric
     )
     display.plot(metric="r2 score")
     return display.figure_, display.ax_

@@ -78,7 +78,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         Xs: Sequence[ArrayLike],
         ys: Sequence[ArrayLike],
         at_step: int | str,
-        metrics: str | Callable | list[str] | tuple[str] | dict[str, Callable] | None,
+        metric: str | Callable | list[str] | tuple[str] | dict[str, Callable] | None,
         n_repeats: int,
         max_samples: float,
         n_jobs: int | None,
@@ -129,7 +129,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                 estimator=estimator,
                 X=X_transformed,
                 y=y,
-                scoring=metrics,
+                scoring=metric,
                 n_repeats=n_repeats,
                 max_samples=max_samples,
                 n_jobs=n_jobs,
@@ -139,7 +139,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             if "importances" in scores:
                 # single metric case -> switch to multi-metric case by wrapping in a
                 # dict with the name of the metric
-                metric_obj = cast(str | Callable | _BaseScorer | None, metrics)
+                metric_obj = cast(str | Callable | _BaseScorer | None, metric)
                 if metric_obj is None:
                     metric_name = "accuracy" if is_classifier(estimator) else "r2"
                 elif isinstance(metric_obj, str):
@@ -263,7 +263,7 @@ class PermutationImportanceDisplay(DisplayMixin):
 
         self._plot_single_estimator(
             subplot_by=subplot_by,
-            frame=self.frame(metrics=metric, aggregate=None),
+            frame=self.frame(metric=metric, aggregate=None),
             estimator_name=self.importances["estimator"].unique()[0],
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
@@ -309,7 +309,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             if subplot_by in ("label", "output") and subplot_by not in frame.columns:
                 raise ValueError(
                     f"Cannot use subplot_by={subplot_by!r} because the selected "
-                    f"metric does not provide per-{subplot_by!r} information."
+                    f"metric does not provide per-{subplot_by} information."
                 )
 
             if subplot_by not in columns_to_groupby:
@@ -377,14 +377,14 @@ class PermutationImportanceDisplay(DisplayMixin):
     def frame(
         self,
         *,
-        metrics: str | list[str] | None = None,
+        metric: str | list[str] | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Get the feature importance in a dataframe format.
 
         Parameters
         ----------
-        metrics : str or list of str, default=None
+        metric : str or list of str, default=None
             Filter the importances by metric. If `None`, all importances associated with
             each metric are returned.
 
@@ -406,8 +406,8 @@ class PermutationImportanceDisplay(DisplayMixin):
             raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
         frame = self.importances.copy()
-        if metrics is not None:
-            frame = frame.query("metric in @metrics")
+        if metric is not None:
+            frame = frame.query("metric in @metric")
 
         if frame["label"].isna().all():
             # regression problem or averaged classification metric

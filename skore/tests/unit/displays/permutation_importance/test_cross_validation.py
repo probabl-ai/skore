@@ -47,7 +47,7 @@ def test_valid_subplot_by(
 ):
     report = request.getfixturevalue(fixture_name)[0]
     display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, metrics=metric
+        n_repeats=2, seed=0, metric=metric
     )
     for subplot_by, expected_len in subplot_by_tuples:
         display.plot(metric=metric_name, subplot_by=subplot_by)
@@ -70,15 +70,15 @@ def test_frame_has_split_column(cross_validation_reports_binary_classification):
     assert frame["split"].nunique() == len(report.estimator_reports_)
 
 
-def test_frame_metrics_filter(cross_validation_reports_regression):
+def test_frame_metric_filter(cross_validation_reports_regression):
     report = cross_validation_reports_regression[0]
     display = report.inspection.permutation_importance(
         n_repeats=2,
         seed=0,
-        metrics=["r2", "neg_mean_squared_error"],
+        metric=["r2", "neg_mean_squared_error"],
     )
     assert set(display.frame()["metric"].unique()) == {"r2", "neg_mean_squared_error"}
-    assert set(display.frame(metrics="r2")["metric"].unique()) == {"r2"}
+    assert set(display.frame(metric="r2")["metric"].unique()) == {"r2"}
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
