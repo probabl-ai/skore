@@ -20,6 +20,8 @@ from skore._sklearn.types import (
     YPlotData,
 )
 
+ThresholdValue = float | Literal["default"]
+
 
 class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     """Display for confusion matrix.
@@ -107,15 +109,15 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold_value: float | None = None,
+        threshold_value: ThresholdValue = "default",
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
     ):
         """Plot the confusion matrix.
 
         In binary classification, the confusion matrix can be displayed at various
         decision thresholds. This is useful for understanding how the model's
-        predictions change as the decision threshold varies. If no threshold is
-        provided, the confusion matrix is displayed at the default threshold (0.5 for
+        predictions change as the decision threshold varies. Use
+        ``threshold_value="default"`` to plot at the default threshold (0.5 for
         `predict_proba` response method, 0 for `decision_function` response method).
 
         Parameters
@@ -125,11 +127,11 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             conditions or all the population. If None, the confusion matrix will not be
             normalized.
 
-        threshold_value : float or None, default=None
-            The decision threshold to use when applicable.
-            If None and thresholds are available, plots the confusion matrix at the
-            default threshold (0.5 for `predict_proba` response method, 0 for
-            `decision_function` response method).
+        threshold_value : float or "default", default="default"
+            The decision threshold to use when applicable (binary classification
+            only). If ``"default"``, plots at the default threshold (0.5 for
+            `predict_proba` response method, 0 for `decision_function` response
+            method). If a float, plots at the closest available threshold.
 
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
             The variable to use for subplotting. If None, the confusion matrix will not
@@ -151,7 +153,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold_value: float | None = None,
+        threshold_value: ThresholdValue = "default",
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
     ) -> None:
         """Matplotlib implementation of the `plot` method.
@@ -163,11 +165,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             conditions or all the population. If None, the confusion matrix will not be
             normalized.
 
-        threshold_value : float or None, default=None
+        threshold_value : float or "default", default="default"
             The decision threshold to use when applicable.
-            If None and thresholds are available, plots the confusion matrix at the
-            default threshold (0.5 for `predict_proba` response method, 0 for
-            `decision_function` response method).
 
         subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
             The variable to use for subplotting. If None, the confusion matrix will not
@@ -240,9 +239,13 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         title = "Confusion Matrix"
         if self.ml_task == "binary-classification":
-            if threshold_value is None:
-                threshold_value = 0.5 if self.response_method == "predict_proba" else 0
-            title = f"{title}\nDecision threshold: {threshold_value:.2f}"
+            if threshold_value == "default":
+                display_threshold = (
+                    0.5 if self.response_method == "predict_proba" else 0
+                )
+            else:
+                display_threshold = threshold_value
+            title = f"{title}\nDecision threshold: {display_threshold:.2f}"
         self.figure_.suptitle(f"{title}\n{info_data_source}")
 
         for ax in self.ax_:
@@ -477,19 +480,27 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         return disp
 
+    @staticmethod
+    def _format_frame(
+        df: pd.DataFrame, columns: list[str], normalize_col: str
+    ) -> pd.DataFrame:
+        return df[columns].rename(columns={normalize_col: "value"})
+
     def frame(
         self,
         *,
         normalize: Literal["true", "pred", "all"] | None = None,
-        threshold_value: float | None = None,
+        threshold_value: ThresholdValue | Literal["all"] = "default",
     ):
         """Return the confusion matrix as a long format dataframe.
 
         In binary classification, the confusion matrix can be returned at various
         decision thresholds. This is useful for understanding how the model's
-        predictions change as the decision threshold varies. If no threshold is
-        provided, the default threshold (0.5 for `predict_proba` response method, 0 for
-        `decision_function` response method) is used.
+        predictions change as the decision threshold varies. Use
+        ``threshold_value="default"`` to return the confusion matrix at the default
+        threshold (0.5 for `predict_proba` response method, 0 for `decision_function`
+        response method). Use ``threshold_value="all"`` to return all available
+        thresholds without filtering.
 
         The matrix is returned as a long format dataframe where each line represents one
         cell of the matrix. The columns are "true_label", "predicted_label", "value",
@@ -504,11 +515,13 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             conditions or all the population. If None, the confusion matrix will not be
             normalized.
 
-        threshold_value : float or None, default=None
-            The decision threshold to use when applicable.
-            If None and thresholds are available, returns the confusion matrix at the
-            default threshold (0.5 for `predict_proba` response method, 0 for
-            `decision_function` response method).
+        threshold_value : float, "default" or "all", default="default"
+            The decision threshold(s) to use when applicable (binary classification
+            only). If ``"default"``, returns the confusion matrix at the default
+            threshold (0.5 for `predict_proba` response method, 0 for
+            `decision_function` response method). If ``"all"``, returns all available
+            thresholds without filtering. If a float, returns the confusion matrix at
+            the closest available threshold to the given value.
 
         Returns
         -------
@@ -516,25 +529,32 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             The confusion matrix as a dataframe.
         """
         normalize_col = "normalized_by_" + normalize if normalize else "count"
-        if threshold_value is not None and self.ml_task != "binary-classification":
+        if (
+            threshold_value not in ("default", "all")
+            and self.ml_task != "binary-classification"
+        ):
             raise ValueError(
                 "Threshold support is only available for binary classification."
             )
-        if threshold_value is None:
+
+        columns = [
+            "true_label",
+            "predicted_label",
+            normalize_col,
+            "threshold",
+            "split",
+            "estimator",
+            "data_source",
+        ]
+
+        if threshold_value == "all":
+            # Return all thresholds (binary) or full matrix (multiclass).
+            return self._format_frame(self.confusion_matrix, columns, normalize_col)
+        if threshold_value == "default":
             if self.ml_task == "binary-classification":
                 threshold_value = 0.5 if self.response_method == "predict_proba" else 0
             else:
-                return self.confusion_matrix[
-                    [
-                        "true_label",
-                        "predicted_label",
-                        normalize_col,
-                        "threshold",
-                        "split",
-                        "estimator",
-                        "data_source",
-                    ]
-                ].rename(columns={normalize_col: "value"})
+                return self._format_frame(self.confusion_matrix, columns, normalize_col)
 
         def select_threshold_and_format(group):
             thresholds = np.sort(group["threshold"].unique())
@@ -550,17 +570,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 index_right if diff_right < diff_left else index_left
             ]
             frame = group.query(f"threshold == {closest_threshold_value}")
-            return frame[
-                [
-                    "true_label",
-                    "predicted_label",
-                    normalize_col,
-                    "threshold",
-                    "split",
-                    "estimator",
-                    "data_source",
-                ]
-            ].rename(columns={normalize_col: "value"})
+            return self._format_frame(frame, columns, normalize_col)
 
         frames = []
         if self.report_type == "comparison-cross-validation":

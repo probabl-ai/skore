@@ -1,26 +1,7 @@
 import numpy as np
-import pandas as pd
 import pytest
 
 from skore import CoefficientsDisplay
-
-
-def test_coefficients_display_invalid_report_type():
-    display = CoefficientsDisplay(
-        coefficients=pd.DataFrame(
-            {
-                "estimator": ["estimator1"],
-                "split": [0],
-                "feature": ["feature1"],
-                "label": [np.nan],
-                "output": [np.nan],
-                "coefficient": [1.0],
-            }
-        ),
-        report_type="invalid-type",
-    )
-    with pytest.raises(TypeError, match="Unexpected report type: 'invalid-type'"):
-        display.frame()
 
 
 @pytest.mark.parametrize(

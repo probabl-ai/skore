@@ -7,14 +7,12 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
 from sklearn.base import BaseEstimator
-from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     get_scorer,
     make_scorer,
     precision_score,
-    rand_score,
     recall_score,
 )
 from sklearn.model_selection import train_test_split
@@ -148,6 +146,15 @@ def test_summarize_data_source_both(forest_binary_classification_data):
     ]
 
 
+def deep_contain(value, test_value):
+    if value == test_value:
+        return True
+    elif isinstance(value, tuple):
+        return any(deep_contain(item, test_value) for item in value)
+    else:
+        return False
+
+
 def test_interaction_cache_metrics(
     linear_regression_multioutput_with_test,
 ):
@@ -160,24 +167,20 @@ def test_interaction_cache_metrics(
     # part of the cache.
     multioutput = "raw_values"
     result_r2_raw_values = report.metrics.r2(multioutput=multioutput)
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == multioutput for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    multioutput_in_cache_key = any(
+        deep_contain(cached_key, multioutput) for cached_key in report._cache
+    )
+    assert multioutput_in_cache_key, (
         f"The value {multioutput} should be stored in one of the cache keys"
     )
     assert len(result_r2_raw_values) == 2
 
     multioutput = "uniform_average"
     result_r2_uniform_average = report.metrics.r2(multioutput=multioutput)
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == multioutput for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    multioutput_in_cache_key = any(
+        deep_contain(cached_key, multioutput) for cached_key in report._cache
+    )
+    assert multioutput_in_cache_key, (
         f"The value {multioutput} should be stored in one of the cache keys"
     )
     assert isinstance(result_r2_uniform_average, float)
@@ -198,12 +201,10 @@ def test_custom_metric(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == threshold for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    threshold_in_cache_key = any(
+        deep_contain(cached_key, threshold) for cached_key in report._cache
+    )
+    assert threshold_in_cache_key, (
         f"The value {threshold} should be stored in one of the cache keys"
     )
 
@@ -218,12 +219,10 @@ def test_custom_metric(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == threshold for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    threshold_in_cache_key = any(
+        deep_contain(cached_key, threshold) for cached_key in report._cache
+    )
+    assert threshold_in_cache_key, (
         f"The value {threshold} should be stored in one of the cache keys"
     )
 
@@ -251,12 +250,10 @@ def test_custom_metric_scorer(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == threshold for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    threshold_in_cache_key = any(
+        deep_contain(cached_key, threshold) for cached_key in report._cache
+    )
+    assert threshold_in_cache_key, (
         f"The value {threshold} should be stored in one of the cache keys"
     )
 
@@ -271,12 +268,10 @@ def test_custom_metric_scorer(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == threshold for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    threshold_in_cache_key = any(
+        deep_contain(cached_key, threshold) for cached_key in report._cache
+    )
+    assert threshold_in_cache_key, (
         f"The value {threshold} should be stored in one of the cache keys"
     )
 
@@ -315,12 +310,10 @@ def test_custom_function_kwargs_numpy_array(
         response_method="predict",
         some_weights=weights,
     )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == hash_weights for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    hash_weights_in_cache_key = any(
+        deep_contain(cached_key, hash_weights) for cached_key in report._cache
+    )
+    assert hash_weights_in_cache_key, (
         "The hash of the weights should be stored in one of the cache keys"
     )
 
@@ -396,29 +389,6 @@ def test_get_X_y_and_data_source_hash_error():
     err_msg = "X and y must be provided."
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.log_loss(data_source="X_y")
-
-    # FIXME: once we choose some basic metrics for clustering, then we don't need to
-    # use `custom_metric` for them.
-    estimator = KMeans().fit(X_train)
-    report = EstimatorReport(estimator, X_test=X_test)
-    err_msg = "X must be provided."
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.custom_metric(
-            rand_score, response_method="predict", data_source="X_y"
-        )
-
-    report = EstimatorReport(estimator)
-    for data_source in ("train", "test"):
-        err_msg = re.escape(
-            f"No {data_source} data (i.e. X_{data_source}) were provided when "
-            f"creating the report. Please provide the {data_source} data either "
-            f"when creating the report or by setting data_source to 'X_y' and "
-            f"providing X and y."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            report.metrics.custom_metric(
-                rand_score, response_method="predict", data_source=data_source
-            )
 
 
 @pytest.mark.parametrize("data_source", ("train", "test", "X_y"))

@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.cluster import KMeans
 from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
 
@@ -126,13 +125,6 @@ def test_analyze_with_invalid_subsample_strategy(cross_validation_report):
             subsample=10,
             subsample_strategy="invalid_strategy",
         )
-
-
-def test_check_y_required():
-    """Check that we raise an error when y is not provided."""
-    X = np.random.rand(100, 5)
-    with pytest.raises(ValueError):
-        CrossValidationReport(KMeans(), X=X).data.analyze()
 
 
 def test_repr(cross_validation_report):

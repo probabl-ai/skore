@@ -33,7 +33,6 @@ from skore_hub_project.metric import (
     RocAucTest,
     RocAucTrain,
 )
-from skore_hub_project.project.project import Project
 from skore_hub_project.report import EstimatorReportPayload
 
 
@@ -62,11 +61,6 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
 
 
 @fixture
-def project():
-    return Project("myworkspace", "myname")
-
-
-@fixture
 def payload(project, binary_classification):
     # Force the compute of the permutations
     binary_classification.inspection.permutation_importance(
@@ -82,9 +76,7 @@ def payload(project, binary_classification):
 
 
 class TestEstimatorReportPayload:
-    @mark.usefixtures("monkeypatch_artifact_hub_client")
-    @mark.usefixtures("monkeypatch_upload_routes")
-    @mark.usefixtures("monkeypatch_upload_with_mock")
+    @mark.respx()
     def test_pickle(
         self, binary_classification, project, payload, upload_mock, respx_mock
     ):
@@ -105,6 +97,7 @@ class TestEstimatorReportPayload:
             "content_type": "application/octet-stream",
         }
 
+    @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
         assert list(map(type, payload.metrics)) == [
             AccuracyTest,
@@ -124,6 +117,7 @@ class TestEstimatorReportPayload:
             PredictTimeTrain,
         ]
 
+    @mark.respx(assert_all_called=False)
     def test_metrics_raises_exception(self, monkeypatch, payload):
         """
         Since metrics compute is multi-threaded, ensure that any exceptions thrown in a
@@ -144,8 +138,7 @@ class TestEstimatorReportPayload:
         with raises(Exception, match="test_metrics_raises_exception"):
             list(map(type, payload.metrics))
 
-    @mark.usefixtures("monkeypatch_artifact_hub_client")
-    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
             EstimatorHtmlRepr,
@@ -160,8 +153,7 @@ class TestEstimatorReportPayload:
             TableReportTrain,
         ]
 
-    @mark.usefixtures("monkeypatch_artifact_hub_client")
-    @mark.usefixtures("monkeypatch_upload_routes")
+    @mark.respx()
     def test_model_dump(self, binary_classification, payload):
         _, checksum = serialize(binary_classification)
 
@@ -181,8 +173,7 @@ class TestEstimatorReportPayload:
             },
         }
 
-    def test_exception(self):
+    @mark.respx(assert_all_called=False)
+    def test_exception(self, project):
         with raises(ValidationError):
-            EstimatorReportPayload(
-                project=Project("myworkspace", "myname"), report=None, key="<key>"
-            )
+            EstimatorReportPayload(project=project, report=None, key="<key>")

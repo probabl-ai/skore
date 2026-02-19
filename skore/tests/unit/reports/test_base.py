@@ -4,7 +4,6 @@ import joblib
 import numpy as np
 import pytest
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
-from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -254,27 +253,6 @@ def test_base_accessor_get_X_y_and_data_source_hash_error():
     err_msg = "X and y must be provided."
     with pytest.raises(ValueError, match=err_msg):
         accessor._get_X_y_and_data_source_hash(data_source="X_y")
-
-    # FIXME: once we choose some basic metrics for clustering, then we don't need to
-    # use `custom_metric` for them.
-    estimator = KMeans(n_clusters=2).fit(X_train)
-    report = MockReport(estimator, X_test=X_test)
-    accessor = MockAccessor(parent=report)
-    err_msg = "X must be provided."
-    with pytest.raises(ValueError, match=err_msg):
-        accessor._get_X_y_and_data_source_hash(data_source="X_y")
-
-    report = MockReport(estimator)
-    accessor = MockAccessor(parent=report)
-    for data_source in ("train", "test"):
-        err_msg = re.escape(
-            f"No {data_source} data (i.e. X_{data_source}) were provided when "
-            f"creating the report. Please provide the {data_source} data either "
-            f"when creating the report or by setting data_source to 'X_y' and "
-            f"providing X and y."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            accessor._get_X_y_and_data_source_hash(data_source=data_source)
 
 
 @pytest.mark.parametrize("data_source", ("train", "test", "X_y"))

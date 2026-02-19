@@ -203,11 +203,14 @@ def test_interrupted_propagates_error(binary_classification_data, error, n_jobs)
         CrossValidationReport(estimator, X, y, splitter=10, n_jobs=n_jobs)
 
 
-def test_no_y():
-    """Check that we can create a report without y, in the case of clustering for
-    instance"""
-    report = CrossValidationReport(KMeans(), X=np.random.rand(100, 5))
-    assert isinstance(report, CrossValidationReport)
+def test_clustering():
+    """Check that we cannot create a report with a clustering model."""
+    with pytest.raises(
+        ValueError,
+        match="Clustering models are not supported yet. "
+        "Please use a classification or regression model instead.",
+    ):
+        CrossValidationReport(KMeans(), X=np.random.rand(10, 5))
 
 
 @pytest.mark.parametrize(

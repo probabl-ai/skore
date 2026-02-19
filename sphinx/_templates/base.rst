@@ -27,6 +27,12 @@
    :add-heading: Gallery examples
    :heading-level: -
 
+{%- elif objtype in ("data", "attribute") -%}
+
+.. currentmodule:: {{ module }}
+
+.. autodata:: {{ objname }}
+
 {%- else -%}
 
 .. currentmodule:: {{ module }}

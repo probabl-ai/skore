@@ -1,3 +1,4 @@
+import inspect
 from functools import partialmethod
 
 from pydantic import ValidationError
@@ -10,14 +11,18 @@ from skore_hub_project.artifact.media import (
     PermutationImportanceTrain,
 )
 from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.project.project import Project
 
 
 def serialize(result) -> bytes:
     import orjson
 
     if hasattr(result, "frame"):
-        result = result.frame()
+        # FIXME: in the future, all inspection methods should have an aggregate
+        # parameter and we should be sending unaggregated data to the hub.
+        if "aggregate" in inspect.signature(result.frame).parameters:
+            result = result.frame(aggregate=None)
+        else:
+            result = result.frame()
 
     return orjson.dumps(
         result.infer_objects().fillna("NaN").to_dict(orient="tight"),
@@ -46,9 +51,6 @@ def monkeypatch_permutation_importance(monkeypatch):
         "are deprecated:DeprecationWarning"
     ),
 )
-@mark.usefixtures("monkeypatch_artifact_hub_client")
-@mark.usefixtures("monkeypatch_upload_routes")
-@mark.usefixtures("monkeypatch_upload_with_mock")
 @mark.parametrize(
     "Media,report,accessor,data_source",
     (
@@ -96,6 +98,7 @@ def monkeypatch_permutation_importance(monkeypatch):
         ),
     ),
 )
+@mark.respx()
 def test_inspection(
     monkeypatch,
     Media,
@@ -104,8 +107,8 @@ def test_inspection(
     data_source,
     upload_mock,
     request,
+    project,
 ):
-    project = Project("myworkspace", "myname")
     report = request.getfixturevalue(report)
 
     function = getattr(report.inspection, accessor)

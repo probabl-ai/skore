@@ -179,13 +179,10 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             columns_to_drop = ["estimator", "split"]
         elif self.report_type == "cross-validation":
             columns_to_drop = ["estimator"]
-        elif self.report_type in (
-            "comparison-estimator",
-            "comparison-cross-validation",
-        ):
+        elif self.report_type == "comparison-estimator":
+            columns_to_drop = ["split"]
+        else:  # comparison-cross-validation
             columns_to_drop = []
-        else:
-            raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
         return self.importances.drop(columns=columns_to_drop)
 
@@ -217,18 +214,27 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         feature using seaborn's catplot. For cross-validation reports, it uses a
         strip plot with boxplot overlay to show the distribution across splits.
         """
+        # Make copy of the dictionary since we are going to pop some keys later
         barplot_kwargs = self._default_barplot_kwargs.copy()
-        stripplot_kwargs = self._default_stripplot_kwargs.copy()
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
-        frame = self.frame()
+        stripplot_kwargs = self._default_stripplot_kwargs.copy()
 
-        self._plot_single_estimator(
-            frame=frame,
-            estimator_name=self.importances["estimator"].unique()[0],
+        if "comparison" in self.report_type:
+            return self._plot_comparison(
+                frame=self.frame(),
+                report_type=self.report_type,
+                barplot_kwargs=barplot_kwargs,
+                boxplot_kwargs=boxplot_kwargs,
+                stripplot_kwargs=stripplot_kwargs,
+            )
+        # EstimatorReport or CrossValidationReport
+        return self._plot_single_estimator(
+            frame=self.frame(),
+            estimator_name=self.importances["estimator"][0],
             report_type=self.report_type,
             barplot_kwargs=barplot_kwargs,
-            stripplot_kwargs=stripplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
         )
 
     def _plot_single_estimator(
@@ -243,9 +249,9 @@ class ImpurityDecreaseDisplay(DisplayMixin):
     ) -> None:
         """Plot the mean decrease in impurity.
 
-        For EstimatorReport, a bar plot is used to display the mean decrease in impurity
-        values. For CrossValidationReport, a strip plot with boxplot overlay is used to
-        show the distribution across splits.
+        For `EstimatorReport`, a bar plot is used to display the mean decrease in
+        impurity values. For `CrossValidationReport`, a strip plot with boxplot overlay
+        is used to show the distribution across splits.
 
         Parameters
         ----------
@@ -255,9 +261,8 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         estimator_name : str
             The name of the estimator to plot.
 
-        report_type : {"estimator", "cross-validation", "comparison-estimator", \
-                "comparison-cross-validation"}
-            The type of report to compute the data for.
+        report_type : {"estimator", "cross-validation"}
+            The type of report to plot.
 
         barplot_kwargs : dict
             Keyword arguments to be passed to :func:`seaborn.barplot` for
@@ -274,11 +279,36 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             rendering the mean decrease in impurity with a
             :class:`~skore.CrossValidationReport`.
         """
+        self._categorical_plot(
+            frame=frame,
+            report_type=report_type,
+            hue=None,
+            col=None,
+            barplot_kwargs=barplot_kwargs,
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
+        )
+
+        self.figure_.suptitle(f"Mean decrease in impurity (MDI) of {estimator_name}")
+
+    def _categorical_plot(
+        self,
+        *,
+        frame: pd.DataFrame,
+        report_type: ReportType,
+        hue: str | None = None,
+        col: str | None = None,
+        barplot_kwargs: dict[str, Any] | None = None,
+        boxplot_kwargs: dict[str, Any] | None = None,
+        stripplot_kwargs: dict[str, Any] | None = None,
+    ):
         if "estimator" in report_type:
             self.facet_ = sns.catplot(
                 data=frame,
                 x="importance",
                 y="feature",
+                hue=hue,
+                col=col,
                 kind="bar",
                 **barplot_kwargs,
             )
@@ -287,6 +317,8 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 data=frame,
                 x="importance",
                 y="feature",
+                hue=hue,
+                col=col,
                 kind="strip",
                 dodge=True,
                 **stripplot_kwargs,
@@ -294,21 +326,100 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 sns.boxplot,
                 x="importance",
                 y="feature",
-                dodge=True,
+                hue=hue,
                 palette="tab10",
                 **boxplot_kwargs,
             )
+        add_background_features = hue is not None
 
         self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
-        self.ax_ = self.ax_[()]  # 0-d array
-        _decorate_matplotlib_axis(
-            ax=self.ax_,
-            add_background_features=False,
-            n_features=frame["feature"].nunique(),
-            xlabel="Mean Decrease in Impurity (MDI)",
-            ylabel="",
+        n_features = (
+            [frame["feature"].nunique()]
+            if col is None
+            else [
+                frame.query(f"{col} == '{col_value}'")["feature"].nunique()
+                for col_value in frame[col].unique()
+            ]
         )
-        self.figure_.suptitle(f"Mean Decrease in Impurity (MDI) of {estimator_name}")
+        for ax, n_feature in zip(self.ax_.flatten(), n_features, strict=True):
+            _decorate_matplotlib_axis(
+                ax=ax,
+                add_background_features=add_background_features,
+                n_features=n_feature,
+                xlabel="Mean decrease in impurity",
+                ylabel="",
+            )
+        if len(self.ax_.flatten()) == 1:
+            self.ax_ = self.ax_.flatten()[0]
+
+    @staticmethod
+    def _has_same_features(*, frame: pd.DataFrame) -> bool:
+        """Check if the features are the same across all estimators."""
+        grouped = {
+            name: group["feature"].sort_values().tolist()
+            for name, group in frame.groupby("estimator", sort=False)
+        }
+        _, reference_features = grouped.popitem()
+        for group_features in grouped.values():
+            if group_features != reference_features:
+                return False
+        return True
+
+    def _plot_comparison(
+        self,
+        *,
+        frame: pd.DataFrame,
+        report_type: ReportType,
+        barplot_kwargs: dict[str, Any],
+        boxplot_kwargs: dict[str, Any],
+        stripplot_kwargs: dict[str, Any],
+    ) -> None:
+        """Plot the mean decrease in impurity for a `ComparisonReport`.
+
+        Parameters
+        ----------
+        frame : pd.DataFrame
+            The frame to plot.
+
+        report_type : {"comparison-estimator", "comparison-cross-validation"}
+            The type of report to plot.
+
+        barplot_kwargs : dict
+            Keyword arguments to be passed to :func:`seaborn.barplot` for
+            rendering the mean decrease in impurity with an
+            :class:`~skore.ComparisonReport` of :class:`~skore.EstimatorReport`.
+
+        boxplot_kwargs : dict
+            Keyword arguments to be passed to :func:`seaborn.boxplot` for
+            rendering the mean decrease in impurity with a
+            :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
+
+        stripplot_kwargs : dict
+            Keyword arguments to be passed to :func:`seaborn.stripplot` for
+            rendering the mean decrease in impurity with a
+            :class:`~skore.ComparisonReport` of :class:`~skore.CrossValidationReport`.
+        """
+        # help mypy to understand the following variable types
+        hue: str | None = None
+
+        has_same_features = self._has_same_features(frame=frame)
+        if not has_same_features:
+            # features cannot be compared across estimators and we therefore
+            # need to subplot by estimator
+            hue, col = None, "estimator"
+        else:
+            hue, col = "estimator", None
+
+        self._categorical_plot(
+            frame=frame,
+            report_type=report_type,
+            hue=hue,
+            col=col,
+            barplot_kwargs={"sharey": has_same_features} | barplot_kwargs,
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs={"sharey": has_same_features} | stripplot_kwargs,
+        )
+        self.figure_.suptitle("Mean decrease in impurity (MDI)")
 
     # ignore the type signature because we override kwargs by specifying the name of
     # the parameters for the user.

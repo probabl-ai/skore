@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
 
-import joblib
 import numpy as np
 from numpy.typing import ArrayLike
 from scipy.sparse import issparse
@@ -25,6 +23,7 @@ from skore._utils._accessor import (
     _check_estimator_has_coef,
     _check_estimator_has_feature_importances,
 )
+from skore._utils._cache_key import deep_key_sanitize
 
 Metric = str | Callable | list[str] | tuple[str] | dict[str, Callable] | None
 
@@ -88,6 +87,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         This method is available for estimators that expose a `feature_importances_`
         attribute. See for example
         :attr:`sklearn.ensemble.GradientBoostingClassifier.feature_importances_`.
+
         In particular, note that the MDI is computed at fit time, i.e. using the
         training data.
 
@@ -308,11 +308,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
             data_source=data_source, X=X, y=y
         )
-        if y_true is None:
-            raise ValueError(
-                "The target should be provided when computing the permutation "
-                "importance."
-            )
 
         # NOTE: to temporary improve the `project.put` UX, we always store the
         # permutation importance into the cache dictionary even when seed is None.
@@ -325,36 +320,26 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if seed is not None and not isinstance(seed, int):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
 
-        # build the cache key components to finally create a tuple that will be used
-        # to check if the metric has already been computed
-        cache_key_parts: list[Any] = [
-            self._parent._hash,
-            "permutation_importance",
-            data_source,
-            at_step,
-        ]
-        cache_key_parts.append(data_source_hash)
-
-        if callable(metric) or isinstance(metric, list | dict):
-            cache_key_parts.append(joblib.hash(metric))
-        else:
-            cache_key_parts.append(metric)
-
-        # order arguments by key to ensure cache works n_jobs variable should not be in
-        # the cache
+        # n_jobs should not be in cache
         kwargs = {"n_repeats": n_repeats, "max_samples": max_samples, "seed": seed}
-        for _, v in sorted(kwargs.items()):
-            cache_key_parts.append(v)
+        cache_key = deep_key_sanitize(
+            (
+                self._parent._hash,
+                "permutation_importance",
+                data_source,
+                at_step,
+                data_source_hash,
+                metric,
+                kwargs,
+            )
+        )
 
-        cache_key = tuple(cache_key_parts)
-
-        if cache_key in self._parent._cache and seed is not None:
-            # NOTE: avoid to fetch from the cache if the seed is None because we want
-            # to trigger the computation in this case. We only have the permutation
-            # stored as a workaround for the serialization for skore-hub as explained
-            # earlier.
-            display = self._parent._cache[cache_key]
-        else:
+        # NOTE: avoid to fetch from the cache if the seed is None because we want
+        # to trigger the computation in this case. We only have the permutation
+        # stored as a workaround for the serialization for skore-hub as explained
+        # earlier.
+        display = None if seed is None else self._parent._cache.get(cache_key)
+        if display is None:
             if not isinstance(self._parent.estimator_, Pipeline) or at_step == 0:
                 feature_engineering, estimator = None, self._parent.estimator_
                 X_transformed = X_

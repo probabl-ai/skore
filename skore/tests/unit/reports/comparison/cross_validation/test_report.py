@@ -1,6 +1,8 @@
+import numpy as np
 import pytest
+from sklearn.cluster import KMeans
 
-from skore import ComparisonReport
+from skore import ComparisonReport, CrossValidationReport
 
 
 def test_init_wrong_parameters(cross_validation_reports_binary_classification):
@@ -63,3 +65,18 @@ def test_get_predictions(
     assert len(predictions) == len(report.reports_)
     for i, cv_report in enumerate(report.reports_.values()):
         assert len(predictions[i]) == cv_report._splitter.n_splits
+
+
+def test_clustering():
+    """Check that we cannot create a report with a clustering model."""
+    with pytest.raises(
+        ValueError,
+        match="Clustering models are not supported yet. Please use a "
+        "classification or regression model instead.",
+    ):
+        ComparisonReport(
+            [
+                CrossValidationReport(KMeans(), X=np.random.rand(10, 5)),
+                CrossValidationReport(KMeans(), X=np.random.rand(10, 5)),
+            ]
+        )

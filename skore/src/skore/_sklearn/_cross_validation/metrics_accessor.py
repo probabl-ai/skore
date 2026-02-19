@@ -1,9 +1,8 @@
 from collections.abc import Callable, Sequence
 from typing import Any, Literal, cast
 
-import joblib
-import numpy as np
 import pandas as pd
+from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
@@ -32,9 +31,10 @@ from skore._utils._accessor import (
     _check_estimator_report_has_method,
     _get_ys_for_single_report,
 )
+from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
-from skore._utils._parallel import Parallel, delayed
+from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
 DataSource = Literal["test", "train", "X_y"]
@@ -198,33 +198,25 @@ class _MetricsAccessor(
             X, y, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
-        else:
+        elif X is None and y is None:
             data_source_hash = None
-
-        cache_key_parts: list[Any] = [
-            self._parent._hash,
-            report_metric_name,
-            data_source,
-        ]
-
-        if data_source_hash is not None:
-            cache_key_parts.append(data_source_hash)
-
-        if aggregate is None or isinstance(aggregate, str):
-            cache_key_parts.append(aggregate)
         else:
-            cache_key_parts.extend(tuple(aggregate))
-        ordered_metric_kwargs = sorted(metric_kwargs.keys())
-        for key in ordered_metric_kwargs:
-            if isinstance(metric_kwargs[key], np.ndarray | list | dict):
-                cache_key_parts.append(joblib.hash(metric_kwargs[key]))
-            else:
-                cache_key_parts.append(metric_kwargs[key])
-        cache_key = tuple(cache_key_parts)
+            err_msg = f"X and y must be None when data_source is {data_source}."
+            raise ValueError(err_msg)
 
-        if cache_key in self._parent._cache:
-            results = self._parent._cache[cache_key]
-        else:
+        cache_key = deep_key_sanitize(
+            (
+                self._parent._hash,
+                report_metric_name,
+                data_source,
+                data_source_hash,
+                aggregate,
+                metric_kwargs,
+            )
+        )
+
+        results = self._parent._cache.get(cache_key)
+        if results is None:
             parallel = Parallel(
                 **_validate_joblib_parallel_params(
                     n_jobs=self._parent.n_jobs, return_as="generator"
@@ -1115,7 +1107,6 @@ class _MetricsAccessor(
             X, y, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
-            assert y is not None, "y must be provided"
         else:
             data_source_hash = None
 
@@ -1123,13 +1114,18 @@ class _MetricsAccessor(
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
-            cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            cache_key_parts.extend(display_kwargs.values())
-            cache_key_parts.append(data_source)
-            cache_key = tuple(cache_key_parts)
+            cache_key = deep_key_sanitize(
+                (
+                    self._parent._hash,
+                    display_class.__name__,
+                    display_kwargs,
+                    data_source,
+                )
+            )
 
-        if cache_key and cache_key in self._parent._cache:
-            return self._parent._cache[cache_key]
+        cache_value = self._parent._cache.get(cache_key)
+        if cache_value is not None:
+            return cache_value
 
         y_true: list[YPlotData] = []
         y_pred: list[YPlotData] = []

@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from sklearn.cluster import KMeans
 
 from skore import ComparisonReport, EstimatorReport
 
@@ -142,3 +143,13 @@ def test_get_predictions_error(
     report = comparison_estimator_reports_binary_classification
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid")
+
+
+def test_clustering():
+    """Check that we cannot create a report with a clustering model."""
+    with pytest.raises(
+        ValueError,
+        match="Clustering models are not supported yet. Please use a "
+        "classification or regression model instead.",
+    ):
+        ComparisonReport([EstimatorReport(KMeans()), EstimatorReport(KMeans())])

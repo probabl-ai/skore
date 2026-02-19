@@ -74,23 +74,11 @@ Inspection
    :widths: 30 70
 
    * - :class:`CoefficientsDisplay`
-     - Display for visualizing model coefficients
+     - Display for visualizing feature importance via model coefficients
+   * - :class:`ImpurityDecreaseDisplay`
+     - Display for visualizing feature importance via Mean Decrease in Impurity (MDI)
    * - :class:`PermutationImportanceDisplay`
-     - Display for permutation feature importance
-
-
-Configuration
-^^^^^^^^^^^^^
-
-.. list-table::
-   :widths: 30 70
-
-   * - :func:`config_context`
-     - Context manager for temporarily modifying skore configuration
-   * - :func:`get_config`
-     - Get current skore configuration values
-   * - :func:`set_config`
-     - Set skore configuration values
+     - Display for visualizing feature importance via permutation importance
 
 
 Utilities
@@ -99,6 +87,8 @@ Utilities
 .. list-table::
    :widths: 30 70
 
+   * - :obj:`configuration`
+     - Global configuration for `skore` also usable as a context manager
    * - :func:`show_versions`
      - Print version information for skore and its dependencies
 
