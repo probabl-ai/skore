@@ -232,12 +232,11 @@ jobs:
         env:
           PACKAGE: ${{ matrix.package }}
 
-      - name: Upload coverage reports
+      - name: Upload coverage reports to Codecov
         if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
-          name: ${{ matrix.package }}-coverage
-          path: ${{ matrix.package }}/coverage/
+          files: ${{ matrix.package }}/coverage/pytest-coverage.xml
 
   pytest:
     needs:
