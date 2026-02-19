@@ -201,7 +201,9 @@ class PermutationImportanceDisplay(DisplayMixin):
         ]
 
         return cls(
-            importances=pd.concat(all_importances, axis="index")[ordered_columns],
+            importances=pd.concat(all_importances, axis="index", ignore_index=True)[
+                ordered_columns
+            ],
             report_type=report_type,
         )
 
