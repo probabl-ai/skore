@@ -74,9 +74,11 @@ Inspection
    :widths: 30 70
 
    * - :class:`CoefficientsDisplay`
-     - Display for visualizing model coefficients
+     - Display for visualizing feature importance via model coefficients
+   * - :class:`ImpurityDecreaseDisplay`
+     - Display for visualizing feature importance via Mean Decrease in Impurity (MDI)
    * - :class:`PermutationImportanceDisplay`
-     - Display for permutation feature importance
+     - Display for visualizing feature importance via permutation importance
 
 
 Configuration
