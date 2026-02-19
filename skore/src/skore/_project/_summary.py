@@ -107,7 +107,7 @@ class Summary(DataFrame):
 
         if return_as == "comparison":
             try:
-                return ComparisonReport(reports)  # type: ignore[arg-type]
+                return ComparisonReport(reports)
             except ValueError as e:
                 raise RuntimeError(
                     f"Bad condition: the comparison mode is only applicable when "
@@ -132,7 +132,7 @@ class Summary(DataFrame):
                 UserWarning,
                 stacklevel=2,
             )
-            return {"text/html": self._repr_html_()}
+            return {"text/html": DataFrame._repr_html_(self)}
 
         from skore._project._widget import ModelExplorerWidget
 

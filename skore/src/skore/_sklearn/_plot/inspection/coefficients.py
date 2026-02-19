@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -408,6 +408,9 @@ class CoefficientsDisplay(DisplayMixin):
         boxplot_kwargs: dict[str, Any] | None = None,
         stripplot_kwargs: dict[str, Any] | None = None,
     ):
+        barplot_kwargs = {} if barplot_kwargs is None else barplot_kwargs
+        stripplot_kwargs = {} if stripplot_kwargs is None else stripplot_kwargs
+        boxplot_kwargs = {} if boxplot_kwargs is None else boxplot_kwargs
         if "estimator" in report_type:
             self.facet_ = sns.catplot(
                 data=frame,
@@ -416,7 +419,7 @@ class CoefficientsDisplay(DisplayMixin):
                 hue=hue,
                 col=col,
                 kind="bar",
-                **cast(dict[str, Any], barplot_kwargs),
+                **barplot_kwargs,
             )
         else:  # "cross-validation" in report_type
             self.facet_ = sns.catplot(
@@ -427,7 +430,7 @@ class CoefficientsDisplay(DisplayMixin):
                 col=col,
                 kind="strip",
                 dodge=True,
-                **cast(dict[str, Any], stripplot_kwargs),
+                **stripplot_kwargs,
             ).map_dataframe(
                 sns.boxplot,
                 x="coefficient",
@@ -435,7 +438,7 @@ class CoefficientsDisplay(DisplayMixin):
                 hue=hue,
                 palette="tab10" if hue is not None else None,
                 dodge=True,
-                **cast(dict[str, Any], barplot_kwargs),
+                **boxplot_kwargs,
             )
         add_background_features = hue is not None
 

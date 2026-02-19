@@ -12,9 +12,10 @@ from rich.panel import Panel
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.train_test_split.warning import TRAIN_TEST_SPLIT_WARNINGS
 
+from .warning.train_test_split_warning import TrainTestSplitWarning
+
 if TYPE_CHECKING:
     ArrayLike = Any
-    from .warning.train_test_split_warning import TrainTestSplitWarning
 
 
 def train_test_split(

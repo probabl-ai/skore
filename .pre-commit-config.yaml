@@ -37,17 +37,38 @@ repos:
       - id: ty-check
         alias: ty-skore
         name: ty skore/
-        args: [--verbose, --project, skore, --ignore, unresolved-import]
+        language: python
+        args: [--project, skore]
         pass_filenames: false
+        additional_dependencies:
+          # from dependencies
+          - IPython
+          - anywidget
+          - ipywidgets
+          - joblib
+          - matplotlib
+          - numpy
+          - pandas
+          - plotly
+          - rich
+          - scikit-learn
+          - skrub
+          - seaborn
+          # from test dependencies
+          - polars
+          - pyarrow
+          - scipy-stubs
 
       - id: ty-check
         alias: ty-skore-local-project
         name: ty skore-local-project/
-        args: [--verbose, --project, skore-local-project, --ignore, unresolved-import]
+        args: [--project, skore-local-project]
         pass_filenames: false
+        additional_dependencies: [skore]
 
       - id: ty-check
         alias: ty-skore-hub-project
         name: ty skore-hub-project/
-        args: [--verbose, --project, skore-hub-project, --ignore, unresolved-import]
+        args: [--project, skore-hub-project]
         pass_filenames: false
+        additional_dependencies: [skore, blake3, httpx, orjson, pandas-stubs, pydantic]

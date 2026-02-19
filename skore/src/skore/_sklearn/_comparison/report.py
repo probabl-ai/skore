@@ -480,7 +480,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             pd.concat(
                 cast(
                     list[pd.DataFrame],
-                    [estimator_report._y_train, estimator_report._y_train],
+                    [estimator_report._y_train, estimator_report._y_test],
                 )
             )
             if isinstance(estimator_report._y_train, (pd.DataFrame, pd.Series))

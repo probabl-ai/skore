@@ -7,13 +7,12 @@ from contextlib import suppress
 from dataclasses import InitVar, dataclass, field, fields
 from datetime import datetime, timezone
 from math import isfinite
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from joblib import hash
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from typing import Any
 
     from skore import CrossValidationReport, EstimatorReport
 
@@ -120,8 +119,11 @@ class EstimatorReportMetadata(ReportMetadata):  # noqa: D101
 
     def __post_init__(self, report: EstimatorReport | CrossValidationReport) -> None:
         """Initialize dynamic fields."""
-        report = cast(EstimatorReport, report)
         super().__post_init__(report)
+
+        from skore import EstimatorReport
+
+        report = cast(EstimatorReport, report)
 
         self.rmse = self.metric(report, "rmse")
         self.log_loss = self.metric(report, "log_loss")
@@ -167,8 +169,11 @@ class CrossValidationReportMetadata(ReportMetadata):  # noqa: D101
 
     def __post_init__(self, report) -> None:
         """Initialize dynamic fields."""
-        report = cast(CrossValidationReport, report)
         super().__post_init__(report)
+
+        from skore import CrossValidationReport
+
+        report = cast(CrossValidationReport, report)
 
         self.rmse_mean = self.metric(report, "rmse")
         self.log_loss_mean = self.metric(report, "log_loss")
