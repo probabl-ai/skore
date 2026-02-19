@@ -31,8 +31,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     You can access this accessor using the `inspection` attribute.
     """
 
-    _verbose_name: str = "feature_importance"
-
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
@@ -76,7 +74,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             estimators=[self._parent.estimator_],
             names=[self._parent.estimator_name_],
             splits=[np.nan],
-            report_type="estimator",
+            report_type=self._parent._report_type,
         )
 
     @available_if(_check_estimator_has_feature_importances())
@@ -85,7 +83,8 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         This method is available for estimators that expose a `feature_importances_`
         attribute. See for example
-        :attr:`sklearn.ensemble.GradientBoostingClassifier.inspections_`.
+        :attr:`sklearn.ensemble.GradientBoostingClassifier.feature_importances_`.
+
         In particular, note that the MDI is computed at fit time, i.e. using the
         training data.
 
@@ -117,7 +116,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             estimators=[self._parent.estimator_],
             names=[self._parent.estimator_name_],
             splits=[np.nan],
-            report_type="estimator",
+            report_type=self._parent._report_type,
         )
 
     def permutation_importance(
@@ -306,11 +305,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
             data_source=data_source, X=X, y=y
         )
-        if y_true is None:
-            # Can only happen if the estimator is a clusterer
-            raise ValueError(
-                "Permutation importance can not be performed on a clustering model."
-            )
 
         # NOTE: to temporary improve the `project.put` UX, we always store the
         # permutation importance into the cache dictionary even when seed is None.
@@ -366,7 +360,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 max_samples=max_samples,
                 n_jobs=n_jobs,
                 seed=seed,
-                report_type="estimator",
+                report_type=self._parent._report_type,
             )
 
             if cache_key is not None:

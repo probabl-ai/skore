@@ -3,6 +3,7 @@
 from typing import Literal
 
 from skore_hub_project.artifact.media.media import Media, Report
+from skore_hub_project.json import dumps
 from skore_hub_project.protocol import EstimatorReport
 
 
@@ -14,8 +15,6 @@ class TableReport(Media[Report]):  # noqa: D101
     )
 
     def content_to_upload(self) -> bytes:  # noqa: D102
-        import orjson
-
         display = (
             self.report.data.analyze()
             if self.data_source is None
@@ -32,10 +31,7 @@ class TableReport(Media[Report]):  # noqa: D101
         # Remove irrelevant information
         del table_report["sample_table"]
 
-        return orjson.dumps(
-            table_report,
-            option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
-        )
+        return dumps(table_report)
 
 
 class TableReportTrain(TableReport[EstimatorReport]):  # noqa: D101

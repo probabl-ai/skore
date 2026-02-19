@@ -8,7 +8,6 @@ from rich.panel import Panel
 from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
-from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._measure_time import MeasureTime
@@ -24,6 +23,12 @@ class _BaseReport(ReportHelpMixin):
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
+    _report_type: Literal[
+        "estimator",
+        "cross-validation",
+        "comparison-estimator",
+        "comparison-cross-validation",
+    ]
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")
@@ -35,8 +40,6 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
     Accessors expose additional views on a report (e.g. data, metrics) and inherit from
     ``AccessorHelpMixin`` to provide a dedicated ``help()`` and rich/HTML help tree.
     """
-
-    _verbose_name: str = "accessor"
 
     def __init__(self, parent: ParentT) -> None:
         self._parent = parent
@@ -61,7 +64,7 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
         data_source: Literal["test", "train", "X_y"],
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
-    ) -> tuple[ArrayLike, ArrayLike | None, int | None]:
+    ) -> tuple[ArrayLike, ArrayLike, int | None]:
         """Get the requested dataset and mention if we should hash before caching.
 
         Parameters
@@ -91,14 +94,11 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
             The hash of the data source. None when we are able to track the data, and
             thus relying on X_train, y_train, X_test, y_test.
         """
-        is_cluster = is_clusterer(self._parent.estimator_)
         if data_source == "test":
             if not (X is None or y is None):
                 raise ValueError("X and y must be None when data_source is test.")
-            if self._parent._X_test is None or (
-                not is_cluster and self._parent._y_test is None
-            ):
-                missing_data = "X_test" if is_cluster else "X_test and y_test"
+            if self._parent._X_test is None or self._parent._y_test is None:
+                missing_data = "X_test and y_test"
                 raise ValueError(
                     f"No {data_source} data (i.e. {missing_data}) were provided "
                     f"when creating the report. Please provide the {data_source} "
@@ -109,10 +109,8 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
         elif data_source == "train":
             if not (X is None or y is None):
                 raise ValueError("X and y must be None when data_source is train.")
-            if self._parent._X_train is None or (
-                not is_cluster and self._parent._y_train is None
-            ):
-                missing_data = "X_train" if is_cluster else "X_train and y_train"
+            if self._parent._X_train is None or self._parent._y_train is None:
+                missing_data = "X_train and y_train"
                 raise ValueError(
                     f"No {data_source} data (i.e. {missing_data}) were provided "
                     f"when creating the report. Please provide the {data_source} "
@@ -121,8 +119,8 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
                 )
             return self._parent._X_train, self._parent._y_train, None
         elif data_source == "X_y":
-            if X is None or (not is_cluster and y is None):
-                missing_data = "X" if is_cluster else "X and y"
+            if X is None or y is None:
+                missing_data = "X and y"
                 raise ValueError(
                     f"{missing_data} must be provided when data_source is X_y."
                 )
@@ -264,8 +262,6 @@ class _BaseMetricsAccessor:
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
-
-    _verbose_name: str = "metrics"
 
     def _get_favorability_text(self, name: str) -> str | None:
         """Get favorability text for a method, or None if not applicable."""

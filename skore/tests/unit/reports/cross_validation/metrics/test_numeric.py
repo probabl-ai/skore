@@ -154,6 +154,23 @@ def test_custom_metric(forest_binary_classification_data):
     assert result.index == ["Accuracy Score"]
 
 
+def test_cache_key_with_string_aggregate_is_not_split(
+    forest_binary_classification_data,
+):
+    """
+    Check that string aggregate values are stored as a single cache-key item.
+    Non-regression test for: https://github.com/probabl-ai/skore/issues/2450
+    """
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+
+    report.metrics.summarize(aggregate="mean")
+
+    summarize_cache_keys = [key for key in report._cache if key[1] == "summarize"]
+    assert summarize_cache_keys
+    assert any("mean" in key for key in summarize_cache_keys)
+
+
 @pytest.mark.parametrize("metric", ["precision", "recall"])
 def test_summarize_pos_label_overwrite(metric, logistic_binary_classification_data):
     """Check that `pos_label` can be overwritten in `summarize`"""
@@ -223,3 +240,23 @@ def test_precision_recall_pos_label_overwrite(
             (metric.capitalize(), "A"), (report.estimator_name_, "mean")
         ]
     )
+
+
+def test_invalid_X_y_call_still_raises_after_cache_write(
+    logistic_binary_classification_data,
+):
+    """
+    Non regression for https://github.com/probabl-ai/skore/issues/2491:
+    Invalid `X`/`y` args should not be masked by a cache hit.
+    """
+    classifier, X, y = logistic_binary_classification_data
+    report = CrossValidationReport(classifier, X, y)
+
+    error_msg = "X and y must be None when data_source is test"
+    with pytest.raises(ValueError, match=error_msg):
+        report.metrics.accuracy(X=X, y=y)
+
+    report.metrics.accuracy()
+
+    with pytest.raises(ValueError, match=error_msg):
+        report.metrics.accuracy(X=X, y=y)

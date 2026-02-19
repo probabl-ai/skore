@@ -7,14 +7,12 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
 from sklearn.base import BaseEstimator
-from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     get_scorer,
     make_scorer,
     precision_score,
-    rand_score,
     recall_score,
 )
 from sklearn.model_selection import train_test_split
@@ -396,29 +394,6 @@ def test_get_X_y_and_data_source_hash_error():
     err_msg = "X and y must be provided."
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.log_loss(data_source="X_y")
-
-    # FIXME: once we choose some basic metrics for clustering, then we don't need to
-    # use `custom_metric` for them.
-    estimator = KMeans().fit(X_train)
-    report = EstimatorReport(estimator, X_test=X_test)
-    err_msg = "X must be provided."
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.custom_metric(
-            rand_score, response_method="predict", data_source="X_y"
-        )
-
-    report = EstimatorReport(estimator)
-    for data_source in ("train", "test"):
-        err_msg = re.escape(
-            f"No {data_source} data (i.e. X_{data_source}) were provided when "
-            f"creating the report. Please provide the {data_source} data either "
-            f"when creating the report or by setting data_source to 'X_y' and "
-            f"providing X and y."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            report.metrics.custom_metric(
-                rand_score, response_method="predict", data_source=data_source
-            )
 
 
 @pytest.mark.parametrize("data_source", ("train", "test", "X_y"))

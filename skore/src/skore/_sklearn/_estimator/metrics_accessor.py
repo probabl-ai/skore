@@ -1740,8 +1740,6 @@ class _MetricsAccessor(
             ds_X, ds_y, ds_hash = self._get_X_y_and_data_source_hash(
                 data_source=ds, X=X, y=y
             )
-            if ds_y is None:
-                raise ValueError("y must be provided")
 
             y_true_data, y_pred_data = _get_ys_for_single_report(
                 cache=self._parent._cache,
@@ -1762,7 +1760,7 @@ class _MetricsAccessor(
         display = display_class._compute_data_for_display(
             y_true=y_true,
             y_pred=y_pred,
-            report_type="estimator",
+            report_type=self._parent._report_type,
             estimators=[self._parent.estimator_],
             ml_task=self._parent._ml_task,
             data_source=data_source,

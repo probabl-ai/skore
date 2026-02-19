@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.cluster import KMeans
 from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
 
@@ -64,9 +63,11 @@ def test_table_report_display_frame(cross_validation_report, display):
     "X",
     [
         np.random.rand(100, 5),
+        pd.DataFrame(np.random.rand(100, 5)),
         pd.DataFrame(
             np.random.rand(100, 5), columns=[f"Feature number {i}" for i in range(5)]
         ),
+        pd.DataFrame(np.random.rand(100, 5), columns=["a", 1, "c", 3, "e"]),
     ],
 )
 @pytest.mark.parametrize(
@@ -76,6 +77,7 @@ def test_table_report_display_frame(cross_validation_report, display):
         np.ones(100),
         pd.Series(np.ones(100)),
         pd.Series(np.ones(100), name="Target"),
+        pd.DataFrame(np.ones((100, 1))),
         pd.DataFrame(np.ones((100, 1)), columns=["Target"]),
     ],
 )
@@ -123,13 +125,6 @@ def test_analyze_with_invalid_subsample_strategy(cross_validation_report):
             subsample=10,
             subsample_strategy="invalid_strategy",
         )
-
-
-def test_check_y_required():
-    """Check that we raise an error when y is not provided."""
-    X = np.random.rand(100, 5)
-    with pytest.raises(ValueError):
-        CrossValidationReport(KMeans(), X=X).data.analyze()
 
 
 def test_repr(cross_validation_report):

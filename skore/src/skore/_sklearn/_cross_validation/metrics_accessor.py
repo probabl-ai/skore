@@ -198,8 +198,11 @@ class _MetricsAccessor(
             X, y, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
-        else:
+        elif X is None and y is None:
             data_source_hash = None
+        else:
+            err_msg = f"X and y must be None when data_source is {data_source}."
+            raise ValueError(err_msg)
 
         cache_key_parts: list[Any] = [
             self._parent._hash,
@@ -210,7 +213,7 @@ class _MetricsAccessor(
         if data_source_hash is not None:
             cache_key_parts.append(data_source_hash)
 
-        if aggregate is None:
+        if aggregate is None or isinstance(aggregate, str):
             cache_key_parts.append(aggregate)
         else:
             cache_key_parts.extend(tuple(aggregate))
@@ -1115,7 +1118,6 @@ class _MetricsAccessor(
             X, y, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
-            assert y is not None, "y must be provided"
         else:
             data_source_hash = None
 
@@ -1168,7 +1170,7 @@ class _MetricsAccessor(
         display = display_class._compute_data_for_display(
             y_true=y_true,
             y_pred=y_pred,
-            report_type="cross-validation",
+            report_type=self._parent._report_type,
             estimators=[
                 report.estimator_ for report in self._parent.estimator_reports_
             ],

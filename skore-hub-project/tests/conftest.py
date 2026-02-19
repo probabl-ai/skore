@@ -4,13 +4,42 @@ from importlib import reload
 from unittest.mock import Mock
 from urllib.parse import urljoin
 
+import numpy as np
 from httpx import Client, Response
 from pytest import fixture
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.model_selection import train_test_split
 from skore import CrossValidationReport, EstimatorReport
+
+from skore_hub_project.project.project import Project
+
+
+@fixture
+def project():
+    return Project(workspace="workspace", name="name")
+
+
+@fixture
+def monkeypatch_project_routes(respx_mock):
+    mocks = [
+        ("get", "/projects/workspace", Response(200)),
+        (
+            "post",
+            "/projects/workspace/name",
+            Response(
+                200,
+                json={
+                    "id": 42,
+                    "url": "http://domain/workspace/name",
+                },
+            ),
+        ),
+    ]
+
+    for method, url, response in mocks:
+        respx_mock.request(method=method, url=url).mock(response)
 
 
 @fixture
@@ -27,13 +56,18 @@ def monkeypatch_upload_with_mock(monkeypatch, upload_mock):
 
 @fixture
 def monkeypatch_upload_routes(respx_mock):
-    respx_mock.post("projects/myworkspace/myname/artifacts").mock(
-        Response(201, json=[{"upload_url": "http://chunk1.com/", "chunk_id": 1}])
-    )
-    respx_mock.put("http://chunk1.com").mock(
-        Response(200, headers={"etag": '"<etag1>"'})
-    )
-    respx_mock.post("projects/myworkspace/myname/artifacts/complete")
+    mocks = [
+        (
+            "post",
+            "projects/workspace/name/artifacts",
+            Response(201, json=[{"upload_url": "http://chunk1.com/", "chunk_id": 1}]),
+        ),
+        ("put", "http://chunk1.com", Response(200, headers={"etag": '"<etag1>"'})),
+        ("post", "projects/workspace/name/artifacts/complete", Response(200)),
+    ]
+
+    for method, url, response in mocks:
+        respx_mock.request(method=method, url=url).mock(response)
 
 
 class FakeClient(Client):
@@ -97,6 +131,22 @@ def binary_classification() -> EstimatorReport:
 
 
 @fixture(scope="module")
+def multiclass_classification() -> EstimatorReport:
+    X, y = make_classification(n_classes=3, n_informative=4, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    return EstimatorReport(
+        LogisticRegression(random_state=42),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+
+
+@fixture(scope="module")
 def cv_binary_classification() -> CrossValidationReport:
     X, y = make_classification(random_state=42)
 
@@ -110,6 +160,60 @@ def small_cv_binary_classification() -> CrossValidationReport:
     return CrossValidationReport(
         RandomForestClassifier(random_state=42), X, y, splitter=2
     )
+
+
+def _make_binary_estimator_report_string_labels(*, pos_label=None):
+    """Binary classification with string y labels ('negative', 'positive')."""
+    X, y = make_classification(random_state=42)
+    labels = np.array(["negative", "positive"])
+    y = labels[y]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    report = EstimatorReport(
+        RandomForestClassifier(random_state=42),
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        pos_label=pos_label,
+    )
+    return report
+
+
+def _make_cv_binary_report_string_labels(*, pos_label=None):
+    """Cross-validation binary classification with string y labels."""
+    X, y = make_classification(random_state=42, n_samples=50)
+    labels = np.array(["negative", "positive"])
+    y = labels[y]
+    report = CrossValidationReport(
+        RandomForestClassifier(random_state=42), X, y, splitter=2, pos_label=pos_label
+    )
+    return report
+
+
+@fixture(scope="module")
+def binary_classification_string_labels() -> EstimatorReport:
+    """Binary classification with string labels, pos_label not set."""
+    return _make_binary_estimator_report_string_labels()
+
+
+@fixture(scope="module")
+def binary_classification_string_labels_with_pos_label() -> EstimatorReport:
+    """Binary classification with string labels and pos_label='positive'."""
+    return _make_binary_estimator_report_string_labels(pos_label="positive")
+
+
+@fixture(scope="module")
+def cv_binary_classification_string_labels() -> CrossValidationReport:
+    """CV binary classification with string labels, pos_label not set."""
+    return _make_cv_binary_report_string_labels()
+
+
+@fixture(scope="module")
+def cv_binary_classification_string_labels_with_pos_label() -> CrossValidationReport:
+    """CV binary classification with string labels and pos_label='positive'."""
+    return _make_cv_binary_report_string_labels(pos_label="positive")
 
 
 @fixture
