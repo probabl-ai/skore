@@ -76,7 +76,7 @@ def _combine_estimator_results(
         # Some metrics can be undefined for some estimators and NaN are
         # introduced after the concatenation. We fill the NaN using the
         # valid favorability
-        favorability_ = results.pop("Favorability").bfill(axis=1).iloc[:, 0]  # type: ignore[arg-type]
+        favorability_ = results.pop("Favorability").bfill(axis=1).iloc[:, 0]
     else:
         favorability_ = None
 

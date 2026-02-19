@@ -324,7 +324,7 @@ class _MetricsAccessor(
         if aggregate:
             if isinstance(aggregate, str):
                 aggregate = cast(Sequence[Literal["mean", "std"]], [aggregate])
-            timings = timings.aggregate(func=aggregate, axis=1)  # type: ignore[call-overload]
+            timings = timings.aggregate(func=aggregate, axis=1)
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
 
         # Add (s) to time measurements

@@ -31,25 +31,23 @@ repos:
       - id: ruff-format
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
 
-  - repo: local
+  - repo: https://github.com/allganize/ty-pre-commit
+    rev: v0.0.17  # ty version
     hooks:
-      - id: ty
+      - id: ty-check
         alias: ty-skore
         name: ty skore/
-        entry: uv run --python 3.13 --with ty==0.0.17 ty check --project skore
-        language: unsupported
+        args: [--verbose, --project, skore, --ignore, unresolved-import]
         pass_filenames: false
 
-      - id: ty
+      - id: ty-check
         alias: ty-skore-local-project
         name: ty skore-local-project/
-        entry: uv run --python 3.13 --with ty==0.0.17 ty check --project skore-local-project
-        language: unsupported
+        args: [--verbose, --project, skore-local-project, --ignore, unresolved-import]
         pass_filenames: false
 
-      - id: ty
+      - id: ty-check
         alias: ty-skore-hub-project
         name: ty skore-hub-project/
-        entry: uv run --python 3.13 --with ty==0.0.17 ty check --project skore-hub-project
-        language: unsupported
+        args: [--verbose, --project, skore-hub-project, --ignore, unresolved-import]
         pass_filenames: false

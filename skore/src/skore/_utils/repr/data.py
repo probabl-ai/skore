@@ -156,7 +156,7 @@ def get_documentation_url(
     if skore_version < parse_version("0.1"):
         url_version = "dev"
     else:
-        url_version = f"{skore_version.major}.{skore_version.minor}"  # type: ignore[attr-defined]
+        url_version = f"{skore_version.major}.{skore_version.minor}"
 
     base_url = f"https://docs.skore.probabl.ai/{url_version}/reference/api"
     path_parts = ["skore", class_name]

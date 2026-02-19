@@ -117,7 +117,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                     df["label"], df["output"] = np.nan, np.nan
                 else:
                     if is_classifier(estimator):
-                        df["label"] = estimator.classes_[target_index]  # type: ignore[attr-defined]
+                        df["label"] = estimator.classes_[target_index]
                         df["output"] = np.nan
                     else:
                         df["output"], df["label"] = target_index, np.nan
