@@ -10,24 +10,17 @@ from functools import wraps
 from operator import itemgetter
 from re import sub as substitute
 from tempfile import TemporaryFile
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal,
-    ParamSpec,
-    Protocol,
-    TypedDict,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import TYPE_CHECKING, Any, ParamSpec, TypedDict, TypeVar
 from unicodedata import normalize
 
-import joblib
-import orjson
-from httpx import HTTPStatusError
+from httpx import HTTPStatusError, codes
+from joblib import load as joblib_load
 from sklearn.utils.validation import _check_pos_label_consistency
 
+from skore_hub_project import console
 from skore_hub_project.client.client import Client, HUBClient
+from skore_hub_project.exception import ForbiddenException, NotFoundException
+from skore_hub_project.json import dumps
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
 P = ParamSpec("P")
@@ -82,57 +75,76 @@ def slugify(string: str) -> str:
     return string.strip(".-_")
 
 
-def slugify_and_warn(string: str, type: Literal["workspace", "name"]) -> str:
-    """Slugify workspace or name string, and warn if the result differs."""
-    slug = slugify(string)
-
-    if slug != string:
-        warnings.warn(
-            (
-                (
-                    f"Your project will be addressed under the '{slug}' workspace. "
-                    "The workspace name must be lower-case and contain only ASCII "
-                    "letters, digits, and characters '.', '-', and '_'."
-                )
-                if type == "workspace"
-                else (
-                    f"Your project will be created as '{slug}'. "
-                    "The project name must be lower-case and contain only ASCII letters"
-                    ", digits, and characters '.', '-', and '_'."
-                )
-            ),
-            stacklevel=2,
-        )
-
-    if slug == "" and type == "name":
-        raise ValueError(
-            "Project name must not be empty. "
-            "This may happen if the given name contains only non-ASCII characters."
-        )
-
-    return slug
-
-
-def ensure_project_is_created(method: Callable[P, R]) -> Callable[P, R]:
-    """Ensure project is created before executing any other operation."""
-
-    @runtime_checkable
-    class Project(Protocol):
-        created: bool
-        workspace: str
-        name: str
+def ensure_workspace_is_valid(method: Callable[P, R]) -> Callable[P, R]:
+    """Ensure workspace is valid before executing any other operation."""
 
     @wraps(method)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        project = args[0]
+        workspace = kwargs["workspace"]
 
-        assert isinstance(project, Project), "You can only wrap `Project` methods"
+        if not isinstance(workspace, str):
+            raise ValueError("`workspace` must be a str.")
 
-        if not project.created:
-            with HUBClient() as hub_client:
-                hub_client.post(f"projects/{project.workspace}/{project.name}")
+        # Check the reliability of the workspace prematurely and thus ensure the user is
+        # using the registered workspace name provided by the hub.
+        #
+        # Using this approach, we trust the hub for its slugification of the workspace.
+        #
+        # We don't have to manually espace/slugify the workspace and remove all
+        # characters with specific meaning in the context of URLs (&?#/) that could
+        # break URLs when used as path segment.
 
-            project.created = True
+        with HUBClient() as hub_client:
+            try:
+                hub_client.get(f"/projects/{workspace}")
+            except HTTPStatusError as e:
+                if e.response.status_code == codes.NOT_FOUND:
+                    raise NotFoundException(
+                        f"Workspace {workspace} not found."
+                    ) from None
+
+                if e.response.status_code == codes.FORBIDDEN:
+                    raise ForbiddenException(
+                        f"You are not member of the workspace {workspace}."
+                    ) from None
+
+                raise
+
+        return method(*args, **kwargs)
+
+    return wrapper
+
+
+def ensure_name_is_valid(method: Callable[P, R]) -> Callable[P, R]:
+    """Ensure name is valid before executing any other operation."""
+
+    @wraps(method)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        name = kwargs.pop("name")
+
+        if not isinstance(name, str):
+            raise ValueError("`name` must be a str.")
+
+        kwargs["name"] = slug = slugify(name)
+
+        if slug != name:
+            warnings.warn(
+                (
+                    f"Your project will be created as '{slug}'. "
+                    "The project name must be lower-case and contain only ASCII letters"
+                    ", digits, and characters '.', '-', and '_'."
+                ),
+                stacklevel=2,
+            )
+
+        if slug == "":
+            raise ValueError(
+                "Project name must not be empty. "
+                "This may happen if the given name contains only non-ASCII characters."
+            )
+
+        if len(slug) > 64:
+            raise ValueError("Project name must be no more than 64 characters long.")
 
         return method(*args, **kwargs)
 
@@ -176,7 +188,9 @@ class Project:
         r"skore:report:(?P<type>(estimator|cross-validation)):(?P<id>.+)"
     )
 
-    def __init__(self, workspace: str, name: str):
+    @ensure_workspace_is_valid
+    @ensure_name_is_valid
+    def __init__(self, *, workspace: str, name: str):
         """
         Initialize a hub project.
 
@@ -195,9 +209,12 @@ class Project:
         name : str
             The name of the project.
         """
-        self.created = False
-        self.__workspace = slugify_and_warn(workspace, "workspace")
-        self.__name = slugify_and_warn(name, "name")
+        with HUBClient() as hub_client:
+            response = hub_client.post(f"projects/{workspace}/{name}")
+
+        self.__workspace = workspace
+        self.__name = name
+        self.__frontend_url = response.json()["url"]
 
     @property
     def workspace(self) -> str:
@@ -209,7 +226,6 @@ class Project:
         """The name of the project."""
         return self.__name
 
-    @ensure_project_is_created
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
         Put a key-report pair to the hub project.
@@ -232,12 +248,12 @@ class Project:
         from ..report import CrossValidationReportPayload, EstimatorReportPayload
 
         if not isinstance(key, str):
-            raise TypeError(f"Key must be a string (found '{type(key)}')")
+            raise TypeError(f"Key must be a string (found '{type(key)}').")
 
         if not isinstance(report, EstimatorReport | CrossValidationReport):
             raise TypeError(
                 f"Report must be a `skore.EstimatorReport` or "
-                f"`skore.CrossValidationReport` (found '{type(report)}')"
+                f"`skore.CrossValidationReport` (found '{type(report)}')."
             )
 
         if report.ml_task == "binary-classification":
@@ -260,15 +276,17 @@ class Project:
         if isinstance(report, EstimatorReport):
             payload = EstimatorReportPayload(project=self, key=key, report=report)
             endpoint = "estimator-reports"
+            frontend_slug = "estimators"
         else:  # CrossValidationReport
             payload = CrossValidationReportPayload(project=self, key=key, report=report)
             endpoint = "cross-validation-reports"
+            frontend_slug = "cross-validations"
 
         payload_dict = payload.model_dump()
-        payload_json_bytes = orjson.dumps(payload_dict, option=orjson.OPT_NON_STR_KEYS)
+        payload_json_bytes = dumps(payload_dict)
 
         with HUBClient() as hub_client:
-            hub_client.post(
+            response = hub_client.post(
                 url=f"projects/{self.workspace}/{self.name}/{endpoint}",
                 content=payload_json_bytes,
                 headers={
@@ -277,7 +295,13 @@ class Project:
                 },
             )
 
-    @ensure_project_is_created
+            response_json = response.json()
+            report_url = f"{self.__frontend_url}/{frontend_slug}/{response_json['id']}"
+
+            console.print(
+                f"Consult your report at [link={report_url}]{report_url}[/link]"
+            )
+
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its URN."""
         if m := re.match(Project.__REPORT_URN_PATTERN, urn):
@@ -288,7 +312,7 @@ class Project:
             url = f"projects/{workspace}/{name}/{type}-reports/{id}"
         else:
             raise ValueError(
-                f"URN '{urn}' format does not match '{Project.__REPORT_URN_PATTERN}'"
+                f"URN '{urn}' format does not match '{Project.__REPORT_URN_PATTERN}'."
             )
 
         # Retrieve presigned URL
@@ -313,11 +337,10 @@ class Project:
 
             tmpfile.seek(0)
 
-            report = joblib.load(tmpfile)
+            report = joblib_load(tmpfile)
 
         return report
 
-    @ensure_project_is_created
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted reports in insertion order."""
 
@@ -371,7 +394,9 @@ class Project:
         return f"Project(mode='hub', name='{self.name}', workspace='{self.workspace}')"
 
     @staticmethod
-    def delete(workspace: str, name: str) -> None:
+    @ensure_workspace_is_valid
+    @ensure_name_is_valid
+    def delete(*, workspace: str, name: str) -> None:
         """
         Delete a hub project.
 
@@ -387,15 +412,12 @@ class Project:
         name : str
             The name of the project.
         """
-        workspace = slugify_and_warn(workspace, "workspace")
-        name = slugify_and_warn(name, "name")
-
         with HUBClient() as hub_client:
             try:
                 hub_client.delete(f"projects/{workspace}/{name}")
             except HTTPStatusError as e:
-                if e.response.status_code == 403:
-                    raise PermissionError(
+                if e.response.status_code == codes.FORBIDDEN:
+                    raise ForbiddenException(
                         f"Failed to delete the project '{name}'; "
                         f"please contact the '{workspace}' owner"
                     ) from e

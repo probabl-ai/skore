@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -172,11 +171,3 @@ def test_analyze_subsampling(
         assert display.summary["dataframe"].index.to_list() == list(range(10))
     else:
         assert display.summary["dataframe"].index.to_list() != list(range(10))
-
-
-def test_data_accessor_clustering():
-    X, y = make_classification(random_state=42)
-    X_train, X_test, _, _ = train_test_split(X, y, random_state=42)
-
-    report = EstimatorReport(KMeans(), X_train=X_train, X_test=X_test)
-    report.data.analyze()  # with_y is True by default

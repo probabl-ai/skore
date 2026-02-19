@@ -1,41 +1,18 @@
 from functools import partialmethod
 from io import BytesIO
 from json import dumps, loads
-from urllib.parse import urljoin
 
 import joblib
-from httpx import Client, Response
+from httpx import Response
 from pytest import fixture, mark, raises, warns
 from skore import CrossValidationReport, EstimatorReport
 
+from skore_hub_project.exception import ForbiddenException, NotFoundException
 from skore_hub_project.project.project import Project
 from skore_hub_project.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
 )
-
-
-class FakeClient(Client):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-
-    def request(self, method, url, **kwargs):
-        response = super().request(method, urljoin("http://localhost", url), **kwargs)
-        response.raise_for_status()
-
-        return response
-
-
-@fixture(autouse=True)
-def monkeypatch_client(monkeypatch):
-    monkeypatch.setattr(
-        "skore_hub_project.project.project.HUBClient",
-        FakeClient,
-    )
-    monkeypatch.setattr(
-        "skore_hub_project.artifact.upload.HUBClient",
-        FakeClient,
-    )
 
 
 @fixture(scope="module")
@@ -82,30 +59,32 @@ def monkeypatch_table_report_representation(monkeypatch):
     "ignore:.*The workspace name can only contain unicode.*:UserWarning"
 )
 @mark.filterwarnings("ignore:.*The project name can only contain unicode.*:UserWarning")
+@mark.usefixtures("monkeypatch_project_hub_client")
+@mark.usefixtures("monkeypatch_artifact_hub_client")
 class TestProject:
-    @mark.parametrize(
-        "input,output,warning",
-        (
-            ("myworkspace", "myworkspace", False),
-            ("my.workspace", "my.workspace", False),
-            ("my-workspace", "my-workspace", False),
-            ("my_workspace", "my_workspace", False),
-            ("my workspace", "my-workspace", True),
-            ("myworkspacë", "myworkspace", True),
-            ("my/workspace", "my-workspace", True),
-            ("my:workspace", "my-workspace", True),
-            ("my?workspace", "my-workspace", True),
-            ("my#workspace", "my-workspace", True),
-            ("my/:?#workspacë", "my-workspace", True),
-            ("👽👾😸👨 ? # @ mÿ-workspace ßß œπ æµ∂ƒ", "my-workspace", True),
-        ),
-    )
-    def test_workspace(self, input, output, warning):
-        if warning:
-            with warns(UserWarning, match=f".*'{output}'.*"):
-                assert Project(input, "myname").workspace == output
-        else:
-            assert Project(input, "myname").workspace == output
+    @mark.respx()
+    def test_workspace(self, respx_mock):
+        mocks = [
+            ("get", "/projects/available", Response(200)),
+            (
+                "post",
+                "/projects/available/name",
+                Response(200, json={"id": 42, "url": "http://domain/workspace/name"}),
+            ),
+            ("get", "/projects/unavailable", Response(404)),
+            ("get", "/projects/forbidden", Response(403)),
+        ]
+
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        assert Project(workspace="available", name="name").workspace == "available"
+
+        with raises(NotFoundException, match="not found"):
+            Project(workspace="unavailable", name="name")
+
+        with raises(ForbiddenException, match="not member"):
+            Project(workspace="forbidden", name="name")
 
     @mark.parametrize(
         "input,output,warning",
@@ -124,62 +103,125 @@ class TestProject:
             ("👽👾😸👨 ? # @ mÿ-name ßß œπ æµ∂ƒ", "my-name", True),
         ),
     )
-    def test_name(self, input, output, warning):
+    @mark.respx(assert_all_called=False)
+    def test_name(self, input, output, warning, respx_mock):
+        post_response = Response(
+            201,
+            json={"id": 42, "url": "http://domain/myworkspace/myname"},
+        )
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            ("post", "/projects/workspace/myname", post_response),
+            ("post", "/projects/workspace/my-name", post_response),
+            ("post", "/projects/workspace/my.name", post_response),
+            ("post", "/projects/workspace/my_name", post_response),
+        ]
+
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
         if warning:
             with warns(UserWarning, match=f".*'{output}'.*"):
-                assert Project("myworkspace", input).name == output
+                assert Project(workspace="workspace", name=input).name == output
         else:
-            assert Project("myworkspace", input).name == output
+            assert Project(workspace="workspace", name=input).name == output
 
-    def test_name_empty(self):
-        err_msg = "Project name must not be empty."
-        with raises(ValueError, match=err_msg):
-            Project("myworkspace", "")
+    @mark.respx()
+    def test_name_empty(self, respx_mock):
+        mocks = [("get", "/projects/workspace", Response(200))]
 
-        warn_msg = "Your project will be created as ''"
-        with warns(UserWarning, match=warn_msg), raises(ValueError, match=err_msg):
-            Project("myworkspace", "あいうえお")
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
 
+        with raises(ValueError, match="Project name must not be empty."):
+            Project(workspace="workspace", name="")
+
+        with (
+            raises(ValueError, match="Project name must not be empty."),
+            warns(UserWarning, match="Your project will be created as ''"),
+        ):
+            Project(workspace="workspace", name="あいうえお")
+
+    @mark.respx()
+    def test_name_too_long(self, respx_mock):
+        mocks = [("get", "/projects/workspace", Response(200))]
+
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        with raises(
+            ValueError, match="Project name must be no more than 64 characters long."
+        ):
+            Project(workspace="workspace", name=("a" * 500))
+
+    @mark.respx()
     def test_put_exception(
         self,
         respx_mock,
         binary_classification_string_labels,
         cv_binary_classification_string_labels,
     ):
-        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+        ]
+
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
 
         with raises(TypeError, match="Key must be a string"):
-            Project("myworkspace", "myname").put(None, "<value>")
+            Project(workspace="workspace", name="name").put(None, "<value>")
 
         with raises(
             TypeError,
             match="must be a `skore.EstimatorReport` or `skore.CrossValidationReport`",
         ):
-            Project("myworkspace", "myname").put("<key>", "<value>")
+            Project(workspace="workspace", name="name").put("<key>", "<value>")
 
         pos_label_msg = (
             "For binary classification, the positive label must be specified. "
             "You can set it using `report.pos_label = <positive_label>`."
         )
         with raises(ValueError, match=pos_label_msg):
-            Project("myworkspace", "myname").put(
+            Project(workspace="workspace", name="name").put(
                 "<key>", binary_classification_string_labels
             )
         with raises(ValueError, match=pos_label_msg):
-            Project("myworkspace", "myname").put(
+            Project(workspace="workspace", name="name").put(
                 "<key>", cv_binary_classification_string_labels
             )
 
+    @mark.respx()
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
-        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
-        respx_mock.post("projects/myworkspace/myname/artifacts").mock(
-            Response(200, json=[])
-        )
-        respx_mock.post("projects/myworkspace/myname/estimator-reports").mock(
-            Response(200)
-        )
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+            ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
+            (
+                "post",
+                "projects/workspace/name/estimator-reports",
+                Response(201, json={"id": 42}),
+            ),
+        ]
 
-        project = Project("myworkspace", "myname")
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
         project.put("<key>", binary_classification)
 
         # Retrieve the content of the request
@@ -203,18 +245,32 @@ class TestProject:
         # `searborn`, which is a dependency of `skore`
         "ignore:The default of observed=False is deprecated.*:FutureWarning:seaborn",
     )
+    @mark.respx()
     def test_put_cross_validation_report(
         self, monkeypatch, small_cv_binary_classification, respx_mock
     ):
-        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
-        respx_mock.post("projects/myworkspace/myname/artifacts").mock(
-            Response(200, json=[])
-        )
-        respx_mock.post("projects/myworkspace/myname/cross-validation-reports").mock(
-            Response(200)
-        )
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+            ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
+            (
+                "post",
+                "projects/workspace/name/cross-validation-reports",
+                Response(200, json={"id": 42}),
+            ),
+        ]
 
-        project = Project("myworkspace", "myname")
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
         project.put("<key>", small_cv_binary_classification)
 
         # Retrieve the content of the request
@@ -230,19 +286,33 @@ class TestProject:
         # Compare content with the desired output
         assert content == desired
 
+    @mark.respx()
     def test_put_estimator_report_string_labels_with_pos_label(
         self, binary_classification_string_labels_with_pos_label, respx_mock
     ):
         """Put with binary string labels and pos_label set works."""
-        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
-        respx_mock.post("projects/myworkspace/myname/artifacts").mock(
-            Response(200, json=[])
-        )
-        respx_mock.post("projects/myworkspace/myname/estimator-reports").mock(
-            Response(200)
-        )
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+            ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
+            (
+                "post",
+                "projects/workspace/name/estimator-reports",
+                Response(200, json={"id": 42}),
+            ),
+        ]
 
-        project = Project("myworkspace", "myname")
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
         report = binary_classification_string_labels_with_pos_label
         project.put("<key>", report)
 
@@ -260,19 +330,33 @@ class TestProject:
         "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning",
         "ignore:The default of observed=False is deprecated.*:FutureWarning:seaborn",
     )
+    @mark.respx()
     def test_put_cross_validation_report_string_labels_with_pos_label(
         self, cv_binary_classification_string_labels_with_pos_label, respx_mock
     ):
         """Put with CV binary string labels and pos_label set works."""
-        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
-        respx_mock.post("projects/myworkspace/myname/artifacts").mock(
-            Response(200, json=[])
-        )
-        respx_mock.post("projects/myworkspace/myname/cross-validation-reports").mock(
-            Response(200)
-        )
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+            ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
+            (
+                "post",
+                "projects/workspace/name/cross-validation-reports",
+                Response(201, json={"id": 42}),
+            ),
+        ]
 
-        project = Project("myworkspace", "myname")
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
         report = cv_binary_classification_string_labels_with_pos_label
         project.put("<key>", report)
 
@@ -286,113 +370,159 @@ class TestProject:
         )
         assert content == desired
 
+    @mark.respx()
     def test_get_estimator_report(self, respx_mock, regression):
-        # Mock hub routes that will be called
-        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
-
-        url = "projects/myworkspace/myname/estimator-reports/<report_id>"
-        response = Response(200, json={"pickle": {"presigned_url": "http://url.com"}})
-        respx_mock.get(url).mock(response)
-
         with BytesIO() as stream:
             joblib.dump(regression, stream)
 
-            url = "http://url.com"
-            response = Response(200, content=stream.getvalue())
-            respx_mock.get(url).mock(response)
+            mocks = [
+                ("get", "/projects/workspace", Response(200)),
+                (
+                    "post",
+                    "/projects/workspace/name",
+                    Response(
+                        201,
+                        json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                    ),
+                ),
+                (
+                    "get",
+                    "projects/workspace/name/estimator-reports/<report_id>",
+                    Response(200, json={"pickle": {"presigned_url": "http://url.com"}}),
+                ),
+                ("get", "http://url.com", Response(200, content=stream.getvalue())),
+            ]
 
-        # Test
-        project = Project("myworkspace", "myname")
+            for method, url, response in mocks:
+                respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
         report = project.get("skore:report:estimator:<report_id>")
 
         assert isinstance(report, EstimatorReport)
         assert report.estimator_name_ == regression.estimator_name_
         assert report.ml_task == regression.ml_task
 
+    @mark.respx()
     def test_reports_get_cross_validation_report(self, respx_mock, cv_regression):
-        # Mock hub routes that will be called
-        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
-
-        url = "projects/myworkspace/myname/cross-validation-reports/<report_id>"
-        response = Response(200, json={"pickle": {"presigned_url": "http://url.com"}})
-        respx_mock.get(url).mock(response)
-
         with BytesIO() as stream:
             joblib.dump(cv_regression, stream)
 
-            url = "http://url.com"
-            response = Response(200, content=stream.getvalue())
-            respx_mock.get(url).mock(response)
+            mocks = [
+                ("get", "/projects/workspace", Response(200)),
+                (
+                    "post",
+                    "/projects/workspace/name",
+                    Response(
+                        201,
+                        json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                    ),
+                ),
+                (
+                    "get",
+                    "projects/workspace/name/cross-validation-reports/<report_id>",
+                    Response(200, json={"pickle": {"presigned_url": "http://url.com"}}),
+                ),
+                ("get", "http://url.com", Response(200, content=stream.getvalue())),
+            ]
 
-        # Test
-        project = Project("myworkspace", "myname")
+            for method, url, response in mocks:
+                respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
         report = project.get("skore:report:cross-validation:<report_id>")
 
         assert isinstance(report, CrossValidationReport)
         assert report.estimator_name_ == cv_regression.estimator_name_
         assert report.ml_task == cv_regression.ml_task
 
+    @mark.respx()
     def test_summarize(self, nowstr, respx_mock):
-        respx_mock.post("projects/myworkspace/myname").mock(Response(200))
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+            (
+                "get",
+                "projects/workspace/name/estimator-reports/",
+                Response(
+                    200,
+                    json=[
+                        {
+                            "urn": "skore:report:estimator:<report_id_0>",
+                            "id": "<report_id_0>",
+                            "key": "<key>",
+                            "ml_task": "<ml_task>",
+                            "estimator_class_name": "<estimator_class_name>",
+                            "dataset_fingerprint": "<dataset_fingerprint>",
+                            "created_at": nowstr,
+                            "metrics": [
+                                {"name": "rmse", "value": 0, "data_source": "train"},
+                                {"name": "rmse", "value": 1, "data_source": "test"},
+                            ],
+                        },
+                        {
+                            "urn": "skore:report:estimator:<report_id_1>",
+                            "id": "<report_id_1>",
+                            "key": "<key>",
+                            "ml_task": "<ml_task>",
+                            "estimator_class_name": "<estimator_class_name>",
+                            "dataset_fingerprint": "<dataset_fingerprint>",
+                            "created_at": nowstr,
+                            "metrics": [
+                                {
+                                    "name": "log_loss",
+                                    "value": 0,
+                                    "data_source": "train",
+                                },
+                                {"name": "log_loss", "value": 2, "data_source": "test"},
+                            ],
+                        },
+                    ],
+                ),
+            ),
+            (
+                "get",
+                "projects/workspace/name/cross-validation-reports/",
+                Response(
+                    200,
+                    json=[
+                        {
+                            "urn": "skore:report:cross-validation:<report_id_2>",
+                            "id": "<report_id_2>",
+                            "key": "<key>",
+                            "ml_task": "<ml_task>",
+                            "estimator_class_name": "<estimator_class_name>",
+                            "dataset_fingerprint": "<dataset_fingerprint>",
+                            "created_at": nowstr,
+                            "metrics": [
+                                {
+                                    "name": "rmse_mean",
+                                    "value": 0,
+                                    "data_source": "train",
+                                },
+                                {
+                                    "name": "rmse_mean",
+                                    "value": 3,
+                                    "data_source": "test",
+                                },
+                            ],
+                        },
+                    ],
+                ),
+            ),
+        ]
 
-        url = "projects/myworkspace/myname/estimator-reports/"
-        respx_mock.get(url).mock(
-            Response(
-                200,
-                json=[
-                    {
-                        "urn": "skore:report:estimator:<report_id_0>",
-                        "id": "<report_id_0>",
-                        "key": "<key>",
-                        "ml_task": "<ml_task>",
-                        "estimator_class_name": "<estimator_class_name>",
-                        "dataset_fingerprint": "<dataset_fingerprint>",
-                        "created_at": nowstr,
-                        "metrics": [
-                            {"name": "rmse", "value": 0, "data_source": "train"},
-                            {"name": "rmse", "value": 1, "data_source": "test"},
-                        ],
-                    },
-                    {
-                        "urn": "skore:report:estimator:<report_id_1>",
-                        "id": "<report_id_1>",
-                        "key": "<key>",
-                        "ml_task": "<ml_task>",
-                        "estimator_class_name": "<estimator_class_name>",
-                        "dataset_fingerprint": "<dataset_fingerprint>",
-                        "created_at": nowstr,
-                        "metrics": [
-                            {"name": "log_loss", "value": 0, "data_source": "train"},
-                            {"name": "log_loss", "value": 2, "data_source": "test"},
-                        ],
-                    },
-                ],
-            )
-        )
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
 
-        url = "projects/myworkspace/myname/cross-validation-reports/"
-        respx_mock.get(url).mock(
-            Response(
-                200,
-                json=[
-                    {
-                        "urn": "skore:report:cross-validation:<report_id_2>",
-                        "id": "<report_id_2>",
-                        "key": "<key>",
-                        "ml_task": "<ml_task>",
-                        "estimator_class_name": "<estimator_class_name>",
-                        "dataset_fingerprint": "<dataset_fingerprint>",
-                        "created_at": nowstr,
-                        "metrics": [
-                            {"name": "rmse_mean", "value": 0, "data_source": "train"},
-                            {"name": "rmse_mean", "value": 3, "data_source": "test"},
-                        ],
-                    },
-                ],
-            )
-        )
-
-        project = Project("myworkspace", "myname")
+        project = Project(workspace="workspace", name="name")
         summary = project.summarize()
 
         assert summary == [
@@ -455,18 +585,86 @@ class TestProject:
             },
         ]
 
+    @mark.respx
     def test_delete(self, respx_mock):
-        respx_mock.delete("projects/myworkspace/myname").mock(Response(204))
-        Project.delete("myworkspace", "myname")
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            ("delete", "/projects/workspace/name", Response(204)),
+        ]
 
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        Project.delete(workspace="workspace", name="name")
+
+    @mark.respx
     def test_delete_exception(self, respx_mock):
-        respx_mock.delete("projects/myworkspace/myname").mock(Response(403))
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            ("delete", "/projects/workspace/name", Response(403)),
+        ]
+
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
 
         with raises(
-            PermissionError,
+            ForbiddenException,
             match=(
-                "Failed to delete the project 'myname'; "
-                "please contact the 'myworkspace' owner"
+                "Failed to delete the project 'name'; "
+                "please contact the 'workspace' owner"
             ),
         ):
-            Project.delete("myworkspace", "myname")
+            Project.delete(workspace="workspace", name="name")
+
+    def test_put_reports_prints_console_message(
+        self, monkeypatch, binary_classification, respx_mock, cv_binary_classification
+    ):
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+            ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
+            (
+                "post",
+                "projects/workspace/name/estimator-reports",
+                Response(
+                    201,
+                    json={"id": 42},
+                ),
+            ),
+            (
+                "post",
+                "projects/workspace/name/cross-validation-reports",
+                Response(
+                    201,
+                    json={"id": 42},
+                ),
+            ),
+        ]
+
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
+
+        report_url = "http://domain/workspace/name/estimators/42"
+
+        def assert_report_url(msg, *args, **kwargs):
+            assert report_url in msg
+
+        monkeypatch.setattr("rich.console.Console", assert_report_url)
+        project.put("<key>", binary_classification)
+
+        cv_report_url = "http://domain/workspace/name/cross-validations/42"
+
+        def assert_cv_report_url(msg, *args, **kwargs):
+            assert cv_report_url in msg
+
+        monkeypatch.setattr("rich.console.Console", assert_cv_report_url)
+        project.put("<key>", cv_binary_classification)

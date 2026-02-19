@@ -214,7 +214,10 @@ class StyleDisplayMixin:
             try:
                 result = plot_func(self, *args, **kwargs)
             finally:
-                plt.tight_layout()
+                if hasattr(self, "facet_"):
+                    self.facet_.tight_layout()
+                else:
+                    plt.tight_layout()
                 plt.rcParams.update(original_params)
             return result
 

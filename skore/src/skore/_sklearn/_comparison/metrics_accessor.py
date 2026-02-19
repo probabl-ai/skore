@@ -2,7 +2,6 @@ from collections.abc import Callable
 from typing import Any, Literal, cast
 
 import joblib
-import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
@@ -34,6 +33,7 @@ from skore._utils._accessor import (
     _expand_data_sources,
     _get_ys_for_single_report,
 )
+from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
 from skore._utils._progress_bar import track
@@ -195,34 +195,20 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         aggregate: Aggregate | None = ("mean", "std"),
         **metric_kwargs: Any,
     ):
-        # build the cache key components to finally create a tuple that will be used
-        # to check if the metric has already been computed
-        cache_key_parts: list[Any] = [
-            self._parent._hash,
-            report_metric_name,
-            data_source,
-        ]
+        is_cv_report = self._parent._report_type == "comparison-cross-validation"
 
-        if self._parent._reports_type == "CrossValidationReport":
-            if aggregate is None or isinstance(aggregate, str):
-                cache_key_parts.append(aggregate)
-            else:
-                cache_key_parts.extend(tuple(aggregate))
+        cache_key = deep_key_sanitize(
+            (
+                self._parent._hash,
+                report_metric_name,
+                data_source,
+                aggregate if is_cv_report else None,
+                metric_kwargs,
+            )
+        )
 
-        # we need to enforce the order of the parameter for a specific metric
-        # to make sure that we hit the cache in a consistent way
-        ordered_metric_kwargs = sorted(metric_kwargs.keys())
-        for key in ordered_metric_kwargs:
-            if isinstance(metric_kwargs[key], np.ndarray | list | dict):
-                cache_key_parts.append(joblib.hash(metric_kwargs[key]))
-            else:
-                cache_key_parts.append(metric_kwargs[key])
-
-        cache_key = tuple(cache_key_parts)
-
-        if cache_key in self._parent._cache:
-            results = self._parent._cache[cache_key]
-        else:
+        results = self._parent._cache.get(cache_key)
+        if results is None:
             parallel = joblib.Parallel(
                 **_validate_joblib_parallel_params(
                     n_jobs=self._parent.n_jobs, return_as="generator"
@@ -235,7 +221,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 y=y,
                 **metric_kwargs,
             )
-            if self._parent._reports_type == "CrossValidationReport":
+            if is_cv_report:
                 kwargs["aggregate"] = None
 
             individual_results = [
@@ -252,7 +238,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 )
             ]
 
-            if self._parent._reports_type == "EstimatorReport":
+            if self._parent._report_type == "comparison-estimator":
                 results = _combine_estimator_results(
                     individual_results,
                     estimator_names=self._parent.reports_.keys(),
@@ -317,7 +303,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Predict time test (s)      ...       ...
         Predict time train (s)     ...       ...
         """
-        if self._parent._reports_type == "EstimatorReport":
+        if self._parent._report_type == "comparison-estimator":
             timings: pd.DataFrame = pd.concat(
                 [
                     pd.Series(report.metrics.timings())
@@ -1200,18 +1186,23 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
-            cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            cache_key_parts.extend(display_kwargs.values())
-            cache_key_parts.append(data_source)
-            cache_key = tuple(cache_key_parts)
+            cache_key = deep_key_sanitize(
+                (
+                    self._parent._hash,
+                    display_class.__name__,
+                    display_kwargs,
+                    data_source,
+                )
+            )
 
-        if cache_key and cache_key in self._parent._cache:
-            return self._parent._cache[cache_key]
+        cache_value = self._parent._cache.get(cache_key)
+        if cache_value is not None:
+            return cache_value
 
         y_true: list[YPlotData] = []
         y_pred: list[YPlotData] = []
 
-        if self._parent._reports_type == "EstimatorReport":
+        if self._parent._report_type == "comparison-estimator":
             for report_name, report in track(
                 self._parent.reports_.items(),
                 description="Computing predictions for display",
@@ -1245,7 +1236,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             display = display_class._compute_data_for_display(
                 y_true=y_true,
                 y_pred=y_pred,
-                report_type="comparison-estimator",
+                report_type=self._parent._report_type,
                 estimators=[
                     report.estimator_ for report in self._parent.reports_.values()
                 ],
@@ -1289,7 +1280,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             display = display_class._compute_data_for_display(
                 y_true=y_true,
                 y_pred=y_pred,
-                report_type="comparison-cross-validation",
+                report_type=self._parent._report_type,
                 estimators=[
                     estimator_report.estimator_
                     for report in self._parent.reports_.values()
@@ -1620,7 +1611,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         else:
             response_method = "predict"
 
-        if self._parent._reports_type == "CrossValidationReport":
+        if self._parent._report_type == "comparison-cross-validation":
             display_labels = tuple(
                 next(iter(self._parent.reports_.values()))
                 .estimator_reports_[0]

@@ -19,8 +19,6 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     You can access this accessor using the `inspection` attribute.
     """
 
-    _verbose_name: str = "feature_importance"
-
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
@@ -62,12 +60,19 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 report.estimator_name_ for report in self._parent.estimator_reports_
             ],
             splits=list(range(len(self._parent.estimator_reports_))),
-            report_type="cross-validation",
+            report_type=self._parent._report_type,
         )
 
     @available_if(_check_cross_validation_sub_estimator_has_feature_importances())
     def impurity_decrease(self) -> ImpurityDecreaseDisplay:
-        """Retrieve the Mean Decrease in Impurity (MDI) across splits.
+        """Retrieve the Mean Decrease in Impurity (MDI) for each split.
+
+        This method is available for estimators that expose a `feature_importances_`
+        attribute. See for example
+        :attr:`sklearn.ensemble.GradientBoostingClassifier.feature_importances_`.
+
+        In particular, note that the MDI is computed at fit time, i.e. using the
+        training data.
 
         Returns
         -------
@@ -104,7 +109,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 report.estimator_name_ for report in self._parent.estimator_reports_
             ],
             splits=list(range(len(self._parent.estimator_reports_))),
-            report_type="cross-validation",
+            report_type=self._parent._report_type,
         )
 
     ####################################################################################

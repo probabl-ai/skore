@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 from numpy.typing import ArrayLike
 from sklearn.pipeline import Pipeline
@@ -254,19 +254,39 @@ def _check_cross_validation_sub_estimator_has_feature_importances() -> Callable:
 def _check_comparison_report_sub_estimators_have_coef() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if all the estimators have a `coef_` attribute."""
-        from skore import CrossValidationReport
-
         parent = accessor._parent
-        parent_estimators = []
-        for parent_report in parent.reports_.values():
-            if parent._reports_type == "CrossValidationReport":
-                parent_report = cast(CrossValidationReport, parent_report)
-                parent_estimators.append(parent_report.estimator_reports_[0].estimator_)
-            elif parent._reports_type == "EstimatorReport":
-                parent_estimators.append(parent_report.estimator_)
-            else:
-                raise TypeError(f"Unexpected report type: {type(parent.reports_[0])}")
+        if parent._report_type == "comparison-cross-validation":
+            parent_estimators = [
+                parent_report.estimator_reports_[0].estimator_
+                for parent_report in parent.reports_.values()
+            ]
+        elif parent._report_type == "comparison-estimator":
+            parent_estimators = [
+                parent_report.estimator_ for parent_report in parent.reports_.values()
+            ]
+        else:
+            raise TypeError(f"Unexpected report type: {type(parent.reports_[0])}")
         return all(_check_has_coef(e) for e in parent_estimators)
+
+    return check
+
+
+def _check_comparison_report_sub_estimators_have_feature_importances() -> Callable:
+    def check(accessor: Any) -> bool:
+        """Check if all the estimators have a `feature_importances_` attribute."""
+        parent = accessor._parent
+        if parent._report_type == "comparison-cross-validation":
+            parent_estimators = [
+                parent_report.estimator_reports_[0].estimator_
+                for parent_report in parent.reports_.values()
+            ]
+        elif parent._report_type == "comparison-estimator":
+            parent_estimators = [
+                parent_report.estimator_ for parent_report in parent.reports_.values()
+            ]
+        else:
+            raise TypeError(f"Unexpected report type: {type(parent.reports_[0])}")
+        return all(_check_has_feature_importances(e) for e in parent_estimators)
 
     return check
 

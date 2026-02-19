@@ -4,7 +4,6 @@ from functools import partial
 from operator import attrgetter
 from typing import Any, Literal, cast
 
-import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
@@ -41,6 +40,7 @@ from skore._utils._accessor import (
     _expand_data_sources,
     _get_ys_for_single_report,
 )
+from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._index import flatten_multi_index
 
 
@@ -499,35 +499,21 @@ class _MetricsAccessor(
                 data_source=data_source, X=X, y=y_true
             )
 
-        # build the cache key components to finally create a tuple that will be used
-        # to check if the metric has already been computed
-        cache_key_parts: list[Any] = [
-            self._parent._hash,
-            metric_fn.__name__,
-            data_source,
-        ]
-
-        if data_source_hash is not None:
-            cache_key_parts.append(data_source_hash)
-
         metric_params = inspect.signature(metric_fn).parameters
-        if "pos_label" in metric_params:
-            cache_key_parts.append(pos_label)
 
-        # add the ordered metric kwargs to the cache key
-        ordered_metric_kwargs = sorted(metric_kwargs.keys())
-        for key in ordered_metric_kwargs:
-            value = metric_kwargs[key]
-            if isinstance(value, np.ndarray):
-                cache_key_parts.append(joblib.hash(value))
-            else:
-                cache_key_parts.append(value)
+        cache_key = deep_key_sanitize(
+            (
+                self._parent._hash,
+                metric_fn.__name__,
+                data_source,
+                data_source_hash,
+                pos_label if "pos_label" in metric_params else None,
+                metric_kwargs,
+            )
+        )
 
-        cache_key = tuple(cache_key_parts)
-
-        if cache_key in self._parent._cache:
-            score = self._parent._cache[cache_key]
-        else:
+        score = self._parent._cache.get(cache_key)
+        if score is None:
             metric_params = inspect.signature(metric_fn).parameters
             kwargs = {**metric_kwargs}
             if "pos_label" in metric_params:
@@ -1725,13 +1711,18 @@ class _MetricsAccessor(
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
-            cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            cache_key_parts.extend(display_kwargs.values())
-            cache_key_parts.append(data_source)
-            cache_key = tuple(cache_key_parts)
+            cache_key = deep_key_sanitize(
+                (
+                    self._parent._hash,
+                    display_class.__name__,
+                    display_kwargs,
+                    data_source,
+                )
+            )
 
-        if cache_key and cache_key in self._parent._cache:
-            return self._parent._cache[cache_key]
+        cache_value = self._parent._cache.get(cache_key)
+        if cache_value is not None:
+            return cache_value
 
         y_true: list[YPlotData] = []
         y_pred: list[YPlotData] = []
@@ -1740,8 +1731,6 @@ class _MetricsAccessor(
             ds_X, ds_y, ds_hash = self._get_X_y_and_data_source_hash(
                 data_source=ds, X=X, y=y
             )
-            if ds_y is None:
-                raise ValueError("y must be provided")
 
             y_true_data, y_pred_data = _get_ys_for_single_report(
                 cache=self._parent._cache,
@@ -1762,7 +1751,7 @@ class _MetricsAccessor(
         display = display_class._compute_data_for_display(
             y_true=y_true,
             y_pred=y_pred,
-            report_type="estimator",
+            report_type=self._parent._report_type,
             estimators=[self._parent.estimator_],
             ml_task=self._parent._ml_task,
             data_source=data_source,

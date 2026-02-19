@@ -1,7 +1,7 @@
 """Package that provides APIs to communicate between ``skore`` and ``skore hub``."""
 
-import logging
 from base64 import b64decode, b64encode
+from logging import basicConfig, getLogger
 
 from rich.console import Console
 from rich.theme import Theme
@@ -14,8 +14,8 @@ __all__ = [
 ]
 
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
+basicConfig()
+logger = getLogger(__name__)
 
 console = Console(
     width=88,
