@@ -85,6 +85,8 @@ Utilities
 .. list-table::
    :widths: 30 70
 
+   * - :obj:`configuration`
+     - Global configuration for `skore` also usable as a context manager
    * - :func:`show_versions`
      - Print version information for skore and its dependencies
 
