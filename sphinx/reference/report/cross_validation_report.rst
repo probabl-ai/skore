@@ -94,3 +94,4 @@ of the features in your model.
 
     CrossValidationReport.inspection.help
     CrossValidationReport.inspection.coefficients
+    CrossValidationReport.inspection.permutation_importance
