@@ -370,7 +370,11 @@ class TestCrossValidationReportPayload:
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
+            Coefficients,
             EstimatorHtmlRepr,
+            ImpurityDecrease,
+            PermutationImportanceTest,
+            PermutationImportanceTrain,
             PrecisionRecallTest,
             PrecisionRecallTrain,
             RocTest,
