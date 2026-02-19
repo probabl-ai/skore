@@ -86,7 +86,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
     ) -> PermutationImportanceDisplay:
-        """Display to inspect feature importance via feature permutation.
+        """Display the permutation feature importance.
 
         This computes the permutation importance using sklearn's
         :func:`~sklearn.inspection.permutation_importance` function,
@@ -275,11 +275,6 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                             data_source=data_source
                         )
                     )
-                    if report_y is None:
-                        raise ValueError(
-                            "Permutation importance can not be performed on a "
-                            "clustering model."
-                        )
                     Xs.append(report_X)
                     ys.append(report_y)
 

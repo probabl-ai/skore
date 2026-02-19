@@ -131,7 +131,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs: int | None = None,
         seed: int | None = None,
     ) -> PermutationImportanceDisplay:
-        """Display the the permutation feature importance.
+        """Display the permutation feature importance.
 
         This computes the permutation importance using sklearn's
         :func:`~sklearn.inspection.permutation_importance` function,
