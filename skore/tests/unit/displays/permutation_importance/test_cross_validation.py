@@ -1,65 +1,92 @@
 import matplotlib as mpl
 import pytest
-from sklearn.metrics import make_scorer, precision_score
+from sklearn.metrics import make_scorer, precision_score, r2_score
 
 
 @pytest.mark.parametrize(
-    "fixture_name, subplot_by, err_msg",
+    "task",
     [
-        (
-            "cross_validation_reports_binary_classification",
-            "label",
-            "Cannot use subplot_by='label'.*does not provide per-label",
-        ),
-        (
-            "cross_validation_reports_binary_classification",
-            "unknown",
-            "The column 'unknown' is not available for subplotting",
-        ),
+        "binary_classification",
+        "multiclass_classification",
+        "regression",
+        "multioutput_regression",
     ],
 )
-def test_invalid_subplot_by(pyplot, fixture_name, subplot_by, err_msg, request):
-    report = request.getfixturevalue(fixture_name)[0]
+def test_invalid_subplot_by(pyplot, task, request):
+    report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
+    valid_values = ["split", "auto", "None"]
+    err_msg = (
+        f"The column 'invalid' is not available for subplotting. You can use the "
+        f"following values to create subplots: {', '.join(valid_values)}"
+    )
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(subplot_by=subplot_by)
+        display.plot(subplot_by="invalid")
 
 
 @pytest.mark.parametrize(
-    "fixture_name, metric, metric_name, subplot_by_tuples",
+    "task",
+    [
+        "binary_classification",
+        "multiclass_classification",
+        "regression",
+        "multioutput_regression",
+    ],
+)
+@pytest.mark.parametrize(
+    "subplot_by, expected_len",
+    [
+        ("split", 2),
+        (None, 0),
+        ("auto", 0),
+    ],
+)
+def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
+    report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
+    display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+    display.plot(subplot_by=subplot_by)
+    if expected_len == 0:
+        assert isinstance(display.ax_, mpl.axes.Axes)
+    else:
+        assert len(display.ax_.flatten()) == expected_len
+
+
+@pytest.mark.parametrize(
+    "task, metric, metric_name, subplot_by, expected_len",
     [
         (
-            "cross_validation_reports_binary_classification",
-            None,
-            None,
-            [("split", 2), ("auto", 0), (None, 0)],
-        ),
-        (
-            "cross_validation_reports_multiclass_classification",
+            "multiclass_classification",
             make_scorer(precision_score, average=None),
             "precision score",
-            [("label", 3), ("auto", 3)],
+            "label",
+            3,
+        ),
+        (
+            "multioutput_regression",
+            make_scorer(r2_score, multioutput="raw_values"),
+            "r2 score",
+            "output",
+            2,
         ),
     ],
 )
-def test_valid_subplot_by(
-    pyplot, fixture_name, metric, metric_name, subplot_by_tuples, request
+def test_subplot_by_non_averaged_metrics(
+    pyplot, task, metric, metric_name, subplot_by, expected_len, request
 ):
-    report = request.getfixturevalue(fixture_name)[0]
+    report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=metric
     )
-    for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(metric=metric_name, subplot_by=subplot_by)
-        if expected_len == 0:
-            assert isinstance(display.ax_, mpl.axes.Axes)
-        else:
-            assert len(display.ax_.flatten()) == expected_len
-        title = display.figure_.get_suptitle()
-        if subplot_by == "split":
-            assert "averaged over splits" not in title
-        else:
-            assert "averaged over splits" in title
+    display.plot(metric=metric_name, subplot_by=subplot_by)
+    assert len(display.ax_) == expected_len
+
+    valid_values = [subplot_by, "split", "auto", "None"]
+    err_msg = (
+        f"The column 'invalid' is not available for subplotting. You can use the "
+        f"following values to create subplots: {', '.join(valid_values)}"
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="invalid")
 
 
 def test_frame_has_split_column(cross_validation_reports_binary_classification):
@@ -77,8 +104,8 @@ def test_frame_metric_filter(cross_validation_reports_regression):
         seed=0,
         metric=["r2", "neg_mean_squared_error"],
     )
-    assert set(display.frame()["metric"].unique()) == {"r2", "neg_mean_squared_error"}
-    assert set(display.frame(metric="r2")["metric"].unique()) == {"r2"}
+    assert set(display.frame()["metric"]) == {"r2", "neg_mean_squared_error"}
+    assert set(display.frame(metric="r2")["metric"]) == {"r2"}
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -87,4 +114,4 @@ def test_data_source(cross_validation_reports_binary_classification, data_source
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, data_source=data_source
     )
-    assert display.importances["data_source"].unique() == [data_source]
+    assert set(display.importances["data_source"]) == {data_source}

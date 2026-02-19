@@ -10,9 +10,6 @@ def estimator_type():
     return "linear"
 
 
-# --- EstimatorReport figure/axes fixtures ------------------------------------
-
-
 @pytest.fixture(scope="module")
 def estimator_reports_binary_classification_figure_axes(
     pyplot, estimator_reports_binary_classification
@@ -55,9 +52,6 @@ def estimator_reports_multioutput_regression_figure_axes(
     )
     display.plot(metric="r2 score")
     return display.figure_, display.ax_
-
-
-# --- CrossValidationReport figure/axes fixtures ------------------------------
 
 
 @pytest.fixture(scope="module")

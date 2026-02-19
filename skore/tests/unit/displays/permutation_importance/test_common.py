@@ -105,6 +105,10 @@ class TestPermutationImportanceDisplay:
         assert "Permutation importance" in title
         estimator_name = display.importances["estimator"].iloc[0]
         assert estimator_name in title
+        if "cross_validation" in fixture_prefix:
+            assert "averaged over splits" in title
+        else:
+            assert "averaged over splits" not in title
 
     def test_set_style(self, pyplot, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")

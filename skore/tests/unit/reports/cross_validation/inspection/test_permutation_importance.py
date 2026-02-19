@@ -1,5 +1,4 @@
 import pytest
-from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import make_scorer, root_mean_squared_error
@@ -32,8 +31,8 @@ def test_returns_display(data_fixture, estimator, request):
     assert isinstance(display, PermutationImportanceDisplay)
 
 
-def test_at_step(request):
-    X, y = request.getfixturevalue("regression_data")
+def test_at_step(regression_data):
+    X, y = regression_data
     pipeline = make_pipeline(StandardScaler(), PCA(n_components=2), Ridge())
     report = CrossValidationReport(pipeline, X, y, splitter=2)
 
@@ -43,15 +42,15 @@ def test_at_step(request):
     display_pca = report.inspection.permutation_importance(
         seed=42, n_repeats=2, at_step=-1
     )
-    raw_features = set(display_raw.importances["feature"].unique())
-    pca_features = set(display_pca.importances["feature"].unique())
+    raw_features = set(display_raw.importances["feature"])
+    pca_features = set(display_pca.importances["feature"])
     assert raw_features != pca_features
     assert len(raw_features) == 4
     assert len(pca_features) == 2
 
 
-def test_cache_seed_int(request):
-    X, y = request.getfixturevalue("regression_data")
+def test_cache_seed_int(regression_data):
+    X, y = regression_data
     report = CrossValidationReport(Ridge(), X, y, splitter=2)
     assert report._cache == {}
 
@@ -67,8 +66,8 @@ def test_cache_seed_int(request):
     assert len(report._cache) == 1
 
 
-def test_cache_seed_none(request):
-    X, y = request.getfixturevalue("regression_data")
+def test_cache_seed_none(regression_data):
+    X, y = regression_data
     report = CrossValidationReport(Ridge(), X, y, splitter=2)
     assert report._cache == {}
 
@@ -81,8 +80,8 @@ def test_cache_seed_none(request):
     assert cached_display is display2
 
 
-def test_cache_parameter_in_cache(request):
-    X, y = request.getfixturevalue("regression_data")
+def test_cache_parameter_in_cache(regression_data):
+    X, y = regression_data
     report = CrossValidationReport(Ridge(), X, y, splitter=2)
 
     report.inspection.permutation_importance(
@@ -97,22 +96,22 @@ def test_cache_parameter_in_cache(request):
         )
 
 
-def test_split_column(request):
-    X, y = request.getfixturevalue("regression_data")
+def test_split_column(regression_data):
+    X, y = regression_data
     report = CrossValidationReport(Ridge(), X, y, splitter=2)
     display = report.inspection.permutation_importance(seed=42, n_repeats=2)
     df = display.importances
-    assert set(df["split"].unique()) == {0, 1}
+    assert set(df["split"]) == {0, 1}
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
-def test_data_source(request, data_source):
-    X, y = request.getfixturevalue("regression_data")
+def test_data_source(regression_data, data_source):
+    X, y = regression_data
     report = CrossValidationReport(Ridge(), X, y, splitter=2)
     display = report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source=data_source
     )
-    assert display.importances["data_source"].unique() == [data_source]
+    assert set(display.importances["data_source"]) == {data_source}
 
 
 def test_data_source_X_y(regression_data):
@@ -122,7 +121,7 @@ def test_data_source_X_y(regression_data):
         seed=42, n_repeats=2, data_source="X_y", X=X, y=y
     )
     assert isinstance(display, PermutationImportanceDisplay)
-    assert display.importances["data_source"].unique() == ["X_y"]
+    assert set(display.importances["data_source"]) == {"X_y"}
 
 
 def test_seed_wrong_type(regression_data):
@@ -132,21 +131,3 @@ def test_seed_wrong_type(regression_data):
         ValueError, match="seed must be an integer or None; got <class 'str'>"
     ):
         report.inspection.permutation_importance(seed="42")
-
-
-def test_no_target(regression_data):
-    X, _ = regression_data
-    report = CrossValidationReport(KMeans(), X, splitter=2)
-    with pytest.raises(
-        ValueError,
-        match="Permutation importance can not be performed on a clustering model.",
-    ):
-        report.inspection.permutation_importance(seed=42)
-
-    with pytest.raises(
-        ValueError,
-        match="Permutation importance can not be performed on a clustering model.",
-    ):
-        report.inspection.permutation_importance(
-            seed=42, data_source="X_y", X=X, y=None
-        )

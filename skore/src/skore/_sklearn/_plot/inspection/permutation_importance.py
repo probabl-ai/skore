@@ -306,17 +306,11 @@ class PermutationImportanceDisplay(DisplayMixin):
                 hue = columns_to_groupby[0] if columns_to_groupby else None
 
         else:
-            if subplot_by in ("label", "output") and subplot_by not in frame.columns:
-                raise ValueError(
-                    f"Cannot use subplot_by={subplot_by!r} because the selected "
-                    f"metric does not provide per-{subplot_by} information."
-                )
-
             if subplot_by not in columns_to_groupby:
                 raise ValueError(
                     f"The column {subplot_by!r} is not available for subplotting. "
                     "You can use the following values to create subplots: "
-                    f"{', '.join(columns_to_groupby)}"
+                    f"{', '.join(columns_to_groupby + ['auto', 'None'])}"
                 )
 
             remaining = set(columns_to_groupby) - {subplot_by}

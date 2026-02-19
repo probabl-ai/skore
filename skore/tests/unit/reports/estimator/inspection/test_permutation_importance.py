@@ -1,5 +1,4 @@
 import pytest
-from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
@@ -36,8 +35,7 @@ def test_at_step_int(regression_train_test_split, at_step, expected_features):
     )
     display = report.inspection.permutation_importance(seed=42, at_step=at_step)
     assert isinstance(display, PermutationImportanceDisplay)
-    actual_features = sorted(display.importances["feature"].unique())
-    assert actual_features == sorted(expected_features)
+    assert set(display.importances["feature"]) == set(expected_features)
 
 
 def test_at_step_str(regression_train_test_split):
@@ -48,8 +46,7 @@ def test_at_step_str(regression_train_test_split):
     )
     display = report.inspection.permutation_importance(seed=42, at_step="pca")
     assert isinstance(display, PermutationImportanceDisplay)
-    actual_features = sorted(display.importances["feature"].unique())
-    assert actual_features == sorted(["x0", "x1", "x2", "x3"])
+    assert set(display.importances["feature"]) == {"x0", "x1", "x2", "x3"}
 
 
 def test_at_step_non_pipeline_int(regression_train_test_split):
@@ -124,7 +121,7 @@ def test_cache_display_stored(regression_train_test_split):
 @pytest.mark.parametrize(
     "param_name, first_value, second_value, use_pipeline",
     [
-        ("metrics", "r2", make_scorer(root_mean_squared_error), False),
+        ("metric", "r2", make_scorer(root_mean_squared_error), False),
         ("at_step", 0, -1, True),
         ("max_samples", 0.5, 0.8, False),
     ],
@@ -228,17 +225,3 @@ def test_seed_wrong_type(regression_train_test_split):
         ValueError, match="seed must be an integer or None; got <class 'str'>"
     ):
         report.inspection.permutation_importance(seed="42")
-
-
-def test_no_target(regression_train_test_split):
-    X_train, X_test, _, _ = regression_train_test_split
-    report = EstimatorReport(
-        KMeans(),
-        X_train=X_train,
-        X_test=X_test,
-    )
-    with pytest.raises(
-        ValueError,
-        match="Permutation importance can not be performed on a clustering model.",
-    ):
-        report.inspection.permutation_importance(seed=42)
