@@ -8,6 +8,7 @@ from matplotlib.legend import Legend
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.metrics import r2_score
 
+from skore import configuration
 from skore._sklearn._base import _BaseAccessor, _BaseReport
 from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
@@ -236,3 +237,22 @@ def custom_r2_score(estimator, X, y):
     """
     y_pred = estimator.predict(X)
     return r2_score(y, y_pred)
+
+
+def _change_configuration_for_testing():
+    """
+    Change configuration for testing purposes, especially on ``joblib.Parallel``.
+
+    This function should exist in a Python module rather than in tests, otherwise joblib
+    will not be able to pickle it.
+    """
+    show_progress_copy = configuration.show_progress
+    plot_backend_copy = configuration.plot_backend
+
+    configuration.show_progress = "show_progress_thread"
+    configuration.plot_backend = "plot_backend_thread"
+
+    return (
+        (show_progress_copy, plot_backend_copy),
+        (configuration.show_progress, configuration.plot_backend),
+    )
