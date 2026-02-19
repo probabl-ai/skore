@@ -5,7 +5,7 @@ from typing import Any, Literal, Protocol, runtime_checkable
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from skore._config import get_config
+from skore import configuration
 from skore._sklearn.types import PlotBackend
 from skore._utils.repr.base import DisplayHelpMixin
 
@@ -53,7 +53,8 @@ class PlotBackendMixin:
 
     def _plot(self, **kwargs):
         """Dispatch plotting to the configured backend."""
-        plot_backend = get_config()["plot_backend"]
+        plot_backend = configuration.plot_backend
+
         if plot_backend == "matplotlib":
             return self._plot_matplotlib(**kwargs)
         elif plot_backend == "plotly":

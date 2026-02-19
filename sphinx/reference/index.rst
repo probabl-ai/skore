@@ -81,26 +81,14 @@ Inspection
      - Display for visualizing feature importance via permutation importance
 
 
-Configuration
-^^^^^^^^^^^^^
-
-.. list-table::
-   :widths: 30 70
-
-   * - :func:`config_context`
-     - Context manager for temporarily modifying skore configuration
-   * - :func:`get_config`
-     - Get current skore configuration values
-   * - :func:`set_config`
-     - Set skore configuration values
-
-
 Utilities
 ^^^^^^^^^
 
 .. list-table::
    :widths: 30 70
 
+   * - :obj:`configuration`
+     - Global configuration for `skore` also usable as a context manager
    * - :func:`show_versions`
      - Print version information for skore and its dependencies
 

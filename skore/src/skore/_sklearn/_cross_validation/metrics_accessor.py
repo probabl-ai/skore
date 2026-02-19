@@ -2,6 +2,7 @@ from collections.abc import Callable
 from typing import Any, Literal, cast
 
 import pandas as pd
+from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
@@ -33,7 +34,7 @@ from skore._utils._accessor import (
 from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._index import flatten_multi_index
-from skore._utils._parallel import Parallel, delayed
+from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
 DataSource = Literal["test", "train", "X_y"]

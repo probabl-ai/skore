@@ -1,3 +1,5 @@
+.. _reference_utils:
+
 Utilities
 ---------
 
@@ -9,7 +11,5 @@ These functions and classes are useful for various purposes when using ``skore``
     :toctree: api/
     :template: base.rst
 
-    config_context
-    get_config
-    set_config
+    configuration
     show_versions

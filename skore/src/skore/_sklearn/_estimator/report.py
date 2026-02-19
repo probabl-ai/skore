@@ -7,6 +7,7 @@ from itertools import product
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
+from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone
 from sklearn.exceptions import NotFittedError
@@ -21,7 +22,7 @@ from skore._sklearn.types import _DEFAULT, PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
-from skore._utils._parallel import Parallel, delayed
+from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
 if TYPE_CHECKING:
