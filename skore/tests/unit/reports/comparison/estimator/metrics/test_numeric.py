@@ -19,7 +19,7 @@ from skore import ComparisonReport, EstimatorReport
                     ["DummyClassifier_1", "DummyClassifier_2"],
                     name="Estimator",
                 ),
-                index=pd.Index(["Accuracy"], dtype="object", name="Metric"),
+                index=pd.Index(["Accuracy"], name="Metric"),
             ),
         ),
         (
@@ -64,7 +64,7 @@ from skore import ComparisonReport, EstimatorReport
                     ["DummyClassifier_1", "DummyClassifier_2"],
                     name="Estimator",
                 ),
-                index=pd.Index(["Brier score"], dtype="object", name="Metric"),
+                index=pd.Index(["Brier score"], name="Metric"),
             ),
         ),
         (
@@ -75,7 +75,7 @@ from skore import ComparisonReport, EstimatorReport
                     ["DummyClassifier_1", "DummyClassifier_2"],
                     name="Estimator",
                 ),
-                index=pd.Index(["ROC AUC"], dtype="object", name="Metric"),
+                index=pd.Index(["ROC AUC"], name="Metric"),
             ),
         ),
         (
@@ -86,7 +86,7 @@ from skore import ComparisonReport, EstimatorReport
                     ["DummyClassifier_1", "DummyClassifier_2"],
                     name="Estimator",
                 ),
-                index=pd.Index(["Log loss"], dtype="object", name="Metric"),
+                index=pd.Index(["Log loss"], name="Metric"),
             ),
         ),
     ],
@@ -133,7 +133,7 @@ def test_binary_classification(
                     ["DummyRegressor_1", "DummyRegressor_2"],
                     name="Estimator",
                 ),
-                index=pd.Index(["RMSE"], dtype="object", name="Metric"),
+                index=pd.Index(["RMSE"], name="Metric"),
             ),
         ),
         (
@@ -144,7 +144,7 @@ def test_binary_classification(
                     ["DummyRegressor_1", "DummyRegressor_2"],
                     name="Estimator",
                 ),
-                index=pd.Index(["R²"], dtype="object", name="Metric"),
+                index=pd.Index(["R²"], name="Metric"),
             ),
         ),
     ],

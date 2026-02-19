@@ -40,7 +40,7 @@ def display(request):
     return report.data.analyze()
 
 
-@pytest.mark.parametrize("dtype", ["category", "object"])
+@pytest.mark.parametrize("dtype", ["category", "str"])
 @pytest.mark.parametrize("other_label", ["other", "xxx"])
 def test_truncate_top_k_categories(dtype, other_label):
     """Check the behaviour of `_truncate_top_k_categories` when `col` is a categorical
