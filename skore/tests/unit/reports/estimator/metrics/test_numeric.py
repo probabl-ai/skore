@@ -146,6 +146,15 @@ def test_summarize_data_source_both(forest_binary_classification_data):
     ]
 
 
+def deep_contain(value, test_value):
+    if value == test_value:
+        return True
+    elif isinstance(value, tuple):
+        return any(deep_contain(item, test_value) for item in value)
+    else:
+        return False
+
+
 def test_interaction_cache_metrics(
     linear_regression_multioutput_with_test,
 ):
@@ -158,24 +167,20 @@ def test_interaction_cache_metrics(
     # part of the cache.
     multioutput = "raw_values"
     result_r2_raw_values = report.metrics.r2(multioutput=multioutput)
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == multioutput for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    multioutput_in_cache_key = any(
+        deep_contain(cached_key, multioutput) for cached_key in report._cache
+    )
+    assert multioutput_in_cache_key, (
         f"The value {multioutput} should be stored in one of the cache keys"
     )
     assert len(result_r2_raw_values) == 2
 
     multioutput = "uniform_average"
     result_r2_uniform_average = report.metrics.r2(multioutput=multioutput)
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == multioutput for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    multioutput_in_cache_key = any(
+        deep_contain(cached_key, multioutput) for cached_key in report._cache
+    )
+    assert multioutput_in_cache_key, (
         f"The value {multioutput} should be stored in one of the cache keys"
     )
     assert isinstance(result_r2_uniform_average, float)
@@ -196,12 +201,10 @@ def test_custom_metric(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == threshold for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    threshold_in_cache_key = any(
+        deep_contain(cached_key, threshold) for cached_key in report._cache
+    )
+    assert threshold_in_cache_key, (
         f"The value {threshold} should be stored in one of the cache keys"
     )
 
@@ -216,12 +219,10 @@ def test_custom_metric(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == threshold for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    threshold_in_cache_key = any(
+        deep_contain(cached_key, threshold) for cached_key in report._cache
+    )
+    assert threshold_in_cache_key, (
         f"The value {threshold} should be stored in one of the cache keys"
     )
 
@@ -249,12 +250,10 @@ def test_custom_metric_scorer(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == threshold for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    threshold_in_cache_key = any(
+        deep_contain(cached_key, threshold) for cached_key in report._cache
+    )
+    assert threshold_in_cache_key, (
         f"The value {threshold} should be stored in one of the cache keys"
     )
 
@@ -269,12 +268,10 @@ def test_custom_metric_scorer(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == threshold for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    threshold_in_cache_key = any(
+        deep_contain(cached_key, threshold) for cached_key in report._cache
+    )
+    assert threshold_in_cache_key, (
         f"The value {threshold} should be stored in one of the cache keys"
     )
 
@@ -313,12 +310,10 @@ def test_custom_function_kwargs_numpy_array(
         response_method="predict",
         some_weights=weights,
     )
-    should_raise = True
-    for cached_key in report._cache:
-        if any(item == hash_weights for item in cached_key):
-            should_raise = False
-            break
-    assert not should_raise, (
+    hash_weights_in_cache_key = any(
+        deep_contain(cached_key, hash_weights) for cached_key in report._cache
+    )
+    assert hash_weights_in_cache_key, (
         "The hash of the weights should be stored in one of the cache keys"
     )
 
