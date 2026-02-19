@@ -14,6 +14,42 @@ class LocalConfiguration(Local):
 
 
 class Configuration:
+    """Configuration for `skore` behavior.
+
+    You can read and set options via attribute access. In parallel processing (e.g.
+    ``joblib.Parallel``), each thread receives its own copy of the configuration;
+    changing attributes inside a worker thread only affects that thread and does not
+    modify the global configuration in the main thread.
+
+    Attributes
+    ----------
+    show_progress : bool
+        Whether to show progress bars for long-running operations.
+        Default is ``True`` (or ``False`` when joblib < 1.4).
+
+    plot_backend : str
+        Backend used for rendering plots (e.g. ``"matplotlib"``).
+        Default is ``"matplotlib"``.
+
+    Examples
+    --------
+    **Global configuration** using the ``configuration`` instance from skore:
+
+    >>> # xdoctest: +SKIP
+    >>> from skore import configuration
+    >>> configuration.show_progress = False
+    >>> configuration.plot_backend = "matplotlib"
+
+    **Temporary overrides** using the context manager (previous values are
+    restored on exit):
+
+    >>> # xdoctest: +SKIP
+    >>> with configuration(show_progress=False):
+    ...     report.fit(X, y)
+    >>> with configuration(plot_backend="plotly"):
+    ...     report.plot()
+    """
+
     def __init__(self):
         self.local = LocalConfiguration()
 
