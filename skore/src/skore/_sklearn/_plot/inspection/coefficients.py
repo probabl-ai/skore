@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -105,7 +105,6 @@ class CoefficientsDisplay(DisplayMixin):
             scores = coefs.apply(lambda x: x.abs().mean())
         else:
             scores = coefs.first().abs()
-        scores = cast(pd.Series, scores)
 
         if select_k > 0:
             selected_features = scores.nlargest(abs(select_k)).index
@@ -125,7 +124,6 @@ class CoefficientsDisplay(DisplayMixin):
             scores = frame.groupby("feature")["coefficient"].apply(
                 lambda x: x.abs().mean()
             )
-            scores = cast(pd.Series, scores)
             feature_order = scores.sort_values(ascending=ascending).index
             return frame.set_index("feature").loc[feature_order].reset_index()
 
@@ -408,6 +406,9 @@ class CoefficientsDisplay(DisplayMixin):
         boxplot_kwargs: dict[str, Any] | None = None,
         stripplot_kwargs: dict[str, Any] | None = None,
     ):
+        barplot_kwargs = {} if barplot_kwargs is None else barplot_kwargs
+        stripplot_kwargs = {} if stripplot_kwargs is None else stripplot_kwargs
+        boxplot_kwargs = {} if boxplot_kwargs is None else boxplot_kwargs
         if "estimator" in report_type:
             self.facet_ = sns.catplot(
                 data=frame,

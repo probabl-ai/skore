@@ -1,6 +1,7 @@
 import os
 import re
 from collections.abc import Iterable
+from typing import Any, cast
 
 from rich import jupyter
 from rich.segment import Segment
@@ -62,4 +63,4 @@ def patched_render_segments(segments: Iterable[Segment]) -> str:
 
 def setup_jupyter_display() -> None:
     """Configure the jupyter display to work properly in VS Code."""
-    jupyter._render_segments = patched_render_segments
+    cast(Any, jupyter)._render_segments = patched_render_segments

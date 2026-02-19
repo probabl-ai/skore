@@ -162,18 +162,8 @@ convention = "numpy"
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]
 
-[tool.mypy]
-exclude = ["src/skore/_externals/", "hatch/", "tests/"]
+[tool.ty.src]
+exclude = ["hatch/**", "src/skore/_externals/**", "tests/**"]
 
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = [
-  "ipywidgets.*",
-  "jinja2.*",
-  "joblib.*",
-  "pandas.*",
-  "plotly.*",
-  "seaborn.*",
-  "sklearn.*",
-  "skrub.*",
-]
+[tool.ty.terminal]
+error-on-warning = true

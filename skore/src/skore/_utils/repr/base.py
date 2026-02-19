@@ -134,7 +134,7 @@ class ReprHTMLMixin:
         return self._repr_html_inner
 
     def _repr_html_inner(self):
-        return self._html_repr()
+        return self._html_repr()  # type: ignore[assignment]
 
     def _repr_mimebundle_(self, **kwargs):
-        return {"text/plain": repr(self), "text/html": self._html_repr()}
+        return {"text/plain": repr(self), "text/html": self._html_repr()}  # type: ignore[assignment]

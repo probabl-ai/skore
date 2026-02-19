@@ -12,7 +12,7 @@ from skore._utils._jupyter import _jupyter_dependencies_available
 if TYPE_CHECKING:
     from typing import Literal
 
-    from skore import ComparisonReport, CrossValidationReport, EstimatorReport
+    from skore import ComparisonReport, CrossValidationReport, EstimatorReport, Project
 
 
 class Summary(DataFrame):
@@ -37,6 +37,8 @@ class Summary(DataFrame):
     """
 
     _metadata = ["project"]
+
+    project: Project
 
     @staticmethod
     def factory(project, /):
@@ -158,7 +160,7 @@ class Summary(DataFrame):
         >>> query_string = df._query_string_selection()
         >>> df_filtered = df.query(query_string)
         """
-        if not hasattr(self, "_plot_widget"):
+        if not hasattr(self, "_plot_widget") or self._plot_widget.current_fig is None:
             return None
 
         self._plot_widget.update_selection()

@@ -291,9 +291,7 @@ class PredictionErrorDisplay(DisplayMixin):
                 labels = [f"Split #{label}" for label in labels]
             if hue == "output" and style is None:
                 labels = [f"Output #{label}" for label in labels]
-        handles.append(
-            Line2D([0], [0], **self._default_perfect_model_kwargs)  # type: ignore[arg-type]
-        )
+        handles.append(Line2D([0], [0], **self._default_perfect_model_kwargs))  # type: ignore
 
         labels.append("Perfect predictions")
 

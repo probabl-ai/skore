@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any, Literal, cast
 
 import pandas as pd
@@ -254,7 +254,7 @@ class _MetricsAccessor(
 
             if aggregate:
                 if isinstance(aggregate, str):
-                    aggregate = [aggregate]
+                    aggregate = cast(Sequence[Literal["mean", "std"]], [aggregate])
 
                 results = results.aggregate(func=aggregate, axis=1)
                 results = pd.concat(
@@ -315,7 +315,7 @@ class _MetricsAccessor(
         )
         if aggregate:
             if isinstance(aggregate, str):
-                aggregate = [aggregate]
+                aggregate = cast(Sequence[Literal["mean", "std"]], [aggregate])
             timings = timings.aggregate(func=aggregate, axis=1)
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
 

@@ -5,9 +5,9 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from diskcache import Cache
+import diskcache
 
-Cache = partial(Cache, size_limit=float("inf"), cull_limit=0, eviction=None)
+Cache = partial(diskcache.Cache, size_limit=float("inf"), cull_limit=0, eviction=None)
 
 
 class DirectoryDoesNotExist(Exception):

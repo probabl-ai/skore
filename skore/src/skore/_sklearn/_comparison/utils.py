@@ -1,5 +1,6 @@
 import copy
-from typing import Literal
+from collections.abc import Sequence
+from typing import Literal, cast
 
 import pandas as pd
 
@@ -283,7 +284,7 @@ def _combine_cross_validation_results(
         7  Precision                1  DummyClassifier_2  Split #1   0.42
         """
         df["Metric"] = df["Metric"].astype(
-            pd.CategoricalDtype(df["Metric"].unique(), ordered=True)
+            pd.CategoricalDtype(df["Metric"].unique().tolist(), ordered=True)
         )
         df["metric_order_index"] = df["Metric"].cat.codes
 
@@ -331,8 +332,7 @@ def _combine_cross_validation_results(
 
     if aggregate:
         if isinstance(aggregate, str):
-            aggregate = [aggregate]
-
+            aggregate = cast(Sequence[Literal["mean", "std"]], [aggregate])
         if "Label / Average" in df.columns:
             index = ["Metric", "Label / Average"]
         else:

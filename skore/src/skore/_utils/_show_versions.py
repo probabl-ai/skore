@@ -4,7 +4,7 @@ Utility methods to print system info for debugging.
 adapted from :func:`sklearn.show_versions`
 """
 
-import importlib
+import importlib.metadata
 import platform
 import re
 import sys

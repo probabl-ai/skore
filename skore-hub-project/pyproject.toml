@@ -109,18 +109,8 @@ convention = "numpy"
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]
 
-[tool.mypy]
-exclude = ["hatch/", "tests/"]
-strict = true
+[tool.ty.src]
+exclude = ["hatch/**", "tests/**"]
 
-[[tool.mypy.overrides]]
-follow_untyped_imports = true
-module = ["skore.*"]
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = [
-  "joblib.*",
-  "scipy.*",
-  "sklearn.*",
-]
+[tool.ty.terminal]
+error-on-warning = true

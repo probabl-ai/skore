@@ -259,7 +259,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
-        self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
+        self._ml_task = next(iter(self.reports_.values()))._ml_task
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -406,15 +406,18 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(25,), (25,)]
         """
-        return [  # type: ignore
-            report.get_predictions(
-                data_source=data_source,
-                response_method=response_method,
-                X=X,
-                pos_label=pos_label,
-            )
-            for report in self.reports_.values()
-        ]
+        return cast(
+            list[ArrayLike] | list[list[ArrayLike]],
+            [
+                report.get_predictions(
+                    data_source=data_source,
+                    response_method=response_method,
+                    X=X,
+                    pos_label=pos_label,
+                )
+                for report in self.reports_.values()
+            ],
+        )
 
     def create_estimator_report(
         self,
@@ -459,14 +462,34 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         estimator_report = cast(EstimatorReport, self.reports_[name])
         X_concat = (
-            pd.concat([estimator_report._X_train, estimator_report._X_test])
+            pd.concat(
+                cast(
+                    list[pd.DataFrame],
+                    [estimator_report._X_train, estimator_report._X_test],
+                )
+            )
             if isinstance(estimator_report._X_train, pd.DataFrame)
-            else np.concatenate([estimator_report._X_train, estimator_report._X_test])
+            else np.concatenate(
+                cast(
+                    list[ArrayLike],
+                    [estimator_report._X_train, estimator_report._X_test],
+                )
+            )
         )
         y_concat = (
-            pd.concat([estimator_report._y_train, estimator_report._y_test])
+            pd.concat(
+                cast(
+                    list[pd.DataFrame],
+                    [estimator_report._y_train, estimator_report._y_test],
+                )
+            )
             if isinstance(estimator_report._y_train, (pd.DataFrame, pd.Series))
-            else np.concatenate([estimator_report._y_train, estimator_report._y_test])
+            else np.concatenate(
+                cast(
+                    list[ArrayLike],
+                    [estimator_report._y_train, estimator_report._y_test],
+                )
+            )
         )
         report = EstimatorReport(
             estimator_report.estimator,

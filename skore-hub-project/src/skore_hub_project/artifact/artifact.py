@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from contextlib import AbstractContextManager, nullcontext
 from functools import cached_property
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -55,7 +56,7 @@ class Artifact(BaseModel, ABC):
                 yield "<str>"
         """
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @cached_property
     def checksum(self) -> str | None:
         """Checksum used to identify the content of the artifact."""
@@ -65,11 +66,13 @@ class Artifact(BaseModel, ABC):
             contextmanager = nullcontext(contextmanager)
 
         with contextmanager as content:
-            if content is not None:
-                return upload(
-                    project=self.project,
-                    content=content,
-                    content_type=self.content_type,
-                )
+            if content is None:
+                return None
 
-        return None
+            content = cast(str | bytes, content)
+
+            return upload(
+                project=self.project,
+                content=content,
+                content_type=self.content_type,
+            )

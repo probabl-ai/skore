@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from numpy.random import RandomState
@@ -11,6 +11,8 @@ from rich.panel import Panel
 
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.train_test_split.warning import TRAIN_TEST_SPLIT_WARNINGS
+
+from .warning.train_test_split_warning import TrainTestSplitWarning
 
 if TYPE_CHECKING:
     ArrayLike = Any
@@ -237,7 +239,7 @@ def train_test_split(
     from skore import console  # avoid circular import
 
     for warning_class in TRAIN_TEST_SPLIT_WARNINGS:
-        warning = warning_class.check(**kwargs)
+        warning = cast(TrainTestSplitWarning, warning_class).check(**kwargs)
 
         if warning is not None and (
             not warnings.filters

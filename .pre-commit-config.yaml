@@ -15,16 +15,9 @@ repos:
     hooks:
       - id: typos
 
-  - repo: https://github.com/kynan/nbstripout
-    rev: 0.9.0
-    hooks:
-      - id: nbstripout
-        args: [--keep-id]
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.14
     hooks:
-
       - id: ruff-check
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
         args: [--fix, --extend-select, I]
@@ -32,16 +25,15 @@ repos:
       - id: ruff-format
         files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+  - repo: https://github.com/allganize/ty-pre-commit
+    rev: v0.0.17  # ty version
     hooks:
-
-      - id: mypy
+      - id: ty-check
+        alias: ty-skore
+        name: ty skore/
+        language: python
+        args: [--project, skore]
         pass_filenames: false
-        alias: mypy-skore
-        name: mypy skore/
-        files: ^skore/
-        args: [--config-file=skore/pyproject.toml, skore]
         additional_dependencies:
           # from dependencies
           - IPython
@@ -61,18 +53,16 @@ repos:
           - pyarrow
           - scipy-stubs
 
-      - id: mypy
+      - id: ty-check
+        alias: ty-skore-local-project
+        name: ty skore-local-project/
+        args: [--project, skore-local-project]
         pass_filenames: false
-        alias: mypy-skore-hub-project
-        name: mypy skore-hub-project/
-        files: ^skore-hub-project/
-        args: [--config-file=skore-hub-project/pyproject.toml, skore-hub-project]
-        additional_dependencies: [skore, blake3, httpx, orjson, pandas-stubs, pydantic]
-
-      - id: mypy
-        pass_filenames: false
-        alias: mypy-skore-local-project
-        name: mypy skore-local-project/
-        files: ^skore-local-project/
-        args: [--config-file=skore-local-project/pyproject.toml, skore-local-project]
         additional_dependencies: [skore]
+
+      - id: ty-check
+        alias: ty-skore-hub-project
+        name: ty skore-hub-project/
+        args: [--project, skore-hub-project]
+        pass_filenames: false
+        additional_dependencies: [skore, blake3, httpx, orjson, pandas-stubs, pydantic]

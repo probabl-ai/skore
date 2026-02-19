@@ -56,7 +56,7 @@ class PlotBackendMixin:
         plot_backend = configuration.plot_backend
 
         if plot_backend == "matplotlib":
-            return self._plot_matplotlib(**kwargs)
+            return self._plot_matplotlib(**kwargs)  # type: ignore[assignment]
         elif plot_backend == "plotly":
             return self._plot_plotly(**kwargs)
         else:

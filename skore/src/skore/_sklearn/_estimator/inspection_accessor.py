@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import numpy as np
-import pandas as pd
 from numpy.typing import ArrayLike
 from scipy.sparse import issparse
 from sklearn.pipeline import Pipeline
@@ -135,7 +134,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         max_samples: float = 1.0,
         n_jobs: int | None = None,
         seed: int | None = None,
-    ) -> pd.DataFrame:
+    ) -> PermutationImportanceDisplay:
         """Report the permutation feature importance.
 
         This computes the permutation importance using sklearn's

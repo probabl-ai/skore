@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -27,7 +27,7 @@ from skore._utils.repr import ReprHTMLMixin
 
 def _truncate_top_k_categories(
     col: pd.Series | None, k: int, other_label: str = "other"
-) -> pd.Series:
+) -> pd.Series | None:
     """Truncate a column to the top k most frequent values.
 
     Replaces the rest with a label defined by ``other_label``. Note that if `col` is not
@@ -533,8 +533,12 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 raise ValueError(
                     "If 'x' and 'y' are categories, 'hue' must be continuous."
                 )
-
-            contingency_table = _compute_contingency_table(x, y, hue, k)
+            x_series = cast(pd.Series, x)
+            y_series = cast(pd.Series, y)
+            hue_series = cast(pd.Series | None, hue)
+            contingency_table = _compute_contingency_table(
+                x_series, y_series, hue_series, k
+            )
             contingency_table.index = [
                 ellide_string(s) for s in contingency_table.index
             ]
@@ -542,7 +546,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 ellide_string(s) for s in contingency_table.columns
             ]
 
-            if max_value := contingency_table.max(axis=None) < 100_000:
+            if (max_value := cast(float, contingency_table.max(axis=None))) < 100_000:
                 # avoid scientific notation for small numbers
                 annotation_format = (
                     ".0f"
