@@ -1,3 +1,4 @@
+import inspect
 from functools import partialmethod
 
 from pydantic import ValidationError
@@ -17,7 +18,12 @@ def serialize(result) -> bytes:
     import orjson
 
     if hasattr(result, "frame"):
-        result = result.frame()
+        # FIXME: in the future, all inspection methods should have an aggregate
+        # parameter and we should be sending unaggregated data to the hub.
+        if "aggregate" in inspect.signature(result.frame).parameters:
+            result = result.frame(aggregate=None)
+        else:
+            result = result.frame()
 
     return orjson.dumps(
         result.fillna("NaN").to_dict(orient="tight"),
