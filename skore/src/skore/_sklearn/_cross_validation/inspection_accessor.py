@@ -201,6 +201,9 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         9         test     r2      1  Feature #0           2  0.49...
         10        test     r2      1  Feature #1           2  1.15...
         11        test     r2      1  Feature #2           2  0.01...
+        >>> import pandas as pd
+        >>> pd.set_option("display.max_columns", None)
+        >>> pd.set_option("display.width", 1000)
         >>> report.inspection.permutation_importance(
         ...    metric=["r2", "neg_mean_squared_error"],
         ...    n_repeats=2,
