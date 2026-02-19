@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
 from typing import Any, Literal, cast
 
@@ -690,7 +692,7 @@ class CoefficientsDisplay(DisplayMixin):
         names: list[str],
         splits: list[int | float],
         report_type: ReportType,
-    ) -> "CoefficientsDisplay":
+    ) -> CoefficientsDisplay:
         """Compute the data for the display.
 
         Parameters

@@ -304,7 +304,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 estimators=[
                     report.estimator_ for report in self._parent.estimator_reports_
                 ],
-                estimator_names=[
+                names=[
                     report.estimator_name_ for report in self._parent.estimator_reports_
                 ],
                 splits=list(range(len(self._parent.estimator_reports_))),

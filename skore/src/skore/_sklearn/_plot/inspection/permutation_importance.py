@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Callable, Sequence
 from typing import Any, Literal, cast
 
@@ -71,7 +73,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         *,
         data_source: DataSource,
         estimators: Sequence[BaseEstimator],
-        estimator_names: Sequence[str],
+        names: Sequence[str],
         splits: Sequence[int | float],
         Xs: Sequence[ArrayLike],
         ys: Sequence[ArrayLike],
@@ -82,7 +84,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         n_jobs: int | None,
         seed: int | None,
         report_type: ReportType,
-    ) -> "PermutationImportanceDisplay":
+    ) -> PermutationImportanceDisplay:
         if not isinstance(at_step, str | int):
             raise ValueError(f"at_step must be an integer or a string; got {at_step!r}")
 
@@ -95,8 +97,8 @@ class PermutationImportanceDisplay(DisplayMixin):
             at_step = list(first_estimator.named_steps.keys()).index(at_step)
 
         all_importances = []
-        for estimator, estimator_name, split, X, y in zip(
-            estimators, estimator_names, splits, Xs, ys, strict=True
+        for estimator, name, split, X, y in zip(
+            estimators, names, splits, Xs, ys, strict=True
         ):
             if isinstance(estimator, Pipeline) and at_step != 0:
                 if abs(at_step) >= len(estimator.steps):
@@ -135,6 +137,8 @@ class PermutationImportanceDisplay(DisplayMixin):
             )
 
             if "importances" in scores:
+                # single metric case -> switch to multi-metric case by wrapping in a
+                # dict with the name of the metric
                 metric_obj = cast(str | Callable | _BaseScorer | None, metrics)
                 if metric_obj is None:
                     metric_name = "accuracy" if is_classifier(estimator) else "r2"
@@ -151,6 +155,8 @@ class PermutationImportanceDisplay(DisplayMixin):
                 metric_importances = np.atleast_3d(metric_values["importances"])
 
                 df_metric_importances = []
+                # we loop across the labels (for classification) or the outputs
+                # (for regression)
                 for target_index, target_importances in enumerate(
                     np.moveaxis(metric_importances, -1, 0)
                 ):
@@ -178,7 +184,7 @@ class PermutationImportanceDisplay(DisplayMixin):
 
             df_importances = pd.concat(df_importances, axis="index")
             df_importances["data_source"] = data_source
-            df_importances["estimator"] = estimator_name
+            df_importances["estimator"] = name
             df_importances["split"] = split
             all_importances.append(df_importances)
 
@@ -251,14 +257,13 @@ class PermutationImportanceDisplay(DisplayMixin):
 
         if metric is None and self.importances["metric"].nunique() > 1:
             raise ValueError(
-                "Please select a metric to plot the associated importances using the"
-                "`metric` parameter. Multiple metrics can not be plotted at once."
+                "Multiple metrics cannot be plotted at once. Please select a metric"
+                " to plot the associated importances using the `metric` parameter."
             )
-        frame = self.frame(metrics=metric, aggregate=None)
 
         self._plot_single_estimator(
             subplot_by=subplot_by,
-            frame=frame,
+            frame=self.frame(metrics=metric, aggregate=None),
             estimator_name=self.importances["estimator"].unique()[0],
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
@@ -286,32 +291,30 @@ class PermutationImportanceDisplay(DisplayMixin):
     ) -> None:
         """Plot the permutation importance for an `EstimatorReport`."""
         aggregate_title = ""
+        columns_to_groupby = self._get_columns_to_groupby(frame=frame)
         if subplot_by == "auto" or subplot_by is None:
-            columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-
             if "split" in columns_to_groupby:
                 frame = self._aggregate_over_split(frame=frame)
                 columns_to_groupby.remove("split")
-                aggregate_title = "averaged over splits"
+                aggregate_title = " averaged over splits"
 
             if subplot_by == "auto":
                 col = columns_to_groupby[0] if columns_to_groupby else None
-                hue, row = None, None
+                hue = None
             else:  # subplot_by is None
+                col = None
                 hue = columns_to_groupby[0] if columns_to_groupby else None
-                col, row = None, None
 
         else:
             if subplot_by in ("label", "output") and subplot_by not in frame.columns:
                 raise ValueError(
-                    f"Cannot use subplot_by='{subplot_by}' because the selected "
-                    f"metric does not provide per-{subplot_by} information."
+                    f"Cannot use subplot_by={subplot_by!r} because the selected "
+                    f"metric does not provide per-{subplot_by!r} information."
                 )
 
-            columns_to_groupby = self._get_columns_to_groupby(frame=frame)
             if subplot_by not in columns_to_groupby:
                 raise ValueError(
-                    f"The column '{subplot_by}' is not available for subplotting. "
+                    f"The column {subplot_by!r} is not available for subplotting. "
                     "You can use the following values to create subplots: "
                     f"{', '.join(columns_to_groupby)}"
                 )
@@ -320,10 +323,9 @@ class PermutationImportanceDisplay(DisplayMixin):
             if "split" in remaining:
                 frame = self._aggregate_over_split(frame=frame)
                 remaining.remove("split")
-                aggregate_title = "averaged over splits"
+                aggregate_title = " averaged over splits"
 
             col = subplot_by
-            row = None
             hue = next(iter(remaining), None)
 
         if hue is None:
@@ -339,7 +341,6 @@ class PermutationImportanceDisplay(DisplayMixin):
             y="feature",
             hue=hue,
             col=col,
-            row=row,
             kind="strip",
             dodge=True,
             sharex=False,
@@ -369,7 +370,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             self.ax_ = self.ax_.flatten()[0]
         data_source = frame["data_source"].unique()[0]
         self.figure_.suptitle(
-            f"Permutation importance {aggregate_title} \n"
+            f"Permutation importance{aggregate_title}\n"
             f"of {estimator_name} on {data_source} set"
         )
 
