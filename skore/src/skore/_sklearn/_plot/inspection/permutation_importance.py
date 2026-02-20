@@ -38,7 +38,8 @@ class PermutationImportanceDisplay(DisplayMixin):
         - `repetition`
         - `value`
 
-    report_type : {"estimator", "cross-validation"}
+    report_type : {"estimator", "cross-validation", "comparison-estimator", \
+            "comparison-cross-validation"}
         Report type from which the display is created.
 
     Attributes
@@ -209,6 +210,8 @@ class PermutationImportanceDisplay(DisplayMixin):
     def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
         """Get the available columns from which to group by."""
         columns_to_groupby = list[str]()
+        if "estimator" in frame.columns and frame["estimator"].nunique() > 1:
+            columns_to_groupby.append("estimator")
         if "label" in frame.columns and frame["label"].nunique() > 1:
             columns_to_groupby.append("label")
         if "output" in frame.columns and frame["output"].nunique() > 1:
@@ -261,9 +264,18 @@ class PermutationImportanceDisplay(DisplayMixin):
                 " to plot the associated importances using the `metric` parameter."
             )
 
-        self._plot_single_estimator(
+        frame = self.frame(metric=metric, aggregate=None)
+        if "comparison" in self.report_type:
+            return self._plot_comparison(
+                subplot_by=subplot_by,
+                frame=frame,
+                boxplot_kwargs=boxplot_kwargs,
+                stripplot_kwargs=stripplot_kwargs,
+            )
+
+        return self._plot_single_estimator(
             subplot_by=subplot_by,
-            frame=self.frame(metric=metric, aggregate=None),
+            frame=frame,
             estimator_name=self.importances["estimator"].unique()[0],
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
@@ -289,7 +301,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
     ) -> None:
-        """Plot the permutation importance for an `EstimatorReport`."""
+        """Plot the permutation importance for a non-comparison report."""
         aggregate_title = ""
         columns_to_groupby = self._get_columns_to_groupby(frame=frame)
         if subplot_by == "auto" or subplot_by is None:
@@ -329,6 +341,67 @@ class PermutationImportanceDisplay(DisplayMixin):
         else:
             boxplot_kwargs.setdefault("palette", "tab10")
 
+        self._categorical_plot(
+            frame=frame,
+            hue=hue,
+            col=col,
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
+            sharey=True,
+        )
+        data_source = frame["data_source"].unique()[0]
+        self.figure_.suptitle(
+            f"Permutation importance{aggregate_title}\n"
+            f"of {estimator_name} on {data_source} set"
+        )
+
+    @staticmethod
+    def _has_same_features(*, frame: pd.DataFrame) -> bool:
+        """Check if the features are the same across all estimators."""
+        grouped = {
+            name: group["feature"].sort_values().tolist()
+            for name, group in frame.groupby("estimator", sort=False)
+        }
+        _, reference_features = grouped.popitem()
+        for group_features in grouped.values():
+            if group_features != reference_features:
+                return False
+        return True
+
+    def _categorical_plot(
+        self,
+        *,
+        frame: pd.DataFrame,
+        hue: str | None,
+        col: str | None,
+        boxplot_kwargs: dict[str, Any],
+        stripplot_kwargs: dict[str, Any],
+        sharey: bool,
+    ) -> None:
+        """Plot importances with strip + box overlays.
+
+        Parameters
+        ----------
+        frame : pd.DataFrame
+            Dataframe containing permutation importances to display.
+
+        hue : str or None
+            Column used to group values with colors.
+
+        col : str or None
+            Column used to create subplot columns.
+
+        boxplot_kwargs : dict
+            Keyword arguments forwarded to :func:`seaborn.boxplot`.
+
+        stripplot_kwargs : dict
+            Keyword arguments forwarded to :func:`seaborn.stripplot`.
+
+        sharey : bool
+            Whether feature axes are shared across subplot columns.
+        """
+        # Ensure seaborn receives a clean, unique index when concatenating groups.
+        frame = frame.reset_index(drop=True)
         self.facet_ = sns.catplot(
             data=frame,
             x="value",
@@ -338,6 +411,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             kind="strip",
             dodge=True,
             sharex=False,
+            sharey=sharey,
             **stripplot_kwargs,
         ).map_dataframe(
             sns.boxplot,
@@ -348,25 +422,132 @@ class PermutationImportanceDisplay(DisplayMixin):
             **boxplot_kwargs,
         )
         add_background_features = hue is not None
-
         metric_name = frame["metric"].unique()[0]
         self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
-        for row_axes in self.facet_.axes:
-            for ax in row_axes:
-                _decorate_matplotlib_axis(
-                    ax=ax,
-                    add_background_features=add_background_features,
-                    n_features=frame["feature"].nunique(),
-                    xlabel=f"Decrease in {metric_name}",
-                    ylabel="",
-                )
+        n_features = (
+            [frame["feature"].nunique()]
+            if col is None
+            else [
+                frame[frame[col] == col_value]["feature"].nunique()
+                for col_value in frame[col].unique()
+            ]
+        )
+        for ax, n_feature in zip(self.ax_.flatten(), n_features, strict=True):
+            _decorate_matplotlib_axis(
+                ax=ax,
+                add_background_features=add_background_features,
+                n_features=n_feature,
+                xlabel=f"Decrease in {metric_name}",
+                ylabel="",
+            )
         if len(self.ax_.flatten()) == 1:
             self.ax_ = self.ax_.flatten()[0]
-        data_source = frame["data_source"].unique()[0]
-        self.figure_.suptitle(
-            f"Permutation importance{aggregate_title}\n"
-            f"of {estimator_name} on {data_source} set"
+
+    def _plot_comparison(
+        self,
+        *,
+        subplot_by: str | None,
+        frame: pd.DataFrame,
+        boxplot_kwargs: dict[str, Any],
+        stripplot_kwargs: dict[str, Any],
+    ) -> None:
+        """Plot permutation importance for comparison reports.
+
+        Parameters
+        ----------
+        subplot_by : str or None
+            Column used to split the plots into subplots. If `"auto"`, a sensible
+            default is selected depending on the available dimensions and whether
+            estimators share the same features.
+
+        frame : pd.DataFrame
+            Dataframe containing permutation importances.
+
+        boxplot_kwargs : dict
+            Keyword arguments forwarded to :func:`seaborn.boxplot`.
+
+        stripplot_kwargs : dict
+            Keyword arguments forwarded to :func:`seaborn.stripplot`.
+        """
+        aggregate_title = ""
+        columns_to_groupby = self._get_columns_to_groupby(frame=frame)
+        has_same_features = self._has_same_features(frame=frame)
+
+        if subplot_by not in ("auto", None) and subplot_by not in columns_to_groupby:
+            raise ValueError(
+                f"The column {subplot_by!r} is not available for subplotting. "
+                "You can use the following values to create subplots: "
+                f"{', '.join(columns_to_groupby + ['auto', 'None'])}"
+            )
+
+        if subplot_by is None and (
+            "label" in columns_to_groupby or "output" in columns_to_groupby
+        ):
+            raise ValueError(
+                "There are multiple labels or outputs and `subplot_by` is `None`. "
+                "There is too much information to display on a single plot. "
+                "Please provide a column to group by using `subplot_by`."
+            )
+
+        if (not has_same_features and subplot_by == "auto") or (
+            subplot_by == "auto"
+            and ("label" in columns_to_groupby or "output" in columns_to_groupby)
+        ):
+            # Fall back to estimator-wise subplots when there is too much information
+            # for a single axis or when estimators cannot be compared feature-wise.
+            subplot_by = "estimator"
+        elif subplot_by == "auto":
+            subplot_by = None
+
+        if subplot_by is None:
+            if "split" in columns_to_groupby:
+                frame = self._aggregate_over_split(frame=frame)
+                columns_to_groupby.remove("split")
+                aggregate_title = " averaged over splits"
+            if columns_to_groupby:
+                hue, col = columns_to_groupby[0], None
+            else:
+                hue, col = None, None
+            if not has_same_features and hue == "estimator":
+                raise ValueError(
+                    "The estimators have different features and should be plotted on "
+                    "different axis using `subplot_by='estimator'`."
+                )
+        else:
+            remaining = [
+                column for column in columns_to_groupby if column != subplot_by
+            ]
+            if "split" in remaining:
+                frame = self._aggregate_over_split(frame=frame)
+                remaining.remove("split")
+                aggregate_title = " averaged over splits"
+            hue = remaining[0] if remaining else None
+            col = subplot_by
+            if not has_same_features and hue == "estimator":
+                raise ValueError(
+                    "The estimators have different features and should be plotted on "
+                    "different axis using `subplot_by='estimator'`."
+                )
+
+        if hue is None:
+            stripplot_kwargs.pop("palette", None)
+        else:
+            boxplot_kwargs.setdefault("palette", "tab10")
+
+        self._categorical_plot(
+            frame=frame,
+            hue=hue,
+            col=col,
+            boxplot_kwargs=boxplot_kwargs,
+            stripplot_kwargs=stripplot_kwargs,
+            sharey=has_same_features,
         )
+
+        title = f"Permutation importance{aggregate_title}"
+        if subplot_by is not None:
+            title += f" by {subplot_by}"
+        data_source = frame["data_source"].unique()[0]
+        self.figure_.suptitle(f"{title}\non {data_source} set")
 
     def frame(
         self,
@@ -396,6 +577,12 @@ class PermutationImportanceDisplay(DisplayMixin):
         elif self.report_type == "cross-validation":
             columns_to_drop = ["estimator"]
             group_by = ["data_source", "metric", "split", "feature"]
+        elif self.report_type == "comparison-estimator":
+            columns_to_drop = ["split"]
+            group_by = ["estimator", "data_source", "metric", "feature"]
+        elif self.report_type == "comparison-cross-validation":
+            columns_to_drop = []
+            group_by = ["estimator", "data_source", "metric", "split", "feature"]
         else:
             raise TypeError(f"Unexpected report type: {self.report_type!r}")
 

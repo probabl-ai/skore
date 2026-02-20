@@ -32,6 +32,8 @@ def test_invalid_report_type(pyplot, method):
     [
         "estimator_reports",
         "cross_validation_reports",
+        "comparison_estimator_reports",
+        "comparison_cross_validation_reports",
     ],
 )
 @pytest.mark.parametrize(
@@ -86,6 +88,8 @@ class TestPermutationImportanceDisplay:
         expected = {"data_source", "metric", "feature", "value_mean", "value_std"}
         if "cross_validation" in fixture_prefix:
             expected.add("split")
+        if "comparison" in fixture_prefix:
+            expected.add("estimator")
         assert set(frame.columns) == expected
 
     def test_plot_structure(self, pyplot, fixture_prefix, task, request):
@@ -103,8 +107,9 @@ class TestPermutationImportanceDisplay:
         figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         title = figure.get_suptitle()
         assert "Permutation importance" in title
-        estimator_name = display.importances["estimator"].iloc[0]
-        assert estimator_name in title
+        if "comparison" not in fixture_prefix:
+            estimator_name = display.importances["estimator"].iloc[0]
+            assert estimator_name in title
         if "cross_validation" in fixture_prefix:
             assert "averaged over splits" in title
         else:
