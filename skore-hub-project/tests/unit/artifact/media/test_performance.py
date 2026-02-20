@@ -35,9 +35,9 @@ def serialize_svg(display) -> bytes:
 
 def serialize_dataframe(display) -> bytes:
     frame = display.frame()
-    frame_dict = frame.infer_objects().fillna("NaN").to_dict(orient="tight")
-
-    return dumps(frame_dict)
+    return dumps(
+        frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+    )
 
 
 @mark.filterwarnings(

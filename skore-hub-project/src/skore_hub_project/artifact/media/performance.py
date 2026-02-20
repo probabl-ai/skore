@@ -64,9 +64,10 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
         )
 
         frame = display.frame()
-        frame_dict = frame.infer_objects().fillna("NaN").to_dict(orient="tight")
 
-        return dumps(frame_dict)
+        return dumps(
+            frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+        )
 
 
 class PrecisionRecallSVG(PerformanceSVG[Report], ABC):  # noqa: D101
