@@ -1,30 +1,6 @@
-import numpy as np
-import pandas as pd
 import pytest
 
 from skore import PermutationImportanceDisplay
-
-
-@pytest.mark.parametrize("method", ["frame", "plot"])
-def test_invalid_report_type(pyplot, method):
-    importances = pd.DataFrame(
-        {
-            "estimator": ["estimator"],
-            "data_source": ["test"],
-            "metric": ["r2"],
-            "split": [np.nan],
-            "feature": ["feature1"],
-            "label": [np.nan],
-            "output": [np.nan],
-            "repetition": [0],
-            "value": [1.0],
-        }
-    )
-    display = PermutationImportanceDisplay(
-        importances=importances, report_type="invalid-type"
-    )
-    with pytest.raises(TypeError, match="Unexpected report type: 'invalid-type'"):
-        getattr(display, method)()
 
 
 @pytest.mark.parametrize(
@@ -144,3 +120,20 @@ class TestPermutationImportanceDisplay:
         frame = display.frame(aggregate=aggregate)
         for col in expected_value_columns:
             assert col in frame.columns
+
+    def test_unavailable_metric(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+
+        available_metric = "r2" if "regression" in task else "accuracy"
+        err_msg = (
+            "The metric 'invalid-metric' is not available. Please select metrics from"
+            f" the following list: {available_metric}. "
+            "Otherwise, use the `metric` parameter of the "
+            "`.permutation_importance\(\)` method to specify the metrics to"
+            " use for computing the importances."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            display.frame(metric="invalid-metric")

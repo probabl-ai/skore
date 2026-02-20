@@ -266,18 +266,17 @@ class PermutationImportanceDisplay(DisplayMixin):
                 " to plot the associated importances using the `metric` parameter."
             )
 
-        frame = self.frame(metric=metric, aggregate=None)
         if "comparison" in self.report_type:
             return self._plot_comparison(
                 subplot_by=subplot_by,
-                frame=frame,
+                frame=self.frame(metric=metric, aggregate=None),
                 boxplot_kwargs=boxplot_kwargs,
                 stripplot_kwargs=stripplot_kwargs,
             )
 
         return self._plot_single_estimator(
             subplot_by=subplot_by,
-            frame=frame,
+            frame=self.frame(metric=metric, aggregate=None),
             estimator_name=self.importances["estimator"].unique()[0],
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
@@ -590,8 +589,19 @@ class PermutationImportanceDisplay(DisplayMixin):
 
         frame = self.importances.copy()
         if metric is not None:
+            if isinstance(metric, str):
+                metric = [metric]
+            available_metrics = self.importances["metric"].unique()
+            for m in metric:
+                if m not in available_metrics:
+                    raise ValueError(
+                        f"The metric {m!r} is not available. Please select metrics from"
+                        f" the following list: {', '.join(available_metrics)}. "
+                        "Otherwise, use the `metric` parameter of the "
+                        "`.permutation_importance()` method to specify the metrics to"
+                        " use for computing the importances."
+                    )
             frame = frame.query("metric in @metric")
-
         if frame["label"].isna().all():
             # regression problem or averaged classification metric
             columns_to_drop.append("label")
