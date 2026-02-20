@@ -581,11 +581,9 @@ class PermutationImportanceDisplay(DisplayMixin):
         elif self.report_type == "comparison-estimator":
             columns_to_drop = ["split"]
             group_by = ["estimator", "data_source", "metric", "feature"]
-        elif self.report_type == "comparison-cross-validation":
+        else:  # comparison-cross-validation
             columns_to_drop = []
             group_by = ["estimator", "data_source", "metric", "split", "feature"]
-        else:
-            raise TypeError(f"Unexpected report type: {self.report_type!r}")
 
         frame = self.importances.copy()
         if metric is not None:

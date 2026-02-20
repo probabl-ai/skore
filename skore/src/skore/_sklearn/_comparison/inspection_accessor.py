@@ -302,6 +302,57 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         :class:`PermutationImportanceDisplay`
             The permutation importance display.
 
+        Examples
+        --------
+        >>> from sklearn.datasets import make_regression
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import train_test_split
+        >>> from skore import ComparisonReport, EstimatorReport
+        >>> X, y = make_regression(n_features=3, random_state=0)
+        >>> split_data = train_test_split(X=X, y=y, shuffle=False, as_dict=True)
+        >>> report_big_alpha = EstimatorReport(Ridge(alpha=1e3), **split_data)
+        >>> report_small_alpha = EstimatorReport(Ridge(alpha=1e-3), **split_data)
+        >>> report = ComparisonReport({
+        ...     "small alpha": report_small_alpha,
+        ...     "big alpha": report_big_alpha,
+        ... })
+        >>> report.inspection.permutation_importance(
+        ...    n_repeats=2,
+        ...    seed=0,
+        ... ).frame(aggregate=None)
+             estimator data_source metric     feature  repetition     value
+        0  small alpha        test     r2  Feature #0           1  0.41...
+        1  small alpha        test     r2  Feature #1           1  1.16...
+        2  small alpha        test     r2  Feature #2           1  0.01...
+        3  small alpha        test     r2  Feature #0           2  0.73...
+        4  small alpha        test     r2  Feature #1           2  0.90...
+        5  small alpha        test     r2  Feature #2           2  0.01...
+        6    big alpha        test     r2  Feature #0           1  0.03...
+        7    big alpha        test     r2  Feature #1           1  0.10...
+        8    big alpha        test     r2  Feature #2           1  0.00...
+        9    big alpha        test     r2  Feature #0           2  0.05...
+        10   big alpha        test     r2  Feature #1           2  0.07...
+        11   big alpha        test     r2  Feature #2           2 -0.00...
+
+        >>> report.inspection.permutation_importance(
+        ...    metric=["r2", "neg_mean_squared_error"],
+        ...    n_repeats=2,
+        ...    seed=0,
+        ... ).frame()
+              estimator data_source        metric     feature   value_mean    value_std
+        0   small alpha        test            r2  Feature #0     0.577888     0.226399
+        1   small alpha        test            r2  Feature #1     1.035454     0.180778
+        2   small alpha        test            r2  Feature #2     0.016801     0.003577
+        3   small alpha        test  neg_mean_...  Feature #0  3749.565731  1468.964660
+        4   small alpha        test  neg_mean_...  Feature #1  6718.437884  1172.961272
+        5   small alpha        test  neg_mean_...  Feature #2   109.009650    23.205795
+        6     big alpha        test            r2  Feature #0     0.044482     0.013717
+        7     big alpha        test            r2  Feature #1     0.088916     0.026191
+        8     big alpha        test            r2  Feature #2     0.001826     0.008475
+        9     big alpha        test  neg_mean_...  Feature #0   288.618702    88.998809
+        10    big alpha        test  neg_mean_...  Feature #1   576.924696   169.940308
+        11    big alpha        test  neg_mean_...  Feature #2    11.846779    54.992092
+
         Notes
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
