@@ -70,9 +70,9 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display.plot() # shows plot
         """
         return CoefficientsDisplay._compute_data_for_display(
-            estimators=[self._parent.estimator_],
-            names=[self._parent.estimator_name_],
-            splits=[np.nan],
+            estimator=self._parent.estimator_,
+            name=self._parent.estimator_name_,
+            split=np.nan,
             report_type=self._parent._report_type,
         )
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
@@ -62,14 +63,15 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         7       1  Feature #2       17.1...
         >>> display.plot() # shows plot
         """
-        return CoefficientsDisplay._compute_data_for_display(
-            estimators=[
-                report.estimator_ for report in self._parent.estimator_reports_
-            ],
-            names=[
-                report.estimator_name_ for report in self._parent.estimator_reports_
-            ],
-            splits=list(range(len(self._parent.estimator_reports_))),
+        frames = []
+        for split_idx, report in enumerate(self._parent.estimator_reports_):
+            display = report.inspection.coefficients()
+            df = display.coefficients.copy()
+            df["split"] = split_idx
+            frames.append(df)
+        coefficients = pd.concat(frames, ignore_index=True)
+        return CoefficientsDisplay(
+            coefficients=coefficients,
             report_type=self._parent._report_type,
         )
 
@@ -331,7 +333,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 max_samples=max_samples,
                 n_jobs=n_jobs,
                 seed=seed,
-                report_type="cross-validation",
+                report_type=self._parent._report_type,
             )
 
             if cache_key is not None:
