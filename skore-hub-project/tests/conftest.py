@@ -4,8 +4,8 @@ from importlib import reload
 from unittest.mock import Mock
 from urllib.parse import urljoin
 
-import numpy as np
 from httpx import Client, Response
+from numpy import array
 from pytest import fixture
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
@@ -165,7 +165,7 @@ def small_cv_binary_classification() -> CrossValidationReport:
 def _make_binary_estimator_report_string_labels(*, pos_label=None):
     """Binary classification with string y labels ('negative', 'positive')."""
     X, y = make_classification(random_state=42)
-    labels = np.array(["negative", "positive"])
+    labels = array(["negative", "positive"])
     y = labels[y]
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
@@ -184,7 +184,7 @@ def _make_binary_estimator_report_string_labels(*, pos_label=None):
 def _make_cv_binary_report_string_labels(*, pos_label=None):
     """Cross-validation binary classification with string y labels."""
     X, y = make_classification(random_state=42, n_samples=50)
-    labels = np.array(["negative", "positive"])
+    labels = array(["negative", "positive"])
     y = labels[y]
     report = CrossValidationReport(
         RandomForestClassifier(random_state=42), X, y, splitter=2, pos_label=pos_label
@@ -227,6 +227,10 @@ def nowstr(now):
 
 
 def pytest_configure(config):
+    import logging
+
+    logging.getLogger(name="httpx").setLevel(level=logging.WARNING)
+
     import matplotlib
 
     # Use a non-interactive ``matplotlib.backend`` that can only write to files.

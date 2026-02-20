@@ -11,11 +11,10 @@ from skore_hub_project.artifact.media import (
     PermutationImportanceTrain,
 )
 from skore_hub_project.artifact.serializer import Serializer
+from skore_hub_project.json import dumps
 
 
 def serialize(result) -> bytes:
-    import orjson
-
     if hasattr(result, "frame"):
         # FIXME: in the future, all inspection methods should have an aggregate
         # parameter and we should be sending unaggregated data to the hub.
@@ -24,9 +23,8 @@ def serialize(result) -> bytes:
         else:
             result = result.frame()
 
-    return orjson.dumps(
-        result.infer_objects().fillna("NaN").to_dict(orient="tight"),
-        option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
+    return dumps(
+        result.astype(object).where(result.notna(), "NaN").to_dict(orient="tight")
     )
 
 
