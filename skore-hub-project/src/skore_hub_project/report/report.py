@@ -7,11 +7,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cached_property, partial
 from typing import ClassVar, Generic, TypeVar, cast
 
-from matplotlib import pyplot as plt
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from skore_hub_project import switch_mpl_backend
+from skore_hub_project import console
 from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
@@ -28,6 +27,7 @@ SkinnedProgress = partial(
     ),
     TextColumn("[orange1]{task.percentage:>3.0f}%"),
     TimeElapsedColumn(),
+    console=console,
     transient=True,
 )
 
@@ -110,12 +110,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
         metrics = [metric_cls(report=self.report) for metric_cls in self.METRICS]
 
-        with (
-            switch_mpl_backend(),
-            plt.ioff(),
-            SkinnedProgress() as progress,
-            ThreadPoolExecutor() as pool,
-        ):
+        with SkinnedProgress() as progress, ThreadPoolExecutor() as pool:
             tasks = [
                 pool.submit(lambda metric: metric.compute(), metric)
                 for metric in metrics
@@ -123,7 +118,10 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
             for task in progress.track(
                 as_completed(tasks),
-                description=f"Computing {self.report.__class__.__name__} metrics",
+                description=(
+                    f"Computing {self.report.__class__.__name__} "
+                    f"#{self.report._hash} metrics"
+                ),
                 total=len(tasks),
             ):
                 task.result()
@@ -144,8 +142,15 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         """
         payloads = []
 
-        with switch_mpl_backend(), plt.ioff():
-            for media_cls in self.MEDIAS:
+        with SkinnedProgress() as progress:
+            for media_cls in progress.track(
+                self.MEDIAS,
+                description=(
+                    f"Computing/uploading {self.report.__class__.__name__} "
+                    f"#{self.report._hash} media"
+                ),
+                total=len(self.MEDIAS),
+            ):
                 payload = media_cls(project=self.project, report=self.report)
 
                 if payload.checksum is not None:
