@@ -11,8 +11,12 @@ from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.artifact.media import (
     EstimatorHtmlRepr,
+    PrecisionRecallDataFrameTest,
+    PrecisionRecallDataFrameTrain,
     PrecisionRecallSVGTest,
     PrecisionRecallSVGTrain,
+    RocDataFrameTest,
+    RocDataFrameTrain,
     RocSVGTest,
     RocSVGTrain,
 )
@@ -367,8 +371,12 @@ class TestCrossValidationReportPayload:
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
             EstimatorHtmlRepr,
+            PrecisionRecallDataFrameTest,
+            PrecisionRecallDataFrameTrain,
             PrecisionRecallSVGTest,
             PrecisionRecallSVGTrain,
+            RocDataFrameTest,
+            RocDataFrameTrain,
             RocSVGTest,
             RocSVGTrain,
             TableReport,

@@ -11,10 +11,16 @@ from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.artifact.media import (
     EstimatorHtmlRepr,
+    PrecisionRecallDataFrameTest,
+    PrecisionRecallDataFrameTrain,
     PrecisionRecallSVGTest,
     PrecisionRecallSVGTrain,
+    PredictionErrorDataFrameTest,
+    PredictionErrorDataFrameTrain,
     PredictionErrorSVGTest,
     PredictionErrorSVGTrain,
+    RocDataFrameTest,
+    RocDataFrameTrain,
     RocSVGTest,
     RocSVGTrain,
 )
@@ -127,10 +133,16 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     )
     MEDIAS: ClassVar[tuple[type[Media[CrossValidationReport]], ...]] = (
         EstimatorHtmlRepr,
+        PrecisionRecallDataFrameTest,
+        PrecisionRecallDataFrameTrain,
         PrecisionRecallSVGTest,
         PrecisionRecallSVGTrain,
+        PredictionErrorDataFrameTest,
+        PredictionErrorDataFrameTrain,
         PredictionErrorSVGTest,
         PredictionErrorSVGTrain,
+        RocDataFrameTest,
+        RocDataFrameTrain,
         RocSVGTest,
         RocSVGTrain,
         TableReport,
