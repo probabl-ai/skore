@@ -14,7 +14,7 @@ from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.protocol import Display
 
 
-class Performance(Media[Report], ABC):  # noqa: D101
+class PerformanceSVG(Media[Report], ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["image/svg+xml"] = "image/svg+xml"
 
@@ -43,40 +43,40 @@ class Performance(Media[Report], ABC):  # noqa: D101
         return figure_bytes
 
 
-class PrecisionRecall(Performance[Report], ABC):  # noqa: D101
+class PrecisionRecallSVG(PerformanceSVG[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision_recall"
     name: Literal["precision_recall"] = "precision_recall"
 
 
-class PrecisionRecallTrain(PrecisionRecall[Report]):  # noqa: D101
+class PrecisionRecallSVGTrain(PrecisionRecallSVG[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PrecisionRecallTest(PrecisionRecall[Report]):  # noqa: D101
+class PrecisionRecallSVGTest(PrecisionRecallSVG[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class PredictionError(Performance[Report], ABC):  # noqa: D101
+class PredictionErrorSVG(PerformanceSVG[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.prediction_error"
     name: Literal["prediction_error"] = "prediction_error"
 
 
-class PredictionErrorTrain(PredictionError[Report]):  # noqa: D101
+class PredictionErrorSVGTrain(PredictionErrorSVG[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PredictionErrorTest(PredictionError[Report]):  # noqa: D101
+class PredictionErrorSVGTest(PredictionErrorSVG[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class Roc(Performance[Report], ABC):  # noqa: D101
+class RocSVG(PerformanceSVG[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.roc"
     name: Literal["roc"] = "roc"
 
 
-class RocTrain(Roc[Report]):  # noqa: D101
+class RocSVGTrain(RocSVG[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class RocTest(Roc[Report]):  # noqa: D101
+class RocSVGTest(RocSVG[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"

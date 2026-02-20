@@ -9,12 +9,12 @@ from .inspection import (
 )
 from .model import EstimatorHtmlRepr
 from .performance import (
-    PrecisionRecallTest,
-    PrecisionRecallTrain,
-    PredictionErrorTest,
-    PredictionErrorTrain,
-    RocTest,
-    RocTrain,
+    PrecisionRecallSVGTest,
+    PrecisionRecallSVGTrain,
+    PredictionErrorSVGTest,
+    PredictionErrorSVGTrain,
+    RocSVGTest,
+    RocSVGTrain,
 )
 
 __all__ = [
@@ -23,12 +23,12 @@ __all__ = [
     "ImpurityDecrease",
     "PermutationImportanceTest",
     "PermutationImportanceTrain",
-    "PrecisionRecallTest",
-    "PrecisionRecallTrain",
-    "PredictionErrorTest",
-    "PredictionErrorTrain",
-    "RocTest",
-    "RocTrain",
+    "PrecisionRecallSVGTest",
+    "PrecisionRecallSVGTrain",
+    "PredictionErrorSVGTest",
+    "PredictionErrorSVGTrain",
+    "RocSVGTest",
+    "RocSVGTrain",
     "TableReportTest",
     "TableReportTrain",
 ]

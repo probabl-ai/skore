@@ -11,10 +11,10 @@ from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.artifact.media import (
     EstimatorHtmlRepr,
-    PrecisionRecallTest,
-    PrecisionRecallTrain,
-    RocTest,
-    RocTrain,
+    PrecisionRecallSVGTest,
+    PrecisionRecallSVGTrain,
+    RocSVGTest,
+    RocSVGTrain,
 )
 from skore_hub_project.artifact.media.data import TableReport
 from skore_hub_project.artifact.serializer import Serializer
@@ -367,10 +367,10 @@ class TestCrossValidationReportPayload:
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
             EstimatorHtmlRepr,
-            PrecisionRecallTest,
-            PrecisionRecallTrain,
-            RocTest,
-            RocTrain,
+            PrecisionRecallSVGTest,
+            PrecisionRecallSVGTrain,
+            RocSVGTest,
+            RocSVGTrain,
             TableReport,
         ]
 
