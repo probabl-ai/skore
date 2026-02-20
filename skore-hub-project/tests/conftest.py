@@ -238,7 +238,7 @@ def pytest_configure(config):
 
     import matplotlib.pyplot as plt
 
-    plt.use("agg")
+    plt.switch_backend("agg")
 
 
 @fixture
