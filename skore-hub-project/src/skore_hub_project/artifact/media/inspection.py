@@ -64,11 +64,11 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
         return None
 
 
-class PermutationImportanceTrain(PermutationImportance):  # noqa: D101
+class PermutationImportanceTrain(PermutationImportance[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PermutationImportanceTest(PermutationImportance):  # noqa: D101
+class PermutationImportanceTest(PermutationImportance[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
