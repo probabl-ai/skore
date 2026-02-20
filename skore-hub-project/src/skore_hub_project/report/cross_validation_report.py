@@ -10,7 +10,11 @@ from scipy.stats import gaussian_kde
 from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.artifact.media import (
+    Coefficients,
     EstimatorHtmlRepr,
+    ImpurityDecrease,
+    PermutationImportanceTest,
+    PermutationImportanceTrain,
     PrecisionRecallTest,
     PrecisionRecallTrain,
     PredictionErrorTest,
@@ -126,7 +130,11 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         PredictTimeTrainStd,
     )
     MEDIAS: ClassVar[tuple[type[Media[CrossValidationReport]], ...]] = (
+        Coefficients,
         EstimatorHtmlRepr,
+        ImpurityDecrease,
+        PermutationImportanceTest,
+        PermutationImportanceTrain,
         PrecisionRecallTest,
         PrecisionRecallTrain,
         PredictionErrorTest,
