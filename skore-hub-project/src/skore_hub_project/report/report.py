@@ -125,6 +125,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
                 total=len(tasks),
             ):
                 task.result()
+                progress.refresh()
 
         return [metric for metric in metrics if metric.value is not None]
 
@@ -155,6 +156,8 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
                 if payload.checksum is not None:
                     payloads.append(payload)
+
+                progress.refresh()
 
         return payloads
 

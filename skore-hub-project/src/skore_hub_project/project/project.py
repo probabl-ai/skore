@@ -296,8 +296,9 @@ class Project:
                 console=console,
             ) as progress,
         ):
-            progress.add_task(
-                description=f"[cyan]Putting [bold bright_white on cyan]{key}"
+            task = progress.add_task(
+                description=f"[cyan]Putting [bold bright_white on cyan]{key}",
+                total=1,
             )
 
             payload_dict = payload.model_dump()
@@ -312,6 +313,9 @@ class Project:
                         "Content-Type": "application/json",
                     },
                 )
+
+            progress.advance(task)
+            progress.refresh()
 
         report_url = f"{self.__frontend_url}/{frontend_slug}/{response.json()['id']}"
         console.print(f"Consult your report at [link={report_url}]{report_url}[/link]")
