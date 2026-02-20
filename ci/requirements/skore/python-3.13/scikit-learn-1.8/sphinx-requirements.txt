@@ -413,6 +413,7 @@ sphinx==8.1.3
     #   sphinx-copybutton
     #   sphinx-design
     #   sphinx-gallery
+    #   sphinx-issues
     #   sphinx-tabs
 sphinx-autosummary-accessors==2025.3.1
     # via skore (skore/pyproject.toml)
@@ -421,6 +422,8 @@ sphinx-copybutton==0.5.2
 sphinx-design==0.7.0
     # via skore (skore/pyproject.toml)
 sphinx-gallery==0.20.0
+    # via skore (skore/pyproject.toml)
+sphinx-issues==5.0.1
     # via skore (skore/pyproject.toml)
 sphinx-tabs==3.5.0
     # via skore (skore/pyproject.toml)

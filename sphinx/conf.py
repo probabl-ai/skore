@@ -41,6 +41,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
+    "sphinx_issues",
     "sphinx_tabs.tabs",
     # Custom extensions
     "generate_accessor_tables",
@@ -234,9 +235,5 @@ html_sidebars = {
 copybutton_prompt_text = r">>> |\.\.\. |\$ "
 copybutton_prompt_is_regexp = True
 
-# -- Options for github link for what's new -----------------------------------
-
-# Config for sphinx_issues
-issues_uri = "https://github.com/probabl-ai/skore/issues/{issue}"
+# sphinx-issues config
 issues_github_path = "probabl-ai/skore"
-issues_user_uri = "https://github.com/{user}"
