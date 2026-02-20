@@ -70,9 +70,9 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display.plot() # shows plot
         """
         return CoefficientsDisplay._compute_data_for_display(
-            estimators=[self._parent.estimator_],
-            names=[self._parent.estimator_name_],
-            splits=[np.nan],
+            estimator=self._parent.estimator_,
+            name=self._parent.estimator_name_,
+            split=np.nan,
             report_type=self._parent._report_type,
         )
 
@@ -112,9 +112,9 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         4  Feature #4     0.02...
         """
         return ImpurityDecreaseDisplay._compute_data_for_display(
-            estimators=[self._parent.estimator_],
-            names=[self._parent.estimator_name_],
-            splits=[np.nan],
+            estimator=self._parent.estimator_,
+            name=self._parent.estimator_name_,
+            split=np.nan,
             report_type=self._parent._report_type,
         )
 
@@ -338,11 +338,11 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if display is None:
             display = PermutationImportanceDisplay._compute_data_for_display(
                 data_source=data_source,
-                estimators=[self._parent.estimator_],
-                names=[self._parent.estimator_name_],
-                splits=[np.nan],
-                Xs=[X_],
-                ys=[y_true],
+                estimator=self._parent.estimator_,
+                name=self._parent.estimator_name_,
+                split=np.nan,
+                X=X_,
+                y=y_true,
                 at_step=at_step,
                 metric=metric,
                 n_repeats=n_repeats,

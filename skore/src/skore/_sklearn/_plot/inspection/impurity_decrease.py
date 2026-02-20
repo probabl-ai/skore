@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import Any, Literal
 
 import pandas as pd
@@ -87,23 +86,23 @@ class ImpurityDecreaseDisplay(DisplayMixin):
     def _compute_data_for_display(
         cls,
         *,
-        estimators: Sequence[BaseEstimator],
-        names: list[str],
-        splits: list[int | float],
+        estimator: BaseEstimator,
+        name: str,
+        split: int | float,
         report_type: ReportType,
     ) -> ImpurityDecreaseDisplay:
-        """Compute the data for the display.
+        """Compute the data for the display from a single estimator.
 
         Parameters
         ----------
-        estimators : list of estimator
-            The estimators to compute the data for.
+        estimator : estimator
+            The estimator to compute the data for.
 
-        names : list of str
-            The names of the estimators.
+        name : str
+            The name of the estimator.
 
-        splits : list of int or np.nan
-            The splits to compute the data for.
+        split : int or float
+            The split index (use np.nan for single-estimator reports).
 
         report_type : {"estimator", "cross-validation", "comparison-estimator", \
                 "comparison-cross-validation"}
@@ -114,29 +113,22 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         ImpurityDecreaseDisplay
             The data for the display.
         """
-        feature_names, est_names, importances_list, split_indices = [], [], [], []
-        for estimator, name, split in zip(estimators, names, splits, strict=True):
-            if isinstance(estimator, Pipeline):
-                preprocessor, predictor = estimator[:-1], estimator[-1]
-            else:
-                preprocessor, predictor = None, estimator
+        if isinstance(estimator, Pipeline):
+            preprocessor, predictor = estimator[:-1], estimator[-1]
+        else:
+            preprocessor, predictor = None, estimator
 
-            n_features = predictor.feature_importances_.shape[0]
-            feat_names = _get_feature_names(
-                predictor, transformer=preprocessor, n_features=n_features
-            )
-
-            feature_names.extend(feat_names)
-            est_names.extend([name] * len(feat_names))
-            importances_list.extend(predictor.feature_importances_.tolist())
-            split_indices.extend([split] * len(feat_names))
+        n_features = predictor.feature_importances_.shape[0]
+        feat_names = _get_feature_names(
+            predictor, transformer=preprocessor, n_features=n_features
+        )
 
         importances = pd.DataFrame(
             {
-                "estimator": est_names,
-                "split": split_indices,
-                "feature": feature_names,
-                "importance": importances_list,
+                "estimator": [name] * n_features,
+                "split": [split] * n_features,
+                "feature": feat_names,
+                "importance": predictor.feature_importances_.tolist(),
             }
         )
 
