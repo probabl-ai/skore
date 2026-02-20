@@ -14,3 +14,4 @@
    auto_examples/index
    reference/index
    contributing
+   changelog
