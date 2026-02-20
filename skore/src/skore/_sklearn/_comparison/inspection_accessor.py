@@ -306,6 +306,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_regression
         >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.metrics import make_scorer, r2_score, mean_squared_error
         >>> from skore import train_test_split
         >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_regression(n_features=3, random_state=0)
@@ -335,23 +336,26 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         11   big alpha        test     r2  Feature #2           2 -0.00...
 
         >>> report.inspection.permutation_importance(
-        ...    metric=["r2", "neg_mean_squared_error"],
+        ...    metric={
+        ...        "r2": make_scorer(r2_score),
+        ...        "mse": make_scorer(mean_squared_error),
+        ...    },
         ...    n_repeats=2,
         ...    seed=0,
         ... ).frame()
-              estimator data_source        metric     feature   value_mean    value_std
-        0   small alpha        test            r2  Feature #0     0.577888     0.226399
-        1   small alpha        test            r2  Feature #1     1.035454     0.180778
-        2   small alpha        test            r2  Feature #2     0.016801     0.003577
-        3   small alpha        test  neg_mean_...  Feature #0  3749.565731  1468.964660
-        4   small alpha        test  neg_mean_...  Feature #1  6718.437884  1172.961272
-        5   small alpha        test  neg_mean_...  Feature #2   109.009650    23.205795
-        6     big alpha        test            r2  Feature #0     0.044482     0.013717
-        7     big alpha        test            r2  Feature #1     0.088916     0.026191
-        8     big alpha        test            r2  Feature #2     0.001826     0.008475
-        9     big alpha        test  neg_mean_...  Feature #0   288.618702    88.998809
-        10    big alpha        test  neg_mean_...  Feature #1   576.924696   169.940308
-        11    big alpha        test  neg_mean_...  Feature #2    11.846779    54.992092
+              estimator data_source  metric  ...   value_mean    value_std
+        0   small alpha        test      r2  ...     0.577888     0.226399
+        1   small alpha        test      r2  ...     1.035454     0.180778
+        2   small alpha        test      r2  ...     0.016801     0.003577
+        3   small alpha        test     mse  ...  3749.565731  1468.964660
+        4   small alpha        test     mse  ...  6718.437884  1172.961272
+        5   small alpha        test     mse  ...   109.009650    23.205795
+        6     big alpha        test      r2  ...     0.044482     0.013717
+        7     big alpha        test      r2  ...     0.088916     0.026191
+        8     big alpha        test      r2  ...     0.001826     0.008475
+        9     big alpha        test     mse  ...   288.618702    88.998809
+        10    big alpha        test     mse  ...   576.924696   169.940308
+        11    big alpha        test     mse  ...    11.846779    54.992092
 
         Notes
         -----

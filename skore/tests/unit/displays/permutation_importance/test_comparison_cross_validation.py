@@ -15,13 +15,10 @@ from sklearn.metrics import make_scorer, precision_score, r2_score
 def test_invalid_subplot_by(pyplot, task, request):
     report = request.getfixturevalue(f"comparison_cross_validation_reports_{task}")
     display = report.inspection.permutation_importance(seed=0, n_repeats=2)
+    valid_values = ["estimator", "split", "auto", "None"]
     err_msg = (
         "The column 'incorrect' is not available for subplotting. You can use "
-        f"the following values to create subplots: {
-            ', '.join(
-                ['estimator', 'split', 'auto', 'None'],
-            )
-        }"
+        f"the following values to create subplots: {', '.join(valid_values)}"
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="incorrect")
