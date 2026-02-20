@@ -10,11 +10,10 @@ from sklearn.model_selection import KFold, RepeatedKFold
 from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.artifact.media import (
-    Coefficients,
+    EstimatorHtmlRepr,
     ImpurityDecrease,
     PermutationImportanceTest,
     PermutationImportanceTrain,
-    EstimatorHtmlRepr,
     PrecisionRecallTest,
     PrecisionRecallTrain,
     RocTest,
@@ -370,7 +369,6 @@ class TestCrossValidationReportPayload:
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
-            Coefficients,
             EstimatorHtmlRepr,
             ImpurityDecrease,
             PermutationImportanceTest,
