@@ -81,6 +81,14 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
 
 @fixture
 def payload(project, small_cv_binary_classification):
+    # Force the compute of the permutations
+    small_cv_binary_classification.inspection.permutation_importance(
+        data_source="train", seed=42
+    )
+    small_cv_binary_classification.inspection.permutation_importance(
+        data_source="test", seed=42
+    )
+
     return CrossValidationReportPayload(
         project=project,
         report=small_cv_binary_classification,
