@@ -202,11 +202,13 @@ html_theme_options = {
 # template names.
 html_additional_pages = {"index": "index.html"}
 
-# Sphinx remove the sidebar from some pages
+# Remove the sidebar from some pages
 html_sidebars = {
     "index": [],
     "install": [],
     "contributing": [],
+    "changelog": [],
+    "release_process": [],
 }
 
 # Sphinx-Copybutton configuration
