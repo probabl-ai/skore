@@ -11,6 +11,6 @@
 
    install
    user_guide/index
-   auto_examples/index
+   generated/auto_examples/index
    reference/index
    contributing
