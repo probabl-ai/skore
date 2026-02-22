@@ -272,6 +272,66 @@ class Project:
         """
         return self.__project.get(id)
 
+    def __setitem__(
+        self, key: str, report: EstimatorReport | CrossValidationReport
+    ) -> None:
+        """Put a report into the project using dict-like syntax."""
+        self.put(key, report)
+
+    def __getitem__(self, key: str) -> EstimatorReport | CrossValidationReport:
+        """
+        Get a report by its key using dict-like syntax (project["my_model"]).
+
+        Raises
+        ------
+        KeyError
+            If the key does not exist in the project.
+        """
+        if not isinstance(key, str):
+            raise TypeError(f"Key must be a string (found '{type(key)}')")
+
+        # We search the internal storage summary for the matching key
+        for report_meta in self.__project.summarize():
+            if report_meta["key"] == key:
+                return self.get(report_meta["id"])
+
+        raise KeyError(f"Key '{key}' not found in project '{self.name}'.")
+
+    def delete_item(self, key: str) -> None:
+        """
+        Delete a key-report pair from the project.
+
+        Parameters
+        ----------
+        key : str
+            The key of the report to delete.
+
+        Raises
+        ------
+        KeyError
+            If the key does not exist in the project.
+        NotImplementedError
+            If the current project mode (e.g. 'hub') does not support deletion.
+        """
+        if not hasattr(self.__project, "delete_item"):
+            raise NotImplementedError(
+                f"The current project mode '{self.mode}' does not "
+                "support deleting items."
+            )
+        self.__project.delete_item(key)
+
+    def __delitem__(self, key: str) -> None:
+        """Delete a report using dict-like syntax (del project['my_model'])."""
+        self.delete_item(key)
+
+    def __contains__(self, key: str) -> bool:
+        """Check if a key exists in the project (e.g., 'my_model' in project)."""
+        if not isinstance(key, str):
+            return False
+        return any(
+            report_meta["key"] == key for report_meta in self.__project.summarize()
+        )
+
     def summarize(self) -> Summary:
         """Obtain metadata/metrics for all persisted reports."""
         return Summary.factory(self.__project)
