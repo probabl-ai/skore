@@ -4,6 +4,10 @@ from typing import ClassVar
 
 from skore_hub_project.artifact.media import (
     Coefficients,
+    ConfusionMatrixDataFrameTest,
+    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixSVGTest,
+    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
     ImpurityDecrease,
     PermutationImportanceTest,
@@ -92,6 +96,10 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
     )
     MEDIAS: ClassVar[tuple[type[Media[EstimatorReport]], ...]] = (
         Coefficients,
+        ConfusionMatrixDataFrameTest,
+        ConfusionMatrixDataFrameTrain,
+        ConfusionMatrixSVGTest,
+        ConfusionMatrixSVGTrain,
         EstimatorHtmlRepr,
         ImpurityDecrease,
         PermutationImportanceTest,

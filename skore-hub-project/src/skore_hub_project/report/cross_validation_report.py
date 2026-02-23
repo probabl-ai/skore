@@ -10,6 +10,10 @@ from scipy.stats import gaussian_kde
 from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.artifact.media import (
+    ConfusionMatrixDataFrameTest,
+    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixSVGTest,
+    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
     PrecisionRecallDataFrameTest,
     PrecisionRecallDataFrameTrain,
@@ -132,6 +136,10 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         PredictTimeTrainStd,
     )
     MEDIAS: ClassVar[tuple[type[Media[CrossValidationReport]], ...]] = (
+        ConfusionMatrixDataFrameTest,
+        ConfusionMatrixDataFrameTrain,
+        ConfusionMatrixSVGTest,
+        ConfusionMatrixSVGTrain,
         EstimatorHtmlRepr,
         PrecisionRecallDataFrameTest,
         PrecisionRecallDataFrameTrain,

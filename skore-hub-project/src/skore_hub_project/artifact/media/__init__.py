@@ -9,6 +9,10 @@ from .inspection import (
 )
 from .model import EstimatorHtmlRepr
 from .performance import (
+    ConfusionMatrixDataFrameTest,
+    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixSVGTest,
+    ConfusionMatrixSVGTrain,
     PrecisionRecallDataFrameTest,
     PrecisionRecallDataFrameTrain,
     PrecisionRecallSVGTest,
@@ -25,6 +29,10 @@ from .performance import (
 
 __all__ = [
     "Coefficients",
+    "ConfusionMatrixDataFrameTest",
+    "ConfusionMatrixDataFrameTrain",
+    "ConfusionMatrixSVGTest",
+    "ConfusionMatrixSVGTrain",
     "EstimatorHtmlRepr",
     "ImpurityDecrease",
     "PermutationImportanceTest",
