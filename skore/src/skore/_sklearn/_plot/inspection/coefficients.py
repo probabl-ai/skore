@@ -732,16 +732,16 @@ class CoefficientsDisplay(DisplayMixin):
 
         coef_data = np.concatenate([intercept, coef])
 
-        feat_names = ["Intercept"] + _get_feature_names(
+        feature_names = ["Intercept"] + _get_feature_names(
             predictor, transformer=preprocessor, n_features=coef.shape[0]
         )
-        n_features = len(feat_names)
+        n_features = len(feature_names)
 
         index = pd.DataFrame(
             {
                 "estimator": [name] * n_features,
                 "split": [split] * n_features,
-                "feature": feat_names,
+                "feature": feature_names,
             }
         )
 

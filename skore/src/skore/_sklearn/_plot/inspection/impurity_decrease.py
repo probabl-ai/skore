@@ -119,7 +119,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             preprocessor, predictor = None, estimator
 
         n_features = predictor.feature_importances_.shape[0]
-        feat_names = _get_feature_names(
+        feature_names = _get_feature_names(
             predictor, transformer=preprocessor, n_features=n_features
         )
 
@@ -127,7 +127,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             {
                 "estimator": [name] * n_features,
                 "split": [split] * n_features,
-                "feature": feat_names,
+                "feature": feature_names,
                 "importance": predictor.feature_importances_.tolist(),
             }
         )
