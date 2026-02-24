@@ -275,21 +275,18 @@ class Project:
                 experiment_ids=[self.experiment_id],
                 output_format="list",
                 order_by=["attributes.start_time ASC"],
-                filter_string='tags.skore_version != ""'
+                filter_string='tags.skore_version != ""',
             ),
         )
 
-        return [
-            self._run_to_metadata(run)
-            for run in runs
-        ]
+        return [self._run_to_metadata(run) for run in runs]
 
     @staticmethod
     def _run_to_metadata(run: mlflow.ActiveRun) -> Metadata:
         tags = run.data.tags
         metrics = run.data.metrics
         report_type = tags["report_type"]
-        
+
         metadata = {
             "id": run.info.run_id,
             "key": run.info.run_name,
@@ -298,25 +295,28 @@ class Project:
             "learner": tags["learner"],
             "ml_task": tags["ml_task"],
             "dataset": "",  # TODO
-            "fit_time": metrics["fit_time"],
-            "predict_time": metrics["predict_time"],
+            "rmse": None,
+            "log_loss": None,
+            "roc_auc": None,
+            "fit_time": None,
+            "predict_time": None,
+            "rmse_mean": None,
+            "log_loss_mean": None,
+            "roc_auc_mean": None,
+            "fit_time_mean": None,
+            "predict_time_mean": None,
         }
 
         if report_type == "estimator":
-            metadata.update({
+            metrics = {
                 "rmse": run.data.metrics.get("rmse"),
                 "log_loss": run.data.metrics.get("log_loss"),
                 "roc_auc": run.data.metrics.get("roc_auc"),
                 "fit_time": metrics["fit_time"],
                 "predict_time": metrics["predict_time"],
-                "rmse_mean": None,
-                "log_loss_mean": None,
-                "roc_auc_mean": None,
-                "fit_time_mean": None,
-                "predict_time_mean": None,
-            })
+            }
         elif report_type == "cross-validation":
-            metadata.update({
+            metrics = {
                 "rmse_mean": run.data.metrics.get("rmse"),
                 "log_loss_mean": run.data.metrics.get("log_loss"),
                 "roc_auc_mean": run.data.metrics.get("roc_auc"),
@@ -327,10 +327,10 @@ class Project:
                 "roc_auc": None,
                 "fit_time": None,
                 "predict_time": None,
-            })
+            }
         else:
             raise ValueError(f"Unsupported report type: {report_type}")
-        return metadata
+        return cast(Metadata, {**metadata, **metrics})
 
     @staticmethod
     def delete(*, name: str) -> None:

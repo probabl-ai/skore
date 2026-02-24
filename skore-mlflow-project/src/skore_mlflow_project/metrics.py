@@ -45,14 +45,14 @@ REG_METRICS = {
 # mappings per task type:
 METRICS = {
     "binary-classification": CLF_METRICS,
-    "binary-classification": CLF_METRICS,
+    "multiclass-classification": CLF_METRICS,
     "regression": REG_METRICS,
     "multioutput-regression": REG_METRICS,
 }
 
 PLOTS = {
     "binary-classification": ["confusion_matrix", "roc", "precision_recall"],
-    "binary-classification": ["confusion_matrix", "roc", "precision_recall"],
+    "multiclass-classification": ["confusion_matrix", "roc", "precision_recall"],
     "regression": ["prediction_error"],
     "multioutput-regression": [],
 }
@@ -93,8 +93,8 @@ def iter_cv_metrics(
         continue
 
     timings = report_any.metrics.timings()
-    fit_time = timings.loc["Fit time (s)"].loc['mean']
-    predict_time = timings.loc['Predict time test (s)'].loc['mean']
+    fit_time = timings.loc["Fit time (s)"].loc["mean"]
+    predict_time = timings.loc["Predict time test (s)"].loc["mean"]
     yield Metric("fit_time", fit_time)
     yield Metric("predict_time", predict_time)
     yield Artifact("timings", report_any.metrics.timings())
