@@ -1,4 +1,6 @@
 import os
+import shutil
+from pathlib import Path
 
 from pytest import fixture
 
@@ -11,9 +13,15 @@ from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 
 
+@fixture(scope="session", autouse=True)
+def cleanup_mlruns():
+    yield
+    shutil.rmtree(Path.cwd() / "mlruns", ignore_errors=True)
+
+
 @fixture(scope="module")
 def regression() -> EstimatorReport:
-    X, y = make_regression(random_state=42)
+    X, y = make_regression(random_state=42, n_features=10)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
