@@ -20,11 +20,11 @@ repos:
     hooks:
 
       - id: ruff-check
-        files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
+        files: ^((skore|skore-hub-project|skore-local-project|skore-mlflow-project)/(hatch|src|tests))|(examples)/
         args: [--fix, --extend-select, I]
 
       - id: ruff-format
-        files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
+        files: ^((skore|skore-hub-project|skore-local-project|skore-mlflow-project)/(hatch|src|tests))|(examples)/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.19.1
@@ -70,3 +70,11 @@ repos:
         files: ^skore-local-project/
         args: [--config-file=skore-local-project/pyproject.toml, skore-local-project]
         additional_dependencies: [skore]
+
+      - id: mypy
+        pass_filenames: false
+        alias: mypy-skore-mlflow-project
+        name: mypy skore-mlflow-project/
+        files: ^skore-mlflow-project/
+        args: [--config-file=skore-mlflow-project/pyproject.toml, skore-mlflow-project]
+        additional_dependencies: [skore, mlflow]

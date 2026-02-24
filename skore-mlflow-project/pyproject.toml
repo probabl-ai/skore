@@ -1,0 +1,113 @@
+[project]
+name = "skore-mlflow-project"
+dynamic = ["license-files", "readme", "version"]
+requires-python = ">=3.10"
+maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
+license = "MIT"
+dependencies = [
+  "joblib",
+  "mlflow",
+  "rich>=14.2.0",
+]
+
+[project.optional-dependencies]
+test = [
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "pytest-order",
+  "pytest-randomly",
+  "pytest-xdist",
+  "skore>=0.12",
+  "xdoctest",
+]
+
+[project.entry-points."skore.plugins.project"]
+mlflow = "skore_mlflow_project:Project"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata.hooks.custom]
+path = "hatch/metadata.py"
+version-default = "0.0.0+unknown"
+license = { "file" = "../LICENSE" }
+readme = { "file" = "../README.md" }
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/", "hatch/"]
+
+[tool.hatch.build.targets.wheel]
+package = ["src/skore_mlflow_project/"]
+
+[tool.pytest.ini_options]
+addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
+  "--xdoctest",
+  "--import-mode=importlib",
+  "--no-header",
+  "--verbosity=2",
+  "--dist=loadscope",
+  "--durations=25",
+]
+xfail_strict = true
+filterwarnings = ["error"]
+log_cli_level = "info"
+
+[tool.coverage.run]
+branch = true
+source = ["skore_mlflow_project"]
+concurrency = ["thread", "multiprocessing"]
+parallel = true
+
+[tool.coverage.report]
+omit = ["src/*", "tests/*"]
+show_missing = true
+exclude_also = [
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.ruff.lint]
+select = [
+    "B",
+    "C4",
+    "T10",
+    "T20",
+    "PYI055", "PYI059",
+    "PT003", "PT014",
+    "SIM",
+    "I",
+    "PERF",
+    "E",
+    "D",
+    "F",
+    "UP",
+    "RUF010", "RUF015",
+]
+ignore = ["PERF203"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+
+[tool.mypy]
+exclude = ["hatch/", "tests/"]
+strict = true
+
+[[tool.mypy.overrides]]
+follow_untyped_imports = true
+module = ["skore.*"]
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = [
+  "joblib.*",
+  "mlflow.*",
+]
