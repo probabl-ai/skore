@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import warnings
 from datetime import UTC, datetime
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, TypedDict, cast
 
 import mlflow
 import mlflow.sklearn
+from joblib import dump as joblib_dump
 from joblib import hash
+from joblib import load as joblib_load
+from mlflow.exceptions import MlflowException
 
 from .protocol import CrossValidationReport, EstimatorReport
 
@@ -174,6 +179,24 @@ class Project:
                     mlflow.sklearn.log_model(
                         sk_model=self.model(report), artifact_path="model"
                     )
+
+            with TemporaryDirectory() as tmp_dir:
+                pickle_path = Path(tmp_dir) / "report.pkl"
+                joblib_dump(report, pickle_path)
+                mlflow.log_artifact(local_path=str(pickle_path), artifact_path="report")
+
+    def get(self, id: str) -> EstimatorReport | CrossValidationReport:
+        """Get a persisted report by its MLflow run id."""
+        try:
+            pickle_path = mlflow.artifacts.download_artifacts(
+                run_id=id,
+                artifact_path="report/report.pkl",
+                tracking_uri=self.tracking_uri,
+            )
+        except MlflowException as exc:
+            raise KeyError(id) from exc
+
+        return cast(EstimatorReport | CrossValidationReport, joblib_load(pickle_path))
 
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted models in insertion order."""

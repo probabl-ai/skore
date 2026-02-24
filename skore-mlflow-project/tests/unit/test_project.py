@@ -32,16 +32,23 @@ class TestProject:
         assert summary[0]["report_type"] == "estimator"
         assert summary[0]["dataset"]
 
-    @pytest.mark.xfail
     def test_get(self, tmp_path, regression):
         project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
         project.put("<key>", regression)
 
         summary = project.summarize()
-        model = project.get(summary[0]["id"])
-        predictions = model.predict(regression.X_test)
+        report = project.get(summary[0]["id"])
+        predictions = report.estimator_.predict(regression.X_test)
+        expected_predictions = regression.estimator_.predict(regression.X_test)
 
         assert len(predictions) == len(regression.X_test)
+        assert predictions == pytest.approx(expected_predictions)
+
+    def test_get_unknown_id(self, tmp_path):
+        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
+
+        with pytest.raises(KeyError):
+            project.get("missing-run-id")
 
     def test_delete(self, tmp_path):
         tracking_uri = self.tracking_uri(tmp_path)
