@@ -229,10 +229,10 @@ jobs:
         timeout-minutes: 60
         run: make html
         env:
-          SKORE_HUB_API_KEY: ${{ secrets.DOCUMENTATION_EXAMPLE_API_KEY }}
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
           SPHINX_DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
+          SPHINX_EXAMPLE_API_KEY: ${{ secrets.DOCUMENTATION_EXAMPLE_API_KEY }}
           SPHINX_EXAMPLE_WORKSPACE: ${{ vars.DOCUMENTATION_EXAMPLE_WORKSPACE }}
           SPHINX_EXAMPLE_PROJECT: project-${{ SPHINX_VERSION }}
           SPHINX_EXAMPLE_PROJECT_URL: ${{ vars.HUB_URL }}/${{ SPHINX_EXAMPLE_WORKSPACE }}/${{ SPHINX_EXAMPLE_PROJECT }}
