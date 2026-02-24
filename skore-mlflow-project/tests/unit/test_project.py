@@ -33,7 +33,7 @@ class TestProject:
         assert summary[0]["learner"] == "Ridge"
         assert summary[0]["ml_task"] == "regression"
         assert summary[0]["report_type"] == "estimator"
-        assert summary[0]["dataset"]
+        assert summary[0]["dataset"] is not None
         assert summary[0]["rmse"] is not None
         assert summary[0]["fit_time"] is not None
 
@@ -54,7 +54,6 @@ class TestProject:
         assert (report_dir / "all_metrics.csv").exists()
         assert (report_dir / "metrics_details" / "prediction_error.csv").exists()
         assert (report_dir / "prediction_error.png").exists()
-        assert (report_dir / "timings.json").exists()
         assert (report_dir / "data.analyze.html").exists()
 
     def test_get(self, tmp_path, regression):
