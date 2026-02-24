@@ -1,4 +1,10 @@
+import os
+
 from pytest import fixture
+
+# TODO: remove once I finished iterating with codex.
+os.environ.setdefault("JOBLIB_MULTIPROCESSING", "0")
+
 from sklearn.datasets import make_regression
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split

@@ -9,7 +9,6 @@ from typing import Any, Protocol, runtime_checkable
 class EstimatorReport(Protocol):
     """Protocol equivalent to ``skore.EstimatorReport``."""
 
-    _report_type: str
     ml_task: str
     estimator_: Any
     estimator_name_: str
@@ -20,7 +19,6 @@ class EstimatorReport(Protocol):
 class CrossValidationReport(Protocol):
     """Protocol equivalent to ``skore.CrossValidationReport``."""
 
-    _report_type: str
     ml_task: str
     estimator_: Any
     estimator_name_: str

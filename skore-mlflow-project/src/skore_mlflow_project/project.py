@@ -37,9 +37,6 @@ def report_type(
     report: EstimatorReport | CrossValidationReport,
 ) -> str:
     """Human readable type of a report."""
-    if hasattr(report, "_report_type"):
-        return report._report_type
-
     if isinstance(report, CrossValidationReport):
         return "cross-validation"
     if isinstance(report, EstimatorReport):
