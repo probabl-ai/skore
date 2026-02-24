@@ -44,12 +44,7 @@ Data
 The `data` accessor helps you to get insights about the dataset used in the
 cross-validation.
 
-.. autosummary::
-    :toctree: ../api/
-    :template: autosummary/accessor_method.rst
-
-    CrossValidationReport.data.help
-    CrossValidationReport.data.analyze
+.. include:: ../api/CrossValidationReport.data.inc
 
 
 .. _cross_validation_metrics:
@@ -60,27 +55,7 @@ Metrics
 The `metrics` accessor helps you to evaluate the statistical performance of your
 estimator across cross-validation splits.
 
-.. autosummary::
-    :toctree: ../api/
-    :template: autosummary/accessor_method.rst
-
-    CrossValidationReport.metrics.help
-    CrossValidationReport.metrics.summarize
-
-    CrossValidationReport.metrics.accuracy
-    CrossValidationReport.metrics.brier_score
-    CrossValidationReport.metrics.confusion_matrix
-    CrossValidationReport.metrics.custom_metric
-    CrossValidationReport.metrics.log_loss
-    CrossValidationReport.metrics.precision
-    CrossValidationReport.metrics.precision_recall
-    CrossValidationReport.metrics.prediction_error
-    CrossValidationReport.metrics.r2
-    CrossValidationReport.metrics.recall
-    CrossValidationReport.metrics.rmse
-    CrossValidationReport.metrics.roc
-    CrossValidationReport.metrics.roc_auc
-    CrossValidationReport.metrics.timings
+.. include:: ../api/CrossValidationReport.metrics.inc
 
 Inspection
 ----------
@@ -88,11 +63,4 @@ Inspection
 The `inspection` accessor helps you inspect your model by e.g. evaluating the importance
 of the features in your model.
 
-.. autosummary::
-    :toctree: ../api/
-    :template: autosummary/accessor_method.rst
-
-    CrossValidationReport.inspection.help
-    CrossValidationReport.inspection.coefficients
-    CrossValidationReport.inspection.impurity_decrease
-    CrossValidationReport.inspection.permutation_importance
+.. include:: ../api/CrossValidationReport.inspection.inc
