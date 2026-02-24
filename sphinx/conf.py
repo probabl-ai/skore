@@ -28,6 +28,12 @@ version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_RELEASE"]
 domain = os.environ["SPHINX_DOMAIN"]
 
+
+# Expose variables to RST
+rst_epilog = f"""
+.. |example_project_url| replace:: {hub_example_url}
+"""
+
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -48,6 +54,7 @@ extensions = [
     "github_link",
     "matplotlib_skore_scraper",
     "report_help",
+    "environ",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
