@@ -5,7 +5,6 @@ from __future__ import annotations
 import itertools
 from collections.abc import Generator
 from dataclasses import dataclass
-from importlib.metadata import version
 from typing import Any, cast
 
 from .metrics import Artifact, iter_cv_metrics, iter_estimator_metrics
@@ -92,8 +91,6 @@ def iter_cv(
     import cloudpickle  # type: ignore[import-untyped]
 
     yield RawDataArtifact("splitter", cloudpickle.dumps(report_any.splitter))
-    yield Tag("skore_version", version("skore"))
-    yield Tag("ml_task", report_any.ml_task)
 
 
 def iter_estimator(
@@ -114,6 +111,3 @@ def iter_estimator(
             yield RawDataArtifact("y_train", report_any.y_train)
         yield RawDataArtifact("X_test", report_any.X_test)
         yield RawDataArtifact("y_test", report_any.y_test)
-
-    yield Tag("skore_version", version("skore"))
-    yield Tag("ml_task", report_any.ml_task)

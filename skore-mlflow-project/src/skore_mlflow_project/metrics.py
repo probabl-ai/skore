@@ -92,7 +92,7 @@ def iter_cv_metrics(
 
         kwargs["aggregate"] = "std"
         std = method(**kwargs).iloc[0, 0]
-        yield Metric(f"{name}.std", std)
+        yield Metric(f"{name}_std", std)
 
     yield Artifact("timings", report_any.metrics.timings())
 

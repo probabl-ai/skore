@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import warnings
 from datetime import UTC, datetime
+from importlib.metadata import version
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, TypedDict, cast
 
+import joblib
 import mlflow
 import mlflow.sklearn
-from joblib import dump as joblib_dump
-from joblib import hash
-from joblib import load as joblib_load
 from mlflow.exceptions import MlflowException
 from mlflow.utils.autologging_utils import disable_discrete_autologging
 
@@ -167,16 +166,6 @@ class Project:
         return self.__experiment_id
 
     @staticmethod
-    def dataset_hash(report: EstimatorReport | CrossValidationReport) -> str:
-        """Compute a deterministic hash of report targets for summary compatibility."""
-        if hasattr(report, "y_test"):
-            return cast(str, hash(report.y_test))
-        if hasattr(report, "y"):
-            return cast(str, hash(report.y))
-
-        return ""
-
-    @staticmethod
     def _log_model(model: Any) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings(
@@ -252,18 +241,17 @@ class Project:
         ):
             mlflow.set_tags(
                 {
-                    "skore.learner": report.estimator_name_,
-                    "skore.ml_task": report.ml_task,
-                    "skore.report_type": report_type(report),
-                    "skore.dataset": self.dataset_hash(report),
-                    "skore.project_name": self.name,
+                    "skore_version": version("skore"),
+                    "report_type": report_type(report),
+                    "ml_task": report.ml_task,
+                    "learner": report.estimator_name_,
                 }
             )
             self._log_iter(iterator, log_sub_iters=False)
 
             with TemporaryDirectory() as tmp_dir:
                 pickle_path = Path(tmp_dir) / "report.pkl"
-                joblib_dump(report, pickle_path)
+                joblib.dump(report, pickle_path)
                 mlflow.log_artifact(local_path=str(pickle_path), artifact_path="report")
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
@@ -277,7 +265,7 @@ class Project:
         except MlflowException as exc:
             raise KeyError(id) from exc
 
-        return cast(EstimatorReport | CrossValidationReport, joblib_load(pickle_path))
+        return cast(EstimatorReport | CrossValidationReport, joblib.load(pickle_path))
 
     @staticmethod
     def _metric(metrics: dict[str, float], *keys: str) -> float | None:
@@ -302,10 +290,10 @@ class Project:
                 "id": run.info.run_id,
                 "key": run.info.run_name,
                 "date": format_date(run.info.start_time),
-                "learner": run.data.tags.get("skore.learner", ""),
-                "ml_task": run.data.tags.get("skore.ml_task", ""),
-                "report_type": run.data.tags.get("skore.report_type", ""),
-                "dataset": run.data.tags.get("skore.dataset", ""),
+                "report_type": run.data.tags["report_type"],
+                "learner": run.data.tags["learner"],
+                "ml_task": run.data.tags["ml_task"],
+                "dataset": "",  # TODO
                 "rmse": self._metric(run.data.metrics, "rmse"),
                 "log_loss": self._metric(run.data.metrics, "log_loss"),
                 "roc_auc": self._metric(run.data.metrics, "roc_auc"),
