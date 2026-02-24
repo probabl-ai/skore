@@ -267,13 +267,6 @@ class Project:
 
         return cast(EstimatorReport | CrossValidationReport, joblib.load(pickle_path))
 
-    @staticmethod
-    def _metric(metrics: dict[str, float], *keys: str) -> float | None:
-        for key in keys:
-            if key in metrics:
-                return metrics[key]
-        return None
-
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted models in insertion order."""
         runs = cast(
@@ -335,6 +328,8 @@ class Project:
                 "fit_time": None,
                 "predict_time": None,
             })
+        else:
+            raise ValueError(f"Unsupported report type: {report_type}")
         return metadata
 
     @staticmethod
