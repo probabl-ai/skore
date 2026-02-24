@@ -14,8 +14,20 @@ from joblib import dump as joblib_dump
 from joblib import hash
 from joblib import load as joblib_load
 from mlflow.exceptions import MlflowException
+from mlflow.utils.autologging_utils import disable_discrete_autologging
 
+from .metrics import Artifact, Metric
 from .protocol import CrossValidationReport, EstimatorReport
+from .reports import Params, RawDataArtifact, Tag, iter_cv, iter_estimator
+
+HTML_UTF8_TEMPLATE = """
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+{html}
+</body>
+"""
 
 
 class Metadata(TypedDict):  # noqa: D101
@@ -38,9 +50,7 @@ class Metadata(TypedDict):  # noqa: D101
     predict_time_mean: float | None
 
 
-def report_type(
-    report: EstimatorReport | CrossValidationReport,
-) -> str:
+def report_type(report: EstimatorReport | CrossValidationReport) -> str:
     """Human readable type of a report."""
     if isinstance(report, CrossValidationReport):
         return "cross-validation"
@@ -59,6 +69,57 @@ def format_date(start_time: int | None) -> str:
         return ""
 
     return datetime.fromtimestamp(start_time / 1_000, tz=UTC).isoformat()
+
+
+def _wrap_html(html: str) -> str:
+    return HTML_UTF8_TEMPLATE.format(html=html)
+
+
+def clean_df(df: Any) -> Any:
+    """Normalize a dataframe-like object before CSV logging."""
+    if not callable(getattr(df, "copy", None)):
+        return df
+
+    df = df.copy(deep=False)
+    columns = getattr(df, "columns", None)
+    if (
+        columns is not None
+        and getattr(columns, "nlevels", 1) > 1
+        and callable(getattr(columns, "droplevel", None))
+    ):
+        df.columns = columns.droplevel(0)
+
+    index = getattr(df, "index", None)
+    is_range_index = index is not None and type(index).__name__ == "RangeIndex"
+    if is_range_index and len(getattr(index, "names", [])) == 1:
+        return df
+
+    if callable(getattr(df, "reset_index", None)):
+        return df.reset_index()
+    return df
+
+
+def log_artifact(artifact: Artifact) -> None:
+    """Log a report artifact."""
+
+    def filename(ext: str) -> str:
+        return f"report/{artifact.name}.{ext}"
+
+    payload = artifact.payload
+    if callable(getattr(payload, "to_csv", None)):
+        csv_text = clean_df(payload).to_csv(index=False)
+        mlflow.log_text(csv_text, filename("csv"))
+    elif callable(getattr(payload, "savefig", None)):
+        mlflow.log_figure(payload, filename("png"))
+    elif isinstance(payload, list):
+        mlflow.log_dict({"values": payload}, filename("json"))
+    elif isinstance(payload, dict):
+        mlflow.log_dict(payload, filename("json"))
+    elif isinstance(payload, str):
+        html_text = _wrap_html(payload)
+        mlflow.log_text(html_text, filename("html"))
+    else:
+        raise TypeError(f"Unexpected artifact payload type: {type(payload)}")
 
 
 class Project:
@@ -85,7 +146,7 @@ class Project:
 
         experiment = mlflow.get_experiment_by_name(name)
         self.__experiment_id = (
-            experiment.experiment_id
+            cast(str, experiment.experiment_id)
             if experiment is not None
             else mlflow.create_experiment(name)
         )
@@ -106,21 +167,6 @@ class Project:
         return self.__experiment_id
 
     @staticmethod
-    def model(report: EstimatorReport | CrossValidationReport) -> Any:
-        """Return the fitted model to store in MLflow."""
-        if hasattr(report, "estimator_"):
-            return report.estimator_
-
-        if hasattr(report, "estimator_reports_"):
-            reports = cast(list[EstimatorReport], report.estimator_reports_)
-            if reports:
-                return reports[0].estimator_
-
-        raise TypeError(
-            f"Could not retrieve a fitted estimator from report type '{type(report)}'."
-        )
-
-    @staticmethod
     def dataset_hash(report: EstimatorReport | CrossValidationReport) -> str:
         """Compute a deterministic hash of report targets for summary compatibility."""
         if hasattr(report, "y_test"):
@@ -129,6 +175,45 @@ class Project:
             return cast(str, hash(report.y))
 
         return ""
+
+    @staticmethod
+    def _log_model(model: Any) -> None:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=".*Any type hint is inferred as AnyType.*",
+                category=UserWarning,
+            )
+            try:
+                mlflow.sklearn.log_model(sk_model=model, name="model")
+            except TypeError:
+                mlflow.sklearn.log_model(sk_model=model, artifact_path="model")
+
+    def _log_iter(self, iterator: Any, *, log_sub_iters: bool) -> None:
+        for obj in iterator:
+            if isinstance(obj, tuple):
+                if not log_sub_iters:
+                    continue
+                # TODO: create nested runs
+                _subrun_name, sub_iter = obj
+                self._log_iter(sub_iter, log_sub_iters=False)
+            elif isinstance(obj, Tag):
+                mlflow.set_tag(obj.key, obj.value)
+            elif isinstance(obj, Params):
+                mlflow.log_params(obj.params)
+            elif isinstance(obj, Metric):
+                mlflow.log_metric(obj.name.replace(".", "_"), obj.value)
+            elif callable(getattr(obj, "fit", None)) and callable(
+                getattr(obj, "get_params", None)
+            ):
+                self._log_model(obj)
+            elif isinstance(obj, Artifact):
+                log_artifact(obj)
+            elif isinstance(obj, RawDataArtifact):
+                # Raw payload logging is intentionally deferred for now.
+                pass
+            else:
+                raise TypeError(type(obj))
 
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
@@ -155,10 +240,18 @@ class Project:
                 f"`skore.CrossValidationReport` (found '{type(report)}')."
             )
 
-        with mlflow.start_run(experiment_id=self.experiment_id, run_name=key):
+        iterator = (
+            iter_estimator(report)
+            if isinstance(report, EstimatorReport)
+            else iter_cv(report)
+        )
+
+        with (
+            disable_discrete_autologging(["sklearn"]),
+            mlflow.start_run(experiment_id=self.experiment_id, run_name=key),
+        ):
             mlflow.set_tags(
                 {
-                    "skore.key": key,
                     "skore.learner": report.estimator_name_,
                     "skore.ml_task": report.ml_task,
                     "skore.report_type": report_type(report),
@@ -166,19 +259,7 @@ class Project:
                     "skore.project_name": self.name,
                 }
             )
-
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    "ignore",
-                    message=".*Any type hint is inferred as AnyType.*",
-                    category=UserWarning,
-                )
-                try:
-                    mlflow.sklearn.log_model(sk_model=self.model(report), name="model")
-                except TypeError:
-                    mlflow.sklearn.log_model(
-                        sk_model=self.model(report), artifact_path="model"
-                    )
+            self._log_iter(iterator, log_sub_iters=False)
 
             with TemporaryDirectory() as tmp_dir:
                 pickle_path = Path(tmp_dir) / "report.pkl"
@@ -198,6 +279,13 @@ class Project:
 
         return cast(EstimatorReport | CrossValidationReport, joblib_load(pickle_path))
 
+    @staticmethod
+    def _metric(metrics: dict[str, float], *keys: str) -> float | None:
+        for key in keys:
+            if key in metrics:
+                return metrics[key]
+        return None
+
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted models in insertion order."""
         runs = cast(
@@ -212,22 +300,30 @@ class Project:
         return [
             {
                 "id": run.info.run_id,
-                "key": run.data.tags.get("skore.key", run.info.run_name or ""),
+                "key": run.info.run_name,
                 "date": format_date(run.info.start_time),
                 "learner": run.data.tags.get("skore.learner", ""),
                 "ml_task": run.data.tags.get("skore.ml_task", ""),
                 "report_type": run.data.tags.get("skore.report_type", ""),
                 "dataset": run.data.tags.get("skore.dataset", ""),
-                "rmse": run.data.metrics.get("rmse"),
-                "log_loss": run.data.metrics.get("log_loss"),
-                "roc_auc": run.data.metrics.get("roc_auc"),
-                "fit_time": run.data.metrics.get("fit_time"),
-                "predict_time": run.data.metrics.get("predict_time"),
-                "rmse_mean": run.data.metrics.get("rmse_mean"),
-                "log_loss_mean": run.data.metrics.get("log_loss_mean"),
-                "roc_auc_mean": run.data.metrics.get("roc_auc_mean"),
-                "fit_time_mean": run.data.metrics.get("fit_time_mean"),
-                "predict_time_mean": run.data.metrics.get("predict_time_mean"),
+                "rmse": self._metric(run.data.metrics, "rmse"),
+                "log_loss": self._metric(run.data.metrics, "log_loss"),
+                "roc_auc": self._metric(run.data.metrics, "roc_auc"),
+                "fit_time": self._metric(run.data.metrics, "fit_time"),
+                "predict_time": self._metric(run.data.metrics, "predict_time"),
+                "rmse_mean": self._metric(run.data.metrics, "rmse_mean", "rmse"),
+                "log_loss_mean": self._metric(
+                    run.data.metrics, "log_loss_mean", "log_loss"
+                ),
+                "roc_auc_mean": self._metric(
+                    run.data.metrics, "roc_auc_mean", "roc_auc"
+                ),
+                "fit_time_mean": self._metric(
+                    run.data.metrics, "fit_time_mean", "fit_time"
+                ),
+                "predict_time_mean": self._metric(
+                    run.data.metrics, "predict_time_mean", "predict_time"
+                ),
             }
             for run in runs
         ]
