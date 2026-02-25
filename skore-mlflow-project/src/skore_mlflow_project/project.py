@@ -280,7 +280,7 @@ def _log_iter(iterator: Iterable[NestedLogItem], *, log_sub_iters: bool) -> None
 def _log_model(model: BaseEstimator) -> None:
     try:
         # MLflow 3.10 emits this warning (and not 3.9), maybe a bug from mlflow's side?
-        with _filterwarnings(UserWarning, "Any type hint is inferred as AnyType"):
+        with _filterwarnings(UserWarning, ".*Any type hint is inferred as AnyType.*"):
             mlflow.sklearn.log_model(model, name="model")
     except TypeError as exc:
         # MLflow < 3 does not support the `name` parameter.
