@@ -16,7 +16,7 @@ cachetools==7.0.1
     # via
     #   mlflow-skinny
     #   mlflow-tracing
-certifi==2026.1.4
+certifi==2026.2.25
     # via requests
 cffi==2.0.0
     # via cryptography
@@ -43,7 +43,7 @@ cryptography==46.0.5
     #   mlflow
 cycler==0.12.1
     # via matplotlib
-databricks-sdk==0.91.0
+databricks-sdk==0.93.0
     # via
     #   mlflow-skinny
     #   mlflow-tracing
@@ -59,7 +59,7 @@ execnet==2.1.2
     # via pytest-xdist
 executing==2.2.1
     # via stack-data
-fastapi==0.131.0
+fastapi==0.133.1
     # via mlflow-skinny
 filelock==3.24.3
     # via virtualenv
@@ -155,7 +155,9 @@ matplotlib-inline==0.2.1
 mdurl==0.1.2
     # via markdown-it-py
 mlflow==3.10.0
-    # via skore-mlflow-project (skore-mlflow-project/pyproject.toml)
+    # via
+    #   --override skore-mlflow-project/overrides.txt
+    #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
 mlflow-skinny==3.10.0
     # via mlflow
 mlflow-tracing==3.10.0
@@ -313,7 +315,7 @@ rich==14.3.3
     #   skore-local-project
 rsa==4.9.1
     # via google-auth
-scikit-learn==1.5.2
+scikit-learn==1.8.0
     # via
     #   --override skore-mlflow-project/overrides.txt
     #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
@@ -341,7 +343,7 @@ skrub==0.7.2
     # via skore
 smmap==5.0.2
     # via gitdb
-sqlalchemy==2.0.46
+sqlalchemy==2.0.47
     # via
     #   alembic
     #   mlflow
@@ -361,7 +363,6 @@ traitlets==5.14.3
 typing-extensions==4.15.0
     # via
     #   alembic
-    #   anyio
     #   anywidget
     #   fastapi
     #   graphene
@@ -372,7 +373,6 @@ typing-extensions==4.15.0
     #   pydantic
     #   pydantic-core
     #   sqlalchemy
-    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via
@@ -386,7 +386,7 @@ urllib3==2.6.3
     #   requests
 uvicorn==0.41.0
     # via mlflow-skinny
-virtualenv==20.38.0
+virtualenv==20.39.1
     # via pre-commit
 wcwidth==0.6.0
     # via
