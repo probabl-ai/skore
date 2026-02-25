@@ -148,8 +148,8 @@ simple_cv_report.data.analyze()
 # using :meth:`~skore.CrossValidationReport.metrics.summarize`:
 
 # %%
-simple_metrics = simple_cv_report.metrics.summarize(favorability=True)
-simple_metrics.frame()
+simple_metrics = simple_cv_report.metrics.summarize()
+simple_metrics.frame(favorability=True)
 
 # %%
 # .. note::
