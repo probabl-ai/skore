@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
@@ -277,19 +278,34 @@ def _log_iter(iterator: Iterable[NestedLogItem], *, log_sub_iters: bool) -> None
 
 
 def _log_model(model: BaseEstimator) -> None:
-    # the fact we have to filter this warning is probably a bug on
-    # MLFlow's side from the very recent 3.10 release.
+    try:
+        # MLflow 3.10 emits this warning (and not 3.9), maybe a bug from mlflow's side?
+        with _filterwarnings(UserWarning, "Any type hint is inferred as AnyType"):
+            mlflow.sklearn.log_model(model, name="model")
+    except TypeError as exc:
+        # MLflow < 3 does not support the `name` parameter.
+        if "unexpected keyword argument 'name'" not in str(exc):
+            raise
+        # MLflow 2.22 emits this warning on Python 3.12 from internal code.
+        with _filterwarnings(DeprecationWarning, r".*utcnow\(\) is deprecated.*"):
+            mlflow.sklearn.log_model(
+                model,
+                artifact_path="model",
+                # Avoid importing MLflow's pyfunc flavor path on MLflow 2, which emits
+                # deprecation warnings with modern pydantic versions:
+                pyfunc_predict_fn="__skore_disabled_pyfunc__",
+            )
+
+
+@contextmanager
+def _filterwarnings(category: type[Warning], msg: str) -> Iterator[None]:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*Any type hint is inferred as AnyType.*",
-            category=UserWarning,
+            message=msg,
+            category=category,
         )
-        # compatibility for different mlflow versions:
-        try:
-            mlflow.sklearn.log_model(model, name="model")
-        except TypeError:
-            mlflow.sklearn.log_model(model, artifact_path="model")
+        yield
 
 
 def _log_artifact(artifact: Artifact) -> None:
