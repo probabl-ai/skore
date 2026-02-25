@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any
 
 import matplotlib.pyplot as plt
 
@@ -63,7 +63,7 @@ def iter_cv_metrics(
 ) -> Generator[Artifact | Metric, Any, None]:
     """Yield metrics/artifacts for a cross-validation report."""
     ml_task = report.ml_task
-    report_any = cast(Any, report)
+    report_any = report
     # NOTE: we could use flat_index=True in summarize, but we have to flatten
     # other frames anyway, so we don't do it here.
     yield Artifact(
@@ -105,7 +105,7 @@ def iter_estimator_metrics(
 ) -> Generator[Artifact | Metric, Any, None]:
     """Yield metrics/artifacts for an estimator report."""
     ml_task = report.ml_task
-    report_any = cast(Any, report)
+    report_any = report
     # NOTE: we could do the same things with data_source="train"
 
     yield Artifact("all_metrics", report_any.metrics.summarize(flat_index=True).frame())

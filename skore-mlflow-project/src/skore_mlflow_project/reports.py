@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import itertools
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import TypeAlias
 
-from .metrics import Artifact, iter_cv_metrics, iter_estimator_metrics
+from sklearn.base import BaseEstimator
+
+from .metrics import Artifact, Metric, iter_cv_metrics, iter_estimator_metrics
 from .protocol import CrossValidationReport, EstimatorReport
 
 
@@ -30,10 +32,14 @@ class Tag:
 class Model:
     """Model payload."""
 
-    model: Any
+    model: BaseEstimator
 
 
-def _safe_param_value(value: Any) -> bool | int | float | str:
+LogItem: TypeAlias = Params | Tag | Model | Artifact | Metric
+NestedLogItem: TypeAlias = LogItem | tuple[str, Iterable[LogItem]]
+
+
+def _safe_param_value(value: object) -> bool | int | float | str:
     if isinstance(value, bool | int | float | str):
         return value
     if value is None:
@@ -41,19 +47,18 @@ def _safe_param_value(value: Any) -> bool | int | float | str:
     return str(value)
 
 
-def iter_cv(report: CrossValidationReport) -> Generator[Any, Any, None]:
+def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, None]:
     """Yield loggable objects for a cross-validation report."""
-    report_any = cast(Any, report)
-    yield from iter_cv_metrics(report_any)
+    yield from iter_cv_metrics(report)
 
-    estimator_report = report_any.create_estimator_report()
-    estimator = estimator_report.estimator
-    yield Params({k: _safe_param_value(v) for k, v in estimator.get_params().items()})
+    estimator_report = report.create_estimator_report()
+    estimator = estimator_report.estimator_
+    yield Params(estimator.get_params())
     yield Model(estimator)
 
-    yield Artifact("data.analyze", report_any.data.analyze()._repr_html_())
+    yield Artifact("data.analyze", report.data.analyze()._repr_html_())
 
-    for split_id, estimator_report in enumerate(report_any.estimator_reports_):
+    for split_id, estimator_report in enumerate(report.estimator_reports_):
         yield (
             f"split_{split_id}",
             itertools.chain(
@@ -63,19 +68,18 @@ def iter_cv(report: CrossValidationReport) -> Generator[Any, Any, None]:
 
     yield Params(
         {
-            "cv_splitter.class": report_any.splitter.__class__.__name__,
-            "cv_splitter.n_splits": report_any.splitter.get_n_splits(),
+            "cv_splitter.class": report.splitter.__class__.__name__,
+            "cv_splitter.n_splits": report.splitter.get_n_splits(),
         }
     )
 
 
-def iter_estimator(report: EstimatorReport) -> Generator[Any, Any, None]:
+def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
     """Yield loggable objects for an estimator report."""
-    report_any = cast(Any, report)
-    yield from iter_estimator_metrics(report_any)
+    yield from iter_estimator_metrics(report)
 
-    estimator = report_any.estimator
-    yield Params({k: _safe_param_value(v) for k, v in estimator.get_params().items()})
+    estimator = report.estimator_
+    yield Params(estimator.get_params())
     yield Model(estimator)
 
-    yield Artifact("data.analyze", report_any.data.analyze()._repr_html_())
+    yield Artifact("data.analyze", report.data.analyze()._repr_html_())

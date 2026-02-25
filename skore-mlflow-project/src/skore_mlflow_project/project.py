@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
@@ -12,12 +13,21 @@ from typing import Any, TypedDict, cast
 import joblib
 import mlflow
 import mlflow.sklearn
+import pandas as pd
 from mlflow.exceptions import MlflowException
 from mlflow.utils.autologging_utils import disable_discrete_autologging
+from sklearn.base import BaseEstimator
 
 from .metrics import Artifact, Metric
 from .protocol import CrossValidationReport, EstimatorReport
-from .reports import Model, Params, Tag, iter_cv, iter_estimator
+from .reports import (
+    Model,
+    NestedLogItem,
+    Params,
+    Tag,
+    iter_cv,
+    iter_estimator,
+)
 
 
 class Metadata(TypedDict):  # noqa: D101
@@ -104,19 +114,6 @@ class Project:
     def experiment_id(self) -> str:
         """The ID of the MLflow experiment."""
         return self.__experiment_id
-
-    @staticmethod
-    def _log_model(model: Any) -> None:
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                message=".*Any type hint is inferred as AnyType.*",
-                category=UserWarning,
-            )
-            try:
-                mlflow.sklearn.log_model(sk_model=model, name="model")
-            except TypeError:
-                mlflow.sklearn.log_model(sk_model=model, artifact_path="model")
 
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
@@ -261,7 +258,7 @@ class Project:
 ## Helpers for logging in MLFlow:
 
 
-def _log_iter(iterator: Any, *, log_sub_iters: bool) -> None:
+def _log_iter(iterator: Iterable[NestedLogItem], *, log_sub_iters: bool) -> None:
     for obj in iterator:
         if isinstance(obj, tuple):
             if not log_sub_iters:
@@ -276,14 +273,53 @@ def _log_iter(iterator: Any, *, log_sub_iters: bool) -> None:
         elif isinstance(obj, Metric):
             mlflow.log_metric(obj.name.replace(".", "_"), obj.value)
         elif isinstance(obj, Model):
-            mlflow.sklearn.log_model(obj.model, name="model")
+            _log_model(obj.model)
         elif isinstance(obj, Artifact):
             _log_artifact(obj)
         else:
             raise TypeError(type(obj))
 
 
-def _clean_df(df: Any) -> Any:
+def _log_model(model: BaseEstimator) -> None:
+    # the fact we have to filter this warning is probably a bug on
+    # MLFlow's side from the very recent 3.10 release.
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*Any type hint is inferred as AnyType.*",
+            category=UserWarning,
+        )
+        # compatibility for different mlflow versions:
+        try:
+            mlflow.sklearn.log_model(model, name="model")
+        except TypeError:
+            mlflow.sklearn.log_model(model, artifact_path="model")
+
+
+def _log_artifact(artifact: Artifact) -> None:
+    """Log a report artifact."""
+
+    def filename(ext: str) -> str:
+        return f"report/{artifact.name}.{ext}"
+
+    payload = artifact.payload
+    if callable(getattr(payload, "to_csv", None)):
+        csv_text = _flatten_df_index(payload).to_csv(index=False)
+        mlflow.log_text(csv_text, filename("csv"))
+    elif callable(getattr(payload, "savefig", None)):
+        mlflow.log_figure(payload, filename("png"))
+    elif isinstance(payload, list):
+        mlflow.log_dict({"values": payload}, filename("json"))
+    elif isinstance(payload, dict):
+        mlflow.log_dict(payload, filename("json"))
+    elif isinstance(payload, str):
+        html_text = _wrap_html(payload)
+        mlflow.log_text(html_text, filename("html"))
+    else:
+        raise TypeError(f"Unexpected artifact payload type: {type(payload)}")
+
+
+def _flatten_df_index(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize a dataframe-like object before CSV logging."""
     if not callable(getattr(df, "copy", None)):
         return df
@@ -305,29 +341,6 @@ def _clean_df(df: Any) -> Any:
     if callable(getattr(df, "reset_index", None)):
         return df.reset_index()
     return df
-
-
-def _log_artifact(artifact: Artifact) -> None:
-    """Log a report artifact."""
-
-    def filename(ext: str) -> str:
-        return f"report/{artifact.name}.{ext}"
-
-    payload = artifact.payload
-    if callable(getattr(payload, "to_csv", None)):
-        csv_text = _clean_df(payload).to_csv(index=False)
-        mlflow.log_text(csv_text, filename("csv"))
-    elif callable(getattr(payload, "savefig", None)):
-        mlflow.log_figure(payload, filename("png"))
-    elif isinstance(payload, list):
-        mlflow.log_dict({"values": payload}, filename("json"))
-    elif isinstance(payload, dict):
-        mlflow.log_dict(payload, filename("json"))
-    elif isinstance(payload, str):
-        html_text = _wrap_html(payload)
-        mlflow.log_text(html_text, filename("html"))
-    else:
-        raise TypeError(f"Unexpected artifact payload type: {type(payload)}")
 
 
 HTML_UTF8_TEMPLATE = """

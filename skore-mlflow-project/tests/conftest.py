@@ -14,14 +14,9 @@ from skore import CrossValidationReport, EstimatorReport
 
 
 @fixture(scope="session", autouse=True)
-def cleanup_mlruns() -> None:
+def cleanup_mlruns():
     yield
-    candidates = {
-        Path.cwd() / "mlruns",
-        Path(__file__).resolve().parent.parent / "mlruns",
-    }
-    for mlruns_path in candidates:
-        shutil.rmtree(mlruns_path, ignore_errors=True)
+    shutil.rmtree(Path.cwd() / "mlruns", ignore_errors=True)
 
 
 @fixture(scope="module")
@@ -44,8 +39,4 @@ def regression() -> EstimatorReport:
 def regression_cv() -> CrossValidationReport:
     X, y = make_regression(random_state=42, n_features=10)
 
-    return CrossValidationReport(
-        Ridge(random_state=42),
-        X=X,
-        y=y,
-    )
+    return CrossValidationReport(Ridge(random_state=42), X=X, y=y, splitter=2)
