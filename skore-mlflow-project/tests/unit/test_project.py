@@ -4,6 +4,12 @@ import mlflow
 import pytest
 
 from skore_mlflow_project import Project
+from skore_mlflow_project.project import format_date
+
+
+def test_format_date() -> None:
+    assert format_date(0) == "1970-01-01T00:00:00+00:00"
+    assert format_date(None) == ""
 
 
 class TestProject:
