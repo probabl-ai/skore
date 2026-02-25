@@ -6,8 +6,8 @@ from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
+import sklearn
 from numpy.typing import ArrayLike, NDArray
-from sklearn import metrics as sklearn_metrics
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
@@ -266,7 +266,7 @@ class _MetricsAccessor(
                 or metric_ in self._score_or_loss_info
             ):
                 try:
-                    metric_ = sklearn_metrics.get_scorer(metric_)
+                    metric_ = sklearn.metrics.get_scorer(metric_)
                 except ValueError as err:
                     raise ValueError(
                         f"Invalid metric: {metric_!r}. "
@@ -729,7 +729,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         score = self._compute_metric_scores(
-            sklearn_metrics.accuracy_score,
+            sklearn.metrics.accuracy_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -859,7 +859,7 @@ class _MetricsAccessor(
             average = "binary"
 
         result = self._compute_metric_scores(
-            sklearn_metrics.precision_score,
+            sklearn.metrics.precision_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -996,7 +996,7 @@ class _MetricsAccessor(
             average = "binary"
 
         result = self._compute_metric_scores(
-            sklearn_metrics.recall_score,
+            sklearn.metrics.recall_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1090,7 +1090,7 @@ class _MetricsAccessor(
         # `pos_label`. Since we get the predictions with `get_response_method`, we
         # can pass any `pos_label`, they will lead to the same result.
         result = self._compute_metric_scores(
-            sklearn_metrics.brier_score_loss,
+            sklearn.metrics.brier_score_loss,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1214,7 +1214,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.roc_auc_score,
+            sklearn.metrics.roc_auc_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1300,7 +1300,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.log_loss,
+            sklearn.metrics.log_loss,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1398,7 +1398,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.r2_score,
+            sklearn.metrics.r2_score,
             X=X,
             y_true=y,
             data_source=data_source,
@@ -1502,7 +1502,7 @@ class _MetricsAccessor(
         in the underlying process.
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.root_mean_squared_error,
+            sklearn.metrics.root_mean_squared_error,
             X=X,
             y_true=y,
             data_source=data_source,
