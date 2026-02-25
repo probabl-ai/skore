@@ -18,9 +18,9 @@ def login(*, mode: ProjectMode = "hub", **kwargs):
 
     It must be called at the top of your script.
 
-    Two storage backends are available and their credentials can be configured using the
-    ``mode`` parameter. Please note that both can be configured in the same script
-    without side-effect.
+    Three storage backends are available and their credentials can be configured
+    using the ``mode`` parameter. Please note that both can be configured in the
+    same script without side-effect.
 
     .. rubric:: Hub mode
 
@@ -36,9 +36,14 @@ def login(*, mode: ProjectMode = "hub", **kwargs):
     Otherwise, it configures the credentials used to communicate with the ``local``
     backend, persisting projects on the user machine.
 
+    .. rubric:: MLflow mode
+
+    For MLflow projects, no explicit authentication step is required by ``skore`` and
+    this function is a no-op.
+
     Parameters
     ----------
-    mode : {"local", "hub"}, default="hub"
+    mode : {"local", "hub", "mlflow"}, default="hub"
         The mode of the storage backend to log in.
     **kwargs : dict
         Extra keyword arguments passed to the login function, depending on its mode.
@@ -54,6 +59,10 @@ def login(*, mode: ProjectMode = "hub", **kwargs):
     """
     if mode == "local":
         logger.debug("Login to local storage.")
+        return
+
+    if mode == "mlflow":
+        logger.debug("Login to MLflow storage.")
         return
 
     logger.debug("Login to hub storage.")

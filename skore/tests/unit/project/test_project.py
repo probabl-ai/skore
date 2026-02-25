@@ -33,8 +33,18 @@ def FakeHubProject():
     return project_factory
 
 
+@fixture
+def FakeMlflowProject():
+    project = Mock()
+    project.summarize = Mock(return_value=[])
+    project_factory = Mock(return_value=project)
+    return project_factory
+
+
 @fixture(autouse=True)
-def monkeypatch_entrypoints(monkeypatch, FakeLocalProject, FakeHubProject):
+def monkeypatch_entrypoints(
+    monkeypatch, FakeLocalProject, FakeHubProject, FakeMlflowProject
+):
     monkeypatch.setattr(
         "skore._project.plugin.entry_points",
         lambda **kwargs: EntryPoints(
@@ -47,6 +57,11 @@ def monkeypatch_entrypoints(monkeypatch, FakeLocalProject, FakeHubProject):
                 FakeEntryPoint(
                     name="hub",
                     value=FakeHubProject,
+                    group="skore.plugins.project",
+                ),
+                FakeEntryPoint(
+                    name="mlflow",
+                    value=FakeMlflowProject,
                     group="skore.plugins.project",
                 ),
             ]
@@ -133,6 +148,19 @@ class TestProject:
             "name": "<name>",
         }
 
+    def test_init_mlflow(self, FakeMlflowProject):
+        project = Project(mode="mlflow", name="<name>", tracking_uri="<uri>")
+
+        assert isinstance(project, Project)
+        assert project._Project__mode == "mlflow"
+        assert project._Project__name == "<name>"
+        assert FakeMlflowProject.called
+        assert not FakeMlflowProject.call_args.args
+        assert FakeMlflowProject.call_args.kwargs == {
+            "name": "<name>",
+            "tracking_uri": "<uri>",
+        }
+
     def test_init_hub_unknown_plugin(self, monkeypatch, tmp_path):
         monkeypatch.undo()
         monkeypatch.setattr(
@@ -184,6 +212,7 @@ class TestProject:
     def test_mode(self):
         assert Project(mode="local", name="<name>").mode == "local"
         assert Project(mode="hub", name="<workspace>/<name>").mode == "hub"
+        assert Project(mode="mlflow", name="<name>").mode == "mlflow"
 
     def test_name(self):
         assert Project(mode="local", name="<name>").name == "<name>"
@@ -333,3 +362,26 @@ class TestProject:
             "workspace": "<workspace>",
             "name": "<name>",
         }
+
+    def test_delete_mlflow(self, FakeMlflowProject):
+        Project.delete(mode="mlflow", name="<name>", tracking_uri="<uri>")
+
+        assert not FakeMlflowProject.called
+        assert FakeMlflowProject.delete.called
+        assert not FakeMlflowProject.delete.call_args.args
+        assert FakeMlflowProject.delete.call_args.kwargs == {
+            "name": "<name>",
+            "tracking_uri": "<uri>",
+        }
+
+    def test_delete_mlflow_with_unexpected_kwargs(self, FakeMlflowProject):
+        with raises(TypeError, match="Unexpected keyword argument\\(s\\): 'workspace'"):
+            Project.delete(
+                mode="mlflow",
+                name="<name>",
+                tracking_uri="<uri>",
+                workspace="<workspace>",
+            )
+
+        assert not FakeMlflowProject.called
+        assert not FakeMlflowProject.delete.called

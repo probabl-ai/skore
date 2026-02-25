@@ -25,8 +25,8 @@ class Project:
     insert a key-report pair into the project, to obtain the metadata/metrics of the
     inserted reports and to get a specific report by its id.
 
-    Two mutually exclusive modes are available and can be configured using the ``mode``
-    parameter of the constructor:
+    Three mutually exclusive modes are available and can be configured using the
+    ``mode`` parameter of the constructor:
 
     .. rubric:: Hub mode
 
@@ -57,13 +57,18 @@ class Project:
     - on Linux, usually ``${HOME}/.local/share/skore``,
     - on macOS, usually ``${HOME}/Library/Application Support/skore``.
 
+    .. rubric:: MLflow mode
+
+    In this mode, ``name`` is used as the MLflow experiment name. Reports are persisted
+    as MLflow model artifacts in runs created under this experiment.
+
     Refer to the :ref:`project` section of the user guide for more details.
 
     Parameters
     ----------
     name : str
         The name of the project.
-    mode : {"hub", "local"}
+    mode : {"hub", "local", "mlflow"}
         The mode of the project.
     **kwargs : dict
         Extra keyword arguments passed to the project, depending on its mode.
@@ -75,7 +80,7 @@ class Project:
     ----------
     name : str
         The name of the project.
-    mode : {"hub", "local"}
+    mode : {"hub", "local", "mlflow"}
         The mode of the project.
     ml_task : MLTask
         The ML task of the project; unset until a first report is put.
@@ -140,6 +145,11 @@ class Project:
     """
 
     __HUB_NAME_PATTERN = re.compile(r"(?P<workspace>[^/]+)/(?P<name>.+)")
+    __DELETE_KWARGS_BY_MODE = {
+        "hub": set(),
+        "local": {"workspace"},
+        "mlflow": {"tracking_uri"},
+    }
 
     @staticmethod
     def __setup_plugin(mode: ProjectMode, name: str) -> tuple[Any, dict]:
@@ -151,10 +161,12 @@ class Project:
                 )
 
             parameters = {"workspace": match["workspace"], "name": match["name"]}
-        elif mode == "local":
+        elif mode == "local" or mode == "mlflow":
             parameters = {"name": name}
         else:
-            raise ValueError(f'`mode` must be "hub" or "local" (found {mode})')
+            raise ValueError(
+                f'`mode` must be "hub", "local" or "mlflow" (found {mode})'
+            )
 
         return plugin.get(group="skore.plugins.project", mode=mode), parameters
 
@@ -166,7 +178,8 @@ class Project:
         ----------
         name : str
             The name of the project.
-        mode : {"hub", "local"}, default "local"
+            For mode:mlflow, this name will be used as the experiment name.
+        mode : {"hub", "local", "mlflow"}, default "local"
             The mode of the project.
         **kwargs : dict
             Extra keyword arguments passed to the project, depending on its mode.
@@ -183,6 +196,9 @@ class Project:
                 - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
                 - on Linux, usually ``${HOME}/.cache/skore``,
                 - on macOS, usually ``${HOME}/Library/Caches/skore``.
+
+            tracking_uri : str, mode:mlflow only.
+                The URI of the MLflow tracking server.
         """
         plugin, parameters = Project.__setup_plugin(mode, name)
 
@@ -221,6 +237,7 @@ class Project:
         ----------
         key : str
             The key to associate with ``report`` in the project.
+            Name of the run for mode:mlflow
         report : EstimatorReport | CrossValidationReport
             The report to associate with ``key`` in the project.
 
@@ -282,13 +299,13 @@ class Project:
     @staticmethod
     def delete(name: str, *, mode: ProjectMode = "local", **kwargs):
         r"""
-        Delete a project.
+        Delete a project. Not implemented for MLFlow projects.
 
         Parameters
         ----------
         name : str
             The name of the project.
-        mode : {"hub", "local"}, default "local"
+        mode : {"hub", "local", "mlflow"}, default "local"
             The mode of the project.
         **kwargs : dict
             Extra keyword arguments passed to the project, depending on its mode.
@@ -305,7 +322,20 @@ class Project:
                 - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
                 - on Linux, usually ``${HOME}/.cache/skore``,
                 - on macOS, usually ``${HOME}/Library/Caches/skore``.
+
+            tracking_uri : str, mode:mlflow only.
+                The URI of the MLflow tracking server.
         """
+        if mode not in Project.__DELETE_KWARGS_BY_MODE:
+            raise ValueError(
+                f'`mode` must be "hub", "local" or "mlflow" (found {mode})'
+            )
+
+        unsupported_kwargs = set(kwargs) - Project.__DELETE_KWARGS_BY_MODE[mode]
+        if unsupported_kwargs:
+            unsupported = ", ".join(sorted(f"{key!r}" for key in unsupported_kwargs))
+            raise TypeError(f"Unexpected keyword argument(s): {unsupported}")
+
         plugin, parameters = Project.__setup_plugin(mode, name)
 
         return plugin.delete(**(kwargs | parameters))

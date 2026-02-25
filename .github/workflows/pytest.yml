@@ -39,7 +39,7 @@ defaults:
     shell: bash
 
 env:
-  PACKAGES: '["skore","skore-hub-project","skore-local-project"]'
+  PACKAGES: '["skore","skore-hub-project","skore-local-project","skore-mlflow-project"]'
 
 jobs:
   pytest-changes:
