@@ -88,7 +88,11 @@ NestedLogItem: TypeAlias = LogItem | tuple[str, Iterable[LogItem]]
 
 
 def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
-    return report.data.analyze()._repr_html_()
+    with switch_mpl_backend(), plt.ioff():
+        try:
+            return report.data.analyze()._repr_html_()
+        finally:
+            plt.close("all")
 
 
 def iter_cv_metrics(
