@@ -55,8 +55,8 @@ CLF_METRICS = {
     # metric -> kwargs
     "accuracy": {},
     "log_loss": {},
-    "recall": {"average": "micro", "multi_class": "ovr"},
-    "precision": {"average": "micro", "multi_class": "ovr"},
+    "recall": {"average": "micro"},
+    "precision": {"average": "micro"},
     "roc_auc": {"average": "micro", "multi_class": "ovr"},
 }
 
