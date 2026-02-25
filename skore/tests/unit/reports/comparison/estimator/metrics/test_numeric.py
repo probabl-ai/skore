@@ -109,7 +109,7 @@ def test_binary_classification(
         )
     else:
         result = getattr(report.metrics, metric_name)(data_source=data_source)
-    pd.testing.assert_frame_equal(result, expected)
+    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
     # ensure metric is valid even from the cache
     if data_source == "X_y":
@@ -118,7 +118,7 @@ def test_binary_classification(
         )
     else:
         result = getattr(report.metrics, metric_name)(data_source=data_source)
-    pd.testing.assert_frame_equal(result, expected)
+    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
 
 @pytest.mark.parametrize("data_source", ["test", "X_y"])
@@ -164,7 +164,7 @@ def test_regression(
         )
     else:
         result = getattr(comp.metrics, metric_name)()
-    pd.testing.assert_frame_equal(result, expected)
+    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
     # ensure metric is valid even from the cache
     if data_source == "X_y":
@@ -173,7 +173,7 @@ def test_regression(
         )
     else:
         result = getattr(comp.metrics, metric_name)()
-    pd.testing.assert_frame_equal(result, expected)
+    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
 
 def test_custom_metric_data_source_external(
@@ -198,7 +198,7 @@ def test_custom_metric_data_source_external(
         X=X_test,
         y=y_test,
     )
-    pd.testing.assert_frame_equal(result, expected)
+    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
     # ensure metric is valid even from the cache
     result = report.metrics.custom_metric(
@@ -209,7 +209,7 @@ def test_custom_metric_data_source_external(
         X=X_test,
         y=y_test,
     )
-    pd.testing.assert_frame_equal(result, expected)
+    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
 
 def test_timings(comparison_estimator_reports_binary_classification):

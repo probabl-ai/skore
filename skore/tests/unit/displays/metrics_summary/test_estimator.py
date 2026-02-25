@@ -267,7 +267,7 @@ def test_favorability(
     """Check that the behaviour of `favorability` is correct."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(favorability=True).frame()
+    result = report.metrics.summarize().frame(favorability=True)
     assert "Favorability" in result.columns
     favorability = result["Favorability"]
     assert favorability["Accuracy"].tolist() == ["(↗︎)"]
@@ -458,8 +458,8 @@ def test_sklearn_metric_strings(forest_binary_classification_with_test):
     assert "Log Loss" in result.index.get_level_values(0)
 
     result_multi = class_report.metrics.summarize(
-        metric=["accuracy", "neg_log_loss", "roc_auc"], favorability=True
-    ).frame()
+        metric=["accuracy", "neg_log_loss", "roc_auc"]
+    ).frame(favorability=True)
     assert "Accuracy" in result_multi.index.get_level_values(0)
     assert "Log Loss" in result_multi.index.get_level_values(0)
     assert "ROC AUC" in result_multi.index.get_level_values(0)
@@ -479,8 +479,7 @@ def test_sklearn_metric_strings_regression(
 
     reg_result = reg_report.metrics.summarize(
         metric=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
-        favorability=True,
-    ).frame()
+    ).frame(favorability=True)
 
     assert "Mean Squared Error" in reg_result.index.get_level_values(0)
     assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
@@ -496,8 +495,8 @@ def test_metric_strings_regression(linear_regression_with_test):
     reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
 
     reg_result = reg_report.metrics.summarize(
-        metric=["rmse", "r2"], favorability=True
-    ).frame()
+        metric=["rmse", "r2"],
+    ).frame(favorability=True)
 
     assert "RMSE" in reg_result.index.get_level_values(0)
     assert "R²" in reg_result.index.get_level_values(0)
@@ -514,8 +513,8 @@ def test_scorer_names_pos_label(
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
     result = report.metrics.summarize(metric=["f1"], pos_label=0).frame()
-    assert "F1 Score" in result.index.get_level_values(0)
-    assert 0 in result.index.get_level_values(1)
+    assert result.index[0] == ("F1 Score", 0)
+
     f1_scorer = make_scorer(
         f1_score, response_method="predict", average="binary", pos_label=0
     )

@@ -103,7 +103,7 @@ def test_regression(linear_regression_with_test, metric):
 
 
 def test_data_source_both(forest_binary_classification_data):
-    """Check the behaviour of `summarize` with `data_source="both"`."""
+    """Check the behaviour with `data_source="both"`."""
     estimator, X, y = forest_binary_classification_data
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
@@ -130,10 +130,7 @@ def test_data_source_both(forest_binary_classification_data):
         check_names=False,
     )
 
-    # By default,
-    result_both = report.metrics.summarize(
-        data_source="both", favorability=True
-    ).frame()
+    result_both = report.metrics.summarize(data_source="both").frame(favorability=True)
     assert result_both.columns.tolist() == [
         "RandomForestClassifier (train)",
         "RandomForestClassifier (test)",

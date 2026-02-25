@@ -182,7 +182,7 @@ class _MetricsAccessor(
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return MetricsSummaryDisplay(summarize_data=results)
+        return MetricsSummaryDisplay(data=results, report_type="cross-validation")
 
     def _compute_metric_scores(
         self,
@@ -223,8 +223,15 @@ class _MetricsAccessor(
                 )
             )
 
+            frame_kwargs = {}
+            for key in ("favorability", "flat_index"):
+                if key in metric_kwargs:
+                    frame_kwargs[key] = metric_kwargs.pop(key)
+
             results = [
-                result.frame() if report_metric_name == "summarize" else result
+                result.frame(**frame_kwargs)
+                if report_metric_name == "summarize"
+                else result
                 for result in track(
                     parallel(
                         delayed(getattr(report.metrics, report_metric_name))(
@@ -247,7 +254,7 @@ class _MetricsAccessor(
             # Pop the favorability column if it exists, to:
             # - not use it in the aggregate operation
             # - later to only report a single column and not by split columns
-            if metric_kwargs.get("favorability", False):
+            if frame_kwargs.get("favorability", False):
                 favorability = results.pop("Favorability").iloc[:, 0]
             else:
                 favorability = None
