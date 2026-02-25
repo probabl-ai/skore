@@ -8,12 +8,13 @@ from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, TypedDict, cast
+from typing import TypedDict, cast
 
 import joblib
 import mlflow
 import mlflow.sklearn
 import pandas as pd
+from mlflow.entities import Run as MLFlowRun
 from mlflow.exceptions import MlflowException
 from mlflow.utils.autologging_utils import disable_discrete_autologging
 from sklearn.base import BaseEstimator
@@ -181,7 +182,7 @@ class Project:
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted models in insertion order."""
         runs = cast(
-            list[Any],
+            list[MLFlowRun],
             mlflow.search_runs(
                 experiment_ids=[self.experiment_id],
                 output_format="list",
@@ -193,7 +194,7 @@ class Project:
         return [self._run_to_metadata(run) for run in runs]
 
     @staticmethod
-    def _run_to_metadata(run: mlflow.ActiveRun) -> Metadata:
+    def _run_to_metadata(run: MLFlowRun) -> Metadata:
         tags = run.data.tags
         metrics = run.data.metrics
         report_type = tags["report_type"]
@@ -233,11 +234,6 @@ class Project:
                 "roc_auc_mean": run.data.metrics.get("roc_auc"),
                 "fit_time_mean": metrics["fit_time"],
                 "predict_time_mean": metrics["predict_time"],
-                "rmse": None,
-                "log_loss": None,
-                "roc_auc": None,
-                "fit_time": None,
-                "predict_time": None,
             }
         else:
             raise ValueError(f"Unsupported report type: {report_type}")
