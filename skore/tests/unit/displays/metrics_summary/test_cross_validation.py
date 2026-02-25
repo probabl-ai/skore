@@ -291,7 +291,7 @@ def test_metric_kwargs_regression(
 def test_metric_kwargs_multi_class(
     forest_multiclass_classification_data,
 ):
-    """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
+    """Check the behaviour of the `MetricsSummaryDisplay` method with metric kwargs."""
     estimator, X, y = forest_multiclass_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, "summarize")
@@ -344,7 +344,7 @@ def test_metric_kwargs_multi_class(
     ],
 )
 def test_overwrite_metric_names(request, fixture_name, metric, expected_index):
-    """Test that we can overwrite the scoring names in `MetricsSummaryDisplay`."""
+    """Test that we can overwrite the metric names in `MetricsSummaryDisplay`."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2)
     result = report.metrics.summarize(metric=metric).frame()
@@ -484,21 +484,21 @@ def test_favorability(forest_binary_classification_data, aggregate):
     assert indicator["Predict time (s)"].tolist() == ["(↘︎)"]
 
 
-def test_overwrite_scoring_names_with_dict_cross_validation(
+def test_overwrite_metric_names_with_dict_cross_validation(
     forest_multiclass_classification_data,
 ):
-    """Test that we can overwrite the scoring names using dict scoring in
+    """Test that we can overwrite the metric names using dict metric in
     CrossValidationReport."""
     estimator, X, y = forest_multiclass_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
 
-    scoring_dict = {
+    metric_dict = {
         "Custom Precision": "precision",
         "Custom Recall": "recall",
         "Custom ROC AUC": "roc_auc",
     }
 
-    result = report.metrics.summarize(metric=scoring_dict).frame()
+    result = report.metrics.summarize(metric=metric_dict).frame()
 
     # Check that custom names are used
     result_index = (

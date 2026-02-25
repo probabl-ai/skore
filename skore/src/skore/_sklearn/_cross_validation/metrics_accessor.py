@@ -892,9 +892,9 @@ class _MetricsAccessor(
             response_method=response_method,
             **kwargs,
         )
-        scoring = {metric_name: scorer} if metric_name is not None else [scorer]
+        metric = {metric_name: scorer} if metric_name is not None else [scorer]
         return self.summarize(
-            metric=scoring,
+            metric=metric,
             data_source=data_source,
             aggregate=aggregate,
             pos_label=pos_label,
