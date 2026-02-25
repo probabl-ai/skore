@@ -26,6 +26,10 @@ class EstimatorReport(Protocol):
     y_test: DatasetLike
     metrics: Any
     data: Any
+    _cache: Any
+
+    def clear_cache(self) -> None:
+        """Clear report cache."""
 
 
 @runtime_checkable
@@ -42,6 +46,10 @@ class CrossValidationReport(Protocol):
     metrics: Any
     data: Any
     splitter: Any
+    _cache: Any
 
     def create_estimator_report(self) -> EstimatorReport:
         """Create a representative estimator report."""
+
+    def clear_cache(self) -> None:
+        """Clear report cache."""

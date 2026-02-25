@@ -7,6 +7,8 @@ from skore_mlflow_project import Project
 
 
 class TestProject:
+    CACHE_SENTINEL = ("__cache_sentinel__",)
+
     @staticmethod
     def tracking_uri(tmp_path):
         return f"sqlite:///{tmp_path}/mlflow.db"
@@ -96,6 +98,41 @@ class TestProject:
         assert (report_dir / "prediction_error.png").exists()
         assert (report_dir / "timings.csv").exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
+
+    def test_put_pickles_estimator_without_cache(self, tmp_path, regression):
+        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
+        original_cache = regression._cache
+        regression._cache[self.CACHE_SENTINEL] = "present"
+
+        project.put("<key>", regression)
+
+        assert regression._cache is original_cache
+        assert regression._cache[self.CACHE_SENTINEL] == "present"
+
+        summary = project.summarize()
+        restored = project.get(summary[0]["id"])
+        assert self.CACHE_SENTINEL not in restored._cache
+
+    def test_put_pickles_cv_without_cache(self, tmp_path, regression_cv):
+        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
+        root_cache = regression_cv._cache
+        split_cache = regression_cv.estimator_reports_[0]._cache
+        regression_cv._cache[self.CACHE_SENTINEL] = "root"
+        regression_cv.estimator_reports_[0]._cache[self.CACHE_SENTINEL] = "split"
+
+        project.put("<key>", regression_cv)
+
+        assert regression_cv._cache is root_cache
+        assert regression_cv.estimator_reports_[0]._cache is split_cache
+        assert regression_cv._cache[self.CACHE_SENTINEL] == "root"
+        assert (
+            regression_cv.estimator_reports_[0]._cache[self.CACHE_SENTINEL] == "split"
+        )
+
+        summary = project.summarize()
+        restored = project.get(summary[0]["id"])
+        assert self.CACHE_SENTINEL not in restored._cache
+        assert self.CACHE_SENTINEL not in restored.estimator_reports_[0]._cache
 
     def test_get_unknown_id(self, tmp_path):
         project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
