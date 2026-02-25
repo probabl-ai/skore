@@ -145,11 +145,6 @@ class Project:
     """
 
     __HUB_NAME_PATTERN = re.compile(r"(?P<workspace>[^/]+)/(?P<name>.+)")
-    __DELETE_KWARGS_BY_MODE = {
-        "hub": set(),
-        "local": {"workspace"},
-        "mlflow": {"tracking_uri"},
-    }
 
     @staticmethod
     def __setup_plugin(mode: ProjectMode, name: str) -> tuple[Any, dict]:
@@ -326,16 +321,6 @@ class Project:
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.
         """
-        if mode not in Project.__DELETE_KWARGS_BY_MODE:
-            raise ValueError(
-                f'`mode` must be "hub", "local" or "mlflow" (found {mode})'
-            )
-
-        unsupported_kwargs = set(kwargs) - Project.__DELETE_KWARGS_BY_MODE[mode]
-        if unsupported_kwargs:
-            unsupported = ", ".join(sorted(f"{key!r}" for key in unsupported_kwargs))
-            raise TypeError(f"Unexpected keyword argument(s): {unsupported}")
-
         plugin, parameters = Project.__setup_plugin(mode, name)
 
         return plugin.delete(**(kwargs | parameters))

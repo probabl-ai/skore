@@ -374,14 +374,19 @@ class TestProject:
             "tracking_uri": "<uri>",
         }
 
-    def test_delete_mlflow_with_unexpected_kwargs(self, FakeMlflowProject):
-        with raises(TypeError, match="Unexpected keyword argument\\(s\\): 'workspace'"):
-            Project.delete(
-                mode="mlflow",
-                name="<name>",
-                tracking_uri="<uri>",
-                workspace="<workspace>",
-            )
+    def test_delete_mlflow_forwards_kwargs(self, FakeMlflowProject):
+        Project.delete(
+            mode="mlflow",
+            name="<name>",
+            tracking_uri="<uri>",
+            workspace="<workspace>",
+        )
 
         assert not FakeMlflowProject.called
-        assert not FakeMlflowProject.delete.called
+        assert FakeMlflowProject.delete.called
+        assert not FakeMlflowProject.delete.call_args.args
+        assert FakeMlflowProject.delete.call_args.kwargs == {
+            "name": "<name>",
+            "tracking_uri": "<uri>",
+            "workspace": "<workspace>",
+        }
