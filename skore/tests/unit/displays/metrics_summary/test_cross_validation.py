@@ -23,9 +23,9 @@ def test_flat_index(forest_binary_classification_data):
     """
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-    result = report.metrics.summarize(flat_index=True)
+    result = report.metrics.summarize()
     assert isinstance(result, MetricsSummaryDisplay)
-    result_df = result.frame()
+    result_df = result.frame(flat_index=True)
     assert result_df.shape == (9, 2)
     assert isinstance(result_df.index, pd.Index)
     assert result_df.index.tolist() == [
@@ -92,13 +92,13 @@ def _check_results_summarize(
 
     # check the aggregate parameter
     stats = ["mean", "std"]
-    result = report.metrics.summarize(aggregate=stats, **params).frame()
+    result = report.metrics.summarize(**params).frame(aggregate=stats)
     # check that the columns contains the expected split names
     split_names = result.columns.get_level_values(1).unique()
     assert list(split_names) == stats
 
     stats = "mean"
-    result = report.metrics.summarize(aggregate=stats, **params).frame()
+    result = report.metrics.summarize(**params).frame(aggregate=stats)
     # check that the columns contains the expected split names
     split_names = result.columns.get_level_values(1).unique()
     assert list(split_names) == [stats]
@@ -276,7 +276,7 @@ def test_regression(linear_regression_data):
 def test_metric_kwargs_regression(
     linear_regression_multioutput_data,
 ):
-    """Check the behaviour of the `MetricsSummaryDisplay` method with scoring kwargs."""
+    """Check the behaviour of the `MetricsSummaryDisplay` method with metric kwargs."""
     estimator, X, y = linear_regression_multioutput_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, "summarize")
@@ -382,8 +382,7 @@ def test_scorer(linear_regression_data):
     result = report.metrics.summarize(
         metric=[r2_score, median_absolute_error_scorer],
         metric_kwargs={"response_method": "predict"},  # only dispatched to r2_score
-        aggregate=None,
-    ).frame()
+    ).frame(aggregate=None)
     assert result.shape == (2, 2)
 
     expected_result = [
@@ -471,17 +470,16 @@ def test_favorability(forest_binary_classification_data, aggregate):
     """Check that the behaviour of `favorability` is correct."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    result = report.metrics.summarize(favorability=True, aggregate=aggregate).frame()
+    result = report.metrics.summarize().frame(favorability=True, aggregate=aggregate)
     assert "Favorability" in result.columns
-    indicator = result["Favorability"]
-    # assert indicator.shape == (9,)
-    assert indicator["Accuracy"].tolist() == ["(↗︎)"]
-    assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
-    assert indicator["Brier score"].tolist() == ["(↘︎)"]
-    assert indicator["Fit time (s)"].tolist() == ["(↘︎)"]
-    assert indicator["Predict time (s)"].tolist() == ["(↘︎)"]
+    favorability = result["Favorability"]
+    assert favorability["Accuracy"].tolist() == ["(↗︎)"]
+    assert favorability["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert favorability["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert favorability["ROC AUC"].tolist() == ["(↗︎)"]
+    assert favorability["Brier score"].tolist() == ["(↘︎)"]
+    assert favorability["Fit time (s)"].tolist() == ["(↘︎)"]
+    assert favorability["Predict time (s)"].tolist() == ["(↘︎)"]
 
 
 def test_overwrite_metric_names_with_dict_cross_validation(

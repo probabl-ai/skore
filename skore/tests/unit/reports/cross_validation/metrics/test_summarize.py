@@ -1,7 +1,27 @@
 import numpy as np
 import pytest
 
-from skore import CrossValidationReport
+from skore import CrossValidationReport, MetricsSummaryDisplay
+
+
+def test_binary_classification(forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+
+    display = report.metrics.summarize()
+    assert isinstance(display, MetricsSummaryDisplay)
+
+    assert set(display.data.columns) == {
+        "split",
+        "metric",
+        "estimator_name",
+        "data_source",
+        "label",
+        "average",
+        "output",
+        "score",
+        "favorability",
+    }
 
 
 def test_cache_key_with_string_aggregate_is_not_split(

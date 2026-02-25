@@ -33,7 +33,6 @@ from skore._utils._accessor import (
 )
 from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
-from skore._utils._index import flatten_multi_index
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
@@ -59,9 +58,6 @@ class _MetricsAccessor(
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
-        favorability: bool = False,
-        flat_index: bool = False,
-        aggregate: Aggregate | None = ("mean", "std"),
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -109,18 +105,6 @@ class _MetricsAccessor(
             class is set to the one provided when creating the report. If `None`,
             the metric is computed considering each class as a positive class.
 
-        favorability : bool, default=False
-            Whether or not to add an indicator of the favorability of the metric as
-            an extra column in the returned DataFrame.
-
-        flat_index : bool, default=False
-            Whether to flatten the `MultiIndex` columns. Flat index will always be lower
-            case, do not include spaces and remove the hash symbol to ease indexing.
-
-        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
-            Function to aggregate the scores across the cross-validation splits.
-            None will return the scores for each split.
-
         Returns
         -------
         :class:`MetricsSummaryDisplay`
@@ -137,8 +121,7 @@ class _MetricsAccessor(
         >>> report.metrics.summarize(
         ...     metric=["precision", "recall"],
         ...     pos_label=1,
-        ...     favorability=True,
-        ... ).frame()
+        ... ).frame(flat_index=False, favorability=True)
                   LogisticRegression           Favorability
                                 mean       std
         Metric
@@ -148,42 +131,27 @@ class _MetricsAccessor(
         if pos_label == _DEFAULT:
             pos_label = self._parent.pos_label
 
-        results = self._compute_metric_scores(
+        return self._compute_metric_scores(
             report_metric_name="summarize",
             data_source=data_source,
-            aggregate=aggregate,
             metric=metric,
             pos_label=pos_label,
             metric_kwargs=metric_kwargs,
-            favorability=favorability,
             response_method=response_method,
         )
-        if flat_index:
-            results = results.copy()
-            if isinstance(results.columns, pd.MultiIndex):
-                results.columns = flatten_multi_index(results.columns)
-            if isinstance(results.index, pd.MultiIndex):
-                results.index = flatten_multi_index(results.index)
-            if isinstance(results.index, pd.Index):
-                results.index = results.index.str.replace(
-                    r"\((.*)\)$", r"\1", regex=True
-                )
-        return MetricsSummaryDisplay(data=results, report_type="cross-validation")
 
     def _compute_metric_scores(
         self,
         report_metric_name: str,
         *,
         data_source: DataSource = "test",
-        aggregate: Aggregate | None = None,
         **metric_kwargs: Any,
-    ) -> pd.DataFrame:
+    ) -> MetricsSummaryDisplay:
         cache_key = deep_key_sanitize(
             (
                 self._parent._hash,
                 report_metric_name,
                 data_source,
-                aggregate,
                 metric_kwargs,
             )
         )
@@ -196,15 +164,8 @@ class _MetricsAccessor(
                 )
             )
 
-            frame_kwargs = {}
-            for key in ("favorability", "flat_index"):
-                if key in metric_kwargs:
-                    frame_kwargs[key] = metric_kwargs.pop(key)
-
             results = [
-                result.frame(**frame_kwargs)
-                if report_metric_name == "summarize"
-                else result
+                result.data if report_metric_name == "summarize" else result
                 for result in track(
                     parallel(
                         delayed(getattr(report.metrics, report_metric_name))(
@@ -217,32 +178,17 @@ class _MetricsAccessor(
                 )
             ]
 
-            results = pd.concat(
-                results,
-                axis=1,
-                keys=[f"Split #{i}" for i in range(len(results))],
-            )
-            results = results.swaplevel(0, 1, axis=1)
-
-            # Pop the favorability column if it exists, to:
-            # - not use it in the aggregate operation
-            # - later to only report a single column and not by split columns
-            if frame_kwargs.get("favorability", False):
-                favorability = results.pop("Favorability").iloc[:, 0]
-            else:
-                favorability = None
-
-            if aggregate:
-                if isinstance(aggregate, str):
-                    aggregate = [aggregate]
-
-                results = results.aggregate(func=aggregate, axis=1)
-                results = pd.concat(
-                    [results], keys=[self._parent.estimator_name_], axis=1
+            results = (
+                pd.concat(
+                    results, axis="index", keys=range(len(results)), names=["split"]
                 )
+                .reset_index()
+                .drop(columns="level_1")
+            )
 
-            if favorability is not None:
-                results["Favorability"] = favorability
+            results = MetricsSummaryDisplay(
+                data=results, report_type="cross-validation"
+            )
 
             self._parent._cache[cache_key] = results
         return results
@@ -312,6 +258,7 @@ class _MetricsAccessor(
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -327,6 +274,9 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
         Returns
         -------
         pd.DataFrame
@@ -340,17 +290,15 @@ class _MetricsAccessor(
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
-        >>> report.metrics.accuracy()
+        >>> report.metrics.accuracy(flat_index=False)
                 LogisticRegression
                             mean      std
         Metric
         Accuracy           0.94...  0.00...
         """
-        return self.summarize(
-            metric=["accuracy"],
-            data_source=data_source,
-            aggregate=aggregate,
-        ).frame()
+        return self.summarize(metric=["accuracy"], data_source=data_source).frame(
+            aggregate=aggregate, flat_index=flat_index
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "precision"))
     def precision(
@@ -362,6 +310,7 @@ class _MetricsAccessor(
         ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -408,6 +357,9 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
         Returns
         -------
         pd.DataFrame
@@ -431,10 +383,9 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["precision"],
             data_source=data_source,
-            aggregate=aggregate,
             pos_label=pos_label,
             metric_kwargs={"average": average},
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "recall"))
     def recall(
@@ -446,6 +397,7 @@ class _MetricsAccessor(
         ) = None,
         pos_label: PositiveLabel | None = _DEFAULT,
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -493,6 +445,9 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
         Returns
         -------
         pd.DataFrame
@@ -516,10 +471,12 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["recall"],
             data_source=data_source,
-            aggregate=aggregate,
             pos_label=pos_label,
             metric_kwargs={"average": average},
-        ).frame()
+        ).frame(
+            aggregate=aggregate,
+            flat_index=flat_index,
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "brier_score"))
     def brier_score(
@@ -527,6 +484,7 @@ class _MetricsAccessor(
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
@@ -541,6 +499,9 @@ class _MetricsAccessor(
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
 
         Returns
         -------
@@ -564,8 +525,7 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["brier_score"],
             data_source=data_source,
-            aggregate=aggregate,
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "roc_auc"))
     def roc_auc(
@@ -575,6 +535,7 @@ class _MetricsAccessor(
         average: Literal["macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
@@ -623,6 +584,9 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
         Returns
         -------
         pd.DataFrame
@@ -645,9 +609,8 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["roc_auc"],
             data_source=data_source,
-            aggregate=aggregate,
             metric_kwargs={"average": average, "multi_class": multi_class},
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
     def log_loss(
@@ -655,6 +618,7 @@ class _MetricsAccessor(
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
     ) -> pd.DataFrame:
         """Compute the log loss.
 
@@ -669,6 +633,9 @@ class _MetricsAccessor(
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
 
         Returns
         -------
@@ -692,8 +659,7 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["log_loss"],
             data_source=data_source,
-            aggregate=aggregate,
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "r2"))
     def r2(
@@ -702,6 +668,7 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
     ) -> pd.DataFrame:
         """Compute the R² score.
 
@@ -727,6 +694,9 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
         Returns
         -------
         pd.DataFrame
@@ -749,9 +719,8 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["r2"],
             data_source=data_source,
-            aggregate=aggregate,
             metric_kwargs={"multioutput": multioutput},
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "rmse"))
     def rmse(
@@ -760,6 +729,7 @@ class _MetricsAccessor(
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
@@ -785,6 +755,9 @@ class _MetricsAccessor(
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
         Returns
         -------
         pd.DataFrame
@@ -807,9 +780,8 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["rmse"],
             data_source=data_source,
-            aggregate=aggregate,
             metric_kwargs={"multioutput": multioutput},
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index)
 
     def custom_metric(
         self,
@@ -819,6 +791,7 @@ class _MetricsAccessor(
         metric_name: str | None = None,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
         **kwargs,
     ) -> pd.DataFrame:
         """Compute a custom metric.
@@ -855,6 +828,9 @@ class _MetricsAccessor(
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
 
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
@@ -896,9 +872,8 @@ class _MetricsAccessor(
         return self.summarize(
             metric=metric,
             data_source=data_source,
-            aggregate=aggregate,
             pos_label=pos_label,
-        ).frame()
+        ).frame(aggregate=aggregate, flat_index=flat_index)
 
     ####################################################################################
     # Methods related to the help tree
