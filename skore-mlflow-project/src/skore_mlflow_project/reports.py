@@ -1,4 +1,4 @@
-"""Report, metric and artifact iteration utilities inspired by ``skomlflow``."""
+"""Report, metric and artifact iteration utilities."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from typing import Any, TypeAlias
 import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator
 
+from ._matplotlib import switch_mpl_backend
 from .protocol import CrossValidationReport, EstimatorReport
 
 
@@ -112,12 +113,13 @@ def iter_cv_metrics(
         method = getattr(report_any.metrics, name)
         display = method()
         yield Artifact(f"metrics_details/{name}", display.frame())
-        display.plot()
-        figure = display.figure_
-        try:
-            yield Artifact(name, figure)
-        finally:
-            plt.close(figure)
+        with switch_mpl_backend(), plt.ioff():
+            display.plot()
+            figure = display.figure_
+            try:
+                yield Artifact(name, figure)
+            finally:
+                plt.close(figure)
         continue
 
     timings = report_any.metrics.timings()
@@ -149,12 +151,13 @@ def iter_estimator_metrics(
         method = getattr(report_any.metrics, name)
         display = method()
         yield Artifact(f"metrics_details/{name}", display.frame())
-        display.plot()
-        figure = display.figure_
-        try:
-            yield Artifact(name, figure)
-        finally:
-            plt.close(figure)
+        with switch_mpl_backend(), plt.ioff():
+            display.plot()
+            figure = display.figure_
+            try:
+                yield Artifact(name, figure)
+            finally:
+                plt.close(figure)
         continue
 
     timings = report_any.metrics.timings()
