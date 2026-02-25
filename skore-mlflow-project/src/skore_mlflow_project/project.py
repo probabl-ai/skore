@@ -243,7 +243,7 @@ class Project:
         return cast(Metadata, {**metadata, **metrics})
 
     @staticmethod
-    def delete(*, name: str) -> None:
+    def delete(*, name: str, tracking_uri: str | None = None) -> None:
         """Not implemented for now."""
         raise NotImplementedError("Delete is not implemented for MLFlow projects")
 
