@@ -7,7 +7,10 @@ license = "MIT"
 dependencies = [
   "joblib",
   "mlflow",
+  "numpy",
+  "pandas",
   "rich>=14.2.0",
+  "scikit-learn",
 ]
 
 [project.optional-dependencies]
@@ -110,4 +113,6 @@ ignore_missing_imports = true
 module = [
   "joblib.*",
   "mlflow.*",
+  "pandas.*",
+  "sklearn.*",
 ]

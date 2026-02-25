@@ -5,7 +5,7 @@ from __future__ import annotations
 import itertools
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 from sklearn.base import BaseEstimator
 
@@ -17,7 +17,7 @@ from .protocol import CrossValidationReport, EstimatorReport
 class Params:
     """Model parameter payload."""
 
-    params: dict[str, bool | int | float | str]
+    params: dict[str, Any]
 
 
 @dataclass
@@ -37,14 +37,6 @@ class Model:
 
 LogItem: TypeAlias = Params | Tag | Model | Artifact | Metric
 NestedLogItem: TypeAlias = LogItem | tuple[str, Iterable[LogItem]]
-
-
-def _safe_param_value(value: object) -> bool | int | float | str:
-    if isinstance(value, bool | int | float | str):
-        return value
-    if value is None:
-        return "None"
-    return str(value)
 
 
 def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, None]:
