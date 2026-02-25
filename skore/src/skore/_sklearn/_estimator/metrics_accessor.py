@@ -5,8 +5,8 @@ from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
+import sklearn
 from numpy.typing import ArrayLike, NDArray
-from sklearn import metrics as sklearn_metrics
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
@@ -240,7 +240,7 @@ class _MetricsAccessor(
         for metric_name, metric_ in zip(metric_names, metrics, strict=False):
             if isinstance(metric_, str) and metric_ not in self._score_or_loss_info:
                 try:
-                    metric_ = sklearn_metrics.get_scorer(metric_)
+                    metric_ = sklearn.metrics.get_scorer(metric_)
                 except ValueError as err:
                     raise ValueError(
                         f"Invalid metric: {metric_!r}. "
@@ -640,7 +640,7 @@ class _MetricsAccessor(
         0.95...
         """
         score = self._compute_metric_scores(
-            sklearn_metrics.accuracy_score,
+            sklearn.metrics.accuracy_score,
             data_source=data_source,
             response_method="predict",
         )
@@ -728,7 +728,7 @@ class _MetricsAccessor(
             average = "binary"
 
         result = self._compute_metric_scores(
-            sklearn_metrics.precision_score,
+            sklearn.metrics.precision_score,
             data_source=data_source,
             response_method="predict",
             pos_label=pos_label,
@@ -823,7 +823,7 @@ class _MetricsAccessor(
             average = "binary"
 
         result = self._compute_metric_scores(
-            sklearn_metrics.recall_score,
+            sklearn.metrics.recall_score,
             data_source=data_source,
             response_method="predict",
             pos_label=pos_label,
@@ -881,7 +881,7 @@ class _MetricsAccessor(
         # `pos_label`. Since we get the predictions with `get_response_method`, we
         # can pass any `pos_label`, they will lead to the same result.
         result = self._compute_metric_scores(
-            sklearn_metrics.brier_score_loss,
+            sklearn.metrics.brier_score_loss,
             data_source=data_source,
             response_method="predict_proba",
             pos_label=self._parent._estimator.classes_[-1],
@@ -965,7 +965,7 @@ class _MetricsAccessor(
         0.99...
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.roc_auc_score,
+            sklearn.metrics.roc_auc_score,
             data_source=data_source,
             response_method=["predict_proba", "decision_function"],
             average=average,
@@ -1022,7 +1022,7 @@ class _MetricsAccessor(
         0.10...
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.log_loss,
+            sklearn.metrics.log_loss,
             data_source=data_source,
             response_method="predict_proba",
         )
@@ -1080,7 +1080,7 @@ class _MetricsAccessor(
         0.35...
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.r2_score,
+            sklearn.metrics.r2_score,
             data_source=data_source,
             response_method="predict",
             multioutput=multioutput,
@@ -1144,7 +1144,7 @@ class _MetricsAccessor(
         56.5...
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.root_mean_squared_error,
+            sklearn.metrics.root_mean_squared_error,
             data_source=data_source,
             response_method="predict",
             multioutput=multioutput,
