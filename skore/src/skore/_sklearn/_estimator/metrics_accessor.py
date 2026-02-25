@@ -273,7 +273,7 @@ class _MetricsAccessor(
                         f"Please use a valid metric from the "
                         f"list of supported metrics: "
                         f"{list(self._score_or_loss_info.keys())} "
-                        "or a valid scikit-learn scoring string."
+                        "or a valid scikit-learn metric string."
                     ) from err
                 if metric_kwargs is not None:
                     raise ValueError(

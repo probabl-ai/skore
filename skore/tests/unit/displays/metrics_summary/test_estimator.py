@@ -243,10 +243,10 @@ def test_metric_kwargs(
         ),
     ],
 )
-def test_overwrite_scoring_names_with_dict(
+def test_overwrite_metric_names_with_dict(
     request, fixture_name, metric_dict, expected_columns
 ):
-    """Test that we can overwrite the scoring names using dict metric."""
+    """Test that we can overwrite the metric names using dict metric."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.summarize(metric=metric_dict).frame()
@@ -269,12 +269,12 @@ def test_favorability(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.summarize(favorability=True).frame()
     assert "Favorability" in result.columns
-    indicator = result["Favorability"]
-    assert indicator["Accuracy"].tolist() == ["(↗︎)"]
-    assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
-    assert indicator["Brier score"].tolist() == ["(↘︎)"]
+    favorability = result["Favorability"]
+    assert favorability["Accuracy"].tolist() == ["(↗︎)"]
+    assert favorability["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert favorability["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert favorability["ROC AUC"].tolist() == ["(↗︎)"]
+    assert favorability["Brier score"].tolist() == ["(↘︎)"]
 
 
 @pytest.mark.parametrize(
@@ -437,9 +437,7 @@ def test_invalid_metric_type(linear_regression_with_test):
         report.metrics.summarize(metric=[1]).frame()
 
 
-def test_neg_metric_strings(
-    forest_binary_classification_with_test,
-):
+def test_neg_metric_strings(forest_binary_classification_with_test):
     """Check that scikit-learn metrics with 'neg_' prefix are handled correctly."""
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
@@ -451,10 +449,8 @@ def test_neg_metric_strings(
     )
 
 
-def test_sklearn_scoring_strings(
-    forest_binary_classification_with_test,
-):
-    """Test that scikit-learn metric strings can be passed to summarize."""
+def test_sklearn_metric_strings(forest_binary_classification_with_test):
+    """Check that scikit-learn metric strings can be passed to summarize."""
     classifier, X_test, y_test = forest_binary_classification_with_test
     class_report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
@@ -474,7 +470,7 @@ def test_sklearn_scoring_strings(
     assert favorability == "(↘︎)"
 
 
-def test_sklearn_scoring_strings_regression(
+def test_sklearn_metric_strings_regression(
     linear_regression_with_test,
 ):
     """Test scikit-learn regression metric strings in `MetricsSummaryDisplay`."""

@@ -283,7 +283,7 @@ def test_custom_metric_scorer(linear_regression_with_test):
 
 @pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
 def test_summarize_error_metric_strings(linear_regression_with_test, metric):
-    """Check that we raise an error if a scoring string is not a valid metric."""
+    """Check that we raise an error if a metric string is not a valid metric."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     err_msg = re.escape(f"Invalid metric: {metric!r}.")
@@ -564,11 +564,11 @@ def test_roc_multiclass_requires_predict_proba(
 
 
 def test_summarize_metric_dict(forest_binary_classification_with_test):
-    """Test that scoring can be passed as a dictionary with custom names."""
+    """Test that metric can be passed as a dictionary with custom names."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    # Test with dictionary scoring
+    # Test with dictionary metric
     metric_dict = {
         "Custom Accuracy": "accuracy",
         "Custom Precision": "precision",
@@ -588,7 +588,7 @@ def test_summarize_metric_dict(forest_binary_classification_with_test):
 
 
 def test_summarize_metric_dict_with_callables(linear_regression_with_test):
-    """Test that scoring dict works with callable functions."""
+    """Test that metric dict works with callable functions."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
