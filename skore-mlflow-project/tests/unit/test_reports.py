@@ -5,7 +5,6 @@ from sklearn.datasets import load_diabetes, load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from skore import CrossValidationReport, EstimatorReport
-import skore_mlflow_project.reports as reports_module
 
 from skore_mlflow_project.reports import (
     Artifact,
