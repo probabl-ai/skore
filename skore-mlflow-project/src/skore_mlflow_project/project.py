@@ -161,7 +161,7 @@ class Project:
                     "learner": report.estimator_name_,
                 }
             )
-            _log_iter(iterator, log_sub_iters=True)
+            _log_iter(iterator)
 
             with TemporaryDirectory() as tmp_dir:
                 pickle_path = Path(tmp_dir) / "report.pkl"
@@ -257,14 +257,12 @@ class Project:
 ## Helpers for logging in MLFlow:
 
 
-def _log_iter(iterator: Iterable[NestedLogItem], *, log_sub_iters: bool) -> None:
+def _log_iter(iterator: Iterable[NestedLogItem]) -> None:
     for obj in iterator:
         if isinstance(obj, tuple):
-            if not log_sub_iters:
-                continue
             subrun_name, sub_iter = obj
             with mlflow.start_run(nested=True, run_name=subrun_name):
-                _log_iter(sub_iter, log_sub_iters=False)
+                _log_iter(sub_iter)
         elif isinstance(obj, Tag):
             mlflow.set_tag(obj.key, obj.value)
         elif isinstance(obj, Params):
@@ -351,26 +349,16 @@ def _log_artifact(artifact: Artifact) -> None:
 
 def _flatten_df_index(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize a dataframe-like object before CSV logging."""
-    if not callable(getattr(df, "copy", None)):
-        return df
-
     df = df.copy(deep=False)
-    columns = getattr(df, "columns", None)
-    if (
-        columns is not None
-        and getattr(columns, "nlevels", 1) > 1
-        and callable(getattr(columns, "droplevel", None))
-    ):
+    columns = df.columns
+    if columns is not None and columns.nlevels > 1:
         df.columns = columns.droplevel(0)
 
-    index = getattr(df, "index", None)
-    is_range_index = index is not None and type(index).__name__ == "RangeIndex"
-    if is_range_index and len(getattr(index, "names", [])) == 1:
+    index = df.index
+    if isinstance(index, pd.RangeIndex) and len(index.names) == 1:
         return df
 
-    if callable(getattr(df, "reset_index", None)):
-        return df.reset_index()
-    return df
+    return df.reset_index()
 
 
 HTML_UTF8_TEMPLATE = """
