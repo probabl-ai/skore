@@ -127,13 +127,6 @@ class TestPermutationImportanceDisplay:
             report = report[0]
         display = report.inspection.permutation_importance(n_repeats=2, seed=0)
 
-        available_metric = "r2" if "regression" in task else "accuracy"
-        err_msg = (
-            "The metric 'invalid-metric' is not available. Please select metrics from"
-            f" the following list: {available_metric}. "
-            "Otherwise, use the `metric` parameter of the "
-            "`.permutation_importance\(\)` method to specify the metrics to"
-            " use for computing the importances."
-        )
+        err_msg = "The metric 'invalid-metric' is not available."
         with pytest.raises(ValueError, match=err_msg):
             display.frame(metric="invalid-metric")

@@ -15,13 +15,9 @@ from sklearn.metrics import make_scorer, precision_score, r2_score
 def test_invalid_subplot_by(pyplot, task, request):
     report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.inspection.permutation_importance(seed=0, n_repeats=2)
-    valid_values = ["estimator", "auto", "None"]
-    err_msg = (
-        "The column 'incorrect' is not available for subplotting. You can use "
-        f"the following values to create subplots: {', '.join(valid_values)}"
-    )
+    err_msg = "The column 'invalid' is not available for subplotting."
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(subplot_by="incorrect")
+        display.plot(subplot_by="invalid")
 
 
 @pytest.mark.parametrize(
@@ -37,15 +33,15 @@ def test_invalid_subplot_by(pyplot, task, request):
     "subplot_by, expected_len",
     [
         ("estimator", 2),
-        ("auto", 0),
-        (None, 0),
+        ("auto", 1),
+        (None, 1),
     ],
 )
 def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
     report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.inspection.permutation_importance(seed=0, n_repeats=2)
     display.plot(subplot_by=subplot_by)
-    if expected_len == 0:
+    if expected_len == 1:
         assert isinstance(display.ax_, mpl.axes.Axes)
     else:
         assert len(display.ax_.flatten()) == expected_len

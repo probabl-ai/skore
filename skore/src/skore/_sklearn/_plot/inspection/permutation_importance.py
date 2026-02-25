@@ -17,7 +17,7 @@ from sklearn.utils.validation import _num_features
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
 from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import Aggregate, DataSource, ReportType
+from skore._sklearn.types import Aggregate, DataSource, Metric, ReportType
 from skore._utils._index import flatten_multi_index
 
 
@@ -79,7 +79,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         Xs: Sequence[ArrayLike],
         ys: Sequence[ArrayLike],
         at_step: int | str,
-        metric: str | Callable | list[str] | tuple[str] | dict[str, Callable] | None,
+        metric: Metric | list[Metric] | dict[str, Metric] | None,
         n_repeats: int,
         max_samples: float,
         n_jobs: int | None,
@@ -479,11 +479,11 @@ class PermutationImportanceDisplay(DisplayMixin):
             for m in metric:
                 if m not in available_metrics:
                     raise ValueError(
-                        f"The metric {m!r} is not available. Please select metrics from"
-                        f" the following list: {', '.join(available_metrics)}. "
+                        f"The metric {m!r} is not available. Please select metrics "
+                        f"from the following list: {', '.join(available_metrics)}. "
                         "Otherwise, use the `metric` parameter of the "
-                        "`.permutation_importance()` method to specify the metrics to"
-                        " use for computing the importances."
+                        "`.permutation_importance()` method to specify the metrics to "
+                        "use for computing the importances."
                     )
             frame = frame.query("metric in @metric")
         if frame["label"].isna().all():
