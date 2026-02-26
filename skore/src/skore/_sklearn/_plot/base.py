@@ -214,10 +214,13 @@ class StyleDisplayMixin:
             try:
                 result = plot_func(self, *args, **kwargs)
             finally:
+                # Checks if the display instance requested specific layout parameters
+                tl_kwargs = getattr(self, "_tight_layout_kwargs", {})
+
                 if hasattr(self, "facet_"):
-                    self.facet_.tight_layout()
+                    self.facet_.tight_layout(**tl_kwargs)
                 else:
-                    plt.tight_layout()
+                    plt.tight_layout(**tl_kwargs)
                 plt.rcParams.update(original_params)
             return result
 
