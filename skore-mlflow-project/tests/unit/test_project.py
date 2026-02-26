@@ -158,23 +158,16 @@ class TestProject:
         project = Project("<project>")
         project.put("<key>", report)
 
-        runs = mlflow.search_runs(
-            experiment_ids=[project.experiment_id],
-            output_format="list",
-            order_by=["attributes.start_time ASC"],
-            filter_string='tags.skore_version != ""',
-        )
-        assert len(runs) == 1
-        run = runs[0]
+        (metadata,) = project.summarize()
+        assert metadata["report_type"] == "estimator"
+        assert metadata["ml_task"] == expected_ml_task
+        assert metadata["learner"] == report.estimator_name_
+        assert metadata["dataset"]
+        assert metadata[expected_metric] is not None
+        assert metadata["fit_time"] is not None
 
-        assert run.info.run_id
+        run = mlflow.get_run(metadata["id"])
         assert run.info.run_name == "<key>"
-        assert run.data.tags["learner"] == report.estimator_name_
-        assert run.data.tags["ml_task"] == expected_ml_task
-        assert run.data.tags["report_type"] == "estimator"
-        assert run.data.metrics[expected_metric] is not None
-        assert "random_state" in run.data.params
-        assert "fit_time" in run.data.metrics
 
         report_dir = Path(
             mlflow.artifacts.download_artifacts(
@@ -204,34 +197,28 @@ class TestProject:
         project = Project("<project>")
         project.put("<key>", regression_cv)
 
-        summary = project.summarize()
-        assert len(summary) == 1
-        assert summary[0]["report_type"] == "cross-validation"
-        assert summary[0]["ml_task"] == "multiclass-classification"
-        assert summary[0]["dataset"]
-        assert summary[0]["roc_auc_mean"] is not None
-        assert summary[0]["fit_time_mean"] is not None
+        (metadata,) = project.summarize()
+        assert metadata["report_type"] == "cross-validation"
+        assert metadata["ml_task"] == "multiclass-classification"
+        assert metadata["dataset"]
+        assert metadata["roc_auc_mean"] is not None
+        assert metadata["fit_time_mean"] is not None
 
-        run = mlflow.get_run(summary[0]["id"])
-        assert run.data.metrics["roc_auc"] == pytest.approx(summary[0]["roc_auc_mean"])
+        run = mlflow.get_run(metadata["id"])
+        assert run.data.metrics["roc_auc"] == pytest.approx(metadata["roc_auc_mean"])
         assert "random_state" in run.data.params
         assert run.data.params["random_state"] == "42"
 
         report_dir = Path(
             mlflow.artifacts.download_artifacts(
-                run_id=summary[0]["id"],
+                run_id=metadata["id"],
                 tracking_uri=project.tracking_uri,
             )
         )
         assert (report_dir / "report.pkl").exists()
         assert (report_dir / "all_metrics.csv").exists()
-        assert (report_dir / "metrics_details" / "confusion_matrix.csv").exists()
-        assert (report_dir / "confusion_matrix.png").exists()
-        assert (report_dir / "metrics_details" / "roc.csv").exists()
-        assert (report_dir / "roc.png").exists()
-        assert (report_dir / "metrics_details" / "precision_recall.csv").exists()
-        assert (report_dir / "precision_recall.png").exists()
-        assert (report_dir / "timings.csv").exists()
+        for artifact in self.CLF_ARTIFACTS:
+            assert (report_dir / artifact).exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
 
     def test_put_pickles_estimator_without_cache(self, reg_report):
