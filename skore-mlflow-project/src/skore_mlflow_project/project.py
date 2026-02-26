@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from importlib.metadata import version
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TypedDict, cast
+from typing import Any, TypedDict, cast
 
 import joblib
 import mlflow
@@ -270,14 +270,14 @@ def _log_iter(iterator: Iterable[NestedLogItem]) -> None:
         elif isinstance(obj, Metric):
             mlflow.log_metric(obj.name.replace(".", "_"), obj.value)
         elif isinstance(obj, Model):
-            _log_model(obj.model)
+            _log_model(obj.model, input_example=obj.input_example)
         elif isinstance(obj, Artifact):
             _log_artifact(obj)
         else:
             raise TypeError(type(obj))
 
 
-def _log_model(model: BaseEstimator) -> None:
+def _log_model(model: BaseEstimator, *, input_example: Any) -> None:
     try:
         with (
             # MLflow 3.10 emits this warning (and not 3.9), looks like a bug:
@@ -291,7 +291,7 @@ def _log_model(model: BaseEstimator) -> None:
             # MLflow 3.0 can trigger this from pydantic internals.
             _filterwarnings(Warning, ".*@model_validator.*deprecated.*"),
         ):
-            mlflow.sklearn.log_model(model, name="model")
+            mlflow.sklearn.log_model(model, name="model", input_example=input_example)
     except TypeError as exc:
         # MLflow < 3 does not support the `name` parameter.
         if "unexpected keyword argument 'name'" not in str(exc):
@@ -303,6 +303,7 @@ def _log_model(model: BaseEstimator) -> None:
                 # Avoid importing MLflow's pyfunc flavor path on MLflow 2, which emits
                 # deprecation warnings with modern pydantic versions:
                 pyfunc_predict_fn="__skore_disabled_pyfunc__",
+                input_example=input_example,
             )
 
 

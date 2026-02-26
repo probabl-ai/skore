@@ -64,7 +64,7 @@ def test_log_model_falls_back_for_mlflow_2(monkeypatch) -> None:
 
     monkeypatch.setattr(mlflow.sklearn, "log_model", _log_model)
 
-    project_module._log_model(LinearRegression())
+    project_module._log_model(LinearRegression(), input_example=None)
 
     assert len(calls) == 2
 
@@ -76,7 +76,7 @@ def test_log_model_reraises_unexpected_typeerror(monkeypatch) -> None:
     monkeypatch.setattr(mlflow.sklearn, "log_model", _log_model)
 
     with pytest.raises(TypeError, match="unexpected failure"):
-        project_module._log_model(LinearRegression())
+        project_module._log_model(LinearRegression(), input_example=None)
 
 
 def test_log_artifact_raises_on_unsupported_payload() -> None:

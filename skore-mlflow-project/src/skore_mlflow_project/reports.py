@@ -8,10 +8,15 @@ from dataclasses import dataclass
 from typing import Any, TypeAlias
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from numpy.typing import NDArray
 from sklearn.base import BaseEstimator
 
 from ._matplotlib import switch_mpl_backend
 from .protocol import CrossValidationReport, EstimatorReport
+
+ArrayLike: TypeAlias = pd.DataFrame | NDArray[np.generic]
 
 
 @dataclass
@@ -50,6 +55,7 @@ class Model:
     """Model payload."""
 
     model: BaseEstimator
+    input_example: ArrayLike
 
 
 CLF_METRICS = {
@@ -172,7 +178,7 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
     estimator_report = report.create_estimator_report()
     estimator = estimator_report.estimator_
     yield Params(estimator.get_params())
-    yield Model(estimator)
+    yield Model(estimator, _sample_input_example(report.X))
 
     yield Artifact("data.analyze", _data_analyze_html(report))
 
@@ -199,7 +205,7 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
 
     estimator = report.estimator_
     yield Params(estimator.get_params())
-    yield Model(estimator)
+    yield Model(estimator, _sample_input_example(report.X_test))
 
     yield Artifact("data.analyze", _data_analyze_html(report))
 
@@ -210,3 +216,10 @@ def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
             return report.data.analyze()._repr_html_()
         finally:
             plt.close("all")
+
+
+def _sample_input_example(X: ArrayLike, *, max_samples: int = 5) -> ArrayLike:
+    if isinstance(X, pd.DataFrame):
+        return X.head(max_samples)
+    else:
+        return X[:max_samples]
