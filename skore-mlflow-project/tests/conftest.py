@@ -8,7 +8,8 @@ from skore import CrossValidationReport, EstimatorReport
 
 
 @fixture(autouse=True)
-def isolated_mlflow_tracking(tmp_path):
+def isolated_mlflow_tracking(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     previous_tracking_uri = mlflow.get_tracking_uri()
     tracking_uri = f"sqlite:///{tmp_path}/mlflow.db"
     mlflow.set_tracking_uri(tracking_uri)
