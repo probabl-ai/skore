@@ -286,13 +286,14 @@ def _log_model(model: BaseEstimator) -> None:
             _filterwarnings(FutureWarning, ".*pickle.*format.*arbitrary code.*"),
             # MLflow 3.4 on SQLAlchemy 2 emits this warning internally.
             _filterwarnings(Warning, r".*Query.get\(\) method is considered legacy.*"),
+            # MLflow <= 3.2 emits this warning internally.
+            _filterwarnings(DeprecationWarning, r".*utcnow\(\) is deprecated.*"),
         ):
             mlflow.sklearn.log_model(model, name="model")
     except TypeError as exc:
         # MLflow < 3 does not support the `name` parameter.
         if "unexpected keyword argument 'name'" not in str(exc):
             raise
-        # MLflow 2.22 emits this warning on Python 3.12 from internal code.
         with _filterwarnings(DeprecationWarning, r".*utcnow\(\) is deprecated.*"):
             mlflow.sklearn.log_model(
                 model,
