@@ -5,6 +5,7 @@ from __future__ import annotations
 import itertools
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
+from numbers import Number
 from typing import Any, TypeAlias
 
 import matplotlib.pyplot as plt
@@ -159,9 +160,10 @@ def iter_estimator_metrics(
     for name, kwargs in METRICS[ml_task].items():
         method = getattr(report_any.metrics, name)
         yield Metric(name, method(**kwargs))
-        if not kwargs or ml_task == "regression":
+        artifact_payload = method()
+        if isinstance(artifact_payload, Number):
             continue
-        yield Artifact(name, method())
+        yield Artifact(name, artifact_payload)
 
     for name in PLOTS[ml_task]:
         method = getattr(report_any.metrics, name)
