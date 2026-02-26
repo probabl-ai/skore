@@ -1,6 +1,4 @@
-import shutil
-from pathlib import Path
-
+import mlflow
 from pytest import fixture
 from sklearn.datasets import load_breast_cancer, load_diabetes, load_iris, load_linnerud
 from sklearn.linear_model import Ridge
@@ -9,10 +7,17 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from skore import CrossValidationReport, EstimatorReport
 
 
-@fixture(scope="session", autouse=True)
-def cleanup_mlruns():
-    yield
-    shutil.rmtree(Path.cwd() / "mlruns", ignore_errors=True)
+@fixture(autouse=True)
+def isolated_mlflow_tracking(tmp_path):
+    previous_tracking_uri = mlflow.get_tracking_uri()
+    tracking_uri = f"sqlite:///{tmp_path}/mlflow.db"
+    mlflow.set_tracking_uri(tracking_uri)
+    try:
+        yield tracking_uri
+    finally:
+        while mlflow.active_run() is not None:
+            mlflow.end_run()
+        mlflow.set_tracking_uri(previous_tracking_uri)
 
 
 @fixture(scope="module")

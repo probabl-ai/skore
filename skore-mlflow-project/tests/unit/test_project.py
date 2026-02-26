@@ -25,14 +25,14 @@ def test_report_type_invalid_report() -> None:
         report_type(object())
 
 
-def test_project_put_requires_string_key(tmp_path, reg_report) -> None:
-    project = Project("<project>", tracking_uri=f"sqlite:///{tmp_path}/mlflow.db")
+def test_project_put_requires_string_key(reg_report) -> None:
+    project = Project("<project>")
     with pytest.raises(TypeError, match="Key must be a string"):
         project.put(1, reg_report)
 
 
-def test_project_put_requires_supported_report_type(tmp_path) -> None:
-    project = Project("<project>", tracking_uri=f"sqlite:///{tmp_path}/mlflow.db")
+def test_project_put_requires_supported_report_type() -> None:
+    project = Project("<project>")
     with pytest.raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
         project.put("<key>", object())
 
@@ -116,12 +116,8 @@ class TestProject:
         "roc.png",
     ]
 
-    @staticmethod
-    def tracking_uri(tmp_path):
-        return f"sqlite:///{tmp_path}/mlflow.db"
-
-    def test_init(self, tmp_path):
-        tracking_uri = self.tracking_uri(tmp_path)
+    def test_init_with_explicit_tracking_uri(self, tmp_path):
+        tracking_uri = f"sqlite:///{tmp_path}/custom-mlflow.db"
 
         project = Project("<project>", tracking_uri=tracking_uri)
 
@@ -152,7 +148,6 @@ class TestProject:
     )
     def test_put(
         self,
-        tmp_path,
         request,
         report_fixture,
         expected_ml_task,
@@ -160,7 +155,6 @@ class TestProject:
         expected_artifacts,
     ):
         report = request.getfixturevalue(report_fixture)
-        mlflow.set_tracking_uri(self.tracking_uri(tmp_path))
         project = Project("<project>")
         project.put("<key>", report)
 
@@ -194,8 +188,8 @@ class TestProject:
         for artifact in expected_artifacts:
             assert (report_dir / artifact).exists()
 
-    def test_get(self, tmp_path, reg_report):
-        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
+    def test_get(self, reg_report):
+        project = Project("<project>")
         project.put("<key>", reg_report)
 
         summary = project.summarize()
@@ -206,8 +200,8 @@ class TestProject:
         assert len(predictions) == len(reg_report.X_test)
         assert predictions == pytest.approx(expected_predictions)
 
-    def test_put_cross_validation(self, tmp_path, regression_cv):
-        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
+    def test_put_cross_validation(self, regression_cv):
+        project = Project("<project>")
         project.put("<key>", regression_cv)
 
         summary = project.summarize()
@@ -240,8 +234,8 @@ class TestProject:
         assert (report_dir / "timings.csv").exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
 
-    def test_put_pickles_estimator_without_cache(self, tmp_path, reg_report):
-        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
+    def test_put_pickles_estimator_without_cache(self, reg_report):
+        project = Project("<project>")
         original_cache = reg_report._cache
         reg_report._cache[self.CACHE_SENTINEL] = "present"
 
@@ -254,8 +248,8 @@ class TestProject:
         restored = project.get(summary[0]["id"])
         assert self.CACHE_SENTINEL not in restored._cache
 
-    def test_put_pickles_cv_without_cache(self, tmp_path, regression_cv):
-        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
+    def test_put_pickles_cv_without_cache(self, regression_cv):
+        project = Project("<project>")
         root_cache = regression_cv._cache
         split_cache = regression_cv.estimator_reports_[0]._cache
         regression_cv._cache[self.CACHE_SENTINEL] = "root"
@@ -275,14 +269,14 @@ class TestProject:
         assert self.CACHE_SENTINEL not in restored._cache
         assert self.CACHE_SENTINEL not in restored.estimator_reports_[0]._cache
 
-    def test_get_unknown_id(self, tmp_path):
-        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
+    def test_get_unknown_id_with_explicit_tracking_uri(self, tmp_path):
+        tracking_uri = f"sqlite:///{tmp_path}/missing-id.db"
+        project = Project("<project>", tracking_uri=tracking_uri)
 
         with pytest.raises(KeyError):
             project.get("missing-run-id")
 
-    def test_delete(self, tmp_path):
-        tracking_uri = self.tracking_uri(tmp_path)
-        project = Project("project", tracking_uri=tracking_uri)
+    def test_delete(self):
+        project = Project("project")
         with pytest.raises(NotImplementedError):
             Project.delete(name=project.name)
