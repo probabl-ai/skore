@@ -176,11 +176,12 @@ class TestProject:
         summary = project.summarize()
         assert len(summary) == 1
         assert summary[0]["report_type"] == "cross-validation"
-        assert summary[0]["rmse_mean"] is not None
+        assert summary[0]["ml_task"] == "multiclass-classification"
+        assert summary[0]["roc_auc_mean"] is not None
         assert summary[0]["fit_time_mean"] is not None
 
         run = mlflow.get_run(summary[0]["id"])
-        assert run.data.metrics["rmse"] == pytest.approx(summary[0]["rmse_mean"])
+        assert run.data.metrics["roc_auc"] == pytest.approx(summary[0]["roc_auc_mean"])
         assert "random_state" in run.data.params
         assert run.data.params["random_state"] == "42"
 
@@ -192,8 +193,12 @@ class TestProject:
         )
         assert (report_dir / "report.pkl").exists()
         assert (report_dir / "all_metrics.csv").exists()
-        assert (report_dir / "metrics_details" / "prediction_error.csv").exists()
-        assert (report_dir / "prediction_error.png").exists()
+        assert (report_dir / "metrics_details" / "confusion_matrix.csv").exists()
+        assert (report_dir / "confusion_matrix.png").exists()
+        assert (report_dir / "metrics_details" / "roc.csv").exists()
+        assert (report_dir / "roc.png").exists()
+        assert (report_dir / "metrics_details" / "precision_recall.csv").exists()
+        assert (report_dir / "precision_recall.png").exists()
         assert (report_dir / "timings.csv").exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
 

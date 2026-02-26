@@ -1,15 +1,11 @@
-import os
 import shutil
 from pathlib import Path
 
 from pytest import fixture
-
-# TODO: remove once I finished iterating with codex.
-os.environ.setdefault("JOBLIB_MULTIPROCESSING", "0")
-
-from sklearn.datasets import make_regression
+from sklearn.datasets import load_diabetes, load_iris
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
 from skore import CrossValidationReport, EstimatorReport
 
 
@@ -21,7 +17,7 @@ def cleanup_mlruns():
 
 @fixture(scope="module")
 def regression() -> EstimatorReport:
-    X, y = make_regression(random_state=42, n_features=10)
+    X, y = load_diabetes(return_X_y=True, as_frame=True)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
@@ -37,6 +33,7 @@ def regression() -> EstimatorReport:
 
 @fixture(scope="module")
 def regression_cv() -> CrossValidationReport:
-    X, y = make_regression(random_state=42, n_features=10)
-
-    return CrossValidationReport(Ridge(random_state=42), X=X, y=y, splitter=2)
+    X, y = load_iris(return_X_y=True)
+    return CrossValidationReport(
+        DecisionTreeClassifier(max_depth=3, random_state=42), X=X, y=y, splitter=2
+    )

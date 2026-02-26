@@ -1,7 +1,13 @@
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.datasets import load_diabetes, load_iris
+from sklearn.datasets import (
+    load_breast_cancer,
+    load_diabetes,
+    load_iris,
+    load_linnerud,
+    load_wine,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from skore import CrossValidationReport, EstimatorReport
@@ -29,8 +35,9 @@ CV_REPORT_FIXTURES = [
 
 @pytest.fixture(scope="module")
 def clf_report() -> EstimatorReport:
-    X, y = load_iris(return_X_y=True, as_frame=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y == 0, random_state=0)
+    """binary-classification"""
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     return EstimatorReport(
         DecisionTreeClassifier(random_state=0),
         X_train=X_train,
@@ -42,6 +49,7 @@ def clf_report() -> EstimatorReport:
 
 @pytest.fixture(scope="module")
 def mclf_report() -> EstimatorReport:
+    """multiclass-classification"""
     X, y = load_iris(return_X_y=True, as_frame=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     return EstimatorReport(
@@ -55,6 +63,7 @@ def mclf_report() -> EstimatorReport:
 
 @pytest.fixture(scope="module")
 def reg_report() -> EstimatorReport:
+    """regression"""
     X, y = load_diabetes(return_X_y=True, as_frame=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     return EstimatorReport(
@@ -68,13 +77,9 @@ def reg_report() -> EstimatorReport:
 
 @pytest.fixture(scope="module")
 def mreg_report() -> EstimatorReport:
-    X, y = load_diabetes(return_X_y=True, as_frame=True)
-    multi_target_y = pd.concat(
-        [y, y + np.random.default_rng(0).normal(0, 20, len(y))], axis=1
-    )
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, multi_target_y, random_state=0
-    )
+    """multiouput-regression"""
+    X, y = load_linnerud(return_X_y=True, as_frame=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     return EstimatorReport(
         DecisionTreeRegressor(random_state=0, max_depth=5),
         X_train=X_train,
@@ -85,25 +90,27 @@ def mreg_report() -> EstimatorReport:
 
 
 @pytest.fixture(scope="module")
-def cv_mclf_report() -> CrossValidationReport:
-    X, y = load_iris(return_X_y=True, as_frame=True)
+def cv_clf_report() -> CrossValidationReport:
+    """binary-classification"""
+    X, y = load_breast_cancer(return_X_y=True, as_frame=True)
     return CrossValidationReport(
         DecisionTreeClassifier(random_state=0), X, y, splitter=2
     )
 
 
 @pytest.fixture(scope="module")
-def cv_clf_report() -> CrossValidationReport:
-    X, y = load_iris(return_X_y=True, as_frame=True)
-    binary_y = y == np.argmax(np.bincount(y))
+def cv_mclf_report() -> CrossValidationReport:
+    """multiclass-classification"""
+    X, y = load_wine(return_X_y=True)
     return CrossValidationReport(
-        DecisionTreeClassifier(random_state=0), X, binary_y, splitter=2
+        DecisionTreeClassifier(random_state=0), X, y, splitter=2
     )
 
 
 @pytest.fixture(scope="module")
 def cv_reg_report() -> CrossValidationReport:
-    X, y = load_diabetes(return_X_y=True, as_frame=True)
+    """regression"""
+    X, y = load_diabetes(return_X_y=True)
     return CrossValidationReport(
         DecisionTreeRegressor(random_state=0, max_depth=5), X, y, splitter=2
     )
@@ -111,6 +118,7 @@ def cv_reg_report() -> CrossValidationReport:
 
 @pytest.fixture(scope="module")
 def cv_mreg_report() -> CrossValidationReport:
+    """multiouput-regression"""
     X, y = load_diabetes(return_X_y=True, as_frame=True)
     multi_target_y = pd.concat(
         [y, y + np.random.default_rng(0).normal(0, 20, len(y))],
