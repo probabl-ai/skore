@@ -167,9 +167,7 @@ class Project:
 
     def _log_iter(self, iterator: Iterable[NestedLogItem]) -> None:
         for obj in iterator:
-            if obj is None:
-                continue
-            elif isinstance(obj, Tag):
+            if isinstance(obj, Tag):
                 mlflow.set_tag(obj.key, obj.value)
             elif isinstance(obj, Params):
                 mlflow.log_params(obj.params)
@@ -215,33 +213,20 @@ class Project:
             ),
         )
 
-        return [self._run_to_metadata(run) for run in runs]
+        metadatas = []
+        for run in runs:
+            try:
+                metadatas.append(self._run_to_metadata(run))
+            except KeyError:
+                continue
+
+        return metadatas
 
     @staticmethod
     def _run_to_metadata(run: MLFlowRun) -> Metadata:
         tags = run.data.tags
         metrics = run.data.metrics
         report_type = tags["report_type"]
-
-        metadata = {
-            "id": run.info.run_id,
-            "key": run.info.run_name,
-            "date": format_date(run.info.start_time),
-            "report_type": report_type,
-            "learner": tags["learner"],
-            "ml_task": tags["ml_task"],
-            "dataset": "",  # TODO
-            "rmse": None,
-            "log_loss": None,
-            "roc_auc": None,
-            "fit_time": None,
-            "predict_time": None,
-            "rmse_mean": None,
-            "log_loss_mean": None,
-            "roc_auc_mean": None,
-            "fit_time_mean": None,
-            "predict_time_mean": None,
-        }
 
         if report_type == "estimator":
             metrics = {
@@ -261,6 +246,26 @@ class Project:
             }
         else:
             raise ValueError(f"Unsupported report type: {report_type}")
+
+        metadata = {
+            "id": run.info.run_id,
+            "key": run.info.run_name,
+            "date": format_date(run.info.start_time),
+            "report_type": report_type,
+            "learner": tags["learner"],
+            "ml_task": tags["ml_task"],
+            "dataset": _dataset_fingerprint(run),
+            "rmse": None,
+            "log_loss": None,
+            "roc_auc": None,
+            "fit_time": None,
+            "predict_time": None,
+            "rmse_mean": None,
+            "log_loss_mean": None,
+            "roc_auc_mean": None,
+            "fit_time_mean": None,
+            "predict_time_mean": None,
+        }
         return cast(Metadata, {**metadata, **metrics})
 
     @staticmethod
@@ -391,3 +396,10 @@ HTML_UTF8_TEMPLATE = """
 
 def _wrap_html(html: str) -> str:
     return HTML_UTF8_TEMPLATE.format(html=html)
+
+
+def _dataset_fingerprint(run: MLFlowRun) -> str:
+    """Extract a stable dataset fingerprint from MLflow run inputs."""
+    dataset_inputs = run.inputs.dataset_inputs
+
+    return "-".join(inp.dataset.digest for inp in dataset_inputs)

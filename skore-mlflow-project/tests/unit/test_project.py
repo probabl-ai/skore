@@ -135,7 +135,7 @@ class TestProject:
         assert summary[0]["learner"] == "Ridge"
         assert summary[0]["ml_task"] == "regression"
         assert summary[0]["report_type"] == "estimator"
-        assert summary[0]["dataset"] is not None
+        assert summary[0]["dataset"]
         assert summary[0]["rmse"] is not None
         assert summary[0]["fit_time"] is not None
 
@@ -177,6 +177,7 @@ class TestProject:
         assert len(summary) == 1
         assert summary[0]["report_type"] == "cross-validation"
         assert summary[0]["ml_task"] == "multiclass-classification"
+        assert summary[0]["dataset"]
         assert summary[0]["roc_auc_mean"] is not None
         assert summary[0]["fit_time_mean"] is not None
 
