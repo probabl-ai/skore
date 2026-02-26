@@ -10,6 +10,10 @@ from sklearn.model_selection import KFold, RepeatedKFold
 from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.artifact.media import (
+    ConfusionMatrixDataFrameTest,
+    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixSVGTest,
+    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
     ImpurityDecrease,
     PermutationImportanceTest,
@@ -381,6 +385,10 @@ class TestCrossValidationReportPayload:
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
+            ConfusionMatrixDataFrameTest,
+            ConfusionMatrixDataFrameTrain,
+            ConfusionMatrixSVGTest,
+            ConfusionMatrixSVGTrain,
             EstimatorHtmlRepr,
             ImpurityDecrease,
             PermutationImportanceTest,
