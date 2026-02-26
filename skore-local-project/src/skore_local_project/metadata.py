@@ -7,7 +7,7 @@ from contextlib import suppress
 from dataclasses import InitVar, dataclass, field, fields
 from datetime import datetime, timezone
 from math import isfinite
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING
 
 from joblib import hash
 
@@ -27,27 +27,6 @@ def cast_to_float(value: Any) -> float | None:
             return float_value
 
     return None
-
-
-def report_type(
-    report: EstimatorReport | CrossValidationReport,
-) -> Literal["cross-validation", "estimator"]:
-    """Human readable type of a report."""
-    if hasattr(report, "_report_type"):
-        return cast(
-            Literal["cross-validation", "estimator"],
-            report._report_type,
-        )
-
-    # TODO: remove this when the minimum version of skore is 0.13
-    # it is only necessary for backward compatibility with skore < 0.13
-    from skore import CrossValidationReport, EstimatorReport
-
-    if isinstance(report, CrossValidationReport):
-        return "cross-validation"
-    if isinstance(report, EstimatorReport):
-        return "estimator"
-    raise TypeError
 
 
 @dataclass(kw_only=True)
@@ -98,7 +77,7 @@ class ReportMetadata(ABC):
         self.date = datetime.now(timezone.utc).isoformat()
         self.learner = report.estimator_name_
         self.ml_task = report.ml_task
-        self.report_type = report_type(report)
+        self.report_type = report._report_type
         self.dataset = hash(report.y_test if hasattr(report, "y_test") else report.y)
 
 
