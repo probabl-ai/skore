@@ -277,6 +277,8 @@ def _log_model(model: BaseEstimator, *, input_example: Any) -> None:
         with (
             # MLflow 3.10 emits this warning (and not 3.9), looks like a bug:
             _filterwarnings(UserWarning, ".*Any type hint is inferred as AnyType.*"),
+            # Found during manual tests:
+            _filterwarnings(UserWarning, r".*schema contains integer column.*"),
             # MLflow 3.9 emits this warning but not 3.10...
             _filterwarnings(FutureWarning, ".*pickle.*format.*arbitrary code.*"),
             # MLflow 3.4 on SQLAlchemy 2 emits this warning internally.
