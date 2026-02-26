@@ -193,9 +193,9 @@ class TestProject:
         assert len(predictions) == len(reg_report.X_test)
         assert predictions == pytest.approx(expected_predictions)
 
-    def test_put_cross_validation(self, regression_cv):
+    def test_put_cross_validation(self, cv_mclf_report):
         project = Project("<project>")
-        project.put("<key>", regression_cv)
+        project.put("<key>", cv_mclf_report)
 
         (metadata,) = project.summarize()
         assert metadata["report_type"] == "cross-validation"
@@ -236,20 +236,20 @@ class TestProject:
         restored = project.get(summary[0]["id"])
         assert self.CACHE_SENTINEL not in restored._cache
 
-    def test_put_pickles_cv_without_cache(self, regression_cv):
+    def test_put_pickles_cv_without_cache(self, cv_reg_report):
         project = Project("<project>")
-        root_cache = regression_cv._cache
-        split_cache = regression_cv.estimator_reports_[0]._cache
-        regression_cv._cache[self.CACHE_SENTINEL] = "root"
-        regression_cv.estimator_reports_[0]._cache[self.CACHE_SENTINEL] = "split"
+        root_cache = cv_reg_report._cache
+        split_cache = cv_reg_report.estimator_reports_[0]._cache
+        cv_reg_report._cache[self.CACHE_SENTINEL] = "root"
+        cv_reg_report.estimator_reports_[0]._cache[self.CACHE_SENTINEL] = "split"
 
-        project.put("<key>", regression_cv)
+        project.put("<key>", cv_reg_report)
 
-        assert regression_cv._cache is root_cache
-        assert regression_cv.estimator_reports_[0]._cache is split_cache
-        assert regression_cv._cache[self.CACHE_SENTINEL] == "root"
+        assert cv_reg_report._cache is root_cache
+        assert cv_reg_report.estimator_reports_[0]._cache is split_cache
+        assert cv_reg_report._cache[self.CACHE_SENTINEL] == "root"
         assert (
-            regression_cv.estimator_reports_[0]._cache[self.CACHE_SENTINEL] == "split"
+            cv_reg_report.estimator_reports_[0]._cache[self.CACHE_SENTINEL] == "split"
         )
 
         summary = project.summarize()

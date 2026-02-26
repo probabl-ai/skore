@@ -1,6 +1,13 @@
 import mlflow
+import pandas as pd
 from pytest import fixture
-from sklearn.datasets import load_breast_cancer, load_diabetes, load_iris, load_linnerud
+from sklearn.datasets import (
+    load_breast_cancer,
+    load_diabetes,
+    load_iris,
+    load_linnerud,
+    load_wine,
+)
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -77,8 +84,44 @@ def mreg_report() -> EstimatorReport:
 
 
 @fixture(scope="module")
-def regression_cv() -> CrossValidationReport:
-    X, y = load_iris(return_X_y=True)
+def cv_clf_report() -> CrossValidationReport:
+    """binary-classification"""
+    X, y = load_breast_cancer(return_X_y=True, as_frame=True)
     return CrossValidationReport(
-        DecisionTreeClassifier(max_depth=3, random_state=42), X=X, y=y, splitter=2
+        DecisionTreeClassifier(random_state=0), X, y, splitter=2
+    )
+
+
+@fixture(scope="module")
+def cv_mclf_report() -> CrossValidationReport:
+    """multiclass-classification"""
+    X, y = load_wine(return_X_y=True)
+    return CrossValidationReport(
+        DecisionTreeClassifier(max_depth=3, random_state=42), X, y, splitter=2
+    )
+
+
+@fixture(scope="module")
+def cv_reg_report() -> CrossValidationReport:
+    """regression"""
+    X, y = load_diabetes(return_X_y=True)
+    return CrossValidationReport(
+        DecisionTreeRegressor(random_state=0, max_depth=5), X, y, splitter=2
+    )
+
+
+@fixture(scope="module")
+def cv_mreg_report() -> CrossValidationReport:
+    """multiouput-regression"""
+    X, y = load_diabetes(return_X_y=True, as_frame=True)
+    y: pd.Series
+    multi_target_y = pd.concat(
+        [y, y + y.sample(len(y))],
+        axis=1,
+    )
+    return CrossValidationReport(
+        DecisionTreeRegressor(random_state=0, max_depth=5),
+        X,
+        multi_target_y,
+        splitter=2,
     )

@@ -1,13 +1,4 @@
-import numpy as np
-import pandas as pd
 import pytest
-from sklearn.datasets import (
-    load_breast_cancer,
-    load_diabetes,
-    load_wine,
-)
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from skore import CrossValidationReport
 
 from skore_mlflow_project.reports import (
     Artifact,
@@ -25,49 +16,6 @@ CV_REPORT_FIXTURES = [
     "cv_reg_report",
     "cv_mreg_report",
 ]
-
-
-@pytest.fixture(scope="module")
-def cv_clf_report() -> CrossValidationReport:
-    """binary-classification"""
-    X, y = load_breast_cancer(return_X_y=True, as_frame=True)
-    return CrossValidationReport(
-        DecisionTreeClassifier(random_state=0), X, y, splitter=2
-    )
-
-
-@pytest.fixture(scope="module")
-def cv_mclf_report() -> CrossValidationReport:
-    """multiclass-classification"""
-    X, y = load_wine(return_X_y=True)
-    return CrossValidationReport(
-        DecisionTreeClassifier(random_state=0), X, y, splitter=2
-    )
-
-
-@pytest.fixture(scope="module")
-def cv_reg_report() -> CrossValidationReport:
-    """regression"""
-    X, y = load_diabetes(return_X_y=True)
-    return CrossValidationReport(
-        DecisionTreeRegressor(random_state=0, max_depth=5), X, y, splitter=2
-    )
-
-
-@pytest.fixture(scope="module")
-def cv_mreg_report() -> CrossValidationReport:
-    """multiouput-regression"""
-    X, y = load_diabetes(return_X_y=True, as_frame=True)
-    multi_target_y = pd.concat(
-        [y, y + np.random.default_rng(0).normal(0, 20, len(y))],
-        axis=1,
-    )
-    return CrossValidationReport(
-        DecisionTreeRegressor(random_state=0, max_depth=5),
-        X,
-        multi_target_y,
-        splitter=2,
-    )
 
 
 @pytest.fixture
