@@ -4,13 +4,10 @@ import pytest
 from sklearn.datasets import (
     load_breast_cancer,
     load_diabetes,
-    load_iris,
-    load_linnerud,
     load_wine,
 )
-from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from skore import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport
 
 from skore_mlflow_project.reports import (
     Artifact,
@@ -28,62 +25,6 @@ CV_REPORT_FIXTURES = [
     "cv_reg_report",
     "cv_mreg_report",
 ]
-
-
-@pytest.fixture(scope="module")
-def clf_report() -> EstimatorReport:
-    """binary-classification"""
-    X, y = load_breast_cancer(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-    return EstimatorReport(
-        DecisionTreeClassifier(random_state=0),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-
-@pytest.fixture(scope="module")
-def mclf_report() -> EstimatorReport:
-    """multiclass-classification"""
-    X, y = load_iris(return_X_y=True, as_frame=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-    return EstimatorReport(
-        DecisionTreeClassifier(random_state=0),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-
-@pytest.fixture(scope="module")
-def reg_report() -> EstimatorReport:
-    """regression"""
-    X, y = load_diabetes(return_X_y=True, as_frame=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-    return EstimatorReport(
-        DecisionTreeRegressor(random_state=0, max_depth=5),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-
-@pytest.fixture(scope="module")
-def mreg_report() -> EstimatorReport:
-    """multiouput-regression"""
-    X, y = load_linnerud(return_X_y=True, as_frame=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-    return EstimatorReport(
-        DecisionTreeRegressor(random_state=0, max_depth=5),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
 
 
 @pytest.fixture(scope="module")
