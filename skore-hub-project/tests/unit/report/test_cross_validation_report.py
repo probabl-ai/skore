@@ -11,6 +11,9 @@ from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.artifact.media import (
     EstimatorHtmlRepr,
+    ImpurityDecrease,
+    PermutationImportanceTest,
+    PermutationImportanceTrain,
     PrecisionRecallDataFrameTest,
     PrecisionRecallDataFrameTrain,
     PrecisionRecallSVGTest,
@@ -82,6 +85,14 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
 
 @fixture
 def payload(project, small_cv_binary_classification):
+    # Force the compute of the permutations
+    small_cv_binary_classification.inspection.permutation_importance(
+        data_source="train", seed=42
+    )
+    small_cv_binary_classification.inspection.permutation_importance(
+        data_source="test", seed=42
+    )
+
     return CrossValidationReportPayload(
         project=project,
         report=small_cv_binary_classification,
@@ -371,6 +382,9 @@ class TestCrossValidationReportPayload:
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
             EstimatorHtmlRepr,
+            ImpurityDecrease,
+            PermutationImportanceTest,
+            PermutationImportanceTrain,
             PrecisionRecallDataFrameTest,
             PrecisionRecallDataFrameTrain,
             PrecisionRecallSVGTest,

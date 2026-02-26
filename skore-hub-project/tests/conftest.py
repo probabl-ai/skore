@@ -237,7 +237,12 @@ def pytest_configure(config):
     #
     # https://github.com/matplotlib/matplotlib/issues/29119
     # https://matplotlib.org/stable/users/explain/figure/backends.html#selecting-a-backend
+
     matplotlib.use("agg")
+
+    import matplotlib.pyplot as plt
+
+    plt.switch_backend("agg")
 
 
 @fixture
