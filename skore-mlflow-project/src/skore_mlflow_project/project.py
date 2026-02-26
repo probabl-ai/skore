@@ -147,7 +147,7 @@ class Project:
 
         with (
             disable_discrete_autologging(["sklearn"]),
-            mlflow.start_run(run_name=key),
+            mlflow.start_run(run_name=key, experiment_id=self.experiment_id),
         ):
             mlflow.set_tags(
                 {
@@ -157,13 +157,38 @@ class Project:
                     "learner": report.estimator_name_,
                 }
             )
-            _log_iter(iterator)
+            self._log_iter(iterator)
 
             with TemporaryDirectory() as tmp_dir:
                 pickle_path = Path(tmp_dir) / "report.pkl"
                 with _cache_cleared_for_pickle(report):
                     joblib.dump(report, pickle_path)
                 mlflow.log_artifact(local_path=str(pickle_path))
+
+    def _log_iter(self, iterator: Iterable[NestedLogItem]) -> None:
+        for obj in iterator:
+            if obj is None:
+                continue
+            elif isinstance(obj, Tag):
+                mlflow.set_tag(obj.key, obj.value)
+            elif isinstance(obj, Params):
+                mlflow.log_params(obj.params)
+            elif isinstance(obj, Metric):
+                mlflow.log_metric(obj.name.replace(".", "_"), obj.value)
+            elif isinstance(obj, Model):
+                _log_model(obj.model, input_example=obj.input_example)
+            elif isinstance(obj, Artifact):
+                _log_artifact(obj)
+            elif isinstance(obj, Dataset):
+                mlflow.log_input(obj.dataset, context=obj.context)
+            elif isinstance(obj, tuple):
+                subrun_name, sub_iter = obj
+                with mlflow.start_run(
+                    nested=True, run_name=subrun_name, experiment_id=self.experiment_id
+                ):
+                    self._log_iter(sub_iter)
+            else:
+                raise TypeError(type(obj))
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its MLflow run id."""
@@ -251,30 +276,6 @@ class Project:
 
 
 ## Helpers for logging in MLFlow:
-
-
-def _log_iter(iterator: Iterable[NestedLogItem]) -> None:
-    for obj in iterator:
-        if obj is None:
-            continue
-        elif isinstance(obj, tuple):
-            subrun_name, sub_iter = obj
-            with mlflow.start_run(nested=True, run_name=subrun_name):
-                _log_iter(sub_iter)
-        elif isinstance(obj, Tag):
-            mlflow.set_tag(obj.key, obj.value)
-        elif isinstance(obj, Params):
-            mlflow.log_params(obj.params)
-        elif isinstance(obj, Metric):
-            mlflow.log_metric(obj.name.replace(".", "_"), obj.value)
-        elif isinstance(obj, Model):
-            _log_model(obj.model, input_example=obj.input_example)
-        elif isinstance(obj, Artifact):
-            _log_artifact(obj)
-        elif isinstance(obj, Dataset):
-            mlflow.log_input(obj.dataset, context=obj.context)
-        else:
-            raise TypeError(type(obj))
 
 
 def _log_model(model: BaseEstimator, *, input_example: Any) -> None:
