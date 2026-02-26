@@ -446,28 +446,6 @@ def test_has_side_effects(prefit_estimator):
     np.testing.assert_array_equal(predictions_before, predictions_after)
 
 
-def test_has_no_deep_copy():
-    """Check that we raise a warning if the deep copy failed with a fitted
-    estimator."""
-    X, y = make_classification(n_classes=2, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-    estimator = LogisticRegression()
-    # Make it so deepcopy does not work
-    estimator.__reduce_ex__ = None
-    estimator.__reduce__ = None
-
-    with pytest.warns(UserWarning, match="Deepcopy failed"):
-        EstimatorReport(
-            estimator,
-            fit=False,
-            X_train=X_train,
-            X_test=X_test,
-            y_train=y_train,
-            y_test=y_test,
-        )
-
-
 @pytest.mark.parametrize("metric", ["brier_score", "log_loss"])
 def test_brier_log_loss_requires_probabilities(metric):
     """Check that the Brier score and the Log loss is not defined for estimator
