@@ -148,7 +148,6 @@ markupsafe==3.0.3
     #   werkzeug
 matplotlib==3.10.8
     # via
-    #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
     #   mlflow
     #   seaborn
     #   skore
@@ -169,7 +168,6 @@ nodeenv==1.10.0
     # via pre-commit
 numpy==2.2.6
     # via
-    #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
     #   contourpy
     #   matplotlib
     #   mlflow
@@ -207,7 +205,6 @@ packaging==26.0
     #   skops
 pandas==2.3.3
     # via
-    #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
     #   mlflow
     #   seaborn
     #   skore
@@ -318,7 +315,6 @@ rsa==4.9.1
 scikit-learn==1.7.2
     # via
     #   --override skore-mlflow-project/overrides.txt
-    #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
     #   mlflow
     #   skops
     #   skore

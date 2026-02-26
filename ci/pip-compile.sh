@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # This script compiles all the `test-requirements.txt` files, based on combinations of
-# `python`, `scikit-learn` and, for MLflow compatibility testing, `mlflow` versions.
-# These combinations mirror those defined in the GitHub workflows.
+# `python` and `scikit-learn` versions. These combinations mirror those defined in the
+# GitHub workflows.
 #
 # You can pass any `uv pip compile` parameter:
 #
@@ -57,24 +57,6 @@ case $1 in
             COMBINATIONS+=("${PACKAGE};test;3.13;1.6")
             COMBINATIONS+=("${PACKAGE};test;3.13;1.7")
             COMBINATIONS+=("${PACKAGE};test;3.13;1.8")
-
-            # Create additional lockfiles for the dedicated MLflow compatibility job.
-            if [[ "${PACKAGE}" == "skore-mlflow-project" ]]; then
-                COMBINATIONS+=("${PACKAGE};test;3.10;1.5;2.20.4")
-                COMBINATIONS+=("${PACKAGE};test;3.11;1.5;2.21.3")
-                COMBINATIONS+=("${PACKAGE};test;3.12;1.5;2.22.4")
-                COMBINATIONS+=("${PACKAGE};test;3.10;1.7;3.0.1")
-                COMBINATIONS+=("${PACKAGE};test;3.11;1.8;3.1.4")
-                COMBINATIONS+=("${PACKAGE};test;3.12;1.8;3.2.0")
-                COMBINATIONS+=("${PACKAGE};test;3.10;1.5;3.3.2")
-                COMBINATIONS+=("${PACKAGE};test;3.11;1.5;3.4.0")
-                COMBINATIONS+=("${PACKAGE};test;3.12;1.5;3.5.1")
-                COMBINATIONS+=("${PACKAGE};test;3.13;1.5;3.6.0")
-                COMBINATIONS+=("${PACKAGE};test;3.13;1.6;3.7.0")
-                COMBINATIONS+=("${PACKAGE};test;3.13;1.7;3.8.1")
-                COMBINATIONS+=("${PACKAGE};test;3.13;1.8;3.9.0")
-                COMBINATIONS+=("${PACKAGE};test;3.13;1.8;3.10.0")
-            fi
         done
 
         unset PACKAGES
@@ -102,24 +84,21 @@ set -eu
 
     for combination in "${COMBINATIONS[@]}"
     do
-        IFS=";" read -r PACKAGE EXTRA PYTHON SCIKIT_LEARN MLFLOW <<< "${combination}"
+        IFS=";" read -r -a combination <<< "${combination}"
 
-        if [[ -n "${MLFLOW:-}" ]]; then
-            FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/scikit-learn-${SCIKIT_LEARN}/mlflow-${MLFLOW}/${EXTRA}-requirements.txt"
-            echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | scikit-learn==${SCIKIT_LEARN} | mlflow==${MLFLOW} (${counter}/${#COMBINATIONS[@]})"
-        else
-            FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/scikit-learn-${SCIKIT_LEARN}/${EXTRA}-requirements.txt"
-            echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | scikit-learn==${SCIKIT_LEARN} (${counter}/${#COMBINATIONS[@]})"
-        fi
+        PACKAGE="${combination[0]}"
+        EXTRA="${combination[1]}"
+        PYTHON="${combination[2]}"
+        SCIKIT_LEARN="${combination[3]}"
+        FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/scikit-learn-${SCIKIT_LEARN}/${EXTRA}-requirements.txt"
+
+        echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | scikit-learn==${SCIKIT_LEARN} (${counter}/${#COMBINATIONS[@]})"
 
         # Copy everything necessary to compile requirements in `TMPDIR`
         mkdir -p "${TMPDIR}/${PACKAGE}"; cp "${CWD}/../${PACKAGE}/pyproject.toml" "${TMPDIR}/${PACKAGE}"
 
         # Force the `scikit-learn` version by creating file overriding requirements
         echo "scikit-learn==${SCIKIT_LEARN}.*" > "${PACKAGE}/overrides.txt"
-        if [[ -n "${MLFLOW:-}" ]]; then
-            echo "mlflow==${MLFLOW}" >> "${PACKAGE}/overrides.txt"
-        fi
 
         # Create the requirements file tree
         mkdir -p $(dirname "${FILEPATH}")
