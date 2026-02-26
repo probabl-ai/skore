@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import Any, Literal, cast
 
 import numpy as np
@@ -72,11 +72,11 @@ class PermutationImportanceDisplay(DisplayMixin):
         cls,
         *,
         data_source: DataSource,
-        estimators: Sequence[BaseEstimator],
-        names: Sequence[str],
-        splits: Sequence[int | float],
-        Xs: Sequence[ArrayLike],
-        ys: Sequence[ArrayLike],
+        estimator: BaseEstimator,
+        name: str,
+        split: int | float,
+        X: ArrayLike,
+        y: ArrayLike,
         at_step: int | str,
         metric: str | Callable | list[str] | tuple[str] | dict[str, Callable] | None,
         n_repeats: int,
@@ -89,104 +89,98 @@ class PermutationImportanceDisplay(DisplayMixin):
             raise ValueError(f"at_step must be an integer or a string; got {at_step!r}")
 
         if isinstance(at_step, str):
-            first_estimator = estimators[0]
-            if not isinstance(first_estimator, Pipeline):
+            if not isinstance(estimator, Pipeline):
                 raise ValueError(
                     "at_step can only be a string when the estimator is a Pipeline"
                 )
-            at_step = list(first_estimator.named_steps.keys()).index(at_step)
+            at_step = list(estimator.named_steps.keys()).index(at_step)
 
-        all_importances = []
-        for estimator, name, split, X, y in zip(
-            estimators, names, splits, Xs, ys, strict=True
-        ):
-            if isinstance(estimator, Pipeline) and at_step != 0:
-                if abs(at_step) >= len(estimator.steps):
-                    raise ValueError(
-                        "at_step must be strictly smaller in magnitude than the "
-                        "number of steps in the Pipeline, which is "
-                        f"{len(estimator.steps)}; got {at_step}"
-                    )
-                feature_engineering = estimator[:at_step]
-                estimator = estimator[at_step:]
-                X_transformed = feature_engineering.transform(X)
+        if isinstance(estimator, Pipeline) and at_step != 0:
+            if abs(at_step) >= len(estimator.steps):
+                raise ValueError(
+                    "at_step must be strictly smaller in magnitude than the "
+                    "number of steps in the Pipeline, which is "
+                    f"{len(estimator.steps)}; got {at_step}"
+                )
+            feature_engineering = estimator[:at_step]
+            estimator = estimator[at_step:]
+            X_transformed = feature_engineering.transform(X)
+        else:
+            feature_engineering = None
+            X_transformed = X
+
+        feature_names = _get_feature_names(
+            estimator,
+            n_features=_num_features(X_transformed),
+            X=X_transformed,
+            transformer=feature_engineering,
+        )
+
+        if issparse(X_transformed):
+            X_transformed = cast(spmatrix, X_transformed)
+            X_transformed = X_transformed.todense()
+
+        scores = permutation_importance(
+            estimator=estimator,
+            X=X_transformed,
+            y=y,
+            scoring=metric,
+            n_repeats=n_repeats,
+            max_samples=max_samples,
+            n_jobs=n_jobs,
+            random_state=seed,
+        )
+
+        if "importances" in scores:
+            # single metric case -> switch to multi-metric case by wrapping in a
+            # dict with the name of the metric
+            metric_obj = cast(str | Callable | _BaseScorer | None, metric)
+            if metric_obj is None:
+                metric_name = "accuracy" if is_classifier(estimator) else "r2"
+            elif isinstance(metric_obj, str):
+                metric_name = metric_obj
+            elif isinstance(metric_obj, _BaseScorer):
+                metric_name = metric_obj._score_func.__name__.replace("_", " ")
             else:
-                feature_engineering = None
-                X_transformed = X
+                metric_name = metric_obj.__name__.replace("_", " ")
+            scores = {metric_name: scores}
 
-            feature_names = _get_feature_names(
-                estimator,
-                n_features=_num_features(X_transformed),
-                X=X_transformed,
-                transformer=feature_engineering,
-            )
+        df_importances = []
+        for metric_name, metric_values in scores.items():
+            metric_importances = np.atleast_3d(metric_values["importances"])
 
-            if issparse(X_transformed):
-                X_transformed = cast(spmatrix, X_transformed)
-                X_transformed = X_transformed.todense()
+            df_metric_importances = []
+            # we loop across the labels (for classification) or the outputs
+            # (for regression)
+            for target_index, target_importances in enumerate(
+                np.moveaxis(metric_importances, -1, 0)
+            ):
+                df = pd.DataFrame(
+                    target_importances,
+                    index=feature_names,
+                    columns=range(1, n_repeats + 1),
+                ).melt(var_name="repetition")
 
-            scores = permutation_importance(
-                estimator=estimator,
-                X=X_transformed,
-                y=y,
-                scoring=metric,
-                n_repeats=n_repeats,
-                max_samples=max_samples,
-                n_jobs=n_jobs,
-                random_state=seed,
-            )
-
-            if "importances" in scores:
-                # single metric case -> switch to multi-metric case by wrapping in a
-                # dict with the name of the metric
-                metric_obj = cast(str | Callable | _BaseScorer | None, metric)
-                if metric_obj is None:
-                    metric_name = "accuracy" if is_classifier(estimator) else "r2"
-                elif isinstance(metric_obj, str):
-                    metric_name = metric_obj
-                elif isinstance(metric_obj, _BaseScorer):
-                    metric_name = metric_obj._score_func.__name__.replace("_", " ")
+                if metric_importances.shape[-1] == 1:
+                    df["label"], df["output"] = np.nan, np.nan
                 else:
-                    metric_name = metric_obj.__name__.replace("_", " ")
-                scores = {metric_name: scores}
-
-            df_importances = []
-            for metric_name, metric_values in scores.items():
-                metric_importances = np.atleast_3d(metric_values["importances"])
-
-                df_metric_importances = []
-                # we loop across the labels (for classification) or the outputs
-                # (for regression)
-                for target_index, target_importances in enumerate(
-                    np.moveaxis(metric_importances, -1, 0)
-                ):
-                    df = pd.DataFrame(
-                        target_importances,
-                        index=feature_names,
-                        columns=range(1, n_repeats + 1),
-                    ).melt(var_name="repetition")
-
-                    if metric_importances.shape[-1] == 1:
-                        df["label"], df["output"] = np.nan, np.nan
+                    if is_classifier(estimator):
+                        df["label"] = estimator.classes_[target_index]
+                        df["output"] = np.nan
                     else:
-                        if is_classifier(estimator):
-                            df["label"] = estimator.classes_[target_index]
-                            df["output"] = np.nan
-                        else:
-                            df["output"], df["label"] = target_index, np.nan
+                        df["output"], df["label"] = target_index, np.nan
 
-                    df["metric"] = metric_name
-                    df["feature"] = np.tile(feature_names, n_repeats)
-                    df_metric_importances.append(df)
+                df["metric"] = metric_name
+                df["feature"] = np.tile(feature_names, n_repeats)
+                df_metric_importances.append(df)
 
-                df_metric_importances = pd.concat(df_metric_importances, axis="index")
-                df_importances.append(df_metric_importances)
+            df_metric_importances = pd.concat(df_metric_importances, axis="index")
+            df_importances.append(df_metric_importances)
 
-            df_importances = pd.concat(df_importances, axis="index")
-            df_importances["data_source"] = data_source
-            df_importances["estimator"] = name
-            df_importances["split"] = split
-            all_importances.append(df_importances)
+        df_importances = pd.concat(df_importances, axis="index")
+        df_importances["data_source"] = data_source
+        df_importances["estimator"] = name
+        df_importances["split"] = split
 
         ordered_columns = [
             "estimator",
@@ -201,9 +195,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         ]
 
         return cls(
-            importances=pd.concat(all_importances, axis="index", ignore_index=True)[
-                ordered_columns
-            ],
+            importances=df_importances.reset_index(drop=True)[ordered_columns],
             report_type=report_type,
         )
 

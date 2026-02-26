@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import numpy as np
@@ -688,23 +687,23 @@ class CoefficientsDisplay(DisplayMixin):
     def _compute_data_for_display(
         cls,
         *,
-        estimators: Sequence[BaseEstimator],
-        names: list[str],
-        splits: list[int | float],
+        estimator: BaseEstimator,
+        name: str,
+        split: int | float,
         report_type: ReportType,
     ) -> CoefficientsDisplay:
-        """Compute the data for the display.
+        """Compute the data for the display from a single estimator.
 
         Parameters
         ----------
-        estimators : list of estimator
-            The estimators to compute the data for.
+        estimator : estimator
+            The estimator to compute the data for.
 
-        names : list of str
-            The names of the estimators.
+        name : str
+            The name of the estimator.
 
-        splits : list of int or np.nan
-            The splits to compute the data for.
+        split : int or float
+            The split index (use np.nan for single-estimator reports).
 
         report_type : {"estimator", "cross-validation", "comparison-estimator", \
                 "comparison-cross-validation"}
@@ -715,37 +714,33 @@ class CoefficientsDisplay(DisplayMixin):
         CoefficientsDisplay
             The data for the display.
         """
-        feature_names, est_names, coefficients, split_indices = [], [], [], []
-        for estimator, name, split in zip(estimators, names, splits, strict=True):
-            if isinstance(estimator, Pipeline):
-                preprocessor, predictor = estimator[:-1], estimator[-1]
-            else:
-                preprocessor, predictor = None, estimator
+        if isinstance(estimator, Pipeline):
+            preprocessor, predictor = estimator[:-1], estimator[-1]
+        else:
+            preprocessor, predictor = None, estimator
 
-            if isinstance(predictor, TransformedTargetRegressor):
-                predictor = predictor.regressor_
+        if isinstance(predictor, TransformedTargetRegressor):
+            predictor = predictor.regressor_
 
-            coef = np.atleast_2d(predictor.coef_).T
-            intercept = np.atleast_2d(predictor.intercept_)
-            if coef.shape[1] != intercept.shape[1]:
-                # it happens that with `fit_intercept=False` and a multi-output
-                # regression problem, intercept is a single float. Thus, we need to
-                # repeat it for each output
-                intercept = np.repeat(intercept, coef.shape[1], axis=1)
+        coef = np.atleast_2d(predictor.coef_).T
+        intercept = np.atleast_2d(predictor.intercept_)
+        if coef.shape[1] != intercept.shape[1]:
+            # it happens that with `fit_intercept=False` and a multi-output
+            # regression problem, intercept is a single float. Thus, we need to
+            # repeat it for each output
+            intercept = np.repeat(intercept, coef.shape[1], axis=1)
 
-            coefficients.append(np.concatenate([intercept, coef]))
+        coef_data = np.concatenate([intercept, coef])
 
-            feat_names = ["Intercept"] + _get_feature_names(
-                predictor, transformer=preprocessor, n_features=coef.shape[0]
-            )
-            feature_names.extend(feat_names)
-            est_names.extend([name] * len(feat_names))
-            split_indices.extend([split] * len(feat_names))
+        feature_names = ["Intercept"] + _get_feature_names(
+            predictor, transformer=preprocessor, n_features=coef.shape[0]
+        )
+        n_features = len(feature_names)
 
         index = pd.DataFrame(
             {
-                "estimator": est_names,
-                "split": split_indices,
+                "estimator": [name] * n_features,
+                "split": [split] * n_features,
                 "feature": feature_names,
             }
         )
@@ -766,13 +761,10 @@ class CoefficientsDisplay(DisplayMixin):
                 index["label"] = np.nan
             id_vars, value_name = index.columns.tolist(), "coefficient"
 
-        coefficients = pd.DataFrame(
-            np.concatenate(coefficients, axis=0), columns=columns
+        coefficients = pd.concat(
+            [index, pd.DataFrame(coef_data, columns=columns)], axis=1
         )
-        coefficients = pd.concat([index, coefficients], axis=1)
         if require_melting:
-            # melt the coefficients and ensure alignment with the label/output, split
-            # feature names, and estimator names
             coefficients = coefficients.melt(
                 id_vars=id_vars,
                 value_vars=columns,

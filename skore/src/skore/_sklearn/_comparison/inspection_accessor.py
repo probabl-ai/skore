@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-import numpy as np
+import pandas as pd
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -83,32 +83,29 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         21    report big alpha  Feature #9        0.4...
         >>> display.plot() # shows plot
         """
+        frames = []
         if self._parent._report_type == "comparison-estimator":
-            return CoefficientsDisplay._compute_data_for_display(
-                estimators=[
-                    report.estimator_ for report in self._parent.reports_.values()
-                ],
-                names=list(self._parent.reports_.keys()),
-                splits=[np.nan] * len(self._parent.reports_),
-                report_type=self._parent._report_type,
-            )
+            for name, report in self._parent.reports_.items():
+                display = report.inspection.coefficients()
+                df = display.coefficients.copy()
+                df["estimator"] = name
+                frames.append(df)
         else:  # self._parent._report_type == "comparison-cross-validation"
-            estimators, names = [], []
-            splits: list[int | float] = []
             for name, report in self._parent.reports_.items():
                 cross_validation_report = cast("CrossValidationReport", report)
                 for split_idx, estimator_report in enumerate(
                     cross_validation_report.estimator_reports_
                 ):
-                    estimators.append(estimator_report.estimator_)
-                    names.append(name)
-                    splits.append(split_idx)
-            return CoefficientsDisplay._compute_data_for_display(
-                estimators=estimators,
-                names=names,
-                splits=splits,
-                report_type=self._parent._report_type,
-            )
+                    display = estimator_report.inspection.coefficients()
+                    df = display.coefficients.copy()
+                    df["estimator"] = name
+                    df["split"] = split_idx
+                    frames.append(df)
+        coefficients = pd.concat(frames, ignore_index=True)
+        return CoefficientsDisplay(
+            coefficients=coefficients,
+            report_type=self._parent._report_type,
+        )
 
     @available_if(_check_comparison_report_sub_estimators_have_feature_importances())
     def impurity_decrease(self) -> ImpurityDecreaseDisplay:
@@ -161,30 +158,27 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         7    big trees   petal width (cm)       0.4...
         >>> display.plot() # shows plot
         """
+        frames = []
         if self._parent._report_type == "comparison-estimator":
-            return ImpurityDecreaseDisplay._compute_data_for_display(
-                estimators=[
-                    report.estimator_ for report in self._parent.reports_.values()
-                ],
-                names=list(self._parent.reports_.keys()),
-                splits=[np.nan] * len(self._parent.reports_),
-                report_type=self._parent._report_type,
-            )
-        else:  # self._parent._report_type == "comparison-cross-validation":
-            estimators, names = [], []
-            splits: list[int | float] = []
+            for name, report in self._parent.reports_.items():
+                display = report.inspection.impurity_decrease()
+                df = display.importances.copy()
+                df["estimator"] = name
+                frames.append(df)
+        else:  # self._parent._report_type == "comparison-cross-validation"
             for name, report in self._parent.reports_.items():
                 report = cast("CrossValidationReport", report)
                 for split_idx, estimator_report in enumerate(report.estimator_reports_):
-                    estimators.append(estimator_report.estimator_)
-                    names.append(name)
-                    splits.append(split_idx)
-            return ImpurityDecreaseDisplay._compute_data_for_display(
-                estimators=estimators,
-                names=names,
-                splits=splits,
-                report_type=self._parent._report_type,
-            )
+                    display = estimator_report.inspection.impurity_decrease()
+                    df = display.importances.copy()
+                    df["estimator"] = name
+                    df["split"] = split_idx
+                    frames.append(df)
+        importances = pd.concat(frames, ignore_index=True)
+        return ImpurityDecreaseDisplay(
+            importances=importances,
+            report_type=self._parent._report_type,
+        )
 
     ####################################################################################
     # Methods related to the help tree
