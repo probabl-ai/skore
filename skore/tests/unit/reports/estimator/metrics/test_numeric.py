@@ -354,7 +354,7 @@ def test_custom_metric_compatible_estimator(
 
 
 def test_get_X_y_and_data_source_hash_error():
-    """Check that we raise the proper error in `get_X_y_and_use_cache`."""
+    """Check that we raise the proper error in `_get_X_y_and_data_source_hash`."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
@@ -365,7 +365,7 @@ def test_get_X_y_and_data_source_hash_error():
         "Invalid data source: unknown. Possible values are: test, train, X_y."
     )
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.log_loss(data_source="unknown")
+        report.metrics._get_X_y_and_data_source_hash(data_source="unknown")
 
     for data_source in ("train", "test"):
         err_msg = re.escape(
@@ -375,7 +375,7 @@ def test_get_X_y_and_data_source_hash_error():
             "'X_y' and providing X and y."
         )
         with pytest.raises(ValueError, match=err_msg):
-            report.metrics.log_loss(data_source=data_source)
+            report.metrics._get_X_y_and_data_source_hash(data_source=data_source)
 
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
@@ -384,16 +384,18 @@ def test_get_X_y_and_data_source_hash_error():
     for data_source in ("train", "test"):
         err_msg = f"X and y must be None when data_source is {data_source}."
         with pytest.raises(ValueError, match=err_msg):
-            report.metrics.log_loss(data_source=data_source, X=X_test, y=y_test)
+            report.metrics._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X_test, y=y_test
+            )
 
     err_msg = "X and y must be provided."
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.log_loss(data_source="X_y")
+        report.metrics._get_X_y_and_data_source_hash(data_source="X_y")
 
 
 @pytest.mark.parametrize("data_source", ("train", "test", "X_y"))
 def test_get_X_y_and_data_source_hash(data_source):
-    """Check the general behaviour of `get_X_y_and_use_cache`."""
+    """Check the general behaviour of `_get_X_y_and_data_source_hash`."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
@@ -500,7 +502,7 @@ def test_average_return_float(forest_binary_classification_with_test):
     "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
 )
 def test_precision_recall_pos_label_overwrite(metric, metric_fn):
-    """Check that `pos_label` can be overwritten in `summarize`"""
+    """Check that `pos_label` can be overwritten."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
     )
