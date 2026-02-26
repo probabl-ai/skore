@@ -11,10 +11,11 @@ from typing import ClassVar, Literal, cast
 from matplotlib import pyplot as plt
 
 from skore_hub_project.artifact.media.media import Media, Report
+from skore_hub_project.json import dumps
 from skore_hub_project.protocol import Display
 
 
-class Performance(Media[Report], ABC):  # noqa: D101
+class PerformanceSVG(Media[Report], ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["image/svg+xml"] = "image/svg+xml"
 
@@ -43,40 +44,105 @@ class Performance(Media[Report], ABC):  # noqa: D101
         return figure_bytes
 
 
-class PrecisionRecall(Performance[Report], ABC):  # noqa: D101
+class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
+    accessor: ClassVar[str]
+    content_type: Literal["application/vnd.dataframe"] = "application/vnd.dataframe"
+
+    def content_to_upload(self) -> bytes | None:  # noqa: D102
+        try:
+            function = cast(
+                "Callable[..., Display]",
+                reduce(getattr, self.accessor.split("."), self.report),
+            )
+        except AttributeError:
+            return None
+
+        display = (
+            function()
+            if self.data_source is None
+            else function(data_source=self.data_source)
+        )
+
+        frame = display.frame()
+
+        return dumps(
+            frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+        )
+
+
+class PrecisionRecallSVG(PerformanceSVG[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision_recall"
     name: Literal["precision_recall"] = "precision_recall"
 
 
-class PrecisionRecallTrain(PrecisionRecall[Report]):  # noqa: D101
+class PrecisionRecallDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
+    accessor: ClassVar[str] = "metrics.precision_recall"
+    name: Literal["precision_recall"] = "precision_recall"
+
+
+class PrecisionRecallSVGTrain(PrecisionRecallSVG[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PrecisionRecallTest(PrecisionRecall[Report]):  # noqa: D101
+class PrecisionRecallDataFrameTrain(PrecisionRecallDataFrame[Report]):  # noqa: D101
+    data_source: Literal["train"] = "train"
+
+
+class PrecisionRecallSVGTest(PrecisionRecallSVG[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class PredictionError(Performance[Report], ABC):  # noqa: D101
+class PrecisionRecallDataFrameTest(PrecisionRecallDataFrame[Report]):  # noqa: D101
+    data_source: Literal["test"] = "test"
+
+
+class PredictionErrorSVG(PerformanceSVG[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.prediction_error"
     name: Literal["prediction_error"] = "prediction_error"
 
 
-class PredictionErrorTrain(PredictionError[Report]):  # noqa: D101
+class PredictionErrorDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
+    accessor: ClassVar[str] = "metrics.prediction_error"
+    name: Literal["prediction_error"] = "prediction_error"
+
+
+class PredictionErrorSVGTrain(PredictionErrorSVG[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PredictionErrorTest(PredictionError[Report]):  # noqa: D101
+class PredictionErrorDataFrameTrain(PredictionErrorDataFrame[Report]):  # noqa: D101
+    data_source: Literal["train"] = "train"
+
+
+class PredictionErrorSVGTest(PredictionErrorSVG[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class Roc(Performance[Report], ABC):  # noqa: D101
+class PredictionErrorDataFrameTest(PredictionErrorDataFrame[Report]):  # noqa: D101
+    data_source: Literal["test"] = "test"
+
+
+class RocSVG(PerformanceSVG[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.roc"
     name: Literal["roc"] = "roc"
 
 
-class RocTrain(Roc[Report]):  # noqa: D101
+class RocDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
+    accessor: ClassVar[str] = "metrics.roc"
+    name: Literal["roc"] = "roc"
+
+
+class RocSVGTrain(RocSVG[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class RocTest(Roc[Report]):  # noqa: D101
+class RocDataFrameTrain(RocDataFrame[Report]):  # noqa: D101
+    data_source: Literal["train"] = "train"
+
+
+class RocSVGTest(RocSVG[Report]):  # noqa: D101
+    data_source: Literal["test"] = "test"
+
+
+class RocDataFrameTest(RocDataFrame[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"

@@ -14,10 +14,14 @@ from skore_hub_project.artifact.media import (
     ImpurityDecrease,
     PermutationImportanceTest,
     PermutationImportanceTrain,
-    PrecisionRecallTest,
-    PrecisionRecallTrain,
-    RocTest,
-    RocTrain,
+    PrecisionRecallDataFrameTest,
+    PrecisionRecallDataFrameTrain,
+    PrecisionRecallSVGTest,
+    PrecisionRecallSVGTrain,
+    RocDataFrameTest,
+    RocDataFrameTrain,
+    RocSVGTest,
+    RocSVGTrain,
 )
 from skore_hub_project.artifact.media.data import TableReport
 from skore_hub_project.artifact.serializer import Serializer
@@ -381,10 +385,14 @@ class TestCrossValidationReportPayload:
             ImpurityDecrease,
             PermutationImportanceTest,
             PermutationImportanceTrain,
-            PrecisionRecallTest,
-            PrecisionRecallTrain,
-            RocTest,
-            RocTrain,
+            PrecisionRecallDataFrameTest,
+            PrecisionRecallDataFrameTrain,
+            PrecisionRecallSVGTest,
+            PrecisionRecallSVGTrain,
+            RocDataFrameTest,
+            RocDataFrameTrain,
+            RocSVGTest,
+            RocSVGTrain,
             TableReport,
         ]
 
