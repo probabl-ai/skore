@@ -19,21 +19,15 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
+from sklearn.datasets import fetch_california_housing
+from sklearn.tree import DecisionTreeRegressor
 from skore import EstimatorReport, Project, train_test_split
 from skrub import tabular_pipeline
 
 # %%
 # Build one report to persist
 # ===========================
-X, y = make_classification(
-    n_samples=2_000,
-    n_features=20,
-    n_informative=8,
-    n_redundant=0,
-    random_state=42,
-)
+X, y = fetch_california_housing(return_X_y=True, as_frame=True)
 split_data = train_test_split(
     X=X,
     y=y,
@@ -42,7 +36,7 @@ split_data = train_test_split(
     as_dict=True,
 )
 
-estimator = tabular_pipeline(LogisticRegression(max_iter=1_000))
+estimator = tabular_pipeline(DecisionTreeRegressor(max_depth=5))
 report = EstimatorReport(estimator, **split_data)
 
 
@@ -64,6 +58,6 @@ with TemporaryDirectory() as tmp_dir:
             mode="mlflow",
             tracking_uri=backend_store_uri,
         )
-    project.put("logreg-baseline", report)
-    summary = project.summarize()
+        project.put("linreg-baseline", report)
+        summary = project.summarize()
     summary
