@@ -33,7 +33,7 @@ ML Assistance
    * - :func:`train_test_split`
      - Split arrays or matrices into random train and test subsets
 
-.. include:: api/accessor_tables.rst
+.. include:: ../generated/accessor_tables.rst
 
 
 Display Classes

@@ -79,6 +79,7 @@ plot_apply_rcparams = True  # if context option is used
 
 # Add any paths that contain templates here, relative to this directory.
 autosummary_generate = True  # generate stubs for all classes
+
 templates_path = ["_templates"]
 
 autodoc_typehints = "none"
@@ -106,7 +107,7 @@ subsections_order = [
 # sphinx_gallery options
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
-    "gallery_dirs": "auto_examples",  # path to gallery generated output
+    "gallery_dirs": "generated/auto_examples",  # path to gallery generated output
     "filename_pattern": "plot_",  # pattern to select examples; change this to only build some of the examples
     "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections
     # see https://sphinx-gallery.github.io/stable/configuration.html#sub-gallery-order
@@ -117,7 +118,7 @@ sphinx_gallery_conf = {
         # The module you locally document uses None
         "skore": None,
     },
-    "backreferences_dir": "reference/api",
+    "backreferences_dir": "generated/api",
     "doc_module": "skore",
     # "reset_modules": (reset_mpl, "seaborn"),
     "abort_on_example_error": True,
