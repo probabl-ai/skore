@@ -148,7 +148,6 @@ class TestProject:
         report_dir = Path(
             mlflow.artifacts.download_artifacts(
                 run_id=summary[0]["id"],
-                artifact_path="report",
                 tracking_uri=project.tracking_uri,
             )
         )
@@ -188,7 +187,6 @@ class TestProject:
         report_dir = Path(
             mlflow.artifacts.download_artifacts(
                 run_id=summary[0]["id"],
-                artifact_path="report",
                 tracking_uri=project.tracking_uri,
             )
         )

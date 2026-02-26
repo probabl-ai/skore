@@ -95,13 +95,8 @@ class Project:
 
         self.__tracking_uri = mlflow.get_tracking_uri()
         self.__name = name
-
-        experiment = mlflow.get_experiment_by_name(name)
-        self.__experiment_id = (
-            cast(str, experiment.experiment_id)
-            if experiment is not None
-            else mlflow.create_experiment(name)
-        )
+        experiment = mlflow.set_experiment(name)
+        self.__experiment_id = cast(str, experiment.experiment_id)
 
     @property
     def name(self) -> str:
@@ -151,7 +146,7 @@ class Project:
 
         with (
             disable_discrete_autologging(["sklearn"]),
-            mlflow.start_run(experiment_id=self.experiment_id, run_name=key),
+            mlflow.start_run(run_name=key),
         ):
             mlflow.set_tags(
                 {
@@ -167,14 +162,14 @@ class Project:
                 pickle_path = Path(tmp_dir) / "report.pkl"
                 with _cache_cleared_for_pickle(report):
                     joblib.dump(report, pickle_path)
-                mlflow.log_artifact(local_path=str(pickle_path), artifact_path="report")
+                mlflow.log_artifact(local_path=str(pickle_path))
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its MLflow run id."""
         try:
             pickle_path = mlflow.artifacts.download_artifacts(
                 run_id=id,
-                artifact_path="report/report.pkl",
+                artifact_path="report.pkl",
                 tracking_uri=self.tracking_uri,
             )
         except MlflowException as exc:
@@ -338,7 +333,7 @@ def _log_artifact(artifact: Artifact) -> None:
     """Log a report artifact."""
 
     def filename(ext: str) -> str:
-        return f"report/{artifact.name}.{ext}"
+        return f"{artifact.name}.{ext}"
 
     payload = artifact.payload
     if callable(getattr(payload, "to_csv", None)):
