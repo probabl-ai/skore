@@ -8,13 +8,15 @@ from dataclasses import dataclass
 from typing import Any, TypeAlias
 
 import matplotlib.pyplot as plt
+import mlflow.data
 import numpy as np
 import pandas as pd
+from mlflow.data.dataset import Dataset as MlFlowDatasetType
 from numpy.typing import NDArray
 from sklearn.base import BaseEstimator
 
 from ._matplotlib import switch_mpl_backend
-from .protocol import CrossValidationReport, EstimatorReport
+from .protocol import CrossValidationReport, DatasetLike, EstimatorReport
 
 ArrayLike: TypeAlias = pd.DataFrame | NDArray[np.generic]
 
@@ -25,6 +27,14 @@ class Artifact:
 
     name: str
     payload: Any
+
+
+@dataclass
+class Dataset:
+    """Dataset metadata payload (wrapper over mlflow's dataset)."""
+
+    dataset: MlFlowDatasetType
+    context: str | None = None
 
 
 @dataclass
@@ -89,7 +99,7 @@ PLOTS = {
 }
 
 
-LogItem: TypeAlias = Params | Tag | Model | Artifact | Metric
+LogItem: TypeAlias = Params | Tag | Model | Artifact | Metric | Dataset | None
 NestedLogItem: TypeAlias = LogItem | tuple[str, Iterable[LogItem]]
 
 
@@ -182,6 +192,9 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
 
     yield Artifact("data.analyze", _data_analyze_html(report))
 
+    yield _dataset_from_any("X", report.X)
+    yield _dataset_from_any("y", report.y)
+
     for split_id, estimator_report in enumerate(report.estimator_reports_):
         yield (
             f"split_{split_id}",
@@ -209,6 +222,11 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
 
     yield Artifact("data.analyze", _data_analyze_html(report))
 
+    yield _dataset_from_any("X_train", report.X_train, context="training")
+    yield _dataset_from_any("y_train", report.y_train, context="training")
+    yield _dataset_from_any("X_test", report.X_test, context="evaluation")
+    yield _dataset_from_any("y_test", report.y_test, context="evaluation")
+
 
 def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
     with switch_mpl_backend(), plt.ioff():
@@ -223,3 +241,20 @@ def _sample_input_example(X: ArrayLike, *, max_samples: int = 5) -> ArrayLike:
         return X.head(max_samples)
     else:
         return X[:max_samples]
+
+
+def _dataset_from_any(
+    name: str, data: DatasetLike, *, context: str | None = None
+) -> Dataset | None:
+    if data is None:
+        return None
+    if isinstance(data, pd.DataFrame):
+        mlflow_dataset = mlflow.data.from_pandas(data, name=name)  # type: ignore[attr-defined]
+    elif isinstance(data, pd.Series):
+        series_name = data.name if data.name is not None else "Target"
+        mlflow_dataset = mlflow.data.from_pandas(  # type: ignore[attr-defined]
+            data.to_frame(name=series_name), name=name
+        )
+    else:
+        mlflow_dataset = mlflow.data.from_numpy(np.asarray(data), name=name)  # type: ignore[attr-defined]
+    return Dataset(dataset=mlflow_dataset, context=context)

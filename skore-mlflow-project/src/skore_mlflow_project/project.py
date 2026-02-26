@@ -23,6 +23,7 @@ from sklearn.base import BaseEstimator
 from .protocol import CrossValidationReport, EstimatorReport
 from .reports import (
     Artifact,
+    Dataset,
     Metric,
     Model,
     NestedLogItem,
@@ -254,7 +255,9 @@ class Project:
 
 def _log_iter(iterator: Iterable[NestedLogItem]) -> None:
     for obj in iterator:
-        if isinstance(obj, tuple):
+        if obj is None:
+            continue
+        elif isinstance(obj, tuple):
             subrun_name, sub_iter = obj
             with mlflow.start_run(nested=True, run_name=subrun_name):
                 _log_iter(sub_iter)
@@ -268,6 +271,8 @@ def _log_iter(iterator: Iterable[NestedLogItem]) -> None:
             _log_model(obj.model, input_example=obj.input_example)
         elif isinstance(obj, Artifact):
             _log_artifact(obj)
+        elif isinstance(obj, Dataset):
+            mlflow.log_input(obj.dataset, context=obj.context)
         else:
             raise TypeError(type(obj))
 
