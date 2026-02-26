@@ -146,3 +146,29 @@ class RocSVGTest(RocSVG[Report]):  # noqa: D101
 
 class RocDataFrameTest(RocDataFrame[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
+
+
+class ConfusionMatrixSVG(PerformanceSVG[Report], ABC):  # noqa: D101
+    accessor: ClassVar[str] = "metrics.confusion_matrix"
+    name: Literal["confusion_matrix"] = "confusion_matrix"
+
+
+class ConfusionMatrixDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
+    accessor: ClassVar[str] = "metrics.confusion_matrix"
+    name: Literal["confusion_matrix"] = "confusion_matrix"
+
+
+class ConfusionMatrixSVGTrain(ConfusionMatrixSVG[Report]):  # noqa: D101
+    data_source: Literal["train"] = "train"
+
+
+class ConfusionMatrixDataFrameTrain(ConfusionMatrixDataFrame[Report]):  # noqa: D101
+    data_source: Literal["train"] = "train"
+
+
+class ConfusionMatrixSVGTest(ConfusionMatrixSVG[Report]):  # noqa: D101
+    data_source: Literal["test"] = "test"
+
+
+class ConfusionMatrixDataFrameTest(ConfusionMatrixDataFrame[Report]):  # noqa: D101
+    data_source: Literal["test"] = "test"

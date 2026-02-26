@@ -11,6 +11,10 @@ from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.artifact.media import (
     Coefficients,
+    ConfusionMatrixDataFrameTest,
+    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixSVGTest,
+    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
     ImpurityDecrease,
     PermutationImportanceTest,
@@ -137,6 +141,10 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     )
     MEDIAS: ClassVar[tuple[type[Media[CrossValidationReport]], ...]] = (
         Coefficients,
+        ConfusionMatrixDataFrameTest,
+        ConfusionMatrixDataFrameTrain,
+        ConfusionMatrixSVGTest,
+        ConfusionMatrixSVGTrain,
         EstimatorHtmlRepr,
         ImpurityDecrease,
         PermutationImportanceTest,
