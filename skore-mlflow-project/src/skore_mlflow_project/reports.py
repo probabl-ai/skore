@@ -265,7 +265,9 @@ def _dataset_from_any(
     else:
         # mlflow.data.from_pandas doesn't support multiple targets
         # use mlflow.data.from_numpy instead
-        return _dataset_from_any(X.to_numpy(), {c: y[c].to_numpy() for c in y.columns})
+        return _dataset_from_any(
+            X.to_numpy(), {c: y[c].to_numpy() for c in y.columns}, context=context
+        )
 
     Xy = pd.concat([X, y], axis=1)
     mlflow_dataset = mlflow.data.from_pandas(Xy, targets=targets)  # type: ignore[attr-defined]
