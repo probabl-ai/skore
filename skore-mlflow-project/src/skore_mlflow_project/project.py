@@ -284,6 +284,8 @@ def _log_model(model: BaseEstimator) -> None:
             _filterwarnings(UserWarning, ".*Any type hint is inferred as AnyType.*"),
             # MLflow 3.9 emits this warning but not 3.10...
             _filterwarnings(FutureWarning, ".*pickle.*format.*arbitrary code.*"),
+            # MLflow 3.4 on SQLAlchemy 2 emits this warning internally.
+            _filterwarnings(Warning, r".*Query.get\(\) method is considered legacy.*"),
         ):
             mlflow.sklearn.log_model(model, name="model")
     except TypeError as exc:
