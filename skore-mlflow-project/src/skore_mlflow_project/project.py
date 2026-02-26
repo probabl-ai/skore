@@ -229,6 +229,8 @@ class Project:
         report_type = tags["report_type"]
 
         if report_type == "estimator":
+            inputs = sorted(run.inputs.dataset_inputs, key=_dataset_context_tag)
+            digests = [inp.dataset.digest for inp in inputs]
             metrics = {
                 "rmse": run.data.metrics.get("rmse"),
                 "log_loss": run.data.metrics.get("log_loss"),
@@ -237,6 +239,7 @@ class Project:
                 "predict_time": metrics["predict_time"],
             }
         elif report_type == "cross-validation":
+            digests = [run.inputs.dataset_inputs[0].dataset.digest]
             metrics = {
                 "rmse_mean": run.data.metrics.get("rmse"),
                 "log_loss_mean": run.data.metrics.get("log_loss"),
@@ -254,7 +257,7 @@ class Project:
             "report_type": report_type,
             "learner": tags["learner"],
             "ml_task": tags["ml_task"],
-            "dataset": _dataset_fingerprint(run),
+            "dataset": "-".join(digests),
             "rmse": None,
             "log_loss": None,
             "roc_auc": None,
@@ -398,8 +401,6 @@ def _wrap_html(html: str) -> str:
     return HTML_UTF8_TEMPLATE.format(html=html)
 
 
-def _dataset_fingerprint(run: MLFlowRun) -> str:
-    """Extract a stable dataset fingerprint from MLflow run inputs."""
-    dataset_inputs = run.inputs.dataset_inputs
-
-    return "-".join(inp.dataset.digest for inp in dataset_inputs)
+def _dataset_context_tag(dataset: Any) -> str:
+    (tag,) = [tag for tag in dataset.tags if tag.key == "mlflow.data.context"]
+    return cast(str, tag.value)
