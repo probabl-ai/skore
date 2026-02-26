@@ -217,6 +217,7 @@ class TestProject:
         )
         assert (report_dir / "report.pkl").exists()
         assert (report_dir / "all_metrics.csv").exists()
+        assert (report_dir / "data.analyze.html").exists()
         for artifact in self.CLF_ARTIFACTS:
             assert (report_dir / artifact).exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
