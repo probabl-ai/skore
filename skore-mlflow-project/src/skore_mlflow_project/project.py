@@ -275,7 +275,6 @@ def _log_iter(iterator: Iterable[NestedLogItem]) -> None:
 def _log_model(model: BaseEstimator, *, input_example: Any) -> None:
     try:
         with (
-            # MLflow 3.10 emits this warning (and not 3.9), looks like a bug:
             _filterwarnings(UserWarning, ".*Any type hint is inferred as AnyType.*"),
             # Found during manual tests:
             _filterwarnings(UserWarning, r".*schema contains integer column.*"),
@@ -293,7 +292,13 @@ def _log_model(model: BaseEstimator, *, input_example: Any) -> None:
         # MLflow < 3 does not support the `name` parameter.
         if "unexpected keyword argument 'name'" not in str(exc):
             raise
-        with _filterwarnings(DeprecationWarning, r".*utcnow\(\) is deprecated.*"):
+        with (
+            _filterwarnings(UserWarning, ".*Any type hint is inferred as AnyType.*"),
+            _filterwarnings(DeprecationWarning, r".*utcnow\(\) is deprecated.*"),
+            # MLflow 2.20 can trigger warnings from pydantic on pydantic >= 2.12.
+            _filterwarnings(Warning, ".*@model_validator.*deprecated.*"),
+            _filterwarnings(Warning, r".*`min_items` is deprecated.*"),
+        ):
             mlflow.sklearn.log_model(
                 model,
                 artifact_path="model",
