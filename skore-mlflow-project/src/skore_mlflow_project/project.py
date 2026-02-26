@@ -288,6 +288,8 @@ def _log_model(model: BaseEstimator) -> None:
             _filterwarnings(Warning, r".*Query.get\(\) method is considered legacy.*"),
             # MLflow <= 3.2 emits this warning internally.
             _filterwarnings(DeprecationWarning, r".*utcnow\(\) is deprecated.*"),
+            # MLflow 3.0 can trigger this from pydantic internals.
+            _filterwarnings(Warning, ".*@model_validator.*deprecated.*"),
         ):
             mlflow.sklearn.log_model(model, name="model")
     except TypeError as exc:
