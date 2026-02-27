@@ -1,6 +1,5 @@
 import re
 
-import joblib
 import numpy as np
 import pytest
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
@@ -64,7 +63,7 @@ class MockRegressor(RegressorMixin, BaseEstimator):
         (MockRegressor, "predict", False),
     ],
 )
-@pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
+@pytest.mark.parametrize("data_source", ["train", "test"])
 @pytest.mark.parametrize("pos_label", [0, 1])
 def test_get_cached_response_values(
     Estimator,
@@ -86,7 +85,6 @@ def test_get_cached_response_values(
         "response_method": response_method,
         "pos_label": pos_label,
         "data_source": data_source,
-        "data_source_hash": None if data_source == "test" else 456,
     }
 
     # trigger the computation
@@ -147,72 +145,6 @@ def test_get_cached_response_values(
     assert response_values.shape == y.shape
 
 
-@pytest.mark.parametrize(
-    "Estimator, response_method",
-    [
-        (MockClassifier, "predict"),
-        (MockClassifier, "predict_proba"),
-        (MockClassifier, "decision_function"),
-        (MockRegressor, "predict"),
-    ],
-)
-def test_get_cached_response_values_different_data_source_hash(
-    Estimator, response_method
-):
-    """Test that different data source hashes trigger new computations."""
-    X = np.array([[1, 2], [3, 4]])
-    y = np.array([0, 1])
-    cache = {}
-    estimator = Estimator().fit(X, y)
-
-    params = {
-        "estimator_hash": 123,
-        "estimator": estimator,
-        "X": X,
-        "response_method": response_method,
-        "pos_label": 1,
-        "data_source": "X_y",
-        "data_source_hash": None,
-    }
-    results = _get_cached_response_values(cache=cache, **params)
-    assert len(results) == 2
-    _, response_values, is_cached = results[0]
-    assert not is_cached
-    assert response_values.shape == y.shape
-    initial_calls = getattr(estimator, f"n_call_{response_method}")
-
-    # cache the results
-    cache.update((key, value) for key, value, _ in results)
-
-    # Second call by passing the hash of the data should not trigger new computation
-    # because we consider it trustworthy
-    params["data_source_hash"] = joblib.hash(X)
-    results = _get_cached_response_values(cache=cache, **params)
-    assert len(results) == 1
-    _, response_values, is_cached = results[0]
-    assert is_cached
-    assert response_values.shape == y.shape
-    current_calls = getattr(estimator, f"n_call_{response_method}")
-    assert current_calls == initial_calls, (
-        f"Passing a hash corresponding to the data should not trigger new "
-        f"computation for {response_method}"
-    )
-
-    # Third call by passing a data hash not in the keys should trigger new computation
-    # It is should never happen in practice but the behaviour is safe
-    params["data_source_hash"] = 456
-    results = _get_cached_response_values(cache=cache, **params)
-    assert len(results) == 2
-    _, response_values, is_cached = results[0]
-    assert not is_cached
-    assert response_values.shape == y.shape
-    current_calls = getattr(estimator, f"n_call_{response_method}")
-    assert current_calls == initial_calls + 1, (
-        f"Passing a hash not present in the cache keys should trigger new "
-        f"computation for {response_method}"
-    )
-
-
 def test_base_accessor_get_X_y_and_data_source_hash_error():
     """Check that we raise the proper error in `get_X_y_and_use_cache`."""
     X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
@@ -223,7 +155,7 @@ def test_base_accessor_get_X_y_and_data_source_hash_error():
     accessor = MockAccessor(parent=report)
 
     err_msg = re.escape(
-        "Invalid data source: unknown. Possible values are: test, train, X_y."
+        "Invalid data source: unknown. Possible values are: test, train."
     )
     with pytest.raises(ValueError, match=err_msg):
         accessor._get_X_y_and_data_source_hash(data_source="unknown")
@@ -232,8 +164,7 @@ def test_base_accessor_get_X_y_and_data_source_hash_error():
         err_msg = re.escape(
             f"No {data_source} data (i.e. X_{data_source} and y_{data_source}) were "
             f"provided when creating the report. Please provide the {data_source} "
-            "data either when creating the report or by setting data_source to "
-            "'X_y' and providing X and y."
+            "data when creating the report."
         )
         with pytest.raises(ValueError, match=err_msg):
             accessor._get_X_y_and_data_source_hash(data_source=data_source)
@@ -243,19 +174,8 @@ def test_base_accessor_get_X_y_and_data_source_hash_error():
     )
     accessor = MockAccessor(parent=report)
 
-    for data_source in ("train", "test"):
-        err_msg = f"X and y must be None when data_source is {data_source}."
-        with pytest.raises(ValueError, match=err_msg):
-            accessor._get_X_y_and_data_source_hash(
-                data_source=data_source, X=X_test, y=y_test
-            )
 
-    err_msg = "X and y must be provided."
-    with pytest.raises(ValueError, match=err_msg):
-        accessor._get_X_y_and_data_source_hash(data_source="X_y")
-
-
-@pytest.mark.parametrize("data_source", ("train", "test", "X_y"))
+@pytest.mark.parametrize("data_source", ("train", "test"))
 def test_base_accessor_get_X_y_and_data_source_hash(data_source):
     """Check the general behaviour of `get_X_y_and_use_cache`."""
     X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
@@ -266,20 +186,12 @@ def test_base_accessor_get_X_y_and_data_source_hash(data_source):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     accessor = MockAccessor(parent=report)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    X, y, data_source_hash = accessor._get_X_y_and_data_source_hash(
-        data_source=data_source, **kwargs
-    )
+    X, y = accessor._get_X_y_and_data_source_hash(data_source=data_source)
 
     if data_source == "train":
         assert X is X_train
         assert y is y_train
-        assert data_source_hash is None
-    elif data_source == "test":
+    else:
+        assert data_source == "test"
         assert X is X_test
         assert y is y_test
-        assert data_source_hash is None
-    elif data_source == "X_y":
-        assert X is X_test
-        assert y is y_test
-        assert data_source_hash == joblib.hash((X_test, y_test))

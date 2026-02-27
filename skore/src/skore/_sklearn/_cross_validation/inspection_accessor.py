@@ -101,20 +101,11 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the test
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the test
-            target provided when creating the report.
 
         at_step : int or str, default=0
             If the estimator is a :class:`~sklearn.pipeline.Pipeline`, at which step of
@@ -261,13 +252,6 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """  # noqa: E501
-        if data_source == "X_y":
-            X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
-                data_source=data_source, X=X, y=y
-            )
-        else:
-            data_source_hash = None
-
         # NOTE: to temporary improve the `project.put` UX, we always store the
         # permutation importance into the cache dictionary even when seed is None.
         # Be aware that if seed is None, we still trigger the computation for all cases.
@@ -287,7 +271,6 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 "permutation_importance",
                 data_source,
                 at_step,
-                data_source_hash,
                 metric,
                 kwargs,
             )
@@ -302,17 +285,11 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Xs: list[ArrayLike] = []
             ys: list[ArrayLike] = []
             for report in self._parent.estimator_reports_:
-                if data_source == "X_y":
-                    Xs.append(X_)
-                    ys.append(y_true)
-                else:
-                    report_X, report_y, _ = (
-                        report.inspection._get_X_y_and_data_source_hash(
-                            data_source=data_source
-                        )
-                    )
-                    Xs.append(report_X)
-                    ys.append(report_y)
+                report_X, report_y = report.inspection._get_X_y_and_data_source_hash(
+                    data_source=data_source
+                )
+                Xs.append(report_X)
+                ys.append(report_y)
 
             display = PermutationImportanceDisplay._compute_data_for_display(
                 data_source=data_source,

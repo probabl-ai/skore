@@ -64,41 +64,6 @@ def test_display_regression(pyplot, linear_regression_with_test, display):
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
-def test_display_binary_classification_external_data(
-    pyplot, forest_binary_classification_with_test, display
-):
-    """The call to display functions should be cached when passing external data."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator)
-    assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test
-    )
-    assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test
-    )
-    assert display_first_call is display_second_call
-
-
-@pytest.mark.parametrize("display", ["prediction_error"])
-def test_display_regression_external_data(pyplot, linear_regression_with_test, display):
-    """The call to display functions should be cached when passing external data,
-    as long as the arguments make it reproducible."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator)
-    assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test, seed=0
-    )
-    assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test, seed=0
-    )
-    assert display_first_call is display_second_call
-
-
-@pytest.mark.parametrize("display", ["roc", "precision_recall"])
 def test_display_binary_classification_switching_data_source(
     pyplot, forest_binary_classification_with_test, display
 ):
@@ -112,11 +77,6 @@ def test_display_binary_classification_switching_data_source(
     assert report._cache != {}
     display_second_call = getattr(report.metrics, display)(data_source="train")
     assert display_first_call is not display_second_call
-    display_third_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test
-    )
-    assert display_first_call is not display_third_call
-    assert display_second_call is not display_third_call
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
@@ -133,8 +93,3 @@ def test_display_regression_switching_data_source(
     assert report._cache != {}
     display_second_call = getattr(report.metrics, display)(data_source="train")
     assert display_first_call is not display_second_call
-    display_third_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test
-    )
-    assert display_first_call is not display_third_call
-    assert display_second_call is not display_third_call

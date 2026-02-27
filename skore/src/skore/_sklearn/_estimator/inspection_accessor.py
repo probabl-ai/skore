@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import numpy as np
-from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -122,8 +121,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         at_step: int | str = 0,
         metric: Metric = None,
         n_repeats: int = 5,
@@ -146,20 +143,11 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the test
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the test
-            target provided when creating the report.
 
         at_step : int or str, default=0
             If the estimator is a :class:`~sklearn.pipeline.Pipeline`, at which step of
@@ -301,9 +289,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """
-        X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
+        X_, y_true = self._get_X_y_and_data_source_hash(data_source=data_source)
 
         # NOTE: to temporary improve the `project.put` UX, we always store the
         # permutation importance into the cache dictionary even when seed is None.
@@ -324,7 +310,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 "permutation_importance",
                 data_source,
                 at_step,
-                data_source_hash,
                 metric,
                 kwargs,
             )

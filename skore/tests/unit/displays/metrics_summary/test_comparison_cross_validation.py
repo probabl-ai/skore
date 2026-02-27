@@ -184,30 +184,6 @@ def test_init_with_report_names(forest_binary_classification_data):
     )
 
 
-def test_data_source_external(
-    comparison_cross_validation_reports_binary_classification,
-    binary_classification_data,
-):
-    """`MetricsSummaryDisplay` works as intended with `data_source="X_y"`."""
-    report = comparison_cross_validation_reports_binary_classification
-    X, y = binary_classification_data
-    result = report.metrics.summarize(data_source="X_y", X=X, y=y).frame()
-
-    assert_index_equal(
-        result.columns,
-        pd.MultiIndex.from_tuples(
-            [
-                ("mean", "DummyClassifier_1"),
-                ("mean", "DummyClassifier_2"),
-                ("std", "DummyClassifier_1"),
-                ("std", "DummyClassifier_2"),
-            ],
-            names=[None, "Estimator"],
-        ),
-    )
-    assert len(result) == 9
-
-
 def test_cache_poisoning(binary_classification_data):
     """Computing metrics for a ComparisonReport should not influence the
     metrics computation for the internal CVReports.

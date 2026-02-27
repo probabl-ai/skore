@@ -1,7 +1,6 @@
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
 
-import joblib
 from numpy.typing import ArrayLike, NDArray
 from rich.console import Console
 from rich.panel import Panel
@@ -61,26 +60,17 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
     def _get_X_y_and_data_source_hash(
         self,
         *,
-        data_source: Literal["test", "train", "X_y"],
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-    ) -> tuple[ArrayLike, ArrayLike, int | None]:
+        data_source: Literal["test", "train"],
+    ) -> tuple[ArrayLike, ArrayLike]:
         """Get the requested dataset and mention if we should hash before caching.
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features) or None, default=None
-            The input data.
-
-        y : array-like of shape (n_samples,) or None, default=None
-            The target data.
 
         Returns
         -------
@@ -89,46 +79,28 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 
         y : array-like of shape (n_samples,)
             The requested dataset.
-
-        data_source_hash : int or None
-            The hash of the data source. None when we are able to track the data, and
-            thus relying on X_train, y_train, X_test, y_test.
         """
         if data_source == "test":
-            if not (X is None or y is None):
-                raise ValueError("X and y must be None when data_source is test.")
             if self._parent._X_test is None or self._parent._y_test is None:
                 missing_data = "X_test and y_test"
                 raise ValueError(
                     f"No {data_source} data (i.e. {missing_data}) were provided "
                     f"when creating the report. Please provide the {data_source} "
-                    "data either when creating the report or by setting data_source "
-                    "to 'X_y' and providing X and y."
+                    "data when creating the report."
                 )
-            return self._parent._X_test, self._parent._y_test, None
+            return self._parent._X_test, self._parent._y_test
         elif data_source == "train":
-            if not (X is None or y is None):
-                raise ValueError("X and y must be None when data_source is train.")
             if self._parent._X_train is None or self._parent._y_train is None:
                 missing_data = "X_train and y_train"
                 raise ValueError(
                     f"No {data_source} data (i.e. {missing_data}) were provided "
                     f"when creating the report. Please provide the {data_source} "
-                    "data either when creating the report or by setting data_source "
-                    "to 'X_y' and providing X and y."
+                    "data when creating the report."
                 )
-            return self._parent._X_train, self._parent._y_train, None
-        elif data_source == "X_y":
-            if X is None or y is None:
-                missing_data = "X and y"
-                raise ValueError(
-                    f"{missing_data} must be provided when data_source is X_y."
-                )
-            return X, y, joblib.hash((X, y))
+            return self._parent._X_train, self._parent._y_train
         else:
             raise ValueError(
-                f"Invalid data source: {data_source}. Possible values are: "
-                "test, train, X_y."
+                f"Invalid data source: {data_source}. Possible values are: test, train."
             )
 
 
@@ -140,8 +112,7 @@ def _get_cached_response_values(
     X: ArrayLike | None,
     response_method: str | list[str] | tuple[str, ...],
     pos_label: PositiveLabel | None = None,
-    data_source: Literal["test", "train", "X_y"] = "test",
-    data_source_hash: int | None = None,
+    data_source: Literal["test", "train"] = "test",
 ) -> list[tuple[tuple[Any, ...], Any, bool]]:
     """Compute or load from local cache the response values.
 
@@ -171,15 +142,11 @@ def _get_cached_response_values(
     pos_label : int, float, bool or str, default=None
         The positive label.
 
-    data_source : {"test", "train", "X_y"}, default="test"
+    data_source : {"test", "train"}, default="test"
         The data source to use.
 
         - "test" : use the test set provided when creating the report.
         - "train" : use the train set provided when creating the report.
-        - "X_y" : use the provided `X` and `y` to compute the metric.
-
-    data_source_hash : int or None
-        The hash of the data source when `data_source` is "X_y".
 
     Returns
     -------
@@ -198,12 +165,6 @@ def _get_cached_response_values(
     """
     prediction_method = _check_response_method(estimator, response_method).__name__
 
-    if data_source == "X_y" and data_source_hash is None:
-        # Only trigger hash computation if it was not previously done.
-        # If data_source_hash is not None, we internally computed ourself the hash
-        # and it is trustful
-        data_source_hash = joblib.hash(X)
-
     if prediction_method not in ("predict_proba", "decision_function"):
         # pos_label is only important in classification and with probabilities
         # and decision functions
@@ -214,7 +175,6 @@ def _get_cached_response_values(
         pos_label,
         prediction_method,
         data_source,
-        data_source_hash,
     )
 
     if cache_key in cache:
@@ -233,7 +193,6 @@ def _get_cached_response_values(
     predict_time_cache_key: tuple[Any, ...] = (
         estimator_hash,
         data_source,
-        data_source_hash,
         "predict_time",
     )
 

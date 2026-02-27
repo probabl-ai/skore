@@ -45,28 +45,6 @@ def test_flat_index(forest_binary_classification_data):
     ]
 
 
-def test_data_source_external(
-    forest_binary_classification_data,
-):
-    """Check that the `data_source` parameter works when using external data."""
-    estimator, X, y = forest_binary_classification_data
-    splitter = 2
-    report = CrossValidationReport(estimator, X, y, splitter=splitter)
-    result = report.metrics.summarize(
-        data_source="X_y", X=X, y=y, aggregate=None
-    ).frame()
-    for split_idx in range(splitter):
-        # check that it is equivalent to call the individual estimator report
-        report_result = (
-            report.estimator_reports_[split_idx]
-            .metrics.summarize(data_source="X_y", X=X, y=y)
-            .frame()
-        )
-        np.testing.assert_allclose(
-            report_result.iloc[:, 0].to_numpy(), result.iloc[:, split_idx].to_numpy()
-        )
-
-
 def _normalize_metric_name(index):
     """Helper to normalize the metric name present in a pandas index that could be
     a multi-index or single-index."""
