@@ -248,6 +248,55 @@ class Project:
         )
 
     @ensure_project_is_not_deleted
+    def delete_item(self, key: str) -> None:
+        """
+        Delete a key-report pair from the local project.
+
+        Parameters
+        ----------
+        key : str
+            The key of the report to delete.
+
+        Raises
+        ------
+        TypeError
+            If the key is not a string.
+        KeyError
+            If the key does not exist in the project.
+        """
+        if not isinstance(key, str):
+            raise TypeError(f"Key must be a string (found '{type(key)}')")
+
+        # Find the specific metadata entries for THIS project and THIS key
+        metadata_ids_to_delete = []
+        artifact_ids_to_check = set()
+
+        for meta_id, value in self.__metadata_storage.items():
+            if value["project_name"] == self.name and value["key"] == key:
+                metadata_ids_to_delete.append(meta_id)
+                artifact_ids_to_check.add(value["artifact_id"])
+
+        if not metadata_ids_to_delete:
+            raise KeyError(f"Key '{key}' not found in project '{self.name}'.")
+
+        # Delete the metadata entries
+        for meta_id in metadata_ids_to_delete:
+            del self.__metadata_storage[meta_id]
+
+        # Scan ALL metadata to see if these artifacts are still referenced
+        active_artifacts = {
+            val["artifact_id"] for val in self.__metadata_storage.values()
+        }
+
+        for artifact_id in artifact_ids_to_check:
+            # No one else is using this file. Safe to delete.
+            if (
+                artifact_id not in active_artifacts
+                and artifact_id in self.__artifacts_storage
+            ):
+                del self.__artifacts_storage[artifact_id]
+
+    @ensure_project_is_not_deleted
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its id."""
         if id in self.__artifacts_storage:

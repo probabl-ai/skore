@@ -297,11 +297,15 @@ class PredictionErrorDisplay(DisplayMixin):
 
         labels.append("Perfect predictions")
 
+        # Reserving the bottom 20% of the figure (Increased from 0.15)
+        self._tight_layout_kwargs = {"rect": [0, 0.2, 1, 1]}
+
         self.figure_.legend(
             handles,
             labels,
             loc="upper center",
-            bbox_to_anchor=(0.5, 0),
+            # Anchor  move up to 0.18 so the bottom clears the edge
+            bbox_to_anchor=(0.5, 0.18),
             ncol=1,
             frameon=True,
         )
