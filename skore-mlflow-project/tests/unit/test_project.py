@@ -118,12 +118,12 @@ def test_switch_mpl_backend_falls_back_when_restore_fails(monkeypatch) -> None:
 class TestProject:
     CACHE_SENTINEL = ("__cache_sentinel__",)
     CLF_ARTIFACTS = [
-        "confusion_matrix.png",
+        "metrics.confusion_matrix.png",
         "metrics_details/confusion_matrix.csv",
         "metrics_details/precision_recall.csv",
         "metrics_details/roc.csv",
-        "precision_recall.png",
-        "roc.png",
+        "metrics.precision_recall.png",
+        "metrics.roc.png",
     ]
 
     def test_init_with_explicit_tracking_uri(self, tmp_path):
@@ -144,13 +144,16 @@ class TestProject:
                 "reg_report",
                 "regression",
                 "rmse",
-                ["metrics_details/prediction_error.csv", "prediction_error.png"],
+                [
+                    "metrics_details/prediction_error.csv",
+                    "metrics.prediction_error.png",
+                ],
             ),
             (
                 "mreg_report",
                 "multioutput-regression",
                 "rmse",
-                ["r2.json", "rmse.json"],
+                [],
             ),
             ("clf_report", "binary-classification", "roc_auc", CLF_ARTIFACTS),
             ("mclf_report", "multiclass-classification", "roc_auc", CLF_ARTIFACTS),
@@ -186,7 +189,7 @@ class TestProject:
             )
         )
         assert (report_dir / "report.pkl").exists()
-        assert (report_dir / "all_metrics.csv").exists()
+        assert (report_dir / "metrics.csv").exists()
         assert (report_dir / "data.analyze.html").exists()
         for artifact in expected_artifacts:
             assert (report_dir / artifact).exists()
@@ -226,7 +229,7 @@ class TestProject:
             )
         )
         assert (report_dir / "report.pkl").exists()
-        assert (report_dir / "all_metrics.csv").exists()
+        assert (report_dir / "metrics.csv").exists()
         assert (report_dir / "data.analyze.html").exists()
         for artifact in self.CLF_ARTIFACTS:
             assert (report_dir / artifact).exists()
