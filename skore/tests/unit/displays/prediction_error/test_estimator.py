@@ -11,8 +11,8 @@ from skore import EstimatorReport
 def test_legend(pyplot, task, n_legend_entries, request):
     """Check the legend of the prediction error plot."""
     figure, _ = request.getfixturevalue(f"estimator_reports_{task}_figure_axes")
-    assert len(figure.legends) == 1
-    legend = figure.legends[0]
+    legend = figure.axes[len(figure.axes)//2].get_legend()
+    assert legend is not None
     legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == n_legend_entries
     if task == "multioutput_regression":
@@ -30,7 +30,7 @@ def test_legend_actual_vs_predicted(pyplot, task, n_legend_entries, request):
     report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    legend_texts = [t.get_text() for t in display.figure_.axes[len(display.figure_.axes)//2].get_legend().get_texts()]
     assert len(legend_texts) == n_legend_entries
     if task == "multioutput_regression":
         assert legend_texts[0] == "Output #0"
@@ -91,7 +91,7 @@ def test_subplot_by_data_source(pyplot, task, request):
     display.plot(subplot_by="data_source")
     assert isinstance(display.ax_[0], mpl.axes.Axes)
     assert len(display.ax_) == 2
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    legend_texts = [t.get_text() for t in display.figure_.axes[len(display.figure_.axes)//2].get_legend().get_texts()]
     assert len(legend_texts) == 1 if task == "regression" else 2
     assert legend_texts[-1] == "Perfect predictions"
     if task == "multioutput_regression":
@@ -105,8 +105,9 @@ def test_source_both(pyplot, task, request):
     report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.metrics.prediction_error(data_source="both")
     display.plot()
-    assert len(display.figure_.legends) == 1
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    legend = display.figure_.axes[len(display.figure_.axes)//2].get_legend()
+    assert legend is not None
+    legend_texts = [t.get_text() for t in legend.get_texts()]
     assert legend_texts[-1] == "Perfect predictions"
     assert "train" in legend_texts
     assert "test" in legend_texts
